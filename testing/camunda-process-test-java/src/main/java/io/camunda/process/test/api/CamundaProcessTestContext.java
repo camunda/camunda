@@ -94,8 +94,19 @@ public interface CamundaProcessTestContext {
    * waiting until a due date is reached, for example, of a BPMN timer event.
    *
    * @param timeToAdd the duration to add to the current time
+   * @throws ArithmeticException if numeric overflow occurs
    */
   void increaseTime(final Duration timeToAdd);
+
+  /**
+   * Sets the current time and date for the process tests. It can be used to jump to a specific date
+   * to avoid waiting until a due date is reached, for example, or start the process from a specific
+   * date.
+   *
+   * @param timeToSet the time to set
+   * @throws ArithmeticException if numeric overflow occurs
+   */
+  void setTime(final Instant timeToSet);
 
   /**
    * Creates a mock job worker for the specified job type.

@@ -16,16 +16,21 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.camunda.client.CamundaClient;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @CamundaProcessTest
-public class CamundaProcessTestClockResetIT {
+public class CamundaProcessContextClockIT {
 
   private static final Duration TIMER_DURATION = Duration.ofHours(1);
 
@@ -60,5 +65,35 @@ public class CamundaProcessTestClockResetIT {
 
     assertThat(Duration.between(testStartTime, currentTime))
         .isCloseTo(Duration.ofSeconds(10), Duration.ofMinutes(1));
+  }
+
+  @Test
+  @Order(3)
+  public void shouldSetTheTime() {
+    // when
+    final Instant timeToSet = Instant.parse("2025-05-28T13:30:00Z");
+    processTestContext.setTime(timeToSet);
+
+    // then
+    final Instant processTime = processTestContext.getCurrentTime();
+
+    assertThat(processTime).isCloseTo(timeToSet, within(10, ChronoUnit.SECONDS));
+  }
+
+  @Test
+  @Order(3)
+  public void shouldSetTheTimeMultipleTimes() {
+    // given
+    final Instant timeToSet = Instant.parse("2025-05-28T13:30:00Z");
+
+    // when
+    processTestContext.increaseTime(Duration.ofHours(4));
+
+    processTestContext.setTime(timeToSet);
+
+    // then
+    final Instant processTime = processTestContext.getCurrentTime();
+
+    assertThat(processTime).isCloseTo(timeToSet, within(10, ChronoUnit.SECONDS));
   }
 }
