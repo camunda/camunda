@@ -77,7 +77,7 @@ public final class ElementInstanceServiceTest {
     }
 
     @Test
-    void shouldReturnUserTaskWithCachedName() {
+    void shouldReturnElementInstanceWithCachedName() {
       final var entity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
@@ -94,7 +94,7 @@ public final class ElementInstanceServiceTest {
     }
 
     @Test
-    void shouldReturnUserTaskWithElementIdAsDefaultName() {
+    void shouldReturnElementInstanceWithElementIdAsDefaultName() {
       final var entity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
@@ -107,94 +107,94 @@ public final class ElementInstanceServiceTest {
       assertThat(searchQueryResult.items()).contains(entity.withFlowNodeName(entity.flowNodeId()));
     }
   }
-}
 
-@Nested
-class GetByKey {
+  @Nested
+  class GetByKey {
 
-  @Test
-  public void shouldReturnFlowNodeInstanceByKey() {
-    // given
-    final var entity = Instancio.create(FlowNodeInstanceEntity.class);
-    when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-    when(securityContextProvider.isAuthorized(
-            entity.processDefinitionId(),
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(true);
+    @Test
+    public void shouldReturnFlowNodeInstanceByKey() {
+      // given
+      final var entity = Instancio.create(FlowNodeInstanceEntity.class);
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
+      when(securityContextProvider.isAuthorized(
+              entity.processDefinitionId(),
+              authentication,
+              Authorization.of(a -> a.processDefinition().readProcessInstance())))
+          .thenReturn(true);
 
-    // when
-    final var searchQueryResult = services.getByKey(entity.flowNodeInstanceKey());
+      // when
+      final var searchQueryResult = services.getByKey(entity.flowNodeInstanceKey());
 
-    // then
-    assertThat(searchQueryResult).isEqualTo(entity);
-  }
+      // then
+      assertThat(searchQueryResult).isEqualTo(entity);
+    }
 
-  @Test
-  public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
-    // given
-    final var entity = Instancio.create(FlowNodeInstanceEntity.class);
-    when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-    when(securityContextProvider.isAuthorized(
-            entity.processDefinitionId(),
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(false);
+    @Test
+    public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
+      // given
+      final var entity = Instancio.create(FlowNodeInstanceEntity.class);
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
+      when(securityContextProvider.isAuthorized(
+              entity.processDefinitionId(),
+              authentication,
+              Authorization.of(a -> a.processDefinition().readProcessInstance())))
+          .thenReturn(false);
 
-    // when
-    final Executable executeGetByKey = () -> services.getByKey(entity.flowNodeInstanceKey());
-    // then
-    final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
-    assertThat(exception.getMessage())
-        .isEqualTo(
-            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
-  }
+      // when
+      final Executable executeGetByKey = () -> services.getByKey(entity.flowNodeInstanceKey());
+      // then
+      final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
+      assertThat(exception.getMessage())
+          .isEqualTo(
+              "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+    }
 
-  @Test
-  public void shouldReturnFlowNodeInstanceWithCachedName() {
-    // given
-    final var entity =
-        Instancio.of(FlowNodeInstanceEntity.class)
-            .set(field(FlowNodeInstanceEntity::flowNodeName), null)
-            .create();
+    @Test
+    public void shouldReturnFlowNodeInstanceWithCachedName() {
+      // given
+      final var entity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+              .create();
 
-    when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-    when(securityContextProvider.isAuthorized(
-            entity.processDefinitionId(),
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(true);
-    when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
-        .thenReturn(
-            ProcessCacheResult.of(
-                entity.processDefinitionKey(), entity.flowNodeId(), "cached name"));
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
+      when(securityContextProvider.isAuthorized(
+              entity.processDefinitionId(),
+              authentication,
+              Authorization.of(a -> a.processDefinition().readProcessInstance())))
+          .thenReturn(true);
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+          .thenReturn(
+              ProcessCacheResult.of(
+                  entity.processDefinitionKey(), entity.flowNodeId(), "cached name"));
 
-    // when
-    final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
+      // when
+      final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
 
-    // then
-    assertThat(foundEntity.flowNodeName()).isEqualTo("cached name");
-  }
+      // then
+      assertThat(foundEntity.flowNodeName()).isEqualTo("cached name");
+    }
 
-  @Test
-  public void shouldReturnFlowNodeInstanceWithElementIdAsDefaultName() {
-    // given
-    final var entity =
-        Instancio.of(FlowNodeInstanceEntity.class)
-            .set(field(FlowNodeInstanceEntity::flowNodeName), null)
-            .create();
+    @Test
+    public void shouldReturnFlowNodeInstanceWithElementIdAsDefaultName() {
+      // given
+      final var entity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+              .create();
 
-    when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-    when(securityContextProvider.isAuthorized(
-            entity.processDefinitionId(),
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(true);
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
+      when(securityContextProvider.isAuthorized(
+              entity.processDefinitionId(),
+              authentication,
+              Authorization.of(a -> a.processDefinition().readProcessInstance())))
+          .thenReturn(true);
 
-    // when
-    final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
+      // when
+      final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
 
-    // then
-    assertThat(foundEntity.flowNodeName()).isEqualTo(entity.flowNodeId());
+      // then
+      assertThat(foundEntity.flowNodeName()).isEqualTo(entity.flowNodeId());
+    }
   }
 }

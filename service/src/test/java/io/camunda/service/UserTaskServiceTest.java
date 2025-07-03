@@ -137,9 +137,10 @@ public class UserTaskServiceTest {
               flownodeInstanceSearchQuery(
                   q ->
                       q.filter(
-                          f ->
-                              f.flowNodeInstanceKeys(
-                                  flowNodeInstanceEntity.flowNodeInstanceKey())))))
+                              f ->
+                                  f.flowNodeInstanceKeys(
+                                      flowNodeInstanceEntity.flowNodeInstanceKey()))
+                          .singleResult())))
           .thenReturn(SearchQueryResult.of(flowNodeInstanceEntity));
       when(variableSearchClient.searchVariables(
               variableSearchQuery(q -> q.filter(f -> f.scopeKeys(1L, 2L, 3L)))))
@@ -165,7 +166,7 @@ public class UserTaskServiceTest {
           Instancio.of(FormEntity.class).set(field(FormEntity::formKey), entity.formKey()).create();
 
       when(formSearchClient.searchForms(
-              formSearchQuery(q -> q.filter(f -> f.formKeys(entity.formKey())))))
+              formSearchQuery(q -> q.filter(f -> f.formKeys(entity.formKey())).singleResult())))
           .thenReturn(SearchQueryResult.of(form));
       when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
       authorizeReadUserTasksForProcess(true, entity.processDefinitionId());
