@@ -15,6 +15,7 @@ import { createTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
 import { Stack } from "@carbon/react";
 import { spacing06 } from "@carbon/elements";
+import { ErrorResponse } from "src/utility/api/request";
 
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("tenants");
@@ -29,7 +30,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const submitDisabled = loading || !name || !tenantId;
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({
+    const { success, error } = await apiCall({
       name,
       tenantId,
       description,
@@ -44,6 +45,14 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         }),
       });
       onSuccess();
+    } else {
+      const detail = (error as ErrorResponse<"detailed">)?.detail;
+
+      enqueueNotification({
+        kind: "error",
+        title: t("failedToCreateTenant"),
+        subtitle: detail,
+      });
     }
   };
 
