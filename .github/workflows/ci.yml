@@ -307,6 +307,7 @@ jobs:
       # API_TEST: "':camunda-process-test-java',':camunda-client-java'"
       REPLACED: ${{ steps.REPLACED.outputs.replaced}}
     steps:
+      - uses: actions/checkout@v4
       - id: ZEEBE_UNIT_TESTS
         run: |
           # shellcheck disable=SC2086
