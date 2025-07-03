@@ -7,7 +7,22 @@
  */
 
 import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import {type ElementInstance} from '@vzeta/camunda-api-zod-schemas';
+import {
+  type ElementInstance,
+  type QueryUserTasksResponseBody,
+} from '@vzeta/camunda-api-zod-schemas';
+
+type UserTaskMetadata = {
+  dueDate?: string;
+  followUpDate?: string;
+  formKey?: string;
+  assignee?: string;
+  userTaskKey?: string;
+  candidateGroups?: string[];
+  candidateUsers?: string[];
+  tenantId?: string;
+  externalFormReference?: string;
+};
 
 // V2 Element Instance Metadata - extends the old structure but with v2 element instance fields will be removed after other components migration
 type V2InstanceMetadata = {
@@ -38,16 +53,30 @@ type V2InstanceMetadata = {
   jobDeadline?: string | null;
   jobCustomHeaders?: string | null;
   jobId?: string | null;
-};
+} & Partial<UserTaskMetadata>;
 
 type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata'> & {
   instanceMetadata: V2InstanceMetadata | null;
 };
 
+type UserTaskSubset = Pick<
+  QueryUserTasksResponseBody['items'][number],
+  | 'dueDate'
+  | 'followUpDate'
+  | 'formKey'
+  | 'assignee'
+  | 'userTaskKey'
+  | 'candidateGroups'
+  | 'candidateUsers'
+  | 'tenantId'
+  | 'externalFormReference'
+>;
+
 // Utility function to create V2 instance metadata from old metadata + migrated element instance
 function createV2InstanceMetadata(
   oldMetadata: MetaDataDto['instanceMetadata'],
   elementInstance: ElementInstance,
+  userTask?: UserTaskSubset,
 ): V2InstanceMetadata {
   return {
     calledProcessInstanceId: oldMetadata?.calledProcessInstanceId ?? null,
@@ -73,8 +102,10 @@ function createV2InstanceMetadata(
     flowNodeInstanceId: elementInstance.elementInstanceKey,
     flowNodeId: elementInstance.elementId,
     flowNodeType: elementInstance.type,
+
+    ...(userTask ?? {}),
   };
 }
 
-export type {V2InstanceMetadata, V2MetaDataDto};
+export type {V2InstanceMetadata, V2MetaDataDto, UserTaskSubset};
 export {createV2InstanceMetadata};
