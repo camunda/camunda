@@ -78,4 +78,34 @@ public class MigrationUtil {
     }
     return normalizedId;
   }
+
+  public static Set<PermissionType> convertDecisionPermissions(final Set<String> permissions) {
+    final Set<PermissionType> result = new HashSet<>();
+    if (permissions.contains("READ")) {
+      result.add(PermissionType.READ_DECISION_DEFINITION);
+      result.add(PermissionType.READ_DECISION_INSTANCE);
+    }
+    if (permissions.contains("DELETE")) {
+      result.add(PermissionType.DELETE_DECISION_INSTANCE);
+    }
+    return result;
+  }
+
+  public static Set<PermissionType> convertProcessPermissions(final Set<String> permissions) {
+    final Set<PermissionType> result = new HashSet<>();
+    if (permissions.contains("READ")) {
+      result.add(PermissionType.READ_PROCESS_DEFINITION);
+      result.add(PermissionType.READ_PROCESS_INSTANCE);
+    }
+    if (permissions.contains("UPDATE_PROCESS_INSTANCE")) {
+      result.add(PermissionType.UPDATE_PROCESS_INSTANCE);
+    }
+    if (permissions.contains("START_PROCESS_INSTANCE")) {
+      result.add(PermissionType.CREATE_PROCESS_INSTANCE);
+    }
+    if (permissions.contains("DELETE") || permissions.contains("DELETE_PROCESS_INSTANCE")) {
+      result.add(PermissionType.DELETE_PROCESS_INSTANCE);
+    }
+    return result;
+  }
 }

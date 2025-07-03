@@ -7,24 +7,37 @@
  */
 package io.camunda.migration.identity.handler.sm;
 
+import static io.camunda.migration.identity.MigrationUtil.convertDecisionPermissions;
+import static io.camunda.migration.identity.MigrationUtil.convertProcessPermissions;
 import static io.camunda.migration.identity.MigrationUtil.normalizeGroupID;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
+import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE;
+import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.handler.MigrationHandler;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private final ManagementIdentityClient managementIdentityClient;
   private final GroupServices groupServices;
+  private final AuthorizationServices authorizationServices;
 
   private final AtomicInteger createdGroupCount = new AtomicInteger();
   private final AtomicInteger assignedUserCount = new AtomicInteger();
@@ -34,9 +47,13 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   private final AtomicInteger totalRoleAssignmentAttempts = new AtomicInteger();
 
   public GroupMigrationHandler(
-      final ManagementIdentityClient managementIdentityClient, final GroupServices groupServices) {
+      final ManagementIdentityClient managementIdentityClient,
+      final GroupServices groupServices,
+      final AuthorizationServices authorizationServices,
+      final CamundaAuthentication authentication) {
     this.managementIdentityClient = managementIdentityClient;
     this.groupServices = groupServices;
+    this.authorizationServices = authorizationServices.withAuthentication(authentication);
   }
 
   @Override
@@ -65,6 +82,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
           }
           assignUsersToGroup(group.id(), normalizedGroupId);
           assignRolesToGroup(group.id(), normalizedGroupId);
+          createAuthorizationsForGroup(group.id(), normalizedGroupId);
         });
   }
 
@@ -139,5 +157,62 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
                 targetGroupId);
           }
         });
+  }
+
+  private void createAuthorizationsForGroup(final String groupId, final String targetGroupId) {
+    final var authorizations = managementIdentityClient.fetchGroupAuthorizations(groupId);
+
+    authorizations.forEach(
+        authorization -> {
+          final var request =
+              new CreateAuthorizationRequest(
+                  targetGroupId,
+                  AuthorizationOwnerType.GROUP,
+                  authorization.resourceKey(),
+                  convertResourceType(authorization.resourceType()),
+                  convertPermissions(authorization.permissions(), authorization.resourceType()));
+          try {
+            authorizationServices.createAuthorization(request).join();
+            logger.debug(
+                "Authorization created for group '{}' with permissions '{}'.",
+                targetGroupId,
+                request.permissionTypes());
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new MigrationException(
+                  String.format(
+                      "Failed to create authorization for group '%s' with permissions '%s'",
+                      targetGroupId, request.permissionTypes()),
+                  e);
+            }
+            logger.debug(
+                "Authorization for group '{}' with permissions '{}' already exists, skipping creation.",
+                targetGroupId,
+                authorization.permissions());
+          }
+        });
+  }
+
+  private AuthorizationResourceType convertResourceType(final String resourceType) {
+    if (IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE.equalsIgnoreCase(resourceType)) {
+      return AuthorizationResourceType.PROCESS_DEFINITION;
+    }
+    if (IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE.equalsIgnoreCase(resourceType)) {
+      return AuthorizationResourceType.DECISION_DEFINITION;
+    }
+    logger.debug("Unknown resource type: {}. Defaulting to UNSPECIFIED.", resourceType);
+    return AuthorizationResourceType.UNSPECIFIED;
+  }
+
+  private Set<PermissionType> convertPermissions(
+      final Set<String> permissions, final String resourceType) {
+    return switch (resourceType) {
+      case IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE -> convertDecisionPermissions(permissions);
+      case IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE -> convertProcessPermissions(permissions);
+      default -> {
+        logger.warn("Unknown resource type: {}. Skipping permissions conversion.", resourceType);
+        yield Collections.emptySet();
+      }
+    };
   }
 }

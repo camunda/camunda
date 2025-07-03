@@ -32,7 +32,11 @@ public class SMKeycloakMigrationHandlerConfig {
 
   @Bean
   public GroupMigrationHandler groupMigrationHandler(
-      final ManagementIdentityClient managementIdentityClient, final GroupServices groupServices) {
-    return new GroupMigrationHandler(managementIdentityClient, groupServices);
+      final ManagementIdentityClient managementIdentityClient,
+      final GroupServices groupServices,
+      final AuthorizationServices authorizationServices,
+      final CamundaAuthentication authentication) {
+    return new GroupMigrationHandler(
+        managementIdentityClient, groupServices, authorizationServices, authentication);
   }
 }
