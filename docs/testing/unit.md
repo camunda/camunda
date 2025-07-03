@@ -201,7 +201,7 @@ public void shouldSubstractAfterAdd() {
 }
 ```
 
-### Dont's: Testing asynchronous code
+### Don'ts: Testing asynchronous code
 
 If we do not separate asynchronous code and the business logic, we have to test our code asynchronously.
 This means we have a harder time testing our logic, as they are non-deterministic and are likely to become flaky.
