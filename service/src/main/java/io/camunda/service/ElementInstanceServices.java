@@ -15,6 +15,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
@@ -58,15 +59,10 @@ public final class ElementInstanceServices
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
-    final var result =
-        flowNodeInstanceSearchClient
-            .withSecurityContext(
-                securityContextProvider.provideSecurityContext(
-                    authentication,
-                    Authorization.of(a -> a.processDefinition().readProcessInstance())))
-            .searchFlowNodeInstances(query);
-
-    return toCacheEnrichedResult(result);
+    return search(
+        query,
+        securityContextProvider.provideSecurityContext(
+            authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())));
   }
 
   public SearchQueryResult<FlowNodeInstanceEntity> search(
@@ -75,8 +71,10 @@ public final class ElementInstanceServices
   }
 
   public FlowNodeInstanceEntity getByKey(final Long key) {
+    final var query = FlowNodeInstanceQuery.of(q -> q.filter(f -> f.flowNodeInstanceKeys(key)));
     final var result =
-        search(FlowNodeInstanceQuery.of(q -> q.filter(f -> f.flowNodeInstanceKeys(key))));
+        search(query, securityContextProvider.provideSecurityContext(authentication));
+
     final var flowNodeInstance = getSingleResultOrThrow(result, key, "Flow node instance");
 
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
@@ -85,6 +83,16 @@ public final class ElementInstanceServices
       throw new ForbiddenException(authorization);
     }
     return result;
+  }
+
+  private SearchQueryResult<FlowNodeInstanceEntity> search(
+      final FlowNodeInstanceQuery query, final SecurityContext securityContext) {
+    final var result =
+        flowNodeInstanceSearchClient
+            .withSecurityContext(securityContext)
+            .searchFlowNodeInstances(query);
+
+    return toCacheEnrichedResult(result);
   }
 
   public CompletableFuture<VariableDocumentRecord> setVariables(
