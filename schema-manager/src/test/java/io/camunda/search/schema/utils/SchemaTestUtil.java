@@ -7,13 +7,17 @@
  */
 package io.camunda.search.schema.utils;
 
+import static java.lang.Boolean.parseBoolean;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.IndexMappingDifference.OrderInsensitiveEquivalence;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
@@ -84,6 +88,33 @@ public final class SchemaTestUtil {
       final var expectedMappingsTree =
           TestObjectMapper.objectMapper().readTree(expectedMappingsJson);
       return mappings.equals(expectedMappingsTree.get("mappings"));
+    }
+  }
+
+  public static void assertMappingsMatch(
+      final JsonNode mappings, final IndexDescriptor indexDescriptor) {
+    try (final var expectedMappingsJson =
+        SchemaTestUtil.class.getResourceAsStream(indexDescriptor.getMappingsClasspathFilename())) {
+      final var expectedMappingsTree =
+          TestObjectMapper.objectMapper()
+              .convertValue(
+                  TestObjectMapper.objectMapper().readTree(expectedMappingsJson).get("mappings"),
+                  Map.class);
+      final var actualMappingsTree =
+          TestObjectMapper.objectMapper().convertValue(mappings, Map.class);
+      final MapDifference difference =
+          Maps.difference(
+              actualMappingsTree, expectedMappingsTree, OrderInsensitiveEquivalence.equals());
+      if (parseBoolean(actualMappingsTree.getOrDefault("dynamic", "false").toString())
+          && parseBoolean(expectedMappingsTree.getOrDefault("dynamic", "false").toString())) {
+        // if dynamic is true, skip mappings validation
+        return;
+      }
+      assertThat(difference.areEqual())
+          .isTrue()
+          .withFailMessage("Mappings did not match: %s", difference);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

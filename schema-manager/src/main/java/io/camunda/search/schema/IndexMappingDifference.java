@@ -11,6 +11,7 @@ import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -97,9 +98,6 @@ public record IndexMappingDifference(
         isRightDynamic);
   }
 
-  record PropertyDifference(
-      String name, IndexMappingProperty leftValue, IndexMappingProperty rightValue) {}
-
   /**
    * A recursive equivalence for comparing Elasticsearch/Opensearch index mappings, specifically
    * required to handle nested structures and ignore list ordering.
@@ -125,9 +123,12 @@ public record IndexMappingDifference(
    *       differences) are treated as equivalent.
    * </ul>
    */
-  private static final class OrderInsensitiveEquivalence extends Equivalence<Object> {
+  @VisibleForTesting
+  public static final class OrderInsensitiveEquivalence extends Equivalence<Object> {
 
     private static final OrderInsensitiveEquivalence INSTANCE = new OrderInsensitiveEquivalence();
+
+    private OrderInsensitiveEquivalence() {}
 
     public static OrderInsensitiveEquivalence equals() {
       return INSTANCE;
@@ -156,4 +157,7 @@ public record IndexMappingDifference(
       }
     }
   }
+
+  record PropertyDifference(
+      String name, IndexMappingProperty leftValue, IndexMappingProperty rightValue) {}
 }
