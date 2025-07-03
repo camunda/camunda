@@ -47,6 +47,11 @@
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
     <!-- SPRING -->
 
     <dependency>

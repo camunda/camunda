@@ -143,6 +143,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUsedUndeclaredDependencies combine.children="append">
+            <dep>io.camunda:zeebe-util</dep>
+          </ignoredUsedUndeclaredDependencies>
+        </configuration>
       </plugin>
 
       <plugin>
