@@ -29,7 +29,9 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -174,7 +176,7 @@ class DocumentAuthorizationQueryStrategyTest {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerIds(List.of("foo"))
+                            f.ownerTypeToOwnerIds(Map.of(EntityType.USER, Set.of("foo")))
                                 .resourceType("PROCESS_DEFINITION")
                                 .permissionTypes(READ_PROCESS_DEFINITION))));
   }
