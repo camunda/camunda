@@ -25,6 +25,7 @@ import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
@@ -86,12 +87,16 @@ public final class UserTaskServices
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
+    return search(
+        query,
+        securityContextProvider.provideSecurityContext(
+            authentication, Authorization.of(a -> a.processDefinition().readUserTask())));
+  }
+
+  private SearchQueryResult<UserTaskEntity> search(
+      final UserTaskQuery query, final SecurityContext securityContext) {
     final var result =
-        userTaskSearchClient
-            .withSecurityContext(
-                securityContextProvider.provideSecurityContext(
-                    authentication, Authorization.of(a -> a.processDefinition().readUserTask())))
-            .searchUserTasks(query);
+        userTaskSearchClient.withSecurityContext(securityContext).searchUserTasks(query);
 
     return toCacheEnrichedResult(result);
   }
@@ -159,9 +164,11 @@ public final class UserTaskServices
   }
 
   public UserTaskEntity getByKey(final long userTaskKey) {
-    final var result = search(UserTaskQuery.of(q -> q.filter(f -> f.userTaskKeys(userTaskKey))));
-    final var userTask = getSingleResultOrThrow(result, userTaskKey, "User task");
+    final var query = UserTaskQuery.of(q -> q.filter(f -> f.userTaskKeys(userTaskKey)));
+    final var result =
+        search(query, securityContextProvider.provideSecurityContext(authentication));
 
+    final var userTask = getSingleResultOrThrow(result, userTaskKey, "User task");
     final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
     if (!securityContextProvider.isAuthorized(
         userTask.processDefinitionId(), authentication, authorization)) {
