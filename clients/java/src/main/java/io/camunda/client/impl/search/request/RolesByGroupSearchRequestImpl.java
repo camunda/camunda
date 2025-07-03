@@ -21,9 +21,9 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.filter.RoleFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;

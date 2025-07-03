@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.fetch;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.RoleFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.TypedSearchRequest;
-import io.camunda.client.api.search.response.Role;
-import io.camunda.client.api.search.sort.RoleSort;
+import io.camunda.client.api.search.filter.MappingFilter;
+import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.sort.MappingSort;
 
-public interface RolesByGroupSearchRequest
-    extends TypedSearchRequest<RoleFilter, RoleSort, RolesByGroupSearchRequest>,
-        FinalSearchRequestStep<Role> {}
+public interface MappingsByGroupSearchRequest
+    extends TypedSearchRequest<MappingFilter, MappingSort, MappingsByGroupSearchRequest>,
+        FinalSearchRequestStep<Mapping> {}
