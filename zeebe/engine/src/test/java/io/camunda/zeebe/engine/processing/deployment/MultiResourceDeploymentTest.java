@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
@@ -293,6 +294,7 @@ public class MultiResourceDeploymentTest {
           RecordingExporter.records()
               .onlyEvents()
               .filter(r -> r.getIntent() != DeploymentIntent.RECONSTRUCTED_ALL)
+              .filter(r -> r.getIntent() != UsageMetricIntent.EXPORTED)
               .limit(record -> record.getPosition() >= firstDeploymentRecord.getPosition())
               .count();
       assertThat(recordsCountBefore)
@@ -352,6 +354,7 @@ public class MultiResourceDeploymentTest {
           RecordingExporter.records()
               .onlyEvents()
               .filter(r -> r.getIntent() != DeploymentIntent.RECONSTRUCTED_ALL)
+              .filter(r -> r.getIntent() != UsageMetricIntent.EXPORTED)
               .limit(record -> record.getPosition() >= secondDeploymentRecord.getPosition())
               .count();
       assertThat(recordsCountAfter - recordsCountBefore)
