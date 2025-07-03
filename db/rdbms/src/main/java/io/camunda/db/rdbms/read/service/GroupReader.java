@@ -30,7 +30,7 @@ public class GroupReader extends AbstractEntityReader<GroupEntity> {
   }
 
   public Optional<GroupEntity> findOne(final String groupId) {
-    final var result = search(GroupQuery.of(b -> b.filter(f -> f.groupId(groupId))));
+    final var result = search(GroupQuery.of(b -> b.filter(f -> f.groupIds(groupId))));
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 

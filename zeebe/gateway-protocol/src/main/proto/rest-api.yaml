@@ -7807,7 +7807,8 @@ components:
       properties:
         groupId:
           description: The group ID search filters.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         name:
           description: The group name search filters.
           type: string

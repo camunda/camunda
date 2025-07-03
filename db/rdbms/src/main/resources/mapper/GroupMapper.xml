@@ -49,7 +49,12 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <if test="filter.groupKey != null">AND g.GROUP_KEY = #{filter.groupKey}</if>
-    <if test="filter.groupId != null">AND g.GROUP_ID = #{filter.groupId}</if>
+    <if test="filter.groupIdOperations != null and !filter.groupIdOperations.isEmpty()">
+      <foreach collection="filter.groupIdOperations" item="operation">
+        AND g.GROUP_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
     <if test="filter.memberIds != null">
       AND gm.ENTITY_ID IN

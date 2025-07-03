@@ -56,7 +56,8 @@ public class GroupsByRoleSearchRequestTest extends ClientRestTest {
 
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getBodyAsString())
-        .contains("{\"sort\":[],\"filter\":{\"groupId\":\"groupId\",\"name\":\"groupName\"}}");
+        .contains(
+            "{\"sort\":[],\"filter\":{\"groupId\":{\"$eq\":\"groupId\",\"$in\":[],\"$notIn\":[]},\"name\":\"groupName\"}}");
   }
 
   @Test
