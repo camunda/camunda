@@ -318,7 +318,7 @@ public class OpenSearchQueryHelper {
 
   private Query batchOperationIdQuery(final ListViewQueryDto query) {
     return query.getBatchOperationId() != null
-        ? term(ListViewTemplate.BATCH_OPERATION_IDS, query.getBatchOperationId())
+        ? term(ListViewTemplate.BATCH_OPERATION_KEYS, query.getBatchOperationId())
         : null;
   }
 

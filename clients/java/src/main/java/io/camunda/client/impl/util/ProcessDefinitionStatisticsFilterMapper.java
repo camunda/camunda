@@ -41,7 +41,7 @@ public final class ProcessDefinitionStatisticsFilterMapper {
     target.setProcessInstanceKey(filter.getProcessInstanceKey());
     target.setParentProcessInstanceKey(filter.getParentProcessInstanceKey());
     target.setParentElementInstanceKey(filter.getParentElementInstanceKey());
-    target.setBatchOperationId(filter.getBatchOperationId());
+    target.setBatchOperationKey(filter.getBatchOperationKey());
     target.setErrorMessage(filter.getErrorMessage());
     target.setHasRetriesLeft(filter.getHasRetriesLeft());
     target.setElementInstanceState(filter.getElementInstanceState());

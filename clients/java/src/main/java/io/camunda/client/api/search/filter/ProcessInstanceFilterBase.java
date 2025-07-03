@@ -113,11 +113,11 @@ public interface ProcessInstanceFilterBase extends SearchRequestFilter {
   /** Filter by variables map */
   ProcessInstanceFilterBase variables(final Map<String, Object> variableValueFilters);
 
-  /** Filter by batchOperationId */
-  ProcessInstanceFilterBase batchOperationId(final String batchOperationId);
+  /** Filter by batchOperationKey */
+  ProcessInstanceFilterBase batchOperationKey(final String batchOperationKey);
 
-  /** Filter by batchOperationId using {@link StringProperty} */
-  ProcessInstanceFilterBase batchOperationId(final Consumer<StringProperty> fn);
+  /** Filter by batchOperationKey using {@link StringProperty} */
+  ProcessInstanceFilterBase batchOperationKey(final Consumer<StringProperty> fn);
 
   /** Filter by error message */
   ProcessInstanceFilterBase errorMessage(final String errorMessage);

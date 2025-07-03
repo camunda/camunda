@@ -348,7 +348,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
     // given
     final var processInstanceFilter =
         FilterBuilders.processInstance(
-            f -> f.batchOperationIds("ab1db89e-4822-4330-90b5-b98346f8f83a"));
+            f -> f.batchOperationKeys("ab1db89e-4822-4330-90b5-b98346f8f83a"));
 
     // when
     final var searchRequest = transformQuery(processInstanceFilter);

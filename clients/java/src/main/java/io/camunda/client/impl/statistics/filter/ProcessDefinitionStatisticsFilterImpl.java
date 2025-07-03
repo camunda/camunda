@@ -175,16 +175,16 @@ public class ProcessDefinitionStatisticsFilterImpl
   }
 
   @Override
-  public ProcessDefinitionStatisticsFilter batchOperationId(final String batchOperationId) {
-    batchOperationId(b -> b.eq(batchOperationId));
+  public ProcessDefinitionStatisticsFilter batchOperationKey(final String batchOperationKey) {
+    batchOperationKey(b -> b.eq(batchOperationKey));
     return this;
   }
 
   @Override
-  public ProcessDefinitionStatisticsFilter batchOperationId(final Consumer<StringProperty> fn) {
+  public ProcessDefinitionStatisticsFilter batchOperationKey(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setBatchOperationId(provideSearchRequestProperty(property));
+    filter.setBatchOperationKey(provideSearchRequestProperty(property));
     return this;
   }
 

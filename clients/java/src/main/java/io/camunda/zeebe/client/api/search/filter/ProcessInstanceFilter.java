@@ -67,8 +67,8 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by variable */
   ProcessInstanceFilter variable(final VariableValueFilterProperty variable);
 
-  /** Filter by batchOperationId */
-  ProcessInstanceFilter batchOperationId(final String batchOperationId);
+  /** Filter by batchOperationKey */
+  ProcessInstanceFilter batchOperationKey(final String batchOperationKey);
 
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);

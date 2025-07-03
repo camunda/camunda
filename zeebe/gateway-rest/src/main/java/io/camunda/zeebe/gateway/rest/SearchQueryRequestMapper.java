@@ -224,9 +224,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getBatchOperationId())
+      ofNullable(filter.getBatchOperationKey())
           .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+          .ifPresent(builder::batchOperationKeyOperations);
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
@@ -968,9 +968,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getBatchOperationId())
+      ofNullable(filter.getBatchOperationKey())
           .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+          .ifPresent(builder::batchOperationKeyOperations);
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
