@@ -1232,9 +1232,10 @@ public class CompactRecordLogger {
   }
 
   private String formatTenant(final TenantOwned value) {
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(value.getTenantId())
+    final String tenantId = value.getTenantId();
+    return StringUtils.isEmpty(tenantId) || TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
         ? ""
-        : " (tenant: %s)".formatted(value.getTenantId());
+        : " (tenant: %s)".formatted(tenantId);
   }
 
   private String formatVariables(final RecordValueWithVariables value) {
