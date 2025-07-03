@@ -1252,6 +1252,7 @@ jobs:
       - build-operate-backend
       - build-platform-frontend
       - commitlint
+      - consolidated-unit-test-setup
       - consolidated-unit-tests
       - detect-changes
       - docker-checks
