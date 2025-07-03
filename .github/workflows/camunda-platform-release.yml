@@ -722,7 +722,14 @@ jobs:
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release succeeded
-    if: ${{ always() && needs.release.result == 'success' && inputs.dryRun == false }}
+    if: ${{ always() && (
+      needs.release.result == 'success' &&
+      needs.zeebe-docker.result == 'success' &&
+      needs.operate-docker.result == 'success' &&
+      needs.tasklist-docker.result == 'success' &&
+      needs.camunda-docker.result == 'success' &&
+      needs.snyk.result == 'success'
+      ) && inputs.dryRun == false }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
@@ -763,7 +770,14 @@ jobs:
     needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release failed
-    if: ${{ always() && needs.release.result == 'failure' && inputs.dryRun == false }}
+    if: ${{ always() && (
+        needs.release.result == 'failure' ||
+        needs.zeebe-docker.result == 'failure' ||
+        needs.operate-docker.result == 'failure' ||
+        needs.tasklist-docker.result == 'failure' ||
+        needs.camunda-docker.result == 'failure' ||
+        needs.snyk.result == 'failure'
+        ) && inputs.dryRun == false }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
