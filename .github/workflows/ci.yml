@@ -301,13 +301,14 @@ jobs:
     needs: [ detect-changes ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
       matrix:
         component: [ Operate, Optimize, Tasklist ]
         suite: [ DataLayer, CoreFeatures ]
         isZeebeTest: [ false ]
+        runs-on: [ gcp-perf-core-8-default ]
         include:
           - suite: DataLayer
             suiteName: Data Layer
@@ -321,7 +322,7 @@ jobs:
             suite: DataLayer
             suiteName: Data Layer
             isZeebeTest: false
-          - component: Zeebe Unit Tests
+          - component: Zeebe
             isZeebeTest: true
             suite: CoreFeatures
             suiteName: Core Features
@@ -336,22 +337,23 @@ jobs:
             suite: CoreFeatures
             suiteName: Core Features
             maven-modules: "':camunda-process-test-java',':camunda-client-java'"
-          - component: Zeebe Exporter Tests
+          - component: Zeebe Exporter
             isZeebeTest: true
             suite: DataLayer
             suiteName: Data Layer
             maven-modules: "':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
-          - component: Zeebe Gateway Tests
+            runs-on: gcp-perf-core-16-default
+          - component: Zeebe Gateway
             isZeebeTest: true
             suite: CoreFeatures
             suiteName: Core Features
             maven-modules: "':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
-          - component: Zeebe Backup Tests
+          - component: Zeebe Backup
             isZeebeTest: true
             suite: CoreFeatures
             suiteName: Core Features
             maven-modules: "':zeebe-backup',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3'"
-          - component: Zeebe Protocol Tests
+          - component: Zeebe Protocol
             isZeebeTest: true
             suite: CoreFeatures
             suiteName: Core Features
@@ -383,7 +385,7 @@ jobs:
           -D surefire.rerunFailingTestsCount=3 -D junitThreadCount=16 -P skipFrontendBuild
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
-      - name: Maven Run Test (Big Test)
+      - name: Maven Run Test (Zeebe)
         if: matrix.isZeebeTest == true
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
