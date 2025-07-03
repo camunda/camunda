@@ -11,6 +11,7 @@ import {authenticationStore} from './authentication';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {getStateLocally} from 'common/local-storage';
 import {getClientConfig} from 'common/config/getClientConfig';
+import {currentUser} from 'common/mocks/current-user';
 
 vi.mock('common/config/getClientConfig', async (importOriginal) => {
   const actual =
@@ -38,6 +39,9 @@ describe('authentication store', () => {
   it('should login', async () => {
     nodeMockServer.use(
       http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
     );
 
     authenticationStore.disableSession();
@@ -80,6 +84,9 @@ describe('authentication store', () => {
 
     nodeMockServer.use(
       http.post('/login', () => new HttpResponse(''), {once: true}),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
       http.post('/logout', () => new HttpResponse(''), {once: true}),
     );
 
@@ -195,8 +202,18 @@ describe('authentication store', () => {
 
       nodeMockServer.use(
         http.post('/login', () => new HttpResponse(''), {once: true}),
+        http.get(
+          '/v2/authentication/me',
+          () => HttpResponse.json(currentUser),
+          {once: true},
+        ),
         http.post('/logout', () => new HttpResponse(''), {once: true}),
         http.post('/login', () => new HttpResponse(''), {once: true}),
+        http.get(
+          '/v2/authentication/me',
+          () => HttpResponse.json(currentUser),
+          {once: true},
+        ),
       );
 
       await authenticationStore.handleLogin('demo', 'demo');

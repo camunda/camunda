@@ -6,28 +6,30 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, queryOptions} from '@tanstack/react-query';
 import {commonApi} from 'common/api';
-import {type RequestError, request} from 'common/api/request';
+import {request} from 'common/api/request';
 import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
 
+const currentUserQueryOptions = queryOptions({
+  queryKey: ['currentUser'],
+  queryFn: async () => {
+    const {response, error} = await request(commonApi.getCurrentUser());
+
+    if (response !== null) {
+      return response.json() as Promise<CurrentUser>;
+    }
+
+    throw error;
+  },
+  gcTime: Infinity,
+  staleTime: Infinity,
+  refetchIntervalInBackground: false,
+  refetchOnWindowFocus: false,
+});
+
 function useCurrentUser() {
-  return useQuery<CurrentUser, RequestError | Error>({
-    queryKey: ['currentUser'],
-    queryFn: async () => {
-      const {response, error} = await request(commonApi.getCurrentUser());
-
-      if (response !== null) {
-        return response.json();
-      }
-
-      throw error ?? new Error('Could not fetch current user');
-    },
-    gcTime: Infinity,
-    staleTime: Infinity,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: false,
-  });
+  return useQuery(currentUserQueryOptions);
 }
 
-export {useCurrentUser};
+export {useCurrentUser, currentUserQueryOptions};
