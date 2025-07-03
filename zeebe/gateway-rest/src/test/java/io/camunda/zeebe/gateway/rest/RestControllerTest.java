@@ -73,9 +73,9 @@ public abstract class RestControllerTest {
           List.of(Operation.in(OffsetDateTime.now(), OffsetDateTime.now().minusDays(1))));
 
   protected static final CamundaAuthentication AUTHENTICATION_WITH_DEFAULT_TENANT =
-      CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("<default>"));
+      CamundaAuthentication.of(a -> a.username("foo").groupId("groupId").tenantId("<default>"));
   protected static final CamundaAuthentication AUTHENTICATION_WITH_NON_DEFAULT_TENANT =
-      CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("tenantId"));
+      CamundaAuthentication.of(a -> a.username("foo").groupId("groupId").tenantId("tenantId"));
 
   @Autowired protected WebTestClient webClient;
 

@@ -52,7 +52,7 @@ public class TenantServiceTest {
   public void before() {
     stubbedBrokerClient = new StubbedBrokerClient();
     final CamundaAuthentication authentication =
-        CamundaAuthentication.of(builder -> builder.user("foo"));
+        CamundaAuthentication.of(builder -> builder.username("foo"));
     client = mock(TenantSearchClient.class);
     final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -237,7 +237,7 @@ public class TenantServiceTest {
   @Test
   public void shouldThrowForbiddenIfNotAuthorized() {
     final CamundaAuthentication auth =
-        CamundaAuthentication.of(builder -> builder.user("unauthorizedUser"));
+        CamundaAuthentication.of(builder -> builder.username("unauthorizedUser"));
     final var contextProvider = mock(SecurityContextProvider.class);
     when(contextProvider.isAuthorized(any(), any(), any())).thenReturn(false);
 

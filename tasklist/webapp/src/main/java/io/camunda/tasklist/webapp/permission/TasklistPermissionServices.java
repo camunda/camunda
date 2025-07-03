@@ -100,6 +100,6 @@ public class TasklistPermissionServices {
     // then the authorization check cannot be performed.
     // the authorization key is only provided when running with the BASIC authentication method
     // in other cases the authorization check must not happen
-    return authentication == null || authentication.authenticatedUsername() == null;
+    return authentication == null || authentication.getUsername() == null;
   }
 }

@@ -149,8 +149,8 @@ public class PermissionsServiceTest {
       final List<String> roleIds,
       final List<String> groupIds) {
     return new CamundaAuthentication.Builder()
-        .user(username)
-        .tenants(tenants)
+        .username(username)
+        .tenantIds(tenants)
         .roleIds(roleIds)
         .groupIds(groupIds)
         .build();

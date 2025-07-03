@@ -7,50 +7,91 @@
  */
 package io.camunda.security.auth;
 
-import static java.util.Collections.unmodifiableList;
-
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.auth.Authorization;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public record CamundaAuthentication(
-    @JsonProperty("authenticated_username") String authenticatedUsername,
-    @JsonProperty("authenticated_client_id") String authenticatedClientId,
-    @JsonProperty("authenticated_group_ids") List<String> authenticatedGroupIds,
-    @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
-    @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
-    @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
-    @JsonProperty("claims") Map<String, Object> claims) {
+public interface CamundaAuthentication {
 
-  public static CamundaAuthentication none() {
-    return of(b -> b);
+  CamundaAuthentication NONE_AUTHENTICATION = of(b -> b);
+  CamundaAuthentication ANONYMOUS_AUTHENTICATION =
+      new CamundaAuthentication.Builder()
+          .claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true))
+          .build();
+
+  String getEmail();
+
+  CamundaAuthentication setEmail(String email);
+
+  String getDisplayName();
+
+  CamundaAuthentication setDisplayName(String displayName);
+
+  String getUsername();
+
+  CamundaAuthentication setUsername(String username);
+
+  String getClientId();
+
+  CamundaAuthentication setClientId(String clientId);
+
+  List<String> getGroupIds();
+
+  CamundaAuthentication setGroupIds(List<String> groups);
+
+  List<String> getRoleIds();
+
+  CamundaAuthentication setRoleIds(List<String> roles);
+
+  List<String> getTenantIds();
+
+  CamundaAuthentication setTenantIds(List<String> tenants);
+
+  List<String> getMappingIds();
+
+  CamundaAuthentication setMappingIds(List<String> mappings);
+
+  Map<String, Object> getClaims();
+
+  CamundaAuthentication setClaims(final Map<String, Object> claims);
+
+  static CamundaAuthentication none() {
+    return NONE_AUTHENTICATION;
   }
 
-  public static CamundaAuthentication anonymous() {
-    return of(b -> b.claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
+  static CamundaAuthentication anonymous() {
+    return ANONYMOUS_AUTHENTICATION;
   }
 
-  public static CamundaAuthentication of(final Function<Builder, Builder> builderFunction) {
+  static CamundaAuthentication of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
   }
 
-  public static final class Builder {
+  final class Builder {
 
+    private String email;
+    private String displayName;
     private String username;
     private String clientId;
-    private final List<String> groupIds = new ArrayList<>();
-    private final List<String> roleIds = new ArrayList<>();
-    private final List<String> tenants = new ArrayList<>();
-    private final List<String> mappings = new ArrayList<>();
+    private List<String> groupIds;
+    private List<String> roleIds;
+    private List<String> tenants;
+    private List<String> mappings;
     private Map<String, Object> claims;
 
-    public Builder user(final String value) {
+    public Builder email(final String value) {
+      email = value;
+      return this;
+    }
+
+    public Builder displayName(final String value) {
+      displayName = value;
+      return this;
+    }
+
+    public Builder username(final String value) {
       username = value;
       return this;
     }
@@ -60,7 +101,7 @@ public record CamundaAuthentication(
       return this;
     }
 
-    public Builder group(final String value) {
+    public Builder groupId(final String value) {
       return groupIds(Collections.singletonList(value));
     }
 
@@ -71,7 +112,7 @@ public record CamundaAuthentication(
       return this;
     }
 
-    public Builder role(final String value) {
+    public Builder roleId(final String value) {
       return roleIds(Collections.singletonList(value));
     }
 
@@ -82,22 +123,22 @@ public record CamundaAuthentication(
       return this;
     }
 
-    public Builder tenant(final String tenant) {
-      return tenants(Collections.singletonList(tenant));
+    public Builder tenantId(final String tenant) {
+      return tenantIds(Collections.singletonList(tenant));
     }
 
-    public Builder tenants(final List<String> values) {
+    public Builder tenantIds(final List<String> values) {
       if (values != null) {
         tenants.addAll(values);
       }
       return this;
     }
 
-    public Builder mapping(final String mapping) {
-      return mapping(Collections.singletonList(mapping));
+    public Builder mappingId(final String mapping) {
+      return mappingIds(Collections.singletonList(mapping));
     }
 
-    public Builder mapping(final List<String> values) {
+    public Builder mappingIds(final List<String> values) {
       if (values != null) {
         mappings.addAll(values);
       }
@@ -110,14 +151,16 @@ public record CamundaAuthentication(
     }
 
     public CamundaAuthentication build() {
-      return new CamundaAuthentication(
-          username,
-          clientId,
-          unmodifiableList(groupIds),
-          unmodifiableList(roleIds),
-          unmodifiableList(tenants),
-          unmodifiableList(mappings),
-          claims);
+      return new DefaultCamundaAuthentication()
+          .setUsername(username)
+          .setEmail(email)
+          .setDisplayName(displayName)
+          .setClientId(clientId)
+          .setGroupIds(groupIds)
+          .setRoleIds(roleIds)
+          .setTenantIds(tenants)
+          .setMappingIds(mappings)
+          .setClaims(claims);
     }
   }
 }

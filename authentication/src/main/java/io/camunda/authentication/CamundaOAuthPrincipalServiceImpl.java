@@ -20,7 +20,6 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
@@ -38,11 +37,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
-import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-@Service
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+// @Service
+// @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalService {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalServiceImpl.class);

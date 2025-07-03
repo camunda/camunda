@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.webapp.security.consolidatedAuth;
 
-import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.Permission;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
@@ -22,16 +22,24 @@ import org.springframework.stereotype.Component;
 @Profile(OperateProfileService.CONSOLIDATED_AUTH)
 public class ConsolidatedAuthenticationUserService extends AbstractUserService<Authentication> {
 
+  private final CamundaAuthenticationProvider authenticationProvider;
+
+  public ConsolidatedAuthenticationUserService(
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.authenticationProvider = authenticationProvider;
+  }
+
   @Override
   public UserDto createUserDtoFrom(final Authentication authentication) {
-    if (authentication.getPrincipal() instanceof final CamundaPrincipal camundaPrincipal) {
-      return new UserDto()
-          .setUserId(camundaPrincipal.getUsername())
-          .setDisplayName(camundaPrincipal.getDisplayName())
-          .setCanLogout(true)
-          .setPermissions(List.of(Permission.READ, Permission.WRITE));
+    final var camundaAuthentication = authenticationProvider.getCamundaAuthentication();
+    if (camundaAuthentication == null) {
+      throw new UsernameNotFoundException(authentication.getPrincipal().toString());
     }
-    throw new UsernameNotFoundException(authentication.getPrincipal().toString());
+    return new UserDto()
+        .setUserId(camundaAuthentication.getUsername())
+        .setDisplayName(camundaAuthentication.getDisplayName())
+        .setCanLogout(true)
+        .setPermissions(List.of(Permission.READ, Permission.WRITE));
   }
 
   @Override

@@ -97,7 +97,7 @@ public final class SearchClientBasedQueryExecutor {
     if (securityContext.authentication() == null) {
       return request;
     }
-    final var tenantIds = securityContext.authentication().authenticatedTenantIds();
+    final var tenantIds = securityContext.authentication().getTenantIds();
     final IndexDescriptor indexDescriptor =
         transformers.getFilterTransformer(query.filter().getClass()).getIndex();
     return indexDescriptor

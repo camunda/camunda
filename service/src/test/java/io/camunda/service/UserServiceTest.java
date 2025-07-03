@@ -76,7 +76,7 @@ public class UserServiceTest {
   @Test
   public void shouldTriggerDeleteRequest() {
     // when
-    when(authentication.claims()).thenReturn(Map.of());
+    when(authentication.getClaims()).thenReturn(Map.of());
     final var userRecord = new UserRecord();
     final var username = "test";
     userRecord.setUsername(username);

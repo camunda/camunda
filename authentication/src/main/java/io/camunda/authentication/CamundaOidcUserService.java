@@ -8,16 +8,14 @@
 package io.camunda.authentication;
 
 import io.camunda.authentication.entity.CamundaOidcUser;
-import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Map;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
-import org.springframework.stereotype.Service;
 
-@Service
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+// @Service
+// @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaOidcUserService extends OidcUserService {
 
   private final CamundaOAuthPrincipalService camundaOAuthPrincipalService;

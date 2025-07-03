@@ -77,6 +77,6 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
         FollowUpCommandMetadata.of(
             b ->
                 b.batchOperationReference(batchOperation.getKey())
-                    .claims(batchOperation.getAuthentication().claims())));
+                    .claims(batchOperation.getAuthentication().getClaims())));
   }
 }

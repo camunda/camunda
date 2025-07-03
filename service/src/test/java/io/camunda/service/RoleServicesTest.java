@@ -46,7 +46,7 @@ public class RoleServicesTest {
 
   @BeforeEach
   public void before() {
-    authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
+    authentication = CamundaAuthentication.of(builder -> builder.username("foo"));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(RoleSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);

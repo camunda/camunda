@@ -52,7 +52,7 @@ public class MappingServicesTest {
 
   @BeforeEach
   public void before() {
-    authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
+    authentication = CamundaAuthentication.of(builder -> builder.username("foo"));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(MappingSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -144,7 +144,7 @@ public class MappingServicesTest {
   public void shouldTriggerDeleteRequest() {
     // given
     final CamundaAuthentication testAuthentication = mock(CamundaAuthentication.class);
-    when(testAuthentication.claims()).thenReturn(Map.of());
+    when(testAuthentication.getClaims()).thenReturn(Map.of());
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingServices testMappingServices =
         new MappingServices(
@@ -168,7 +168,7 @@ public class MappingServicesTest {
   public void shouldTriggerUpdateRequest() {
     // given
     final CamundaAuthentication testAuthentication = mock(CamundaAuthentication.class);
-    when(testAuthentication.claims()).thenReturn(Map.of());
+    when(testAuthentication.getClaims()).thenReturn(Map.of());
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingServices testMappingServices =
         new MappingServices(
