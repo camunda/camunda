@@ -237,10 +237,7 @@ jobs:
             # NOTE: optimize-qa-integrity-tests is temporarily skipped because it needs adjustment
             #   to work with migration from 8.7.0 to 8.8.0.
             # NOTE: Operate and Optimize are skipped here as their UTs are run in consolidated-unit-tests
-            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter'
-            ,'-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests','-:operate-common',
-            '-:operate-importer-8_7','-:operate-schema','-:operate-webapp','-:optimize-backend','-:upgrade-optimize','-:optimize-commons','-:camunda-optimize','-:tasklist-common',
-            '-:tasklist-els-schema','-:tasklist-importer','-:tasklist-importer-common','-:tasklist-webapp','-:camunda-authentication','-:camunda-schema-manager'"
+            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests','-:operate-common','-:operate-importer-8_7','-:operate-schema','-:operate-webapp','-:optimize-backend','-:upgrade-optimize','-:optimize-commons','-:camunda-optimize','-:tasklist-common','-:tasklist-els-schema','-:tasklist-importer','-:tasklist-importer-common','-:tasklist-webapp','-:camunda-authentication','-:camunda-schema-manager'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-default
@@ -310,7 +307,7 @@ jobs:
       matrix:
         component: [ Operate, Optimize, Tasklist ]
         suite: [ DataLayer, CoreFeatures ]
-        isBigTest: [ false ]
+        isZeebeTest: [ false ]
         include:
           - suite: DataLayer
             suiteName: Data Layer
@@ -319,21 +316,46 @@ jobs:
           - component: Authentication
             suite: Identity
             suiteName: Identity
-            isBigTest: false
+            isZeebeTest: false
           - component: SchemaManager
             suite: DataLayer
             suiteName: Data Layer
-            isBigTest: false
+            isZeebeTest: false
+          - component: Zeebe Unit Tests
+            isZeebeTest: true
+            suite: CoreFeatures
+            suiteName: Core Features
+            maven-modules: "':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-qa-update-tests',':zeebe-qa-util',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'"
           - component: Zeebe Big Unit Tests
-            isBigTest: true
-            suite: ForeFeatures
+            isZeebeTest: true
+            suite: CoreFeatures
             suiteName: Core Features
             maven-modules: "':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'"
           - component: Camunda API Big Unit Tests
-            isBigTest: true
+            isZeebeTest: true
             suite: CoreFeatures
             suiteName: Core Features
-            maven-modules: "':camunda-process-test-java',':zeebe-gateway-rest',':camunda-client-java',':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter'"
+            maven-modules: "':camunda-process-test-java',':camunda-client-java''"
+          - component: Zeebe Exporter Tests
+            isZeebeTest: true
+            suite: DataLayer
+            suiteName: Data Layer
+            maven-modules: "':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
+          - component: Zeebe Gateway Tests
+            isZeebeTest: true
+            suite: CoreFeatures
+            suiteName: Core Features
+            maven-modules: "':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
+          - component: Zeebe Backup Tests
+            isZeebeTest: true
+            suite: CoreFeatures
+            suiteName: Core Features
+            maven-modules: "':zeebe-backup',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3'"
+          - component: Zeebe Protocol Tests
+            isZeebeTest: true
+            suite: CoreFeatures
+            suiteName: Core Features
+            maven-modules: "':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -349,7 +371,7 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Run Test
-        if: matrix.isBigTest == false
+        if: matrix.isZeebeTest == false
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
@@ -360,7 +382,7 @@ jobs:
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Maven Run Test (Big Test)
-        if: matrix.isBigTest == true
+        if: matrix.isZeebeTest == true
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
