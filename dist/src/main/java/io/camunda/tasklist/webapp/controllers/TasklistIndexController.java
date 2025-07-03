@@ -31,7 +31,7 @@ public class TasklistIndexController {
     return "tasklist/index";
   }
 
-  @RequestMapping(value = {"/tasklist/{regex:[\\w-]+}", "/tasklist/**/{regex:[\\w-]+}"})
+  @RequestMapping(value = {"/tasklist/{regex:[\\w-]+}", "/tasklist/**"})
   public String forwardToTasklist(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "tasklist");
   }
