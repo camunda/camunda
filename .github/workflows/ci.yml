@@ -311,7 +311,7 @@ jobs:
         run: |
           echo "ZEEBE_BIG_TEST="':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'"" >> "$GITHUB_OUTPUT"
       - id: REPLACED
-        run: echo "replaced="${{env.ZEEBE_UNIT_TESTS}},${{env.ZEEBE_BIG_TEST}}" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
+        run: echo "replaced=\"${{env.ZEEBE_UNIT_TESTS}},${{env.ZEEBE_BIG_TEST}}\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate, Optimize, Tasklist
