@@ -23,7 +23,20 @@ runs:
       shell: bash
       id: build-java
       run: |
+        set -euo pipefail
+
         ./mvnw -B -T1C -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
-        export BUILD_DIR=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
-        export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+
+        BUILD_DIR=$(
+          ./mvnw -q -N -f dist/pom.xml help:evaluate \
+                -Dexpression=project.build.directory \
+                -DforceStdout
+        ) || { echo "::error::could not evaluate project.build.directory"; exit 1; }
+
+        ARTIFACT=$(
+          ./mvnw -q -N -f dist/pom.xml help:evaluate \
+                -Dexpression=project.build.finalName \
+                -DforceStdout
+        ) || { echo "::error::could not evaluate project.build.finalName"; exit 1; }
+
         echo "distball=${BUILD_DIR}/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
