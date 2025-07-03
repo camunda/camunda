@@ -78,7 +78,9 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
   }
 
   protected List<SearchAggregator> toAggregations(final AggregationBase aggregation) {
-    return transformers.getAggregationTransformer(aggregation.getClass()).apply(aggregation);
+    return transformers
+        .getAggregationTransformer(aggregation.getClass())
+        .apply(Tuple.of(aggregation, transformers));
   }
 
   private List<SearchSortOptions> toSearchSortOptions(final S sort, final boolean reverse) {

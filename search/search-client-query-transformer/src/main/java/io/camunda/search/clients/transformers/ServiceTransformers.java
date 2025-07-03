@@ -231,6 +231,7 @@ import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity;
 import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -268,7 +269,8 @@ public final class ServiceTransformers {
 
   public <A extends AggregationBase> AggregationTransformer<A> getAggregationTransformer(
       final Class<?> cls) {
-    final ServiceTransformer<A, List<SearchAggregator>> transformer = getTransformer(cls);
+    final ServiceTransformer<Tuple<A, ServiceTransformers>, List<SearchAggregator>> transformer =
+        getTransformer(cls);
     return (AggregationTransformer<A>) transformer;
   }
 

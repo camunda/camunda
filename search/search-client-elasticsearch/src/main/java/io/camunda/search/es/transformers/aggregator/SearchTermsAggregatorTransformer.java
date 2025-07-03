@@ -7,11 +7,15 @@
  */
 package io.camunda.search.es.transformers.aggregator;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
 import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
+import co.elastic.clients.util.NamedValue;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.sort.SortOption.FieldSorting;
+import java.util.List;
 
 public final class SearchTermsAggregatorTransformer
     extends AggregatorTransformer<SearchTermsAggregator, Aggregation> {
@@ -26,6 +30,7 @@ public final class SearchTermsAggregatorTransformer
     final TermsAggregation termsAggregation =
         AggregationBuilders.terms()
             .field(value.field())
+            .order(toOrder(value.sorting()))
             .size(value.size())
             .minDocCount(value.minDocCount())
             .build();
@@ -33,5 +38,21 @@ public final class SearchTermsAggregatorTransformer
     final var builder = new Aggregation.Builder().terms(termsAggregation);
     applySubAggregations(builder, value);
     return builder.build();
+  }
+
+  private List<NamedValue<SortOrder>> toOrder(final List<FieldSorting> sorting) {
+    return sorting.stream()
+        .map(
+            fieldSorting ->
+                new NamedValue<>(
+                    fieldSorting.field(),
+                    fieldSorting.order() == null
+                        ? SortOrder.Asc
+                        : toSortOrder(fieldSorting.order())))
+        .toList();
+  }
+
+  private SortOrder toSortOrder(final io.camunda.search.sort.SortOrder order) {
+    return order == io.camunda.search.sort.SortOrder.ASC ? SortOrder.Asc : SortOrder.Desc;
   }
 }
