@@ -15,7 +15,7 @@ import {usePrefersReducedMotion} from './usePrefersReducedMotion';
 import styles from './styles.module.scss';
 import '@bpmn-io/form-js-viewer/dist/assets/form-js-base.css';
 import '@bpmn-io/form-js-carbon-styles/src/carbon-styles.scss';
-import type {SuccessDocument} from 'common/api/useUploadDocuments.mutation';
+import type {DocumentReference} from '@vzeta/camunda-api-zod-schemas/8.8';
 import set from 'lodash/set';
 import {FormLevelErrorMessage} from './FormLevelErrorMessage';
 import {Stack} from '@carbon/react';
@@ -29,7 +29,7 @@ type Props = {
   handleSubmit: (variables: PartialVariable[]) => Promise<void>;
   handleFileUpload?: (
     files: Map<string, File[]>,
-  ) => Promise<Map<string, SuccessDocument[]>>;
+  ) => Promise<Map<string, DocumentReference[]>>;
   schema: string;
   data?: Record<string, unknown>;
   readOnly?: boolean;
@@ -101,7 +101,7 @@ function useScrollToError(manager: FormManager) {
 
 function injectFileMetadataIntoData(options: {
   data: Record<string, unknown>;
-  fileMetadata: Map<string, SuccessDocument[]>;
+  fileMetadata: Map<string, DocumentReference[]>;
   pathsToInject: Map<string, string>;
 }): Record<string, unknown> {
   const {data, fileMetadata, pathsToInject} = options;
