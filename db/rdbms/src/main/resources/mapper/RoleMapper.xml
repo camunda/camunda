@@ -77,42 +77,30 @@
     </collection>
   </resultMap>
 
-  <insert
-    id="insert"
-    parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel">
     INSERT INTO ${prefix}ROLES (ROLE_KEY, ROLE_ID, NAME, DESCRIPTION)
     VALUES (#{roleKey}, #{roleId}, #{name}, #{description})
   </insert>
 
-  <update
-    id="update"
-    parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel"
-    flushCache="true">
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel">
     UPDATE ${prefix}ROLES
     SET NAME = #{name},
         DESCRIPTION = #{description}
     WHERE ROLE_ID = #{roleId}
   </update>
 
-  <delete id="delete" parameterType="java.lang.String" flushCache="true">
+  <delete id="delete" parameterType="java.lang.String">
     DELETE
     FROM ${prefix}ROLES
     WHERE ROLE_ID = #{roleId}
   </delete>
 
-  <insert
-    id="insertMember"
-    parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
-    flushCache="true">
+  <insert id="insertMember" parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel">
     INSERT INTO ${prefix}ROLE_MEMBER (ROLE_ID, ENTITY_ID, ENTITY_TYPE)
     VALUES (#{roleId}, #{entityId}, #{entityType})
   </insert>
 
-  <delete
-    id="deleteMember"
-    parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel"
-    flushCache="true">
+  <delete id="deleteMember" parameterType="io.camunda.db.rdbms.write.domain.RoleMemberDbModel">
     DELETE
     FROM ${prefix}ROLE_MEMBER
     WHERE ROLE_ID = #{roleId}

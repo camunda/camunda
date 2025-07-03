@@ -145,10 +145,7 @@
 
   </resultMap>
 
-  <insert
-    id="insert"
-    parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel">
     INSERT INTO ${prefix}INCIDENT (INCIDENT_KEY,
                           FLOW_NODE_INSTANCE_KEY,
                           FLOW_NODE_ID,
@@ -171,11 +168,7 @@
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
-  <update
-    id="update"
-    statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel"
-    flushCache="true">
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel">
     UPDATE INCIDENT
     SET FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
         FLOW_NODE_ID           = #{flowNodeId},
@@ -194,11 +187,7 @@
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
 
-  <update
-    id="updateState"
-    statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.sql.IncidentMapper$IncidentStateDto"
-    flushCache="true">
+  <update id="updateState" parameterType="io.camunda.db.rdbms.sql.IncidentMapper$IncidentStateDto">
     UPDATE ${prefix}INCIDENT i
     SET STATE         = #{state},
         ERROR_MESSAGE = #{errorMessage},
@@ -206,19 +195,13 @@
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
 
-  <update
-    flushCache="true"
-    id="updateHistoryCleanupDate"
-    statementType="PREPARED">
+  <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}INCIDENT SET
       HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
-  <delete
-    flushCache="true"
-    id="cleanupHistory"
-    statementType="PREPARED">
+  <delete id="cleanupHistory">
     <bind name="tableName" value="'INCIDENT'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>

@@ -138,10 +138,7 @@
     </constructor>
   </resultMap>
 
-  <insert
-    id="insert"
-    parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
     INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, FLOW_NODE_NAME, PROCESS_INSTANCE_KEY,
                                     PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
                                              START_DATE, END_DATE, TENANT_ID, TREE_PATH,
@@ -152,10 +149,7 @@
             #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
-  <update
-    id="update"
-    parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel"
-    flushCache="true">
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel">
     UPDATE FLOW_NODE_INSTANCE
     SET FLOW_NODE_ID             = #{flowNodeId},
         FLOW_NODE_NAME           = #{flowNodeName},
@@ -171,60 +165,40 @@
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
-  <update
-    id="updateStateAndEndDate"
-    statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$EndFlowNodeDto"
-    flushCache="true">
+  <update id="updateStateAndEndDate"
+    parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$EndFlowNodeDto">
     UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET STATE = #{state},
         END_DATE = #{endDate}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
-  <update
-    id="updateIncident"
-    statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$UpdateIncidentDto"
-    flushCache="true">
+  <update id="updateIncident"
+    parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$UpdateIncidentDto">
     UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET INCIDENT_KEY = #{incidentKey}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
-  <update
-    id="incrementSubprocessIncidentCount"
-    statementType="PREPARED"
-    parameterType="java.lang.Long"
-    flushCache="true">
+  <update id="incrementSubprocessIncidentCount" parameterType="java.lang.Long">
     UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET NUM_SUBPROCESS_INCIDENTS = NUM_SUBPROCESS_INCIDENTS + 1
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
-  <update
-    id="decrementSubprocessIncidentCount"
-    statementType="PREPARED"
-    parameterType="java.lang.Long"
-    flushCache="true">
+  <update id="decrementSubprocessIncidentCount" parameterType="java.lang.Long">
     UPDATE ${prefix}FLOW_NODE_INSTANCE
     SET NUM_SUBPROCESS_INCIDENTS = NUM_SUBPROCESS_INCIDENTS - 1
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
 
-  <update
-    flushCache="true"
-    id="updateHistoryCleanupDate"
-    statementType="PREPARED">
+  <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}FLOW_NODE_INSTANCE SET
       HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
-  <delete
-    flushCache="true"
-    id="cleanupHistory"
-    statementType="PREPARED">
+  <delete id="cleanupHistory">
     <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
