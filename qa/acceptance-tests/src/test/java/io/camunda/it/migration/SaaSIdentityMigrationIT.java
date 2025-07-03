@@ -623,7 +623,7 @@ public class SaaSIdentityMigrationIT {
             .uri(new URI("%s%s".formatted(externalIdentityUrl(IDENTITY), "/api/groups")))
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                        """
+                    """
                     {
                       "name": "%s",
                       "organizationId": "org123"
@@ -657,7 +657,7 @@ public class SaaSIdentityMigrationIT {
                             "/api/groups/%s/users".formatted(groupId))))
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                        """
+                    """
                     {
                       "userId": "%s",
                       "organizationId": "org123"
