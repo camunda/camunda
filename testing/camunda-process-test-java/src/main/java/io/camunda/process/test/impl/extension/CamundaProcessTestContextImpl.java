@@ -258,7 +258,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                                   .filter(userTaskSelector::test)
                                   .collect(Collectors.toList());
                           Assertions.assertThat(tasks).isNotEmpty();
-                          userTaskKey.set(items.get(0).getUserTaskKey());
+                          userTaskKey.set(tasks.get(0).getUserTaskKey());
                         });
               });
     } catch (final ConditionTimeoutException | TerminalFailureException e) {
