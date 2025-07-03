@@ -128,7 +128,7 @@ public class BatchOperationModifyProcessInstanceTest {
     allProcessInstances.addAll(processInstancesPath2);
 
     // when
-    final var batchOperationId =
+    final var batchOperationKey =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskE", "userTaskF")
@@ -138,12 +138,12 @@ public class BatchOperationModifyProcessInstanceTest {
                                 .processDefinitionId("multi_instance_subprocess")));
 
     // then wait if batch has correct amount of items. (To fail fast if not)
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId, 20);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 20);
 
     // and
-    waitForBatchOperationCompleted(camundaClient, batchOperationId, 20, 0);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 20, 0);
     batchOperationHasItemsWithState(
-        batchOperationId, BatchOperationItemState.COMPLETED, allProcessInstances);
+        batchOperationKey, BatchOperationItemState.COMPLETED, allProcessInstances);
 
     for (final long itemKey : allProcessInstances) {
       processInstanceHasActiveUserTasks(camundaClient, itemKey, Map.of("userTaskF", 2L));
@@ -157,7 +157,7 @@ public class BatchOperationModifyProcessInstanceTest {
     final var processInstanceKey2 = processInstancesPath1.get(1);
 
     // when
-    final var batchOperationId1 =
+    final var batchOperationKey1 =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskE", "userTaskF")
@@ -165,7 +165,7 @@ public class BatchOperationModifyProcessInstanceTest {
                         f ->
                             f.variables(getScopedVariables(testScopeId))
                                 .processInstanceKey(processInstanceKey1)));
-    final var batchOperationId2 =
+    final var batchOperationKey2 =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskC", "userTaskD")
@@ -173,7 +173,7 @@ public class BatchOperationModifyProcessInstanceTest {
                         f ->
                             f.variables(getScopedVariables(testScopeId))
                                 .processInstanceKey(processInstanceKey1)));
-    final var batchOperationId3 =
+    final var batchOperationKey3 =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskE", "userTaskF")
@@ -183,21 +183,21 @@ public class BatchOperationModifyProcessInstanceTest {
                                 .processInstanceKey(processInstanceKey2)));
 
     // then wait if batch has correct amount of items. (If not, fail fast)
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId1, 1);
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId2, 1);
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId3, 1);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey1, 1);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey2, 1);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey3, 1);
 
     // and
-    waitForBatchOperationCompleted(camundaClient, batchOperationId1, 1, 0);
-    waitForBatchOperationCompleted(camundaClient, batchOperationId2, 1, 0);
-    waitForBatchOperationCompleted(camundaClient, batchOperationId3, 1, 0);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey1, 1, 0);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey2, 1, 0);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey3, 1, 0);
 
     batchOperationHasItemsWithState(
-        batchOperationId1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey1));
+        batchOperationKey1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey1));
     batchOperationHasItemsWithState(
-        batchOperationId1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey1));
+        batchOperationKey1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey1));
     batchOperationHasItemsWithState(
-        batchOperationId1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey2));
+        batchOperationKey1, BatchOperationItemState.COMPLETED, List.of(processInstanceKey2));
 
     processInstanceHasActiveUserTasks(
         camundaClient, processInstanceKey1, Map.of("userTaskD", 1L, "userTaskF", 2L));
@@ -207,7 +207,7 @@ public class BatchOperationModifyProcessInstanceTest {
   @Test
   void shouldModifyProcessInstancesWithBatchFail() {
     // when
-    final var batchOperationId =
+    final var batchOperationKey =
         modifyProcessInstance(
             b ->
                 b.addMoveInstruction("userTaskA", "userTaskB")
@@ -219,14 +219,14 @@ public class BatchOperationModifyProcessInstanceTest {
                                 .processDefinitionId("multi_instance_subprocess")));
 
     // then
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId, 20);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 20);
 
     // and
-    waitForBatchOperationCompleted(camundaClient, batchOperationId, 10, 10);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 10, 10);
     batchOperationHasItemsWithState(
-        batchOperationId, BatchOperationItemState.FAILED, processInstancesPath1);
+        batchOperationKey, BatchOperationItemState.FAILED, processInstancesPath1);
     batchOperationHasItemsWithState(
-        batchOperationId, BatchOperationItemState.COMPLETED, processInstancesPath2);
+        batchOperationKey, BatchOperationItemState.COMPLETED, processInstancesPath2);
 
     // and
     for (final long itemKey : processInstancesPath2) {
@@ -248,11 +248,11 @@ public class BatchOperationModifyProcessInstanceTest {
         .apply(camundaClient.newCreateBatchOperationCommand().modifyProcessInstance())
         .send()
         .join()
-        .getBatchOperationId();
+        .getBatchOperationKey();
   }
 
   public void batchOperationHasItemsWithState(
-      final String batchOperationId,
+      final String batchOperationKey,
       final BatchOperationItemState state,
       final List<Long> failedItemKeys) {
     await("should have items with state")
@@ -264,7 +264,7 @@ public class BatchOperationModifyProcessInstanceTest {
               final var itemsObj =
                   camundaClient
                       .newBatchOperationItemsSearchRequest()
-                      .filter(f -> f.batchOperationId(batchOperationId))
+                      .filter(f -> f.batchOperationKey(batchOperationKey))
                       .send()
                       .join();
 

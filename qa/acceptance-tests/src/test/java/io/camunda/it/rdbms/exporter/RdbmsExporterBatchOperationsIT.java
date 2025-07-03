@@ -466,7 +466,7 @@ class RdbmsExporterBatchOperationsIT {
         .getBatchOperationItemReader()
         .search(
             SearchQueryBuilders.batchOperationItemQuery(
-                q -> q.filter(f -> f.batchOperationIds(Long.toString(batchOperationKey)))))
+                q -> q.filter(f -> f.batchOperationKeys(Long.toString(batchOperationKey)))))
         .items();
   }
 }

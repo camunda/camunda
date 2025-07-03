@@ -29,9 +29,9 @@ public interface BatchOperationMapper {
 
   void incrementOperationsTotalCount(BatchOperationUpdateTotalCountDto dto);
 
-  void incrementFailedOperationsCount(String batchOperationId);
+  void incrementFailedOperationsCount(String batchOperationKey);
 
-  void incrementCompletedOperationsCount(String batchOperationId);
+  void incrementCompletedOperationsCount(String batchOperationKey);
 
   Long count(BatchOperationDbQuery query);
 
@@ -42,23 +42,23 @@ public interface BatchOperationMapper {
   List<BatchOperationItemEntity> searchItems(BatchOperationItemDbQuery query);
 
   record BatchOperationUpdateDto(
-      String batchOperationId, BatchOperationState state, OffsetDateTime endDate) {}
+      String batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}
 
-  record BatchOperationUpdateTotalCountDto(String batchOperationId, int operationsTotalCount) {}
+  record BatchOperationUpdateTotalCountDto(String batchOperationKey, int operationsTotalCount) {}
 
-  record BatchOperationUpdateCountsDto(String batchOperationId, long itemKey) {}
+  record BatchOperationUpdateCountsDto(String batchOperationKey, long itemKey) {}
 
-  record BatchOperationItemsDto(String batchOperationId, List<BatchOperationItemDbModel> items) {}
+  record BatchOperationItemsDto(String batchOperationKey, List<BatchOperationItemDbModel> items) {}
 
   record BatchOperationItemDto(
-      String batchOperationId,
+      String batchOperationKey,
       Long itemKey,
       BatchOperationEntity.BatchOperationItemState state,
       OffsetDateTime processedDate,
       String errorMessage) {}
 
   record BatchOperationItemStatusUpdateDto(
-      String batchOperationId,
+      String batchOperationKey,
       BatchOperationEntity.BatchOperationItemState oldState,
       BatchOperationEntity.BatchOperationItemState newState) {}
 }

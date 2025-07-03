@@ -46,7 +46,7 @@ public class BatchOperationUpdateTaskTest {
   @Test
   void shouldReturnZeroIfNoDocumentUpdatesRequired() {
     // given - when
-    repository.batchOperationIds.add("1");
+    repository.batchOperationKeys.add("1");
     final var result = task.execute();
 
     // then
@@ -59,9 +59,9 @@ public class BatchOperationUpdateTaskTest {
   @Test
   void shouldUpdateBatchOperations() {
     // given - when
-    repository.batchOperationIds.add("1");
-    repository.batchOperationIds.add("2");
-    repository.batchOperationIds.add("3");
+    repository.batchOperationKeys.add("1");
+    repository.batchOperationKeys.add("2");
+    repository.batchOperationKeys.add("3");
     repository.finishedOperationsCount.add(new OperationsAggData("1", Map.of("COMPLETED", 5L)));
     repository.finishedOperationsCount.add(new OperationsAggData("2", Map.of("COMPLETED", 6L)));
     final var result = task.execute();
@@ -77,18 +77,18 @@ public class BatchOperationUpdateTaskTest {
   }
 
   private static final class TestRepository implements BatchOperationUpdateRepository {
-    List<String> batchOperationIds = new ArrayList<>();
+    List<String> batchOperationKeys = new ArrayList<>();
     List<OperationsAggData> finishedOperationsCount = new ArrayList<>();
     private List<DocumentUpdate> documentUpdates = new ArrayList<>();
 
     @Override
     public CompletionStage<Collection<String>> getNotFinishedBatchOperations() {
-      return CompletableFuture.completedFuture(batchOperationIds);
+      return CompletableFuture.completedFuture(batchOperationKeys);
     }
 
     @Override
     public CompletionStage<List<OperationsAggData>> getOperationsCount(
-        final Collection<String> batchOperationIds) {
+        final Collection<String> batchOperationKeys) {
       return CompletableFuture.completedFuture(finishedOperationsCount);
     }
 
