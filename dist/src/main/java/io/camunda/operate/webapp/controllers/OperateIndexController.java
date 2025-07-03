@@ -31,7 +31,7 @@ public class OperateIndexController {
     return "operate/index";
   }
 
-  @RequestMapping(value = {"/operate/{regex:[\\w-]+}", "/operate/**/{regex:[\\w-]+}"})
+  @RequestMapping(value = {"/operate/{regex:[\\w-]+}", "/operate/**"})
   public String forwardToOperate(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "operate");
   }
