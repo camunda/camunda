@@ -34,12 +34,15 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   private final LongProperty bootstrappedAt = new LongProperty("bootstrappedAt", -1L);
   private final LongProperty scalingPosition = new LongProperty("scalingPosition", -1L);
+  private final IntegerProperty messageCorrelationPartitions =
+      new IntegerProperty("messageCorrelationPartitions", -1);
 
   public ScaleRecord() {
-    super(5);
+    super(6);
     declareProperty(desiredPartitionCountProp)
         .declareProperty(redistributedPartitions)
         .declareProperty(relocatedPartitions)
+        .declareProperty(messageCorrelationPartitions)
         .declareProperty(bootstrappedAt)
         .declareProperty(scalingPosition);
   }
@@ -75,6 +78,11 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   }
 
   @Override
+  public int getMessageCorrelationPartitions() {
+    return messageCorrelationPartitions.getValue();
+  }
+
+  @Override
   public long getBootstrappedAt() {
     return bootstrappedAt.getValue();
   }
@@ -91,6 +99,11 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public ScaleRecord setScalingPosition(final long position) {
     scalingPosition.setValue(position);
+    return this;
+  }
+
+  public ScaleRecord setMessageCorrelationPartitions(final int messageCorrelationPartitions) {
+    this.messageCorrelationPartitions.setValue(messageCorrelationPartitions);
     return this;
   }
 
@@ -115,9 +128,11 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   public ScaleRecord statusResponse(
       final int desiredPartitionCount,
       final Collection<Integer> redistributedPartitions,
+      final int messageCorrelationPartitions,
       final long bootstrappedAt) {
     setDesiredPartitionCount(desiredPartitionCount);
     setRedistributedPartitions(redistributedPartitions);
+    setMessageCorrelationPartitions(messageCorrelationPartitions);
     setBootstrappedAt(bootstrappedAt);
     return this;
   }

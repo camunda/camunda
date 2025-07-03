@@ -215,7 +215,7 @@ public class SnapshotApiRequestHandlerTest {
           final var writer =
               new CommandResponseWriterImpl(output)
                   .partitionId(partitionId)
-                  .valueWriter(new ScaleRecord().statusResponse(3, List.of(), position))
+                  .valueWriter(new ScaleRecord().statusResponse(3, List.of(), 2, position))
                   .recordType(RecordType.COMMAND)
                   .valueType(ValueType.SCALE);
           output.sendResponse(

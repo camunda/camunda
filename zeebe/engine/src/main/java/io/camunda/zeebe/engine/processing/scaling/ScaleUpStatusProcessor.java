@@ -40,6 +40,7 @@ public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord>
     response.statusResponse(
         desiredPartitions.size(),
         routingState.currentPartitions(),
+        routingState.messageCorrelation().partitionCount(),
         routingState.bootstrappedAt(desiredPartitionCount));
     writers.state().appendFollowUpEvent(key, ScaleIntent.STATUS_RESPONSE, response);
     writers.response().writeEventOnCommand(key, ScaleIntent.STATUS_RESPONSE, response, command);
