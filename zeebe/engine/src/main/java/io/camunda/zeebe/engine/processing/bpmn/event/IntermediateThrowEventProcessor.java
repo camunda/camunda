@@ -185,8 +185,8 @@ public class IntermediateThrowEventProcessor
                       .suspendProcessInstanceIfNeeded(element, completed)
                       .ifLeft(
                           notSuspended ->
-                              stateTransitionBehavior.activateElementInstanceInFlowScope(
-                                  completed, element.getLink().getCatchEventElement())));
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, completed)));
     }
   }
 
