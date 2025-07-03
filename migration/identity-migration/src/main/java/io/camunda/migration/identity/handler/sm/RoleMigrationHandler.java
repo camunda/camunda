@@ -37,7 +37,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
       final AuthorizationServices authorizationServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices.withAuthentication(authentication);
-    this.authorizationServices = authorizationServices;
+    this.authorizationServices = authorizationServices.withAuthentication(authentication);
   }
 
   @Override
