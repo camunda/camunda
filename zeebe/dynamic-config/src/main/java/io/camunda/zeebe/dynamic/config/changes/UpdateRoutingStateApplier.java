@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.ClusterOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
@@ -39,6 +40,12 @@ public class UpdateRoutingStateApplier implements ClusterOperationApplier {
             ? CompletableActorFuture.completed(updateRoutingState.routingState().get())
             : executor.getRoutingState();
 
-    return routingState.thenApply(state -> config -> config.setRoutingState(state));
+    return routingState.thenApply(
+        state ->
+            config -> {
+              final var previousVersion =
+                  config.routingState().map(RoutingState::version).orElse(0L);
+              return config.setRoutingState(state.withVersion(previousVersion + 1));
+            });
   }
 }
