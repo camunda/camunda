@@ -7,33 +7,35 @@
  */
 package io.camunda.application.commons.console.ping;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.AssertionsKt.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration.RetryConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
-import java.io.IOException;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class PingConsoleRunnerIT {
 
-  private MockWebServer mockWebServer;
+  private WireMockServer wireMockServer;
   private ManagementServices managementServices;
   private final boolean validLicense = true;
   private final boolean isCommercial = true;
@@ -56,9 +58,12 @@ public class PingConsoleRunnerIT {
           validLicense, licenseType, isCommercial, clusterId, clusterName);
 
   @BeforeEach
-  void setup() throws IOException {
-    mockWebServer = new MockWebServer();
-    mockWebServer.start();
+  void setup() {
+    wireMockServer = new WireMockServer(0);
+    wireMockServer.start();
+    configureFor("localhost", wireMockServer.port());
+    stubFor(post(urlEqualTo("/ping")).willReturn(aResponse().withStatus(200).withBody("PONG")));
+
     managementServices = mock(ManagementServices.class);
     when(managementServices.getCamundaLicenseType()).thenReturn(licenseType);
     when(managementServices.isCommercialCamundaLicense()).thenReturn(isCommercial);
@@ -66,23 +71,16 @@ public class PingConsoleRunnerIT {
   }
 
   @AfterEach
-  void tearDown() throws IOException {
-    mockWebServer.shutdown();
+  void tearDown() {
+    wireMockServer.stop();
   }
 
   @Test
-  void shouldSendCorrectPayload() throws InterruptedException, JsonProcessingException {
+  void shouldSendCorrectPayload() throws Exception {
     // given
-    final String mockUrl = mockWebServer.url("/ping").toString();
-
-    // we have the server answer with a valid response for 3 times.
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("PONG"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("PONG"));
-    mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("PONG"));
-
+    final String mockUrl = "http://localhost:" + wireMockServer.port() + "/ping";
     final Duration pingPeriod = Duration.ofMillis(200);
-    final ConsolePingConfiguration.RetryConfiguration retryConfig =
-        new RetryConfiguration(1, 1, Duration.ofMillis(100));
+    final RetryConfiguration retryConfig = new RetryConfiguration();
 
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
@@ -94,18 +92,18 @@ public class PingConsoleRunnerIT {
     pingConsoleRunner.run(null);
 
     // then
-    await().atMost(10, TimeUnit.SECONDS).until(() -> mockWebServer.getRequestCount() >= 3);
+    await()
+        .atMost(10, TimeUnit.SECONDS)
+        .until(() -> wireMockServer.getAllServeEvents().size() >= 3);
 
     // we validate the first request received by the mock server
-    final RecordedRequest request = mockWebServer.takeRequest(1, TimeUnit.SECONDS);
-    assertNotNull(request);
-    assertEquals("POST", request.getMethod());
-
-    final String body = request.getBody().readUtf8();
+    final List<ServeEvent> serveEvents = wireMockServer.getAllServeEvents();
+    final String actualBody = serveEvents.get(0).getRequest().getBodyAsString();
 
     final ObjectMapper mapper = new ObjectMapper();
     final JsonNode expected = mapper.readTree(expectedBody);
+    final JsonNode actual = mapper.readTree(actualBody);
 
-    assertEquals(expected.toString(), body, "JSON payload did not match expected structure");
+    assertEquals(expected, actual, "JSON payload did not match expected structure");
   }
 }
