@@ -302,7 +302,7 @@ jobs:
       ZEEBE_BACKUP: "':zeebe-backup',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3'"
       ZEEBE_PROTOCOL: "':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
       API_TEST: "':camunda-process-test-java',':camunda-client-java'"
-      FOO: "${{ ZEEBE_GATEWAY }},${{API_TEST}}"
+      FOO: "${{outputs.ZEEBE_GATEWAY }},${{outputs.API_TEST}}"
     steps:
       - name: "Output"
         run: |
