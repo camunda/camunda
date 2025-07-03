@@ -294,6 +294,9 @@ jobs:
 
   consolidated-unit-test-setup:
     runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 10
+    needs: [ detect-changes ]
     outputs:
       ZEEBE_UNIT_TESTS: ${{ steps.ZEEBE_UNIT_TESTS.outputs.val}}
       ZEEBE_BIG_TEST: ${{ steps.ZEEBE_BIG_TEST.outputs.val}}
@@ -316,6 +319,16 @@ jobs:
         run: |
           # shellcheck disable=SC2086
           echo "replaced=\"${{env.ZEEBE_UNIT_TESTS}},${{env.ZEEBE_BIG_TEST}}\" | sed 's/\:/-:/g'"  >> $GITHUB_OUTPUT
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
 
 
 
