@@ -9,17 +9,9 @@ package io.camunda.tasklist.property;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.stereotype.Component;
 
 /** This class contains all project configuration parameters. */
-@Component
-@Configuration
-@ConfigurationProperties(TasklistProperties.PREFIX)
-@PropertySource("classpath:tasklist-version.properties")
 public class TasklistProperties {
 
   public static final String PREFIX = "camunda.tasklist";

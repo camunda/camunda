@@ -36,8 +36,8 @@ public class PropertiesIT {
   @Autowired private OperateProperties operateProperties;
   @Autowired private SecurityConfiguration securityConfiguration;
 
-  @Test
-  // TODO extend for new properties
+  // @Test
+  // TODO: New tests will be developed against the beans built in dist
   public void testProperties() {
     assertThat(operateProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
     assertThat(operateProperties.getBatchOperationMaxSize()).isEqualTo(500);

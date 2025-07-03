@@ -8,6 +8,7 @@
 package io.camunda.operate.util;
 
 import io.camunda.operate.OperateModuleConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfigurationHelper;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -28,7 +29,7 @@ import org.springframework.context.annotation.Import;
           value = OperateModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import(WebappsModuleConfiguration.class)
+@Import({WebappsModuleConfiguration.class, UnifiedConfigurationHelper.class})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {

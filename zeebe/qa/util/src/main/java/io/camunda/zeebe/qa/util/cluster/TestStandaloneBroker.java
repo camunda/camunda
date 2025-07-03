@@ -18,6 +18,7 @@ import io.camunda.security.configuration.ConfiguredMapping;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.unifiedconfig.UnifiedConfigurationHelper;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -48,7 +49,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
-    super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
+    super(
+        BrokerModuleConfiguration.class,
+        CommonsModuleConfiguration.class,
+        UnifiedConfigurationHelper.class);
 
     config = new BrokerBasedProperties();
 
