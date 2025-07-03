@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.testcontainers.OpensearchContainer;
+import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class SchemaManagerITInvocationProvider
@@ -41,12 +42,18 @@ public class SchemaManagerITInvocationProvider
         AfterEachCallback {
 
   public static final String CONFIG_PREFIX = "custom-prefix";
+  public static final String OPENSEARCH_NETWORK_ALIAS = "test-opensearch";
+  public static final String ELASTICSEARCH_NETWORK_ALIAS = "test-elasticsearch";
   protected SearchClientAdapter elsClientAdapter;
   protected SearchClientAdapter osClientAdapter;
   private final ElasticsearchContainer elsContainer =
-      TestSearchContainers.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefeaultElasticsearchContainer()
+          .withNetwork(Network.SHARED)
+          .withNetworkAliases(ELASTICSEARCH_NETWORK_ALIAS);
   private final OpensearchContainer<?> osContainer =
-      TestSearchContainers.createDefaultOpensearchContainer();
+      TestSearchContainers.createDefaultOpensearchContainer()
+          .withNetwork(Network.SHARED)
+          .withNetworkAliases(OPENSEARCH_NETWORK_ALIAS);
   private ElasticsearchClient elsClient;
   private OpenSearchClient osClient;
   private final List<AutoCloseable> closeables = new ArrayList<>();

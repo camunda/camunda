@@ -51,6 +51,10 @@ public class SearchClientAdapter {
     schemaResourceSerializer = new SchemaResourceSerializer(objectMapper);
   }
 
+  public ElasticsearchClient getElsClient() {
+    return elsClient;
+  }
+
   private JsonNode opensearchIndexToNode(final IndexState index) {
     final Map<String, Object> indexAsMap;
     try {
@@ -189,6 +193,32 @@ public class SearchClientAdapter {
       return osClient.index(i -> i.index(index).id(id).document(document)).result().jsonValue();
     }
     return "";
+  }
+
+  public void createIndex(final String indexName, final int numberOfReplicas) throws IOException {
+    if (elsClient != null) {
+      elsClient
+          .indices()
+          .create(
+              c ->
+                  c.index(indexName)
+                      .settings(
+                          settings ->
+                              settings
+                                  .numberOfShards("1")
+                                  .numberOfReplicas(String.valueOf(numberOfReplicas))));
+    } else if (osClient != null) {
+      osClient
+          .indices()
+          .create(
+              c ->
+                  c.index(indexName)
+                      .settings(
+                          settings ->
+                              settings
+                                  .numberOfShards("1")
+                                  .numberOfReplicas(String.valueOf(numberOfReplicas))));
+    }
   }
 
   public void refresh() throws IOException {
