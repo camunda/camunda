@@ -41,7 +41,7 @@ public class JobFieldSortingTransformer implements FieldSortingTransformer {
       case "type" -> JOB_TYPE;
       case "worker" -> JOB_WORKER;
       case "state" -> JOB_STATE;
-      case "jobKind" -> JOB_KIND;
+      case "kind" -> JOB_KIND;
       case "listenerEventType" -> LISTENER_EVENT_TYPE;
       case "endTime" -> TIME;
       case "tenantId" -> TENANT_ID;

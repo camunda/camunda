@@ -31,6 +31,7 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.Mapping;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -308,5 +309,11 @@ public final class SearchResponseMapper {
     return Optional.ofNullable(items)
         .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
         .orElse(Collections.emptyList());
+  }
+
+  public static SearchResponse<Job> toJobSearchResponse(final JobSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Job> instances = toSearchResponseInstances(response.getItems(), JobImpl::new);
+    return new SearchResponseImpl<>(instances, page);
   }
 }

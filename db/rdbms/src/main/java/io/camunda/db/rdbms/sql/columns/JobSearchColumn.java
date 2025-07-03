@@ -14,7 +14,7 @@ public enum JobSearchColumn implements SearchColumn<JobEntity> {
   DENIED_REASON("deniedReason"),
   ELEMENT_ID("elementId"),
   ELEMENT_INSTANCE_KEY("elementInstanceKey"),
-  ENDTIME("endTime"),
+  END_TIME("endTime"),
   ERROR_CODE("errorCode"),
   ERROR_MESSAGE("errorMessage"),
   HAS_FAILED_WITH_RETRIES_LEFT("hasFailedWithRetriesLeft"),
