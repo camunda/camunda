@@ -103,17 +103,18 @@ public final class UserTaskServices
 
   private SearchQueryResult<UserTaskEntity> toCacheEnrichedResult(
       final SearchQueryResult<UserTaskEntity> result) {
-    final var itemsWithoutName = result.items().stream().filter(u -> !u.hasName()).toList();
 
-    if (itemsWithoutName.isEmpty()) {
+    final var processDefinitionKeys =
+        result.items().stream()
+            .filter(u -> !u.hasName())
+            .map(UserTaskEntity::processDefinitionKey)
+            .collect(Collectors.toSet());
+
+    if (processDefinitionKeys.isEmpty()) {
       return result;
     }
 
-    final var cacheResult =
-        processCache.getCacheItems(
-            itemsWithoutName.stream()
-                .map(UserTaskEntity::processDefinitionKey)
-                .collect(Collectors.toSet()));
+    final var cacheResult = processCache.getCacheItems(processDefinitionKeys);
 
     return result.withItems(
         result.items().stream()

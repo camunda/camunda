@@ -111,17 +111,17 @@ public final class ElementInstanceServices
 
   private SearchQueryResult<FlowNodeInstanceEntity> toCacheEnrichedResult(
       final SearchQueryResult<FlowNodeInstanceEntity> result) {
-    final var itemsWithoutName = result.items().stream().filter(u -> !u.hasFlowNodeName()).toList();
+    final var processDefinitionKeys =
+        result.items().stream()
+            .filter(u -> !u.hasFlowNodeName())
+            .map(FlowNodeInstanceEntity::processDefinitionKey)
+            .collect(Collectors.toSet());
 
-    if (itemsWithoutName.isEmpty()) {
+    if (processDefinitionKeys.isEmpty()) {
       return result;
     }
 
-    final var cacheResult =
-        processCache.getCacheItems(
-            itemsWithoutName.stream()
-                .map(FlowNodeInstanceEntity::processDefinitionKey)
-                .collect(Collectors.toSet()));
+    final var cacheResult = processCache.getCacheItems(processDefinitionKeys);
 
     return result.withItems(
         result.items().stream()
