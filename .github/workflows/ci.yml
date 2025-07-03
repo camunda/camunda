@@ -295,8 +295,8 @@ jobs:
   consolidated-unit-test-var-setup:
     runs-on: ubuntu-latest
     outputs:
-      ZEEBE_UNIT_TESTS: ${{ steps.ZEEBE_UNIT_TESTS.val}}
-      ZEEBE_BIG_TEST: ${{ steps.ZEEBE_BIG_TEST.val}}
+      ZEEBE_UNIT_TESTS: ${{ steps.ZEEBE_UNIT_TESTS.outputs.val}}
+      ZEEBE_BIG_TEST: ${{ steps.ZEEBE_BIG_TEST.outputs.val}}
       # ZEEBE_EXPORTER: "':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
       # ZEEBE_GATEWAY: "':zeebe-gateway',':zeebe-gateway-grpc',':zeebe-gateway-protocol',':zeebe-gateway-protocol-impl',':zeebe-gateway-rest'"
       # ZEEBE_BACKUP: "':zeebe-backup',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3'"
@@ -315,7 +315,7 @@ jobs:
       REPLACED: ${{ steps.ZEEBE_UNIT_TESTS.val}}
     steps:
       - id: REPLACED
-        run: echo "REPLACED= echo \"${{needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}},${{needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}}\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
+        run: echo "REPLACED=\"${{needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}},${{needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}}\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate, Optimize, Tasklist
@@ -323,7 +323,7 @@ jobs:
   consolidated-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[UT] ${{ matrix.component }} - ${{matrix.suiteName}}"
-    needs: [ detect-changes, consolidated-unit-test-setup ]
+    needs: [ detect-changes, consolidated-unit-test-var-setup, consolidated-unit-test-setup ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
