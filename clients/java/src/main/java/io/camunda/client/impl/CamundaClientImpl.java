@@ -1187,6 +1187,7 @@ public final class CamundaClientImpl implements CamundaClient {
   public JobSearchRequest newJobSearchRequest() {
     return new JobSearchRequestImpl(httpClient, jsonMapper);
   }
+
   @Override
   public CamundaClientConfiguration getConfiguration() {
     return jobClient.getConfiguration();
