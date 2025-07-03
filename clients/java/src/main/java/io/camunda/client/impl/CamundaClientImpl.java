@@ -1253,11 +1253,6 @@ public final class CamundaClientImpl implements CamundaClient {
     return new JobSearchRequestImpl(httpClient, jsonMapper);
   }
 
-  private JobClient newJobClient() {
-    return new JobClientImpl(
-        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
-  }
-
   @Override
   public MessageSubscriptionSearchRequest newMessageSubscriptionSearchRequest() {
     return new MessageSubscriptionSearchRequestImpl(httpClient, jsonMapper);
@@ -1354,5 +1349,10 @@ public final class CamundaClientImpl implements CamundaClient {
   public DeleteDocumentCommandStep1 newDeleteDocumentCommand(
       final DocumentReferenceResponse documentReference) {
     return jobClient.newDeleteDocumentCommand(documentReference);
+  }
+
+  private JobClient newJobClient() {
+    return new JobClientImpl(
+        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 }
