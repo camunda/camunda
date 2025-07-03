@@ -12,20 +12,18 @@ import {QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas';
 
 const USER_TASKS_SEARCH_QUERY_KEY = 'userTasksSearch';
 
-function getQueryKey(params: QueryUserTasksRequestBody) {
-  return [USER_TASKS_SEARCH_QUERY_KEY, params];
-}
-
 const useUserTasksSearch = (params: QueryUserTasksRequestBody) => {
   return useQuery({
-    queryKey: getQueryKey(params),
+    queryKey: [USER_TASKS_SEARCH_QUERY_KEY, params],
     queryFn: () =>
       searchUserTasks(params).then(({response, error}) => {
-        if (response !== null) return response;
+        if (response !== null) {
+          return response;
+        }
         throw error;
       }),
     enabled: !!params,
   });
 };
 
-export {useUserTasksSearch, USER_TASKS_SEARCH_QUERY_KEY};
+export {useUserTasksSearch};
