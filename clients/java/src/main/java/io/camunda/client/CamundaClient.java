@@ -1478,7 +1478,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UsersByRoleSearchRequest newUsersByRoleSearchRequest(String roleId);
 
   /**
-   * Executes a search request to query users by tenant.
+   * Executes a search request to query users assigned to a tenant.
    *
    * <pre>
    * camundaClient
