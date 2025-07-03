@@ -509,7 +509,7 @@ public class RequestMapper {
       final Function<BrokerResponseT, ResponseEntity<Object>> result) {
     return method
         .get()
-        .handleAsync(
+        .handle(
             (response, error) ->
                 RestErrorMapper.getResponse(error, RestErrorMapper.DEFAULT_REJECTION_MAPPER)
                     .orElseGet(() -> result.apply(response)));

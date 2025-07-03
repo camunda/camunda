@@ -107,7 +107,7 @@ public class JobController {
     jobServices
         .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .activateJobs(activationRequest, responseObserver, responseObserver::setCancelationHandler);
-    return result.handleAsync(
+    return result.handle(
         (res, ex) -> {
           responseObserver.invokeCancelationHandler();
           return res;

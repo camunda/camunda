@@ -81,7 +81,7 @@ public final class ProcessInstanceServiceTest {
             processInstanceSearchClient,
             sequenceFlowSearchClient,
             incidentSearchClient,
-            authentication);
+            authentication, meterRegistry);
   }
 
   @Test

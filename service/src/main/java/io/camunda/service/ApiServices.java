@@ -52,7 +52,7 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     brokerRequest.setAuthorization(authentication.claims());
     return brokerClient
         .sendRequest(brokerRequest)
-        .handleAsync(
+        .handle(
             (response, error) -> {
               if (error != null) {
                 throw new CamundaBrokerException(error);

@@ -39,6 +39,8 @@ import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,19 +54,23 @@ public class ProcessInstanceController {
   private final ProcessInstanceServices processInstanceServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final MeterRegistry meterRegistry;
 
   public ProcessInstanceController(
       final ProcessInstanceServices processInstanceServices,
       final MultiTenancyConfiguration multiTenancyCfg,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final MeterRegistry meterRegistry) {
     this.processInstanceServices = processInstanceServices;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+    this.meterRegistry = Objects.requireNonNull(meterRegistry, "must specify a meter registry");
   }
 
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
       @RequestBody final ProcessInstanceCreationInstruction request) {
+    meterRegistry.counter("camunda.rest.create.instance").increment();
     return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
   }

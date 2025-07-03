@@ -61,6 +61,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -126,14 +127,16 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
-      final IncidentSearchClient incidentSearchClient) {
+      final IncidentSearchClient incidentSearchClient,
+      final MeterRegistry meterRegistry) {
     return new ProcessInstanceServices(
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentSearchClient,
-        null);
+        null,
+        meterRegistry);
   }
 
   @Bean

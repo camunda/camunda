@@ -31,6 +31,7 @@ import io.camunda.zeebe.transport.ClientTransport;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
@@ -104,8 +105,22 @@ final class BrokerRequestManager extends Actor {
       final TransportRequestSender sender,
       final Duration requestTimeout) {
     final CompletableFuture<BrokerResponse<T>> responseFuture = new CompletableFuture<>();
+    final var startSerialize = System.currentTimeMillis();
     request.serializeValue();
-    actor.run(() -> sendRequestInternal(request, responseFuture, sender, requestTimeout));
+    metrics
+        .getRegistry()
+        .timer("camunda.gateway.serialize.req.duration")
+        .record(System.currentTimeMillis() - startSerialize, TimeUnit.MILLISECONDS);
+
+    final var startSchedule = System.currentTimeMillis();
+    actor.run(
+        () -> {
+          metrics
+              .getRegistry()
+              .timer("camunda.gateway.broker.req.latency")
+              .record(System.currentTimeMillis() - startSchedule, TimeUnit.MILLISECONDS);
+          sendRequestInternal(request, responseFuture, sender, requestTimeout);
+        });
     return responseFuture;
   }
 
@@ -114,7 +129,7 @@ final class BrokerRequestManager extends Actor {
       final CompletableFuture<BrokerResponse<T>> returnFuture,
       final TransportRequestSender sender,
       final Duration requestTimeout) {
-
+    final var startSendReq = System.currentTimeMillis();
     final BrokerAddressProvider nodeIdProvider;
     try {
       nodeIdProvider = determineBrokerNodeIdProvider(request);
@@ -135,6 +150,10 @@ final class BrokerRequestManager extends Actor {
       return;
     }
 
+    metrics
+        .getRegistry()
+        .timer("camunda.gateway.broker.req.prep.latency")
+        .record(System.currentTimeMillis() - startSendReq, TimeUnit.MILLISECONDS);
     final ActorFuture<DirectBuffer> responseFuture =
         sender.send(clientTransport, nodeIdProvider, request, requestTimeout);
     final long startTime = System.currentTimeMillis();

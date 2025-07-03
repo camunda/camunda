@@ -51,10 +51,12 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -65,6 +67,7 @@ public final class ProcessInstanceServices
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
   private final IncidentSearchClient incidentSearchClient;
+  private final MeterRegistry meterRegistry;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
@@ -72,11 +75,13 @@ public final class ProcessInstanceServices
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentSearchClient incidentSearchClient,
-      final CamundaAuthentication authentication) {
+      final CamundaAuthentication authentication,
+      final MeterRegistry meterRegistry) {
     super(brokerClient, securityContextProvider, authentication);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentSearchClient = incidentSearchClient;
+    this.meterRegistry = meterRegistry;
   }
 
   @Override
@@ -87,7 +92,8 @@ public final class ProcessInstanceServices
         processInstanceSearchClient,
         sequenceFlowSearchClient,
         incidentSearchClient,
-        authentication);
+        authentication,
+        meterRegistry);
   }
 
   @Override
@@ -169,6 +175,7 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
       final ProcessInstanceCreateRequest request) {
+    final var start = System.currentTimeMillis();
     final var brokerRequest =
         new BrokerCreateProcessInstanceRequest()
             .setBpmnProcessId(request.bpmnProcessId())
@@ -181,7 +188,12 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendBrokerRequest(brokerRequest)
+        .whenComplete(
+            (v, t) ->
+                meterRegistry
+                    .timer("camunda.rest.create.instance.latency")
+                    .record((System.currentTimeMillis() - start), TimeUnit.MILLISECONDS));
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(

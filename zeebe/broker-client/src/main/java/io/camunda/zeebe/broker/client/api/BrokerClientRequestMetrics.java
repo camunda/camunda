@@ -40,6 +40,10 @@ public final class BrokerClientRequestMetrics {
     failedRequests = Map3D.simple();
   }
 
+  public MeterRegistry getRegistry() {
+    return registry;
+  }
+
   /** Increments the count of successful requests for the given parameters, using these as tags. */
   public void registerSuccessfulRequest(
       final int partitionId, final String requestType, final long latencyMs) {
