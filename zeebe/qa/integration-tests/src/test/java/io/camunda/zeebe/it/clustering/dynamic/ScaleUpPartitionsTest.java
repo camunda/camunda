@@ -231,7 +231,7 @@ public class ScaleUpPartitionsTest {
   @ValueSource(strings = {"partition1Leader", "bootstrapNode"})
   public void shouldSucceedScaleUpWhenCriticalNodesRestart(final String restartTarget) {
     // given - healthy cluster
-    cluster.awaitHealthyTopology();
+    cluster.awaitCompleteTopology();
     deployProcessModel(camundaClient, JOB_TYPE, PROCESS_ID);
     final var targetPartitionCount = PARTITIONS_COUNT + 1;
 
