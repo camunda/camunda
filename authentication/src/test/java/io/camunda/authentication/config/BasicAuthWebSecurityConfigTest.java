@@ -9,9 +9,11 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,6 +42,32 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
     // then
     assertThat(testResult).hasStatusOk();
     assertDefaultSecurityHeaders(testResult);
+  }
+
+  @Test
+  public void shouldAcceptRequestsToProtectedWebResourcesWithoutAuthentication() {
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(testResult).hasStatusOk();
+  }
+
+  @Test
+  public void shouldAcceptRequestToUnprotectedWebResourcesWithoutAuthentication() {
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_UNPROTECTED_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(testResult).hasStatusOk();
   }
 
   protected static HttpHeaders basicAuthDemo() {

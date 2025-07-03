@@ -10,11 +10,14 @@ package io.camunda.authentication.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
+import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
@@ -81,5 +84,31 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
     // then
     assertThat(testResult).hasStatusOk();
     assertDefaultSecurityHeaders(testResult);
+  }
+
+  @Test
+  public void shouldRejectRequestsToProtectedWebResourcesWithoutAuthentication() {
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(testResult).hasStatus(HttpStatus.UNAUTHORIZED);
+  }
+
+  @Test
+  public void shouldAcceptRequestToUnprotectedWebResourcesWithoutAuthentication() {
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_UNPROTECTED_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(testResult).hasStatusOk();
   }
 }
