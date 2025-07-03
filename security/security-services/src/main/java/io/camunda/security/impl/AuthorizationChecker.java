@@ -126,15 +126,15 @@ public class AuthorizationChecker {
 
   private List<String> collectOwnerIds(final CamundaAuthentication authentication) {
     final List<String> ownerIds = new ArrayList<>();
-    if (authentication.authenticatedUsername() != null) {
-      ownerIds.add(authentication.authenticatedUsername());
+    if (authentication.getUsername() != null) {
+      ownerIds.add(authentication.getUsername());
     }
-    if (authentication.authenticatedClientId() != null) {
-      ownerIds.add(authentication.authenticatedClientId());
+    if (authentication.getClientId() != null) {
+      ownerIds.add(authentication.getClientId());
     }
-    ownerIds.addAll(authentication.authenticatedMappingIds());
-    ownerIds.addAll(authentication.authenticatedGroupIds());
-    ownerIds.addAll(authentication.authenticatedRoleIds());
+    ownerIds.addAll(authentication.getMappingIds());
+    ownerIds.addAll(authentication.getGroupIds());
+    ownerIds.addAll(authentication.getRoleIds());
     return ownerIds;
   }
 }

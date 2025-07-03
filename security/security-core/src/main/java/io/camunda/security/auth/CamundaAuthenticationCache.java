@@ -7,12 +7,9 @@
  */
 package io.camunda.security.auth;
 
-@FunctionalInterface
-public interface CamundaAuthenticationConverter<T> {
+public interface CamundaAuthenticationCache {
 
-  default boolean supports(final T containerBasedAuthentication) {
-    return false;
-  }
+  CamundaAuthentication getFromCache();
 
-  CamundaAuthentication convert(final T containerBasedAuthentication);
+  void addOrUpdateInCache(CamundaAuthentication camundaAuthentication);
 }

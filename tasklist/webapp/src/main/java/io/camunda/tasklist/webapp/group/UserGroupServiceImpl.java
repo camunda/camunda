@@ -7,9 +7,8 @@
  */
 package io.camunda.tasklist.webapp.group;
 
-import io.camunda.authentication.service.CamundaUserService;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -26,10 +25,14 @@ import org.springframework.stereotype.Component;
  * enabled.
  */
 public class UserGroupServiceImpl implements UserGroupService {
-  @Autowired private CamundaUserService camundaUserService;
+  private final CamundaAuthenticationProvider authenticationProvider;
+
+  public UserGroupServiceImpl(final CamundaAuthenticationProvider authenticationProvider) {
+    this.authenticationProvider = authenticationProvider;
+  }
 
   @Override
   public List<String> getUserGroups() {
-    return camundaUserService.getCurrentUser().groups();
+    return authenticationProvider.getCamundaAuthentication().getGroupIds();
   }
 }

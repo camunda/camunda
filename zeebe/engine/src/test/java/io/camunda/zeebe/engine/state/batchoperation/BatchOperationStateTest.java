@@ -56,7 +56,7 @@ public class BatchOperationStateTest {
             .processDefinitionVersions(1)
             .build();
     final String username = "bud spencer";
-    final var authentication = CamundaAuthentication.of(b -> b.user(username));
+    final var authentication = CamundaAuthentication.of(b -> b.username(username));
     final var record =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)

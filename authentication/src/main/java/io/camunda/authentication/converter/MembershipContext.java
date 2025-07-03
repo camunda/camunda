@@ -5,14 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.security.auth;
+package io.camunda.authentication.converter;
 
-@FunctionalInterface
-public interface CamundaAuthenticationConverter<T> {
+import java.util.List;
 
-  default boolean supports(final T containerBasedAuthentication) {
-    return false;
-  }
-
-  CamundaAuthentication convert(final T containerBasedAuthentication);
-}
+public record MembershipContext(
+    List<String> groupIds, List<String> roleIds, List<String> tenantIds, List<String> mappingIds) {}

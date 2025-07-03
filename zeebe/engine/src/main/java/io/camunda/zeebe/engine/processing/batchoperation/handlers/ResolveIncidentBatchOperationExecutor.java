@@ -50,6 +50,6 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
         FollowUpCommandMetadata.of(
             b ->
                 b.batchOperationReference(batchOperation.getKey())
-                    .claims(batchOperation.getAuthentication().claims())));
+                    .claims(batchOperation.getAuthentication().getClaims())));
   }
 }

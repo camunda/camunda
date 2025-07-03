@@ -56,7 +56,8 @@ class DocumentAuthorizationQueryStrategyTest {
   void shouldReturnRequestUnchangedWhenAuthorizationNotRequired() {
     // given
     final var originalRequest = mock(SearchQueryRequest.class);
-    final var securityContext = SecurityContext.of(s -> s.withAuthentication(a -> a.user("foo")));
+    final var securityContext =
+        SecurityContext.of(s -> s.withAuthentication(a -> a.username("foo")));
 
     // when
     final SearchQueryRequest result =
@@ -95,7 +96,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user("foo"))
+                s.withAuthentication(a -> a.username("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
@@ -123,7 +124,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user("foo"))
+                s.withAuthentication(a -> a.username("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
@@ -147,7 +148,7 @@ class DocumentAuthorizationQueryStrategyTest {
     final var securityContext =
         SecurityContext.of(
             s ->
-                s.withAuthentication(a -> a.user("foo"))
+                s.withAuthentication(a -> a.username("foo"))
                     .withAuthorization(
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)

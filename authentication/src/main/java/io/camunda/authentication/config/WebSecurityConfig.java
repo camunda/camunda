@@ -10,22 +10,17 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 
-import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
-import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.service.AuthorizationServices;
-import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -190,11 +185,11 @@ public class WebSecurityConfig {
         .build();
   }
 
-  @Bean
-  public WebApplicationAuthorizationCheckFilter applicationAuthorizationFilterFilter(
-      final SecurityConfiguration securityConfiguration) {
-    return new WebApplicationAuthorizationCheckFilter(securityConfiguration);
-  }
+  //  @Bean
+  //  public WebApplicationAuthorizationCheckFilter applicationAuthorizationFilterFilter(
+  //      final SecurityConfiguration securityConfiguration) {
+  //    return new WebApplicationAuthorizationCheckFilter(securityConfiguration);
+  //  }
 
   private static void noContentSuccessHandler(
       final HttpServletRequest request,
@@ -295,14 +290,8 @@ public class WebSecurityConfig {
   public static class BasicConfiguration {
     @Bean
     @ConditionalOnMissingBean(UserDetailsService.class)
-    public CamundaUserDetailsService camundaUserDetailsService(
-        final UserServices userServices,
-        final AuthorizationServices authorizationServices,
-        final RoleServices roleServices,
-        final TenantServices tenantServices,
-        final GroupServices groupServices) {
-      return new CamundaUserDetailsService(
-          userServices, authorizationServices, roleServices, tenantServices, groupServices);
+    public CamundaUserDetailsService camundaUserDetailsService(final UserServices userServices) {
+      return new CamundaUserDetailsService(userServices);
     }
 
     @Bean
@@ -353,7 +342,8 @@ public class WebSecurityConfig {
     public SecurityFilterChain httpBasicWebappAuthSecurityFilterChain(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
+        //        final WebApplicationAuthorizationCheckFilter
+        // webApplicationAuthorizationCheckFilter,
         final SecurityConfiguration securityConfiguration,
         final RoleServices roleServices)
         throws Exception {
@@ -394,7 +384,8 @@ public class WebSecurityConfig {
                   exceptionHandling
                       .authenticationEntryPoint(authFailureHandler)
                       .accessDeniedHandler(authFailureHandler))
-          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
+          //          .addFilterAfter(webApplicationAuthorizationCheckFilter,
+          // AuthorizationFilter.class)
           .addFilterBefore(
               new AdminUserCheckFilter(securityConfiguration, roleServices),
               AuthorizationFilter.class)
@@ -463,7 +454,7 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final JwtDecoder jwtDecoder,
-        final CamundaJwtAuthenticationConverter converter,
+        //        final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration)
         throws Exception {
       return httpSecurity
@@ -488,10 +479,7 @@ public class WebSecurityConfig {
           .formLogin(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
           .oauth2ResourceServer(
-              oauth2 ->
-                  oauth2.jwt(
-                      jwtConfigurer ->
-                          jwtConfigurer.decoder(jwtDecoder).jwtAuthenticationConverter(converter)))
+              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
           .oauth2Login(AbstractHttpConfigurer::disable)
           .oidcLogout(AbstractHttpConfigurer::disable)
           .logout(AbstractHttpConfigurer::disable)
@@ -504,9 +492,10 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
+        //        final WebApplicationAuthorizationCheckFilter
+        // webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
-        final CamundaJwtAuthenticationConverter converter,
+        //        final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration)
         throws Exception {
       return httpSecurity
@@ -531,10 +520,7 @@ public class WebSecurityConfig {
           .formLogin(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
           .oauth2ResourceServer(
-              oauth2 ->
-                  oauth2.jwt(
-                      jwtConfigurer ->
-                          jwtConfigurer.decoder(jwtDecoder).jwtAuthenticationConverter(converter)))
+              oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
           .oauth2Login(
               oauthLoginConfigurer -> {
                 oauthLoginConfigurer
@@ -550,7 +536,8 @@ public class WebSecurityConfig {
                       .logoutUrl(LOGOUT_URL)
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
                       .deleteCookies())
-          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
+          //          .addFilterAfter(webApplicationAuthorizationCheckFilter,
+          // AuthorizationFilter.class)
           .build();
     }
   }

@@ -7,12 +7,7 @@
  */
 package io.camunda.security.auth;
 
-@FunctionalInterface
-public interface CamundaAuthenticationConverter<T> {
+import java.util.Map;
 
-  default boolean supports(final T containerBasedAuthentication) {
-    return false;
-  }
-
-  CamundaAuthentication convert(final T containerBasedAuthentication);
-}
+public record CamundaAuthenticatedPrincipal(
+    String username, String clientId, Map<String, Object> attributes) {}

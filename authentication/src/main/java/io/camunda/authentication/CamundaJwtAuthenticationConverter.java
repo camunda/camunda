@@ -8,15 +8,13 @@
 package io.camunda.authentication;
 
 import io.camunda.authentication.entity.CamundaJwtUser;
-import io.camunda.security.entity.AuthenticationMethod;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.stereotype.Service;
 
-@Service
-@ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+// @Service
+// @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaJwtAuthenticationConverter
     implements Converter<Jwt, AbstractAuthenticationToken> {
 

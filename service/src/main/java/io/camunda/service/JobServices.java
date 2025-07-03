@@ -67,7 +67,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable());
-    brokerRequest.setAuthorization(authentication.claims());
+    brokerRequest.setAuthorization(authentication.getClaims());
     activateJobsHandler.activateJobs(
         brokerRequest, responseObserver, cancelationHandlerConsumer, request.requestTimeout());
   }
