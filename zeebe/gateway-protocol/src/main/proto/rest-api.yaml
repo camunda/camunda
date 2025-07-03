@@ -5860,7 +5860,7 @@ components:
           description: Name of this process definition.
           type: string
         isLatestVersion:
-          description: Whether to only return the latest version of each process definition.
+          description: Whether to only return the latest version of each process definition. When using this filter, paging backwards is not supported with Elasticsearch or Opensearch.
           type: boolean
         resourceName:
           description: Resource name of this process definition.
