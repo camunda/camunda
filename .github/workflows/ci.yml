@@ -68,10 +68,10 @@ jobs:
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.7'
@@ -101,10 +101,10 @@ jobs:
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - name: Determine fetch depth for checkout
         id: depth
@@ -133,10 +133,10 @@ jobs:
 
   maven-spotless-linter:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
@@ -158,10 +158,10 @@ jobs:
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     name: Java checks
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@v4
@@ -185,10 +185,10 @@ jobs:
 
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-frontend
@@ -222,7 +222,7 @@ jobs:
     name: "[UT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -292,7 +292,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  consolidated-unit-test-var-setup:
+  consolidated-unit-test-setup:
     runs-on: ubuntu-latest
     outputs:
       ZEEBE_UNIT_TESTS: ${{ steps.ZEEBE_UNIT_TESTS.outputs.val}}
@@ -302,20 +302,18 @@ jobs:
       # ZEEBE_BACKUP: "':zeebe-backup',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3'"
       # ZEEBE_PROTOCOL: "':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
       # API_TEST: "':camunda-process-test-java',':camunda-client-java'"
+      REPLACED: ${{ steps.ZEEBE_UNIT_TESTS.outputs.replaced}}
     steps:
       - id: ZEEBE_UNIT_TESTS
-        run: echo "val=':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'"  >> "$GITHUB_OUTPUT"
+        run: |
+          ZEEBE_UNIT_TESTS=':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'
+          echo "val=$ZEEBE_UNIT_TESTS"  >> "$GITHUB_OUTPUT"
       - id: ZEEBE_BIG_TEST
-        run: echo "val=':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'"  >> "$GITHUB_OUTPUT"
-
-  consolidated-unit-test-setup:
-    runs-on: ubuntu-latest
-    needs: [ consolidated-unit-test-var-setup ]
-    outputs:
-      REPLACED: ${{ steps.ZEEBE_UNIT_TESTS.val}}
-    steps:
+        run: |
+          ZEEBE_BIG_TEST=':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'
+          echo "val=$ZEEBE_BIG_TEST"  >> "$GITHUB_OUTPUT"
       - id: REPLACED
-        run: echo "REPLACED=\"${{needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}},${{needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}}\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
+        run: echo "replaced=\"$ZEEBE_BIG_TEST,$ZEEBE_UNIT_TESTS\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate, Optimize, Tasklist
@@ -323,7 +321,7 @@ jobs:
   consolidated-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[UT] ${{ matrix.component }} - ${{matrix.suiteName}}"
-    needs: [ detect-changes, consolidated-unit-test-var-setup, consolidated-unit-test-setup ]
+    needs: [ detect-changes, consolidated-unit-test-setup ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
@@ -453,7 +451,7 @@ jobs:
     needs: [ detect-changes ]
     name: "[IT] Elasticsearch"
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -545,7 +543,7 @@ jobs:
     needs: [ detect-changes ]
     name: "[IT] OpenSearch"
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -707,67 +705,67 @@ jobs:
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     name: "[IT] RDBMS"
     timeout-minutes: 7
     runs-on: gcp-perf-core-8-default
-    permissions: {}  # no GITHUB_TOKEN is needed
+    permissions: { }  # no GITHUB_TOKEN is needed
     steps:
-    - uses: actions/checkout@v4
-    - uses: ./.github/actions/setup-build
-      with:
-        dockerhub-readonly: true
-        maven-cache-key-modifier: it-rdbms
-        vault-address: ${{ secrets.VAULT_ADDR }}
-        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-    - uses: ./.github/actions/build-zeebe
-      with:
-        maven-extra-args: -T1C -PskipFrontendBuild
-    - name: Create build output log file
-      run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-    # Run integration tests with RDBMS database
-    - name: Maven Test Build
-      run: >
-        ./mvnw -B -T1C --no-snapshot-updates
-        -D forkCount=1
-        -D maven.javadoc.skip=true
-        -D skipUTs -D skipChecks
-        -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-        -P rdbms
-        -pl qa/acceptance-tests
-        verify
-        | tee "${BUILD_OUTPUT_FILE_PATH}"
-    - name: Analyze Test Runs
-      id: analyze-test-run
-      if: always()
-      uses: ./.github/actions/analyze-test-runs
-      with:
-        buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-    - name: Upload test artifacts
-      uses: ./.github/actions/collect-test-artifacts
-      if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
-      with:
-        name: "[IT] RDBMS"
-    - name: Observe build status
-      if: always()
-      continue-on-error: true
-      uses: ./.github/actions/observe-build-status
-      with:
-        build_status: ${{ job.status }}
-        user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-        user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-        detailed_junit_flaky_tests: true
-        secret_vault_address: ${{ secrets.VAULT_ADDR }}
-        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          maven-cache-key-modifier: it-rdbms
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run integration tests with RDBMS database
+      - name: Maven Test Build
+        run: >
+          ./mvnw -B -T1C --no-snapshot-updates
+          -D forkCount=1
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P rdbms
+          -pl qa/acceptance-tests
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -1005,10 +1003,10 @@ jobs:
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: identity/client
@@ -1044,13 +1042,13 @@ jobs:
 
   tasklist-frontend-tests:
     if: needs.detect-changes.outputs.tasklist-frontend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
     secrets: inherit
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
     with:
@@ -1061,10 +1059,10 @@ jobs:
   build-operate-backend:
     if: needs.detect-changes.outputs.operate-backend-changes == 'true'
     name: "Operate Build Checks"
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     env:
       BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
@@ -1107,7 +1105,7 @@ jobs:
     name: "[FE] Operate"
     uses: ./.github/workflows/operate-ci-fe.yml
     secrets: inherit
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
 
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
@@ -1118,10 +1116,10 @@ jobs:
 
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: optimize/client
@@ -1166,7 +1164,7 @@ jobs:
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -1219,10 +1217,10 @@ jobs:
   openapi-lint:
     name: C8 REST OpenAPI linting
     if: needs.detect-changes.outputs.openapi-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v4
       - name: Install Vacuum
@@ -1255,13 +1253,12 @@ jobs:
     timeout-minutes: 3
     permissions:
       checks: read
-    needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
+    needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
       - build-operate-backend
       - build-platform-frontend
       - commitlint
       - consolidated-unit-test-setup
-      - consolidated-unit-test-var-setup
       - consolidated-unit-tests
       - detect-changes
       - docker-checks
@@ -1299,7 +1296,7 @@ jobs:
     needs: [ check-results ]
     runs-on: gcp-perf-core-8-default
     timeout-minutes: 25
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-maven-snapshot
@@ -1349,7 +1346,7 @@ jobs:
     needs: [ check-results, get-snapshot-docker-version-tag ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions: { }  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: deploy-camunda-docker-snapshot
