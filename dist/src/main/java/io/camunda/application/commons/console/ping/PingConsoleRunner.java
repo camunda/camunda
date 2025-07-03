@@ -15,6 +15,7 @@ import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
@@ -88,16 +89,28 @@ public class PingConsoleRunner implements ApplicationRunner {
     if (pingConfiguration.pingPeriod().isZero() || pingConfiguration.pingPeriod().isNegative()) {
       throw new IllegalArgumentException("Ping period must be greater than zero.");
     }
-    if (pingConfiguration.retryConfiguration != null) {
-      if (pingConfiguration.retryConfiguration().numberOfMaxRetries() <= 0) {
+    if (pingConfiguration.retry() != null) {
+      if (pingConfiguration.retry().getMaxRetries() <= 0) {
         throw new IllegalArgumentException("Number of max retries must be greater than zero.");
       }
-      if (pingConfiguration.retryConfiguration().retryDelayMultiplier() <= 0) {
+      if (pingConfiguration.retry().getRetryDelayMultiplier() <= 0) {
         throw new IllegalArgumentException("Retry delay multiplier must be greater than zero.");
       }
-      if (pingConfiguration.retryConfiguration().maxRetryDelay().isZero()
-          || pingConfiguration.retryConfiguration().maxRetryDelay().isNegative()) {
+      if (pingConfiguration.retry().getMaxRetryDelay().isZero()
+          || pingConfiguration.retry().getMinRetryDelay().isNegative()) {
         throw new IllegalArgumentException("Max retry delay must be greater than zero.");
+      }
+      if (pingConfiguration.retry().getMinRetryDelay().isZero()
+          || pingConfiguration.retry().getMinRetryDelay().isNegative()) {
+        throw new IllegalArgumentException("Min retry delay must be greater than zero.");
+      }
+      if (pingConfiguration
+              .retry()
+              .getMaxRetryDelay()
+              .compareTo(pingConfiguration.retry().getMinRetryDelay())
+          < 0) {
+        throw new IllegalArgumentException(
+            "Max retry delay must be greater than or equal to min retry delay.");
       }
     }
     if (licensePayload.isLeft()) {
@@ -150,9 +163,6 @@ public class PingConsoleRunner implements ApplicationRunner {
       String clusterId,
       String clusterName,
       Duration pingPeriod,
-      RetryConfiguration retryConfiguration,
-      Map<String, String> properties) {
-    public record RetryConfiguration(
-        int numberOfMaxRetries, int retryDelayMultiplier, Duration maxRetryDelay) {}
-  }
+      RetryConfiguration retry,
+      Map<String, String> properties) {}
 }
