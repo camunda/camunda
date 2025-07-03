@@ -23,6 +23,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Group;
+import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
@@ -69,8 +71,11 @@ public class KeycloakIdentityMigrationIT {
   @Container
   private static final KeycloakContainer KEYCLOAK = IdentityMigrationTestUtil.getKeycloak();
 
+  @Container
+  private static final GenericContainer<?> POSTGRES = IdentityMigrationTestUtil.getPostgres();
+
   private static final GenericContainer<?> IDENTITY =
-      IdentityMigrationTestUtil.getManagementIdentitySMKeycloak(KEYCLOAK)
+      IdentityMigrationTestUtil.getManagementIdentitySMKeycloak(KEYCLOAK, POSTGRES)
           // this triggers the setup of the default roles for operate, tasklist and zeebe
           .withEnv("KEYCLOAK_INIT_OPERATE_SECRET", "operate")
           .withEnv("KEYCLOAK_INIT_OPERATE_ROOT_URL", "http://localhost:8081")
@@ -81,7 +86,7 @@ public class KeycloakIdentityMigrationIT {
           .withEnv("KEYCLOAK_GROUPS_0_NAME", "groupA")
           .withEnv("KEYCLOAK_GROUPS_1_NAME", "groupB")
           .withEnv("KEYCLOAK_GROUPS_2_NAME", "groupC")
-          // create users and assign them to groups
+          // create users and assign them to groups and roles
           .withEnv("KEYCLOAK_USERS_0_EMAIL", "user0@email.com")
           .withEnv("KEYCLOAK_USERS_0_FIRST-NAME", "user0")
           .withEnv("KEYCLOAK_USERS_0_LAST-NAME", "user0")
@@ -93,13 +98,23 @@ public class KeycloakIdentityMigrationIT {
           .withEnv("KEYCLOAK_USERS_0_ROLES_1", "Operate")
           .withEnv("KEYCLOAK_USERS_0_ROLES_2", "Tasklist")
           .withEnv("KEYCLOAK_USERS_0_ROLES_3", "Zeebe")
-          //          .withEnv("KEYCLOAK_USERS_0_ROLES_1", "Zeebe")
           .withEnv("KEYCLOAK_USERS_1_EMAIL", "user1@email.com")
           .withEnv("KEYCLOAK_USERS_1_FIRST-NAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_LAST-NAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_USERNAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_PASSWORD", "password")
           .withEnv("KEYCLOAK_USERS_1_GROUPS_0", "groupC")
+          // assign authorizations to groups
+          .withEnv("IDENTITY_AUTHORIZATIONS_0_GROUP_NAME", "groupA")
+          .withEnv("IDENTITY_AUTHORIZATIONS_0_RESOURCE_KEY", "*")
+          .withEnv("IDENTITY_AUTHORIZATIONS_0_RESOURCE_TYPE", "process-definition")
+          .withEnv("IDENTITY_AUTHORIZATIONS_0_PERMISSIONS_0", "READ")
+          .withEnv("IDENTITY_AUTHORIZATIONS_0_PERMISSIONS_1", "DELETE")
+          .withEnv("IDENTITY_AUTHORIZATIONS_1_GROUP_NAME", "groupB")
+          .withEnv("IDENTITY_AUTHORIZATIONS_1_RESOURCE_KEY", "*")
+          .withEnv("IDENTITY_AUTHORIZATIONS_1_RESOURCE_TYPE", "decision-definition")
+          .withEnv("IDENTITY_AUTHORIZATIONS_1_PERMISSIONS_0", "READ")
+          .withEnv("IDENTITY_AUTHORIZATIONS_1_PERMISSIONS_1", "DELETE")
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
@@ -289,6 +304,69 @@ public class KeycloakIdentityMigrationIT {
                     PermissionType.CREATE)),
             tuple("identity", ResourceType.USER, Set.of(PermissionType.READ)),
             tuple("identity", ResourceType.APPLICATION, Set.of(PermissionType.ACCESS)));
+  }
+
+  @Test
+  public void canMigrateGroups() throws URISyntaxException, IOException, InterruptedException {
+    // when
+    migration.start();
+
+    final var restAddress = client.getConfiguration().getRestAddress().toString();
+    Awaitility.await()
+        .atMost(Duration.ofHours(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var groups = client.newGroupsSearchRequest().send().join();
+              assertThat(groups.items())
+                  .extracting(Group::getGroupId)
+                  .contains("groupa", "groupb", "groupc");
+
+              final var authorizations = searchAuthorizations(restAddress);
+              assertThat(authorizations.items())
+                  .extracting(AuthorizationResponse::ownerId)
+                  .contains("groupa", "groupb");
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var groups = client.newGroupsSearchRequest().send().join();
+    assertThat(groups.items())
+        .extracting(Group::getGroupId, Group::getName)
+        .contains(tuple("groupa", "groupA"), tuple("groupb", "groupB"), tuple("groupc", "groupC"));
+
+    final var usersGroupA = client.newUsersByGroupSearchRequest("groupa").send().join();
+    assertThat(usersGroupA.items()).extracting(GroupUser::getUsername).containsExactly("user0");
+    final var usersGroupB = client.newUsersByGroupSearchRequest("groupb").send().join();
+    assertThat(usersGroupB.items()).extracting(GroupUser::getUsername).containsExactly("user0");
+    final var usersGroupC = client.newUsersByGroupSearchRequest("groupc").send().join();
+    assertThat(usersGroupC.items()).extracting(GroupUser::getUsername).containsExactly("user1");
+
+    final var authorizations = searchAuthorizations(restAddress);
+    assertThat(authorizations.items())
+        .extracting(
+            AuthorizationResponse::ownerId,
+            AuthorizationResponse::ownerType,
+            AuthorizationResponse::resourceType,
+            AuthorizationResponse::permissionTypes)
+        .contains(
+            tuple(
+                "groupa",
+                OwnerType.GROUP,
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
+            tuple(
+                "groupb",
+                OwnerType.GROUP,
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.DELETE_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_DEFINITION)));
   }
 
   // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented

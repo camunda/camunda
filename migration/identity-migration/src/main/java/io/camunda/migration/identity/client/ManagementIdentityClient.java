@@ -29,7 +29,10 @@ public class ManagementIdentityClient {
       "/api/migration/tenant/user?" + URL_PARAMS;
   private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
       "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
-  private static final String MIGRATION_GROUPS_ENDPOINT = "/api/group?page={0}&organizationId={1}";
+  private static final String MIGRATION_GROUPS_ENDPOINT = "/api/groups?page={0}&organizationId={1}";
+  private static final String MIGRATION_GROUPS_ROLES_ENDPOINT = "/api/groups/{0}/roles";
+  private static final String MIGRATION_GROUPS_AUTHORISATIONS_ENDPOINT =
+      "/api/groups/{0}/authorizations";
   private static final String MIGRATION_USER_GROUPS_ENDPOINT =
       "/api/groups/{0}/users?organizationId={1}";
   private static final String MIGRATION_AUTHORIZATION_ENDPOINT =
@@ -90,8 +93,7 @@ public class ManagementIdentityClient {
   public List<Role> fetchGroupRoles(final String groupId) {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(
-                    MIGRATION_GROUPS_ENDPOINT + "/{0}/roles", Role[].class, groupId)))
+                restTemplate.getForObject(MIGRATION_GROUPS_ROLES_ENDPOINT, Role[].class, groupId)))
         .toList();
   }
 
@@ -99,9 +101,7 @@ public class ManagementIdentityClient {
     return Arrays.stream(
             Objects.requireNonNull(
                 restTemplate.getForObject(
-                    MIGRATION_GROUPS_ENDPOINT + "/{0}/authorizations",
-                    Authorization[].class,
-                    groupId)))
+                    MIGRATION_GROUPS_AUTHORISATIONS_ENDPOINT, Authorization[].class, groupId)))
         .toList();
   }
 

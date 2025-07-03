@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -54,7 +53,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
       final AuthorizationServices authorizationServices,
       final CamundaAuthentication authentication) {
     this.managementIdentityClient = managementIdentityClient;
-    this.groupServices = groupServices;
+    this.groupServices = groupServices.withAuthentication(authentication);
     this.authorizationServices = authorizationServices.withAuthentication(authentication);
   }
 
@@ -142,7 +141,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             final var normalizedRoleId = normalizeID(role.name());
             logger.debug("Assigning Role: {} to Group: {}", normalizedRoleId, targetGroupId);
             final var groupMember =
-                new GroupMemberDTO(targetGroupId, normalizedRoleId, EntityType.USER);
+                new GroupMemberDTO(targetGroupId, normalizedRoleId, EntityType.ROLE);
             groupServices.assignMember(groupMember).join();
             assignedRoleCount.incrementAndGet();
           } catch (final Exception e) {
@@ -162,15 +161,16 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   }
 
   private void createAuthorizationsForGroup(final String groupId, final String targetGroupId) {
-    List<Authorization> authorizations = new ArrayList<>();
+    final List<Authorization> authorizations;
     try {
-    authorizations = managementIdentityClient.fetchGroupAuthorizations(groupId);
+      authorizations = managementIdentityClient.fetchGroupAuthorizations(groupId);
     } catch (final Exception e) {
       if (!isNotImplementedError(e)) {
         throw new MigrationException(
             String.format("Failed to fetch authorizations for group with ID '%s'", groupId), e);
       }
       logger.warn("Authorization endpoint is not available, skipping.");
+      return;
     }
 
     authorizations.forEach(
