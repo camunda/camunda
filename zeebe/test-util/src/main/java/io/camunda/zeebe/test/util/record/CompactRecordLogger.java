@@ -70,6 +70,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMet
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -195,6 +196,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
     valueLoggers.put(ValueType.USER, this::summarizeUser);
     valueLoggers.put(ValueType.AUTHORIZATION, this::summarizeAuthorization);
+    valueLoggers.put(ValueType.RESOURCE, this::summarizeResource);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1168,6 +1170,28 @@ public class CompactRecordLogger {
         .append(shortenKey(value.getScopeKey()))
         .append("]")
         .toString();
+  }
+
+  private String summarizeResource(final Record<?> record) {
+    final var value = (Resource) record.getValue();
+    final var result = new StringBuilder();
+
+    result
+        .append(value.getResourceName())
+        .append(" -> ")
+        .append(formatId(value.getResourceId()))
+        .append(" v")
+        .append(value.getVersion());
+
+    if (StringUtils.isNotEmpty(value.getVersionTag())) {
+      result.append("(tag-").append(value.getVersionTag()).append(")");
+    }
+
+    if (value.isDuplicate()) {
+      result.append(" (dup)");
+    }
+
+    return result.append(formatTenant(value)).toString();
   }
 
   private String formatPinnedTime(final long time) {
