@@ -10,11 +10,17 @@ import React from 'react';
 import {Overlay} from './styled';
 
 type Props = {
-  children?: React.ReactNode | React.ReactNode[];
+  children?: React.ReactNode;
 };
 
-const IncidentsOverlay: React.FC<Props> = (props) => {
-  return <Overlay {...props}>{props.children}</Overlay>;
-};
+const IncidentsOverlay = React.forwardRef<HTMLDivElement, Props>(
+  (props, ref) => {
+    return (
+      <Overlay ref={ref} {...props}>
+        {props.children}
+      </Overlay>
+    );
+  },
+);
 
 export {IncidentsOverlay};
