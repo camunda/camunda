@@ -66,8 +66,12 @@ public class MigrationUtil {
     }
     final String groupName = group.name();
 
+    return normalizeID(groupName);
+  }
+
+  public static String normalizeID(final String roleName) {
     String normalizedId =
-        groupName.toLowerCase().replaceAll("[^a-z0-9_@.-]", "_"); // Replace disallowed characters
+        roleName.toLowerCase().replaceAll("[^a-z0-9_@.-]", "_"); // Replace disallowed characters
 
     if (normalizedId.length() > 256) {
       normalizedId = normalizedId.substring(0, 256);

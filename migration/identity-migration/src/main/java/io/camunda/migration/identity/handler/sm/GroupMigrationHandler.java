@@ -8,6 +8,7 @@
 package io.camunda.migration.identity.handler.sm;
 
 import static io.camunda.migration.identity.MigrationUtil.normalizeGroupID;
+import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
@@ -15,6 +16,8 @@ import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
+import io.camunda.service.GroupServices.GroupMemberDTO;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,7 +27,11 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   private final GroupServices groupServices;
 
   private final AtomicInteger createdGroupCount = new AtomicInteger();
+  private final AtomicInteger assignedUserCount = new AtomicInteger();
+  private final AtomicInteger assignedRoleCount = new AtomicInteger();
   private final AtomicInteger totalGroupCount = new AtomicInteger();
+  private final AtomicInteger totalUserAssignmentAttempts = new AtomicInteger();
+  private final AtomicInteger totalRoleAssignmentAttempts = new AtomicInteger();
 
   public GroupMigrationHandler(
       final ManagementIdentityClient managementIdentityClient, final GroupServices groupServices) {
@@ -56,14 +63,81 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             }
             logger.debug("Group with ID '{}' already exists, skipping creation.", group.id());
           }
+          assignUsersToGroup(group.id(), normalizedGroupId);
+          assignRolesToGroup(group.id(), normalizedGroupId);
         });
   }
 
   @Override
   protected void logSummary() {
     logger.info(
-        "Group migration completed: Created {} out of {} groups, the remaining existed already.",
+        "Group migration completed: Created {} out of {} groups, the remaining existed already. Assigned {} users out of {} attempted, the remaining were already assigned. Assigned {} roles out of {} attempted, the remaining were already assigned.",
         createdGroupCount.get(),
-        totalGroupCount.get());
+        totalGroupCount.get(),
+        assignedUserCount.get(),
+        totalUserAssignmentAttempts.get(),
+        assignedRoleCount.get(),
+        totalRoleAssignmentAttempts.get());
+  }
+
+  private void assignUsersToGroup(final String groupId, final String targetGroupId) {
+    final var users = managementIdentityClient.fetchGroupUsers(groupId);
+    totalUserAssignmentAttempts.addAndGet(users.size());
+
+    users.forEach(
+        user -> {
+          try {
+            final var username = user.getUsername();
+            logger.debug(
+                "Assigning User: {} with username: {} to Group: {}",
+                user.getId(),
+                username,
+                targetGroupId);
+            final var groupMember = new GroupMemberDTO(targetGroupId, username, EntityType.USER);
+            groupServices.assignMember(groupMember).join();
+            assignedUserCount.incrementAndGet();
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new MigrationException(
+                  String.format(
+                      "Failed to assign user with ID '%s' to group with ID '%s'",
+                      user.getUsername(), targetGroupId),
+                  e);
+            }
+            logger.debug(
+                "User with ID '{}' already assigned to group '{}', skipping assignment.",
+                user.getUsername(),
+                targetGroupId);
+          }
+        });
+  }
+
+  private void assignRolesToGroup(final String groupId, final String targetGroupId) {
+    final var roles = managementIdentityClient.fetchGroupRoles(groupId);
+    totalRoleAssignmentAttempts.addAndGet(roles.size());
+
+    roles.forEach(
+        role -> {
+          try {
+            final var normalizedRoleId = normalizeID(role.name());
+            logger.debug("Assigning Role: {} to Group: {}", normalizedRoleId, targetGroupId);
+            final var groupMember =
+                new GroupMemberDTO(targetGroupId, normalizedRoleId, EntityType.USER);
+            groupServices.assignMember(groupMember).join();
+            assignedRoleCount.incrementAndGet();
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new MigrationException(
+                  String.format(
+                      "Failed to assign role '%s' to group with ID '%s'",
+                      role.name(), targetGroupId),
+                  e);
+            }
+            logger.debug(
+                "Role '{}' already assigned to group '{}', skipping assignment.",
+                role.name(),
+                targetGroupId);
+          }
+        });
   }
 }

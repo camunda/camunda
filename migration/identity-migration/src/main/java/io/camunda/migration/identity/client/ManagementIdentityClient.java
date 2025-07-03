@@ -87,6 +87,14 @@ public class ManagementIdentityClient {
         .toList();
   }
 
+  public List<Role> fetchGroupRoles(final String groupId) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_GROUPS_ENDPOINT + "/{0}/roles", Role[].class, groupId)))
+        .toList();
+  }
+
   public List<Authorization> fetchAuthorizations() {
     return Arrays.stream(
             Objects.requireNonNull(
