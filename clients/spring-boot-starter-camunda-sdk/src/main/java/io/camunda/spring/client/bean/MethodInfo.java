@@ -115,7 +115,8 @@ public class MethodInfo implements BeanInfo {
     return parameterNames;
   }
 
-  public List<ParameterInfo> getParametersFilteredByAnnotation(final Class type) {
+  public List<ParameterInfo> getParametersFilteredByAnnotation(
+      final Class<? extends Annotation> type) {
     final Parameter[] parameters = method.getParameters();
     final String[] parameterNames = getParameterNames();
 

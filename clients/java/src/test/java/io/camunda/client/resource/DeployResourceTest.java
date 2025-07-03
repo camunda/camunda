@@ -15,6 +15,7 @@
  */
 package io.camunda.client.resource;
 
+import static io.camunda.client.TestUtil.getBytes;
 import static io.camunda.client.util.RecordingGatewayService.deployedDecision;
 import static io.camunda.client.util.RecordingGatewayService.deployedDecisionRequirements;
 import static io.camunda.client.util.RecordingGatewayService.deployedForm;
@@ -25,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.client.impl.response.DecisionImpl;
 import io.camunda.client.impl.response.DecisionRequirementsImpl;
 import io.camunda.client.impl.response.FormImpl;
@@ -36,7 +36,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -443,13 +442,5 @@ public final class DeployResourceTest extends ClientTest {
         .containsExactly(
             new FormImpl(formId1, 1, 1, filename1, DEFAULT_TENANT),
             new FormImpl(formId2, 1, 2, filename2, DEFAULT_TENANT));
-  }
-
-  private byte[] getBytes(final String filename) {
-    try {
-      return StreamUtil.readInputStream(DeployResourceTest.class.getResourceAsStream(filename));
-    } catch (final IOException e) {
-      throw new AssertionError("Failed to read bytes of file: " + filename, e);
-    }
   }
 }
