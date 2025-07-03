@@ -69,15 +69,6 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
   }
 
   @Override
-  public ActorFuture<Void> awaitRedistributionCompletion(
-      final int desiredPartitionCount,
-      final Set<Integer> redistributedPartitions,
-      final Duration timeout) {
-    return awaitRedistributionProgress(desiredPartitionCount, redistributedPartitions)
-        .andThen(ignored -> deleteSnapshot(), concurrencyControl);
-  }
-
-  @Override
   public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
     final ActorFuture<BrokerResponse<ScaleRecord>> bootstrapFuture =
         concurrencyControl.createFuture();
@@ -103,7 +94,7 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
 
   @Override
   public ActorFuture<RoutingState> getRoutingState() {
-    final var result = concurrencyControl.<Void>createFuture();
+    final var result = concurrencyControl.<RoutingState>createFuture();
     brokerClient.sendRequestWithRetry(
         new GetScaleUpProgress(),
         (key, response) -> {
@@ -118,9 +109,21 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
                               response.getDesiredPartitionCount())
                           .boxed()
                           .collect(Collectors.toSet()));
-          final var mesageCorrelation = new MessageCorrelation.HashMod()
+          final var messageCorrelation =
+              new MessageCorrelation.HashMod(response.getMessageCorrelationPartitions());
+          result.complete(new RoutingState(0L, requestHandling, messageCorrelation));
         },
-        error -> {});
+        result::completeExceptionally);
+    return result;
+  }
+
+  @Override
+  public ActorFuture<Void> awaitRedistributionCompletion(
+      final int desiredPartitionCount,
+      final Set<Integer> redistributedPartitions,
+      final Duration timeout) {
+    return awaitRedistributionProgress(desiredPartitionCount, redistributedPartitions)
+        .andThen(ignored -> deleteSnapshot(), concurrencyControl);
   }
 
   private ActorFuture<Void> awaitRedistributionProgress(

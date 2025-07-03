@@ -29,6 +29,11 @@ public interface ScaleRecordValue extends RecordValue {
 
   Collection<Integer> getRelocatedPartitions();
 
+  /**
+   * @return The number of partitions taking part in the message correlation
+   */
+  int getMessageCorrelationPartitions();
+
   long getBootstrappedAt();
 
   long getScalingPosition();

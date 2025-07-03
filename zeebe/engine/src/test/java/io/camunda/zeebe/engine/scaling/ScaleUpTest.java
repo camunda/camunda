@@ -200,7 +200,7 @@ public class ScaleUpTest {
   }
 
   @Test
-  public void shouldRespondWithTheCurrentNumberOfRedistributedPartitions() {
+  public void shouldRespondWithTheCurrentNumberOfRedistributedPartitionsAndMessageCorrelation() {
     // given
     final var scaleUpCommand =
         RecordToWrite.command()
@@ -221,6 +221,7 @@ public class ScaleUpTest {
     assertThat(record.getValue().getRedistributedPartitions()).containsExactly(1, 2);
     // SCALE_UP command is the first command
     assertThat(record.getValue().getBootstrappedAt()).isEqualTo(1);
+    assertThat(record.getValue().getMessageCorrelationPartitions()).isEqualTo(2);
 
     // when the partitions are marked as bootstrapped
     final var bootstrapPartition3 =
@@ -243,6 +244,7 @@ public class ScaleUpTest {
             .getLast();
     assertThat(finalResponse.getValue().getDesiredPartitionCount()).isEqualTo(4);
     assertThat(finalResponse.getValue().getRedistributedPartitions()).containsExactly(1, 2, 3, 4);
+    assertThat(record.getValue().getMessageCorrelationPartitions()).isEqualTo(2);
   }
 
   @Test
