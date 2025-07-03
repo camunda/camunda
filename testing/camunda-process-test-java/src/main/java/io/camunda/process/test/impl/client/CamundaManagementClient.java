@@ -85,6 +85,13 @@ public class CamundaManagementClient {
     }
   }
 
+  public void setTime(final Instant timeToSet) {
+    final Instant now =  Instant.now();
+    final Duration timeOffset =  Duration.between(now, timeToSet);
+
+    increaseTime(timeOffset);
+  }
+
   public void resetTime() {
     final HttpDelete request = new HttpDelete(camundaManagementApi + CLOCK_ENDPOINT);
 

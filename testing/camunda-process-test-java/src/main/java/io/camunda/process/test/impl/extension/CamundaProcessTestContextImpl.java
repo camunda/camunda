@@ -149,6 +149,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void setTime(final Instant timeToSet) {
+    LOGGER.debug("Setting the time to {}", timeToSet);
+    camundaManagementClient.setTime(timeToSet);
+  }
+
+  @Override
   public JobWorkerMock mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
     return new JobWorkerMockImpl(jobType, client);
