@@ -50,6 +50,8 @@ public class JobSearchTest {
     startProcessInstance(camundaClient, process.getBpmnProcessId());
     waitForProcessInstancesToStart(camundaClient, 1);
 
+    waitUntilNewJobHasBeenCreated(1);
+
     final var executionStartListenerJob =
         camundaClient
             .newJobSearchRequest()
