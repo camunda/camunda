@@ -348,8 +348,7 @@ public class JobSearchTest {
     final var result =
         camundaClient
             .newJobSearchRequest()
-            .filter(
-                f -> f.processDefinitionKey(o -> o.eq(taskABpmnJob.getProcessDefinitionKey())))
+            .filter(f -> f.processDefinitionKey(o -> o.eq(taskABpmnJob.getProcessDefinitionKey())))
             .send()
             .join();
 
