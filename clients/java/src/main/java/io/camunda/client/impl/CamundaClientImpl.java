@@ -1261,6 +1261,7 @@ public final class CamundaClientImpl implements CamundaClient {
   private JobClient newJobClient() {
     return new JobClientImpl(
         asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+}
   @Override
   public CamundaClientConfiguration getConfiguration() {
     return jobClient.getConfiguration();
