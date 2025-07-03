@@ -719,7 +719,7 @@ jobs:
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [release]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release succeeded
     if: ${{ always() && needs.release.result == 'success' && inputs.dryRun == false }}
@@ -760,7 +760,7 @@ jobs:
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [release]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, camunda-docker, snyk]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release failed
     if: ${{ always() && needs.release.result == 'failure' && inputs.dryRun == false }}
