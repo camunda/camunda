@@ -114,14 +114,17 @@ public final class MultiInstanceBodyProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifLeft(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
@@ -129,6 +132,12 @@ public final class MultiInstanceBodyProcessor
       terminate(element, context);
     }
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   @Override

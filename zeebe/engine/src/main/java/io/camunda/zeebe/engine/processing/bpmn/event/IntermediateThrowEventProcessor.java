@@ -92,6 +92,7 @@ public class IntermediateThrowEventProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {
+
     eventBehaviorOf(element).onTerminate(element, terminating);
 
     if (element.hasExecutionListeners()) {
@@ -104,6 +105,12 @@ public class IntermediateThrowEventProcessor
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableIntermediateThrowEvent element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private IntermediateThrowEventBehavior eventBehaviorOf(
@@ -173,7 +180,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifLeft(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, completed)));
     }
   }
 
@@ -220,7 +233,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifLeft(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, completed)));
     }
 
     @Override
@@ -260,8 +279,12 @@ public class IntermediateThrowEventProcessor
           .transitionToCompleted(element, completing)
           .thenDo(
               completed ->
-                  stateTransitionBehavior.activateElementInstanceInFlowScope(
-                      completed, element.getLink().getCatchEventElement()));
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifLeft(
+                          notSuspended ->
+                              stateTransitionBehavior.activateElementInstanceInFlowScope(
+                                  completed, element.getLink().getCatchEventElement())));
     }
   }
 
@@ -303,7 +326,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifLeft(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, completed)));
     }
 
     private Either<Failure, DirectBuffer> evaluateEscalationCode(
@@ -359,7 +388,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifLeft(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, completed)));
     }
   }
 
@@ -397,7 +432,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifLeft(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, completed)));
     }
   }
 }

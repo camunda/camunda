@@ -74,12 +74,19 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
     return eventSubscriptionBehavior
         .subscribeToEvents(flowScope, flowScopeInstanceContext)
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
-        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+        .thenDo(
+            completed ->
+                stateTransitionBehavior
+                    .suspendProcessInstanceIfNeeded(element, completed)
+                    .ifLeft(
+                        notSuspended ->
+                            stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed)));
   }
 
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableStartEvent element, final BpmnElementContext context) {
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -90,6 +97,12 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private BpmnElementContextImpl buildContextForFlowScopeInstance(

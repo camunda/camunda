@@ -101,7 +101,11 @@ public final class BusinessRuleTaskProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifLeft(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 
@@ -136,5 +140,11 @@ public final class BusinessRuleTaskProcessor
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 }

@@ -199,6 +199,12 @@ public final class ProcessInstanceMigrationPreconditions {
       than the source gateway with id '%s'. \
       Target gateway must have at least the same number of incoming sequence flows as the source gateway.""";
 
+  private static final String ERROR_SUSPENDED_PROCESS_INSTANCE =
+      """
+      Expected to migrate process instance '%s' \
+      but it is currently suspended. \
+      Suspended process instances cannot be migrated.""";
+
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
 
@@ -1188,6 +1194,20 @@ public final class ProcessInstanceMigrationPreconditions {
       // We can't migrate until the previous migration has completed
       throw new ProcessInstanceMigrationPreconditionFailedException(
           message, RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * This precondition checks whether the specified process instance is currently suspended.
+   *
+   * @param processInstance process instance to check
+   */
+  public static void requireProcessInstanceNotInSuspendedState(ElementInstance processInstance) {
+    if (processInstance.isSuspended()) {
+      final String reason =
+          String.format(ERROR_SUSPENDED_PROCESS_INSTANCE, processInstance.getKey());
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_STATE);
     }
   }
 

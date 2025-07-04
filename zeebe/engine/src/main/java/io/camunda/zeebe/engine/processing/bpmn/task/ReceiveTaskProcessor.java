@@ -79,7 +79,11 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifLeft(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 
@@ -116,5 +120,11 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
             });
 
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 }

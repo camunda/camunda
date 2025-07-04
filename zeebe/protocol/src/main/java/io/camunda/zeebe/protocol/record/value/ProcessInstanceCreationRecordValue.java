@@ -42,9 +42,21 @@ public interface ProcessInstanceCreationRecordValue
   /** Returns a list of start instructions (if available), or an empty list. */
   List<ProcessInstanceCreationStartInstructionValue> getStartInstructions();
 
+  /** Returns a list of runtime instructions (if available), or an empty list. */
+  List<ProcessInstanceCreationRuntimeInstructionValue> getRuntimeInstructions();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableProcessInstanceCreationStartInstructionValue.Builder.class)
   interface ProcessInstanceCreationStartInstructionValue {
     String getElementId();
+  }
+
+  @Value.Immutable
+  @ImmutableProtocol(
+      builder = ImmutableProcessInstanceCreationRuntimeInstructionValue.Builder.class)
+  interface ProcessInstanceCreationRuntimeInstructionValue {
+    String getType();
+
+    String getAfterElementId();
   }
 }

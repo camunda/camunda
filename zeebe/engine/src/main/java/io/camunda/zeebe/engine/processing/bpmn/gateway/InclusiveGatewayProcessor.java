@@ -61,12 +61,18 @@ public final class InclusiveGatewayProcessor
               return stateTransitionBehavior
                   .transitionToCompleted(element, completing)
                   .thenDo(
-                      completed -> {
-                        if (optFlows != null) {
-                          optFlows.forEach(
-                              flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow));
-                        }
-                      });
+                      completed ->
+                          stateTransitionBehavior
+                              .suspendProcessInstanceIfNeeded(element, completed)
+                              .ifLeft(
+                                  notSuspended -> {
+                                    if (optFlows != null) {
+                                      optFlows.forEach(
+                                          flow ->
+                                              stateTransitionBehavior.takeSequenceFlow(
+                                                  completed, flow));
+                                    }
+                                  }));
             });
   }
 
@@ -82,6 +88,7 @@ public final class InclusiveGatewayProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -91,6 +98,12 @@ public final class InclusiveGatewayProcessor
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableInclusiveGateway element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private Either<Failure, List<ExecutableSequenceFlow>> findSequenceFlowsToTake(

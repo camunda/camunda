@@ -29,6 +29,7 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
   ELEMENT_COMPLETED((short) 5),
   ELEMENT_TERMINATING((short) 6),
   ELEMENT_TERMINATED((short) 7),
+  ELEMENT_SUSPENDED((short) 15),
 
   ACTIVATE_ELEMENT((short) 8),
   COMPLETE_ELEMENT((short) 9),
@@ -116,6 +117,8 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
         return ANCESTOR_MIGRATED;
       case 14:
         return CONTINUE_TERMINATING_ELEMENT;
+      case 15:
+        return ELEMENT_SUSPENDED;
       default:
         return Intent.UNKNOWN;
     }
@@ -138,6 +141,7 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case ELEMENT_TERMINATED:
       case ELEMENT_MIGRATED:
       case ANCESTOR_MIGRATED:
+      case ELEMENT_SUSPENDED:
         return true;
       default:
         return false;

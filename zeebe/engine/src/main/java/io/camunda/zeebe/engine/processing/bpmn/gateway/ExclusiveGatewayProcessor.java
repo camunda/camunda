@@ -60,10 +60,15 @@ public final class ExclusiveGatewayProcessor
               return stateTransitionBehavior
                   .transitionToCompleted(element, completing)
                   .thenDo(
-                      completed -> {
-                        optFlow.ifPresent(
-                            flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow));
-                      });
+                      completed ->
+                          stateTransitionBehavior
+                              .suspendProcessInstanceIfNeeded(element, completed)
+                              .ifLeft(
+                                  notSuspended ->
+                                      optFlow.ifPresent(
+                                          flow ->
+                                              stateTransitionBehavior.takeSequenceFlow(
+                                                  completed, flow))));
             });
   }
 
@@ -79,6 +84,7 @@ public final class ExclusiveGatewayProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -88,6 +94,12 @@ public final class ExclusiveGatewayProcessor
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private Either<Failure, Optional<ExecutableSequenceFlow>> findSequenceFlowToTake(

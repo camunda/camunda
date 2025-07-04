@@ -68,12 +68,17 @@ public final class EventSubProcessProcessor
   @Override
   public Either<Failure, ?> finalizeCompletion(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    return stateTransitionBehavior.transitionToCompleted(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
+        .thenDo(
+            completed ->
+                stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, completed));
   }
 
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(terminating);
     }
@@ -85,6 +90,12 @@ public final class EventSubProcessProcessor
       onChildTerminated(element, terminating, null);
     }
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   @Override

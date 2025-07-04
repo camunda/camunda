@@ -75,16 +75,21 @@ public final class EventBasedGatewayProcessor
         .transitionToCompleted(element, context)
         .thenDo(
             completed ->
-                eventSubscriptionBehavior.activateTriggeredEvent(
-                    context.getElementInstanceKey(),
-                    completed.getFlowScopeKey(),
-                    eventTrigger,
-                    completed));
+                stateTransitionBehavior
+                    .suspendProcessInstanceIfNeeded(element, completed)
+                    .ifLeft(
+                        notSuspended ->
+                            eventSubscriptionBehavior.activateTriggeredEvent(
+                                context.getElementInstanceKey(),
+                                completed.getFlowScopeKey(),
+                                eventTrigger,
+                                completed)));
   }
 
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -96,5 +101,11 @@ public final class EventBasedGatewayProcessor
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 }

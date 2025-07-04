@@ -91,13 +91,18 @@ public final class SubProcessProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifLeft(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(terminating);
     }
@@ -111,6 +116,12 @@ public final class SubProcessProcessor
       onChildTerminated(element, terminating, null);
     }
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   @Override

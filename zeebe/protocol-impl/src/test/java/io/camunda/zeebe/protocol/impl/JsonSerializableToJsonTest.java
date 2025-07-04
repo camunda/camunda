@@ -1551,7 +1551,8 @@ final class JsonSerializableToJsonTest {
               "elementId": "element"
             }
           ],
-          "tenantId": "test-tenant"
+          "tenantId": "test-tenant",
+          "runtimeInstructions": []
         }
         """
       },
@@ -1570,7 +1571,8 @@ final class JsonSerializableToJsonTest {
           "version": -1,
           "processInstanceKey": -1,
           "startInstructions": [],
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "runtimeInstructions": []
         }
         """
       },

@@ -60,6 +60,7 @@ public final class ProcessInstanceStateTransitionGuard {
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT ->
           hasActiveFlowScopeInstance(context)
+              .flatMap(ok -> processInstanceNotSuspended(context, element))
               .flatMap(ok -> canActivateParallelGateway(context, element))
               .flatMap(ok -> canActivateInclusiveGateway(context, element));
       case COMPLETE_ELEMENT ->
@@ -69,7 +70,8 @@ public final class ProcessInstanceStateTransitionGuard {
                   context,
                   ProcessInstanceIntent.ELEMENT_ACTIVATED,
                   ProcessInstanceIntent.ELEMENT_COMPLETING)
-              .flatMap(ok -> hasActiveFlowScopeInstance(context));
+              .flatMap(ok -> hasActiveFlowScopeInstance(context))
+              .flatMap(ok -> processInstanceNotSuspended(context, element));
       case TERMINATE_ELEMENT ->
           hasElementInstanceWithState(
               context,
@@ -205,6 +207,23 @@ public final class ProcessInstanceStateTransitionGuard {
       // a root process has no flow scope instance
       return Either.right(null);
     }
+  }
+
+  private Either<String, Object> processInstanceNotSuspended(
+      final BpmnElementContext context, final ExecutableFlowElement element) {
+    if (context.getBpmnElementType() == BpmnElementType.PROCESS
+        && context.getIntent() == ProcessInstanceIntent.ACTIVATE_ELEMENT) {
+      // when activating a process instance, it cannot yet be suspended
+      return Either.right(null);
+    }
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (processInstance == null) {
+      return Either.left("Process instance '" + context.getProcessInstanceKey() + "' not found");
+    }
+    if (processInstance.isSuspended()) {
+      return Either.left("Process instance '" + context.getProcessInstanceKey() + "' is suspended");
+    }
+    return Either.right(processInstance);
   }
 
   private Either<String, ?> canActivateParallelGateway(

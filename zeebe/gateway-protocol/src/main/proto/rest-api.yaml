@@ -6382,17 +6382,19 @@ components:
           type: string
           description: The parent element instance key.
     ProcessInstanceStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      description: Process instance states
       enum:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+        - SUSPENDED
     ElementInstanceStateEnum:
-      description: Element states, one of ACTIVE, COMPLETED, TERMINATED.
+      description: Element states
       enum:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+        - SUSPENDED
     ProcessInstanceCallHierarchyEntry:
       type: object
       required:
@@ -9815,6 +9817,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceCreationStartInstruction"
+        runtimeInstructions:
+          description: |
+            Runtime instructions (alpha). List of instructions that affect the runtime behavior of
+            the process instance. Refer to specific instruction types for more details.
+
+            This parameter is an alpha feature and may be subject to change
+            in future releases.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
         awaitCompletion:
           description: |
             Wait for the process instance to complete. If the process instance completion does
@@ -9851,6 +9863,53 @@ components:
 
             For now, however, the start instruction is implicitly a "startBeforeElement" instruction
           type: string
+    RuntimeInstructionType:
+      type: string
+      description: |
+        The type of the runtime instruction. For now, only SUSPEND_PROCESS_INSTANCE is supported.
+
+        Caution: process instance suspension is an alpha feature and may be subject to change
+        in future releases.
+
+        Note the following limitations of suspended process instances:
+          - Suspended process instances currently cannot be resumed. The only possible state
+            transition is to cancel the suspended instance.
+          - Suspending a process instance currently means that all jobs, user tasks, incidents, and
+            event subscriptions are removed from the runtime state. This means that process instances
+            suspended with the current implementation may not be fully recoverable in the future,
+            when the resume functionality is implemented.
+          - Suspended process instances currently cannot be modified or migrated.
+
+        It is therefore not recommended to use process instance suspension outside of testing or
+        debugging context.
+      enum:
+        - SUSPEND_PROCESS_INSTANCE
+    ProcessInstanceCreationRuntimeInstruction:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/RuntimeInstructionType"
+      discriminator:
+        propertyName: type
+        mapping:
+          SUSPEND_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationSuspendInstruction"
+      description: |
+        Base type for all runtime instructions.
+    ProcessInstanceCreationSuspendInstruction:
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
+        - type: object
+          required:
+            - afterElementId
+          properties:
+            afterElementId:
+              description: |
+                The ID of the element that, once completed, will cause the process to move into suspended state.
+              type: string
+          description: |
+            Suspends the process instance after a specific BPMN element is completed.
     CreateProcessInstanceResult:
       type: object
       properties:

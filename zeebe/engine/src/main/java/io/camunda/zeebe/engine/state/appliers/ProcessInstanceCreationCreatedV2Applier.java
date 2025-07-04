@@ -58,6 +58,10 @@ final class ProcessInstanceCreationCreatedV2Applier
                 incrementNumberOfTakenSequenceFlows(element, flowScope);
               });
     }
+    if (!value.getRuntimeInstructions().isEmpty()) {
+      elementInstanceState.addRuntimeInstructions(
+          value.getProcessInstanceKey(), value.getRuntimeInstructions());
+    }
 
     incrementUsageMetric(value);
   }

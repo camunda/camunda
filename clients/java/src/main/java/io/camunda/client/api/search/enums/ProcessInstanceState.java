@@ -19,5 +19,6 @@ public enum ProcessInstanceState {
   ACTIVE,
   COMPLETED,
   TERMINATED,
+  SUSPENDED,
   UNKNOWN_ENUM_VALUE;
 }

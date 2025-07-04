@@ -100,7 +100,11 @@ public class AdHocSubProcessProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifLeft(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 
@@ -121,6 +125,12 @@ public class AdHocSubProcessProcessor
       terminate(element, terminating);
     }
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableAdHocSubProcess element, final BpmnElementContext terminated) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminated);
   }
 
   private void terminate(

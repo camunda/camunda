@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
@@ -33,6 +34,8 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -47,26 +50,38 @@ public final class BpmnStateTransitionBehavior {
 
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnJobBehavior jobBehavior;
   private final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
       processorLookUp;
 
+  private final BpmnUserTaskBehavior userTaskBehavior;
   private final ProcessEngineMetrics metrics;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
+  private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
 
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
       final BpmnStateBehavior stateBehavior,
+      final BpmnJobBehavior bpmnJobBehavior,
+      final BpmnEventSubscriptionBehavior eventSubscriptionBehavior,
+      final BpmnIncidentBehavior incidentBehavior,
+      final BpmnUserTaskBehavior userTaskBehavior,
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
       final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
+    this.jobBehavior = bpmnJobBehavior;
+    this.userTaskBehavior = userTaskBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
     stateWriter = writers.state();
     commandWriter = writers.command();
+    this.eventSubscriptionBehavior = eventSubscriptionBehavior;
+    this.incidentBehavior = incidentBehavior;
   }
 
   /**
@@ -154,6 +169,35 @@ public final class BpmnStateTransitionBehavior {
     }
 
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
+  }
+
+  public void transitionToSuspended(final BpmnElementContext context) {
+    resetTreePathProperties(context);
+
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+
+    stateWriter.appendFollowUpEvent(
+        context.getProcessInstanceKey(),
+        ProcessInstanceIntent.ELEMENT_SUSPENDED,
+        processInstance.getValue());
+
+    final var dequeue = new ArrayDeque<BpmnElementContext>();
+    final var processInstanceContext = new BpmnElementContextImpl();
+    processInstanceContext.init(
+        processInstance.getKey(), processInstance.getValue(), processInstance.getState());
+    dequeue.add(processInstanceContext);
+
+    // recurse through the process instance tree without causing stack overflow
+    while (!dequeue.isEmpty()) {
+      final var elementInstanceContext = dequeue.pop();
+      jobBehavior.cancelJob(elementInstanceContext);
+      eventSubscriptionBehavior.unsubscribeFromEvents(elementInstanceContext);
+      incidentBehavior.resolveIncidents(elementInstanceContext);
+      userTaskBehavior.cancelUserTask(elementInstanceContext);
+
+      final var children = stateBehavior.getChildInstanceContexts(elementInstanceContext);
+      dequeue.addAll(children);
+    }
   }
 
   /**
@@ -436,8 +480,33 @@ public final class BpmnStateTransitionBehavior {
 
   public <T extends ExecutableFlowNode> void takeOutgoingSequenceFlows(
       final T element, final BpmnElementContext context) {
-
     element.getOutgoing().forEach(sequenceFlow -> takeSequenceFlow(context, sequenceFlow));
+  }
+
+  /**
+   * Suspends the process instance if the condition for suspension is met.
+   *
+   * @param element the flow node element that is being processed
+   * @param context the context of the process instance
+   * @return an Either with the context (left) if the process instance is not suspended by this
+   *     call, or Void (right) if it is. If already suspended, returns the context (left) to allow
+   *     the processors to finish terminating elements.
+   */
+  public <T extends ExecutableFlowNode>
+      Either<BpmnElementContext, Void> suspendProcessInstanceIfNeeded(
+          final T element, BpmnElementContext context) {
+
+    if (!stateBehavior.shouldSuspendProcessInstance(
+        context.getProcessInstanceKey(), BufferUtil.bufferAsString(element.getId()))) {
+      return Either.left(context);
+    }
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (processInstance.isSuspended()) {
+      // if the process instance is already suspended, we don't need to suspend it again
+      return Either.left(context);
+    }
+    transitionToSuspended(context);
+    return Either.right(null);
   }
 
   public Either<Failure, ?> beforeExecutionPathCompleted(
