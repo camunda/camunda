@@ -13,5 +13,7 @@ public interface MutableUsageMetricState extends UsageMetricState {
 
   void recordRPIMetric(final String tenantId);
 
+  void recordEDIMetric(final String tenantId);
+
   void resetActiveBucket(final long fromTime);
 }

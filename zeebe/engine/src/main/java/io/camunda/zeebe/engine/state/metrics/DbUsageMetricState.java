@@ -61,6 +61,11 @@ public class DbUsageMetricState implements MutableUsageMetricState {
   }
 
   @Override
+  public void recordEDIMetric(final String tenantId) {
+    updateActiveBucket(getActiveBucket().recordEDI(tenantId));
+  }
+
+  @Override
   public void resetActiveBucket(final long resetTime) {
     setActiveBucketKeys();
     metricsBucketColumnFamily.deleteIfExists(metricsBucketKey);

@@ -21,10 +21,14 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
   private final LongProperty fromTimeProp = new LongProperty("fromTime");
   private final LongProperty toTimeProp = new LongProperty("toTime");
   private final DocumentProperty tenantRPIMapProp = new DocumentProperty("tenantRPI");
+  private final DocumentProperty tenantEDIMapProp = new DocumentProperty("tenantEDI");
 
   public PersistedUsageMetrics() {
-    super(3);
-    declareProperty(fromTimeProp).declareProperty(toTimeProp).declareProperty(tenantRPIMapProp);
+    super(4);
+    declareProperty(fromTimeProp)
+        .declareProperty(toTimeProp)
+        .declareProperty(tenantRPIMapProp)
+        .declareProperty(tenantEDIMapProp);
   }
 
   public long getFromTime() {
@@ -59,10 +63,30 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public DirectBuffer getTenantEDIMapValue() {
+    return tenantRPIMapProp.getValue();
+  }
+
+  public Map<String, Long> getTenantEDIMap() {
+    return MsgPackConverter.convertToLongMap(tenantEDIMapProp.getValue());
+  }
+
+  public void setTenantEDIMap(final Map<String, Long> tenantEDIMap) {
+    tenantEDIMapProp.setValue(
+        BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantEDIMap)));
+  }
+
   public PersistedUsageMetrics recordRPI(final String tenantId) {
     final var tenantRPIMap = getTenantRPIMap();
     tenantRPIMap.merge(tenantId, 1L, Long::sum);
     setTenantRPIMap(tenantRPIMap);
+    return this;
+  }
+
+  public PersistedUsageMetrics recordEDI(final String tenantId) {
+    final var tenantEDIMap = getTenantEDIMap();
+    tenantEDIMap.merge(tenantId, 1L, Long::sum);
+    setTenantEDIMap(tenantEDIMap);
     return this;
   }
 }
