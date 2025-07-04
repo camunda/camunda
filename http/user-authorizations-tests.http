@@ -311,7 +311,7 @@ Accept: application/json
 # @name process-instance-search-unauthorized
 < {%
   import {wait} from "js/wait"
-  wait(1)
+  wait(3)
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/search
 Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
@@ -394,11 +394,11 @@ Accept: application/json
 
 > {%
   client.test("User creation should be Unauthorized", function () {
-    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.status === 403, "Response status is not 403");
   });
 
-  client.test("Unauthorized error message should be displayed", function () {
-    client.assert(response.body.error.includes("Unauthorized"), "Incorrect error message");
+  client.test("FORBIDDEN error message should be displayed", function () {
+    client.assert(response.body.detail.includes("FORBIDDEN"), "Incorrect error message");
   });
 %}
 
@@ -417,7 +417,11 @@ Accept: application/json
 
 > {%
   client.test("User update should be unauthorized", function () {
-    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("FORBIDDEN error message should be displayed", function () {
+    client.assert(response.body.detail.includes("FORBIDDEN"), "Incorrect error message");
   });
 %}
 
