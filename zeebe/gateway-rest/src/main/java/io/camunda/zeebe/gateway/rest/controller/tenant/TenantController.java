@@ -23,8 +23,8 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchQueryRequest;
@@ -185,9 +185,9 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/{tenantId}/mappings/search")
-  public ResponseEntity<MappingSearchQueryResult> searchMappingsInTenant(
+  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final MappingSearchQueryRequest query) {
+      @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -323,7 +323,7 @@ public class TenantController {
     }
   }
 
-  private ResponseEntity<MappingSearchQueryResult> searchMappingsInTenant(
+  private ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInTenant(
       final String tenantId, final MappingQuery mappingQuery) {
     try {
       final var composedMappingQuery = buildMappingQuery(tenantId, mappingQuery);

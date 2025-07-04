@@ -19,18 +19,18 @@ import io.camunda.client.api.search.filter.MappingFilter;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 
 public class MappingFilterImpl
-    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.MappingFilter>
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.MappingRuleFilter>
     implements MappingFilter {
 
-  private final io.camunda.client.protocol.rest.MappingFilter filter;
+  private final io.camunda.client.protocol.rest.MappingRuleFilter filter;
 
   public MappingFilterImpl() {
-    filter = new io.camunda.client.protocol.rest.MappingFilter();
+    filter = new io.camunda.client.protocol.rest.MappingRuleFilter();
   }
 
   @Override
   public MappingFilter mappingId(final String mappingId) {
-    filter.setMappingId(mappingId);
+    filter.setMappingRuleId(mappingId);
     return this;
   }
 
@@ -53,7 +53,7 @@ public class MappingFilterImpl
   }
 
   @Override
-  protected io.camunda.client.protocol.rest.MappingFilter getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.MappingRuleFilter getSearchRequestProperty() {
     return filter;
   }
 }

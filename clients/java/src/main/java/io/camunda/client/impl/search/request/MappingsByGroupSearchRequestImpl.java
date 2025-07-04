@@ -32,18 +32,18 @@ import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.client.protocol.rest.MappingSearchQueryResult;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class MappingsByGroupSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<MappingSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<MappingRuleSearchQueryRequest>
     implements MappingsByGroupSearchRequest {
 
-  private final MappingSearchQueryRequest request;
+  private final MappingRuleSearchQueryRequest request;
   private final String groupId;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -55,7 +55,7 @@ public class MappingsByGroupSearchRequestImpl
     this.jsonMapper = jsonMapper;
     this.groupId = groupId;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new MappingSearchQueryRequest();
+    request = new MappingRuleSearchQueryRequest();
   }
 
   @Override
@@ -72,7 +72,7 @@ public class MappingsByGroupSearchRequestImpl
         String.format("/groups/%s/mapping-rules/search", groupId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        MappingSearchQueryResult.class,
+        MappingRuleSearchQueryResult.class,
         SearchResponseMapper::toMappingsResponse,
         result);
     return result;
@@ -114,7 +114,7 @@ public class MappingsByGroupSearchRequestImpl
   }
 
   @Override
-  protected MappingSearchQueryRequest getSearchRequestProperty() {
+  protected MappingRuleSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 }

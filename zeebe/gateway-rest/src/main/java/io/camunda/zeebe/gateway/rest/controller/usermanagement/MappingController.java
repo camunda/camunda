@@ -13,11 +13,11 @@ import io.camunda.search.query.MappingQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
-import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -72,8 +72,8 @@ public class MappingController {
                 .deleteMapping(mappingId));
   }
 
-  @CamundaGetMapping(path = "/{mappingId}")
-  public ResponseEntity<MappingResult> getMapping(@PathVariable final String mappingId) {
+  @CamundaGetMapping(path = "/{mappingRuleId}")
+  public ResponseEntity<MappingRuleResult> getMappingRule(@PathVariable final String mappingId) {
     try {
       return ResponseEntity.ok()
           .body(
@@ -87,8 +87,8 @@ public class MappingController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<MappingSearchQueryResult> searchMappings(
-      @RequestBody(required = false) final MappingSearchQueryRequest query) {
+  public ResponseEntity<MappingRuleSearchQueryResult> searchMappings(
+      @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
@@ -111,7 +111,7 @@ public class MappingController {
         ResponseMapper::toMappingUpdateResponse);
   }
 
-  private ResponseEntity<MappingSearchQueryResult> search(final MappingQuery query) {
+  private ResponseEntity<MappingRuleSearchQueryResult> search(final MappingQuery query) {
     try {
       final var result =
           mappingServices
