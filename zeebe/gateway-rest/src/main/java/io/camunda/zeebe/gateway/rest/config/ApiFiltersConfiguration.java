@@ -12,6 +12,7 @@ import static io.camunda.security.configuration.OidcAuthenticationConfiguration.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.gateway.rest.controller.EndpointAccessErrorFilter;
+import io.camunda.zeebe.util.VisibleForTesting;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -20,10 +21,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ApiFiltersConfiguration {
 
-  private static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
+  @VisibleForTesting
+  public static final String GROUPS_API_DISABLED_ERROR_MESSAGE =
       "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to to manage group mode removing the '%s' property."
           .formatted(GROUPS_CLAIM_PROPERTY);
-  private static final String TENANTS_API_DISABLED_ERROR_MESSAGE =
+
+  public static final String TENANTS_API_DISABLED_ERROR_MESSAGE =
       "Tenants API is disabled. Enable the API by setting '%s' to true."
           .formatted(API_ENABLED_PROPERTY);
 
