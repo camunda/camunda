@@ -129,21 +129,25 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-frontend
+        name: Build Operate Frontend
         id: build-operate-fe
         with:
           directory: ./operate/client
       - uses: ./.github/actions/build-frontend
+        name: Build Tasklist Frontend
         id: build-tasklist-fe
         with:
           directory: ./tasklist/client
       - uses: ./.github/actions/build-frontend
+        name: Build Identity Frontend
         id: build-identity-fe
         with:
           directory: ./identity/client
       - uses: ./.github/actions/build-zeebe
+        name: Build Zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -PskipFrontendBuild -Dmaven.test.skip=true
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize -Dmaven.test.skip=true
       - uses: google-github-actions/auth@v2
         id: auth
         with:
@@ -157,6 +161,7 @@ jobs:
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
       - uses: ./.github/actions/build-platform-docker
+        name: Build Camunda Docker Image
         with:
           repository: 'gcr.io/zeebe-io/zeebe'
           revision: ${{ inputs.ref }}
@@ -197,11 +202,11 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - run: ./mvnw -B -D skipTests -D skipChecks -pl zeebe/benchmarks/project -am install
+      - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl zeebe/benchmarks/project -am install
       - name: Build Starter Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -P\!include-optimize -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Build Worker Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
 
   deploy-benchmark-cluster:
     name: Deploy
