@@ -15,6 +15,7 @@ import {OperationItem} from 'modules/components/OperationItem';
 import {Link} from 'modules/components/Link';
 import {useRootInstanceId} from 'modules/queries/callHierarchy/useRootInstanceId';
 import {notificationsStore} from 'modules/stores/notifications';
+import {useProcessInstanceOperationsContext} from 'App/ProcessInstance/ProcessInstanceHeader/v2/processInstanceOperationsContext';
 
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
@@ -28,15 +29,25 @@ const Cancel: React.FC<Props> = ({processInstanceKey}) => {
     enabled: isCancellationModalVisible,
   });
 
+  const processInstanceOperationsContext =
+    useProcessInstanceOperationsContext();
+  const {isPending, onMutate, onError} =
+    processInstanceOperationsContext?.cancellation ?? {};
+
   const cancelProcessInstanceMutation = useCancelProcessInstance(
     processInstanceKey,
-    (error) =>
-      notificationsStore.displayNotification({
-        kind: 'error',
-        title: 'Failed to cancel process instance',
-        subtitle: error.message,
-        isDismissable: true,
-      }),
+    {
+      onError: (error) => {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Failed to cancel process instance',
+          subtitle: error.message,
+          isDismissable: true,
+        });
+        onError?.(error);
+      },
+      onMutate,
+    },
   );
 
   return (
@@ -45,7 +56,7 @@ const Cancel: React.FC<Props> = ({processInstanceKey}) => {
         type="CANCEL_PROCESS_INSTANCE"
         onClick={() => setIsCancellationModalVisible(true)}
         title={`Cancel Instance ${processInstanceKey}`}
-        disabled={cancelProcessInstanceMutation.isPending}
+        disabled={isPending}
         size="sm"
       />
 

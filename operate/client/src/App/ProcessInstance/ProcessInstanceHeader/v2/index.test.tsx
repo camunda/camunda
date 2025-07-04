@@ -31,6 +31,7 @@ import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations'
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
+import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -47,6 +48,8 @@ describe('InstanceHeader', () => {
   });
 
   it('should render process instance data', async () => {
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
@@ -91,7 +94,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should render "View All" link for call activity process', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -112,7 +115,7 @@ describe('InstanceHeader', () => {
     jest.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -140,7 +143,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should render parent Process Instance Key', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -168,7 +171,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner when instance has active operations', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -184,7 +187,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should not show spinner when instance has no active operations', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess({
       ...mockInstanceDeprecated,
       operations: [],
@@ -387,6 +390,50 @@ describe('InstanceHeader', () => {
 
     expect(
       screen.queryByRole('button', {name: /Modify Instance/}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show spinner on process instance cancellation', async () => {
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess({
+      ...mockInstanceDeprecated,
+      operations: [],
+    });
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockCancelProcessInstance().withSuccess({});
+
+    const {user, rerender} = render(
+      <ProcessInstanceHeader processInstance={mockInstance} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton'),
+    );
+
+    await user.click(screen.getByRole('button', {name: /cancel instance/i}));
+    await user.click(screen.getByRole('button', {name: /apply/i}));
+
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /cancel instance/i}),
+    ).toBeDisabled();
+
+    rerender(
+      <ProcessInstanceHeader
+        processInstance={{...mockInstance, state: 'TERMINATED'}}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole('button', {name: /cancel instance/i}),
     ).not.toBeInTheDocument();
   });
 });

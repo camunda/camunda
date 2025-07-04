@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation} from '@tanstack/react-query';
+import {useMutation, UseMutationOptions} from '@tanstack/react-query';
 import {cancelProcessInstance} from 'modules/api/v2/processInstances/cancelProcessInstance';
 
 function useCancelProcessInstance(
   processInstanceKey: string,
-  onError?: (error: Error) => void,
+  options?: Partial<UseMutationOptions>,
 ) {
   return useMutation({
     mutationFn: async () => {
@@ -21,7 +21,7 @@ function useCancelProcessInstance(
       }
       return response;
     },
-    onError,
+    ...options,
   });
 }
 
