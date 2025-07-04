@@ -7,7 +7,7 @@
  */
 
 import {mockServer} from 'modules/mock-server/node';
-import {DefaultBodyType, RestRequest, rest} from 'msw';
+import {type DefaultBodyType, RestRequest, rest} from 'msw';
 
 const checkPollingHeader = ({
   req,

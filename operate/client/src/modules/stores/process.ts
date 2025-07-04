@@ -7,7 +7,8 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import {fetchProcess, ProcessDto} from 'modules/api/processes/fetchProcess';
+import {fetchProcess} from 'modules/api/processes/fetchProcess';
+import type {ProcessDto} from 'modules/api/processes/fetchProcess';
 import {logger} from 'modules/logger';
 
 type State = {

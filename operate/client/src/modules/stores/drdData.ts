@@ -9,7 +9,7 @@
 import {
   action,
   computed,
-  IReactionDisposer,
+  type IReactionDisposer,
   makeObservable,
   observable,
   override,
@@ -17,7 +17,7 @@ import {
 } from 'mobx';
 import {
   fetchDrdData,
-  DrdDataDto,
+  type DrdDataDto,
 } from 'modules/api/decisionInstances/fetchDrdData';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
@@ -92,7 +92,7 @@ class Drd extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
   };
 

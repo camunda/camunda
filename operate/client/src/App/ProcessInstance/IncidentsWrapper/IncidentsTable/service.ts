@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Incident} from 'modules/stores/incidents';
+import {type Incident} from 'modules/stores/incidents';
 import {compareAsc} from 'date-fns';
 
 const SECONDARY_SORT_KEY = 'id';

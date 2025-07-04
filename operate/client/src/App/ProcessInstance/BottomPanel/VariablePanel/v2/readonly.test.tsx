@@ -29,7 +29,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {
   type GetProcessInstanceStatisticsResponseBody,
-  ProcessInstance,
+  type ProcessInstance,
 } from '@vzeta/camunda-api-zod-schemas';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';

@@ -12,9 +12,9 @@ import {
   action,
   when,
   autorun,
-  IReactionDisposer,
   override,
 } from 'mobx';
+import type {IReactionDisposer} from 'mobx';
 import {fetchSequenceFlows} from 'modules/api/processInstances/sequenceFlows';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessedSequenceFlows} from './mappers';

@@ -7,7 +7,7 @@
  */
 
 import {mockPostRequest} from '../mockRequest';
-import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
+import type {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
 
 const mockFetchGroupedProcesses = (contextPath = '') =>
   mockPostRequest<ProcessDto[]>(`${contextPath}/api/processes/grouped`);

@@ -13,7 +13,7 @@ import {waitFor} from 'modules/testing-library';
 import {modificationsStore} from './modifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {init} from 'modules/utils/flowNodeMetadata';
 

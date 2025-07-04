@@ -37,7 +37,7 @@ const createMockedModules = (container: any): {[module: string]: any} => ({
   graphicsFactory: {update: jest.fn(() => {})},
   eventBus: {on: jest.fn()},
   overlays: {
-    add: jest.fn((elementId, type, {html: children}) => {
+    add: jest.fn((_elementId: string, _type: string, {html: children}: any) => {
       container.appendChild(children);
     }),
     remove: jest.fn(),

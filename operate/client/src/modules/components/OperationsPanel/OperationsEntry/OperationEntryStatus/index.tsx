@@ -8,7 +8,7 @@
 
 import {CheckmarkFilled, StatusContainer, Text, WarningFilled} from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {OperationLabelType} from '../';
+import {type OperationLabelType} from '../';
 
 interface Props {
   isTypeDeleteProcessOrDecision: boolean;

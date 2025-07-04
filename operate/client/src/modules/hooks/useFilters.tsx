@@ -11,7 +11,7 @@ import {
   updateProcessFiltersSearchString,
   getDecisionInstanceFilters,
 } from 'modules/utils/filter';
-import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 
 import {variableFilterStore} from 'modules/stores/variableFilter';

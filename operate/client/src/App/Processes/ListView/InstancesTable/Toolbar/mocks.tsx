@@ -9,13 +9,13 @@
 import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {MemoryRouter} from 'react-router-dom';
-import {Screen, waitFor} from '@testing-library/react';
+import {type Screen, waitFor} from '@testing-library/react';
 import {Paths} from 'modules/Routes';
-import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
+import {type ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {UserEvent} from '@testing-library/user-event';
+import {type UserEvent} from '@testing-library/user-event';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';

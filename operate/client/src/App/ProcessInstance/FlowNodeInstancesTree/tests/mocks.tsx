@@ -7,8 +7,8 @@
  */
 
 import {
-  FlowNodeInstance,
-  FlowNodeInstances,
+  type FlowNodeInstance,
+  type FlowNodeInstances,
   flowNodeInstanceStore,
 } from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';

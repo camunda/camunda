@@ -7,8 +7,8 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import {
-  fetchProcessInstanceListeners,
+import {fetchProcessInstanceListeners} from 'modules/api/processInstances/fetchProcessInstanceListeners';
+import type {
   ListenerPayload,
   ListenersDto,
 } from 'modules/api/processInstances/fetchProcessInstanceListeners';

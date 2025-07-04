@@ -9,7 +9,7 @@
 import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {Form as ReactFinalForm} from 'react-final-form';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 
 import {Content, EmptyMessageContainer} from '../styled';
 import arrayMutators from 'final-form-arrays';

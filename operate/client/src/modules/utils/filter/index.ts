@@ -9,7 +9,7 @@
 import {parse, isValid} from 'date-fns';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {getSearchString} from 'modules/utils/getSearchString';
-import {Location} from 'react-router-dom';
+import type {Location} from 'react-router-dom';
 import {
   generateDecisionKey,
   groupedDecisionsStore,
@@ -19,10 +19,10 @@ import {variableFilterStore} from 'modules/stores/variableFilter';
 import {generateProcessKey} from '../generateProcessKey';
 import {getProcessInstanceFilters} from './getProcessInstanceFilters';
 import {
-  ProcessInstanceFilters,
   PROCESS_INSTANCE_FILTER_FIELDS,
   BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
 } from './shared';
+import type {ProcessInstanceFilters} from './shared';
 
 type DecisionInstanceFilterField =
   | 'tenant'

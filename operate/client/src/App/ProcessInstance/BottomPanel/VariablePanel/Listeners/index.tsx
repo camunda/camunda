@@ -27,11 +27,11 @@ import {Layer} from '@carbon/react';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 
-enum FilterLabelMapping {
-  'All listeners' = 'ALL_LISTENERS',
-  'Execution listeners' = 'EXECUTION_LISTENER',
-  'User task listeners' = 'TASK_LISTENER',
-}
+const FilterLabelMapping = {
+  'All listeners': 'ALL_LISTENERS',
+  'Execution listeners': 'EXECUTION_LISTENER',
+  'User task listeners': 'TASK_LISTENER',
+} as const;
 
 type FilterLabelMappingType = typeof FilterLabelMapping;
 type FilterLabelMappingKeys = keyof FilterLabelMappingType;

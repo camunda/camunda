@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML

@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {ReactComponent as EmptyStateProcessIncidents} from 'modules/components/Icon/empty-state-process-incidents.svg';
+import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
 import {EmptyState} from '.';
 
 describe('EmptyState', () => {

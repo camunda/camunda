@@ -8,11 +8,9 @@
 
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {getFlowNodeName} from './flowNodes';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-import {
-  flowNodeSelectionStore,
-  Selection,
-} from 'modules/stores/flowNodeSelection';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import type {Selection} from 'modules/stores/flowNodeSelection';
 import {reaction, when} from 'mobx';
 import {modificationsStore} from 'modules/stores/modifications';
 

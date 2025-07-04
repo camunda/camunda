@@ -6,14 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
-import {MeDto} from './api/v2/authentication/me';
-import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
-import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
-import {ProcessDto} from './api/processes/fetchGroupedProcesses';
-import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
-import {BatchOperationDto} from './api/sharedTypes';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
+import type {MeDto} from './api/v2/authentication/me';
+import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
+import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
+import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
+import type {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
+import type {BatchOperationDto} from './api/sharedTypes';
+import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
 /**
  * @returns a jest mock function that resolves with given value

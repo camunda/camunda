@@ -7,7 +7,7 @@
  */
 
 import {screen, waitFor, within} from '@testing-library/react';
-import {UserEvent} from 'modules/testing-library';
+import type {UserEvent} from 'modules/testing-library';
 
 const selectComboBoxOption = async ({
   user,

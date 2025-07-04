@@ -7,12 +7,12 @@
  */
 
 import {
-  DecisionInstanceFilters,
+  type DecisionInstanceFilters,
   getDecisionInstanceFilters,
   updateDecisionsFiltersSearchString,
 } from 'modules/utils/filter';
 import {Form} from 'react-final-form';
-import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {
   Container,
   Form as StyledForm,
@@ -24,7 +24,7 @@ import {DecisionsFormGroup} from './DecisionsFormGroup';
 import {InstancesStatesFormGroup} from './InstancesStatesFormGroup';
 import {Stack} from '@carbon/react';
 import {
-  OptionalFilter,
+  type OptionalFilter,
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
 import {isEqual} from 'lodash';

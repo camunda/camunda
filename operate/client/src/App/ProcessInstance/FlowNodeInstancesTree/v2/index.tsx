@@ -11,7 +11,7 @@ import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   flowNodeInstanceStore,
-  FlowNodeInstance,
+  type FlowNodeInstance,
   MAX_INSTANCES_STORED,
 } from 'modules/stores/flowNodeInstance';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
@@ -29,7 +29,7 @@ import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {useLatestMigrationDate} from 'modules/queries/operations/useLatestMigrationDate';
 import {
   fetchNext,
@@ -39,7 +39,7 @@ import {
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
 const TREE_NODE_HEIGHT = 32;
 

@@ -25,12 +25,8 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('modifications hooks', () => {
-  const getWrapper = (
-    initialEntries: React.ComponentProps<
-      typeof MemoryRouter
-    >['initialEntries'] = [Paths.processInstance('processId')],
-  ) => {
-    const Wrapper = ({children}: {children: React.ReactNode}) => {
+  const getWrapper = () => {
+    const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
       useEffect(() => {
         return () => {
           modificationsStore.reset();

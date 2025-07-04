@@ -15,7 +15,7 @@ import {BatchModificationSummaryModal} from './BatchModificationSummaryModal/v2'
 import {Stack} from './styled';
 import {tracking} from 'modules/tracking';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
-import {Location, Transition} from 'history';
+import {type Location, type Transition} from 'history';
 import {useState} from 'react';
 
 /**

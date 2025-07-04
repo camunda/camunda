@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {DecisionInstancesDto} from 'modules/api/decisionInstances/fetchDecisionInstances';
+import type {DecisionInstancesDto} from 'modules/api/decisionInstances/fetchDecisionInstances';
 
 const mockDecisionInstances: DecisionInstancesDto = {
   decisionInstances: [

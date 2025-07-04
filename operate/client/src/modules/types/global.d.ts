@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Mixpanel} from 'mixpanel-browser';
+import type {Mixpanel} from 'mixpanel-browser';
 
 /* istanbul ignore file */
 

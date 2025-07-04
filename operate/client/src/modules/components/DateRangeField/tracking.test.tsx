@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, UserEvent} from 'modules/testing-library';
+import {render, screen, type UserEvent} from 'modules/testing-library';
 import {
   applyDateRange,
   pickDateTimeRange,

@@ -8,9 +8,9 @@
 
 import {
   endpoints,
-  GetElementInstanceResponseBody,
+  type GetElementInstanceResponseBody,
 } from '@vzeta/camunda-api-zod-schemas';
-import {requestWithThrow, RequestResult} from 'modules/request';
+import {requestWithThrow, type RequestResult} from 'modules/request';
 
 const fetchElementInstance = async (params: {
   elementInstanceKey: string;

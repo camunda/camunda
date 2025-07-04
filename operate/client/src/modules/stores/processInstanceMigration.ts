@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IReactionDisposer, makeAutoObservable, when} from 'mobx';
-import {BatchOperationQuery} from 'modules/api/processInstances/operations';
+import {makeAutoObservable, when} from 'mobx';
+import type {IReactionDisposer} from 'mobx';
+import type {BatchOperationQuery} from 'modules/api/processInstances/operations';
 import {operationsStore} from './operations';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from './notifications';

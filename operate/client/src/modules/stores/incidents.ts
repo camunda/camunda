@@ -12,11 +12,11 @@ import {
   action,
   observable,
   autorun,
-  IReactionDisposer,
   override,
 } from 'mobx';
-import {
-  fetchProcessInstanceIncidents,
+import type {IReactionDisposer} from 'mobx';
+import {fetchProcessInstanceIncidents} from 'modules/api/processInstances/fetchProcessInstanceIncidents';
+import type {
   ProcessInstanceIncidentsDto,
   IncidentDto,
 } from 'modules/api/processInstances/fetchProcessInstanceIncidents';

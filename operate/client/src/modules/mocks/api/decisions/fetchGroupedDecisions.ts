@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
+import type {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
 import {mockPostRequest} from '../mockRequest';
 
 const mockFetchGroupedDecisions = () =>

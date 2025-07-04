@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {To} from 'react-router-dom';
-import {DecisionInstanceFilters} from 'modules/utils/filter';
-import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import type {To} from 'react-router-dom';
+import type {DecisionInstanceFilters} from 'modules/utils/filter';
+import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 type RouterState = {
   referrer?: string;

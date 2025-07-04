@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
+import type {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
 import {mockGetRequest} from '../mockRequest';
 
 const mockFetchProcessInstancesByName = () =>

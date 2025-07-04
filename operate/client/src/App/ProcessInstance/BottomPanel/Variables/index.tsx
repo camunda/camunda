@@ -18,7 +18,7 @@ import {useForm, useFormState} from 'react-final-form';
 import {Restricted} from 'modules/components/Restricted';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useFieldArray} from 'react-final-form-arrays';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';

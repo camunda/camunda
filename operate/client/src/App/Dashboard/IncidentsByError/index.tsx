@@ -20,7 +20,7 @@ import {truncateErrorMessage} from './utils/truncateErrorMessage';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {LinkWrapper, ErrorMessage} from '../styled';
 import {EmptyState} from 'modules/components/EmptyState';
-import {ReactComponent as EmptyStateProcessIncidents} from 'modules/components/Icon/empty-state-process-incidents.svg';
+import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
 import {Details} from './Details';
 import {generateErrorMessageId} from './utils/generateErrorMessageId';
 

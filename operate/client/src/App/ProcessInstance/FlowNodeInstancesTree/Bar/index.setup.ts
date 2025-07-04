@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {type FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 const mockStartNode: FlowNodeInstance = {
   type: 'START_EVENT',

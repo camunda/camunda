@@ -8,10 +8,15 @@
 
 import {logger} from './logger';
 
-const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
+const ORIGINAL_NODE_ENV = import.meta.env.MODE;
 
-function setNodeEnv(newValue: typeof process.env.NODE_ENV) {
-  Object.defineProperty(process.env, 'NODE_ENV', {value: newValue});
+function setNodeEnv(newValue: string) {
+  Object.defineProperty(import.meta.env, 'MODE', {
+    value: newValue,
+    configurable: true,
+    enumerable: true,
+    writable: true,
+  });
 }
 
 const mockConsoleError = jest

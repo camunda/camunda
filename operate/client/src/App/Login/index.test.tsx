@@ -12,7 +12,7 @@ import {
   waitForElementToBeRemoved,
   waitFor,
 } from 'modules/testing-library';
-import {Link, MemoryRouter, To} from 'react-router-dom';
+import {Link, MemoryRouter, type To} from 'react-router-dom';
 import {Login} from './index';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';

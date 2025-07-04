@@ -8,8 +8,8 @@
 
 import {makeObservable, action, observable, computed, override} from 'mobx';
 
-import {
-  fetchGroupedProcesses,
+import {fetchGroupedProcesses} from 'modules/api/processes/fetchGroupedProcesses';
+import type {
   ProcessDto,
   ProcessVersionDto,
 } from 'modules/api/processes/fetchGroupedProcesses';
@@ -19,7 +19,7 @@ import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
-import {Location} from 'react-router-dom';
+import type {Location} from 'react-router-dom';
 
 type Process = ProcessDto & {key: string};
 type State = {

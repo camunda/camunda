@@ -12,7 +12,7 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   flowNodeInstanceStore,
-  FlowNodeInstance,
+  type FlowNodeInstance,
   MAX_INSTANCES_STORED,
 } from 'modules/stores/flowNodeInstance';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
@@ -31,7 +31,7 @@ import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 const TREE_NODE_HEIGHT = 32;
 

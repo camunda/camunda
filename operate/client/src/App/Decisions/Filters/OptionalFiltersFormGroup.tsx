@@ -8,10 +8,10 @@
 
 import {observer} from 'mobx-react';
 import {useEffect, useState} from 'react';
-import {useLocation, Location} from 'react-router-dom';
-import {FieldValidator} from 'final-form';
+import {useLocation, type Location} from 'react-router-dom';
+import type {FieldValidator} from 'final-form';
 import {
-  DecisionInstanceFilterField,
+  type DecisionInstanceFilterField,
   getDecisionInstanceFilters,
 } from 'modules/utils/filter';
 import {

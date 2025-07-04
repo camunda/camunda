@@ -13,7 +13,7 @@ import {
   computed,
   when,
   autorun,
-  IReactionDisposer,
+  type IReactionDisposer,
   override,
   reaction,
 } from 'mobx';
@@ -21,7 +21,7 @@ import {getOperation} from 'modules/api/getOperation';
 import {fetchVariable} from 'modules/api/fetchVariable';
 import {
   fetchVariables,
-  VariablePayload,
+  type VariablePayload,
 } from 'modules/api/processInstances/fetchVariables';
 import {applyOperation} from 'modules/api/processInstances/operations';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -299,7 +299,7 @@ class Variables extends NetworkReconnectionHandler {
     }
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
   };
 
@@ -307,7 +307,7 @@ class Variables extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchVariableFailure = (error?: unknown) => {
+  handleFetchVariableFailure = () => {
     this.setLoadingItemId(null);
   };
 

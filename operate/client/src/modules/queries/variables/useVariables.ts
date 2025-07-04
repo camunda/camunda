@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
-import {
+import {useQuery} from '@tanstack/react-query';
+import type {UseQueryResult} from '@tanstack/react-query';
+import type {
   QueryVariablesRequestBody,
   QueryVariablesResponseBody,
 } from '@vzeta/camunda-api-zod-schemas';
-import {RequestError} from 'modules/request';
+import type {RequestError} from 'modules/request';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 
 const VARIABLES_SEARCH_QUERY_KEY = 'variablesSearch';

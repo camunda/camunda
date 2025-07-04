@@ -11,7 +11,7 @@ import {AppHeader} from '../index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {MeDto} from 'modules/api/v2/authentication/me';
+import type {MeDto} from 'modules/api/v2/authentication/me';
 import {Wrapper as BaseWrapper} from './mocks';
 import {useEffect} from 'react';
 

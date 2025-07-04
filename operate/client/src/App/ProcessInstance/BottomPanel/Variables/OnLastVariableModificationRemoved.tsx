@@ -13,7 +13,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {useForm, useFormState} from 'react-final-form';
 import {createVariableFieldName} from './createVariableFieldName';
 import {reaction} from 'mobx';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 import {useFieldArray} from 'react-final-form-arrays';
 
 const OnLastVariableModificationRemoved: React.FC = observer(() => {

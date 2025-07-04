@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {hasEventType} from 'modules/bpmn-js/utils/hasEventType';
 import {hasType} from 'modules/bpmn-js/utils/hasType';
 import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';

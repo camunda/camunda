@@ -9,7 +9,7 @@
 import React, {useState} from 'react';
 
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
-import {ErrorHandler, operationsStore} from 'modules/stores/operations';
+import {type ErrorHandler, operationsStore} from 'modules/stores/operations';
 import {observer} from 'mobx-react';
 
 import {hasIncident, isRunning} from 'modules/utils/instance';

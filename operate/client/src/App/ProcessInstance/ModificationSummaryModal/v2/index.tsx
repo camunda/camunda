@@ -20,7 +20,7 @@ import {
 import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
-import {StateProps} from 'modules/components/ModalStateManager';
+import {type StateProps} from 'modules/components/ModalStateManager';
 import {Warning} from '../Messages/Warning';
 import {Error} from '../Messages/v2/Error';
 import {VariableModification} from '../VariableModification';
