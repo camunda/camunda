@@ -116,30 +116,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const userTask: UserTaskSubset | undefined = useMemo(() => {
     const task = userTaskSearchResult?.items?.[0];
     if (!task) return undefined;
-
-    const {
-      dueDate,
-      followUpDate,
-      formKey,
-      assignee,
-      userTaskKey,
-      candidateGroups,
-      candidateUsers,
-      tenantId,
-      externalFormReference,
-    } = task;
-
-    return {
-      dueDate,
-      followUpDate,
-      formKey,
-      assignee,
-      userTaskKey,
-      candidateGroups,
-      candidateUsers,
-      tenantId,
-      externalFormReference,
-    };
+    return task;
   }, [userTaskSearchResult]);
 
   if (

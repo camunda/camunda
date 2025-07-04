@@ -151,6 +151,10 @@ describe('MetadataPopover <Details />', () => {
         candidateGroups: ['managers', 'admins'],
         candidateUsers: ['user1', 'user2'],
         externalFormReference: 'external-form-ref-123',
+        creationDate: '2023-12-01T09:00:00.000Z',
+        completionDate: '2023-12-31T18:00:00.000Z',
+        customHeaders: {custom1: 'value1', custom2: 2},
+        priority: 10,
       },
     };
 
@@ -193,6 +197,21 @@ describe('MetadataPopover <Details />', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"externalFormReference": "external-form-ref-123"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"creationDate": "2023-12-01T09:00:00.000Z"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"completionDate": "2023-12-31T18:00:00.000Z"/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"priority": 10/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (content) =>
+          content.includes('"customHeaders":') &&
+          content.includes('"custom1": "value1"') &&
+          content.includes('"custom2": 2'),
+      ),
     ).toBeInTheDocument();
   });
 
