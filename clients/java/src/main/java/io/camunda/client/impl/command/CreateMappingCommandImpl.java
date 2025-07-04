@@ -63,7 +63,7 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
 
   @Override
   public CreateMappingCommandStep1 mappingId(final String mappingId) {
-    mappingRequest.mappingId(mappingId);
+    mappingRequest.mappingRuleId(mappingId);
     return this;
   }
 
@@ -78,7 +78,7 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
     ArgumentUtil.ensureNotNull("claimName", mappingRequest.getClaimName());
     ArgumentUtil.ensureNotNull("claimValue", mappingRequest.getClaimValue());
     ArgumentUtil.ensureNotNull("name", mappingRequest.getName());
-    ArgumentUtil.ensureNotNull("mappingId", mappingRequest.getMappingId());
+    ArgumentUtil.ensureNotNull("mappingRuleId", mappingRequest.getMappingRuleId());
     final HttpCamundaFuture<CreateMappingResponse> result = new HttpCamundaFuture<>();
     final CreateMappingResponseImpl response = new CreateMappingResponseImpl();
     httpClient.post(

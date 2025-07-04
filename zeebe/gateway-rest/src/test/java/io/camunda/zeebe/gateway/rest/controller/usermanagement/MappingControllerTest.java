@@ -107,7 +107,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("claim")
             .claimValue("claimValue")
             .name("name")
-            .mappingId("");
+            .mappingRuleId("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -128,7 +128,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimName() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingId("id");
+        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -153,7 +153,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("")
             .claimValue("claimValue")
             .name("name")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -174,7 +174,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimValue() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingId("id");
+        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -199,7 +199,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("claimName")
             .claimValue("")
             .name("name")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -223,7 +223,7 @@ public class MappingControllerTest extends RestControllerTest {
         new MappingRuleCreateRequest()
             .claimName("claimName")
             .claimValue("claimValue")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -251,7 +251,7 @@ public class MappingControllerTest extends RestControllerTest {
     // given
     final var request =
         new MappingRuleCreateRequest()
-            .mappingId(id)
+            .mappingRuleId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -277,7 +277,7 @@ public class MappingControllerTest extends RestControllerTest {
     final var id = "x".repeat(257);
     final var request =
         new MappingRuleCreateRequest()
-            .mappingId(id)
+            .mappingRuleId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");

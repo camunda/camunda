@@ -28,8 +28,8 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -155,9 +155,9 @@ public class GroupController {
   }
 
   @CamundaPostMapping(path = "/{groupId}/mapping-rules/search")
-  public ResponseEntity<MappingSearchQueryResult> mappingsByGroup(
+  public ResponseEntity<MappingRuleSearchQueryResult> mappingsByGroup(
       @PathVariable final String groupId,
-      @RequestBody(required = false) final MappingSearchQueryRequest query) {
+      @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -272,7 +272,7 @@ public class GroupController {
     }
   }
 
-  private ResponseEntity<MappingSearchQueryResult> searchMappingsInGroup(
+  private ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInGroup(
       final String groupId, final MappingQuery mappingQuery) {
     try {
       final var composedMappingQuery = buildMappingQuery(groupId, mappingQuery);

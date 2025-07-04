@@ -492,7 +492,7 @@ public class RequestMapper {
                 request.getClaimName(),
                 request.getClaimValue(),
                 request.getName(),
-                request.getMappingId()));
+                request.getMappingRuleId()));
   }
 
   public static Either<ProblemDetail, MappingDTO> toMappingDTO(

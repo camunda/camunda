@@ -32,18 +32,18 @@ import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.client.protocol.rest.MappingSearchQueryResult;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class MappingsByRoleSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<MappingSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<MappingRuleSearchQueryRequest>
     implements MappingsByRoleSearchRequest {
 
-  private final MappingSearchQueryRequest request;
+  private final MappingRuleSearchQueryRequest request;
   private final String roleId;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -54,8 +54,8 @@ public class MappingsByRoleSearchRequestImpl
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.roleId = roleId;
-    this.httpRequestConfig = httpClient.newRequestConfig();
-    this.request = new MappingSearchQueryRequest();
+    httpRequestConfig = httpClient.newRequestConfig();
+    request = new MappingRuleSearchQueryRequest();
   }
 
   @Override
@@ -72,7 +72,7 @@ public class MappingsByRoleSearchRequestImpl
         String.format("/roles/%s/mapping-rules/search", roleId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        MappingSearchQueryResult.class,
+        MappingRuleSearchQueryResult.class,
         SearchResponseMapper::toMappingsResponse,
         result);
     return result;
@@ -114,7 +114,7 @@ public class MappingsByRoleSearchRequestImpl
   }
 
   @Override
-  protected MappingSearchQueryRequest getSearchRequestProperty() {
+  protected MappingRuleSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 }
