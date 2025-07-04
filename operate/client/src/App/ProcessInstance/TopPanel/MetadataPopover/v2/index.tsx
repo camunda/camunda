@@ -65,15 +65,16 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
   const {data: elementInstancesSearchResult, isLoading: isSearchingInstances} =
     useElementInstancesSearch(
-      shouldFetchElementInstances
-        ? {
-            filter: {
-              elementId,
-              processInstanceKey: processInstance.processInstanceKey,
-            },
-            page: {limit: 1},
-          }
-        : ({} as QueryElementInstancesRequestBody),
+      {
+        filter: {
+          elementId,
+          processInstanceKey: processInstance!.processInstanceKey,
+        },
+        page: {limit: 1},
+      },
+      {
+        enabled: shouldFetchElementInstances,
+      },
     );
 
   const elementInstanceMetadata = useMemo(() => {

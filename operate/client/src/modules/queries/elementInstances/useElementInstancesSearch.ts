@@ -18,6 +18,7 @@ function getQueryKey(payload: QueryElementInstancesRequestBody) {
 
 const useElementInstancesSearch = (
   payload: QueryElementInstancesRequestBody,
+  {enabled} = {enabled: true},
 ) => {
   return useQuery({
     queryKey: getQueryKey(payload),
@@ -26,7 +27,7 @@ const useElementInstancesSearch = (
         if (response !== null) return response;
         throw error;
       }),
-    enabled: !!payload,
+    enabled,
   });
 };
 
