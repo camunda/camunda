@@ -77,4 +77,28 @@ public class DbUsageMetricStateTest {
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L, "tenant1", 3L, "tenant2", 1L));
   }
+
+  @Test
+  public void shouldRecordEDIMetrics() {
+    // given
+    final var eventTime = InstantSource.system().millis();
+    when(mockClock.millis()).thenReturn(eventTime);
+    state.resetActiveBucket(1L);
+
+    // when
+    state.recordEDIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.recordEDIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.recordEDIMetric("tenant1");
+    state.recordEDIMetric("tenant1");
+    state.recordEDIMetric("tenant1");
+    state.recordEDIMetric("tenant2");
+
+    // then
+    final var actual = state.getActiveBucket();
+    assertThat(actual.getFromTime()).isEqualTo(1L);
+    assertThat(actual.getToTime()).isEqualTo(1001L);
+    assertThat(actual.getTenantEDIMap())
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L, "tenant1", 3L, "tenant2", 1L));
+  }
 }
