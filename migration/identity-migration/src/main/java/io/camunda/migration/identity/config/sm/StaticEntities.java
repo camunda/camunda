@@ -182,7 +182,7 @@ public class StaticEntities {
                     AuthorizationOwnerType.ROLE,
                     "*",
                     AuthorizationResourceType.BATCH_OPERATION,
-                    Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.DELETE)),
+                    Set.of(PermissionType.READ, PermissionType.CREATE)),
                 new CreateAuthorizationRequest(
                     roleId,
                     AuthorizationOwnerType.ROLE,
