@@ -29,8 +29,11 @@ import {
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {labels, renderPopover} from './mocks';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {ProcessInstance, ElementInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {init} from 'modules/utils/flowNodeMetadata';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
@@ -54,6 +57,21 @@ const mockProcessInstance: ProcessInstance = {
   hasIncident: true,
 };
 
+const mockElementInstance: ElementInstance = {
+  elementInstanceKey: '2251799813699889',
+  elementId: 'Activity_0zqism7',
+  elementName: 'Service Task',
+  type: 'SERVICE_TASK',
+  state: 'COMPLETED',
+  startDate: '2018-12-12T00:00:00.000Z',
+  endDate: '2018-12-12T00:05:00.000Z',
+  processDefinitionId: 'process-def-1',
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  processDefinitionKey: '2',
+  hasIncident: false,
+  tenantId: '<default>',
+};
+
 describe('MetadataPopover', () => {
   beforeEach(() => {
     init('process-instance', []);
@@ -61,6 +79,9 @@ describe('MetadataPopover', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchElementInstance('').withNetworkError();
+    mockSearchElementInstances().withNetworkError();
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
   });
 
   it('should not show unrelated data', async () => {
@@ -189,9 +210,7 @@ describe('MetadataPopover', () => {
     );
 
     expect(
-      screen.getByText(
-        /Flow Node "Activity_0zqism7" 2251799813699889 Metadata/,
-      ),
+      screen.getByText(/Element "Activity_0zqism7" 2251799813699889 Metadata/),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
 
@@ -229,12 +248,12 @@ describe('MetadataPopover', () => {
     await user.click(screen.getByRole('button', {name: /close/i}));
     expect(
       screen.queryByText(
-        /Flow Node "Activity_0zqism7" 2251799813699889 Metadata/,
+        /Element "Activity_0zqism7" 2251799813699889 Metadata/,
       ),
     ).not.toBeInTheDocument();
   });
 
-  it('should render metadata for multi instance flow nodes', async () => {
+  it('should render metadata for multi instance elements', async () => {
     mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -253,7 +272,7 @@ describe('MetadataPopover', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/This Flow Node triggered 10 times/),
+      await screen.findByText(/This Element triggered 10 times/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -363,5 +382,234 @@ describe('MetadataPopover', () => {
 
     expect(await screen.findByText(labels.retriesLeft)).toBeInTheDocument();
     expect(screen.getByTestId('retries-left-count')).toHaveTextContent('2');
+  });
+
+  it('should render metadata popover with element instance terminology', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: FLOW_NODE_ID,
+      },
+    );
+
+    renderPopover();
+
+    expect(
+      await screen.findByRole('heading', {name: labels.details}),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(labels.flowNodeInstanceKey)).toBeInTheDocument();
+  });
+
+  it('should handle multiple element instances scenario', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+      }),
+    );
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: FLOW_NODE_ID,
+      },
+    );
+
+    renderPopover();
+
+    expect(
+      await screen.findByText(/This Element triggered 10 times/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /To view details for any of these, select one Instance in the Instance History./,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should preserve backward compatibility with existing incident data', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'INCIDENT',
+      }),
+    );
+    incidentsStore.init();
+
+    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
+
+    renderPopover();
+
+    expect(await screen.findByText(labels.type)).toBeInTheDocument();
+    expect(screen.getByText(labels.errorMessage)).toBeInTheDocument();
+  });
+
+  it('should preserve call activity functionality', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+      },
+    );
+
+    renderPopover();
+
+    expect(
+      await screen.findByRole('heading', {name: labels.details}),
+    ).toBeInTheDocument();
+  });
+
+  it('should fetch and display specific element instance when selected from history', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockElementInstance,
+    );
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: FLOW_NODE_ID,
+        flowNodeInstanceId: '2251799813699889',
+      },
+    );
+
+    renderPopover();
+
+    expect(
+      await screen.findByRole('heading', {name: labels.details}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('2251799813699889')).toBeInTheDocument();
+  });
+
+  it('should search for single element instance when count is 1', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: FLOW_NODE_ID,
+          active: 1,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+      ],
+    });
+    mockSearchElementInstances().withSuccess({
+      items: [mockElementInstance],
+      page: {totalItems: 1},
+    });
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
+
+    renderPopover();
+
+    expect(
+      await screen.findByRole('heading', {name: labels.details}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('2251799813699889')).toBeInTheDocument();
+  });
+
+  it('should handle failed element instance search gracefully', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockSearchElementInstances().withNetworkError();
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
+
+    renderPopover();
+
+    expect(
+      screen.queryByRole('heading', {name: labels.details}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should handle failed single element instance fetch gracefully', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('invalid-key').withNetworkError();
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: FLOW_NODE_ID,
+        flowNodeInstanceId: 'invalid-key',
+      },
+    );
+
+    renderPopover();
+
+    expect(
+      screen.queryByRole('heading', {name: labels.details}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show multi-instance message and not fetch individual instances', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+      }),
+    );
+
+    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
+
+    renderPopover();
+
+    expect(
+      await screen.findByText(/This Element triggered 10 times/),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('heading', {name: labels.details}),
+    ).not.toBeInTheDocument();
   });
 });
