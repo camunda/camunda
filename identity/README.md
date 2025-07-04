@@ -24,7 +24,7 @@ Example (using Operate's configuration):
 docker compose -f operate/docker-compose.yml up -d elasticsearch
 ```
 
-3. Run this command for some final setup and running the Zeebe broker:
+3. Run the application with initial setup variables:
 
 ```
 SPRING_PROFILES_ACTIVE=consolidated-auth,broker,identity \
@@ -39,15 +39,33 @@ ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExpo
 ./dist/target/camunda-zeebe/bin/camunda
 ```
 
+4. Run the frontend in another terminal tab by navigating to the `identity/client` folder and running:
+
+```shell
+yarn dev
+```
+
+### Variations
+
+To have a demo user created by default, add the following env variables when running the application:
+
+```
+CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
+CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo \
+CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
+CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
+CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
+```
+
+To have authorizations enabled by default, add the following env variable when running the application:
+
+```
+CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true \
+```
+
 If you would like to enable operate and tasklist, you can add their profile to the `SPRING_PROFILES_ACTIVE` variable like this:
 
 ```
 SPRING_PROFILES_ACTIVE=operate,tasklist,consolidated-auth,broker,identity
-```
-
-4. Run the frontend by navigating to the `identity/client` folder and running:
-
-```shell
-yarn dev
 ```
 
