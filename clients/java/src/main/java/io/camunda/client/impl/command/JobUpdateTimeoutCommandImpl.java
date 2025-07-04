@@ -132,6 +132,7 @@ public class JobUpdateTimeoutCommandImpl
   @Override
   public UpdateTimeoutJobCommandStep2 operationReference(final long operationReference) {
     grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
     return this;
   }
 

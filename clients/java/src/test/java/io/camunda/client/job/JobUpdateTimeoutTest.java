@@ -111,6 +111,23 @@ public class JobUpdateTimeoutTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client
+        .newUpdateTimeoutCommand(123)
+        .timeout(100)
+        .operationReference(operationReference)
+        .execute();
+
+    // then
+    final UpdateJobTimeoutRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldNotHaveNullResponse() {
     // given
     final UpdateTimeoutJobCommandStep1 command = client.newUpdateTimeoutCommand(12);

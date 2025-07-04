@@ -57,6 +57,19 @@ public class JobUpdateRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldSetOperationReferenceForUpdateRetriesCommand() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client.newUpdateRetriesCommand(123).retries(3).operationReference(operationReference).execute();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldUpdateTimeoutByKeyMillis() {
     // given
     final long jobKey = 12;
@@ -112,6 +125,23 @@ public class JobUpdateRestTest extends ClientRestTest {
     // then
     final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
     assertThat(request.getChangeset().getTimeout()).isEqualTo(timeout.toMillis());
+  }
+
+  @Test
+  public void shouldSetOperationReferenceForUpdateTimeoutCommand() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client
+        .newUpdateTimeoutCommand(123)
+        .timeout(100)
+        .operationReference(operationReference)
+        .execute();
+
+    // then
+    final JobUpdateRequest request = gatewayService.getLastRequest(JobUpdateRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
   }
 
   @Test
