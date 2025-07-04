@@ -25,7 +25,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -206,7 +205,7 @@ public class ScaleUpPartitionsTest {
           "Restarting node {} because it's the leader for partition 1 and the target node for bootstrapping ",
           member0);
       cluster.leaderForPartition(1).stop().start();
-      cluster.awaitHealthyTopology();
+      cluster.awaitCompleteTopology();
     }
     // when - start scaling up
     scaleToPartitions(targetPartitionCount);
@@ -221,6 +220,17 @@ public class ScaleUpPartitionsTest {
 
     LOG.info("Restarting node {} ", brokerToRestart.nodeId());
     brokerToRestart.stop().start();
+    LOG.info("Restarted node {} ", brokerToRestart.nodeId());
+    Awaitility.await("restarted broker is ready")
+        .until(
+            () -> {
+              try {
+                brokerToRestart.healthActuator().ready();
+                return true;
+              } catch (final Exception e) {
+                return false;
+              }
+            });
 
     // then - scale up should still complete successfully
     awaitScaleUpCompletion(targetPartitionCount);
@@ -229,23 +239,6 @@ public class ScaleUpPartitionsTest {
     createInstanceWithAJobOnAllPartitions(
         camundaClient, JOB_TYPE, targetPartitionCount, false, PROCESS_ID);
     cluster.awaitHealthyTopology();
-  }
-
-  private void awaitScaleUpCompletion(final int desiredPartitionCount) {
-    Awaitility.await("until scaling is done")
-        .timeout(Duration.ofMinutes(1))
-        .untilAsserted(
-            () -> {
-              final var topology = clusterActuator.getTopology();
-              if (Objects.requireNonNull(topology.getRouting().getRequestHandling())
-                  instanceof final RequestHandlingAllPartitions allPartitions) {
-                assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
-              } else {
-                throw new AssertionError(
-                    "Unexpected request handling mode: "
-                        + topology.getRouting().getRequestHandling());
-              }
-            });
   }
 
   private PlannedOperationsResponse scaleToPartitions(final int desiredPartitionCount) {
@@ -257,5 +250,28 @@ public class ScaleUpPartitionsTest {
                     .replicationFactor(3)),
         false,
         false);
+  }
+
+  private void awaitScaleUpCompletion(final int desiredPartitionCount) {
+    Awaitility.await("until scaling is done")
+        .atMost(Duration.ofMinutes(2))
+        .catchUncaughtExceptions()
+        .logging()
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              try {
+                final var topology = clusterActuator.getTopology();
+                assertThat(topology.getRouting()).isNotNull();
+                final var requestHandling = topology.getRouting().getRequestHandling();
+                assertThat(requestHandling).isInstanceOf(RequestHandlingAllPartitions.class);
+                final var allPartitions = (RequestHandlingAllPartitions) requestHandling;
+                assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
+              } catch (final Exception e) {
+                System.err.println("Got exception in assertion");
+                e.printStackTrace();
+                throw new RuntimeException(e);
+              }
+            });
   }
 }
