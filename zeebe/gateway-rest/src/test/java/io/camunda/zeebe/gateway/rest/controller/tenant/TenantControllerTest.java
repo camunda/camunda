@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.tenant;
 
+import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.TENANTS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -27,12 +28,14 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
 import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -42,8 +45,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 public class TenantControllerTest {
 
@@ -625,6 +632,140 @@ public class TenantControllerTest {
           Arguments.of(EntityType.GROUP, "groups", "groupId"),
           Arguments.of(EntityType.ROLE, "roles", "roleId"),
           Arguments.of(EntityType.CLIENT, "clients", "clientId"));
+    }
+  }
+
+  @Nested
+  @WebMvcTest(TenantController.class)
+  @Import(ApiFiltersConfiguration.class)
+  @TestPropertySource(properties = "camunda.security.multiTenancy.apiEnabled=false")
+  public class TenantsApiDisabledTest extends RestControllerTest {
+    public static final String FORBIDDEN_MESSAGE =
+        """
+        {
+          "type": "about:blank",
+          "status": 403,
+          "title": "Access issue",
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(TENANTS_API_DISABLED_ERROR_MESSAGE);
+
+    @MockitoBean private TenantServices tenantServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private MappingServices mappingServices;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+
+    @ParameterizedTest
+    @MethodSource("tenantControllerRequests")
+    void shouldReturnForbiddenWhenTenantsApiIsDisabled(
+        final String uri, final Function<WebTestClient, ResponseSpec> webClientConsumer) {
+      webClientConsumer
+          .apply(webClient)
+          .expectStatus()
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+    }
+
+    private static Stream<Arguments> tenantControllerRequests() {
+      return Stream.of(
+          Arguments.of(
+              "/v2/tenants",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.post().uri("/v2/tenants").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.get().uri("/v2/tenants/tenantId").exchange()),
+          Arguments.of(
+              "/v2/tenants/search",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.post().uri("/v2/tenants/search").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.put().uri("/v2/tenants/tenantId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/users/username",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.put().uri("/v2/tenants/tenantId/users/username").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/users/search",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.post().uri("/v2/tenants/tenantId/users/search").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/clients/clientId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.put().uri("/v2/tenants/tenantId/clients/clientId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/mappings/mappingId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.put().uri("/v2/tenants/tenantId/mappings/mappingId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/groups/groupId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.put().uri("/v2/tenants/tenantId/groups/groupId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/roles/roleId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.put().uri("/v2/tenants/tenantId/roles/roleId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient -> webClient.delete().uri("/v2/tenants/tenantId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/users/username",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.delete().uri("/v2/tenants/tenantId/users/username").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/clients/clientId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.delete().uri("/v2/tenants/tenantId/clients/clientId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/mappings/search",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.post().uri("/v2/tenants/tenantId/mappings/search").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/mappings/mappingId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.delete().uri("/v2/tenants/tenantId/mappings/mappingId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/groups/groupId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.delete().uri("/v2/tenants/tenantId/groups/groupId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/roles/roleId",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.delete().uri("/v2/tenants/tenantId/roles/roleId").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/groups/search",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.post().uri("/v2/tenants/tenantId/groups/search").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/roles/search",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.post().uri("/v2/tenants/tenantId/roles/search").exchange()),
+          Arguments.of(
+              "/v2/tenants/tenantId/clients/search",
+              (Function<WebTestClient, ResponseSpec>)
+                  webClient ->
+                      webClient.post().uri("/v2/tenants/tenantId/clients/search").exchange()));
     }
   }
 }
