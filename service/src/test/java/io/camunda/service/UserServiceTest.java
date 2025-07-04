@@ -95,7 +95,7 @@ public class UserServiceTest {
   public void shouldReturnUserForGet() {
     // given
     final var entity = mock(UserEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
     when(client.searchUsers(any())).thenReturn(result);
 
     // when
@@ -109,7 +109,8 @@ public class UserServiceTest {
   public void shouldThrownExceptionIfUserNotFoundByUsername() {
     // given
     final var username = "username";
-    when(client.searchUsers(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
+    when(client.searchUsers(any()))
+        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
 
     // when / then
     assertThat(services.findUser(username)).isEmpty();

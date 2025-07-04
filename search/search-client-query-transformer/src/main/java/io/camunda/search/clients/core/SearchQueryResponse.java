@@ -16,6 +16,7 @@ import java.util.function.Function;
 
 public record SearchQueryResponse<T>(
     long totalHits,
+    boolean hasMoreTotalItems,
     String scrollId,
     List<SearchQueryHit<T>> hits,
     Map<String, AggregationResult> aggregations) {
@@ -28,12 +29,19 @@ public record SearchQueryResponse<T>(
   public static final class Builder<T> implements ObjectBuilder<SearchQueryResponse<T>> {
 
     private long totalHits;
+    private boolean hasMoreTotalItems = false;
     private String scrollId;
     private List<SearchQueryHit<T>> hits;
     private Map<String, AggregationResult> aggregations;
 
     public Builder<T> totalHits(final long value) {
       totalHits = value;
+      return this;
+    }
+
+    public Builder<T> totalHits(final long value, final boolean hasMoreTotalItems) {
+      totalHits = value;
+      this.hasMoreTotalItems = hasMoreTotalItems;
       return this;
     }
 
@@ -56,6 +64,7 @@ public record SearchQueryResponse<T>(
     public SearchQueryResponse<T> build() {
       return new SearchQueryResponse<T>(
           totalHits,
+          hasMoreTotalItems,
           scrollId,
           Objects.requireNonNullElse(hits, Collections.emptyList()),
           aggregations);
