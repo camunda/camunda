@@ -26,6 +26,7 @@ public class ApiFiltersConfiguration {
       "Groups API is disabled because the application is configured in group claim mode. To use the Groups API, reconfigure the application to to manage group mode removing the '%s' property."
           .formatted(GROUPS_CLAIM_PROPERTY);
 
+  @VisibleForTesting
   public static final String TENANTS_API_DISABLED_ERROR_MESSAGE =
       "Tenants API is disabled. Enable the API by setting '%s' to true."
           .formatted(API_ENABLED_PROPERTY);
