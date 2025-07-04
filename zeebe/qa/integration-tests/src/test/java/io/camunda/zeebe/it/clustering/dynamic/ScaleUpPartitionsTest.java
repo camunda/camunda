@@ -12,6 +12,7 @@ import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJo
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.deployProcessModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
@@ -24,7 +25,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -188,21 +188,57 @@ public class ScaleUpPartitionsTest {
             });
   }
 
-  private void awaitScaleUpCompletion(final int desiredPartitionCount) {
-    Awaitility.await("until scaling is done")
-        .timeout(Duration.ofMinutes(5))
-        .untilAsserted(
+  @ParameterizedTest
+  @ValueSource(strings = {"partition1Leader", "bootstrapNode"})
+  public void shouldSucceedScaleUpWhenCriticalNodesRestart(final String restartTarget) {
+    // given - healthy cluster
+    cluster.awaitCompleteTopology();
+    deployProcessModel(camundaClient, JOB_TYPE, PROCESS_ID);
+    final var targetPartitionCount = PARTITIONS_COUNT + 1;
+
+    final var member0 = MemberId.from("0");
+    if ("bootstrapNode".equals(restartTarget)
+        && cluster.leaderForPartition(1).nodeId().equals(member0)) {
+      // if we need to restart the bootstrap node, make sure that it's not the same as the
+      // leader for partition 1`
+      LOG.info(
+          "Restarting node {} because it's the leader for partition 1 and the target node for bootstrapping ",
+          member0);
+      cluster.leaderForPartition(1).stop().start();
+      cluster.awaitCompleteTopology();
+    }
+    // when - start scaling up
+    scaleToPartitions(targetPartitionCount);
+
+    // Restart the appropriate node based on the test argument
+    final var brokerToRestart =
+        switch (restartTarget) {
+          case "partition1Leader" -> cluster.leaderForPartition(1);
+          case "bootstrapNode" -> cluster.brokers().get(member0);
+          default -> throw new IllegalArgumentException("Unknown restart target: " + restartTarget);
+        };
+
+    LOG.info("Restarting node {} ", brokerToRestart.nodeId());
+    brokerToRestart.stop().start();
+    LOG.info("Restarted node {} ", brokerToRestart.nodeId());
+    Awaitility.await("restarted broker is ready")
+        .until(
             () -> {
-              final var topology = clusterActuator.getTopology();
-              if (Objects.requireNonNull(topology.getRouting().getRequestHandling())
-                  instanceof final RequestHandlingAllPartitions allPartitions) {
-                assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
-              } else {
-                throw new AssertionError(
-                    "Unexpected request handling mode: "
-                        + topology.getRouting().getRequestHandling());
+              try {
+                brokerToRestart.healthActuator().ready();
+                return true;
+              } catch (final Exception e) {
+                return false;
               }
             });
+
+    // then - scale up should still complete successfully
+    awaitScaleUpCompletion(targetPartitionCount);
+
+    // Verify the new partition is functional
+    createInstanceWithAJobOnAllPartitions(
+        camundaClient, JOB_TYPE, targetPartitionCount, false, PROCESS_ID);
+    cluster.awaitHealthyTopology();
   }
 
   private PlannedOperationsResponse scaleToPartitions(final int desiredPartitionCount) {
@@ -214,5 +250,28 @@ public class ScaleUpPartitionsTest {
                     .replicationFactor(3)),
         false,
         false);
+  }
+
+  private void awaitScaleUpCompletion(final int desiredPartitionCount) {
+    Awaitility.await("until scaling is done")
+        .atMost(Duration.ofMinutes(2))
+        .catchUncaughtExceptions()
+        .logging()
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              try {
+                final var topology = clusterActuator.getTopology();
+                assertThat(topology.getRouting()).isNotNull();
+                final var requestHandling = topology.getRouting().getRequestHandling();
+                assertThat(requestHandling).isInstanceOf(RequestHandlingAllPartitions.class);
+                final var allPartitions = (RequestHandlingAllPartitions) requestHandling;
+                assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
+              } catch (final Exception e) {
+                System.err.println("Got exception in assertion");
+                e.printStackTrace();
+                throw new RuntimeException(e);
+              }
+            });
   }
 }
