@@ -60,7 +60,7 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
                   transferId, partition, partitionId)));
     }
 
-    return getLatestSnapshotForBootstrap(lastProcessedPosition, transferId)
+    return getLatestSnapshotForBootstrap(lastProcessedPosition)
         .andThen(
             snapshot -> {
               if (snapshot == null) {
@@ -134,13 +134,12 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   }
 
   private ActorFuture<PersistedSnapshot> getLatestSnapshotForBootstrap(
-      final long lastProcessedPosition, final UUID transferId) {
+      final long lastProcessedPosition) {
     final ActorFuture<PersistedSnapshot> lastSnapshotFuture = concurrency.createFuture();
 
     final var lastSnapshot = snapshotStore.getBootstrapSnapshot();
     if (lastSnapshot.isEmpty()) {
-      createSnapshotForBootstrap(partitionId, lastProcessedPosition)
-          .onComplete(lastSnapshotFuture, concurrency);
+      createSnapshotForBootstrap(lastProcessedPosition).onComplete(lastSnapshotFuture, concurrency);
     } else {
       lastSnapshotFuture.complete(lastSnapshot.get());
     }
@@ -148,13 +147,13 @@ public class SnapshotTransferServiceImpl implements SnapshotSenderService {
   }
 
   private ActorFuture<PersistedSnapshot> createSnapshotForBootstrap(
-      final int partitionId, final long lastProcessedPosition) {
+      final long lastProcessedPosition) {
     final var lastPersistedSnapshot = snapshotStore.getLatestSnapshot();
     final ActorFuture<PersistedSnapshot> lastSnapshot =
         lastPersistedSnapshot.isEmpty()
                 || lastPersistedSnapshot.get().getMetadata().processedPosition()
                     < lastProcessedPosition
-            ? takeSnapshot.takeSnapshot(partitionId, lastProcessedPosition, concurrency)
+            ? takeSnapshot.takeSnapshot(lastProcessedPosition)
             : CompletableActorFuture.completed(lastPersistedSnapshot.get());
 
     return lastSnapshot.andThen(

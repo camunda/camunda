@@ -38,6 +38,10 @@ public record RoutingState(
     return new RoutingState(version + 1, update.apply(requestHandling), messageCorrelation);
   }
 
+  public RoutingState withVersion(final long version) {
+    return new RoutingState(version, requestHandling, messageCorrelation);
+  }
+
   public RoutingState merge(final RoutingState other) {
     if (equals(other)) {
       return this;

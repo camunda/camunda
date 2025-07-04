@@ -18,6 +18,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -34,7 +35,9 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
-    implements RaftApplicationEntryCommittedPositionListener, HealthMonitorable {
+    implements RaftApplicationEntryCommittedPositionListener,
+        HealthMonitorable,
+        SnapshotTransferService.TakeSnapshot {
 
   public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
@@ -376,6 +379,15 @@ public final class AsyncSnapshotDirector extends Actor
     }
 
     ongoingSnapshotFuture = null;
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshot> takeSnapshot(final long lastProcessedPosition) {
+    final var inProgressSnapshot = new InProgressSnapshot();
+    inProgressSnapshot.lowerBoundSnapshotPosition = lastProcessedPosition;
+    final var result = actor.<PersistedSnapshot>createFuture();
+    actor.run(() -> snapshot(inProgressSnapshot).onComplete(result));
+    return result;
   }
 
   private static final class InProgressSnapshot {

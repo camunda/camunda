@@ -35,7 +35,7 @@ public class SnapshotApiHandlerTransitionStep implements PartitionTransitionStep
       final var service =
           new SnapshotTransferServiceImpl(
               context.getPersistedSnapshotStore(),
-              context.getStateController(),
+              context.getSnapshotDirector(),
               context.getPartitionId(),
               (from, to) ->
                   context.snapshotCopy().copySnapshot(from, to, Set.of(ColumnFamilyScope.GLOBAL)),
