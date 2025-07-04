@@ -29,7 +29,6 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
   private final int priority;
   private final MemberId memberId;
   private final PartitionChangeExecutor partitionChangeExecutor;
-  private final Optional<DynamicPartitionConfig> config;
   private final boolean initializeFromSnapshot;
   private DynamicPartitionConfig partitionConfig;
 
@@ -39,7 +38,6 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
     partitionId = operation.partitionId();
     priority = operation.priority();
     memberId = operation.memberId();
-    config = operation.config();
     initializeFromSnapshot = operation.initializeFromSnapshot();
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
@@ -53,7 +51,6 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
     this.partitionId = partitionId;
     this.priority = priority;
     this.memberId = memberId;
-    config = Optional.empty();
     this.initializeFromSnapshot = initializeFromSnapshot;
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
@@ -82,6 +79,7 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
     }
 
     if (isPartitionAlreadyBootstrapping(currentClusterConfiguration)) {
+      partitionConfig = initPartitionConfig(currentClusterConfiguration);
       return Either.right(UnaryOperator.identity());
     }
 
@@ -99,10 +97,7 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
                   .formatted(partitionId)));
     }
 
-    partitionConfig =
-        config.orElse(
-            getFirstMemberFirstPartitionConfig(currentClusterConfiguration)
-                .orElse(getFallbackPartitionConfig()));
+    partitionConfig = initPartitionConfig(currentClusterConfiguration);
 
     return Either.right(
         memberState ->
@@ -114,7 +109,6 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
   public ActorFuture<UnaryOperator<MemberState>> applyOperation() {
     final CompletableActorFuture<UnaryOperator<MemberState>> result =
         new CompletableActorFuture<>();
-
     partitionChangeExecutor
         .bootstrap(partitionId, priority, partitionConfig, initializeFromSnapshot)
         .onComplete(
@@ -131,6 +125,12 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
     return result;
   }
 
+  private DynamicPartitionConfig initPartitionConfig(
+      final ClusterConfiguration currentClusterConfiguration) {
+    return getFirstMemberFirstPartitionConfig(currentClusterConfiguration)
+        .orElse(getFallbackPartitionConfig());
+  }
+
   private DynamicPartitionConfig getFallbackPartitionConfig() {
     return DynamicPartitionConfig.init();
   }
@@ -139,11 +139,9 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
       final ClusterConfiguration currentClusterConfiguration) {
     return currentClusterConfiguration.members().values().stream()
         .flatMap(m -> m.partitions().entrySet().stream().filter(p -> p.getKey() == 1))
-        .toList()
-        .stream()
         .findFirst()
         .map(Entry::getValue)
-        .map(PartitionState::config);
+        .flatMap(p -> Optional.ofNullable(p.config()));
   }
 
   private boolean isLocalMemberIsActive(final ClusterConfiguration currentClusterConfiguration) {
