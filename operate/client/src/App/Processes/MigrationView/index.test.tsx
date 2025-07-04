@@ -6,12 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  unstable_HistoryRouter as HistoryRouter,
-  Route,
-  Routes,
-} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, screen, within} from 'modules/testing-library';
 import {Paths} from 'modules/Routes';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
@@ -44,10 +39,8 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
 
     return (
       <QueryClientProvider client={getMockQueryClient()}>
-        <HistoryRouter
-          history={createMemoryHistory({
-            initialEntries: [initialPath],
-          })}
+        <MemoryRouter
+          initialEntries={[initialPath]}
           basename={contextPath ?? ''}
         >
           <Routes>
@@ -70,7 +63,7 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
               }
             />
           </Routes>
-        </HistoryRouter>
+        </MemoryRouter>
       </QueryClientProvider>
     );
   };

@@ -7,11 +7,13 @@
  */
 
 import {
-  unstable_HistoryRouter as HistoryRouter,
+  Outlet,
   Route,
-  Routes,
+  RouterProvider,
+  createBrowserRouter,
+  createRoutesFromElements,
 } from 'react-router-dom';
-import loadable from '@loadable/component';
+import {ErrorBoundary} from 'react-error-boundary';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
@@ -24,44 +26,89 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
-import {createBrowserHistory} from 'history';
+
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
 
-const CarbonLogin = loadable(() => import('./Login/index'), {
-  resolveComponent: (components) => components.Login,
-});
+const Wrapper: React.FC = () => {
+  return (
+    <>
+      <RedirectDeprecatedRoutes />
+      <SessionWatcher />
+      <TrackPagination />
+      <Outlet />
+    </>
+  );
+};
 
-const CarbonLayout = loadable(() => import('./Layout/index'), {
-  resolveComponent: (components) => components.Layout,
-});
-
-const CarbonDashboard = loadable(() => import('./Dashboard/index'), {
-  resolveComponent: (components) => components.Dashboard,
-});
-
-const CarbonDecisions = loadable(() => import('./Decisions/index'), {
-  resolveComponent: (components) => components.Decisions,
-});
-
-const CarbonProcesses = loadable(() => import('./Processes/index'), {
-  resolveComponent: (components) => components.Processes,
-});
-
-const CarbonProcessInstanceV2 = loadable(
-  () => import('./ProcessInstance/v2/index'),
-  {
-    resolveComponent: (components) => components.ProcessInstance,
-  },
+const routes = createRoutesFromElements(
+  <Route path="/" element={<Wrapper />}>
+    <Route
+      path={Paths.login()}
+      lazy={async () => {
+        const {Login} = await import('./Login/index');
+        return {Component: Login};
+      }}
+    />
+    <Route path={Paths.forbidden()} element={<ForbiddenPage />} />
+    <Route
+      path={Paths.dashboard()}
+      lazy={async () => {
+        const {Layout} = await import('./Layout/index');
+        return {
+          Component: () => (
+            <AuthenticationCheck redirectPath={Paths.login()}>
+              <AuthorizationCheck>
+                <Layout />
+              </AuthorizationCheck>
+            </AuthenticationCheck>
+          ),
+        };
+      }}
+    >
+      <Route
+        index
+        lazy={async () => {
+          const {Dashboard} = await import('./Dashboard/index');
+          return {Component: Dashboard};
+        }}
+      />
+      <Route
+        path={Paths.processes()}
+        lazy={async () => {
+          const {Processes} = await import('./Processes/index');
+          return {Component: Processes};
+        }}
+      />
+      <Route
+        path={Paths.processInstance()}
+        lazy={async () => {
+          const {ProcessInstance} = await import('./ProcessInstance/v2/index');
+          return {Component: ProcessInstance};
+        }}
+      />
+      <Route
+        path={Paths.decisions()}
+        lazy={async () => {
+          const {Decisions} = await import('./Decisions/index');
+          return {Component: Decisions};
+        }}
+      />
+      <Route
+        path={Paths.decisionInstance()}
+        lazy={async () => {
+          const {DecisionInstance} = await import('./DecisionInstance/index');
+          return {Component: DecisionInstance};
+        }}
+      />
+    </Route>
+  </Route>,
 );
 
-const CarbonDecisionInstance = loadable(
-  () => import('./DecisionInstance/index'),
-  {
-    resolveComponent: (components) => components.DecisionInstance,
-  },
-);
+const router = createBrowserRouter(routes, {
+  basename: window.clientConfig?.baseName ?? '/',
+});
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -72,47 +119,16 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ThemeProvider>
-      <ReactQueryProvider>
-        <ThemeSwitcher />
-        <Notifications />
-        <NetworkStatusWatcher />
-        <HistoryRouter
-          history={createBrowserHistory({window})}
-          basename={window.clientConfig?.baseName ?? '/'}
-        >
-          <RedirectDeprecatedRoutes />
-          <SessionWatcher />
-          <TrackPagination />
-          <Routes>
-            <Route path={Paths.login()} element={<CarbonLogin />} />
-            <Route path={Paths.forbidden()} element={<ForbiddenPage />} />
-            <Route
-              path={Paths.dashboard()}
-              element={
-                <AuthenticationCheck redirectPath={Paths.login()}>
-                  <AuthorizationCheck>
-                    <CarbonLayout />
-                  </AuthorizationCheck>
-                </AuthenticationCheck>
-              }
-            >
-              <Route index element={<CarbonDashboard />} />
-              <Route path={Paths.processes()} element={<CarbonProcesses />} />
-              <Route
-                path={Paths.processInstance()}
-                element={<CarbonProcessInstanceV2 />}
-              />
-              <Route path={Paths.decisions()} element={<CarbonDecisions />} />
-              <Route
-                path={Paths.decisionInstance()}
-                element={<CarbonDecisionInstance />}
-              />
-            </Route>
-          </Routes>
-        </HistoryRouter>
-      </ReactQueryProvider>
-    </ThemeProvider>
+    <ErrorBoundary FallbackComponent={ForbiddenPage}>
+      <ThemeProvider>
+        <ReactQueryProvider>
+          <ThemeSwitcher />
+          <Notifications />
+          <NetworkStatusWatcher />
+          <RouterProvider router={router} />
+        </ReactQueryProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 };
 

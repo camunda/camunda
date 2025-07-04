@@ -17,13 +17,8 @@ import {
   createVariable,
 } from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {
-  Route,
-  unstable_HistoryRouter as HistoryRouter,
-  Routes,
-} from 'react-router-dom';
+import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {createMemoryHistory} from 'history';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {
   type Selection,
@@ -104,10 +99,8 @@ function getWrapper(options?: {
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
         <QueryClientProvider client={getMockQueryClient()}>
-          <HistoryRouter
-            history={createMemoryHistory({
-              initialEntries: [initialPath],
-            })}
+          <MemoryRouter
+            initialEntries={[initialPath]}
             basename={contextPath ?? ''}
           >
             <Routes>
@@ -119,7 +112,7 @@ function getWrapper(options?: {
               <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
             )}
             <LocationLog />
-          </HistoryRouter>
+          </MemoryRouter>
         </QueryClientProvider>
       </ProcessDefinitionKeyContext.Provider>
     );

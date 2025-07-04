@@ -21,7 +21,7 @@ const RedirectDeprecatedRoutes: React.FC = () => {
         (route) => matchPath(route, location.pathname) !== null,
       )
     ) {
-      return navigate(
+      navigate(
         {
           ...location,
           pathname: location.pathname.replace(/instances/, 'processes'),
