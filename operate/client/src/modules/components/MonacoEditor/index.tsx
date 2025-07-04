@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import Editor, {DiffEditor, useMonaco, loader} from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
-
-loader.config({monaco});
+import Editor, {DiffEditor, useMonaco} from '@monaco-editor/react';
 
 export default Editor;
 export {useMonaco, DiffEditor};
