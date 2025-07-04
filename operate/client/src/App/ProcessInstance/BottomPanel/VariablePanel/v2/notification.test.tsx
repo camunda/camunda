@@ -8,6 +8,7 @@
 
 import {VariablePanel} from './index';
 import {
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -388,7 +389,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockApplyOperation().withNetworkError();
 
-    await user.click(
+    fireEvent.click(
       screen.getByRole('button', {
         name: /save variable/i,
       }),

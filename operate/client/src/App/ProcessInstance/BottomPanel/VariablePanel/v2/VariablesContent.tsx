@@ -24,39 +24,11 @@ import {
   VARIABLES_SEARCH_QUERY_KEY,
   useVariables,
 } from 'modules/queries/variables/useVariables';
-import {useDisplayStatus} from 'modules/hooks/variables';
-import {VariablesContext} from './VariablesContext';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const scopeId = getScopeId();
   const queryClient = useQueryClient();
-
-  const {
-    isLoading,
-    isFetchingPreviousPage,
-    isFetched,
-    isError,
-    data: variablesData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useVariables({
-    filter: {
-      processInstanceKey: {$eq: processInstanceId},
-      scopeKey: {$eq: scopeId ?? undefined},
-    },
-    sort: [{field: 'name', order: 'asc'}],
-  });
-
-  const displayStatus = useDisplayStatus({
-    isLoading,
-    isFetchingNextPage,
-    isFetchingPreviousPage,
-    isFetched,
-    isError,
-    hasItems: (variablesData?.pages?.[0]?.items?.length ?? 0) > 0,
-  });
+  const {displayStatus} = useVariables();
 
   if (displayStatus === 'error') {
     return (
@@ -78,89 +50,73 @@ const VariablesContent: React.FC = observer(() => {
   }
 
   return (
-    <VariablesContext.Provider
-      value={{
-        variablesData,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
-        status: displayStatus,
-      }}
-    >
-      <Content>
-        {displayStatus === 'spinner' && (
-          <Loading data-testid="variables-spinner" />
-        )}
-        <ReactFinalForm<VariableFormValues>
-          mutators={{
-            ...arrayMutators,
-            triggerValidation(
-              fieldsToValidate: string[],
-              state,
-              {changeValue},
-            ) {
-              fieldsToValidate.forEach((fieldName) => {
-                changeValue(state, fieldName, (n) => n);
+    <Content>
+      {displayStatus === 'spinner' && (
+        <Loading data-testid="variables-spinner" />
+      )}
+      <ReactFinalForm<VariableFormValues>
+        mutators={{
+          ...arrayMutators,
+          triggerValidation(fieldsToValidate: string[], state, {changeValue}) {
+            fieldsToValidate.forEach((fieldName) => {
+              changeValue(state, fieldName, (n) => n);
+            });
+          },
+        }}
+        key={getScopeId()}
+        render={(props) => <VariablesForm {...props} />}
+        onSubmit={async (values, form) => {
+          const {initialValues} = form.getState();
+
+          const {name, value} = values;
+
+          if (name === undefined || value === undefined) {
+            return;
+          }
+
+          const params = {
+            id: processInstanceId,
+            name,
+            value,
+            invalidateQueries: () => {
+              queryClient.invalidateQueries({
+                queryKey: [VARIABLES_SEARCH_QUERY_KEY],
               });
             },
-          }}
-          key={getScopeId()}
-          render={(props) => <VariablesForm {...props} />}
-          onSubmit={async (values, form) => {
-            const {initialValues} = form.getState();
+            onSuccess: () => {
+              notificationsStore.displayNotification({
+                kind: 'success',
+                title: 'Variable added',
+                isDismissable: true,
+              });
 
-            const {name, value} = values;
-
-            if (name === undefined || value === undefined) {
-              return;
-            }
-
-            const params = {
-              id: processInstanceId,
-              name,
-              value,
-              invalidateQueries: () => {
-                queryClient.invalidateQueries({
-                  queryKey: [VARIABLES_SEARCH_QUERY_KEY],
-                });
-              },
-              onSuccess: () => {
-                notificationsStore.displayNotification({
-                  kind: 'success',
-                  title: 'Variable added',
-                  isDismissable: true,
-                });
-
-                form.reset({});
-              },
-              onError: (statusCode: number) => {
-                notificationsStore.displayNotification({
-                  kind: 'error',
-                  title: 'Variable could not be saved',
-                  subtitle:
-                    statusCode === 403
-                      ? 'You do not have permission'
-                      : undefined,
-                  isDismissable: true,
-                });
-
-                form.reset({});
-              },
-            };
-
-            if (initialValues.name === '') {
-              const result = await addVariable(params);
-              if (result === 'VALIDATION_ERROR') {
-                return {name: 'Name should be unique'};
-              }
-            } else if (initialValues.name === name) {
-              updateVariable(params);
               form.reset({});
+            },
+            onError: (statusCode: number) => {
+              notificationsStore.displayNotification({
+                kind: 'error',
+                title: 'Variable could not be saved',
+                subtitle:
+                  statusCode === 403 ? 'You do not have permission' : undefined,
+                isDismissable: true,
+              });
+
+              form.reset({});
+            },
+          };
+
+          if (initialValues.name === '') {
+            const result = await addVariable(params);
+            if (result === 'VALIDATION_ERROR') {
+              return {name: 'Name should be unique'};
             }
-          }}
-        />
-      </Content>
-    </VariablesContext.Provider>
+          } else if (initialValues.name === name) {
+            updateVariable(params);
+            form.reset({});
+          }
+        }}
+      />
+    </Content>
   );
 });
 

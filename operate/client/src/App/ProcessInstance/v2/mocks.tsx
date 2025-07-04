@@ -97,27 +97,23 @@ const mockSequenceFlowsV2: SequenceFlow[] = [
   },
 ];
 
-const mockRequests = (contextPath: string = '') => {
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+const mockRequests = () => {
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-  mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-  mockFetchCallHierarchy(contextPath).withSuccess([]);
-  mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
+  mockFetchProcessInstance().withSuccess(mockProcessInstance);
+  mockFetchProcessInstance().withSuccess(mockProcessInstance);
+  mockFetchCallHierarchy().withSuccess([]);
+  mockFetchProcessDefinitionXml().withSuccess('');
   mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
-  mockFetchFlowNodeInstances(contextPath).withSuccess(
-    processInstancesMock.level1,
-  );
-  mockFetchFlowNodeInstances(contextPath).withSuccess(
-    processInstancesMock.level1,
-  );
+  mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+  mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
   mockFetchFlownodeInstancesStatistics().withSuccess({
     items: [
       {
@@ -136,24 +132,24 @@ const mockRequests = (contextPath: string = '') => {
       },
     ],
   });
-  mockFetchVariables(contextPath).withSuccess([createVariable()]);
-  mockSearchVariables(contextPath).withSuccess({
+  mockFetchVariables().withSuccess([createVariable()]);
+  mockSearchVariables().withSuccess({
     items: [createVariableV2()],
     page: {
       totalItems: 1,
     },
   });
-  mockFetchVariables(contextPath).withSuccess([createVariable()]);
-  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+  mockFetchVariables().withSuccess([createVariable()]);
+  mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
   });
-  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+  mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
   });
-  mockFetchProcess(contextPath).withSuccess(mockProcess);
-  mockFetchProcessInstanceListeners(contextPath).withSuccess(noListeners);
+  mockFetchProcess().withSuccess(mockProcess);
+  mockFetchProcessInstanceListeners().withSuccess(noListeners);
 };
 
 type FlowNodeSelectorProps = {

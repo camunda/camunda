@@ -20,7 +20,7 @@ import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
 import {useEffect, useRef} from 'react';
 import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
-import {useVariablesContext} from 'App/ProcessInstance/BottomPanel/VariablePanel/v2/VariablesContext';
+import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {
   variableName: string;
@@ -34,7 +34,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
     useVariableFormFields(variableName);
   const selectedFlowNodeName = useSelectedFlowNodeName() || '';
   const inputRef = useRef<HTMLInputElement>(null);
-  const {variablesData} = useVariablesContext();
+  const {data: variablesData} = useVariables();
   const allVariables =
     variablesData?.pages.flatMap((page) => (page.items ? page.items : [])) ??
     [];

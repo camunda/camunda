@@ -24,13 +24,13 @@ import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {Popup} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 import {EditButtons} from '../EditButtons';
-import {useVariablesContext} from '../../VariablePanel/v2/VariablesContext';
+import {useVariables} from 'modules/queries/variables/useVariables';
 
 const NewVariable: React.FC = () => {
   const formState = useFormState();
   const form = useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const {variablesData} = useVariablesContext();
+  const {data: variablesData} = useVariables();
   const allVariables =
     variablesData?.pages.flatMap((page) => (page.items ? page.items : [])) ??
     [];

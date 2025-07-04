@@ -6,48 +6,33 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  type QueryVariablesRequestBody,
-  type QueryVariablesResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
+import {type QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
-import {MAX_VARIABLES_PER_REQUEST} from 'modules/constants/variables';
+import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {getScopeId} from 'modules/utils/variables';
+import {useDisplayStatus} from 'modules/hooks/variables';
 
+const MAX_VARIABLES_PER_REQUEST = 50;
 const VARIABLES_SEARCH_QUERY_KEY = 'variablesSearch';
 
-function getQueryKey(payload: QueryVariablesRequestBody) {
-  const {filter = {}, page = {}, sort = []} = payload;
-
-  return [
-    VARIABLES_SEARCH_QUERY_KEY,
-    ...Object.entries(filter).map(
-      ([key, value]) => `${key}:${Object.entries(value)}`,
-    ),
-    ...Object.entries(page).map(([key, value]) => `${key}:${value}`),
-    ...sort.flatMap((item) =>
-      Object.entries(item).map(([key, value]) => `${key}:${value}`),
-    ),
-  ];
-}
-
-function useVariables(
-  payload: QueryVariablesRequestBody,
-  options?: {
-    refetchInterval?: number | false;
-  },
-) {
+function useVariables(options?: {refetchInterval?: number | false}) {
+  const {processInstanceId = ''} = useProcessInstancePageParams();
+  const scopeId = getScopeId();
   const {refetchInterval = false} = options ?? {};
-  return useInfiniteQuery({
-    queryKey: getQueryKey(payload),
+  const result = useInfiniteQuery({
+    queryKey: [VARIABLES_SEARCH_QUERY_KEY, processInstanceId, scopeId],
     queryFn: async ({pageParam = 0}) => {
       const {response, error} = await searchVariables({
-        ...payload,
-        page: {
-          ...payload.page,
-          from: pageParam,
-          limit: payload.page?.limit ?? MAX_VARIABLES_PER_REQUEST,
+        filter: {
+          processInstanceKey: {$eq: processInstanceId},
+          scopeKey: {$eq: scopeId ?? undefined},
         },
+        page: {
+          from: pageParam,
+          limit: MAX_VARIABLES_PER_REQUEST,
+        },
+        sort: [{field: 'name', order: 'asc'}],
       });
 
       if (response !== null) {
@@ -57,25 +42,36 @@ function useVariables(
       throw error;
     },
     initialPageParam: 0,
-    getNextPageParam: (lastPage, __pages_, lastPageParam) => {
+    getNextPageParam: (lastPage, _, lastPageParam) => {
       const {page} = lastPage;
-      if (!page) return null;
-      const nextPage =
-        lastPageParam + (page.totalItems ?? MAX_VARIABLES_PER_REQUEST);
-      if (nextPage >= page.totalItems) {
+      const nextPage = lastPageParam + MAX_VARIABLES_PER_REQUEST;
+
+      if (nextPage > page.totalItems) {
         return null;
       }
+
       return nextPage;
     },
-    getPreviousPageParam: (_firstPage, _pages, firstPageParam) => {
+    getPreviousPageParam: (_, __, firstPageParam) => {
       const previousPage = firstPageParam - MAX_VARIABLES_PER_REQUEST;
+
       if (previousPage < 0) {
         return null;
       }
+
       return previousPage;
     },
     refetchInterval,
   });
+  const displayStatus = useDisplayStatus({
+    isLoading: result.isLoading,
+    isFetchingNextPage: result.isFetchingNextPage,
+    isFetchingPreviousPage: result.isFetchingPreviousPage,
+    isFetched: result.isFetched,
+    isError: result.isError,
+    hasItems: (result.data?.pages?.[0]?.items?.length ?? 0) > 0,
+  });
+  return Object.assign(result, {displayStatus});
 }
 
 export {VARIABLES_SEARCH_QUERY_KEY, useVariables};

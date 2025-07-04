@@ -32,6 +32,8 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockVariablesV2} from '../index.setup';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
 import {VariablePanel} from '../../VariablePanel/v2';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -50,6 +52,7 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess(mockVariablesV2);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
   });
 
   it.skip('should show/hide edit button next to variable according to it having an active operation', async () => {
@@ -496,7 +499,7 @@ describe('Edit variable', () => {
       mockProcessInstanceDeprecated,
     );
     mockFetchProcessDefinitionXml().withSuccess('');
-    vi.useFakeTimers({shouldAdvanceTime: true});
+
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -532,6 +535,13 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
+    mockGetVariable().withSuccess(
+      createVariableV2({
+        value: '123456',
+        isTruncated: false,
+      }),
+    );
+
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {
@@ -545,20 +555,12 @@ describe('Edit variable', () => {
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
     });
 
-    mockGetVariable().withSuccess(
-      createVariableV2({
-        value: '123456',
-        isTruncated: false,
-      }),
-    );
-
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByTestId('edit-variable-value'));
 
-    expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
+    expect(await screen.findByTestId('edit-variable-value')).toHaveValue(
+      '123456',
+    );
   });
 
   it('should load full value on json viewer click during modification mode if it was truncated', async () => {
@@ -693,7 +695,12 @@ describe('Edit variable', () => {
       state: 'TERMINATED',
     });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchVariables().withSuccess(mockVariables);
 
     variablesStore.fetchVariables({

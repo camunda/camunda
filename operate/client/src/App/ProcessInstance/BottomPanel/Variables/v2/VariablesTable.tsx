@@ -25,7 +25,7 @@ import {ViewFullVariableButton} from '../ViewFullVariableButton';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {Restricted} from 'modules/components/Restricted';
-import {useVariablesContext} from '../../VariablePanel/v2/VariablesContext';
+import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {
   scopeId: string | null;
@@ -42,8 +42,12 @@ const VariablesTable: React.FC<Props> = ({
   const form = useForm<VariableFormValues>();
   const variableNameRef = useRef<HTMLDivElement>(null);
 
-  const {variablesData, fetchNextPage, hasNextPage, isFetchingNextPage} =
-    useVariablesContext();
+  const {
+    data: variablesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useVariables();
 
   const isEditMode = (variableName: string) =>
     (initialValues?.name === variableName && isProcessInstanceRunning) ||

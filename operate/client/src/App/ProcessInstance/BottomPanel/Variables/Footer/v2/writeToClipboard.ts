@@ -6,4 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export const endpoints = {};
+function writeToClipboard(text: string) {
+  navigator.clipboard.writeText(text);
+}
+
+export {writeToClipboard};

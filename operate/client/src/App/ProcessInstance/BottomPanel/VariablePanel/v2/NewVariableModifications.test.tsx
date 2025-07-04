@@ -36,13 +36,12 @@ import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
-const editNameFromTextfieldAndBlur = async (
+const editLastNewVariableName = async (
   user: UserEvent,
   value: string,
   index: number = 0,
 ) => {
-  const nameFields = screen.getAllByTestId('new-variable-name');
-  const nameField = nameFields[index];
+  const nameField = screen.getAllByTestId('new-variable-name').at(-1);
 
   if (!nameField) {
     throw new Error(`No name field found at index ${index}`);
@@ -53,13 +52,12 @@ const editNameFromTextfieldAndBlur = async (
   await user.tab();
 };
 
-const editValueFromTextfieldAndBlur = async (
+const editLastNewVariableValue = async (
   user: UserEvent,
   value: string,
   index: number = 0,
 ) => {
-  const valueFields = screen.getAllByTestId('new-variable-value');
-  const valueField = valueFields[index];
+  const valueField = screen.getAllByTestId('new-variable-value').at(-1);
 
   if (!valueField) {
     throw new Error(`No value field found at index ${index}`);
@@ -207,7 +205,7 @@ describe('New Variable Modifications', () => {
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
     await user.click(screen.getByTestId('new-variable-name'));
     await user.tab();
-    await editValueFromTextfieldAndBlur(user, '123');
+    await editLastNewVariableValue(user, '123');
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
     expect(
       await screen.findByText(/Name has to be filled/i),
@@ -250,8 +248,8 @@ describe('New Variable Modifications', () => {
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
-    await editNameFromTextfieldAndBlur(user, 'testVariableName');
-    await editValueFromTextfieldAndBlur(user, '123');
+    await editLastNewVariableName(user, 'testVariableName');
+    await editLastNewVariableValue(user, '123');
     await waitFor(() =>
       expect(
         screen.getByRole('button', {name: /add variable/i}),
@@ -262,20 +260,9 @@ describe('New Variable Modifications', () => {
     ).toBeInTheDocument();
 
     await user.clear(screen.getByTestId('new-variable-name'));
-    await editNameFromTextfieldAndBlur(user, 'test2');
+    await editLastNewVariableName(user, 'test2');
 
     expect(modificationsStore.state.modifications).toEqual([
-      {
-        payload: {
-          flowNodeName: 'someProcessName',
-          id: expect.any(String),
-          name: 'testVariableName',
-          newValue: '123',
-          operation: 'ADD_VARIABLE',
-          scopeId: 'instance_id',
-        },
-        type: 'variable',
-      },
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -290,23 +277,12 @@ describe('New Variable Modifications', () => {
     ]);
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
-    await editNameFromTextfieldAndBlur(user, 'test2');
-    await editValueFromTextfieldAndBlur(user, '1234');
+    await editLastNewVariableName(user, 'test2');
+    await editLastNewVariableValue(user, '1234');
     expect(
       await screen.findByText(/Name should be unique/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications).toEqual([
-      {
-        payload: {
-          flowNodeName: 'someProcessName',
-          id: expect.any(String),
-          name: 'testVariableName',
-          newValue: '123',
-          operation: 'ADD_VARIABLE',
-          scopeId: 'instance_id',
-        },
-        type: 'variable',
-      },
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -344,7 +320,7 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
 
-    await editNameFromTextfieldAndBlur(user, 'test2');
+    await editLastNewVariableName(user, 'test2');
     await user.click(screen.getByTestId('new-variable-value'));
     await user.tab();
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
@@ -352,7 +328,7 @@ describe('New Variable Modifications', () => {
       await screen.findByText(/Value has to be filled/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
-    await editValueFromTextfieldAndBlur(user, 'invalid value');
+    await editLastNewVariableValue(user, 'invalid value');
     expect(
       await screen.findByText(/Value has to be JSON/i),
     ).toBeInTheDocument();
@@ -386,8 +362,8 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
 
-    await editNameFromTextfieldAndBlur(user, 'test2');
-    await editValueFromTextfieldAndBlur(user, '12345');
+    await editLastNewVariableName(user, 'test2');
+    await editLastNewVariableValue(user, '12345');
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     expect(modificationsStore.state.modifications).toEqual([
@@ -423,7 +399,7 @@ describe('New Variable Modifications', () => {
       },
     ]);
 
-    await editNameFromTextfieldAndBlur(user, '-updated');
+    await editLastNewVariableName(user, '-updated');
 
     expect(modificationsStore.state.modifications).toEqual([
       {
@@ -460,7 +436,7 @@ describe('New Variable Modifications', () => {
       },
     ]);
 
-    await editValueFromTextfieldAndBlur(user, '678');
+    await editLastNewVariableValue(user, '678');
     expect(modificationsStore.state.modifications).toEqual([
       {
         payload: {
@@ -576,9 +552,9 @@ describe('New Variable Modifications', () => {
     await user.tab();
 
     await user.clear(screen.getByTestId('new-variable-name'));
-    await editNameFromTextfieldAndBlur(user, 'test2');
+    await editLastNewVariableName(user, 'test2');
     await user.clear(screen.getByTestId('new-variable-value'));
-    await editValueFromTextfieldAndBlur(user, '12345');
+    await editLastNewVariableValue(user, '12345');
 
     expect(modificationsStore.state.modifications).toEqual([
       {
@@ -641,8 +617,8 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
 
-    await editNameFromTextfieldAndBlur(user, 'test1');
-    await editValueFromTextfieldAndBlur(user, '123');
+    await editLastNewVariableName(user, 'test1');
+    await editLastNewVariableValue(user, '123');
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
@@ -650,8 +626,8 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findAllByTestId('new-variable-name')).toHaveLength(2);
 
-    await editNameFromTextfieldAndBlur(user, 'test2', 1);
-    await editValueFromTextfieldAndBlur(user, '456', 1);
+    await editLastNewVariableName(user, 'test2', 1);
+    await editLastNewVariableValue(user, '456', 1);
 
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
@@ -729,8 +705,8 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
 
-    await editNameFromTextfieldAndBlur(user, 'test1');
-    await editValueFromTextfieldAndBlur(user, '123');
+    await editLastNewVariableName(user, 'test1');
+    await editLastNewVariableValue(user, '123');
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 

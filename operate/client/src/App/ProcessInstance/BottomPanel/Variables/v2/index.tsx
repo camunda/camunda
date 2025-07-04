@@ -27,7 +27,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
-import {useVariablesContext} from '../../VariablePanel/v2/VariablesContext';
+import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -37,7 +37,7 @@ type FooterVariant = React.ComponentProps<typeof Footer>['variant'];
 
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
-    const {status: displayStatus} = useVariablesContext();
+    const {displayStatus} = useVariables();
     const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );

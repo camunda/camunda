@@ -27,6 +27,8 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockVariablesV2} from '../index.setup';
 import {VariablePanel} from '../../VariablePanel/v2';
 
@@ -39,8 +41,6 @@ describe('Footer', () => {
       mockProcessWithInputOutputMappingsXML,
     );
     mockProcessInstanceDeprecated().withSuccess(instanceMock);
-    mockProcessInstanceDeprecated().withSuccess(instanceMock);
-    mockFetchVariables().withSuccess(mockVariables);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -59,40 +59,40 @@ describe('Footer', () => {
         },
       ],
     });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: [
-        {
-          elementId: 'start',
-          active: 0,
-          canceled: 0,
-          incidents: 0,
-          completed: 1,
-        },
-        {
-          elementId: 'neverFails',
-          active: 0,
-          canceled: 0,
-          incidents: 0,
-          completed: 1,
-        },
-      ],
-    });
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    init('process-instance', [
+      {
+        elementId: 'start',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        elementId: 'neverFails',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+    ]);
   });
 
-  afterEach(async () => {
-    vi.clearAllMocks();
+  afterEach(() => {
+    act(() => {
+      flowNodeSelectionStore.reset();
+      flowNodeMetaDataStore.reset();
+      variablesStore.reset();
+      processInstanceDetailsStore.reset();
+    });
   });
 
   it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
-    vi.useFakeTimers();
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockProcessInstanceDeprecated().withSuccess(instanceMock);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
-    );
-
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -134,50 +134,44 @@ describe('Footer', () => {
   });
 
   it('should disable add variable button when selected flow node is not running', async () => {
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchVariables().withSuccess([]);
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
-
-    init('process-instance', []);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    mockFetchFlowNodeMetadata().withSuccess({
+    mockFetchVariables().withSuccess([]);
+    const mockSearchVariablesPayload = {
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    };
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    const mockFetchFlowNodeMetadataPayload = {
       ...singleInstanceMetadata,
       instanceMetadata: {
         ...singleInstanceMetadata.instanceMetadata!,
         endDate: null,
       },
-    });
+    };
+    mockFetchFlowNodeMetadata().withSuccess(mockFetchFlowNodeMetadataPayload);
+    mockFetchFlowNodeMetadata().withSuccess(mockFetchFlowNodeMetadataPayload);
+    mockFetchFlowNodeMetadata().withSuccess(mockFetchFlowNodeMetadataPayload);
 
-    act(() =>
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'start',
-        flowNodeInstanceId: '2',
-        isMultiInstance: false,
-      }),
-    );
+    init('process-instance', []);
+
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'start',
+      flowNodeInstanceId: '2',
+      isMultiInstance: false,
+    });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
@@ -192,8 +186,6 @@ describe('Footer', () => {
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
     );
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() =>
       flowNodeSelectionStore.setSelection({
@@ -213,7 +205,6 @@ describe('Footer', () => {
   });
 
   it('should disable add variable button when loading', async () => {
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockFetchVariables().withSuccess(mockVariables);
@@ -235,18 +226,16 @@ describe('Footer', () => {
     );
   });
 
-  it.only('should disable add variable button if instance state is cancelled', async () => {
-    mockFetchProcessInstance().withSuccess({
-      ...mockProcessInstance,
-      state: 'TERMINATED',
-    });
+  it('should disable add variable button if instance state is cancelled', async () => {
     processInstanceDetailsStore.setProcessInstance({
       ...instanceMock,
       state: 'CANCELED',
     });
-
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'TERMINATED',
+    });
     mockFetchVariables().withSuccess(mockVariables);
-    mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
 

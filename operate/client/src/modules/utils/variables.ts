@@ -93,18 +93,12 @@ const updateVariable = async ({
   }
 };
 
-/**
- * Returns true if any of the variable values is truncated
- */
 const isTruncated = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
   return variables?.pages[0]?.items.some((item) => {
     return item.isTruncated;
   });
 };
 
-/**
- * Returns true if the list of variables is paginated (50 variables or more)
- */
 const isPaginated = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
   return (variables?.pages && variables.pages.length >= 2) || false;
 };
