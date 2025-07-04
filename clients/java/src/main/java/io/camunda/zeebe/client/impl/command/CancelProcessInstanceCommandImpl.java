@@ -123,6 +123,7 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   @Override
   public CancelProcessInstanceCommandStep1 operationReference(final long operationReference) {
     builder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
     return this;
   }
 
