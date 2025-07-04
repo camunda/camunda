@@ -7,6 +7,8 @@
  */
 package io.camunda.migration.identity.handler.saas;
 
+import static io.camunda.migration.identity.MigrationUtil.normalizeGroupID;
+
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.client.ConsoleClient.Member;
@@ -84,24 +86,6 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
         totalGroupCount.get(),
         assignedUserCount.get(),
         totalUserAssignmentAttempts.get());
-  }
-
-  // Normalizes the group ID to ensure it meets the requirements for a valid group ID.
-  // For SaaS the group ID is derived from the group name, because in the old identity
-  // management system the group ID was generated internally.
-  private String normalizeGroupID(final Group group) {
-    if (group.name() == null || group.name().isEmpty()) {
-      return group.id();
-    }
-    final String groupName = group.name();
-
-    String normalizedId =
-        groupName.toLowerCase().replaceAll("[^a-z0-9_@.-]", "_"); // Replace disallowed characters
-
-    if (normalizedId.length() > 256) {
-      normalizedId = normalizedId.substring(0, 256);
-    }
-    return normalizedId;
   }
 
   private void assignUsersToGroup(

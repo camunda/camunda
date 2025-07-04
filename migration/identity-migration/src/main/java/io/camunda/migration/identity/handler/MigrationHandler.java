@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import java.util.List;
 import java.util.concurrent.CompletionException;
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,10 @@ public abstract class MigrationHandler<T> {
             && isConflictError(brokerException.getCause()))
         || (e instanceof final CompletionException completionException
             && isConflictError(completionException.getCause()));
+  }
+
+  protected boolean isNotImplementedError(final Throwable e) {
+    return e instanceof final NotImplementedException exception;
   }
 
   public void migrate() {

@@ -7,6 +7,8 @@
  */
 package io.camunda.migration.identity.handler.saas;
 
+import static io.camunda.migration.identity.MigrationUtil.convertDecisionPermissions;
+import static io.camunda.migration.identity.MigrationUtil.convertProcessPermissions;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE;
 
@@ -22,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -146,35 +147,5 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
         yield Collections.emptySet();
       }
     };
-  }
-
-  private Set<PermissionType> convertDecisionPermissions(final Set<String> permissions) {
-    final Set<PermissionType> result = new HashSet<>();
-    if (permissions.contains("READ")) {
-      result.add(PermissionType.READ_DECISION_DEFINITION);
-      result.add(PermissionType.READ_DECISION_INSTANCE);
-    }
-    if (permissions.contains("DELETE")) {
-      result.add(PermissionType.DELETE_DECISION_INSTANCE);
-    }
-    return result;
-  }
-
-  private Set<PermissionType> convertProcessPermissions(final Set<String> permissions) {
-    final Set<PermissionType> result = new HashSet<>();
-    if (permissions.contains("READ")) {
-      result.add(PermissionType.READ_PROCESS_DEFINITION);
-      result.add(PermissionType.READ_PROCESS_INSTANCE);
-    }
-    if (permissions.contains("UPDATE_PROCESS_INSTANCE")) {
-      result.add(PermissionType.UPDATE_PROCESS_INSTANCE);
-    }
-    if (permissions.contains("START_PROCESS_INSTANCE")) {
-      result.add(PermissionType.CREATE_PROCESS_INSTANCE);
-    }
-    if (permissions.contains("DELETE") || permissions.contains("DELETE_PROCESS_INSTANCE")) {
-      result.add(PermissionType.DELETE_PROCESS_INSTANCE);
-    }
-    return result;
   }
 }

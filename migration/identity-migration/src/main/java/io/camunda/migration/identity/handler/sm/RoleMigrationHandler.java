@@ -8,6 +8,7 @@
 package io.camunda.migration.identity.handler.sm;
 
 import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
+import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthorizationsByAudience;
 
 import io.camunda.migration.api.MigrationException;
@@ -54,7 +55,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
     roles.forEach(
         role -> {
           final var roleName = role.name();
-          final var roleId = normalizeRoleID(roleName);
+          final var roleId = normalizeID(roleName);
           try {
             roleServices
                 .createRole(new CreateRoleRequest(roleId, roleName, role.description()))
@@ -77,19 +78,6 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
         "Role Migration completed: Created {} roles out of {} total roles.",
         createdRoleCount.get(),
         totalRoleCount.get());
-  }
-
-  // Normalizes the role ID to ensure it meets the requirements for a valid role ID.
-  // For SM the role ID is derived from the role name, because in the old identity
-  // management system the role ID was generated internally.
-  private String normalizeRoleID(final String roleName) {
-    String normalizedId =
-        roleName.toLowerCase().replaceAll("[^a-z0-9_@.-]", "_"); // Replace disallowed characters
-
-    if (normalizedId.length() > 256) {
-      normalizedId = normalizedId.substring(0, 256);
-    }
-    return normalizedId;
   }
 
   private void createAuthorizationsForRole(final String roleId, final String roleName) {

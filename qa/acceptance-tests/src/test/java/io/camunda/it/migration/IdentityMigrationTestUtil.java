@@ -72,11 +72,14 @@ final class IdentityMigrationTestUtil {
                 .withStartupTimeout(Duration.ofMinutes(2)));
   }
 
-  static GenericContainer<?> getManagementIdentitySMKeycloak(final KeycloakContainer keycloak) {
+  static GenericContainer<?> getManagementIdentitySMKeycloak(
+      final KeycloakContainer keycloak, final GenericContainer<?> postgres) {
     return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
         .withImagePullPolicy(PullPolicy.alwaysPull())
         .dependsOn(keycloak)
+        .dependsOn(postgres)
         .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
+        .withEnv("RESOURCE_PERMISSIONS_ENABLED", "true")
         .withEnv("KEYCLOAK_URL", "http://%s:%d".formatted(KEYCLOAK_HOST, KEYCLOAK_PORT))
         .withEnv(
             "IDENTITY_AUTH_PROVIDER_BACKEND_URL",
@@ -97,6 +100,12 @@ final class IdentityMigrationTestUtil {
         // this will enable readiness checks by spring to await ApplicationRunner completion
         .withEnv("MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED", "true")
         .withEnv("MANAGEMENT_HEALTH_READINESSSTATE_ENABLED", "true")
+        // postgres configuration
+        .withEnv("IDENTITY_DATABASE_HOST", POSTGRES_HOST)
+        .withEnv("IDENTITY_DATABASE_NAME", IDENTITY_DATABASE_NAME)
+        .withEnv("IDENTITY_DATABASE_PASSWORD", IDENTITY_DATABASE_PASSWORD)
+        .withEnv("IDENTITY_DATABASE_PORT", Integer.toString(POSTGRES_PORT))
+        .withEnv("IDENTITY_DATABASE_USERNAME", IDENTITY_DATABASE_USERNAME)
         .withNetworkAliases("identity")
         .withNetwork(NETWORK)
         .withExposedPorts(IDENTITY_PORT, 8082)
