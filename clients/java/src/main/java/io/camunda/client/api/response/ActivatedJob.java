@@ -105,6 +105,13 @@ public interface ActivatedJob {
   Object getVariable(String name);
 
   /**
+   * @return user task properties associated with this job. Present only if the job is of kind
+   *     {@code TASK_LISTENER}; returns {@code null} for other job kinds such as {@code
+   *     BPMN_ELEMENT} or {@code EXECUTION_LISTENER}.
+   */
+  UserTaskProperties getUserTask();
+
+  /**
    * @return the record encoded as JSON
    */
   String toJson();

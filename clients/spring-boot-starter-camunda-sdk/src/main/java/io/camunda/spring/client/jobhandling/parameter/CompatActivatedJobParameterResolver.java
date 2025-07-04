@@ -17,6 +17,8 @@ package io.camunda.spring.client.jobhandling.parameter;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.zeebe.client.api.response.UserTaskProperties;
+import java.util.List;
 import java.util.Map;
 
 public class CompatActivatedJobParameterResolver implements ParameterResolver {
@@ -112,6 +114,65 @@ public class CompatActivatedJobParameterResolver implements ParameterResolver {
     @Override
     public Object getVariable(final String name) {
       return job.getVariable(name);
+    }
+
+    @Override
+    public UserTaskProperties getUserTask() {
+      if (job.getUserTask() == null) {
+        return null;
+      }
+
+      return new UserTaskProperties() {
+        @Override
+        public String getAction() {
+          return job.getUserTask().getAction();
+        }
+
+        @Override
+        public String getAssignee() {
+          return job.getUserTask().getAssignee();
+        }
+
+        @Override
+        public List<String> getCandidateGroups() {
+          return job.getUserTask().getCandidateGroups();
+        }
+
+        @Override
+        public List<String> getCandidateUsers() {
+          return job.getUserTask().getCandidateUsers();
+        }
+
+        @Override
+        public List<String> getChangedAttributes() {
+          return job.getUserTask().getChangedAttributes();
+        }
+
+        @Override
+        public String getDueDate() {
+          return job.getUserTask().getDueDate();
+        }
+
+        @Override
+        public String getFollowUpDate() {
+          return job.getUserTask().getFollowUpDate();
+        }
+
+        @Override
+        public Long getFormKey() {
+          return job.getUserTask().getFormKey();
+        }
+
+        @Override
+        public Integer getPriority() {
+          return job.getUserTask().getPriority();
+        }
+
+        @Override
+        public Long getUserTaskKey() {
+          return job.getUserTask().getUserTaskKey();
+        }
+      };
     }
 
     @Override

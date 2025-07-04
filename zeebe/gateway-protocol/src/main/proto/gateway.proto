@@ -83,6 +83,40 @@ message ActivatedJob {
   string variables = 13;
   // the id of the tenant that owns the job
   string tenantId = 14;
+  // Contains user task properties if the job is of kind TASK_LISTENER
+  optional UserTaskProperties userTask = 15;
+}
+
+message UserTaskProperties {
+  // The action performed on the user task (e.g., "claim", "update", "complete").
+  optional string action = 1;
+
+  // The user assigned to the task.
+  optional string assignee = 2;
+
+  // The list of candidate groups for the user task.
+  repeated string candidateGroups = 3;
+
+  // The list of candidate users for the user task.
+  repeated string candidateUsers = 4;
+
+  // The list of attributes that were changed in the user task.
+  repeated string changedAttributes = 5;
+
+  // The due date of the user task in ISO 8601 format.
+  optional string dueDate = 6;
+
+  // The follow-up date of the user task in ISO 8601 format.
+  optional string followUpDate = 7;
+
+  // The key of the form associated with the user task.
+  optional int64 formKey = 8;
+
+  // The priority of the user task (0-100).
+  optional int32 priority = 9;
+
+  // The unique key identifying the user task.
+  optional int64 userTaskKey = 10;
 }
 
 message CancelProcessInstanceRequest {

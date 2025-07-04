@@ -28,6 +28,7 @@ import io.camunda.client.impl.response.ActivatedJobImpl;
 import io.camunda.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UserTaskProperties;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -106,6 +107,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getRetries()).isEqualTo(activatedJob1.getRetries());
     assertThat(job.getDeadline()).isEqualTo(activatedJob1.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
+    assertThat(job.getUserTask()).isNull();
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
 
     job = response.getJobs().get(1);
@@ -123,6 +125,7 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getRetries()).isEqualTo(activatedJob2.getRetries());
     assertThat(job.getDeadline()).isEqualTo(activatedJob2.getDeadline());
     assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
+    assertThat(job.getUserTask()).isNull();
     assertThat(job.getTenantId()).isEqualTo(activatedJob2.getTenantId());
 
     final ActivateJobsRequest request = gatewayService.getLastRequest();
@@ -130,6 +133,94 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(request.getMaxJobsToActivate()).isEqualTo(3);
     assertThat(request.getTimeout()).isEqualTo(1000);
     assertThat(request.getWorker()).isEqualTo("worker1");
+  }
+
+  @Test
+  public void shouldActivateJobsWithUserTaskProperties() {
+    // given
+    final ActivatedJob activatedJob1 =
+        ActivatedJob.newBuilder()
+            // with all user task properties set
+            .setUserTask(
+                UserTaskProperties.newBuilder()
+                    .setAction("update")
+                    .setAssignee("tony")
+                    .addCandidateGroups("assistants")
+                    .addCandidateUsers("jarvis")
+                    .addCandidateUsers("friday")
+                    .addChangedAttributes("assignee")
+                    .setDueDate("2019-04-22T00:00:00Z")
+                    .setFollowUpDate("2018-04-23T00:00:00Z")
+                    .setFormKey(123)
+                    .setPriority(10)
+                    .setUserTaskKey(456)
+                    .build())
+            .build();
+
+    final ActivatedJob activatedJob2 =
+        ActivatedJob.newBuilder()
+            // with empty user task properties
+            .setUserTask(UserTaskProperties.newBuilder().build())
+            .build();
+
+    final ActivatedJob activatedJob3 =
+        ActivatedJob.newBuilder()
+            // with not set user task properties
+            .build();
+
+    gatewayService.onActivateJobsRequest(activatedJob1, activatedJob2, activatedJob3);
+
+    // when
+    final ActivateJobsResponse response =
+        client
+            .newActivateJobsCommand()
+            .jobType("payment")
+            .maxJobsToActivate(10)
+            .workerName("paymentWorker")
+            .timeout(Duration.ofMillis(1000))
+            .execute();
+
+    // then
+    assertThat(response.getJobs()).hasSize(3);
+
+    io.camunda.client.api.response.ActivatedJob job = response.getJobs().get(0);
+    assertThat(job.getUserTask())
+        .describedAs("Should activate job with all user task properties set")
+        .satisfies(
+            props -> {
+              assertThat(props.getAction()).isEqualTo("update");
+              assertThat(props.getAssignee()).isEqualTo("tony");
+              assertThat(props.getCandidateGroups()).containsExactly("assistants");
+              assertThat(props.getCandidateUsers()).containsExactly("jarvis", "friday");
+              assertThat(props.getChangedAttributes()).containsExactly("assignee");
+              assertThat(props.getDueDate()).isEqualTo("2019-04-22T00:00:00Z");
+              assertThat(props.getFollowUpDate()).isEqualTo("2018-04-23T00:00:00Z");
+              assertThat(props.getFormKey()).isEqualTo(123);
+              assertThat(props.getPriority()).isEqualTo(10);
+              assertThat(props.getUserTaskKey()).isEqualTo(456);
+            });
+
+    job = response.getJobs().get(1);
+    assertThat(job.getUserTask())
+        .describedAs("Should activate job with empty user task properties")
+        .satisfies(
+            props -> {
+              assertThat(props.getAction()).isNull();
+              assertThat(props.getAssignee()).isNull();
+              assertThat(props.getCandidateGroups()).isEmpty();
+              assertThat(props.getCandidateUsers()).isEmpty();
+              assertThat(props.getChangedAttributes()).isEmpty();
+              assertThat(props.getDueDate()).isNull();
+              assertThat(props.getFollowUpDate()).isNull();
+              assertThat(props.getFormKey()).isNull();
+              assertThat(props.getPriority()).isNull();
+              assertThat(props.getUserTaskKey()).isNull();
+            });
+
+    job = response.getJobs().get(2);
+    assertThat(job.getUserTask())
+        .describedAs("Should activate job with null user task properties")
+        .isNull();
   }
 
   @Test

@@ -8293,6 +8293,59 @@ components:
             The unique key identifying the associated task, unique within the scope of the
             process instance.
           type: string
+        userTask:
+          $ref: "#/components/schemas/UserTaskProperties"
+    UserTaskProperties:
+      type: object
+      description: Contains properties of a user task.
+      properties:
+        action:
+          description: The action performed on the user task.
+          type: string
+        assignee:
+          description: The user assigned to the task.
+          type: string
+          nullable: true
+        candidateGroups:
+          description: The groups eligible to claim the task.
+          type: array
+          items:
+            type: string
+        candidateUsers:
+          description: The users eligible to claim the task.
+          type: array
+          items:
+            type: string
+        changedAttributes:
+          description: The attributes that were changed in the task.
+          type: array
+          items:
+            type: string
+        dueDate:
+          description: The due date of the user task in ISO 8601 format.
+          type: string
+          format: date-time
+          nullable: true
+        followUpDate:
+          description: The follow-up date of the user task in ISO 8601 format.
+          type: string
+          format: date-time
+          nullable: true
+        formKey:
+          description: The key of the form associated with the user task.
+          type: string
+          nullable: true
+        priority:
+          description: The priority of the user task.
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          nullable: true
+        userTaskKey:
+          description: The unique key identifying the user task.
+          type: string
+          nullable: true
     JobFailRequest:
       type: object
       properties:
