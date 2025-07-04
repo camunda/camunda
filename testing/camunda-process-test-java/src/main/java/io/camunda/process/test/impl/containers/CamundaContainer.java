@@ -67,6 +67,10 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_SPRING_PROFILES_ACTIVE, ACTIVE_SPRING_PROFILES)
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_CLOCK_CONTROLLED, "true")
         .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_LOG_APPENDER, LOG_APPENDER_STACKDRIVER)
+        .withEnv(
+            ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API,
+            "true")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED, "false")
         .withH2()
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
@@ -137,7 +141,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withReadTimeout(DEFAULT_READINESS_TIMEOUT);
   }
 
-  private static boolean isPartitionReady(String response) {
+  private static boolean isPartitionReady(final String response) {
     return response.matches(".*\"partitionId\"\\s*:\\s*1.*")
         && response.matches(".*\"role\"\\s*:\\s*\"leader\".*")
         && response.matches(".*\"health\"\\s*:\\s*\"healthy\".*");

@@ -142,6 +142,8 @@ public abstract class TasklistZeebeExtension
             .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
             .withEnv("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "2")
             .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+            .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
             .withEnv(
                 "JAVA_OPTS",
                 "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005");

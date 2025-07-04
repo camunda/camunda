@@ -10,6 +10,8 @@ env-up:
 	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
 	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
 	CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
+  CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
+  CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=1 \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY=1 \
@@ -31,6 +33,8 @@ env-os-up:
       CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
       CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
       CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
+      CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
+      CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
          mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth -Dcamunda.operate.zeebe.compatibility.enabled=true
 
 # Look up for users (bender/bender etc) in: https://github.com/rroemhild/docker-test-openldap
@@ -82,6 +86,8 @@ env-identity-up:
   CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
   CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
   CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
+  CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
+  CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
 	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth,identity
@@ -127,6 +133,8 @@ start-e2e:
   CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
   CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
   CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
+  CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
+  CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
 	SERVER_PORT=8081 \
 	MANAGEMENT_SERVER_PORT=9601 \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \

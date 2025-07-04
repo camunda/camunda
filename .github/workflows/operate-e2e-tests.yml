@@ -120,6 +120,8 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
+          CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
+          CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci

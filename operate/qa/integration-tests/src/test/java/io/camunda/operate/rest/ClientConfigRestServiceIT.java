@@ -82,7 +82,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"isLoginDelegated\":false,"
                 + "\"tasklistUrl\":\"https://tasklist.camunda.io/tl\","
-                + "\"resourcePermissionsEnabled\":false,"
+                + "\"resourcePermissionsEnabled\":true,"
                 + "\"multiTenancyEnabled\":false"
                 + "};");
   }
@@ -115,7 +115,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"isLoginDelegated\":false,"
                 + "\"tasklistUrl\":null,"
-                + "\"resourcePermissionsEnabled\":false,"
+                + "\"resourcePermissionsEnabled\":true,"
                 + "\"multiTenancyEnabled\":false"
                 + "};");
   }
@@ -149,7 +149,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"isLoginDelegated\":false,"
                 + "\"tasklistUrl\":null,"
-                + "\"resourcePermissionsEnabled\":false,"
+                + "\"resourcePermissionsEnabled\":true,"
                 + "\"multiTenancyEnabled\":false"
                 + "};");
   }

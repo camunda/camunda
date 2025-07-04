@@ -69,7 +69,7 @@ public class ClientConfigRestServiceIdentityIT extends OperateAbstractIT {
                 + "\"mixpanelToken\":null,"
                 + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":null,"
-                + "\"resourcePermissionsEnabled\":false,"
+                + "\"resourcePermissionsEnabled\":true,"
                 + "\"multiTenancyEnabled\":false"
                 + "};");
   }

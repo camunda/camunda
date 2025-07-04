@@ -103,7 +103,7 @@ class UnavailableBrokersTest {
     gateway =
         new Gateway(
             config,
-            SecurityConfigurations.unauthenticated(),
+            SecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer(),

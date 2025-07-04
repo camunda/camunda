@@ -9,7 +9,7 @@ package io.camunda.security.configuration;
 
 public class AuthorizationsConfiguration {
 
-  private static final boolean DEFAULT_AUTHORIZATIONS_ENABLED = false;
+  private static final boolean DEFAULT_AUTHORIZATIONS_ENABLED = true;
 
   private boolean enabled = DEFAULT_AUTHORIZATIONS_ENABLED;
 

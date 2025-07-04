@@ -87,6 +87,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     brokerProperties.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
 
     securityConfig = new CamundaSecurityProperties();
+    securityConfig.getAuthorizations().setEnabled(false);
+    securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
         .getUsers()

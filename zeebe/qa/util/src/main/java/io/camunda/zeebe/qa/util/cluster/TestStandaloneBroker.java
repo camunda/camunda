@@ -69,6 +69,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
+    securityConfig.getAuthorizations().setEnabled(false);
+    securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
         .getUsers()
@@ -132,6 +134,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+  }
+
+  public TestStandaloneBroker withAuthorizationsDisabled() {
+    withUnauthenticatedAccess();
+    return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(false));
   }
 
   @Override

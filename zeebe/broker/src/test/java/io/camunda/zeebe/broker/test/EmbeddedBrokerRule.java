@@ -244,7 +244,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
             scheduler,
             atomixCluster,
             TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler),
-            SecurityConfigurations.unauthenticated(),
+            SecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
             null);

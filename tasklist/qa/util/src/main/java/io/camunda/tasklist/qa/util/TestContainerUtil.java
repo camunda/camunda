@@ -479,7 +479,10 @@ public class TestContainerUtil {
       broker =
           new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version))
               .withNetwork(testContext.getNetwork())
-              .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
+              .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+              .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+              .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
+
       if (testContext.getZeebeDataFolder() != null) {
         broker.withCreateContainerCmdModifier(
             cmd -> {
