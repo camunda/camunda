@@ -39,10 +39,13 @@ import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.util.OpensearchUtil;
+import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -63,6 +66,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchArchiverRepository.class);
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
+  @Autowired protected OpenSearchAsyncClient osAsyncClient;
 
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
@@ -79,7 +83,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
       final String instancesAggName) {
     final var buckets =
         searchResponse.aggregations().get(datesAggName).dateHistogram().buckets().keyed();
-    if (buckets.size() > 0) {
+    if (!buckets.isEmpty()) {
       final var entry = buckets.entrySet().iterator().next();
       final var hits =
           entry.getValue().aggregations().get(instancesAggName).topHits().hits().hits();
@@ -202,25 +206,22 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
             .query(
                 stringTerms(
                     idFieldName, processInstanceKeys.stream().map(Object::toString).toList()))
-            .waitForCompletion(false)
             .slices(getAutoSlices())
             .conflicts(Conflicts.Proceed);
 
-    return withTimer(
-        metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY),
-        () ->
-            richOpenSearchClient
-                .async()
-                .doc()
-                .delete(
-                    deleteByQueryRequestBuilder,
-                    e -> "Failed to delete asynchronously from " + sourceIndexName)
-                .thenAccept(
-                    response ->
-                        richOpenSearchClient
-                            .async()
-                            .task()
-                            .totalImpactedByTask(response.task(), archiverExecutor)));
+    LOGGER.debug("Deleting Process Instances: {} from {}", processInstanceKeys, sourceIndexName);
+
+    final var deletionFuture = new CompletableFuture<Long>();
+    final var startTimer = Timer.start();
+    OpensearchUtil.deleteAsync(deleteByQueryRequestBuilder.build(), osAsyncClient)
+        .whenComplete(
+            (response, e) -> {
+              final var timer = metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY);
+              startTimer.stop(timer);
+              final var result = OpensearchUtil.handleResponse(response, e, sourceIndexName);
+              result.ifRightOrLeft(deletionFuture::complete, deletionFuture::completeExceptionally);
+            });
+    return deletionFuture.thenApply(ok -> null);
   }
 
   @Override
@@ -233,32 +234,32 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
       createIndexAs(sourceIndexName, destinationIndexName);
     }
 
-    final String errorMessage =
-        format(
-            "Failed to reindex asynchronously from %s to %s!",
-            sourceIndexName, destinationIndexName);
     final Query sourceQuery =
         stringTerms(idFieldName, processInstanceKeys.stream().map(Object::toString).toList());
     final var reindexRequest =
         reindexRequestBuilder(sourceIndexName, sourceQuery, destinationIndexName)
-            .waitForCompletion(false)
             .scroll(time(OpenSearchDocumentOperations.INTERNAL_SCROLL_KEEP_ALIVE_MS))
             .slices(getAutoSlices())
-            .conflicts(Conflicts.Proceed);
+            .conflicts(Conflicts.Proceed)
+            .build();
 
-    return withTimer(
-        metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY),
-        () ->
-            richOpenSearchClient
-                .async()
-                .index()
-                .reindex(reindexRequest, e -> errorMessage)
-                .thenAccept(
-                    response ->
-                        richOpenSearchClient
-                            .async()
-                            .task()
-                            .totalImpactedByTask(response.task(), archiverExecutor)));
+    LOGGER.debug(
+        "Reindexing Process Instances: {} from {} to {}",
+        processInstanceKeys,
+        sourceIndexName,
+        destinationIndexName);
+
+    final var reindexFuture = new CompletableFuture<Long>();
+    final var startTimer = Timer.start();
+    OpensearchUtil.reindexAsync(reindexRequest, osAsyncClient)
+        .whenComplete(
+            (response, e) -> {
+              final var timer = metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY);
+              startTimer.stop(timer);
+              final var result = OpensearchUtil.handleResponse(response, e, sourceIndexName);
+              result.ifRightOrLeft(reindexFuture::complete, reindexFuture::completeExceptionally);
+            });
+    return reindexFuture.thenApply(ok -> null);
   }
 
   private long getAutoSlices() {
