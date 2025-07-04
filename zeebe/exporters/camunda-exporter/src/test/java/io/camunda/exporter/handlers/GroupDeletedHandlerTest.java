@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -53,12 +54,14 @@ public class GroupDeletedHandlerTest {
     // given
     final Record<GroupRecordValue> groupRecord =
         factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.DELETED);
+    final String groupId = groupRecord.getValue().getGroupId();
+    final String uniqueExporterId = GroupIndex.JOIN_RELATION_FACTORY.createParentId(groupId);
 
     // when
     final var idList = underTest.generateIds(groupRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(groupRecord.getValue().getGroupId()));
+    assertThat(idList).containsExactly(uniqueExporterId);
   }
 
   @Test

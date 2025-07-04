@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -56,12 +57,14 @@ public class RoleCreateUpdateHandlerTest {
     // given
     final Record<RoleRecordValue> roleRecord =
         factory.generateRecordWithIntent(ValueType.ROLE, RoleIntent.CREATED);
+    final String roleId = roleRecord.getValue().getRoleId();
+    final String uniqueExporterId = RoleIndex.JOIN_RELATION_FACTORY.createParentId(roleId);
 
     // when
     final var idList = underTest.generateIds(roleRecord);
 
     // then
-    assertThat(idList).containsExactly(roleRecord.getValue().getRoleId());
+    assertThat(idList).containsExactly(uniqueExporterId);
   }
 
   @Test

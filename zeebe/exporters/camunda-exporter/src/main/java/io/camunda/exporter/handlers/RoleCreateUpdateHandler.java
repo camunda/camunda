@@ -43,7 +43,7 @@ public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRe
 
   @Override
   public List<String> generateIds(final Record<RoleRecordValue> record) {
-    return List.of(record.getValue().getRoleId());
+    return List.of(RoleIndex.JOIN_RELATION_FACTORY.createParentId(record.getValue().getRoleId()));
   }
 
   @Override

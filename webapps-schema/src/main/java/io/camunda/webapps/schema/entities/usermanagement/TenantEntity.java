@@ -16,7 +16,7 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
   private String name;
   private String description;
 
-  private EntityJoinRelation<String> join;
+  private EntityJoinRelation join;
 
   public Long getKey() {
     return key;
@@ -54,11 +54,11 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
     return this;
   }
 
-  public EntityJoinRelation<String> getJoin() {
+  public EntityJoinRelation getJoin() {
     return join;
   }
 
-  public TenantEntity setJoin(final EntityJoinRelation<String> join) {
+  public TenantEntity setJoin(final EntityJoinRelation join) {
     this.join = join;
     return this;
   }

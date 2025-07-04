@@ -59,7 +59,9 @@ public class TenantEntityAddedHandlerTest {
     // then
     final var value = tenantRecord.getValue();
     assertThat(idList)
-        .containsExactly(TenantMemberEntity.getChildKey(value.getTenantId(), value.getEntityId()));
+        .containsExactly(
+            TenantIndex.JOIN_RELATION_FACTORY.createChildId(
+                value.getTenantId(), value.getEntityId()));
   }
 
   @Test

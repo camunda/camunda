@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -56,12 +57,14 @@ public class TenantCreateUpdateHandlerTest {
     // given
     final Record<TenantRecordValue> tenantRecord =
         factory.generateRecordWithIntent(ValueType.TENANT, TenantIntent.CREATED);
+    final String tenantId = tenantRecord.getValue().getTenantId();
+    final String uniqueExporterId = TenantIndex.JOIN_RELATION_FACTORY.createParentId(tenantId);
 
     // when
     final var idList = underTest.generateIds(tenantRecord);
 
     // then
-    assertThat(idList).containsExactly(tenantRecord.getValue().getTenantId());
+    assertThat(idList).containsExactly(uniqueExporterId);
   }
 
   @Test
