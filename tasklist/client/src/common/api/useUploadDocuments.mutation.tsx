@@ -8,49 +8,22 @@
 
 import {useMutation} from '@tanstack/react-query';
 import {commonApi} from 'common/api';
-import {type RequestError, request} from 'common/api/request';
+import {request} from 'common/api/request';
 import {PICKER_KEY} from 'common/document-handling/buildDocumentMultipart';
+import type {
+  DocumentReference,
+  CreateDocumentsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+
 type Payload = {
   files: Map<string, File[]>;
-};
-
-type FileUploadMetadata = {
-  contentType: string;
-  fileName: string;
-  expiresAt?: string;
-  size: number;
-  processDefinitionId?: string;
-  processInstanceKey?: number;
-  customProperties?: Record<string, unknown>;
-};
-
-type SuccessDocument = {
-  'camunda.document.type': 'camunda';
-  storeId: string;
-  documentId: string;
-  contentHash: string;
-  metadata: FileUploadMetadata;
-};
-
-type FailedDocument = {
-  filename: string;
-  detail: string;
-};
-
-type BatchUploadResponse = {
-  createdDocuments: SuccessDocument[];
-  failedDocuments: FailedDocument[];
 };
 
 const MIXED_SUCCESS_AND_FAILED_DOCUMENTS_STATUS_CODE = 207;
 
 function useUploadDocuments() {
-  return useMutation<
-    Map<string, SuccessDocument[]>,
-    RequestError | Error,
-    Payload
-  >({
-    mutationFn: async ({files}) => {
+  return useMutation({
+    mutationFn: async ({files}: Payload) => {
       const {response, error} = await request(
         commonApi.uploadDocuments({files}),
       );
@@ -63,9 +36,9 @@ function useUploadDocuments() {
         throw new Error('Failed to upload some documents');
       }
 
-      const payload: BatchUploadResponse = await response.json();
+      const payload: CreateDocumentsResponseBody = await response.json();
 
-      const result = new Map<string, BatchUploadResponse['createdDocuments']>();
+      const result = new Map<string, DocumentReference[]>();
 
       payload.createdDocuments.forEach((document) => {
         const pickerKey = document.metadata.customProperties?.[PICKER_KEY];
@@ -89,4 +62,3 @@ function useUploadDocuments() {
 }
 
 export {useUploadDocuments};
-export type {SuccessDocument};

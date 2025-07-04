@@ -16,6 +16,7 @@
 package io.camunda.process.test.impl.extension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
@@ -47,6 +48,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
+import org.awaitility.core.TerminalFailureException;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -236,26 +239,36 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
     final AtomicReference<Long> userTaskKey = new AtomicReference<>();
-    Awaitility.await("until user task is active")
-        .ignoreExceptions()
-        .atMost(Duration.ofSeconds(2 * TIMEOUT))
-        .untilAsserted(
-            () -> {
-              final Future<SearchResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskSearchRequest().send();
-              Assertions.assertThat(userTaskFuture)
-                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
-                  .extracting(SearchResponse::items)
-                  .satisfies(
-                      items -> {
-                        final List<UserTask> tasks =
-                            items.stream()
-                                .filter(userTaskSelector::test)
-                                .collect(Collectors.toList());
-                        Assertions.assertThat(tasks).isNotEmpty();
-                        userTaskKey.set(items.get(0).getUserTaskKey());
-                      });
-            });
+
+    try {
+      Awaitility.await("until user task is active")
+          .ignoreExceptions()
+          .atMost(Duration.ofSeconds(2 * TIMEOUT))
+          .untilAsserted(
+              () -> {
+                final Future<SearchResponse<UserTask>> userTaskFuture =
+                    client.newUserTaskSearchRequest().send();
+                Assertions.assertThat(userTaskFuture)
+                    .succeedsWithin(Duration.ofSeconds(TIMEOUT))
+                    .extracting(SearchResponse::items)
+                    .satisfies(
+                        items -> {
+                          final List<UserTask> tasks =
+                              items.stream()
+                                  .filter(userTaskSelector::test)
+                                  .collect(Collectors.toList());
+                          Assertions.assertThat(tasks).isNotEmpty();
+                          userTaskKey.set(tasks.get(0).getUserTaskKey());
+                        });
+              });
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+      final String failureMessage =
+          String.format(
+              "Expected to complete user task [%s] but no job is available.",
+              userTaskSelector.describe());
+
+      fail(failureMessage);
+    }
 
     LOGGER.debug(
         "Complete user task with variables {} [user-task-key: '{}']", variables, userTaskKey.get());
@@ -302,21 +315,33 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private ActivatedJob getActivatedJob(final String jobType) {
     final CamundaClient client = createClient();
     final AtomicReference<ActivatedJob> activatedJob = new AtomicReference<>();
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(10))
-        .untilAsserted(
-            () -> {
-              final List<ActivatedJob> jobs =
-                  client
-                      .newActivateJobsCommand()
-                      .jobType(jobType)
-                      .maxJobsToActivate(1)
-                      .send()
-                      .join()
-                      .getJobs();
-              assertThat(jobs).isNotEmpty();
-              activatedJob.set(jobs.get(0));
-            });
+
+    try {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(10))
+          .untilAsserted(
+              () -> {
+                final List<ActivatedJob> jobs =
+                    client
+                        .newActivateJobsCommand()
+                        .jobType(jobType)
+                        .maxJobsToActivate(1)
+                        .send()
+                        .join()
+                        .getJobs();
+
+                assertThat(jobs).isNotEmpty();
+
+                activatedJob.set(jobs.get(0));
+              });
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+      final String failureMessage =
+          String.format(
+              "Expected to complete a job with the type '%s' but no job is available.", jobType);
+
+      fail(failureMessage);
+    }
+
     return activatedJob.get();
   }
 }

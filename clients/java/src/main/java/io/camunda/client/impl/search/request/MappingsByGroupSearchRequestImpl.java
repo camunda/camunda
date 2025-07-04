@@ -21,9 +21,9 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
 import io.camunda.client.api.search.filter.MappingFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.MappingsByGroupSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Mapping;
 import io.camunda.client.api.search.response.SearchResponse;

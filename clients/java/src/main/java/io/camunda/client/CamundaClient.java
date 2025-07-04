@@ -93,22 +93,17 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
-import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
-import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
-import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
-import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
-import io.camunda.client.api.fetch.UsersSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -121,16 +116,23 @@ import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
+import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.JobSearchRequest;
+import io.camunda.client.api.search.request.MappingsByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
 import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
+import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
+import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
@@ -1476,6 +1478,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UsersByRoleSearchRequest newUsersByRoleSearchRequest(String roleId);
 
   /**
+   * Executes a search request to query users assigned to a tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUsersByTenantSearchRequest("tenantId")
+   *  .sort((s) -> s.username().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the users by tenant search request
+   */
+  UsersByTenantSearchRequest newUsersByTenantSearchRequest(String tenantId);
+
+  /**
    * Executes a search request to query users.
    *
    * <pre>
@@ -2488,4 +2506,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the groups by role search request
    */
   GroupsByRoleSearchRequest newGroupsByRoleSearchRequest(String roleId);
+
+  /**
+   * Executes a search request to query jobs.
+   *
+   * <pre>
+   * camundaClient
+   *  .newJobSearchRequest()
+   *  .filter((f) -> f.jobKey(userTaskKey))
+   *  .sort((s) -> s.endTime.asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the job search request
+   */
+  JobSearchRequest newJobSearchRequest();
 }

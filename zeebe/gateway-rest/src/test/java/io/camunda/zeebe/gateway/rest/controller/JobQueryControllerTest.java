@@ -81,28 +81,29 @@ public class JobQueryControllerTest extends RestControllerTest {
           .total(1L)
           .items(
               List.of(
-                  new JobEntity(
-                      1L,
-                      "testJob",
-                      "testWorker",
-                      JobState.COMPLETED,
-                      JobKind.TASK_LISTENER,
-                      ListenerEventType.COMPLETING,
-                      3,
-                      true,
-                      "test denied reason",
-                      false,
-                      "123",
-                      "test error message",
-                      Map.of("foo", "bar"),
-                      OffsetDateTime.parse("2025-06-05T09:05:00.000Z"),
-                      OffsetDateTime.parse("2025-06-05T10:05:00.000Z"),
-                      "processDefinitionId",
-                      2L,
-                      3L,
-                      "elementId",
-                      4L,
-                      "<default>")))
+                  new JobEntity.Builder()
+                      .jobKey(1L)
+                      .type("testJob")
+                      .worker("testWorker")
+                      .state(JobState.COMPLETED)
+                      .kind(JobKind.TASK_LISTENER)
+                      .listenerEventType(ListenerEventType.COMPLETING)
+                      .retries(3)
+                      .isDenied(true)
+                      .deniedReason("test denied reason")
+                      .hasFailedWithRetriesLeft(false)
+                      .errorCode("123")
+                      .errorMessage("test error message")
+                      .customHeaders(Map.of("foo", "bar"))
+                      .deadline(OffsetDateTime.parse("2025-06-05T09:05:00.000Z"))
+                      .endTime(OffsetDateTime.parse("2025-06-05T10:05:00.000Z"))
+                      .processDefinitionId("processDefinitionId")
+                      .processDefinitionKey(2L)
+                      .processInstanceKey(3L)
+                      .elementId("elementId")
+                      .elementInstanceKey(4L)
+                      .tenantId("<default>")
+                      .build()))
           .startCursor("123base64")
           .endCursor("456base64")
           .build();

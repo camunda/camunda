@@ -31,6 +31,7 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.Mapping;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -40,6 +41,7 @@ import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
+import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
@@ -250,6 +252,18 @@ public final class SearchResponseMapper {
     return new GroupUserImpl(response.getUsername());
   }
 
+  public static SearchResponse<TenantUser> toTenantUsersResponse(
+      final TenantUserSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<TenantUser> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toTenantUser);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  private static TenantUser toTenantUser(final TenantUserResult response) {
+    return new TenantUserImpl(response.getUsername());
+  }
+
   public static Mapping toMappingResponse(final MappingResult response) {
     return new MappingImpl(
         response.getMappingId(),
@@ -308,5 +322,11 @@ public final class SearchResponseMapper {
     return Optional.ofNullable(items)
         .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
         .orElse(Collections.emptyList());
+  }
+
+  public static SearchResponse<Job> toJobSearchResponse(final JobSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Job> instances = toSearchResponseInstances(response.getItems(), JobImpl::new);
+    return new SearchResponseImpl<>(instances, page);
   }
 }

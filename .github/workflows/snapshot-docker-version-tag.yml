@@ -1,0 +1,40 @@
+# description: Generate a Docker version tag for snapshot builds based on the branch name.
+# type: CI
+# owner: @camunda/monorepo-devops-team
+name: Generate Docker Version Tag (SNAPSHOT)
+
+permissions:
+  contents: read
+
+on:
+  workflow_call:
+    outputs:
+      version_tag:
+        description: "Generated Docker version tag"
+        value: ${{  jobs.get-snapshot-docker-version-tag.outputs.tag }}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  get-snapshot-docker-version-tag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    outputs:
+      tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
+    steps:
+      - name: Determine Snapshot Docker Version Tag
+        id: set_docker_snapshot_version_tag
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == "main" ]]; then
+            TAG="SNAPSHOT"
+          elif [[ "$BRANCH" == stable/* ]]; then
+            TAG="${BRANCH#stable/}-SNAPSHOT"
+          else
+            echo "Unsupported branch: $BRANCH"
+            exit 0
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"

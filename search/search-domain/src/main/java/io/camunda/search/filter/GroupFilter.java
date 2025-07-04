@@ -7,21 +7,27 @@
  */
 package io.camunda.search.filter;
 
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
+
+import io.camunda.search.filter.UserFilter.Builder;
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public record GroupFilter(
     Long groupKey,
-    String groupId,
+    List<Operation<String>> groupIdOperations,
     String name,
     String description,
     String joinParentId,
     Set<String> memberIds,
     EntityType memberType,
     String tenantId,
-    Set<String> groupIds,
     EntityType childMemberType,
     String roleId,
     Map<EntityType, Set<String>> memberIdsByType)
@@ -30,14 +36,13 @@ public record GroupFilter(
   public Builder toBuilder() {
     return new Builder()
         .groupKey(groupKey)
-        .groupId(groupId)
+        .groupIdOperations(groupIdOperations)
         .name(name)
         .description(description)
         .joinParentId(joinParentId)
         .memberIds(memberIds)
         .memberType(memberType)
         .tenantId(tenantId)
-        .groupIds(groupIds)
         .childMemberType(childMemberType)
         .roleId(roleId)
         .memberIdsByType(memberIdsByType);
@@ -45,14 +50,13 @@ public record GroupFilter(
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
     private Long groupKey;
-    private String groupId;
+    private List<Operation<String>> groupIdOperations;
     private String name;
     private String description;
     private String joinParentId;
     private Set<String> memberIds;
     private EntityType memberType;
     private String tenantId;
-    private Set<String> groupIds;
     private EntityType childMemberType;
     private String roleId;
     private Map<EntityType, Set<String>> memberIdsByType;
@@ -62,9 +66,33 @@ public record GroupFilter(
       return this;
     }
 
-    public Builder groupId(final String value) {
-      groupId = value;
+    public Builder groupIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        groupIdOperations = addValuesToList(groupIdOperations, operations);
+      }
       return this;
+    }
+
+    public Builder groupIds(final Set<String> value) {
+      final var vals = FilterUtil.mapDefaultToOperation(new ArrayList<>(value));
+      if (vals != null) {
+        return groupIdOperations(vals);
+      }
+      return this;
+    }
+
+    public Builder groupIds(final String value, final String... values) {
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return groupIdOperations(vals);
+      }
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder groupIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return groupIdOperations(collectValues(operation, operations));
     }
 
     public Builder name(final String value) {
@@ -101,11 +129,6 @@ public record GroupFilter(
       return this;
     }
 
-    public Builder groupIds(final Set<String> value) {
-      groupIds = value;
-      return this;
-    }
-
     public Builder childMemberType(final EntityType value) {
       childMemberType = value;
       return this;
@@ -125,14 +148,13 @@ public record GroupFilter(
     public GroupFilter build() {
       return new GroupFilter(
           groupKey,
-          groupId,
+          groupIdOperations,
           name,
           description,
           joinParentId,
           memberIds,
           memberType,
           tenantId,
-          groupIds,
           childMemberType,
           roleId,
           memberIdsByType);

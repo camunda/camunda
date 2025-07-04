@@ -119,11 +119,7 @@
     </constructor>
   </resultMap>
 
-  <insert
-    id="insert"
-    statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
     INSERT INTO ${prefix}VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                                    LONG_VALUE, VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW,
                                    PARTITION_ID, HISTORY_CLEANUP_DATE)
@@ -131,11 +127,7 @@
             #{longValue}, #{value}, #{fullValue}, #{tenantId}, #{isPreview}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
-  <update
-    id="update"
-    statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
-    flushCache="true">
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel">
       UPDATE ${prefix}VARIABLE
       SET TYPE         = #{type},
           DOUBLE_VALUE = #{doubleValue},
@@ -147,28 +139,18 @@
       WHERE VAR_KEY = #{variableKey}
   </update>
 
-  <update
-    flushCache="true"
-    id="updateHistoryCleanupDate"
-    statementType="PREPARED">
+  <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}VARIABLE SET
       HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
-  <delete
-    flushCache="true"
-    id="cleanupHistory"
-    statementType="PREPARED">
+  <delete id="cleanupHistory">
     <bind name="tableName" value="'VARIABLE'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 
-  <update
-    id="migrateToProcess"
-    statementType="PREPARED"
-    parameterType="java.util.Map"
-    flushCache="true">
+  <update id="migrateToProcess" parameterType="java.util.Map">
       UPDATE ${prefix}VARIABLE
       SET PROCESS_DEFINITION_ID = #{processDefinitionId}
       WHERE VAR_KEY = #{variableKey}

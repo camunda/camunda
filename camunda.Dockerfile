@@ -5,9 +5,9 @@
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:noble"
-ARG BASE_DIGEST="sha256:b59d21599a2b151e23eea5f6602f4af4d7d31c4e236d22bf0b62b86d2e386b8f"
+ARG BASE_DIGEST="sha256:440dcf6a5640b2ae5c77724e68787a906afb8ddee98bf86db94eea8528c2c076"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
-ARG JDK_DIGEST="sha256:3fb2f29aa7aebc952bebe81a29b7f87f90dd5b034cca0644cc4d300437628958"
+ARG JDK_DIGEST="sha256:5a65f334da5a91a66076735d78e3ae30483a2593ac108f830dcd59521f2535cd"
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
@@ -17,6 +17,9 @@ ARG DIST="distball"
 # hadolint ignore=DL3006
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 WORKDIR /
+
+# Use custom APT timeout and retry values for more resilient builds
+COPY .github/actions/build-platform-docker/99apt-timeout-and-retries /etc/apt/apt.conf.d/
 
 # Upgrade all outdated packages and install missing ones (e.g. locales, tini)
 # This breaks reproducibility of builds, but is acceptable to gain access to security patches faster

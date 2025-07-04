@@ -11,12 +11,12 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolderAbstract;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;

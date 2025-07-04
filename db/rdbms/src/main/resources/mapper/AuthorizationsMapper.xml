@@ -88,8 +88,7 @@
     </collection>
   </resultMap>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel">
     INSERT INTO ${prefix}AUTHORIZATIONS (AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_ID, PERMISSION_TYPE)
     VALUES
     <foreach collection="permissionTypes" item="permissionType" separator=",">
@@ -97,8 +96,7 @@
     </foreach>
   </insert>
 
-  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel"
-    flushCache="true">
+  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel">
     DELETE
     FROM ${prefix}AUTHORIZATIONS
     WHERE AUTHORIZATION_KEY = #{authorizationKey}

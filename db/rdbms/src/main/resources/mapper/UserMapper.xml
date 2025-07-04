@@ -94,18 +94,12 @@
     </constructor>
   </resultMap>
 
-  <insert
-    id="insert"
-    parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.UserDbModel">
     INSERT INTO ${prefix}USERS (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD)
     VALUES (#{userKey}, #{username}, #{name}, #{email}, #{password})
   </insert>
 
-  <update
-    id="update"
-    parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
-    flushCache="true">
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserDbModel">
     UPDATE ${prefix}USERS
     SET NAME     = #{name},
         EMAIL    = #{email},
@@ -113,7 +107,7 @@
     WHERE USERNAME = #{username}
   </update>
 
-  <delete id="delete" parameterType="java.lang.String" flushCache="true">
+  <delete id="delete" parameterType="java.lang.String">
     DELETE FROM ${prefix}USERS
     WHERE USERNAME = #{username}
   </delete>

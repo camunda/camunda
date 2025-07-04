@@ -7,3 +7,7 @@ Please refer to the [local installation with Camunda 8 Run guide](https://docs.c
 ## CI requirement for merging
 
 Only CI checks related to C8Run (those with "c8run" in the name) and CI runs marked as `required` are needed to merge. Non-C8Run-related CI checks can be ignored.
+
+## Build C8run locally
+
+To build and run C8Run locally run `./package.sh` followed by `./start.sh`

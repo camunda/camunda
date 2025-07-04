@@ -27,10 +27,9 @@ test.describe("login page", () => {
       password: "wrong-password",
     });
 
-    // TODO: add this back when login validation is implemented - https://github.com/camunda/camunda/issues/29849
-    // await expect(
-    //   page.getByRole("alert").getByText("Username and password do not match"),
-    // ).toBeVisible();
+    await expect(
+      page.getByRole("alert").getByText("Username and password don't match"),
+    ).toBeVisible();
 
     await expect(page).toHaveURL(relativizePath(Paths.login()));
   });

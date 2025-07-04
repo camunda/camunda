@@ -92,10 +92,7 @@
     </constructor>
   </resultMap>
 
-  <insert
-    id="insert"
-    parameterType="io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel">
     INSERT INTO ${prefix}DECISION_DEFINITION (DECISION_DEFINITION_KEY, DECISION_DEFINITION_ID, NAME, TENANT_ID, VERSION, DECISION_REQUIREMENTS_ID, DECISION_REQUIREMENTS_KEY)
     VALUES (#{decisionDefinitionKey}, #{decisionDefinitionId}, #{name},
             #{tenantId}, #{version}, #{decisionRequirementsId}, #{decisionRequirementsKey})

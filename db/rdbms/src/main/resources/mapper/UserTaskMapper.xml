@@ -10,11 +10,7 @@
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="io.camunda.db.rdbms.sql.UserTaskMapper">
 
-  <insert
-    flushCache="true"
-    id="insert"
-    parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
-    statementType="PREPARED">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, NAME, PROCESS_DEFINITION_ID, CREATION_DATE,
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
@@ -31,10 +27,7 @@
             #{priority}, #{partitionId}, #{historyCleanupDate})
   </insert>
 
-  <insert flushCache="true"
-    id="insertCandidateUsers"
-    parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
-    statementType="PREPARED">
+  <insert id="insertCandidateUsers" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     INSERT INTO ${prefix}CANDIDATE_USER (USER_TASK_KEY, CANDIDATE_USER)
     VALUES
     <foreach collection="candidateUsers" item="candidateUser" separator=", ">
@@ -42,10 +35,7 @@
     </foreach>
   </insert>
 
-  <insert flushCache="true"
-    id="insertCandidateGroups"
-    parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
-    statementType="PREPARED">
+  <insert id="insertCandidateGroups" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     INSERT INTO ${prefix}CANDIDATE_GROUP (USER_TASK_KEY, CANDIDATE_GROUP)
     VALUES
     <foreach collection="candidateGroups" item="candidateGroup" separator=", ">
@@ -92,8 +82,7 @@
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
   <select id="search"
     parameterType="io.camunda.db.rdbms.read.domain.UserTaskDbQuery"
-    resultMap="io.camunda.db.rdbms.sql.UserTaskMapper.searchResultMap"
-    statementType="PREPARED">
+    resultMap="io.camunda.db.rdbms.sql.UserTaskMapper.searchResultMap">
     SELECT * FROM (
     SELECT
     ut.*,
@@ -135,9 +124,7 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
-  <select id="count"
-    resultType="java.lang.Long"
-    statementType="PREPARED">
+  <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}USER_TASK ut
     <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
@@ -305,11 +292,7 @@
 
   </sql>
 
-  <update
-    flushCache="true"
-    id="update"
-    parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
-    statementType="PREPARED">
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     UPDATE ${prefix}USER_TASK
     SET
     COMPLETION_DATE = #{completionDate},
@@ -325,40 +308,25 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
-  <delete
-    flushCache="true"
-    id="deleteCandidateUsers"
-    parameterType="java.lang.Long"
-    statementType="PREPARED">
+  <delete id="deleteCandidateUsers" parameterType="java.lang.Long">
     DELETE
     FROM ${prefix}CANDIDATE_USER
     WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
 
-  <delete
-    flushCache="true"
-    id="deleteCandidateGroups"
-    parameterType="java.lang.Long"
-    statementType="PREPARED">
+  <delete id="deleteCandidateGroups" parameterType="java.lang.Long">
     DELETE
     FROM ${prefix}CANDIDATE_GROUP
     WHERE USER_TASK_KEY = #{userTaskKey}
   </delete>
 
-  <update
-    flushCache="true"
-    id="updateHistoryCleanupDate"
-    statementType="PREPARED">
+  <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}USER_TASK SET
     HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
-  <update
-    flushCache="true"
-    id="migrateToProcess"
-    parameterType="java.util.Map"
-    statementType="PREPARED">
+  <update id="migrateToProcess" parameterType="java.util.Map">
     UPDATE ${prefix}USER_TASK SET
     ELEMENT_ID = #{elementId},
     NAME = #{name},
@@ -368,10 +336,7 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
-  <delete
-    flushCache="true"
-    id="cleanupHistory"
-    statementType="PREPARED">
+  <delete id="cleanupHistory">
     <bind name="tableName" value="'USER_TASK'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>

@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.store;
 
-import io.camunda.operate.util.Either;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.util.List;
 

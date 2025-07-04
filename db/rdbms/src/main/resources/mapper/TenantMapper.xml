@@ -46,42 +46,30 @@
     <result column="DESCRIPTION" property="description"/>
   </resultMap>
 
-  <insert
-    id="insert"
-    parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel">
     INSERT INTO ${prefix}TENANT (TENANT_KEY, TENANT_ID, NAME, DESCRIPTION)
     VALUES (#{tenantKey}, #{tenantId}, #{name}, #{description})
   </insert>
 
-  <update
-    id="update"
-    parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
-    flushCache="true">
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel">
     UPDATE ${prefix}TENANT SET
                     NAME = #{name},
                     DESCRIPTION = #{description}
     WHERE TENANT_ID = #{tenantId}
   </update>
 
-  <delete id="delete" parameterType="java.lang.String" flushCache="true">
+  <delete id="delete" parameterType="java.lang.String">
     DELETE
     FROM ${prefix}TENANT
     WHERE TENANT_ID = #{tenantId}
   </delete>
 
-  <insert
-    id="insertMember"
-    parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
-    flushCache="true">
+  <insert id="insertMember" parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel">
     INSERT INTO ${prefix}TENANT_MEMBER (TENANT_ID, ENTITY_ID, ENTITY_TYPE)
     VALUES (#{tenantId}, #{entityId}, #{entityType})
   </insert>
 
-  <delete
-    id="deleteMember"
-    parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
-    flushCache="true">
+  <delete id="deleteMember" parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel">
     DELETE
     FROM ${prefix}TENANT_MEMBER
     WHERE TENANT_ID = #{tenantId}

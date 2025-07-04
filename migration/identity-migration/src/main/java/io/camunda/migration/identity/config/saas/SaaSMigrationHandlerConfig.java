@@ -7,13 +7,13 @@
  */
 package io.camunda.migration.identity.config.saas;
 
-import io.camunda.migration.identity.AuthorizationMigrationHandler;
-import io.camunda.migration.identity.ClientMigrationHandler;
-import io.camunda.migration.identity.GroupMigrationHandler;
-import io.camunda.migration.identity.StaticConsoleRoleAuthorizationMigrationHandler;
-import io.camunda.migration.identity.StaticConsoleRoleMigrationHandler;
-import io.camunda.migration.identity.console.ConsoleClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import io.camunda.migration.identity.client.ConsoleClient;
+import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.handler.saas.AuthorizationMigrationHandler;
+import io.camunda.migration.identity.handler.saas.ClientMigrationHandler;
+import io.camunda.migration.identity.handler.saas.GroupMigrationHandler;
+import io.camunda.migration.identity.handler.saas.StaticConsoleRoleAuthorizationMigrationHandler;
+import io.camunda.migration.identity.handler.saas.StaticConsoleRoleMigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -43,7 +44,7 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldQueryByGroupId() {
     // given
-    final var filter = FilterBuilders.group((f) -> f.groupId("group1"));
+    final var filter = FilterBuilders.group((f) -> f.groupIdOperations(Operation.eq("group1")));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -59,6 +60,33 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
                                 List.of(
                                     SearchQuery.of(
                                         q1 -> q.term(t -> t.field("groupId").value("group1"))),
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("join").value("group"))))))));
+  }
+
+  @Test
+  public void shouldQueryByGroupIds() {
+    // given
+    final var filter =
+        FilterBuilders.group(
+            (f) -> f.groupIdOperations(Operation.eq("group1"), Operation.eq("group2")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest)
+        .isEqualTo(
+            SearchQuery.of(
+                q ->
+                    q.bool(
+                        b ->
+                            b.must(
+                                List.of(
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("groupId").value("group1"))),
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("groupId").value("group2"))),
                                     SearchQuery.of(
                                         q1 -> q.term(t -> t.field("join").value("group"))))))));
   }
@@ -158,7 +186,8 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
   public void shouldQueryByMultipleGroupFields() {
     // given
     final var filter =
-        FilterBuilders.group((f) -> f.groupKey(12345L).groupId("group1").name("TestGroup"));
+        FilterBuilders.group(
+            (f) -> f.groupKey(12345L).groupIdOperations(Operation.eq("group1")).name("TestGroup"));
 
     // when
     final var searchRequest = transformQuery(filter);

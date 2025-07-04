@@ -7,7 +7,10 @@
  */
 package io.camunda.search.entities;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -35,15 +38,170 @@ public record JobEntity(
     Long elementInstanceKey,
     String tenantId) {
 
+  public static class Builder implements ObjectBuilder<JobEntity> {
+    private Long jobKey;
+    private String type;
+    private String worker;
+    private JobState state;
+    private JobKind kind;
+    private ListenerEventType listenerEventType;
+    private Integer retries;
+    private Boolean isDenied;
+    private String deniedReason;
+    private Boolean hasFailedWithRetriesLeft;
+    private String errorCode;
+    private String errorMessage;
+    private Map<String, String> customHeaders;
+    private OffsetDateTime deadline;
+    private OffsetDateTime endTime;
+    private String processDefinitionId;
+    private Long processDefinitionKey;
+    private Long processInstanceKey;
+    private String elementId;
+    private Long elementInstanceKey;
+    private String tenantId;
+
+    public Builder jobKey(final Long jobKey) {
+      this.jobKey = jobKey;
+      return this;
+    }
+
+    public Builder type(final String type) {
+      this.type = type;
+      return this;
+    }
+
+    public Builder worker(final String worker) {
+      this.worker = worker;
+      return this;
+    }
+
+    public Builder state(final JobState state) {
+      this.state = state;
+      return this;
+    }
+
+    public Builder kind(final JobKind kind) {
+      this.kind = kind;
+      return this;
+    }
+
+    public Builder listenerEventType(final ListenerEventType listenerEventType) {
+      this.listenerEventType = listenerEventType;
+      return this;
+    }
+
+    public Builder retries(final Integer retries) {
+      this.retries = retries;
+      return this;
+    }
+
+    public Builder isDenied(final Boolean isDenied) {
+      this.isDenied = isDenied;
+      return this;
+    }
+
+    public Builder deniedReason(final String deniedReason) {
+      this.deniedReason = deniedReason;
+      return this;
+    }
+
+    public Builder hasFailedWithRetriesLeft(final Boolean hasFailedWithRetriesLeft) {
+      this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
+      return this;
+    }
+
+    public Builder errorCode(final String errorCode) {
+      this.errorCode = errorCode;
+      return this;
+    }
+
+    public Builder errorMessage(final String errorMessage) {
+      this.errorMessage = errorMessage;
+      return this;
+    }
+
+    public Builder customHeaders(final Map<String, String> customHeaders) {
+      this.customHeaders = customHeaders;
+      return this;
+    }
+
+    public Builder deadline(final OffsetDateTime deadline) {
+      this.deadline = deadline;
+      return this;
+    }
+
+    public Builder endTime(final OffsetDateTime endTime) {
+      this.endTime = endTime;
+      return this;
+    }
+
+    public Builder processDefinitionId(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
+      return this;
+    }
+
+    public Builder processDefinitionKey(final Long processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    public Builder processInstanceKey(final Long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public Builder elementId(final String elementId) {
+      this.elementId = elementId;
+      return this;
+    }
+
+    public Builder elementInstanceKey(final Long elementInstanceKey) {
+      this.elementInstanceKey = elementInstanceKey;
+      return this;
+    }
+
+    public Builder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    @Override
+    public JobEntity build() {
+      return new JobEntity(
+          requireNonNull(jobKey, "Expected non-null field for jobKey."),
+          type,
+          worker,
+          requireNonNull(state, "Expected non-null field for state"),
+          requireNonNull(kind, "Expected non-null field for kind."),
+          requireNonNull(listenerEventType, "Expected non-null field for listenerEventType."),
+          retries,
+          isDenied,
+          deniedReason,
+          hasFailedWithRetriesLeft,
+          errorCode,
+          errorMessage,
+          customHeaders,
+          deadline,
+          endTime,
+          processDefinitionId,
+          processDefinitionKey,
+          processInstanceKey,
+          elementId,
+          elementInstanceKey,
+          tenantId);
+    }
+  }
+
   public enum JobState {
-    CREATED,
+    CANCELED,
     COMPLETED,
+    CREATED,
+    ERROR_THROWN,
     FAILED,
+    MIGRATED,
     RETRIES_UPDATED,
     TIMED_OUT,
-    CANCELED,
-    ERROR_THROWN,
-    MIGRATED,
   }
 
   public enum JobKind {
@@ -53,13 +211,13 @@ public record JobEntity(
   }
 
   public enum ListenerEventType {
-    UNSPECIFIED,
-    START,
-    END,
-    CREATING,
     ASSIGNING,
-    UPDATING,
+    CANCELING,
     COMPLETING,
-    CANCELING
+    CREATING,
+    END,
+    START,
+    UNSPECIFIED,
+    UPDATING
   }
 }

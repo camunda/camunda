@@ -35,9 +35,9 @@ test.beforeAll(async ({resetData}) => {
 });
 
 test.describe('task panel page', () => {
-  test.beforeEach(async ({page, taskListLoginPage}) => {
+  test.beforeEach(async ({page, loginPage}) => {
     await navigateToApp(page, 'tasklist');
-    await taskListLoginPage.login('demo', 'demo');
+    await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist');
   });
 

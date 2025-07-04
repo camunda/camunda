@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateRoleResponse;
+import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Client;
@@ -66,9 +67,14 @@ class RoleAuthorizationIT {
               new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*")),
               new Permissions(ResourceType.ROLE, PermissionType.DELETE, List.of("*")),
               new Permissions(ResourceType.GROUP, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.GROUP, PermissionType.READ, List.of("*")),
+              new Permissions(ResourceType.GROUP, PermissionType.UPDATE, List.of("*")),
               new Permissions(ResourceType.MAPPING_RULE, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.MAPPING_RULE, PermissionType.READ, List.of("*")),
               new Permissions(ResourceType.TENANT, PermissionType.CREATE, List.of("*")),
               new Permissions(ResourceType.TENANT, PermissionType.UPDATE, List.of("*")),
+              new Permissions(ResourceType.AUTHORIZATION, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.AUTHORIZATION, PermissionType.READ, List.of("*")),
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
@@ -681,6 +687,82 @@ class RoleAuthorizationIT {
     final SearchResponse<Group> response =
         camundaClient.newGroupsByRoleSearchRequest(ROLE_ID_1).send().join();
     assertThat(response.items()).isEmpty();
+  }
+
+  @Test
+  void shouldNotOverloadRoleIdByUsernameWhenApplyAuthorizationCheck(
+      @Authenticated(RESTRICTED) final CamundaClient restrictedClient,
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    createRole(adminClient, RESTRICTED, "roleName");
+    final var authorization =
+        adminClient
+            .newCreateAuthorizationCommand()
+            .ownerId(RESTRICTED)
+            .ownerType(OwnerType.ROLE)
+            .resourceId("*")
+            .resourceType(ResourceType.ROLE)
+            .permissionTypes(PermissionType.READ)
+            .send()
+            .join();
+
+    // verify
+    Awaitility.await("Authorization is searchable")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var response =
+                  adminClient
+                      .newAuthorizationGetRequest(authorization.getAuthorizationKey())
+                      .send()
+                      .join();
+              assertThat(response).isNotNull();
+            });
+
+    // when
+    final var roles = restrictedClient.newRolesSearchRequest().send().join();
+
+    // then
+    assertThat(roles.items()).isEmpty();
+  }
+
+  @Test
+  void shouldNotOverloadRoleIdByGroupIdWhenApplyAuthorizationCheck(
+      @Authenticated(RESTRICTED) final CamundaClient restrictedClient,
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    adminClient.newCreateGroupCommand().groupId("foo").name("groupName").send().join();
+    adminClient.newAssignUserToGroupCommand().username(RESTRICTED).groupId("foo").send().join();
+    createRole(adminClient, "foo", "roleName");
+    final var authorization =
+        adminClient
+            .newCreateAuthorizationCommand()
+            .ownerId("foo")
+            .ownerType(OwnerType.ROLE)
+            .resourceId("*")
+            .resourceType(ResourceType.ROLE)
+            .permissionTypes(PermissionType.READ)
+            .send()
+            .join();
+
+    // verify
+    Awaitility.await("Authorization is searchable")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var response =
+                  adminClient
+                      .newAuthorizationGetRequest(authorization.getAuthorizationKey())
+                      .send()
+                      .join();
+              assertThat(response).isNotNull();
+            });
+
+    // when
+    final var roles = restrictedClient.newRolesSearchRequest().send().join();
+
+    // then
+    assertThat(roles.items()).isEmpty();
   }
 
   private static void createRole(

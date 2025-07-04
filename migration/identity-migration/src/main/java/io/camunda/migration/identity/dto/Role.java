@@ -7,9 +7,4 @@
  */
 package io.camunda.migration.identity.dto;
 
-import java.util.List;
-
-public record Role(String name, String description, List<Permission> permissions) {
-  public record Permission(
-      String definition, String description, String apiName, String audience) {}
-}
+public record Role(String name, String description) {}

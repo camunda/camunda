@@ -15,17 +15,23 @@ export const waitForItemInList = async (
     shouldBeVisible?: boolean;
     timeout?: number;
     emptyStateLocator?: Locator;
+    clickAuthorizationsPageTab?: () => Promise<void>;
   },
 ) => {
   const {
     shouldBeVisible = true,
     timeout = 10000,
     emptyStateLocator,
+    clickAuthorizationsPageTab,
   } = options || {};
 
   const poll = expect.poll(
     async () => {
       await page.reload();
+
+      if (clickAuthorizationsPageTab) {
+        await clickAuthorizationsPageTab();
+      }
 
       if (emptyStateLocator) {
         await Promise.race([

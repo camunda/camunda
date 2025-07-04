@@ -83,7 +83,6 @@ final class IdentityMigrationTestUtil {
             "http://%s:%d/realms/camunda-platform".formatted(KEYCLOAK_HOST, KEYCLOAK_PORT))
         .withEnv("KEYCLOAK_SETUP_USER", KEYCLOAK_USER)
         .withEnv("KEYCLOAK_SETUP_PASSWORD", KEYCLOAK_PASSWORD)
-        .withEnv("KEYCLOAK_INIT_ZEEBE_SECRET", IDENTITY_CLIENT_SECRET)
         .withEnv("KEYCLOAK_CLIENTS_0_NAME", IDENTITY_CLIENT)
         .withEnv("KEYCLOAK_CLIENTS_0_ID", IDENTITY_CLIENT)
         .withEnv("KEYCLOAK_CLIENTS_0_SECRET", IDENTITY_CLIENT_SECRET)

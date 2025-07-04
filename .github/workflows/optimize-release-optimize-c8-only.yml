@@ -349,8 +349,9 @@ jobs:
               echo "tag_arguments=$tag_arguments" >>"$GITHUB_ENV"
           fi
 
+          # shellcheck disable=SC2086
           docker buildx build \
-              "${tag_arguments}" \
+              ${tag_arguments} \
               --build-arg VERSION="${RELEASE_VERSION}" \
               --build-arg DATE="${DATE}" \
               --build-arg REVISION="${REVISION}" \

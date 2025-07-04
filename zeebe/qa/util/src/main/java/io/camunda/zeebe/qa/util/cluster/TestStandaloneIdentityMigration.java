@@ -39,6 +39,8 @@ public final class TestStandaloneIdentityMigration
     //noinspection resource
     withBean("migrationConfig", migrationProperties, IdentityMigrationProperties.class)
         .withAdditionalProfile(Profile.IDENTITY_MIGRATION);
+
+    withProperty("camunda.migration.identity.mode", migrationProperties.getMode());
   }
 
   @Override

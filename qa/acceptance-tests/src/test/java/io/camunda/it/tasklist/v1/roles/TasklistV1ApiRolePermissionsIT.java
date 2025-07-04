@@ -9,6 +9,7 @@ package io.camunda.it.tasklist.v1.roles;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
@@ -70,7 +71,8 @@ public class TasklistV1ApiRolePermissionsIT {
               new Permissions(ROLE, UPDATE, List.of("*")),
               new Permissions(AUTHORIZATION, CREATE, List.of("*")),
               new Permissions(RESOURCE, CREATE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*"))));
+              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
   private static final TestUser AUTHORIZED_USER =

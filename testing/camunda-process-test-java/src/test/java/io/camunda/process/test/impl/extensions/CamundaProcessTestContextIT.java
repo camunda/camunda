@@ -198,6 +198,19 @@ public class CamundaProcessTestContextIT {
   }
 
   @Test
+  void shouldGiveClearErrorMessageWhenJobIsMissing() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then
+    Assertions.assertThatThrownBy(() -> processTestContext.completeJob("not-found"))
+        .hasMessage(
+            "Expected to complete a job with the type 'not-found' " + "but no job is available.");
+  }
+
+  @Test
   void shouldThrowBpmnErrorFromJob() {
     // Given
     final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
@@ -363,6 +376,20 @@ public class CamundaProcessTestContextIT {
     assertThat(processInstanceEvent).isCompleted();
     assertThat(processInstanceEvent).hasCompletedElements("success-end");
     assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldGiveHelpfulErrorMessageWhenCompleteUserTaskFails() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When
+    Assertions.assertThatThrownBy(
+            () ->
+                processTestContext.completeUserTask(UserTaskSelectors.byElementId("unknown-task")))
+        .hasMessage("Expected to complete user task [unknown-task] but no job is available.");
   }
 
   @Test
@@ -716,9 +743,6 @@ public class CamundaProcessTestContextIT {
     Assertions.assertThatThrownBy(
             () -> assertThat(DecisionSelectors.byId("decision_overall_happiness")).isEvaluated())
         .hasMessage("No DecisionInstance [decision_overall_happiness] found.");
-    Assertions.assertThatThrownBy(
-            () -> assertThat(DecisionSelectors.byId("decision_language_happiness")).isEvaluated())
-        .hasMessage("No DecisionInstance [decision_language_happiness] found.");
   }
 
   /**

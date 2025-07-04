@@ -245,14 +245,60 @@ public class ProcessInstanceAssertj
   }
 
   @Override
+  public ProcessInstanceAssert hasLocalVariableNames(
+      final String elementId, final String... variableNames) {
+    variableAssertj.hasLocalVariableNames(
+        getProcessInstanceKey(), elementSelector.apply(elementId), variableNames);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableNames(
+      final ElementSelector selector, final String... variableNames) {
+    variableAssertj.hasLocalVariableNames(getProcessInstanceKey(), selector, variableNames);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasVariable(final String variableName, final Object variableValue) {
     variableAssertj.hasVariable(getProcessInstanceKey(), variableName, variableValue);
     return this;
   }
 
   @Override
+  public ProcessInstanceAssert hasLocalVariable(
+      final String elementId, final String variableName, final Object variableValue) {
+    variableAssertj.hasLocalVariable(
+        getProcessInstanceKey(), elementSelector.apply(elementId), variableName, variableValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariable(
+      final ElementSelector selector, final String variableName, final Object variableValue) {
+    variableAssertj.hasLocalVariable(
+        getProcessInstanceKey(), selector, variableName, variableValue);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
     variableAssertj.hasVariables(getProcessInstanceKey(), variables);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariables(
+      final String elementId, final Map<String, Object> variables) {
+    variableAssertj.hasLocalVariables(
+        getProcessInstanceKey(), elementSelector.apply(elementId), variables);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariables(
+      final ElementSelector selector, final Map<String, Object> variables) {
+    variableAssertj.hasLocalVariables(getProcessInstanceKey(), selector, variables);
     return this;
   }
 

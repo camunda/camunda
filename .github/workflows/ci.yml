@@ -721,7 +721,8 @@ jobs:
             maven-build-threads: 1
             maven-test-fork-count: 3
             runs-on: gcp-perf-core-8-default
-            docker-file: ''
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
           - group: qa-integration
             name: "Zeebe QA - Integration Tests"
             maven-modules: "zeebe/qa/integration-tests"
@@ -758,6 +759,7 @@ jobs:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
+      CAMUNDA_TEST_DOCKER_IMAGE: localhost:5000/camunda/camunda:current-test
       CAMUNDA_DOCKER_IMAGE_NAME: localhost:5000/camunda/camunda
       DOCKER_IMAGE_TAG: current-test
     services:
@@ -1314,13 +1316,19 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  get-snapshot-docker-version-tag:
+    needs: [ check-results ]
+    uses: ./.github/workflows/snapshot-docker-version-tag.yml
+    secrets: inherit
+
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ check-results ]
+    needs: [ check-results, get-snapshot-docker-version-tag ]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
       group: deploy-camunda-docker-snapshot
       cancel-in-progress: false
@@ -1352,7 +1360,7 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: SNAPSHOT
+          version: ${{ needs.get-snapshot-docker-version-tag.outputs.version_tag }}
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile

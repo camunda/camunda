@@ -58,6 +58,23 @@ public class GroupSearchTest extends ClientRestTest {
   }
 
   @Test
+  public void testGroupsSearchByIds() {
+    // when
+    client
+        .newGroupsSearchRequest()
+        .filter(fn -> fn.groupId(b -> b.in("group1", "group2")))
+        .sort(GroupSort::name)
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/groups/search");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
   public void testUsersSearchByGroup() {
     // when
     final String groupId = "groupId";
