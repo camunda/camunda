@@ -27,6 +27,28 @@ public record FlowNodeInstanceEntity(
     String processDefinitionId,
     String tenantId) {
 
+  public FlowNodeInstanceEntity withFlowNodeName(final String name) {
+    return new FlowNodeInstanceEntity(
+        flowNodeInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        startDate,
+        endDate,
+        flowNodeId,
+        name,
+        treePath,
+        type,
+        state,
+        hasIncident,
+        incidentKey,
+        processDefinitionId,
+        tenantId);
+  }
+
+  public boolean hasFlowNodeName() {
+    return flowNodeName != null && !flowNodeName.isBlank();
+  }
+
   public enum FlowNodeType {
     UNSPECIFIED,
     PROCESS,

@@ -16,7 +16,6 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -35,7 +34,6 @@ public class ElementInstanceControllerTest extends RestControllerTest {
   static final String ELEMENTS_BASE_URL = "/v2/element-instances";
 
   @MockitoBean ElementInstanceServices elementInstanceServices;
-  @MockitoBean ProcessCache processCache;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<SetVariablesRequest> requestCaptor;
 
