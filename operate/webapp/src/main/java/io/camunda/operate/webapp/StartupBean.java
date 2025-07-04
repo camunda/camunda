@@ -11,7 +11,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -39,21 +38,12 @@ public class StartupBean {
   @Autowired(required = false)
   private ElasticsearchClient elasticsearchClient;
 
-  @Autowired(required = false)
-  private OperateUserDetailsService operateUserDetailsService;
-
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private OperationExecutor operationExecutor;
 
   @PostConstruct
   public void initApplication() {
-    if (operateUserDetailsService != null) {
-      LOGGER.info(
-          "INIT: Create users in {} if not exists ...", DatabaseInfo.getCurrent().getCode());
-      operateUserDetailsService.initializeUsers();
-    }
-
     LOGGER.info("INIT: Start operation executor...");
     operationExecutor.startExecuting();
     LOGGER.info("INIT: DONE");
