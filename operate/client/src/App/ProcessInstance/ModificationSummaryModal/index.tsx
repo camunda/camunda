@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useLayoutEffect, useRef} from 'react';
+import React, {lazy, Suspense, useLayoutEffect, useRef} from 'react';
 import {observer} from 'mobx-react';
 import {
   TruncatedValueContainer,
@@ -26,14 +26,34 @@ import {type StateProps} from 'modules/components/ModalStateManager';
 import {Warning} from './Messages/Warning';
 import {Error} from './Messages/Error';
 import {VariableModification} from './VariableModification';
-import {JSONEditor} from 'modules/components/JSONEditor';
-import {DiffEditor} from 'modules/components/DiffEditor';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {notificationsStore} from 'modules/stores/notifications';
 import {
   useModificationsByFlowNode,
   useWillAllFlowNodesBeCanceled,
 } from 'modules/hooks/modifications';
+
+const JSONEditor = lazy(async () => {
+  const [{loadMonaco}, {JSONEditor}] = await Promise.all([
+    import('modules/loadMonaco'),
+    import('modules/components/JSONEditor'),
+  ]);
+
+  loadMonaco();
+
+  return {default: JSONEditor};
+});
+
+const DiffEditor = lazy(async () => {
+  const [{loadMonaco}, {DiffEditor}] = await Promise.all([
+    import('modules/loadMonaco'),
+    import('modules/components/DiffEditor'),
+  ]);
+
+  loadMonaco();
+
+  return {default: DiffEditor};
+});
 
 const OPERATION_DISPLAY_NAME = {
   ADD_TOKEN: 'Add',
@@ -276,22 +296,25 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
             expandedContents={modificationsStore.variableModifications.reduce(
               (accumulator, {id, scopeId, operation, oldValue, newValue}) => ({
                 ...accumulator,
-                [`${scopeId}/${id}`]:
-                  operation === 'ADD_VARIABLE' ? (
-                    <JSONEditor
-                      value={beautifyJSON(newValue)}
-                      readOnly
-                      height="10vh"
-                      width="95%"
-                    />
-                  ) : (
-                    <DiffEditor
-                      modifiedValue={beautifyJSON(newValue)}
-                      originalValue={beautifyJSON(oldValue ?? '')}
-                      height="10vh"
-                      width="95%"
-                    />
-                  ),
+                [`${scopeId}/${id}`]: (
+                  <Suspense>
+                    {operation === 'ADD_VARIABLE' ? (
+                      <JSONEditor
+                        value={beautifyJSON(newValue)}
+                        readOnly
+                        height="10vh"
+                        width="95%"
+                      />
+                    ) : (
+                      <DiffEditor
+                        modifiedValue={beautifyJSON(newValue)}
+                        originalValue={beautifyJSON(oldValue ?? '')}
+                        height="10vh"
+                        width="95%"
+                      />
+                    )}
+                  </Suspense>
+                ),
               }),
               {},
             )}

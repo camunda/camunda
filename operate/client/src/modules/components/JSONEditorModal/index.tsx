@@ -6,15 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef, useState} from 'react';
+import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
-import {JSONEditor} from 'modules/components/JSONEditor';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {Modal} from '@carbon/react';
 
 type EditorFirstParam = Parameters<
   NonNullable<React.ComponentProps<typeof JSONEditor>['onMount']>
 >[0];
+
+const JSONEditor = lazy(async () => {
+  const [{loadMonaco}, {JSONEditor}] = await Promise.all([
+    import('modules/loadMonaco'),
+    import('modules/components/JSONEditor'),
+  ]);
+
+  loadMonaco();
+
+  return {default: JSONEditor};
+});
 
 type Props = {
   value: string;
@@ -69,15 +79,17 @@ const JSONEditorModal: React.FC<Props> = observer(
         passiveModal={readOnly}
         preventCloseOnClickOutside
       >
-        <JSONEditor
-          value={editedValue}
-          onChange={setEditedValue}
-          readOnly={readOnly}
-          onValidate={setIsValid}
-          onMount={(editor) => {
-            editorRef.current = editor;
-          }}
-        />
+        <Suspense>
+          <JSONEditor
+            value={editedValue}
+            onChange={setEditedValue}
+            readOnly={readOnly}
+            onValidate={setIsValid}
+            onMount={(editor) => {
+              editorRef.current = editor;
+            }}
+          />
+        </Suspense>
       </Modal>
     );
   },

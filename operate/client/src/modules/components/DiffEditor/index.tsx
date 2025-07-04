@@ -35,6 +35,8 @@ const DiffEditor: React.FC<Props> = observer(
           theme={currentTheme.theme === 'dark' ? 'vs-dark' : 'light'}
           language="json"
           options={{...options, readOnly: true, renderOverviewRuler: false}}
+          keepCurrentOriginalModel
+          keepCurrentModifiedModel
         />
       </>
     );
