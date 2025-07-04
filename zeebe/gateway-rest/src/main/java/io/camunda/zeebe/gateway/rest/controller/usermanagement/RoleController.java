@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -325,12 +324,6 @@ public class RoleController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
-  }
-
-  private GroupQuery buildGroupQuery(final String roleId, final GroupQuery groupQuery) {
-    return groupQuery.toBuilder()
-        .filter(groupQuery.filter().toBuilder().roleId(roleId).build())
-        .build();
   }
 
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromRole(
