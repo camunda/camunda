@@ -149,7 +149,7 @@ test.describe('process detail', () => {
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
+        variablesV2: runningInstance.variablesV2,
         xml: runningInstance.xml,
         metaData: runningInstance.metaData,
       }),
