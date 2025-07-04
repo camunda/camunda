@@ -29,7 +29,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('process detail', () => {
-  test(`have no violations for running instance`, async ({
+  test('have no violations for running instance', async ({
     page,
     processInstancePage,
     makeAxeBuilder,
@@ -70,7 +70,7 @@ test.describe('process detail', () => {
     validateResults(resultsWithMetadataPopover);
   });
 
-  test(`have no violations for instance with incident`, async ({
+  test('have no violations for instance with incident', async ({
     page,
     processInstancePage,
     makeAxeBuilder,
@@ -134,7 +134,7 @@ test.describe('process detail', () => {
     validateResults(resultsWithMetadataPopover);
   });
 
-  test(`have no violations in modification mode`, async ({
+  test('have no violations in modification mode', async ({
     page,
     processInstancePage,
     makeAxeBuilder,
@@ -174,6 +174,6 @@ test.describe('process detail', () => {
 
     await processInstancePage.addVariableButton.click();
 
-    await validateResults(modificationModeResults);
+    validateResults(modificationModeResults);
   });
 });

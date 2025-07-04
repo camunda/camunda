@@ -24,7 +24,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('login', () => {
-  test(`have no violations`, async ({page, loginPage, makeAxeBuilder}) => {
+  test('have no violations', async ({page, loginPage, makeAxeBuilder}) => {
     await loginPage.gotoLoginPage();
 
     await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
