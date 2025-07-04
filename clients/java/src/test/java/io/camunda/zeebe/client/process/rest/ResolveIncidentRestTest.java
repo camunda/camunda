@@ -18,9 +18,11 @@ package io.camunda.zeebe.client.process.rest;
 import static io.camunda.zeebe.client.util.assertions.LoggedRequestAssert.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
+import io.camunda.client.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import io.camunda.zeebe.client.util.RestGatewayService;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ResolveIncidentRestTest extends ClientRestTest {
@@ -37,6 +39,20 @@ public class ResolveIncidentRestTest extends ClientRestTest {
     assertThat(RestGatewayService.getLastRequest())
         .hasMethod(RequestMethod.POST)
         .hasUrl(RestGatewayPaths.getIncidentResolutionUrl(incidentKey))
-        .hasEmptyBody();
+        .hasEmptyJsonObjectBody();
+  }
+
+  @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client.newResolveIncidentCommand(123).operationReference(operationReference).send().join();
+
+    // then
+    final IncidentResolutionRequest request =
+        gatewayService.getLastRequest(IncidentResolutionRequest.class);
+    Assertions.assertThat(request.getOperationReference()).isEqualTo(operationReference);
   }
 }

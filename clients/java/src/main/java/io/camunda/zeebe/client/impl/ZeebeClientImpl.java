@@ -507,7 +507,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest,
         httpClient,
-        config.preferRestOverGrpc());
+        config.preferRestOverGrpc(),
+        jsonMapper);
   }
 
   @Override
