@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import Logo from 'common/images//logo.svg?react';
+import Logo from 'common/images/logo.svg?react';
 import styles from './CamundaLogo.module.scss';
 import cn from 'classnames';
 
