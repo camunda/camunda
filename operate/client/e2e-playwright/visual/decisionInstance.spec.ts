@@ -48,7 +48,7 @@ test.describe('decision instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`evaluated`, async ({page, decisionInstancePage}) => {
+  test('evaluated', async ({page, decisionInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -77,7 +77,7 @@ test.describe('decision instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`evaluated (drd panel maximised)`, async ({
+  test('evaluated (drd panel maximised)', async ({
     page,
     decisionInstancePage,
   }) => {
@@ -102,7 +102,7 @@ test.describe('decision instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`evaluated (without input output panel)`, async ({
+  test('evaluated (without input output panel)', async ({
     page,
     decisionInstancePage,
   }) => {
@@ -125,7 +125,7 @@ test.describe('decision instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`evaluated (with large table)`, async ({page, decisionInstancePage}) => {
+  test('evaluated (with large table)', async ({page, decisionInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -150,7 +150,7 @@ test.describe('decision instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`failed`, async ({page, decisionInstancePage}) => {
+  test('failed', async ({page, decisionInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -167,7 +167,7 @@ test.describe('decision instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`failed (result tab selected)`, async ({page, decisionInstancePage}) => {
+  test('failed (result tab selected)', async ({page, decisionInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({

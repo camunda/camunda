@@ -29,7 +29,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('process detail', () => {
-  test(`have no violations for running instance`, async ({
+  test('have no violations for running instance', async ({
     page,
     processInstancePage,
     makeAxeBuilder,
@@ -70,7 +70,7 @@ test.describe('process detail', () => {
     validateResults(resultsWithMetadataPopover);
   });
 
-  test(`have no violations for instance with incident`, async ({
+  test('have no violations for instance with incident', async ({
     page,
     processInstancePage,
     makeAxeBuilder,
@@ -86,6 +86,7 @@ test.describe('process detail', () => {
         sequenceFlows: instanceWithIncident.sequenceFlows,
         sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
         variables: instanceWithIncident.variables,
+        variablesV2: instanceWithIncident.variablesV2,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
         metaData: instanceWithIncident.metaData,
@@ -133,7 +134,7 @@ test.describe('process detail', () => {
     validateResults(resultsWithMetadataPopover);
   });
 
-  test(`have no violations in modification mode`, async ({
+  test('have no violations in modification mode', async ({
     page,
     processInstancePage,
     makeAxeBuilder,
@@ -148,7 +149,7 @@ test.describe('process detail', () => {
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
+        variablesV2: runningInstance.variablesV2,
         xml: runningInstance.xml,
         metaData: runningInstance.metaData,
       }),
@@ -173,6 +174,6 @@ test.describe('process detail', () => {
 
     await processInstancePage.addVariableButton.click();
 
-    await validateResults(modificationModeResults);
+    validateResults(modificationModeResults);
   });
 });

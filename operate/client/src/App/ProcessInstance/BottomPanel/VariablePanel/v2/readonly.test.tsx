@@ -16,6 +16,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -40,6 +41,7 @@ import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {cancelAllTokens} from 'modules/utils/modifications';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -78,20 +80,20 @@ const getWrapper = (
   return Wrapper;
 };
 
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: 'instance_id',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: false,
+};
+
 describe('VariablePanel', () => {
   beforeEach(() => {
-    const mockProcessInstance: ProcessInstance = {
-      processInstanceKey: 'instance_id',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      processDefinitionKey: '2',
-      processDefinitionVersion: 1,
-      processDefinitionId: 'someKey',
-      tenantId: '<default>',
-      processDefinitionName: 'someProcessName',
-      hasIncident: false,
-    };
-
     const mockProcessInstanceDeprecated = createInstance();
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -183,6 +185,12 @@ describe('VariablePanel', () => {
       mockProcessWithInputOutputMappingsXML,
     );
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -241,6 +249,12 @@ describe('VariablePanel', () => {
         },
       ],
     };
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -269,6 +283,12 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
@@ -348,6 +368,12 @@ describe('VariablePanel', () => {
         endDate: '2022-04-10T15:01:31.794+0000',
       },
     });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -365,6 +391,12 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
@@ -442,6 +474,12 @@ describe('VariablePanel', () => {
     };
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -473,6 +511,26 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([
       createVariable({name: 'some-other-variable'}),
     ]);
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          name: 'some-other-variable',
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          name: 'some-other-variable',
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -500,6 +558,9 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /edit variable/i}),
+    ).not.toBeInTheDocument();
 
     act(() => {
       cancelAllTokens('Activity_0qtp1k6', 2, 2, {});
@@ -513,13 +574,20 @@ describe('VariablePanel', () => {
     expect(screen.getByText('some-other-variable')).toBeInTheDocument();
 
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /edit variable/i}),
-    ).not.toBeInTheDocument();
   });
 
   it('should be readonly if flow node has variables but no running instances', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'COMPLETED',
+    });
     modificationsStore.enableModificationMode();
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
       wrapper: getWrapper(),
@@ -539,6 +607,26 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([
       createVariable({name: 'some-other-variable'}),
     ]);
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          name: 'some-other-variable',
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          name: 'some-other-variable',
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -563,6 +651,7 @@ describe('VariablePanel', () => {
       screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
+
     expect(
       screen.queryByRole('button', {name: /edit variable/i}),
     ).not.toBeInTheDocument();

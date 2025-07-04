@@ -21,6 +21,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -40,6 +41,7 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -161,6 +163,12 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
+    mockSearchVariables().withDelay({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     const {user} = render(
       <VariablePanel setListenerTabVisibility={jest.fn()} />,
       {wrapper: getWrapper()},
@@ -172,27 +180,39 @@ describe('VariablePanel spinner', () => {
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
+    mockSearchVariables().withDelay({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     act(() => {
       flowNodeSelectionStore.setSelection({
-        flowNodeInstanceId: 'another_flow_node',
         flowNodeId: 'TEST_FLOW_NODE',
+        flowNodeInstanceId: '2',
       });
     });
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
-    expect(screen.getByText('test2')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
   });
 
   it('should display spinner on second variable fetch', async () => {
+    mockSearchVariables().withDelay({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
       wrapper: getWrapper(),
     });
@@ -202,10 +222,9 @@ describe('VariablePanel spinner', () => {
     mockFetchVariables().withDelay([createVariable()]);
 
     act(() => {
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'TEST_FLOW_NODE',
+        flowNodeInstanceId: '2',
       });
     });
 
@@ -218,6 +237,18 @@ describe('VariablePanel spinner', () => {
 
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={jest.fn()} />,

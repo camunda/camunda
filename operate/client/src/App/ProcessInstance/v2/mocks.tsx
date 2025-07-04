@@ -14,6 +14,7 @@ import {testData} from '../index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createVariable,
+  createVariableV2,
 } from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {
@@ -49,6 +50,7 @@ import {ProcessInstance, SequenceFlow} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 const mockProcessInstance: ProcessInstance = {
@@ -137,6 +139,12 @@ const mockRequests = (contextPath: string = '') => {
     ],
   });
   mockFetchVariables(contextPath).withSuccess([createVariable()]);
+  mockSearchVariables(contextPath).withSuccess({
+    items: [createVariableV2()],
+    page: {
+      totalItems: 1,
+    },
+  });
   mockFetchVariables(contextPath).withSuccess([createVariable()]);
   mockFetchProcessInstanceIncidents(contextPath).withSuccess({
     ...mockIncidents,
