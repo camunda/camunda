@@ -28,4 +28,16 @@ public class ApiFiltersConfiguration {
     registration.setOrder(1);
     return registration;
   }
+
+  @ConditionalOnExpression("'${camunda.security.multiTenancy.apiEnabled:}' == 'false'")
+  @Bean
+  public FilterRegistrationBean<EndpointAccessErrorFilter> disableMultiTenancyApiFilter(
+      final ObjectMapper objectMapper) {
+    final FilterRegistrationBean<EndpointAccessErrorFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setFilter(new EndpointAccessErrorFilter(objectMapper));
+    registration.addUrlPatterns("/v2/tenants/*");
+    registration.setOrder(1);
+    return registration;
+  }
 }
