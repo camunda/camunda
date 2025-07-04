@@ -150,6 +150,33 @@
       <name>Camunda Identity Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/</url>
     </repository>
+<<<<<<< HEAD
+=======
+
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>camunda-bpm</id>
+      <name>Camunda BPM Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
+    </repository>
+
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>camunda-bpm-snapshots</id>
+      <name>Camunda BPM Snapshot Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
+    </repository>
+>>>>>>> fde14f8a (fix: typo in camunda-bpm repo name)
   </repositories>
 
   <build>
