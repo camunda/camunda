@@ -202,11 +202,7 @@ public final class SearchResponseMapper {
   }
 
   public static Tenant toTenantResponse(final TenantResult response) {
-    return new TenantImpl(
-        response.getTenantId(),
-        response.getName(),
-        response.getDescription(),
-        response.getTenantKey());
+    return new TenantImpl(response.getTenantId(), response.getName(), response.getDescription());
   }
 
   public static SearchResponse<RoleUser> toRoleUsersResponse(final RoleUserSearchResult response) {
