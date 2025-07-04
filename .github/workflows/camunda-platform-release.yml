@@ -724,6 +724,7 @@ jobs:
     # else => send slack notification as an actual release succeeded
     if: ${{ always() && (
       needs.release.result == 'success' &&
+      needs.github.result == 'success' &&
       needs.zeebe-docker.result == 'success' &&
       needs.operate-docker.result == 'success' &&
       needs.tasklist-docker.result == 'success' &&
@@ -772,6 +773,7 @@ jobs:
     # else => send slack notification as an actual release failed
     if: ${{ always() && (
         needs.release.result == 'failure' ||
+        needs.github.result == 'failure' ||
         needs.zeebe-docker.result == 'failure' ||
         needs.operate-docker.result == 'failure' ||
         needs.tasklist-docker.result == 'failure' ||
