@@ -264,9 +264,9 @@ public final class SearchResponseMapper {
     return new TenantUserImpl(response.getUsername());
   }
 
-  public static Mapping toMappingResponse(final MappingResult response) {
+  public static Mapping toMappingResponse(final MappingRuleResult response) {
     return new MappingImpl(
-        response.getMappingId(),
+        response.getMappingRuleId(),
         response.getClaimName(),
         response.getClaimValue(),
         response.getName());
@@ -287,7 +287,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchResponse<Mapping> toMappingsResponse(
-      final MappingSearchQueryResult response) {
+      final MappingRuleSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Mapping> instances =
         toSearchResponseInstances(response.getItems(), SearchResponseMapper::toMappingResponse);

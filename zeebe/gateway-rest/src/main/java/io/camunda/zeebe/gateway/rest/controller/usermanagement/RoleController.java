@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -19,6 +20,10 @@ import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchQueryRequest;
@@ -200,16 +205,16 @@ public class RoleController {
   }
 
   @CamundaPostMapping(path = "/{roleId}/mapping-rules/search")
-  public ResponseEntity<MappingSearchQueryResult> searchMappingRulesByRole(
+  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesByRole(
       @PathVariable final String roleId,
-      @RequestBody(required = false) final MappingSearchQueryRequest query) {
+      @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mappingQuery -> searchMappingRulesInRole(roleId, mappingQuery));
   }
 
-  private ResponseEntity<MappingSearchQueryResult> searchMappingRulesInRole(
+  private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInRole(
       final String roleId, final MappingQuery mappingQuery) {
     try {
       final var composedMappingQuery = buildMappingQuery(roleId, mappingQuery);
