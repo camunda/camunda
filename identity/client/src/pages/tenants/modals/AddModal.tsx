@@ -31,6 +31,10 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   const submitDisabled = loading || !name || !tenantId || !isTenantIdValid;
 
+  const validateTenantId = () => {
+    setIsTenantIdValid(isValidTenantId(tenantId));
+  };
+
   const handleSubmit = async () => {
     const { success, error } = await apiCall({
       name,
@@ -58,10 +62,6 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     }
   };
 
-  const validateTenantId = (id: string) => {
-    setIsTenantIdValid(isValidTenantId(id));
-  };
-
   return (
     <FormModal
       headline={t("createNewTenant")}
@@ -77,9 +77,9 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
           label={t("tenantId")}
           placeholder={t("tenantIdPlaceholder")}
           onChange={(value) => {
-            validateTenantId(value);
             setTenantId(value);
           }}
+          onBlur={validateTenantId}
           value={tenantId}
           errors={!isTenantIdValid ? [t("pleaseEnterValidTenantId")] : []}
           helperText={t("tenantIdHelperText")}
