@@ -21,7 +21,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.VersionUtil;
-import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -37,10 +36,11 @@ import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @ExtendWith(SchemaManagerITInvocationProvider.class)
@@ -72,8 +72,14 @@ class SchemaUpdateIT {
                     : OPENSEARCH_NETWORK_ALIAS,
                 9200);
     try (final var previousVersionContainer =
-        new ZeebeContainer(DockerImageName.parse("camunda/camunda:%s".formatted(PREVIOUS_VERSION)))
+        new GenericContainer<>("camunda/camunda:%s".formatted(PREVIOUS_VERSION))
             .withNetwork(Network.SHARED)
+            .withExposedPorts(9600)
+            .waitingFor(
+                new HttpWaitStrategy()
+                    .forPort(9600)
+                    .forPath("/actuator/health")
+                    .withReadTimeout(Duration.ofSeconds(120)))
             .withEnv("CAMUNDA_OPERATE_DATABASE", databaseType.toString())
             .withEnv("CAMUNDA_OPERATE_%s_URL".formatted(databaseType.name()), url)
             .withEnv("CAMUNDA_OPERATE_%s_NUMBEROFREPLICAS".formatted(databaseType.name()), "1")

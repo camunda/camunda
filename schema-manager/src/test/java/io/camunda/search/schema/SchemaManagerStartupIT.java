@@ -10,7 +10,6 @@ package io.camunda.search.schema;
 import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.createDefeaultElasticsearchContainer;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
@@ -21,13 +20,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategyTarget;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 class SchemaManagerStartupIT {
@@ -41,8 +40,8 @@ class SchemaManagerStartupIT {
   private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
   @AutoClose
-  private final ZeebeContainer camunda =
-      new ZeebeContainer(DockerImageName.parse(CAMUNDA_TEST_IMAGE_NAME))
+  private final GenericContainer<?> camunda =
+      new GenericContainer<>(CAMUNDA_TEST_IMAGE_NAME)
           .withEnv("CAMUNDA_DATABASE_URL", "http://test-elasticsearch:9200")
           .withEnv("SPRING_PROFILES_ACTIVE", "broker")
           .withEnv("LOGGING_LEVEL_IO_CAMUNDA", "DEBUG")
@@ -97,7 +96,7 @@ class SchemaManagerStartupIT {
     // when
     // Simulate external shutdown signal
     LOG.info("Start graceful shutdown of the container");
-    camunda.shutdownGracefully(Duration.ofSeconds(30)); // as default Kubernetes shutdown timeout
+    shutDownContainerGracefully(Duration.ofSeconds(30)); // as default Kubernetes shutdown timeout
     shutdownLatch.countDown();
 
     thread.join(Duration.ofSeconds(5));
@@ -110,5 +109,17 @@ class SchemaManagerStartupIT {
     assertThat(logs).contains("io.camunda.zeebe.broker.system - Broker shut down");
     assertThat(logs).doesNotContain("Failed to start application");
     assertThat(logs).doesNotContain("BeanCreationException");
+  }
+
+  private void shutDownContainerGracefully(final Duration timeout) {
+    final String containerId = camunda.getContainerId();
+    if (containerId == null) {
+      return;
+    }
+    camunda
+        .getDockerClient()
+        .stopContainerCmd(containerId)
+        .withTimeout((int) timeout.getSeconds())
+        .exec();
   }
 }

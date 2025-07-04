@@ -169,8 +169,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-test-container</artifactId>
+      <groupId>com.github.docker-java</groupId>
+      <artifactId>docker-java-api</artifactId>
       <scope>test</scope>
     </dependency>
 
