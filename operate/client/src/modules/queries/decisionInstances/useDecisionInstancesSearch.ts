@@ -12,22 +12,19 @@ import {QueryDecisionInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas'
 
 const DECISION_INSTANCES_SEARCH_QUERY_KEY = 'decisionInstancesSearch';
 
-function getQueryKey(params: QueryDecisionInstancesRequestBody) {
-  return [DECISION_INSTANCES_SEARCH_QUERY_KEY, params];
-}
-
-const useElementInstancesSearch = (
-  params: QueryDecisionInstancesRequestBody,
+const useDecisionInstancesSearch = (
+  payload: QueryDecisionInstancesRequestBody,
+  {enabled} = {enabled: true},
 ) => {
   return useQuery({
-    queryKey: getQueryKey(params),
+    queryKey: [DECISION_INSTANCES_SEARCH_QUERY_KEY, payload],
     queryFn: () =>
-      searchDecisionInstances(params).then(({response, error}) => {
+      searchDecisionInstances(payload).then(({response, error}) => {
         if (response !== null) return response;
         throw error;
       }),
-    enabled: !!params,
+    enabled,
   });
 };
 
-export {useElementInstancesSearch, DECISION_INSTANCES_SEARCH_QUERY_KEY};
+export {useDecisionInstancesSearch};
