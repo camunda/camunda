@@ -6,17 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  makeObservable,
-  observable,
-  action,
-  IReactionDisposer,
-  override,
-} from 'mobx';
-import {
-  fetchProcessCoreStatistics,
-  CoreStatisticsDto,
-} from 'modules/api/processInstances/fetchProcessCoreStatistics';
+import {makeObservable, observable, action, override} from 'mobx';
+import type {IReactionDisposer} from 'mobx';
+import {fetchProcessCoreStatistics} from 'modules/api/processInstances/fetchProcessCoreStatistics';
+import type {CoreStatisticsDto} from 'modules/api/processInstances/fetchProcessCoreStatistics';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 

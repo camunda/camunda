@@ -10,7 +10,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {Modal} from '@carbon/react';
 import {useLocation} from 'react-router-dom';
-import {StateProps} from 'modules/components/ModalStateManager';
+import {type StateProps} from 'modules/components/ModalStateManager';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {batchModificationStore} from 'modules/stores/batchModification';

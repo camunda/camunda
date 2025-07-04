@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {Modal} from '@carbon/react';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {Paths} from 'modules/Routes';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {OperationItem} from 'modules/components/OperationItem';

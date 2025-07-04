@@ -12,7 +12,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {fetchFlowNodeMetaData} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {reaction} from 'mobx';
-import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas';
 import {mockProcessInstances} from 'modules/testUtils';
 
 jest.mock('modules/api/processInstances/fetchFlowNodeMetaData', () => ({

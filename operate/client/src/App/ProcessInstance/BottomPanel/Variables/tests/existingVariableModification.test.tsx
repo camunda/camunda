@@ -7,7 +7,7 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {render, screen, UserEvent, waitFor} from 'modules/testing-library';
+import {render, screen, type UserEvent, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ExistingVariableValue} from '../ExistingVariableValue';

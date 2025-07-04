@@ -7,7 +7,8 @@
  */
 
 import {formatISODate} from 'modules/components/DateRangeField/formatDate';
-import {UserEvent, Screen, waitFor} from 'modules/testing-library';
+import {waitFor} from 'modules/testing-library';
+import type {UserEvent, Screen} from 'modules/testing-library';
 
 const pad = (value: String | Number) => {
   return String(value).padStart(2, '0');

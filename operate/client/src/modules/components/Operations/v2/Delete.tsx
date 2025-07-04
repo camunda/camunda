@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {Modal} from '@carbon/react';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {Restricted} from 'modules/components/Restricted';
 import {useOperations} from 'modules/queries/operations/useOperations';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';

@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {useProcessDefinitionXml} from './useProcessDefinitionXml';
-import {DiagramModel} from 'bpmn-moddle';
+import type {DiagramModel} from 'bpmn-moddle';
 import {isMigratableFlowNode} from 'modules/bpmn-js/utils/isMigratableFlowNode';
 import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
 import {processesStore} from 'modules/stores/processes/processes.migration';

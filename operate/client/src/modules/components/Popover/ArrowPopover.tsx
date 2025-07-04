@@ -7,12 +7,12 @@
  */
 
 import {
-  Side,
+  type Side,
   useFloating,
   arrow,
-  Placement,
+  type Placement,
   autoUpdate,
-  Middleware,
+  type Middleware,
   shift,
 } from '@floating-ui/react-dom';
 

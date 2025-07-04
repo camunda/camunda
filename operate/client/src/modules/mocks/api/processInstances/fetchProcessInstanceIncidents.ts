@@ -7,7 +7,7 @@
  */
 
 import {mockGetRequest} from '../mockRequest';
-import {ProcessInstanceIncidentsDto} from 'modules/api/processInstances/fetchProcessInstanceIncidents';
+import type {ProcessInstanceIncidentsDto} from 'modules/api/processInstances/fetchProcessInstanceIncidents';
 
 const mockFetchProcessInstanceIncidents = (contextPath = '') =>
   mockGetRequest<ProcessInstanceIncidentsDto>(

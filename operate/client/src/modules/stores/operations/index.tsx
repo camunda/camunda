@@ -12,17 +12,19 @@ import {
   action,
   computed,
   autorun,
-  IReactionDisposer,
   override,
 } from 'mobx';
+import type {IReactionDisposer} from 'mobx';
 import {fetchBatchOperations} from 'modules/api/fetchBatchOperations';
-import {BatchOperationDto} from 'modules/api/sharedTypes';
+import type {BatchOperationDto} from 'modules/api/sharedTypes';
 import {
+  applyBatchOperation,
+  applyOperation,
+} from 'modules/api/processInstances/operations';
+import type {
   BatchOperationQuery,
   MigrationPlan,
   Modifications,
-  applyBatchOperation,
-  applyOperation,
 } from 'modules/api/processInstances/operations';
 import {sortOperations} from '../utils/sortOperations';
 import {logger} from 'modules/logger';

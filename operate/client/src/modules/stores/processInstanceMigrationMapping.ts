@@ -13,7 +13,7 @@ import {getEventSubProcessType} from 'modules/bpmn-js/utils/getEventSubProcessTy
 import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 type State = {
   isMappedFilterEnabled: boolean;

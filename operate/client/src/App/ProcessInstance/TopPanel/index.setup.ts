@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {SequenceFlow} from '@vzeta/camunda-api-zod-schemas';
+import {type SequenceFlow} from '@vzeta/camunda-api-zod-schemas';
 import {createIncident, createSequenceFlows} from 'modules/testUtils';
 
 const mockIncidents = {

@@ -7,7 +7,7 @@
  */
 
 import {mockPostRequest} from '../mockRequest';
-import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
+import type {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 
 const mockFetchProcessInstances = () =>
   mockPostRequest<ProcessInstancesDto>('/api/process-instances');

@@ -13,7 +13,7 @@ import {sortIncidents} from '../service';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {FlexContainer, ErrorMessageCell} from '../styled';
-import {Incident} from 'modules/stores/incidents';
+import {type Incident} from 'modules/stores/incidents';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router-dom';

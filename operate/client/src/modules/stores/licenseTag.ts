@@ -7,7 +7,8 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import {fetchLicense, License} from 'modules/api/v2/fetchLicense';
+import {fetchLicense} from 'modules/api/v2/fetchLicense';
+import type {License} from 'modules/api/v2/fetchLicense';
 import {logger} from 'modules/logger';
 
 type State = {

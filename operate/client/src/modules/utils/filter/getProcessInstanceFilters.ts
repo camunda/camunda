@@ -8,10 +8,12 @@
 
 import {logger} from 'modules/logger';
 import {
-  ProcessInstanceFilters,
-  ProcessInstanceFilterField,
   PROCESS_INSTANCE_FILTER_FIELDS,
   BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
+} from './shared';
+import type {
+  ProcessInstanceFilters,
+  ProcessInstanceFilterField,
 } from './shared';
 
 function getFilters<Fields extends string, Filters>(

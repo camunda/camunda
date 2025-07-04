@@ -7,7 +7,7 @@
  */
 
 import {
-  ParsedXmlData,
+  type ParsedXmlData,
   useProcessDefinitionXml,
 } from './useProcessDefinitionXml';
 

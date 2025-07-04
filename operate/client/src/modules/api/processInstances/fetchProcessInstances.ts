@@ -7,7 +7,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
-import {RequestFilters} from 'modules/utils/filter';
+import {type RequestFilters} from 'modules/utils/filter';
 
 type ProcessInstancesDto = {
   processInstances: ProcessInstanceEntity[];

@@ -9,7 +9,7 @@
 import {Stack} from '@carbon/react';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {Header} from '../Header';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
 

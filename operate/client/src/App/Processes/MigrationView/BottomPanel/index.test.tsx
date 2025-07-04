@@ -7,7 +7,7 @@
  */
 
 import {
-  MatcherFunction,
+  type MatcherFunction,
   render,
   screen,
   waitFor,

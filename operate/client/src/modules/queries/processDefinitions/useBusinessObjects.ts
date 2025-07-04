@@ -8,11 +8,11 @@
 
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {
-  ParsedXmlData,
+  type ParsedXmlData,
   useProcessDefinitionXml,
 } from './useProcessDefinitionXml';
 import {isFlowNode} from 'modules/utils/flowNodes';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 function businessObjectsParser({diagramModel}: ParsedXmlData): BusinessObjects {
   const businessObjects = Object.entries(diagramModel.elementsById).reduce(

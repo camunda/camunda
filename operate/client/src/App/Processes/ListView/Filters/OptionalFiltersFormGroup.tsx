@@ -8,11 +8,11 @@
 
 import {observer} from 'mobx-react';
 import {useEffect, useState} from 'react';
-import {useLocation, Location} from 'react-router-dom';
-import {FieldValidator} from 'final-form';
+import {useLocation, type Location} from 'react-router-dom';
+import {type FieldValidator} from 'final-form';
 import {Close} from '@carbon/react/icons';
 import intersection from 'lodash/intersection';
-import {ProcessInstanceFilterField} from 'modules/utils/filter/shared';
+import {type ProcessInstanceFilterField} from 'modules/utils/filter/shared';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {
   validateIdsCharacters,

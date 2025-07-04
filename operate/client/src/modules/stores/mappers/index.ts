@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
+import type {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
 
 const getProcessedSequenceFlows = (sequenceFlows: SequenceFlowsDto) => {
   return sequenceFlows

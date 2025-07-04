@@ -12,14 +12,14 @@ import {
   observable,
   action,
   autorun,
-  IReactionDisposer,
   override,
 } from 'mobx';
+import type {IReactionDisposer} from 'mobx';
 import {
   fetchProcessInstances,
   fetchProcessInstancesByIds,
-  ProcessInstancesDto,
 } from 'modules/api/processInstances/fetchProcessInstances';
+import type {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 import {logger} from 'modules/logger';
 import {
   getProcessInstancesRequestFilters,

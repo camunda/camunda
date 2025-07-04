@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getSelectedFlowNodeName} from 'modules/utils/flowNodeSelection';

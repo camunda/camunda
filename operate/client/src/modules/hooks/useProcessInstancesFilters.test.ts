@@ -8,10 +8,10 @@
 
 import {renderHook} from '@testing-library/react-hooks';
 import {useFilters} from 'modules/hooks/useFilters';
-import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas';
 import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 
 jest.mock('modules/hooks/useFilters');

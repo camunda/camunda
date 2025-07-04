@@ -8,9 +8,9 @@
 
 import React, {useState} from 'react';
 
-import {ErrorHandler, operationsStore} from 'modules/stores/operations';
+import {type ErrorHandler, operationsStore} from 'modules/stores/operations';
 
-import {Incident} from 'modules/stores/incidents';
+import {type Incident} from 'modules/stores/incidents';
 import {OperationItems} from 'modules/components/OperationItems';
 import {OperationItem} from 'modules/components/OperationItem';
 import {observer} from 'mobx-react';

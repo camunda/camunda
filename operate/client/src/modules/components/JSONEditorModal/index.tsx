@@ -9,12 +9,11 @@
 import {useEffect, useRef, useState} from 'react';
 import {observer} from 'mobx-react';
 import {JSONEditor} from 'modules/components/JSONEditor';
-import {U} from 'ts-toolbelt';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {Modal} from '@carbon/react';
 
 type EditorFirstParam = Parameters<
-  U.NonNullable<React.ComponentProps<typeof JSONEditor>['onMount']>
+  NonNullable<React.ComponentProps<typeof JSONEditor>['onMount']>
 >[0];
 
 type Props = {

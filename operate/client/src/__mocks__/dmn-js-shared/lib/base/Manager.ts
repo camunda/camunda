@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {View} from 'dmn-js-shared/lib/base/Manager';
+import type {View} from 'dmn-js-shared/lib/base/Manager';
 
 const mockedModules: {[module: string]: any} = {
   canvas: {

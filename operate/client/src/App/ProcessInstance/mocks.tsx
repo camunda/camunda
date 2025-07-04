@@ -26,7 +26,7 @@ import {Paths} from 'modules/Routes';
 import {createMemoryHistory} from 'history';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {
-  Selection,
+  type Selection,
   flowNodeSelectionStore,
 } from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';

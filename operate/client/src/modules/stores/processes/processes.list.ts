@@ -8,7 +8,7 @@
 
 import {computed, makeObservable} from 'mobx';
 import {ProcessesBase} from './processes.base';
-import {ProcessVersionDto} from 'modules/api/processes/fetchGroupedProcesses';
+import type {ProcessVersionDto} from 'modules/api/processes/fetchGroupedProcesses';
 
 class Processes extends ProcessesBase {
   constructor() {

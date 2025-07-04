@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {hasType} from './hasType';
 
 const isProcessEndEvent = (businessObject: BusinessObject) => {

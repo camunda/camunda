@@ -7,7 +7,6 @@
  */
 
 import {
-  IReactionDisposer,
   action,
   autorun,
   computed,
@@ -15,7 +14,9 @@ import {
   observable,
   override,
 } from 'mobx';
-import {ProcessesBase, Process} from './processes.base';
+import type {IReactionDisposer} from 'mobx';
+import {ProcessesBase} from './processes.base';
+import type {Process} from './processes.base';
 
 type MigrationState = {
   selectedTargetProcess: Omit<Process, 'permissions' | 'processes'> | null;

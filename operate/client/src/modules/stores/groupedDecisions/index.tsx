@@ -6,18 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  action,
-  computed,
-  IReactionDisposer,
-  makeObservable,
-  observable,
-  override,
-} from 'mobx';
-import {
-  fetchGroupedDecisions,
-  DecisionDto,
-} from 'modules/api/decisions/fetchGroupedDecisions';
+import {action, computed, makeObservable, observable, override} from 'mobx';
+import type {IReactionDisposer} from 'mobx';
+import {fetchGroupedDecisions} from 'modules/api/decisions/fetchGroupedDecisions';
+import type {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {getSearchString} from 'modules/utils/getSearchString';

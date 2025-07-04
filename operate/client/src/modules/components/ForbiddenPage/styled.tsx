@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReactComponent as ForbiddenIcon} from 'modules/components/Icon/forbidden.svg';
+import ForbiddenIcon from 'modules/components/Icon/forbidden.svg?react';
 import {styles} from '@carbon/elements';
 import styled from 'styled-components';
 import {Stack} from '@carbon/react';

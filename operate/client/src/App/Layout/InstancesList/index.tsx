@@ -13,7 +13,7 @@ import {
 import {Container, PanelContainer} from './styled';
 import {observer} from 'mobx-react';
 import {useEffect, useRef, useState} from 'react';
-import {Frame, FrameProps} from 'modules/components/Frame';
+import {Frame, type FrameProps} from 'modules/components/Frame';
 
 type Props = {
   leftPanel?: React.ReactNode;

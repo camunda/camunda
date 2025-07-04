@@ -22,7 +22,7 @@ import {getProcessName} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 import {Button} from '@carbon/react';
-import {StateProps} from 'modules/components/ModalStateManager';
+import {type StateProps} from 'modules/components/ModalStateManager';
 import {Warning} from './Messages/Warning';
 import {Error} from './Messages/Error';
 import {VariableModification} from './VariableModification';

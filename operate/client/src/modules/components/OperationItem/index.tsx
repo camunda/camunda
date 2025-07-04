@@ -7,8 +7,7 @@
  */
 
 import {Error, Tools, RetryFailed} from '@carbon/react/icons';
-import {Icon} from 'carbon-components-react';
-import {Button, ButtonSize} from '@carbon/react';
+import {Button, type ButtonSize, type Icon} from '@carbon/react';
 
 type ItemProps = {
   type:

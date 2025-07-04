@@ -12,12 +12,12 @@ import {
   action,
   computed,
   when,
-  IReactionDisposer,
   override,
 } from 'mobx';
+import type {IReactionDisposer} from 'mobx';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {
-  fetchFlowNodeInstances,
+import {fetchFlowNodeInstances} from 'modules/api/fetchFlowNodeInstances';
+import type {
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
 } from 'modules/api/fetchFlowNodeInstances';

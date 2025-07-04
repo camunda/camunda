@@ -11,13 +11,14 @@ import {
   type GetProcessDefinitionStatisticsRequestBody,
   type GetProcessDefinitionStatisticsResponseBody,
 } from '@vzeta/camunda-api-zod-schemas';
-import {RequestResult, requestWithThrow} from 'modules/request';
+import type {RequestResult} from 'modules/request';
+import {requestWithThrow} from 'modules/request';
 
-enum ProcessInstanceState {
-  ACTIVE = 'ACTIVE',
-  COMPLETED = 'COMPLETED',
-  TERMINATED = 'TERMINATED',
-}
+const ProcessInstanceState = {
+  ACTIVE: 'ACTIVE',
+  COMPLETED: 'COMPLETED',
+  TERMINATED: 'TERMINATED',
+} as const;
 
 const fetchProcessInstancesStatistics = async (
   payload: GetProcessDefinitionStatisticsRequestBody,

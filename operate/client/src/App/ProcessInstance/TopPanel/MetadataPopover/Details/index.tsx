@@ -9,7 +9,7 @@
 import {useState} from 'react';
 import {Stack} from '@carbon/react';
 import isNil from 'lodash/isNil';
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';

@@ -7,7 +7,7 @@
  */
 
 import {mockGetRequest} from '../../mockRequest';
-import {GetProcessInstanceSequenceFlowsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import type {GetProcessInstanceSequenceFlowsResponseBody} from '@vzeta/camunda-api-zod-schemas';
 
 const mockFetchProcessSequenceFlows = () =>
   mockGetRequest<GetProcessInstanceSequenceFlowsResponseBody>(

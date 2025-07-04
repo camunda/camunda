@@ -7,12 +7,19 @@
  */
 
 import {App} from './App';
+// @ts-ignore - CSS imports
 import './index.scss';
+// @ts-ignore - CSS imports
 import 'dmn-js/dist/assets/dmn-js-decision-table.css';
+// @ts-ignore - CSS imports
 import 'dmn-js/dist/assets/dmn-js-shared.css';
+// @ts-ignore - CSS imports
 import 'dmn-js/dist/assets/dmn-js-drd.css';
+// @ts-ignore - CSS imports
 import 'dmn-js/dist/assets/dmn-js-literal-expression.css';
+// @ts-ignore - CSS imports
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
+// @ts-ignore - CSS imports
 import 'bpmn-js/dist/assets/bpmn-js.css';
 import {tracking} from 'modules/tracking';
 import {createRoot} from 'react-dom/client';
@@ -20,7 +27,7 @@ import {createRoot} from 'react-dom/client';
 function enableMockingForDevEnv(): Promise<void> {
   return new Promise((resolve) => {
     if (
-      process.env.NODE_ENV === 'development' ||
+      import.meta.env.DEV ||
       window.location.host.match(/camunda\.cloud$/) !== null
     ) {
       import('modules/mock-server/browser').then(({startMocking}) => {

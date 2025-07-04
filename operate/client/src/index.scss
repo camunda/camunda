@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-@use '@carbon/react' as *;
-
+@use '@carbon/react' as * with (
+  $font-path: '@ibm/plex'
+);
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme';
 
@@ -87,8 +88,8 @@ svg {
 
 .bjs-container {
   --breadcrumbs-item-color: var(--cds-background-brand) !important;
-  --breadcrumbs-font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial,
-    sans-serif;
+  --breadcrumbs-font-family:
+    'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .cds--modal {

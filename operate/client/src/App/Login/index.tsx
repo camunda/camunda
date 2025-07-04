@@ -193,7 +193,7 @@ const Login: React.FC = () => {
       </Form>
       <Column sm={4} md={8} lg={16} as={CopyrightNotice}>
         {`© Camunda Services GmbH ${new Date().getFullYear()}. All rights reserved. | ${
-          process.env.REACT_APP_VERSION
+          import.meta.env.VITE_VERSION
         }`}
       </Column>
     </Grid>

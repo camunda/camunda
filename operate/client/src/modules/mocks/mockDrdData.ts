@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
+import type {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
 
 const mockDrdData: DrdDataDto = {
   'invoice-assign-approver': [{decisionInstanceId: '0', state: 'EVALUATED'}],

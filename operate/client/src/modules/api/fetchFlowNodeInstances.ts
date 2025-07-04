@@ -7,7 +7,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
-import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {type FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 
 type Query = {
   processInstanceId: ProcessInstanceEntity['id'];

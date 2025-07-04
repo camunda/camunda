@@ -20,7 +20,7 @@ import {Popup} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
 import {getSelectedFlowNodeName} from 'modules/utils/flowNodeSelection';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';

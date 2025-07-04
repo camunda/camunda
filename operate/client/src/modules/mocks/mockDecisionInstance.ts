@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
+import type {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
 
 const invoiceClassification: DecisionInstanceDto = {
   id: '3ß945876576324-1',

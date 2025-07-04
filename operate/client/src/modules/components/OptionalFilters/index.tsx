@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ReactElement} from 'react';
+import {type ReactElement} from 'react';
 import {OverflowMenuItem} from '@carbon/react';
 import {Filter} from '@carbon/react/icons';
 import {ButtonStack, OverflowMenu, Container} from './styled';

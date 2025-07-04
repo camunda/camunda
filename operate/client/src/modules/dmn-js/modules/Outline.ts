@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {EventCallback} from 'dmn-js-shared/lib/base/Manager';
+import {type EventCallback} from 'dmn-js-shared/lib/base/Manager';
 import {
   append as svgAppend,
   attr as svgAttr,

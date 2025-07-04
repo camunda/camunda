@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FlowNodeModification, modificationsStore} from './modifications';
+import {modificationsStore} from './modifications';
+import type {FlowNodeModification} from './modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {
   createAddVariableModification,

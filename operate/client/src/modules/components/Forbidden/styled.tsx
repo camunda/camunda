@@ -8,7 +8,7 @@
 
 import styled from 'styled-components';
 import {EmptyState as BaseEmptyState} from 'modules/components/EmptyState';
-import {ReactComponent as PermissionDenied} from 'modules/components/Icon/permission-denied.svg';
+import PermissionDenied from 'modules/components/Icon/permission-denied.svg?react';
 
 const EmptyState = styled(BaseEmptyState)`
   background-color: var(--cds-layer);

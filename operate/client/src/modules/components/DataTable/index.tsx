@@ -17,7 +17,7 @@ import {
   TableExpandRow,
   TableExpandHeader,
   TableExpandedRow,
-  DenormalizedRow,
+  type DenormalizedRow,
 } from '@carbon/react';
 
 type Props = {

@@ -21,7 +21,7 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 
 describe('useWillAllFlowNodesBeCanceled', () => {
   const getWrapper = (
-    initialEntries: React.ComponentProps<
+    _initialEntries: React.ComponentProps<
       typeof MemoryRouter
     >['initialEntries'] = [Paths.processInstance('processId')],
   ) => {

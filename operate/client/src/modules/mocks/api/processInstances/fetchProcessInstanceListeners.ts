@@ -7,7 +7,7 @@
  */
 
 import {mockPostRequest} from '../mockRequest';
-import {ListenersDto} from 'modules/api/processInstances/fetchProcessInstanceListeners';
+import type {ListenersDto} from 'modules/api/processInstances/fetchProcessInstanceListeners';
 
 const mockFetchProcessInstanceListeners = (contextPath = '') =>
   mockPostRequest<ListenersDto>(

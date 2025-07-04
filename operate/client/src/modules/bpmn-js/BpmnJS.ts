@@ -7,9 +7,9 @@
  */
 
 import NavigatedViewer, {
-  BpmnElement,
-  Event,
-  OverlayPosition,
+  type BpmnElement,
+  type Event,
+  type OverlayPosition,
 } from 'bpmn-js/lib/NavigatedViewer';
 import OutlineModule from 'bpmn-js/lib/features/outline';
 // @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'

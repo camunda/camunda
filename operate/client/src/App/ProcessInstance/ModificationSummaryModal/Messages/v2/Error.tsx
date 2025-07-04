@@ -8,7 +8,7 @@
 
 import {Link} from '@carbon/react';
 import {ActionableNotification, Text} from '../styled';
-import {CallHierarchy} from '@vzeta/camunda-api-zod-schemas';
+import {type CallHierarchy} from '@vzeta/camunda-api-zod-schemas';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 
 function getParentAndRootProcessInformation(callHierarchy?: CallHierarchy[]) {

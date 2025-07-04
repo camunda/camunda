@@ -8,8 +8,8 @@
 
 import {makeAutoObservable} from 'mobx';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {
-  modify,
+import {modify} from 'modules/api/processInstances/modify';
+import type {
   ModificationPayload,
   FlowNodeVariables,
 } from 'modules/api/processInstances/modify';
@@ -17,7 +17,7 @@ import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {generateParentScopeIds} from 'modules/utils/modifications';
 
 type FlowNodeModificationPayload =

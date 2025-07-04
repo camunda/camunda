@@ -12,9 +12,9 @@ import {
   action,
   computed,
   autorun,
-  IReactionDisposer,
   override,
 } from 'mobx';
+import type {IReactionDisposer} from 'mobx';
 import {fetchProcessInstance} from 'modules/api/processInstances/fetchProcessInstance';
 import {createOperation, getProcessName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';

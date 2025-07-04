@@ -21,7 +21,7 @@ import {useForm, useFormState} from 'react-final-form';
 import {Operations} from './Operations';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {Edit} from '@carbon/react/icons';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 import {EditButtons} from './EditButtons';
 import {ExistingVariableValue} from './ExistingVariableValue';
 import {Name} from './NewVariableModification/Name';

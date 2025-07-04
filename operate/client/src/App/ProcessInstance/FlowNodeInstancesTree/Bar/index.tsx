@@ -12,7 +12,7 @@ import {TimeStampLabel} from './TimeStampLabel';
 import {NodeName, Container, StateIcon} from './styled';
 import {Layer, Stack, Tag} from '@carbon/react';
 import {ModificationIcons as ModificationIconsV2} from './ModificationIcons/v2';
-import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {type FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {formatDate} from 'modules/utils/date';
 
 type Props = {

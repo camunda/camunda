@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
-import {RequestError} from 'modules/request';
+import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import type {RequestError} from 'modules/request';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchProcessInstanceDeprecated} from 'modules/api/processInstances/fetchProcessInstance';
 

@@ -7,10 +7,8 @@
  */
 
 import {action, makeObservable, observable, override} from 'mobx';
-import {
-  fetchProcessInstancesByName,
-  ProcessInstanceByNameDto,
-} from 'modules/api/incidents/fetchProcessInstancesByName';
+import {fetchProcessInstancesByName} from 'modules/api/incidents/fetchProcessInstancesByName';
+import type {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import isEqual from 'lodash/isEqual';
 

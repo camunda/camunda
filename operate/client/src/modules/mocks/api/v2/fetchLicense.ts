@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {License} from 'modules/api/v2/fetchLicense';
+import type {License} from 'modules/api/v2/fetchLicense';
 import {mockGetRequest} from '../mockRequest';
 
 const mockFetchLicense = () => mockGetRequest<License>('/v2/license');

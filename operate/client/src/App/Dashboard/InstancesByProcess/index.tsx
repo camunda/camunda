@@ -19,7 +19,7 @@ import {InstancesBar} from 'modules/components/InstancesBar';
 import {LinkWrapper, ErrorMessage} from '../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {EmptyState} from 'modules/components/EmptyState';
-import {ReactComponent as EmptyStateProcessInstancesByName} from 'modules/components/Icon/empty-state-process-instances-by-name.svg';
+import EmptyStateProcessInstancesByName from 'modules/components/Icon/empty-state-process-instances-by-name.svg?react';
 import {authenticationStore} from 'modules/stores/authentication';
 import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Button, ButtonSize} from '@carbon/react';
+import {Button, type ButtonSize} from '@carbon/react';
 
 type ItemProps = {
   type: 'DELETE';

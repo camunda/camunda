@@ -11,9 +11,9 @@ import {observer} from 'mobx-react';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {FormRenderProps} from 'react-final-form';
+import {type FormRenderProps} from 'react-final-form';
 
 import {AddVariableButton, Form, VariablesContainer} from '../styled';
 import Variables from '../../Variables/v2';

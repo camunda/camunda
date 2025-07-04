@@ -7,8 +7,8 @@
  */
 
 import styled, {css} from 'styled-components';
-import {ReactComponent as HelpDiagram_Dark} from 'modules/components/Icon/HelpDiagram_Dark_Carbon.svg';
-import {ReactComponent as HelpDiagram_Light} from 'modules/components/Icon/HelpDiagram_Light_Carbon.svg';
+import HelpDiagram_Dark from 'modules/components/Icon/HelpDiagram_Dark_Carbon.svg?react';
+import HelpDiagram_Light from 'modules/components/Icon/HelpDiagram_Light_Carbon.svg?react';
 import {styles} from '@carbon/elements';
 import {Add, Error, ArrowRight} from '@carbon/react/icons';
 import {Checkbox as BaseCheckbox, Stack} from '@carbon/react';

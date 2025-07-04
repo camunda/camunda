@@ -25,7 +25,7 @@ import {Paths} from 'modules/Routes';
 import {createMemoryHistory} from 'history';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {
-  Selection,
+  type Selection,
   flowNodeSelectionStore,
 } from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
@@ -45,7 +45,10 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {ProcessInstance, SequenceFlow} from '@vzeta/camunda-api-zod-schemas';
+import {
+  type ProcessInstance,
+  type SequenceFlow,
+} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';

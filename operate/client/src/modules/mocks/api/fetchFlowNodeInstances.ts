@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
+import type {
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
 } from 'modules/api/fetchFlowNodeInstances';

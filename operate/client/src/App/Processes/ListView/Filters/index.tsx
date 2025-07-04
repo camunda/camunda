@@ -12,7 +12,7 @@ import {Stack} from '@carbon/react';
 import {Error} from '@carbon/react/icons';
 import {Form} from 'react-final-form';
 import isEqual from 'lodash/isEqual';
-import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {useFilters} from 'modules/hooks/useFilters';
 import {ProcessField} from './ProcessField';
@@ -31,7 +31,7 @@ import {
 } from 'modules/components/StateIcon/styled';
 import {CheckboxGroup} from './CheckboxGroup';
 import {
-  OptionalFilter,
+  type OptionalFilter,
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
 import {TenantField} from 'modules/components/TenantField';

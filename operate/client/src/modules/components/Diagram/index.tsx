@@ -7,7 +7,11 @@
  */
 
 import React, {useRef, useEffect, useLayoutEffect, useState} from 'react';
-import {BpmnJS, OnFlowNodeSelection, OverlayData} from 'modules/bpmn-js/BpmnJS';
+import {
+  BpmnJS,
+  type OnFlowNodeSelection,
+  type OverlayData,
+} from 'modules/bpmn-js/BpmnJS';
 import DiagramControls from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {modificationsStore} from 'modules/stores/modifications';

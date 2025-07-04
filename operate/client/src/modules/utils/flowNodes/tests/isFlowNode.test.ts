@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ElementType, BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import type {ElementType, BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isFlowNode} from '..';
 
 const createElement = (

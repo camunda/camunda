@@ -7,16 +7,14 @@
  */
 
 import {fetchFlowNodeMetaData} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {modificationsStore} from 'modules/stores/modifications';
 import {formatDate} from './date';
-import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas';
 import {reaction} from 'mobx';
-import {
-  flowNodeSelectionStore,
-  Selection,
-} from 'modules/stores/flowNodeSelection';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import type {Selection} from 'modules/stores/flowNodeSelection';
 
 const init = (
   processInstanceId: string,

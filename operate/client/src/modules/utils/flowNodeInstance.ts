@@ -6,14 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {when} from 'mobx';
 import {
-  FlowNodeInstance,
-  FlowNodeInstances,
   flowNodeInstanceStore,
   MAX_INSTANCES_PER_REQUEST,
   MAX_INSTANCES_STORED,
+} from 'modules/stores/flowNodeInstance';
+import type {
+  FlowNodeInstance,
+  FlowNodeInstances,
 } from 'modules/stores/flowNodeInstance';
 import {isInstanceRunning} from './instance';
 import {fetchFlowNodeInstances} from 'modules/api/fetchFlowNodeInstances';

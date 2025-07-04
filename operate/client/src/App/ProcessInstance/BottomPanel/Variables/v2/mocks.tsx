@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
@@ -19,7 +19,7 @@ import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {createInstance} from 'modules/testUtils';
 
 const mockProcessInstance: ProcessInstance = {

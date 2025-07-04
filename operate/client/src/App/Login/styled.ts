@@ -9,7 +9,7 @@
 import styled from 'styled-components';
 
 import {styles, rem} from '@carbon/elements';
-import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
+import BaseLogo from 'modules/components/Icon/logo.svg?react';
 import {Button as BaseButton} from '@carbon/react';
 
 const Button: typeof BaseButton = styled(BaseButton)`

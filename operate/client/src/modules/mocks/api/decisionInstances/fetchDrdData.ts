@@ -7,7 +7,7 @@
  */
 
 import {mockGetRequest} from '../mockRequest';
-import {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
+import type {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
 
 const mockFetchDrdData = () =>
   mockGetRequest<DrdDataDto>(

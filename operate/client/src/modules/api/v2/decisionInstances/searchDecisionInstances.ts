@@ -8,10 +8,10 @@
 
 import {
   endpoints,
-  QueryDecisionInstancesRequestBody,
-  QueryDecisionInstancesResponseBody,
+  type QueryDecisionInstancesRequestBody,
+  type QueryDecisionInstancesResponseBody,
 } from '@vzeta/camunda-api-zod-schemas';
-import {requestWithThrow, RequestResult} from 'modules/request';
+import {requestWithThrow, type RequestResult} from 'modules/request';
 
 const searchDecisionInstances = async (
   payload: QueryDecisionInstancesRequestBody,

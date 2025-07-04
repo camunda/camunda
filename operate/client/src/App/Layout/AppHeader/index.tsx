@@ -12,10 +12,10 @@ import {Link} from 'react-router-dom';
 import {useCurrentPage} from '../useCurrentPage';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {ArrowRight} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
-import {currentTheme, ThemeType} from 'modules/stores/currentTheme';
+import {currentTheme, type ThemeType} from 'modules/stores/currentTheme';
 import capitalize from 'lodash/capitalize';
 import {licenseTagStore} from 'modules/stores/licenseTag';
 
@@ -31,6 +31,7 @@ const AppHeader: React.FC = observer(() => {
   const {currentPage} = useCurrentPage();
   const {displayName, canLogout, userId, salesPlanType, roles, c8Links} =
     authenticationStore.state;
+  const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 
   useEffect(() => {
     if (userId) {
@@ -120,9 +121,10 @@ const AppHeader: React.FC = observer(() => {
           expiresAt: licenseTagStore.state.expiresAt,
         },
       }}
+      toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
       appBar={{
         ariaLabel: 'App Panel',
-        isOpen: false,
+        isOpen: isAppBarOpen,
         elements: window.clientConfig?.organizationId
           ? orderedApps.map((appName) => ({
               key: appName,
@@ -205,7 +207,7 @@ const AppHeader: React.FC = observer(() => {
         ],
       }}
       userSideBar={{
-        version: process.env.REACT_APP_VERSION,
+        version: import.meta.env.VITE_VERSION,
         ariaLabel: 'Settings',
         customElements: {
           profile: {

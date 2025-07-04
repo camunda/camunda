@@ -14,7 +14,7 @@ import {InstancesTable} from './InstancesTable';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {Filters} from './Filters';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {useLocation, Location} from 'react-router-dom';
+import {useLocation, type Location} from 'react-router-dom';
 import {OperationsPanel} from 'modules/components/OperationsPanel';
 
 type LocationType = Omit<Location, 'state'> & {

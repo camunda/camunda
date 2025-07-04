@@ -20,7 +20,10 @@ const gridColumnLayout = css<ContainerProps>`
   ${({$hasLeftPanel = false, $hasRightPanel = false}) => {
     if ($hasLeftPanel && $hasRightPanel) {
       return css`
-        grid-template-columns: auto minmax(0, 1fr) ${COLLAPSABLE_PANEL_MIN_WIDTH};
+        grid-template-columns: auto minmax(
+            0,
+            1fr
+          ) ${COLLAPSABLE_PANEL_MIN_WIDTH};
       `;
     }
 

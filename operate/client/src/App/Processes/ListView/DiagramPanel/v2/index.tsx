@@ -7,7 +7,7 @@
  */
 
 import React, {useRef} from 'react';
-import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
 import {deleteSearchParams} from 'modules/utils/filter';

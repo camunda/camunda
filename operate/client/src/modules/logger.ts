@@ -7,9 +7,9 @@
  */
 
 const logger = {
-  error(message: unknown | Error) {
-    if (['production', 'development'].includes(process.env.NODE_ENV)) {
-      console.error(message);
+  error(...args: Parameters<typeof console.error>) {
+    if (import.meta.env.MODE !== 'test') {
+      console.error(...args);
     }
   },
 } as const;
