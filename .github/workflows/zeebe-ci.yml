@@ -366,7 +366,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     needs: [ test-summary, get-snapshot-docker-version-tag ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.7'
     concurrency:
       group: deploy-docker-snapshot8.7
       cancel-in-progress: false
