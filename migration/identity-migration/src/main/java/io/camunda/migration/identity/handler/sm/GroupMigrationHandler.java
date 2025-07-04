@@ -205,14 +205,16 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   }
 
   private AuthorizationResourceType convertResourceType(final String resourceType) {
-    if (IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE.equalsIgnoreCase(resourceType)) {
-      return AuthorizationResourceType.PROCESS_DEFINITION;
-    }
-    if (IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE.equalsIgnoreCase(resourceType)) {
-      return AuthorizationResourceType.DECISION_DEFINITION;
-    }
-    logger.debug("Unknown resource type: {}. Defaulting to UNSPECIFIED.", resourceType);
-    return AuthorizationResourceType.UNSPECIFIED;
+    return switch (resourceType) {
+      case IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE ->
+          AuthorizationResourceType.PROCESS_DEFINITION;
+      case IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE ->
+          AuthorizationResourceType.DECISION_DEFINITION;
+      default -> {
+        logger.debug("Unknown resource type: {}. Defaulting to UNSPECIFIED.", resourceType);
+        yield AuthorizationResourceType.UNSPECIFIED;
+      }
+    };
   }
 
   private Set<PermissionType> convertPermissions(
