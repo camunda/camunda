@@ -270,12 +270,8 @@ public class ProcessDefinitionSearchTest {
   @Test
   void shouldRetrieveAllLatestProcessDefinitions() {
     // given
-    final var expectedProcessDefinitionIds =
-        PROCESSES_LATEST_VERSION.entrySet().stream()
-            .filter(Map.Entry::getValue)
-            .map(Map.Entry::getKey)
-            .map(process -> process.replace(".bpmn", ""))
-            .toList();
+    final var expectedProcessDefinitionIdsSize =
+        PROCESSES_LATEST_VERSION.entrySet().stream().filter(Map.Entry::getValue).count();
 
     // when
     final var result =
@@ -286,22 +282,17 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(expectedProcessDefinitionIds.size());
-    final var service_tasks_v1_version =
-        result.items().stream()
-            .filter(pd -> pd.getProcessDefinitionId().equals("processA_ID"))
-            .findFirst()
-            .map(ProcessDefinition::getVersion)
-            .orElseThrow();
-    assertThat(service_tasks_v1_version).isEqualTo(3);
-    final var service_tasks_v2_version =
-        result.items().stream()
-            .filter(pd -> pd.getProcessDefinitionId().equals("processB_ID"))
-            .findFirst()
-            .map(ProcessDefinition::getVersion)
-            .orElseThrow();
-    assertThat(service_tasks_v2_version).isEqualTo(2);
-    assertThat(result.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
+    assertThat(result.items()).hasSize((int) expectedProcessDefinitionIdsSize);
+    assertThat(result.items())
+        .filteredOn("processDefinitionId", "processA_ID")
+        .extracting("version")
+        .containsExactly(3);
+    assertThat(result.items())
+        .filteredOn("processDefinitionId", "processB_ID")
+        .extracting("version")
+        .containsExactly(2);
+    assertThat(result.items())
+        .extracting("processDefinitionId")
         .containsExactlyInAnyOrderElementsOf(
             List.of(
                 "processWithVersionTag",
@@ -315,12 +306,8 @@ public class ProcessDefinitionSearchTest {
   @Test
   void shouldRetrieveAllLatestProcessDefinitionsWhenPaginated() {
     // given
-    final var expectedProcessDefinitionIds =
-        PROCESSES_LATEST_VERSION.entrySet().stream()
-            .filter(Map.Entry::getValue)
-            .map(Map.Entry::getKey)
-            .map(process -> process.replace(".bpmn", ""))
-            .toList();
+    final var expectedProcessDefinitionIdsSize =
+        PROCESSES_LATEST_VERSION.entrySet().stream().filter(Map.Entry::getValue).count();
 
     // when
     final var processDefinitions = new ArrayList<ProcessDefinition>();
@@ -349,8 +336,9 @@ public class ProcessDefinitionSearchTest {
     } while (endCursor != null && !endCursor.isEmpty());
 
     // then
-    assertThat(processDefinitions.size()).isEqualTo(expectedProcessDefinitionIds.size());
-    assertThat(processDefinitions.stream().map(ProcessDefinition::getProcessDefinitionId).toList())
+    assertThat(processDefinitions).hasSize((int) expectedProcessDefinitionIdsSize);
+    assertThat(processDefinitions)
+        .extracting("processDefinitionId")
         .containsExactlyInAnyOrderElementsOf(
             List.of(
                 "processWithVersionTag",
@@ -393,12 +381,8 @@ public class ProcessDefinitionSearchTest {
       final Function<ProcessDefinitionSort, ProcessDefinitionSort> sort,
       final List<String> expectedOrderedProcessDefinitionIds) {
     // given
-    final var expectedProcessDefinitionIds =
-        PROCESSES_LATEST_VERSION.entrySet().stream()
-            .filter(Map.Entry::getValue)
-            .map(Map.Entry::getKey)
-            .map(process -> process.replace(".bpmn", ""))
-            .toList();
+    final var expectedProcessDefinitionIdsSize =
+        PROCESSES_LATEST_VERSION.entrySet().stream().filter(Map.Entry::getValue).count();
 
     // when
     final var processDefinitions = new LinkedHashSet<ProcessDefinition>();
@@ -428,8 +412,9 @@ public class ProcessDefinitionSearchTest {
     } while (endCursor != null && !endCursor.isEmpty());
 
     // then
-    assertThat(processDefinitions.size()).isEqualTo(expectedProcessDefinitionIds.size());
-    assertThat(processDefinitions.stream().map(ProcessDefinition::getProcessDefinitionId).toList())
+    assertThat(processDefinitions).hasSize((int) expectedProcessDefinitionIdsSize);
+    assertThat(processDefinitions)
+        .extracting("processDefinitionId")
         .containsExactlyElementsOf(expectedOrderedProcessDefinitionIds);
   }
 
