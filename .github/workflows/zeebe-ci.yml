@@ -460,6 +460,7 @@ jobs:
           # fixed to avoid triggering false positive; see https://github.com/golangci/golangci-lint-action/issues/535
           version: v1.55.2
           working-directory: clients/go
+          skip-cache: true
       - name: Observe build status
         if: always()
         continue-on-error: true
