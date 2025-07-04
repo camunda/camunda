@@ -34,8 +34,7 @@
     "react-router-dom": "7.6.3",
     "react-transition-group": "4.4.5",
     "serve": "14.2.4",
-    "styled-components": "6.1.13",
-    "stylis": "4.3.4"
+    "styled-components": "6.1.13"
   },
   "scripts": {
     "start": "vite",
@@ -68,7 +67,6 @@
     "@testing-library/user-event": "14.6.1",
     "@types/carbon__elements": "11.10.3",
     "@types/carbon-components-react": "7.55.13",
-    "@types/jest": "29.5.14",
     "@types/lodash": "4.17.12",
     "@types/mixpanel-browser": "2.60.0",
     "@types/node": "22.16.0",
