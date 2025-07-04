@@ -12,16 +12,12 @@ import {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas';
 
 const ELEMENT_INSTANCES_SEARCH_QUERY_KEY = 'elementInstancesSearch';
 
-function getQueryKey(payload: QueryElementInstancesRequestBody) {
-  return [ELEMENT_INSTANCES_SEARCH_QUERY_KEY, payload];
-}
-
 const useElementInstancesSearch = (
   payload: QueryElementInstancesRequestBody,
   {enabled} = {enabled: true},
 ) => {
   return useQuery({
-    queryKey: getQueryKey(payload),
+    queryKey: [ELEMENT_INSTANCES_SEARCH_QUERY_KEY, payload],
     queryFn: () =>
       searchElementInstances(payload).then(({response, error}) => {
         if (response !== null) return response;
@@ -31,4 +27,4 @@ const useElementInstancesSearch = (
   });
 };
 
-export {useElementInstancesSearch, ELEMENT_INSTANCES_SEARCH_QUERY_KEY};
+export {useElementInstancesSearch};

@@ -23,7 +23,6 @@ import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesS
 import {useMemo} from 'react';
 import {Details} from './Details';
 import {createV2InstanceMetadata} from './types';
-import {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
