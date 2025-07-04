@@ -39,6 +39,8 @@ public class ManagementIdentityClient {
       "/api/authorizations?organizationId={0}";
   private static final String MIGRATION_ROLES_ENDPOINT = "/api/roles";
   private static final String MIGRATION_ROLES_PERMISSIONS_ENDPOINT = "/api/roles/{0}/permissions";
+  private static final String MIGRATION_USERS_ENDPOINT = "/api/users?page={0}";
+  private static final String MIGRATION_USERS_ROLES_ENDPOINT = "/api/users/{0}/roles";
 
   private final String organizationId;
   private final RestTemplate restTemplate;
@@ -125,6 +127,20 @@ public class ManagementIdentityClient {
             Objects.requireNonNull(
                 restTemplate.getForObject(
                     MIGRATION_ROLES_PERMISSIONS_ENDPOINT, Permission[].class, roleName)))
+        .toList();
+  }
+
+  public List<User> fetchUsers(final int page) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(MIGRATION_USERS_ENDPOINT, User[].class, page)))
+        .toList();
+  }
+
+  public List<Role> fetchUserRoles(final String userId) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(MIGRATION_USERS_ROLES_ENDPOINT, Role[].class, userId)))
         .toList();
   }
 }
