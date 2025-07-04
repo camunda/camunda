@@ -19,7 +19,7 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@camunda/camunda-composite-components": "0.17.0",
+    "@camunda/camunda-composite-components": "0.19.1",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.78.2",
     "i18next": "25.3.0",
