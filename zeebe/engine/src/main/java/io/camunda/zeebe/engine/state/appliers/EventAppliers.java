@@ -279,11 +279,6 @@ public final class EventAppliers implements EventApplier {
         2,
         new ProcessInstanceCreationCreatedV2Applier(
             processState, elementInstanceState, usageMetricState));
-    register(
-        ProcessInstanceCreationIntent.CREATED,
-        3,
-        new ProcessInstanceCreationCreatedV3Applier(
-            processState, elementInstanceState, usageMetricState));
   }
 
   private void registerProcessInstanceModificationAppliers(final MutableProcessingState state) {
