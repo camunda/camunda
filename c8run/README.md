@@ -19,7 +19,7 @@ To successfully build `c8run`, you need:
 Export your OKTA credentials as:
 
 ```bash
-export JAVA_ARTIFACTS_USER=username
+export JAVA_ARTIFACTS_USER=firstname.lastname
 export JAVA_ARTIFACTS_PASSWORD=password
 ```
 
