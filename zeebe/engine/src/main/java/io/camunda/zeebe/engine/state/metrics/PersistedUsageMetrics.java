@@ -25,7 +25,9 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
 
   public PersistedUsageMetrics() {
     super(4);
-    declareProperty(fromTimeProp).declareProperty(toTimeProp).declareProperty(tenantRPIMapProp)
+    declareProperty(fromTimeProp)
+        .declareProperty(toTimeProp)
+        .declareProperty(tenantRPIMapProp)
         .declareProperty(tenantEDIMapProp);
   }
 
