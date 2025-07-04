@@ -34,7 +34,6 @@ import {init} from 'modules/utils/flowNodeInstance';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 jest.mock('modules/utils/bpmn');
@@ -88,6 +87,9 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 
 describe('FlowNodeInstanceLog', () => {
   beforeEach(async () => {
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockDeprecatedProcessInstance,
+    );
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
     );
@@ -210,10 +212,6 @@ describe('FlowNodeInstanceLog', () => {
   });
 
   it('should render flow node instances tree', async () => {
-    jest.useFakeTimers();
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockDeprecatedProcessInstance,
-    );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
     init(mockProcessInstance);
@@ -227,7 +225,5 @@ describe('FlowNodeInstanceLog', () => {
     expect(
       await screen.findByText('Migrated 2018-12-12 00:00:00'),
     ).toBeInTheDocument();
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 });

@@ -48,7 +48,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should render process instance data', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -94,7 +94,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should render "View All" link for call activity process', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -115,7 +115,7 @@ describe('InstanceHeader', () => {
     jest.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -143,7 +143,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should render parent Process Instance Key', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -171,7 +171,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner when instance has active operations', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -187,7 +187,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should not show spinner when instance has no active operations', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess({
       ...mockInstanceDeprecated,
       operations: [],
@@ -394,7 +394,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner on process instance cancellation', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess({
       ...mockInstanceDeprecated,
       operations: [],
