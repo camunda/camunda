@@ -9,6 +9,7 @@ package io.camunda.security.configuration;
 
 public class MultiTenancyConfiguration {
 
+  public static final String API_ENABLED_PROPERTY = "camunda.security.multiTenancy.apiEnabled";
   private static final boolean DEFAULT_MULTITENANCY_ENABLED = false;
   private static final boolean DEFAULT_API_ENABLED = true;
 
