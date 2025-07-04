@@ -16,15 +16,23 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +41,17 @@ public class ProcessDefinitionSearchTest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessDefinitionSearchTest.class);
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-
+  private static final Map<String, Boolean> PROCESSES_LATEST_VERSION =
+      Map.of(
+          "processA-v1.bpmn", false,
+          "processA-v2.bpmn", false,
+          "processA-v3.bpmn", true,
+          "processB-v1.bpmn", false,
+          "processB-v2.bpmn", true,
+          "service_tasks_v1.bpmn", true,
+          "service_tasks_v2.bpmn", true,
+          "processWithVersionTag.bpmn", true,
+          "process_start_form.bpmn", true);
   private static CamundaClient camundaClient;
 
   @BeforeAll
@@ -41,15 +59,11 @@ public class ProcessDefinitionSearchTest {
     final List<String> forms = List.of("form.form", "form_v2.form");
     forms.forEach(form -> deployResource("form/" + form));
 
-    final List<String> processes =
-        List.of(
-            "service_tasks_v1.bpmn",
-            "service_tasks_v2.bpmn",
-            "process_start_form.bpmn",
-            "processWithVersionTag.bpmn");
-
-    processes.forEach(
-        process -> DEPLOYED_PROCESSES.addAll(deployResource("process/" + process).getProcesses()));
+    PROCESSES_LATEST_VERSION
+        .keySet()
+        .forEach(
+            process ->
+                DEPLOYED_PROCESSES.addAll(deployResource("process/" + process).getProcesses()));
 
     waitForProcessesToBeDeployed();
   }
@@ -236,6 +250,157 @@ public class ProcessDefinitionSearchTest {
     assertThat(result.items().size()).isEqualTo(expectedProcessDefinitionIds.size());
     assertThat(result.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrderElementsOf(expectedProcessDefinitionIds);
+  }
+
+  @Test
+  void shouldRetrieveAllLatestProcessDefinitions() {
+    // given
+    final var expectedProcessDefinitionIdsSize =
+        PROCESSES_LATEST_VERSION.entrySet().stream().filter(Map.Entry::getValue).count();
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(f -> f.isLatestVersion(true))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize((int) expectedProcessDefinitionIdsSize);
+    assertThat(result.items())
+        .filteredOn("processDefinitionId", "processA_ID")
+        .extracting("version")
+        .containsExactly(3);
+    assertThat(result.items())
+        .filteredOn("processDefinitionId", "processB_ID")
+        .extracting("version")
+        .containsExactly(2);
+    assertThat(result.items())
+        .extracting("processDefinitionId")
+        .containsExactlyInAnyOrderElementsOf(
+            List.of(
+                "processWithVersionTag",
+                "Process_11hxie4",
+                "service_tasks_v1",
+                "service_tasks_v2",
+                "processA_ID",
+                "processB_ID"));
+  }
+
+  @Test
+  void shouldRetrieveAllLatestProcessDefinitionsWhenPaginated() {
+    // given
+    final var expectedProcessDefinitionIdsSize =
+        PROCESSES_LATEST_VERSION.entrySet().stream().filter(Map.Entry::getValue).count();
+
+    // when
+    final var processDefinitions = new ArrayList<ProcessDefinition>();
+    var endCursor = "";
+    do {
+      final String finalEndCursor = endCursor;
+      final var result =
+          camundaClient
+              .newProcessDefinitionSearchRequest()
+              .filter(f -> f.isLatestVersion(true))
+              .page(
+                  p -> {
+                    p.limit(1);
+                    if (!Objects.equals(finalEndCursor, "")) {
+                      p.after(finalEndCursor);
+                    }
+                  })
+              .send()
+              .join();
+      if (!result.items().isEmpty()) {
+        processDefinitions.addAll(result.items());
+        endCursor = result.page().endCursor();
+      } else {
+        endCursor = null; // No more items to fetch
+      }
+    } while (endCursor != null && !endCursor.isEmpty());
+
+    // then
+    assertThat(processDefinitions).hasSize((int) expectedProcessDefinitionIdsSize);
+    assertThat(processDefinitions)
+        .extracting("processDefinitionId")
+        .containsExactlyInAnyOrderElementsOf(
+            List.of(
+                "processWithVersionTag",
+                "Process_11hxie4",
+                "service_tasks_v1",
+                "service_tasks_v2",
+                "processA_ID",
+                "processB_ID"));
+  }
+
+  private static Stream<Arguments> processDefinitionsWithSort() {
+    final Function<ProcessDefinitionSort, ProcessDefinitionSort> asc =
+        s -> s.processDefinitionId().asc();
+    final Function<ProcessDefinitionSort, ProcessDefinitionSort> desc =
+        s -> s.processDefinitionId().desc();
+    return Stream.of(
+        Arguments.of(
+            asc,
+            List.of(
+                "Process_11hxie4",
+                "processA_ID",
+                "processB_ID",
+                "processWithVersionTag",
+                "service_tasks_v1",
+                "service_tasks_v2")),
+        Arguments.of(
+            desc,
+            List.of(
+                "service_tasks_v2",
+                "service_tasks_v1",
+                "processWithVersionTag",
+                "processB_ID",
+                "processA_ID",
+                "Process_11hxie4")));
+  }
+
+  @ParameterizedTest
+  @MethodSource("processDefinitionsWithSort")
+  void shouldRetrieveAllLatestProcessDefinitionsWhenPaginatedAndSorted(
+      final Function<ProcessDefinitionSort, ProcessDefinitionSort> sort,
+      final List<String> expectedOrderedProcessDefinitionIds) {
+    // given
+    final var expectedProcessDefinitionIdsSize =
+        PROCESSES_LATEST_VERSION.entrySet().stream().filter(Map.Entry::getValue).count();
+
+    // when
+    final var processDefinitions = new LinkedHashSet<ProcessDefinition>();
+    var endCursor = "";
+    do {
+      final String finalEndCursor = endCursor;
+      final var result =
+          camundaClient
+              .newProcessDefinitionSearchRequest()
+              .filter(f -> f.isLatestVersion(true))
+              .sort(sort::apply)
+              .page(
+                  p -> {
+                    p.limit(1);
+                    if (!Objects.equals(finalEndCursor, "")) {
+                      p.after(finalEndCursor);
+                    }
+                  })
+              .send()
+              .join();
+      if (!result.items().isEmpty()) {
+        processDefinitions.addAll(result.items());
+        endCursor = result.page().endCursor();
+      } else {
+        endCursor = null; // No more items to fetch
+      }
+    } while (endCursor != null && !endCursor.isEmpty());
+
+    // then
+    assertThat(processDefinitions).hasSize((int) expectedProcessDefinitionIdsSize);
+    assertThat(processDefinitions)
+        .extracting("processDefinitionId")
+        .containsExactlyElementsOf(expectedOrderedProcessDefinitionIds);
   }
 
   @Test

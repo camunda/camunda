@@ -27,16 +27,19 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.AC
 
 import io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
+import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public class ProcessInstanceFlowNodeStatisticsAggregationTransformer
     implements AggregationTransformer<ProcessInstanceFlowNodeStatisticsAggregation> {
 
   @Override
-  public List<SearchAggregator> apply(final ProcessInstanceFlowNodeStatisticsAggregation value) {
+  public List<SearchAggregator> apply(
+      final Tuple<ProcessInstanceFlowNodeStatisticsAggregation, ServiceTransformers> value) {
 
     // aggregate filters for active, completed, canceled, incidents
     final var filtersAgg =
