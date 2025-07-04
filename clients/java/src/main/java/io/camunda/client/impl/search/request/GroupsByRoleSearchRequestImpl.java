@@ -32,18 +32,18 @@ import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.client.protocol.rest.GroupSearchQueryResult;
+import io.camunda.client.protocol.rest.RoleGroupSearchQueryRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class GroupsByRoleSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<GroupSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<RoleGroupSearchQueryRequest>
     implements GroupsByRoleSearchRequest {
 
-  private final GroupSearchQueryRequest request;
+  private final RoleGroupSearchQueryRequest request;
   private final String roleId;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -55,7 +55,7 @@ public class GroupsByRoleSearchRequestImpl
     this.jsonMapper = jsonMapper;
     this.roleId = roleId;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new GroupSearchQueryRequest();
+    request = new RoleGroupSearchQueryRequest();
   }
 
   @Override
@@ -80,7 +80,6 @@ public class GroupsByRoleSearchRequestImpl
 
   @Override
   public GroupsByRoleSearchRequest filter(final GroupFilter value) {
-    request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
@@ -92,7 +91,8 @@ public class GroupsByRoleSearchRequestImpl
   @Override
   public GroupsByRoleSearchRequest sort(final GroupSort value) {
     request.setSort(
-        SearchRequestSortMapper.toGroupSearchQuerySortRequest(provideSearchRequestProperty(value)));
+        SearchRequestSortMapper.toRoleGroupSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
     return this;
   }
 
@@ -113,7 +113,7 @@ public class GroupsByRoleSearchRequestImpl
   }
 
   @Override
-  protected GroupSearchQueryRequest getSearchRequestProperty() {
+  protected RoleGroupSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 }
