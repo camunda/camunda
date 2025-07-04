@@ -10,8 +10,10 @@ package io.camunda.security.configuration;
 public class MultiTenancyConfiguration {
 
   private static final boolean DEFAULT_MULTITENANCY_ENABLED = false;
+  private static final boolean DEFAULT_API_ENABLED = true;
 
   private boolean enabled = DEFAULT_MULTITENANCY_ENABLED;
+  private boolean apiEnabled = DEFAULT_API_ENABLED;
 
   public boolean isEnabled() {
     return enabled;
@@ -19,5 +21,13 @@ public class MultiTenancyConfiguration {
 
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
+  }
+
+  public boolean isApiEnabled() {
+    return apiEnabled;
+  }
+
+  public void setApiEnabled(final boolean apiEnabled) {
+    this.apiEnabled = apiEnabled;
   }
 }
