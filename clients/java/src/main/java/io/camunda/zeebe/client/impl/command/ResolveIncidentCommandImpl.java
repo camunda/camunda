@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.client.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
@@ -44,6 +46,8 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   private final RequestConfig.Builder httpRequestConfig;
   private boolean useRest;
   private final long incidentKey;
+  private final IncidentResolutionRequest httpRequestObject;
+  private final JsonMapper jsonMapper;
 
   public ResolveIncidentCommandImpl(
       final GatewayStub asyncStub,
@@ -51,7 +55,8 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
       final Duration requestTimeout,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
-      final boolean preferRestOverGrpc) {
+      final boolean preferRestOverGrpc,
+      final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
     this.requestTimeout = requestTimeout;
@@ -60,6 +65,8 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;
     this.incidentKey = incidentKey;
+    httpRequestObject = new IncidentResolutionRequest();
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
@@ -81,7 +88,10 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   private ZeebeFuture<ResolveIncidentResponse> sendRestRequest() {
     final HttpZeebeFuture<ResolveIncidentResponse> result = new HttpZeebeFuture<>();
     httpClient.post(
-        "/incidents/" + incidentKey + "/resolution", "", httpRequestConfig.build(), result);
+        "/incidents/" + incidentKey + "/resolution",
+        jsonMapper.toJson(httpRequestObject),
+        httpRequestConfig.build(),
+        result);
     return result;
   }
 
@@ -111,6 +121,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   @Override
   public ResolveIncidentCommandStep1 operationReference(final long operationReference) {
     builder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
     return this;
   }
 

@@ -51,6 +51,19 @@ public final class ResolveIncidentTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client.newResolveIncidentCommand(123).operationReference(operationReference).send().join();
+
+    // then
+    final ResolveIncidentRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldNotHaveNullResponse() {
     // given
     final ResolveIncidentCommandStep1 command = client.newResolveIncidentCommand(12);

@@ -76,6 +76,24 @@ public final class JobUpdateRetriesTest extends ClientTest {
   }
 
   @Test
+  public void shouldSetOperationReference() {
+    // given
+    final long operationReference = 456;
+
+    // when
+    client
+        .newUpdateRetriesCommand(123)
+        .retries(3)
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    final UpdateJobRetriesRequest request = gatewayService.getLastRequest();
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
+
+  @Test
   public void shouldNotHaveNullResponse() {
     // given
     final UpdateRetriesJobCommandStep1 command = client.newUpdateRetriesCommand(12);

@@ -128,6 +128,7 @@ public final class JobUpdateRetriesCommandImpl
   @Override
   public UpdateRetriesJobCommandStep2 operationReference(final long operationReference) {
     grpcRequestObjectBuilder.setOperationReference(operationReference);
+    httpRequestObject.setOperationReference(operationReference);
     return this;
   }
 

@@ -94,4 +94,14 @@ public class LoggedRequestAssert extends AbstractAssert<LoggedRequestAssert, Log
 
     return this;
   }
+
+  public LoggedRequestAssert hasEmptyJsonObjectBody() {
+    isNotNull();
+
+    Assertions.assertThat(actual.getBodyAsString())
+        .describedAs("Expected request body to be an empty JSON object '{}'")
+        .isEqualTo("{}");
+
+    return this;
+  }
 }
