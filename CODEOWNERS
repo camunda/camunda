@@ -127,3 +127,8 @@
 
 # Performance  + Load testing
 /zeebe/benchmarks @camunda/zeebe-distributed-platform
+
+# Identity
+/identity/*        @camunda/identity
+/authentication/*  @camunda/identity
+/security/*        @camunda/identity
