@@ -11,12 +11,15 @@ import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.TENANT;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static io.camunda.client.api.search.enums.ResourceType.USER;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.TenantUser;
@@ -47,7 +50,6 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.springframework.http.HttpStatus;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
@@ -127,30 +129,19 @@ class TenantAuthorizationIT {
   void getByIdShouldReturnAuthorizedTenant(
       @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
     // when
-    final var tenant =
-        getTenantById(
-            userClient.getConfiguration().getRestAddress().toString(), RESTRICTED, "tenant1");
+    final Tenant tenant = userClient.newTenantGetRequest("tenant1").send().join();
 
     // then
-    assertThat(tenant.isRight()).isTrue();
-    assertThat(tenant.get().tenantId()).isEqualTo("tenant1");
+    assertThat(tenant.getTenantId()).isEqualTo("tenant1");
   }
 
   @Test
   void getByIdShouldReturnForbiddenForUnauthorizedTenantId(
       @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
-    // when
-    final var tenant =
-        getTenantById(
-            userClient.getConfiguration().getRestAddress().toString(), UNAUTHORIZED, "tenant1");
-
-    // then
-    assertThat(tenant.isLeft()).isTrue();
-    final var statusCode = tenant.getLeft().getLeft();
-    final var responseBody = tenant.getLeft().getRight();
-    assertThat(statusCode).isEqualTo(HttpStatus.FORBIDDEN);
-    assertThat(responseBody)
-        .contains("Unauthorized to perform operation 'READ' on resource 'TENANT'");
+    // when/then
+    assertThatThrownBy(() -> userClient.newTenantGetRequest("tenant1").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Unauthorized to perform operation 'READ' on resource 'TENANT'");
   }
 
   @Test
@@ -230,30 +221,6 @@ class TenantAuthorizationIT {
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
     return OBJECT_MAPPER.readValue(response.body(), TenantSearchResponse.class);
-  }
-
-  // TODO once available, this test should use the client to make the request
-  private static Either<Tuple<HttpStatus, String>, TenantResponse> getTenantById(
-      final String restAddress, final String username, final String tenantId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder().encodeToString("%s:%s".formatted(username, PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/tenants/%s".formatted(tenantId))))
-            .GET()
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    // Send the request and get the response
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-
-    if (response.statusCode() == HttpStatus.OK.value()) {
-      return Either.right(OBJECT_MAPPER.readValue(response.body(), TenantResponse.class));
-    }
-
-    return Either.left(Tuple.of(HttpStatus.resolve(response.statusCode()), response.body()));
   }
 
   private record TenantSearchResponse(List<TenantResponse> items) {}
