@@ -8,7 +8,12 @@
 package io.camunda.zeebe.dynamic.config.changes;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
@@ -30,6 +35,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 final class PartitionBootstrapApplierTest {
 
@@ -109,18 +115,25 @@ final class PartitionBootstrapApplierTest {
               m ->
                   m.addPartition(
                       partitionId, PartitionState.bootstrapping(partitionId, partitionConfig)));
+      final var applier =
+          new PartitionBootstrapApplier(
+              partitionId, priority, localMemberId, true, partitionChangeExecutor);
+      when(partitionChangeExecutor.bootstrap(anyInt(), anyInt(), any(), anyBoolean()))
+          .thenReturn(CompletableActorFuture.completed());
 
       // when
-      final var result =
-          new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, false, partitionChangeExecutor)
-              .init(topologyWithPartitionBootstrapping);
+      final var result = applier.init(topologyWithPartitionBootstrapping);
 
       // then
       EitherAssert.assertThat(result).isRight();
       assertThat(result.get().apply(topologyWithPartitionBootstrapping))
           .describedAs("No change to the topology")
           .isEqualTo(topologyWithPartitionBootstrapping);
+
+      assertThat(applier.applyOperation()).succeedsWithin(Duration.ofSeconds(1));
+      final var configCaptor = ArgumentCaptor.forClass(DynamicPartitionConfig.class);
+      verify(partitionChangeExecutor).bootstrap(eq(2), anyInt(), configCaptor.capture(), eq(true));
+      assertThat(configCaptor.getValue()).isEqualTo(partitionConfig);
     }
 
     @Test
