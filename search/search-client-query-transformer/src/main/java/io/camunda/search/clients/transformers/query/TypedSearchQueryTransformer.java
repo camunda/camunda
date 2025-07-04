@@ -46,6 +46,7 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
 
     final var page = query.page();
     final var reverse = !page.isNextPage();
+    final var type = page.type();
 
     final var builder =
         searchRequest().index(indices).query(searchQueryFilter).from(page.from()).size(page.size());

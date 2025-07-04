@@ -13,6 +13,7 @@ import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.transformers.ServiceTransformer;
@@ -54,9 +55,23 @@ public final class SearchClientBasedQueryExecutor {
         (SearchQueryResultTransformer<T, R>) getSearchResultTransformer(documentClass);
     return executeSearch(
         query,
-        q ->
-            responseTransformer.apply(
-                searchClient.search(q, documentClass), !query.page().isNextPage()));
+        q -> {
+          final SearchQueryResponse<T> response;
+          switch (query.page().type()) {
+            case UNLIMITED -> response = searchClient.scroll(q, documentClass, true);
+            case SINGLE_RESULT -> response = searchClient.singleResult(q, documentClass);
+            case PAGE -> {
+              if (query.page().size() <= DocumentBasedSearchClient.QUERY_MAX_SIZE) {
+                response = searchClient.search(q, documentClass);
+              } else {
+                response = searchClient.scroll(q, documentClass, false);
+              }
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + query.page().type());
+          }
+          responseTransformer.apply(response, !query.page().isNextPage());
+          return null;
+        });
   }
 
   public <F extends FilterBase, S extends SortOption, T, R> List<R> findAll(

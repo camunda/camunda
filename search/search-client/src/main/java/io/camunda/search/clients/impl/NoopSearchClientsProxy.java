@@ -125,11 +125,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public List<GroupEntity> findAllGroups(final GroupQuery query) {
-    return List.of();
-  }
-
-  @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     return SearchQueryResult.empty();
   }

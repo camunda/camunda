@@ -44,6 +44,7 @@ import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,6 +79,58 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       LOGGER.warn(ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e);
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e, searchExceptionToReason(e));
+    }
+  }
+
+  @Override
+  public <T> SearchQueryResponse<T> scroll(
+      final SearchQueryRequest searchRequest, final Class<T> documentClass, final boolean unlimited) {
+    final List<Hit<T>> totalHits = new ArrayList<>();
+    final var limit = searchRequest.size();
+    String scrollId = null;
+
+    try {
+      final var request = transformSearchRequestToScrollRequest(searchRequest);
+      final var rawSearchResponse = client.search(request, documentClass);
+      scrollId = rawSearchResponse.scrollId();
+
+      final var searchResponseHits = collectHits(rawSearchResponse.hits());
+      totalHits.addAll(searchResponseHits);
+
+      if (totalHits.size() < QUERY_MAX_SIZE) {
+        // stop early; no need to continue with scroll
+        final SearchResponseTransformer<T> searchResponseTransformer =
+            getSearchResponseTransformer();
+        return searchResponseTransformer.apply(rawSearchResponse);
+      }
+
+      List<Hit<T>> scrollResponseHits;
+      do {
+        final var rawScrollResponse = scroll(scrollId, documentClass);
+        scrollId = rawScrollResponse.scrollId();
+
+        scrollResponseHits = collectHits(rawScrollResponse.hits());
+        totalHits.addAll(scrollResponseHits);
+
+      } while (!scrollResponseHits.isEmpty()
+          && scrollResponseHits.size() >= QUERY_MAX_SIZE
+          && (unlimited || totalHits.size() < limit));
+
+      final var limitExceededBy = totalHits.size() - limit;
+      if (limitExceededBy > 0) {
+        // stay in the limit, don't return too much
+        final var subListedHits = scrollResponseHits.subList(0, limit - 1);
+        return transformScrollResponseHits(subListedHits);
+      }
+
+      return transformScrollResponseHits(totalHits);
+
+    } catch (final IOException | OpenSearchException e) {
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e);
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e, searchExceptionToReason(e));
+    } finally {
+      clearScroll(scrollId);
     }
   }
 
@@ -127,6 +180,29 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_GET_REQUEST, e, searchExceptionToReason(e));
     }
+  }
+
+  private SearchRequest transformSearchRequestToScrollRequest(
+      final SearchQueryRequest searchRequest) {
+    return getSearchRequestTransformer()
+        .toSearchRequestBuilder(searchRequest)
+        // load in pages of max 10k
+        .size(QUERY_MAX_SIZE)
+        .scroll(s -> s.time(SCROLL_KEEP_ALIVE_TIME))
+        .build();
+  }
+
+  private <T> List<Hit<T>> collectHits(final HitsMetadata<T> hitsMetadata) {
+    return hitsMetadata.hits().stream().toList();
+  }
+
+  private <T> SearchQueryResponse<T> transformScrollResponseHits(final List<Hit<T>> hits) {
+    final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
+    final var transformedHits = searchResponseTransformer.toSearchQueryHits(hits);
+    return new SearchQueryResponse.Builder<T>()
+        .totalHits(hits.size())
+        .hits(transformedHits)
+        .build();
   }
 
   @Override

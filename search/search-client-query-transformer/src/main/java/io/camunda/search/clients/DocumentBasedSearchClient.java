@@ -21,6 +21,8 @@ import java.util.function.Function;
 
 public interface DocumentBasedSearchClient extends CloseableSilently {
 
+  int QUERY_MAX_SIZE = 10_000;
+
   <T> SearchQueryResponse<T> search(
       final SearchQueryRequest searchRequest, final Class<T> documentClass);
 
@@ -28,6 +30,14 @@ public interface DocumentBasedSearchClient extends CloseableSilently {
       final Function<Builder, ObjectBuilder<SearchQueryRequest>> fn, final Class<T> documentClass) {
     return search(searchRequest(fn), documentClass);
   }
+
+  <T> SearchQueryResponse<T> scroll(
+      final SearchQueryRequest searchRequest,
+      final Class<T> documentClass,
+      final boolean unlimited);
+
+  <T> SearchQueryResponse<T> singleResult(
+      final SearchQueryRequest searchRequest, final Class<T> documentClass);
 
   <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass);
 

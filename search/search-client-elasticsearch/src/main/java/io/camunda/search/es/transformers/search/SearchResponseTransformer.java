@@ -39,7 +39,7 @@ public final class SearchResponseTransformer<T>
     final var totalHits = of(total);
 
     final var sourceHits = hits.hits();
-    final var transformedHits = of(sourceHits);
+    final var transformedHits = toSearchQueryHits(sourceHits);
     final var transformedAggregations = of(aggregations);
 
     return new SearchQueryResponse.Builder<T>()
@@ -50,7 +50,7 @@ public final class SearchResponseTransformer<T>
         .build();
   }
 
-  private List<SearchQueryHit<T>> of(final List<Hit<T>> hits) {
+  public List<SearchQueryHit<T>> toSearchQueryHits(final List<Hit<T>> hits) {
     if (hits != null) {
       final var hitTransformer = new SearchQueryHitTransformer<T>(transformers);
       return hits.stream().map(hitTransformer::apply).collect(Collectors.toList());

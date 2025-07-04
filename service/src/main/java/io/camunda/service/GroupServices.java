@@ -12,6 +12,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
+import io.camunda.search.page.SearchQueryPage.Builder;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -47,11 +48,13 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
 
   public List<GroupEntity> getGroupsByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds) {
-    return findAll(
-        GroupQuery.of(
-            groupQuery ->
-                groupQuery.filter(
-                    groupFilter -> groupFilter.memberIdsByType(memberTypesToMemberIds))));
+    return search(
+            GroupQuery.of(
+                groupQuery ->
+                    groupQuery
+                        .filter(groupFilter -> groupFilter.memberIdsByType(memberTypesToMemberIds))
+                        .page(Builder::unlimited)))
+        .items();
   }
 
   @Override
@@ -61,14 +64,6 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.group().read())))
         .searchGroups(query);
-  }
-
-  public List<GroupEntity> findAll(final GroupQuery query) {
-    return groupSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.group().read())))
-        .findAllGroups(query);
   }
 
   @Override
@@ -111,18 +106,24 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public List<GroupEntity> getGroupsByMemberId(final String memberId, final EntityType memberType) {
-    return findAll(
-        SearchQueryBuilders.groupSearchQuery()
-            .filter(f -> f.memberId(memberId).childMemberType(memberType))
-            .build());
+    return search(
+            GroupQuery.of(
+                groupQuery ->
+                    groupQuery
+                        .filter(f -> f.memberId(memberId).childMemberType(memberType))
+                        .page(Builder::unlimited)))
+        .items();
   }
 
   public List<GroupEntity> getGroupsByMemberIds(
       final Set<String> memberIds, final EntityType memberType) {
-    return findAll(
-        SearchQueryBuilders.groupSearchQuery()
-            .filter(f -> f.memberIds(memberIds).childMemberType(memberType))
-            .build());
+    return search(
+            GroupQuery.of(
+                groupQuery ->
+                    groupQuery
+                        .filter(f -> f.memberIds(memberIds).childMemberType(memberType))
+                        .page(Builder::unlimited)))
+        .items();
   }
 
   public Optional<GroupEntity> findGroup(final String groupId) {

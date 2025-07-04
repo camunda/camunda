@@ -18,6 +18,7 @@ import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.SearchDeleteRequest;
@@ -83,6 +84,72 @@ public class ElasticsearchSearchClient
   }
 
   @Override
+  public <T> SearchQueryResponse<T> scroll(
+      final SearchQueryRequest searchRequest,
+      final Class<T> documentClass,
+      final boolean unlimited) {
+    final List<Hit<T>> totalHits = new ArrayList<>();
+    final var limit = searchRequest.size();
+
+    String scrollId = null;
+
+    try {
+      final var request = transformSearchRequestToScrollRequest(searchRequest);
+      final var rawSearchResponse = client.search(request, documentClass);
+      scrollId = rawSearchResponse.scrollId();
+
+      final var searchResponseHits = collectHits(rawSearchResponse.hits());
+      totalHits.addAll(searchResponseHits);
+
+      if (totalHits.size() < QUERY_MAX_SIZE) {
+        // stop early; no need to continue with scroll
+        final SearchResponseTransformer<T> searchResponseTransformer =
+            getSearchResponseTransformer();
+        return searchResponseTransformer.apply(rawSearchResponse);
+      }
+
+      List<Hit<T>> scrollResponseHits;
+      do {
+        final var rawScrollResponse = scroll(scrollId, documentClass);
+        scrollId = rawScrollResponse.scrollId();
+
+        scrollResponseHits = collectHits(rawScrollResponse.hits());
+        totalHits.addAll(scrollResponseHits);
+
+      } while (!scrollResponseHits.isEmpty()
+          && scrollResponseHits.size() >= QUERY_MAX_SIZE
+          && (unlimited || totalHits.size() < limit));
+
+      final var limitExceededBy = totalHits.size() - limit;
+      if (limitExceededBy > 0) {
+        // stay in the limit, don't return too much
+        final var subListedHits = scrollResponseHits.subList(0, limit - 1);
+        return transformScrollResponseHits(subListedHits);
+      }
+
+      return transformScrollResponseHits(totalHits);
+
+    } catch (final IOException | ElasticsearchException e) {
+      LOGGER.warn(ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e);
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e, searchExceptionToReason(e));
+    } finally {
+      clearScroll(scrollId);
+    }
+  }
+
+  @Override
+  public <T> SearchQueryResponse<T> singleResult(
+      final SearchQueryRequest searchRequest, final Class<T> documentClass) {
+    final var response = search(searchRequest, documentClass);
+    if (response.hits().size() <= 1) {
+      return response;
+    }
+    throw new CamundaSearchException(
+        ErrorMessages.ERROR_NOT_UNIQUE_QUERY, CamundaSearchException.Reason.NOT_UNIQUE);
+  }
+
+  @Override
   public <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass) {
     final List<T> result = new ArrayList<>();
     String scrollId = null;
@@ -128,6 +195,29 @@ public class ElasticsearchSearchClient
       throw new CamundaSearchException(
           ErrorMessages.ERROR_FAILED_GET_REQUEST, e, searchExceptionToReason(e));
     }
+  }
+
+  private SearchRequest transformSearchRequestToScrollRequest(
+      final SearchQueryRequest searchRequest) {
+    return getSearchRequestTransformer()
+        .toSearchRequestBuilder(searchRequest)
+        // load in pages of max 10k
+        .size(QUERY_MAX_SIZE)
+        .scroll(s -> s.time(SCROLL_KEEP_ALIVE_TIME))
+        .build();
+  }
+
+  private <T> List<Hit<T>> collectHits(final HitsMetadata<T> hitsMetadata) {
+    return hitsMetadata.hits().stream().toList();
+  }
+
+  private <T> SearchQueryResponse<T> transformScrollResponseHits(final List<Hit<T>> hits) {
+    final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
+    final var transformedHits = searchResponseTransformer.toSearchQueryHits(hits);
+    return new SearchQueryResponse.Builder<T>()
+        .totalHits(hits.size())
+        .hits(transformedHits)
+        .build();
   }
 
   @Override

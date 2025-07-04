@@ -224,22 +224,6 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<GroupEntity> findAllGroups(final GroupQuery query) {
-    LOG.debug("[RDBMS Search Client] Search for all groups: {}", query);
-
-    // search without size boundary to find all items
-    return rdbmsService
-        .getGroupReader()
-        .search(
-            GroupQuery.of(
-                b ->
-                    b.filter(query.filter())
-                        .sort(query.sort())
-                        .page(p -> p.size(Integer.MAX_VALUE))))
-        .items();
-  }
-
-  @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
     return rdbmsService
         .getUserTaskReader()
