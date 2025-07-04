@@ -89,6 +89,7 @@ import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
@@ -379,6 +380,21 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, RoleQuery> toRoleQuery(
+      final RoleGroupSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.roleSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromRoleGroupSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::role,
+            SearchQueryRequestMapper::applyRoleGroupSortField);
+    final var filter = FilterBuilders.role().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
+  }
+
+  public static Either<ProblemDetail, RoleQuery> toRoleQuery(
       final RoleClientSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleSearchQuery().build());
@@ -450,6 +466,21 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::tenant,
             SearchQueryRequestMapper::applyTenantSortField);
     final var filter = toTenantFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
+  }
+
+  public static Either<ProblemDetail, TenantQuery> toTenantQuery(
+      final TenantGroupSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromTenantGroupSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::tenant,
+            SearchQueryRequestMapper::applyTenantGroupSortField);
+    final var filter = FilterBuilders.tenant().build();
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
@@ -1338,6 +1369,17 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
+  private static List<String> applyRoleGroupSortField(
+      final RoleGroupSearchQuerySortRequest.FieldEnum field, final RoleSort.Builder builder) {
+    return switch (field) {
+      case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+      case GROUP_ID -> {
+        builder.memberId();
+        yield List.of();
+      }
+    };
+  }
+
   private static List<String> applyRoleUserSortField(
       final RoleUserSearchQuerySortRequest.FieldEnum field, final RoleSort.Builder builder) {
     return switch (field) {
@@ -1418,6 +1460,17 @@ public final class SearchQueryRequestMapper {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case USERNAME -> {
+        builder.memberId();
+        yield List.of();
+      }
+    };
+  }
+
+  private static List<String> applyTenantGroupSortField(
+      final TenantGroupSearchQuerySortRequest.FieldEnum field, final TenantSort.Builder builder) {
+    return switch (field) {
+      case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+      case GROUP_ID -> {
         builder.memberId();
         yield List.of();
       }
@@ -1821,5 +1874,13 @@ public final class SearchQueryRequestMapper {
                         f.getResourceType() == null ? null : f.getResourceType().getValue())
                     .build())
         .orElse(null);
+  }
+
+  public static Either<ProblemDetail, TenantQuery> toTenantMemberQuery(
+      final String tenantId, final GroupSearchQueryRequest query) {
+    return Either.right(
+        new TenantQuery.Builder()
+            .filter(f -> f.joinParentId(tenantId).memberType(EntityType.GROUP))
+            .build());
   }
 }

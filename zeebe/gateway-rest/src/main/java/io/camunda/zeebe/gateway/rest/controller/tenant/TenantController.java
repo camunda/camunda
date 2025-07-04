@@ -22,7 +22,6 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
@@ -31,6 +30,8 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantGroupSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantGroupSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
@@ -215,13 +216,26 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/{tenantId}/groups/search")
-  public ResponseEntity<GroupSearchQueryResult> searchGroupsInTenant(
+  public ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final GroupSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toGroupQuery(query)
+      @RequestBody(required = false) final TenantGroupSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toTenantQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            groupQuery -> searchGroupsInTenant(tenantId, groupQuery));
+            tenantQuery -> searchGroupIdsInTenant(tenantId, tenantQuery));
+  }
+
+  private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
+      final String tenantId, final TenantQuery query) {
+    try {
+      final var result =
+          tenantServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.GROUP, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   @CamundaPostMapping(path = "/{tenantId}/roles/search")

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.zeebe.gateway.protocol.rest.*;
+import jakarta.validation.Valid;
 import java.util.List;
 
 public class SearchQuerySortRequestMapper {
@@ -39,6 +40,12 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  public static List<SearchQuerySortRequest<RoleGroupSearchQuerySortRequest.FieldEnum>>
+      fromRoleGroupSearchQuerySortRequest(
+          final @Valid List<RoleGroupSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   public static List<SearchQuerySortRequest<RoleClientSearchQuerySortRequest.FieldEnum>>
       fromRoleClientSearchQuerySortRequest(final List<RoleClientSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
@@ -67,6 +74,12 @@ public class SearchQuerySortRequestMapper {
 
   public static List<SearchQuerySortRequest<TenantUserSearchQuerySortRequest.FieldEnum>>
       fromTenantUserSearchQuerySortRequest(final List<TenantUserSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  public static List<SearchQuerySortRequest<TenantGroupSearchQuerySortRequest.FieldEnum>>
+      fromTenantGroupSearchQuerySortRequest(
+          final List<TenantGroupSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
