@@ -94,11 +94,11 @@ describe('MetadataPopover <Details />', () => {
   it('should render Tasklist link for user tasks when configured', () => {
     window.clientConfig = {tasklistUrl: 'https://tasklist.example.com'};
 
-    const meta = {
+    const meta: V2MetaDataDto = {
       ...baseMetaData,
       instanceMetadata: {
         ...baseMetaData.instanceMetadata!,
-        type: 'USER_TASK' as V2InstanceMetadata['type'],
+        type: 'USER_TASK',
       },
     };
 
