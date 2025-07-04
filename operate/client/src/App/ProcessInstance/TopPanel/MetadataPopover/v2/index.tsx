@@ -22,7 +22,8 @@ import {useElementInstance} from 'modules/queries/elementInstances/useElementIns
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useMemo} from 'react';
 import {Details} from './Details';
-import {createV2InstanceMetadata} from './types';
+import {createV2InstanceMetadata, UserTaskSubset} from './types';
+import {useUserTasksSearch} from '../../../../../modules/queries/userTasks/useUserTasksSearch';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -97,11 +98,33 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     elementInstancesSearchResult,
   ]);
 
+  const {data: userTaskSearchResult, isLoading: isSearchingUserTasks} =
+    useUserTasksSearch(
+      {
+        filter: {
+          elementInstanceKey: elementInstanceMetadata?.elementInstanceKey,
+        },
+        page: {limit: 1},
+      },
+      {
+        enabled:
+          !!elementInstanceMetadata?.elementInstanceKey &&
+          elementInstanceMetadata?.type === 'USER_TASK',
+      },
+    );
+
+  const userTask: UserTaskSubset | undefined = useMemo(() => {
+    const task = userTaskSearchResult?.items?.[0];
+    if (!task) return undefined;
+    return task;
+  }, [userTaskSearchResult]);
+
   if (
     elementId === undefined ||
     metaData === null ||
     isSearchingInstances ||
-    isFetchingInstance
+    isFetchingInstance ||
+    isSearchingUserTasks
   ) {
     return null;
   }
@@ -138,6 +161,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                 instanceMetadata: createV2InstanceMetadata(
                   instanceMetadata,
                   elementInstanceMetadata,
+                  elementInstanceMetadata.type === 'USER_TASK'
+                    ? userTask
+                    : undefined,
                 ),
               }}
               elementId={elementInstanceMetadata.elementId}
