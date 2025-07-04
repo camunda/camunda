@@ -18,6 +18,7 @@ import {Component} from './index';
 import {authenticationStore} from 'common/auth/authentication';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {LocationLog} from 'common/testing/LocationLog';
+import {currentUser} from 'common/mocks/current-user';
 
 function createWrapper(
   initialEntries: React.ComponentProps<
@@ -66,6 +67,9 @@ describe('<Login />', () => {
           once: true,
         },
       ),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
     );
 
     const {user} = render(<Component />, {
@@ -98,6 +102,9 @@ describe('<Login />', () => {
           once: true,
         },
       ),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
     );
     const {user} = render(<Component />, {
       wrapper: createWrapper(),
@@ -194,6 +201,9 @@ describe('<Login />', () => {
           once: true,
         },
       ),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
     );
 
     const {user} = render(<Component />, {
@@ -209,6 +219,10 @@ describe('<Login />', () => {
         name: 'Logging in',
       }),
     ).toBeDisabled();
+
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/i),
+    );
   });
 
   it('should have the correct copyright notice', () => {
@@ -238,6 +252,9 @@ describe('<Login />', () => {
           once: true,
         },
       ),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
       http.post(
         '/login',
         () => {
@@ -247,6 +264,9 @@ describe('<Login />', () => {
           once: true,
         },
       ),
+      http.get('/v2/authentication/me', () => HttpResponse.json(currentUser), {
+        once: true,
+      }),
     );
 
     const {user} = render(<Component />, {

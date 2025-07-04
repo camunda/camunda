@@ -8,12 +8,14 @@
 package io.camunda.authentication.config.controllers;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class TestApiController {
 
+  public static final String DEFAULT_RESPONSE = "I am dummy endpoint";
   public static final String DUMMY_OPERATE_INTERNAL_API_ENDPOINT = "/api/foo";
   public static final String DUMMY_V1_API_ENDPOINT = "/v1/foo";
   public static final String DUMMY_V2_API_ENDPOINT = "/v2/foo";
@@ -22,26 +24,31 @@ public class TestApiController {
 
   @RequestMapping(DUMMY_OPERATE_INTERNAL_API_ENDPOINT)
   public @ResponseBody String dummyOperateInternalApiEndpoint() {
-    return "I am dummy endpoint";
+    return DEFAULT_RESPONSE;
   }
 
   @RequestMapping(DUMMY_V1_API_ENDPOINT)
   public @ResponseBody String dummyV1ApiEndpoint() {
-    return "I am dummy endpoint";
+    return DEFAULT_RESPONSE;
   }
 
   @RequestMapping(DUMMY_V2_API_ENDPOINT)
   public @ResponseBody String dummyV2ApiEndpoint() {
-    return "I am dummy endpoint";
+    return DEFAULT_RESPONSE;
   }
 
   @RequestMapping(DUMMY_WEBAPP_ENDPOINT)
   public @ResponseBody String dummyWebappEndpoint() {
-    return "I am dummy endpoint";
+    return DEFAULT_RESPONSE;
   }
 
   @RequestMapping(DUMMY_UNPROTECTED_ENDPOINT)
   public @ResponseBody String dummyUnprotectedEndpoint() {
-    return "I am dummy endpoint";
+    return DEFAULT_RESPONSE;
+  }
+
+  @PostMapping(DUMMY_V2_API_ENDPOINT)
+  public @ResponseBody String dummyV2ApiPostEndpoint() {
+    return DEFAULT_RESPONSE;
   }
 }

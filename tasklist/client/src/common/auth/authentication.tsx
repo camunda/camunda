@@ -12,6 +12,7 @@ import {getClientConfig} from 'common/config/getClientConfig';
 import {reactQueryClient} from 'common/react-query/reactQueryClient';
 import {request} from 'common/api/request';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
+import {currentUserQueryOptions} from 'common/api/useCurrentUser.query';
 
 type Status =
   | 'initial'
@@ -44,6 +45,7 @@ class Authentication {
 
     if (error === null) {
       this.activateSession();
+      await reactQueryClient.ensureQueryData(currentUserQueryOptions);
     }
 
     return {response, error};
