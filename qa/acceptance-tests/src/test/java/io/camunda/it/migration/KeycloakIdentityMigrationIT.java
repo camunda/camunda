@@ -26,6 +26,7 @@ import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -104,6 +105,7 @@ public class KeycloakIdentityMigrationIT {
           .withEnv("KEYCLOAK_USERS_1_USERNAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_PASSWORD", "password")
           .withEnv("KEYCLOAK_USERS_1_GROUPS_0", "groupC")
+          .withEnv("KEYCLOAK_USERS_1_ROLES_0", "Zeebe")
           // assign authorizations to groups
           .withEnv("IDENTITY_AUTHORIZATIONS_0_GROUP_NAME", "groupA")
           .withEnv("IDENTITY_AUTHORIZATIONS_0_RESOURCE_KEY", "*")
@@ -367,6 +369,34 @@ public class KeycloakIdentityMigrationIT {
                     PermissionType.DELETE_DECISION_INSTANCE,
                     PermissionType.READ_DECISION_INSTANCE,
                     PermissionType.READ_DECISION_DEFINITION)));
+  }
+
+  @Test
+  public void canMigrateUsersRolesMembership() {
+    // when
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var users = client.newUsersByRoleSearchRequest("zeebe").send().join();
+              assertThat(users.items()).hasSize(2);
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+    final var zeebeUsers = client.newUsersByRoleSearchRequest("zeebe").send().join().items();
+    assertThat(zeebeUsers)
+        .extracting(RoleUser::getUsername)
+        .containsExactlyInAnyOrder("user0", "user1");
+    final var operateUsers = client.newUsersByRoleSearchRequest("operate").send().join().items();
+    assertThat(operateUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
+    final var tasklistUsers = client.newUsersByRoleSearchRequest("tasklist").send().join().items();
+    assertThat(tasklistUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
+    final var identityUsers = client.newUsersByRoleSearchRequest("identity").send().join().items();
+    assertThat(identityUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
   }
 
   // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
