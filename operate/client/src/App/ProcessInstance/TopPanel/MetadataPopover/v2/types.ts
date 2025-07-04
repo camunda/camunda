@@ -22,6 +22,10 @@ type UserTaskMetadata = {
   candidateUsers?: string[];
   tenantId?: string;
   externalFormReference?: string;
+  creationDate?: string;
+  completionDate?: string;
+  customHeaders?: Record<string, unknown>;
+  priority?: number;
 };
 
 // V2 Element Instance Metadata - extends the old structure but with v2 element instance fields will be removed after other components migration
@@ -70,6 +74,10 @@ type UserTaskSubset = Pick<
   | 'candidateUsers'
   | 'tenantId'
   | 'externalFormReference'
+  | 'creationDate'
+  | 'completionDate'
+  | 'customHeaders'
+  | 'priority'
 >;
 
 // Utility function to create V2 instance metadata from old metadata + migrated element instance
