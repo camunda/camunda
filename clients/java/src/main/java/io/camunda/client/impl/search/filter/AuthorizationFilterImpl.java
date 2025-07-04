@@ -22,6 +22,7 @@ import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.OwnerTypeEnum;
 import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import java.util.Arrays;
 import java.util.List;
 
 public class AuthorizationFilterImpl
@@ -43,6 +44,12 @@ public class AuthorizationFilterImpl
   @Override
   public AuthorizationFilter ownerType(final OwnerType ownerType) {
     filter.setOwnerType(EnumUtil.convert(ownerType, OwnerTypeEnum.class));
+    return this;
+  }
+
+  @Override
+  public AuthorizationFilter resourceIds(final String... resourceIds) {
+    filter.setResourceIds(Arrays.asList(resourceIds));
     return this;
   }
 

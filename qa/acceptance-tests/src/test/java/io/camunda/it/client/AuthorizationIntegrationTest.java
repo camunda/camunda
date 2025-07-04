@@ -163,7 +163,7 @@ public class AuthorizationIntegrationTest {
               final var authorizationsSearchResponse =
                   camundaClient
                       .newAuthorizationSearchRequest()
-                      .filter(fn -> fn.resourceIds(List.of(resourceId)))
+                      .filter(fn -> fn.resourceIds(resourceId))
                       .send()
                       .join();
               assertThat(authorizationsSearchResponse.items())

@@ -44,6 +44,14 @@ public interface AuthorizationFilter extends SearchRequestFilter {
    * @param resourceIds the IDs of the resource
    * @return the updated filter
    */
+  AuthorizationFilter resourceIds(final String... resourceIds);
+
+  /**
+   * Filter authorizations by the specified resource IDs.
+   *
+   * @param resourceIds the IDs of the resource
+   * @return the updated filter
+   */
   AuthorizationFilter resourceIds(final List<String> resourceIds);
 
   /**
