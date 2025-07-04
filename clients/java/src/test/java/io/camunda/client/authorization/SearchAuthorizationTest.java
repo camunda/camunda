@@ -45,4 +45,40 @@ public class SearchAuthorizationTest extends ClientRestTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("authorizationKey must be greater than 0");
   }
+
+  @Test
+  public void shouldSearchAuthorizations() {
+    // when
+    client
+        .newAuthorizationSearchRequest()
+        .filter(fn -> fn.ownerId("ownerId"))
+        .sort(s -> s.ownerType().desc())
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/authorizations/search");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  void shouldIncludeSortAndFilterInAuthorizationsSearchRequestBody() {
+    // when
+    client
+        .newAuthorizationSearchRequest()
+        .filter(fn -> fn.ownerId("ownerId"))
+        .sort(s -> s.ownerType().desc())
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest lastRequest = gatewayService.getLastRequest();
+    final String requestBody = lastRequest.getBodyAsString();
+
+    assertThat(requestBody).contains("\"sort\":[{\"field\":\"ownerType\",\"order\":\"DESC\"}]");
+    assertThat(requestBody).contains("\"filter\":{\"ownerId\"");
+  }
 }

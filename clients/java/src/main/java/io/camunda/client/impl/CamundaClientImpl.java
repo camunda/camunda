@@ -95,6 +95,7 @@ import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
+import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
@@ -241,6 +242,7 @@ import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
 import io.camunda.client.impl.search.request.AdHocSubProcessActivitySearchRequestImpl;
+import io.camunda.client.impl.search.request.AuthorizationsSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationItemSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByRoleSearchRequestImpl;
@@ -1149,6 +1151,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AuthorizationGetRequest newAuthorizationGetRequest(final long authorizationKey) {
     return new AuthorizationGetRequestImpl(httpClient, authorizationKey);
+  }
+
+  @Override
+  public AuthorizationsSearchRequest newAuthorizationSearchRequest() {
+    return new AuthorizationsSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

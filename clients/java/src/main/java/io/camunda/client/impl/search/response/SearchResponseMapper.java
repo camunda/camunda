@@ -211,6 +211,15 @@ public final class SearchResponseMapper {
     return new RoleUserImpl(response.getUsername());
   }
 
+  public static SearchResponse<Authorization> toAuthorizationsResponse(
+      final AuthorizationSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Authorization> instances =
+        toSearchResponseInstances(
+            response.getItems(), SearchResponseMapper::toAuthorizationResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
   public static Authorization toAuthorizationResponse(final AuthorizationResult response) {
     final List<PermissionTypeEnum> permissionTypes = response.getPermissionTypes();
     final List<PermissionType> convertedPermissionTypes = new ArrayList<>();
