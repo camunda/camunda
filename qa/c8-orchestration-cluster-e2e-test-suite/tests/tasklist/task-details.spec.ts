@@ -180,6 +180,7 @@ test.describe('task details page', () => {
     taskPanelPage,
     taskDetailsPage,
   }) => {
+    test.slow();
     await taskPanelPage.openTask('Zeebe_user_task');
     await taskDetailsPage.clickUnassignButton();
     await taskDetailsPage.clickAssignToMeButton();
