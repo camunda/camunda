@@ -13,14 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.fetch;
+package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.search.filter.GroupFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.TypedSearchRequest;
-import io.camunda.client.api.search.response.Group;
-import io.camunda.client.api.search.sort.GroupSort;
+import io.camunda.client.api.search.response.TenantUser;
 
-public interface GroupsSearchRequest
-    extends TypedSearchRequest<GroupFilter, GroupSort, GroupsSearchRequest>,
-        FinalSearchRequestStep<Group> {}
+public class TenantUserImpl implements TenantUser {
+
+  private final String username;
+
+  public TenantUserImpl(final String username) {
+    this.username = username;
+  }
+
+  @Override
+  public String getUsername() {
+    return username;
+  }
+}

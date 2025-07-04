@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.fetch;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.MappingFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.TypedSearchRequest;
-import io.camunda.client.api.search.response.Mapping;
-import io.camunda.client.api.search.sort.MappingSort;
+import io.camunda.client.api.search.filter.TenantUserFilter;
+import io.camunda.client.api.search.response.TenantUser;
+import io.camunda.client.api.search.sort.TenantUserSort;
 
-public interface MappingsByGroupSearchRequest
-    extends TypedSearchRequest<MappingFilter, MappingSort, MappingsByGroupSearchRequest>,
-        FinalSearchRequestStep<Mapping> {}
+public interface UsersByTenantSearchRequest
+    extends TypedSearchRequest<TenantUserFilter, TenantUserSort, UsersByTenantSearchRequest>,
+        FinalSearchRequestStep<TenantUser> {}

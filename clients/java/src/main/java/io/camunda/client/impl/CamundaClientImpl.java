@@ -104,22 +104,17 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
-import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
-import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
-import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
-import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
-import io.camunda.client.api.fetch.UsersSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -132,17 +127,23 @@ import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
+import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.JobSearchRequest;
+import io.camunda.client.api.search.request.MappingsByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
 import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
+import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
+import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
@@ -264,6 +265,7 @@ import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByRoleSearchRequestImpl;
+import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
@@ -943,6 +945,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UsersByRoleSearchRequest newUsersByRoleSearchRequest(final String roleId) {
     return new UsersByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
+  }
+
+  @Override
+  public UsersByTenantSearchRequest newUsersByTenantSearchRequest(final String tenantId) {
+    return new UsersByTenantSearchRequestImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override
