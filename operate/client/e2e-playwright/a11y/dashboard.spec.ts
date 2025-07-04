@@ -31,7 +31,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('dashboard', () => {
-  test(`have no violations`, async ({page, dashboardPage, makeAxeBuilder}) => {
+  test('have no violations', async ({page, dashboardPage, makeAxeBuilder}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -48,7 +48,7 @@ test.describe('dashboard', () => {
     validateResults(results);
   });
 
-  test(`have no violations when rows are expanded`, async ({
+  test('have no violations when rows are expanded', async ({
     page,
     dashboardPage,
     makeAxeBuilder,

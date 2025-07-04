@@ -29,7 +29,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('modifications', () => {
-  test(`with helper modal`, async ({page, processInstancePage}) => {
+  test('with helper modal', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -59,7 +59,7 @@ test.describe('modifications', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`with add variable state`, async ({page, processInstancePage}) => {
+  test('with add variable state', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -97,7 +97,7 @@ test.describe('modifications', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`diagram badges and flow node instance history panel`, async ({
+  test('diagram badges and flow node instance history panel', async ({
     page,
     processInstancePage,
   }) => {
@@ -176,7 +176,7 @@ test.describe('modifications', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`apply modifications summary modal`, async ({
+  test('apply modifications summary modal', async ({
     page,
     processInstancePage,
   }) => {

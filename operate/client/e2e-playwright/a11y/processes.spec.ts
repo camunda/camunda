@@ -32,7 +32,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('processes', () => {
-  test(`have no violations`, async ({page, processesPage, makeAxeBuilder}) => {
+  test('have no violations', async ({page, processesPage, makeAxeBuilder}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
