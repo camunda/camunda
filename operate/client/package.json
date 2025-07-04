@@ -2,6 +2,7 @@
   "name": "camunda-operate",
   "version": "8.8.0-SNAPSHOT",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@axe-core/playwright": "4.10.0",
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
@@ -40,7 +41,7 @@
   },
   "scripts": {
     "start": "vite",
-    "build": "npm run ts-check && vite build",
+    "build": "npm run ts-check && vite build && node license-build.js",
     "test": "react-scripts test --env=jsdom --resetMocks=false --clearMocks=true",
     "test:ci": "cross-env CI=true react-scripts test --env=jsdom --resetMocks=false --ci --testTimeout 7000 --clearMocks=true",
     "ts-check": "tsc -b",
@@ -92,7 +93,6 @@
     "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-react-refresh": "0.4.20",
     "event-source-polyfill": "1.0.31",
-    "glob": "11.0.0",
     "globals": "16.3.0",
     "http-proxy-middleware": "3.0.4",
     "jest-styled-components": "7.2.0",
