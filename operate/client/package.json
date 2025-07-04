@@ -11,12 +11,10 @@
     "@carbon/react": "1.85.1",
     "@devbookhq/splitter": "1.4.2",
     "@floating-ui/react-dom": "2.1.2",
-    "@loadable/component": "^5.15.3",
     "@monaco-editor/react": "4.7.0",
     "@tanstack/eslint-plugin-query": "5.81.2",
     "@tanstack/react-query": "5.81.2",
     "@tanstack/react-query-devtools": "^5.67.1",
-    "@types/loadable__component": "5.13.9",
     "@vzeta/camunda-api-zod-schemas": "1.1.0",
     "bpmn-js": "18.6.2",
     "bpmn-moddle": "9.0.1",
@@ -33,7 +31,7 @@
     "react-dom": "18.3.1",
     "react-final-form": "6.5.9",
     "react-final-form-arrays": "3.1.4",
-    "react-router-dom": "6.4.2",
+    "react-router-dom": "7.6.3",
     "react-transition-group": "4.4.5",
     "serve": "14.2.4",
     "styled-components": "6.1.13",
@@ -59,11 +57,6 @@
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "cross-env VITE_VERSION=0.0.0-SNAPSHOT npm run build",
     "extract-sbom": "vite build --mode sbom"
-  },
-  "jest": {
-    "transformIgnorePatterns": [
-      "/node_modules/(?!@camunda/camunda-composite-components)"
-    ]
   },
   "devDependencies": {
     "@camunda8/sdk": "^8.6.8",

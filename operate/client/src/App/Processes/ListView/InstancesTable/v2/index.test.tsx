@@ -8,11 +8,10 @@
 
 import {render, screen, within} from 'modules/testing-library';
 import {InstancesTable} from '.';
-import {unstable_HistoryRouter as HistoryRouter} from 'react-router-dom';
+import {MemoryRouter} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useEffect} from 'react';
-import {createMemoryHistory} from 'history';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {processInstancesStore} from 'modules/stores/processInstances';
@@ -37,16 +36,12 @@ function getWrapper(initialPath: string = Paths.processes()) {
 
     return (
       <QueryClientProvider client={getMockQueryClient()}>
-        <HistoryRouter
-          history={createMemoryHistory({
-            initialEntries: [initialPath],
-          })}
-        >
+        <MemoryRouter initialEntries={[initialPath]}>
           {children}
           <button onClick={batchModificationStore.enable}>
             Enable batch modification mode
           </button>
-        </HistoryRouter>
+        </MemoryRouter>
       </QueryClientProvider>
     );
   };
