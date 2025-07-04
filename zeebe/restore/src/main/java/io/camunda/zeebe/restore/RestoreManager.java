@@ -72,37 +72,6 @@ public class RestoreManager {
       return CompletableFuture.failedFuture(e);
     }
 
-    // restore Topology file
-    if (configuration.getCluster().getNodeId() == 0) {
-      final var coordinatorId = MemberId.from("0");
-      LOG.info("Restoring topology file");
-      final var file =
-          Path.of(configuration.getData().getDirectory())
-              .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
-      final var staticConfiguration =
-          StaticConfigurationGenerator.getStaticConfiguration(configuration, coordinatorId);
-      final var initializer = new StaticInitializer(staticConfiguration);
-      try {
-        // it's ok to block, it's not really async
-        final var base = initializer.initialize().get();
-        final var configuration =
-            new ClusterConfiguration(
-                base.version(),
-                base.members(),
-                base.lastChange(),
-                Optional.of(
-                    ClusterChangePlan.init(
-                        1L, List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
-                Optional.empty());
-        final var persistedConfiguration =
-            PersistedClusterConfiguration.ofFile(file, new ProtoBufSerializer());
-        persistedConfiguration.update(configuration);
-        LOG.info("Successfully restored topology file {}", base);
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
-
     final var partitionToRestore = collectPartitions();
 
     final var partitionIds = partitionToRestore.stream().map(p -> p.partition().id().id()).toList();
@@ -112,7 +81,45 @@ public class RestoreManager {
             partitionToRestore.stream()
                 .map(partition -> restorePartition(partition, backupId, validateConfig))
                 .toArray(CompletableFuture[]::new))
+        .<Void>thenApply(
+            ignored -> {
+              // restore Topology file
+              if (configuration.getCluster().getNodeId() == 0) {
+                restoreTopologyFile();
+              }
+              return null;
+            })
         .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
+  }
+
+  private void restoreTopologyFile() {
+    final var coordinatorId = MemberId.from("0");
+    LOG.info("Restoring topology file");
+    final var file =
+        Path.of(configuration.getData().getDirectory())
+            .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
+    final var staticConfiguration =
+        StaticConfigurationGenerator.getStaticConfiguration(configuration, coordinatorId);
+    final var initializer = new StaticInitializer(staticConfiguration);
+    try {
+      // it's ok to block, it's not really async
+      final var base = initializer.initialize().get();
+      final var configuration =
+          new ClusterConfiguration(
+              base.version(),
+              base.members(),
+              base.lastChange(),
+              Optional.of(
+                  ClusterChangePlan.init(
+                      1L, List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
+              base.routingState());
+      final var persistedConfiguration =
+          PersistedClusterConfiguration.ofFile(file, new ProtoBufSerializer());
+      persistedConfiguration.update(configuration);
+      LOG.info("Successfully restored topology file {}", base);
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private CompletableFuture<Void> logFailureAndDeleteDataDirectory(
