@@ -78,5 +78,6 @@
   "assignClientToTenant": "Assign client to tenant",
   "tenantClientRemoved": "Tenant client removed",
   "removeClientFromTenant": "Are you sure you want to remove <strong>{{clientId}}</strong> from this tenant?",
-  "assignClientsToTenant": "Assign clients to this Tenant"
+  "assignClientsToTenant": "Assign clients to this Tenant",
+  "failedToCreateTenant": "Failed to create tenant"
 }
