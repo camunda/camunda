@@ -17,11 +17,15 @@ on:
     - opened
     - synchronize
 
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
 jobs:
   analyze:
-    name: Analyze dependencies
+    name: "Analyze ${{ matrix.project.name }} dependencies"
     permissions: {}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       # The matrix is necessary to run separate analyses
@@ -38,9 +42,9 @@ jobs:
           maven-config: |
             -Dquickly=true
             -DskipQaBuild=true
-    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v4
+
     # Import FOSSA_API_KEY secret from Vault
     - name: Import Secrets
       id: secrets
@@ -52,28 +56,34 @@ jobs:
         secretId: ${{ secrets.VAULT_SECRET_ID }}
         secrets: |
           secret/data/products/camunda/ci/camunda FOSSA_API_KEY;
+
     - uses: ./.github/actions/setup-build
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
       with:
         vault-address: ${{ secrets.VAULT_ADDR }}
         vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
         vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
     - uses: actions/setup-go@v5
       if: matrix.project.name == 'c8run'
       with:
         go-version: '>=1.23.1'
         cache: false  # disabling since not working anyways without a cache-dependency-path specified
+
     - name: Update Maven configs
       if: matrix.project.maven-config != ''
       env:
         MAVEN_CONFIG: ${{ matrix.project.maven-config }}
       run: |
         echo "${MAVEN_CONFIG}" | tee ./.mvn/maven.config
+
     - name: Setup fossa-cli
       uses: camunda/infra-global-github-actions/fossa/setup@b7a52cc68a9c0087ff09e1e589fe1331f3803d57
+
     - name: Get context info
       id: info
       uses: camunda/infra-global-github-actions/fossa/info@b7a52cc68a9c0087ff09e1e589fe1331f3803d57
+
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
       run: |
@@ -93,6 +103,7 @@ jobs:
         yq -i \
           'del(.project.modules.module[] | select(. == "qa"))' \
           optimize/pom.xml
+
     - name: Analyze project
       uses: camunda/infra-global-github-actions/fossa/analyze@b7a52cc68a9c0087ff09e1e589fe1331f3803d57
       with:
@@ -100,6 +111,7 @@ jobs:
         branch: ${{  steps.info.outputs.head-ref }}
         path: ${{ matrix.project.path }}
         revision-id: ${{ steps.info.outputs.head-revision }}
+
     # PR-only: Check for newly introduced license issues
     # This step only fails if the PR introduces new license violations.
     # It does not fail for pre-existing issues already present in the base branch.
@@ -119,3 +131,14 @@ jobs:
         path: ${{ matrix.project.path }}
         project: ${{ matrix.project.name }}
         revision: ${{ steps.info.outputs.head-revision }}
+
+    - name: Observe build status
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/observe-build-status
+      with:
+        job_name: "analyze/${{ matrix.project.name }}"
+        build_status: ${{ job.status }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
