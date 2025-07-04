@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -20,12 +19,8 @@ import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
@@ -271,18 +266,18 @@ public class RoleController {
   }
 
   @CamundaPutMapping(
-      path = "/{roleId}/mappings/{mappingId}",
+      path = "/{roleId}/mapping-rules/{mappingRuleId}",
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignMappingToRole(
-      @PathVariable final String roleId, @PathVariable final String mappingId) {
-    return RequestMapper.toRoleMemberRequest(roleId, mappingId, EntityType.MAPPING)
+      @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
-  @CamundaDeleteMapping(path = "/{roleId}/mappings/{mappingId}")
+  @CamundaDeleteMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromRole(
-      @PathVariable final String roleId, @PathVariable final String mappingId) {
-    return RequestMapper.toRoleMemberRequest(roleId, mappingId, EntityType.MAPPING)
+      @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
