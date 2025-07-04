@@ -10,7 +10,7 @@ import type {InfiniteData} from '@tanstack/react-query';
 import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import React from 'react';
 
-export type VariablesDisplayStatus =
+type VariablesDisplayStatus =
   | 'error'
   | 'no-content'
   | 'multi-instances'
@@ -27,10 +27,9 @@ type VariablesContextType = {
   variablesData?: InfiniteData<QueryVariablesResponseBody>;
 };
 
-export const VariablesContext =
-  React.createContext<VariablesContextType | null>(null);
+const VariablesContext = React.createContext<VariablesContextType | null>(null);
 
-export const useVariablesContext = () => {
+const useVariablesContext = () => {
   const context = React.useContext(VariablesContext);
   if (!context) {
     throw new Error(
@@ -39,3 +38,6 @@ export const useVariablesContext = () => {
   }
   return context;
 };
+
+export {VariablesContext, useVariablesContext};
+export type {VariablesContextType};
