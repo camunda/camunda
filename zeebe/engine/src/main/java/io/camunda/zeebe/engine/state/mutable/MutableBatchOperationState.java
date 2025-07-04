@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import java.util.Set;
 
 public interface MutableBatchOperationState extends BatchOperationState {
@@ -35,6 +36,9 @@ public interface MutableBatchOperationState extends BatchOperationState {
   void resume(final long batchOperationKey);
 
   void complete(final long batchOperationKey);
+
+  void failPartition(
+      final long batchOperationKey, int sourcePartitionId, BatchOperationError error);
 
   /**
    * Marks a partition of a batch operation as finished. This is called when the partition has been

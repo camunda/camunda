@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record BatchOperationEntity(
@@ -22,7 +23,8 @@ public record BatchOperationEntity(
     OffsetDateTime endDate,
     Integer operationsTotalCount,
     Integer operationsFailedCount,
-    Integer operationsCompletedCount) {
+    Integer operationsCompletedCount,
+    List<BatchOperationErrorEntity> errors) {
 
   /**
    * Because of backwards compatibility (Legacy Batches have a UUID as ID), batchOperationId is a
@@ -55,12 +57,14 @@ public record BatchOperationEntity(
       OffsetDateTime processedDate,
       String errorMessage) {}
 
+  public record BatchOperationErrorEntity(Integer partitionId, String type, String message) {}
+
   public enum BatchOperationState {
     CREATED,
     ACTIVE,
     SUSPENDED,
     COMPLETED,
-    COMPLETED_WITH_ERRORS,
+    PARTIALLY_COMPLETED,
     CANCELED,
     INCOMPLETED // This is just used for running legacy batch operations
   }

@@ -39,6 +39,20 @@
       },
       "operationsCompletedCount": {
         "type": "long"
+      },
+      "errors": {
+        "type": "object",
+        "properties": {
+          "partitionId": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "keyword"
+          },
+          "message": {
+            "type": "text"
+          }
+        }
       }
 		}
 	}

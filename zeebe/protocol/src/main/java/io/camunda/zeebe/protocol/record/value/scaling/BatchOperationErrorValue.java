@@ -13,15 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.zeebe.protocol.record.value.scaling;
 
-public enum BatchOperationState {
-  CREATED,
-  ACTIVE,
-  SUSPENDED,
-  COMPLETED,
-  PARTIALLY_COMPLETED,
-  CANCELED,
-  INCOMPLETED,
-  UNKNOWN_ENUM_VALUE;
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
+import org.immutables.value.Value;
+
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableBatchOperationErrorValue.Builder.class)
+public interface BatchOperationErrorValue extends RecordValue {
+
+  /** Partition on which the error occurred. */
+  int getPartitionId();
+
+  BatchOperationErrorType getType();
+
+  String getMessage();
 }
