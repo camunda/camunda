@@ -49,4 +49,18 @@ public class CancelProcessInstanceRestTest extends ClientRestTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
+
+  @Test
+  public void shouldSetOperationReference() {
+    // given
+    final int operationReference = 456;
+
+    // when
+    client.newCancelInstanceCommand(123).operationReference(operationReference).send().join();
+
+    // then
+    final CancelProcessInstanceRequest request =
+        gatewayService.getLastRequest(CancelProcessInstanceRequest.class);
+    assertThat(request.getOperationReference()).isEqualTo(operationReference);
+  }
 }
