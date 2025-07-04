@@ -315,7 +315,7 @@ public class KeycloakIdentityMigrationIT {
 
     final var restAddress = client.getConfiguration().getRestAddress().toString();
     Awaitility.await()
-        .atMost(Duration.ofHours(5))
+        .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -390,13 +390,19 @@ public class KeycloakIdentityMigrationIT {
     final var zeebeUsers = client.newUsersByRoleSearchRequest("zeebe").send().join().items();
     assertThat(zeebeUsers)
         .extracting(RoleUser::getUsername)
-        .containsExactlyInAnyOrder("user0", "user1");
+        .containsExactlyInAnyOrder("user0@email.com", "user1@email.com");
     final var operateUsers = client.newUsersByRoleSearchRequest("operate").send().join().items();
-    assertThat(operateUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
+    assertThat(operateUsers)
+        .extracting(RoleUser::getUsername)
+        .containsExactlyInAnyOrder("user0@email.com");
     final var tasklistUsers = client.newUsersByRoleSearchRequest("tasklist").send().join().items();
-    assertThat(tasklistUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
+    assertThat(tasklistUsers)
+        .extracting(RoleUser::getUsername)
+        .containsExactlyInAnyOrder("user0@email.com");
     final var identityUsers = client.newUsersByRoleSearchRequest("identity").send().join().items();
-    assertThat(identityUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
+    assertThat(identityUsers)
+        .extracting(RoleUser::getUsername)
+        .containsExactlyInAnyOrder("user0@email.com");
   }
 
   // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented

@@ -56,8 +56,8 @@ public class UserRoleMigrationHandlerTest {
     when(managementIdentityClient.fetchUsers(any(Integer.class)))
         .thenReturn(
             List.of(
-                new User("user1", "username1", "name", "email@email.com"),
-                new User("user2", "username2", "name", "email@email.com")))
+                new User("user1", "username1", "name", "user1@email.com"),
+                new User("user2", "username2", "name", "user2@email.com")))
         .thenReturn(List.of());
     when(managementIdentityClient.fetchUserRoles(any()))
         .thenReturn(
@@ -81,10 +81,10 @@ public class UserRoleMigrationHandlerTest {
     assertThat(requests)
         .extracting(RoleMemberRequest::roleId, RoleMemberRequest::entityId)
         .containsExactlyInAnyOrder(
-            tuple("role_1", "username1"),
-            tuple("role@name_with_special_chars", "username1"),
-            tuple("role_2", "username2"),
-            tuple("role_3", "username2"));
+            tuple("role_1", "user1@email.com"),
+            tuple("role@name_with_special_chars", "user1@email.com"),
+            tuple("role_2", "user2@email.com"),
+            tuple("role_3", "user2@email.com"));
   }
 
   @Test

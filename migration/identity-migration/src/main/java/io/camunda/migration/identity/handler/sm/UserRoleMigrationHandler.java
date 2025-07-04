@@ -45,7 +45,7 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
   protected void process(final List<User> batch) {
     batch.forEach(
         user -> {
-          final var username = user.getUsername();
+          final var userId = user.getEmail();
           final var userRoles = managementIdentityClient.fetchUserRoles(user.getId());
           totalRoleCount.addAndGet(userRoles.size());
 
@@ -53,16 +53,16 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
               role -> {
                 try {
                   final var roleId = normalizeID(role.name());
-                  logger.debug("Assigning role '{}' to user '{}'", roleId, username);
-                  roleServices.addMember(new RoleMemberRequest(roleId, username, EntityType.USER));
+                  logger.debug("Assigning role '{}' to user '{}'", roleId, userId);
+                  roleServices.addMember(new RoleMemberRequest(roleId, userId, EntityType.USER));
                   assignedUserCount.incrementAndGet();
                 } catch (final Exception e) {
                   if (!isConflictError(e)) {
-                    throw new MigrationException("Failed to assign user: " + username, e);
+                    throw new MigrationException("Failed to assign user: " + userId, e);
                   }
                   logger.debug(
                       "User with ID '{}' is already assigned to role with ID '{}', skipping assignation.",
-                      username,
+                      userId,
                       role.name());
                 }
               });
