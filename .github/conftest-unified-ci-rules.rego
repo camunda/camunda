@@ -66,6 +66,7 @@ deny[msg] {
 
         # no Unified CI jobs running after (and including) "check-results" job
         job_id != "check-results"
+        job_id != "get-snapshot-docker-version-tag"
         not startswith(job_id, "deploy-")
     }
 
@@ -111,6 +112,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "detect-changes"
         job_id != "check-results"
         job_id != "test-summary"
+        job_id != "get-snapshot-docker-version-tag"
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses
@@ -143,6 +145,7 @@ get_jobs_not_needing_detectchanges(jobInput) = jobs_not_needing_detectchanges {
         # not enforced on Unified CI jobs that are part of change detection control flow structure
         job_id != "detect-changes"
         job_id != "check-results"
+        job_id != "get-snapshot-docker-version-tag"
 
         # not enforced on Unified CI jobs running after "check-results" job
         not startswith(job_id, "deploy-")
