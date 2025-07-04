@@ -251,12 +251,15 @@ public class ScaleUpPartitionsTest {
     }
 
     cluster.close();
+    LOG.info("Cluster stopped, restoring all brokers");
 
     restoreAllBrokers(backupId);
 
+    LOG.info("All brokers restored, starting cluster");
     // then
     // the topology is restored to the desired partition count and message correlation
     cluster.start();
+    cluster.awaitCompleteTopology();
     if (backupBeforeScaling) {
       assertThatRoutingStateMatches(
           new RoutingState()
