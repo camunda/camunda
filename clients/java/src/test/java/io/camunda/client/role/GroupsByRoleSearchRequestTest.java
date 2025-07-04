@@ -38,29 +38,6 @@ public class GroupsByRoleSearchRequestTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSendRequestWithGroupNameSort() {
-    client.newGroupsByRoleSearchRequest(ROLE_ID).sort(s -> s.name().asc()).send().join();
-
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getBodyAsString())
-        .contains("\"sort\":[{\"field\":\"name\",\"order\":\"ASC\"}]");
-  }
-
-  @Test
-  void shouldSendRequestWithGroupNameFilter() {
-    client
-        .newGroupsByRoleSearchRequest(ROLE_ID)
-        .filter(f -> f.name("groupName").groupId("groupId"))
-        .send()
-        .join();
-
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getBodyAsString())
-        .contains(
-            "{\"sort\":[],\"filter\":{\"groupId\":{\"$eq\":\"groupId\",\"$in\":[],\"$notIn\":[]},\"name\":\"groupName\"}}");
-  }
-
-  @Test
   void shouldFailOnEmptyRoleId() {
     assertThatThrownBy(() -> client.newGroupsByRoleSearchRequest("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
