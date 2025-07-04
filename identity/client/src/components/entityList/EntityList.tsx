@@ -108,12 +108,12 @@ type EntityListProps<D extends EntityData> = {
     onSelectAll: (selected: D[]) => unknown;
     isSelected: (selected: D) => boolean;
   };
+  maxDisplayCellLength?: number;
 };
 
 const MAX_ICON_ACTIONS = 2;
 const PAGINATION_HIDE_LIMIT = 15;
 const PAGINATION_MAX_PAGE_SIZE = 15;
-const MAX_DISPLAY_CELL_LENGTH = 20;
 
 const EntityList = <D extends EntityData>({
   title,
@@ -131,6 +131,7 @@ const EntityList = <D extends EntityData>({
   loading,
   batchSelection,
   searchPlaceholder,
+  maxDisplayCellLength = 50,
 }: EntityListProps<D>): ReturnType<FC> => {
   const debounce = useDebounce(300);
   const { t } = useTranslate("components");
@@ -324,7 +325,7 @@ const EntityList = <D extends EntityData>({
                           const truncatedValue =
                             displayValue &&
                             displayValue.toString().length >
-                              MAX_DISPLAY_CELL_LENGTH ? (
+                              maxDisplayCellLength ? (
                               <StyledToolTip
                                 label={displayValue}
                                 autoAlign
@@ -332,7 +333,7 @@ const EntityList = <D extends EntityData>({
                               >
                                 <TooltipTrigger>
                                   {displayValue
-                                    .substring(0, MAX_DISPLAY_CELL_LENGTH)
+                                    .substring(0, maxDisplayCellLength)
                                     .concat("…")}
                                 </TooltipTrigger>
                               </StyledToolTip>
