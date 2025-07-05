@@ -5,22 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.security.consolidatedAuth;
+package io.camunda.operate.webapp.security.impl;
 
 import io.camunda.authentication.entity.CamundaPrincipal;
-import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AbstractUserService;
 import io.camunda.operate.webapp.security.Permission;
 import java.util.List;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile(OperateProfileService.CONSOLIDATED_AUTH)
-public class ConsolidatedAuthenticationUserService extends AbstractUserService<Authentication> {
+public class UserServiceImpl extends AbstractUserService<Authentication> {
 
   @Override
   public UserDto createUserDtoFrom(final Authentication authentication) {
