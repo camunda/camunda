@@ -12,15 +12,41 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.index.FormIndex.BPMN_ID;
 import static io.camunda.webapps.schema.descriptors.index.FormIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.FormIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FormFilter;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public class FormFilterTransformer extends IndexFilterTransformer<FormFilter> {
 
   public FormFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public FormFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+    super(indexDescriptor, resourceAccessManager);
+  }
+
+  @Override
+  public FormFilterTransformer withResourceAccessFilter(
+      final ResourceAccessFilter resourceAccessFilter) {
+    return new FormFilterTransformer(indexDescriptor, resourceAccessFilter);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    throw new CamundaSearchException("No authorization checks can be applied");
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

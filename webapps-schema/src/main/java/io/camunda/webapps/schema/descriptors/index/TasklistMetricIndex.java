@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import java.util.Optional;
 
 public class TasklistMetricIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
@@ -32,11 +31,6 @@ public class TasklistMetricIndex extends AbstractIndexDescriptor implements Prio
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override

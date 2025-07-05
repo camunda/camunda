@@ -11,7 +11,6 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
-import java.util.Optional;
 
 public class ProcessIndex extends AbstractIndexDescriptor implements Prio5Backup {
 
@@ -39,11 +38,6 @@ public class ProcessIndex extends AbstractIndexDescriptor implements Prio5Backup
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override
