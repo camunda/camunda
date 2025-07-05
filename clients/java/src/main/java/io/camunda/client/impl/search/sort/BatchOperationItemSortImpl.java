@@ -22,8 +22,8 @@ public class BatchOperationItemSortImpl extends SearchRequestSortBase<BatchOpera
     implements BatchOperationItemSort {
 
   @Override
-  public BatchOperationItemSort batchOperationId() {
-    return field("batchOperationId");
+  public BatchOperationItemSort batchOperationKey() {
+    return field("batchOperationKey");
   }
 
   @Override

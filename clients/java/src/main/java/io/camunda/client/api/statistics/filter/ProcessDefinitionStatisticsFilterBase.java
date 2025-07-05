@@ -87,11 +87,11 @@ public interface ProcessDefinitionStatisticsFilterBase extends StatisticsRequest
   /** Filter by variables map */
   ProcessDefinitionStatisticsFilterBase variables(final Map<String, Object> variableValueFilters);
 
-  /** Filter by batchOperationId */
-  ProcessDefinitionStatisticsFilterBase batchOperationId(final String batchOperationId);
+  /** Filter by batchOperationKey */
+  ProcessDefinitionStatisticsFilterBase batchOperationKey(final String batchOperationKey);
 
-  /** Filter by batchOperationId using {@link StringProperty} */
-  ProcessDefinitionStatisticsFilterBase batchOperationId(final Consumer<StringProperty> fn);
+  /** Filter by batchOperationKey using {@link StringProperty} */
+  ProcessDefinitionStatisticsFilterBase batchOperationKey(final Consumer<StringProperty> fn);
 
   /** Filter by error message */
   ProcessDefinitionStatisticsFilterBase errorMessage(final String errorMessage);

@@ -241,16 +241,16 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter batchOperationId(final String batchOperationId) {
-    batchOperationId(b -> b.eq(batchOperationId));
+  public ProcessInstanceFilter batchOperationKey(final String batchOperationKey) {
+    batchOperationKey(b -> b.eq(batchOperationKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn) {
+  public ProcessInstanceFilter batchOperationKey(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setBatchOperationId(provideSearchRequestProperty(property));
+    filter.setBatchOperationKey(provideSearchRequestProperty(property));
     return this;
   }
 

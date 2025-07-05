@@ -25,9 +25,10 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
   /**
    * Counts amount of single operations by state that are included in given batch operations.
    *
-   * @param batchOperationIds list of batch operation ids
+   * @param batchOperationKeys list of batch operation keys
    */
-  CompletionStage<List<OperationsAggData>> getOperationsCount(Collection<String> batchOperationIds);
+  CompletionStage<List<OperationsAggData>> getOperationsCount(
+      Collection<String> batchOperationKeys);
 
   /**
    * Updates the batch operations with the different amounts operations by state. Update method
@@ -51,7 +52,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
       long completedOperationsCount,
       long totalOperationsCount) {}
 
-  record OperationsAggData(String batchOperationId, Map<String, Long> stateCounts) {
+  record OperationsAggData(String batchOperationKey, Map<String, Long> stateCounts) {
     public long getFinishedOperationsCount() {
       return getCompletedOperationsCount() + getFailedOperationsCount();
     }
@@ -78,7 +79,7 @@ public interface BatchOperationUpdateRepository extends AutoCloseable {
 
     @Override
     public CompletionStage<List<OperationsAggData>> getOperationsCount(
-        final Collection<String> batchOperationIds) {
+        final Collection<String> batchOperationKeys) {
       return CompletableFuture.completedFuture(List.of());
     }
 

@@ -48,12 +48,12 @@ public class BatchOperationUpdateTask implements BackgroundTask {
   }
 
   private CompletionStage<Integer> updateBatchOperations(
-      final Collection<String> batchOperationIds) {
-    if (batchOperationIds.isEmpty()) {
+      final Collection<String> batchOperationKeys) {
+    if (batchOperationKeys.isEmpty()) {
       return CompletableFuture.completedFuture(NO_UPDATES);
     }
 
-    final var response = batchOperationUpdateRepository.getOperationsCount(batchOperationIds);
+    final var response = batchOperationUpdateRepository.getOperationsCount(batchOperationKeys);
 
     return response
         .thenApplyAsync(this::collectDocumentUpdates, executor)
@@ -71,7 +71,7 @@ public class BatchOperationUpdateTask implements BackgroundTask {
         .map(
             d ->
                 new DocumentUpdate(
-                    d.batchOperationId(),
+                    d.batchOperationKey(),
                     d.getFinishedOperationsCount(),
                     d.getFailedOperationsCount(),
                     d.getCompletedOperationsCount(),

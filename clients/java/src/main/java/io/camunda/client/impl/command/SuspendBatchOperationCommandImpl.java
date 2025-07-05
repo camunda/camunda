@@ -27,13 +27,13 @@ import org.apache.hc.client5.http.config.RequestConfig;
 /** Implementation of the command to suspend a batch operation. */
 public final class SuspendBatchOperationCommandImpl implements SuspendBatchOperationStep1 {
 
-  private final String batchOperationOd;
+  private final String batchOperationKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public SuspendBatchOperationCommandImpl(
-      final HttpClient httpClient, final String batchOperationId) {
-    batchOperationOd = batchOperationId;
+      final HttpClient httpClient, final String batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
@@ -48,7 +48,7 @@ public final class SuspendBatchOperationCommandImpl implements SuspendBatchOpera
   public CamundaFuture<Void> send() {
     final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>();
     httpClient.put(
-        "/batch-operations/" + batchOperationOd + "/suspension",
+        "/batch-operations/" + batchOperationKey + "/suspension",
         null,
         httpRequestConfig.build(),
         result);

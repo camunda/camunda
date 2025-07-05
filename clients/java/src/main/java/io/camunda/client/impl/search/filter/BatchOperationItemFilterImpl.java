@@ -37,18 +37,18 @@ public class BatchOperationItemFilterImpl
   }
 
   @Override
-  public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationId(
-      final String batchOperationId) {
-    batchOperationId(b -> b.eq(batchOperationId));
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationKey(
+      final String batchOperationKey) {
+    batchOperationKey(b -> b.eq(batchOperationKey));
     return this;
   }
 
   @Override
-  public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationId(
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationKey(
       final Consumer<BasicStringProperty> fn) {
     final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
-    filter.setBatchOperationId(provideSearchRequestProperty(property));
+    filter.setBatchOperationKey(provideSearchRequestProperty(property));
     return this;
   }
 

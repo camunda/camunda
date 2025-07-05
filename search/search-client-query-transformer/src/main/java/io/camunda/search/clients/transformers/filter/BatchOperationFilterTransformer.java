@@ -24,7 +24,7 @@ public final class BatchOperationFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final BatchOperationFilter filter) {
     return and(
-        stringOperations(ID, filter.batchOperationIdOperations()),
+        stringOperations(ID, filter.batchOperationKeyOperations()),
         stringOperations(STATE, filter.stateOperations()),
         stringOperations(TYPE, filter.operationTypeOperations()));
   }

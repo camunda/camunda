@@ -30,7 +30,7 @@ public class AbstractOperationHandler {
     return indexName;
   }
 
-  protected String generateId(final long batchOperationId, final long itemKey) {
-    return String.format(ID_PATTERN, batchOperationId, itemKey);
+  protected String generateId(final long batchOperationKey, final long itemKey) {
+    return String.format(ID_PATTERN, batchOperationKey, itemKey);
   }
 }

@@ -20,7 +20,7 @@ import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_KEYS;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
@@ -123,7 +123,7 @@ public class ProcessDefinitionStatisticsFilterTransformer
             filter.errorMessageOperations(),
             ACTIVITIES_JOIN_RELATION,
             SearchMatchQueryOperator.AND));
-    queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
+    queries.addAll(stringOperations(BATCH_OPERATION_KEYS, filter.batchOperationKeyOperations()));
     ofNullable(filter.hasRetriesLeft()).ifPresent(value -> queries.add(hasRetriesLeftQuery(value)));
 
     return ofNullable(queries.isEmpty() ? null : queries);

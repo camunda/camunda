@@ -49,7 +49,7 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   public static final String VAR_VALUE = "varValue";
   public static final String SCOPE_KEY = "scopeKey";
 
-  public static final String BATCH_OPERATION_IDS = "batchOperationIds";
+  public static final String BATCH_OPERATION_KEYS = "batchOperationIds";
 
   public static final String JOIN_RELATION = "joinRelation";
   public static final String PROCESS_INSTANCE_JOIN_RELATION = "processInstance";

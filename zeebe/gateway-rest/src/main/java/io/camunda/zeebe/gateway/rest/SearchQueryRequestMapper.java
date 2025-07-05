@@ -225,9 +225,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getBatchOperationId())
+      ofNullable(filter.getBatchOperationKey())
           .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+          .ifPresent(builder::batchOperationKeyOperations);
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);
@@ -818,9 +818,9 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.batchOperation();
 
     if (filter != null) {
-      ofNullable(filter.getBatchOperationId())
+      ofNullable(filter.getBatchOperationKey())
           .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+          .ifPresent(builder::batchOperationKeyOperations);
       ofNullable(filter.getState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::stateOperations);
@@ -871,9 +871,9 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.batchOperationItem();
 
     if (filter != null) {
-      ofNullable(filter.getBatchOperationId())
+      ofNullable(filter.getBatchOperationKey())
           .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+          .ifPresent(builder::batchOperationKeyOperations);
       ofNullable(filter.getState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::stateOperations);
@@ -897,7 +897,7 @@ public final class SearchQueryRequestMapper {
     } else {
       switch (field) {
         case STATE -> builder.state();
-        case BATCH_OPERATION_ID -> builder.batchOperationId();
+        case BATCH_OPERATION_KEY -> builder.batchOperationKey();
         case ITEM_KEY -> builder.itemKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
@@ -999,9 +999,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
-      ofNullable(filter.getBatchOperationId())
+      ofNullable(filter.getBatchOperationKey())
           .map(mapToOperations(String.class))
-          .ifPresent(builder::batchOperationIdOperations);
+          .ifPresent(builder::batchOperationKeyOperations);
       ofNullable(filter.getErrorMessage())
           .map(mapToOperations(String.class))
           .ifPresent(builder::errorMessageOperations);

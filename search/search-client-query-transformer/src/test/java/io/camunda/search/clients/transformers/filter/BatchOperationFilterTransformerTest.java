@@ -20,7 +20,7 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByBatchOperationId() {
     // given
-    final var filter = FilterBuilders.batchOperation(f -> f.batchOperationIds("123"));
+    final var filter = FilterBuilders.batchOperation(f -> f.batchOperationKeys("123"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -40,7 +40,7 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
   void shouldQueryLegacyByBatchOperationId() {
     // given
     final var batchIdUuid = UUID.randomUUID().toString();
-    final var filter = FilterBuilders.batchOperation(f -> f.batchOperationIds(batchIdUuid));
+    final var filter = FilterBuilders.batchOperation(f -> f.batchOperationKeys(batchIdUuid));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -99,7 +99,7 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
     // given
     final var filter =
         FilterBuilders.batchOperation(
-            f -> f.batchOperationIds("123").states("ACTIVE").operationTypes("CREATE"));
+            f -> f.batchOperationKeys("123").states("ACTIVE").operationTypes("CREATE"));
 
     // when
     final var searchRequest = transformQuery(filter);

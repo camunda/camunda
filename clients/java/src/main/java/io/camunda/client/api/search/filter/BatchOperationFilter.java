@@ -27,20 +27,20 @@ import java.util.function.Consumer;
 public interface BatchOperationFilter extends SearchRequestFilter {
 
   /**
-   * Filters batch operations by the specified batchOperationId.
+   * Filters batch operations by the specified batchOperationKey.
    *
-   * @param batchOperationId the ID of the batch operation
+   * @param batchOperationKey the ID of the batch operation
    * @return the updated filter
    */
-  BatchOperationFilter batchOperationId(final String batchOperationId);
+  BatchOperationFilter batchOperationKey(final String batchOperationKey);
 
   /**
-   * Filter by batchOperationId using {@link StringProperty} consumer
+   * Filter by batchOperationKey using {@link StringProperty} consumer
    *
    * @param fn the consumer to apply to the StringProperty
    * @return the updated filter
    */
-  BatchOperationFilter batchOperationId(final Consumer<BasicStringProperty> fn);
+  BatchOperationFilter batchOperationKey(final Consumer<BasicStringProperty> fn);
 
   /**
    * Filters batch operations by the specified type.

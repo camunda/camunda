@@ -25,9 +25,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
 
   @Test
-  void shouldQueryByBatchOperationId() {
+  void shouldQueryByBatchOperationKey() {
     // given
-    final var filter = FilterBuilders.batchOperationItem(f -> f.batchOperationIds("123"));
+    final var filter = FilterBuilders.batchOperationItem(f -> f.batchOperationKeys("123"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -44,10 +44,10 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  void shouldQueryLegacyByBatchOperationId() {
+  void shouldQueryLegacyByBatchOperationKey() {
     // given
     final var batchIdUuid = UUID.randomUUID().toString();
-    final var filter = FilterBuilders.batchOperationItem(f -> f.batchOperationIds(batchIdUuid));
+    final var filter = FilterBuilders.batchOperationItem(f -> f.batchOperationKeys(batchIdUuid));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -185,7 +185,7 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
     final var filter =
         FilterBuilders.batchOperationItem(
             f ->
-                f.batchOperationIds("123")
+                f.batchOperationKeys("123")
                     .states("ACTIVE")
                     .itemKeys(123L)
                     .processInstanceKeys(456L));

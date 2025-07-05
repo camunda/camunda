@@ -138,13 +138,13 @@ public interface ProcessInstanceFilter extends ProcessInstanceFilterBase {
   @Override
   ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters);
 
-  /** Filter by batchOperationId */
+  /** Filter by batchOperationKey */
   @Override
-  ProcessInstanceFilter batchOperationId(final String batchOperationId);
+  ProcessInstanceFilter batchOperationKey(final String batchOperationKey);
 
-  /** Filter by batchOperationId using {@link StringProperty} */
+  /** Filter by batchOperationKey using {@link StringProperty} */
   @Override
-  ProcessInstanceFilter batchOperationId(final Consumer<StringProperty> fn);
+  ProcessInstanceFilter batchOperationKey(final Consumer<StringProperty> fn);
 
   /** Filter by error message */
   @Override

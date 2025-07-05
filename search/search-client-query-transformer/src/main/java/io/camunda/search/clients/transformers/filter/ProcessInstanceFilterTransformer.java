@@ -13,7 +13,7 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PART
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
-import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_IDS;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BATCH_OPERATION_KEYS;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.END_DATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ERROR_MSG;
@@ -87,7 +87,7 @@ public final class ProcessInstanceFilterTransformer
               SearchMatchQueryOperator.AND));
     }
 
-    queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
+    queries.addAll(stringOperations(BATCH_OPERATION_KEYS, filter.batchOperationKeyOperations()));
 
     ofNullable(getHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
 

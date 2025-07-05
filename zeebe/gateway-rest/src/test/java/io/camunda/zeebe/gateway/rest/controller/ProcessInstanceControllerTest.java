@@ -1342,7 +1342,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-          {"batchOperationId":"123","batchOperationType":"CANCEL_PROCESS_INSTANCE"}
+          {"batchOperationKey":"123","batchOperationType":"CANCEL_PROCESS_INSTANCE"}
         """);
 
     verify(processInstanceServices)
@@ -1390,7 +1390,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-          {"batchOperationId":"123","batchOperationType":"MODIFY_PROCESS_INSTANCE"}
+          {"batchOperationKey":"123","batchOperationType":"MODIFY_PROCESS_INSTANCE"}
         """);
 
     verify(processInstanceServices)
@@ -1466,7 +1466,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-          {"batchOperationId":"123","batchOperationType":"RESOLVE_INCIDENT"}
+          {"batchOperationKey":"123","batchOperationType":"RESOLVE_INCIDENT"}
         """);
 
     verify(processInstanceServices)
@@ -1516,7 +1516,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-          {"batchOperationId":"123","batchOperationType":"MIGRATE_PROCESS_INSTANCE"}
+          {"batchOperationKey":"123","batchOperationType":"MIGRATE_PROCESS_INSTANCE"}
         """);
 
     verify(processInstanceServices)

@@ -365,7 +365,7 @@ public final class TestHelper {
   }
 
   public static void waitForBatchOperationWithCorrectTotalCount(
-      final CamundaClient camundaClient, final String batchOperationId, final int expectedItems) {
+      final CamundaClient camundaClient, final String batchOperationKey, final int expectedItems) {
     Awaitility.await("should start batch operation with correct total count")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -373,7 +373,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
             });
@@ -381,7 +381,7 @@ public final class TestHelper {
 
   public static void waitForBatchOperationCompleted(
       final CamundaClient camundaClient,
-      final String batchOperationId,
+      final String batchOperationKey,
       final int expectedCompletedItems,
       final int expectedFailedItems) {
     Awaitility.await("should complete batch operation with correct completed/failed count")
@@ -391,7 +391,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
               assertThat(batch.getOperationsCompletedCount()).isEqualTo(expectedCompletedItems);
@@ -401,7 +401,7 @@ public final class TestHelper {
 
   public static void waitForBatchOperationStatus(
       final CamundaClient camundaClient,
-      final String batchOperationId,
+      final String batchOperationKey,
       final BatchOperationState expectedStatus) {
     Awaitility.await("batch operation should have state " + expectedStatus)
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -410,7 +410,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(expectedStatus);
             });
@@ -418,7 +418,7 @@ public final class TestHelper {
 
   public static void waitForBatchOperationStatus(
       final CamundaClient camundaClient,
-      final String batchOperationId,
+      final String batchOperationKey,
       final Set<BatchOperationState> acceptedStates) {
     Awaitility.await("batch operation should have state " + acceptedStates)
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -427,7 +427,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus())
                   .withFailMessage(

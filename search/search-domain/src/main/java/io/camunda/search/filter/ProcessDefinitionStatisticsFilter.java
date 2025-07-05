@@ -29,7 +29,7 @@ public record ProcessDefinitionStatisticsFilter(
     List<Operation<String>> tenantIdOperations,
     List<VariableValueFilter> variableFilters,
     List<Operation<String>> errorMessageOperations,
-    List<Operation<String>> batchOperationIdOperations,
+    List<Operation<String>> batchOperationKeyOperations,
     Boolean hasRetriesLeft,
     List<Operation<String>> flowNodeIdOperations,
     Boolean hasFlowNodeInstanceIncident,
@@ -49,7 +49,7 @@ public record ProcessDefinitionStatisticsFilter(
         .hasIncident(hasIncident)
         .tenantIdOperations(tenantIdOperations)
         .variables(variableFilters)
-        .batchOperationIdOperations(batchOperationIdOperations);
+        .batchOperationKeyOperations(batchOperationKeyOperations);
   }
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionStatisticsFilter> {
@@ -65,7 +65,7 @@ public record ProcessDefinitionStatisticsFilter(
     private List<Operation<String>> tenantIdOperations;
     private List<VariableValueFilter> variableFilters;
     private List<Operation<String>> errorMessageOperations;
-    private List<Operation<String>> batchOperationIdOperations;
+    private List<Operation<String>> batchOperationKeyOperations;
     private Boolean hasRetriesLeft;
     private List<Operation<String>> flowNodeIdOperations;
     private Boolean hasFlowNodeInstanceIncident;
@@ -191,19 +191,19 @@ public record ProcessDefinitionStatisticsFilter(
       return this;
     }
 
-    public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
-      batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
+    public Builder batchOperationKeyOperations(final List<Operation<String>> operations) {
+      batchOperationKeyOperations = addValuesToList(batchOperationKeyOperations, operations);
       return this;
     }
 
-    public Builder batchOperationIds(final String value, final String... values) {
-      return batchOperationIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    public Builder batchOperationKeys(final String value, final String... values) {
+      return batchOperationKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
-    public final Builder batchOperationIdOperations(
+    public final Builder batchOperationKeyOperations(
         final Operation<String> operation, final Operation<String>... operations) {
-      return batchOperationIdOperations(collectValues(operation, operations));
+      return batchOperationKeyOperations(collectValues(operation, operations));
     }
 
     public Builder errorMessages(final String value, final String... values) {
@@ -293,7 +293,7 @@ public record ProcessDefinitionStatisticsFilter(
           Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
           Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(batchOperationKeyOperations, Collections.emptyList()),
           hasRetriesLeft,
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
           hasFlowNodeInstanceIncident,

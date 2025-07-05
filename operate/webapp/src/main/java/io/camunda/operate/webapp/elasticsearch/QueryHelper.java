@@ -125,7 +125,7 @@ public class QueryHelper {
 
   private QueryBuilder createBatchOperationIdQuery(final ListViewQueryDto query) {
     if (query.getBatchOperationId() != null) {
-      return termQuery(ListViewTemplate.BATCH_OPERATION_IDS, query.getBatchOperationId());
+      return termQuery(ListViewTemplate.BATCH_OPERATION_KEYS, query.getBatchOperationId());
     }
     return null;
   }

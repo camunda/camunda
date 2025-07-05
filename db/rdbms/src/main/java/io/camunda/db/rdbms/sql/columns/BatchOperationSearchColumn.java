@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.BatchOperationEntity;
 
 public enum BatchOperationSearchColumn implements SearchColumn<BatchOperationEntity> {
-  BATCH_OPERATION_ID("batchOperationId");
+  BATCH_OPERATION_KEY("batchOperationKey");
 
   private final String property;
 

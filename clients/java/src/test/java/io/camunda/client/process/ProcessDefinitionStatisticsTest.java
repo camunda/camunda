@@ -86,7 +86,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                     .hasIncident(true)
                     .tenantId("tenant")
                     .variables(variablesMap)
-                    .batchOperationId("batchOperationId")
+                    .batchOperationKey("batchOperationKey")
                     .errorMessage("Error message")
                     .hasRetriesLeft(true)
                     .elementId("elementId")
@@ -111,7 +111,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
-    assertThat(filter.getBatchOperationId().get$Eq()).isEqualTo("batchOperationId");
+    assertThat(filter.getBatchOperationKey().get$Eq()).isEqualTo("batchOperationKey");
     assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
     assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
     assertThat(filter.getElementId().get$Eq()).isEqualTo("elementId");
