@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import java.util.Optional;
 
 public class JobTemplate extends AbstractTemplateDescriptor
     implements ProcessInstanceDependant, Prio4Backup {
@@ -50,11 +49,6 @@ public class JobTemplate extends AbstractTemplateDescriptor
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override

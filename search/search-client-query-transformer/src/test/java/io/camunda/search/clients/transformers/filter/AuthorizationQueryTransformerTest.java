@@ -9,14 +9,24 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchMatchAllQuery;
+import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.AuthorizationFilter.Builder;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.AuthorizationBasedResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.TenantBasedResourceAccessFilter;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -44,6 +54,136 @@ public class AuthorizationQueryTransformerTest extends AbstractTransformerTest {
               assertThat(t.field()).isEqualTo(column);
               assertThat(t.value().value()).isEqualTo(value);
             });
+  }
+
+  @Test
+  public void shouldApplyAuthorizationFilterWithResourceIds() {
+    // given
+    final var filter = FilterBuilders.authorization(b -> b);
+    final var expectedAuthorization =
+        Authorization.of(
+            a ->
+                a.resourceType(AuthorizationResourceType.AUTHORIZATION)
+                    .permissionType(PermissionType.READ)
+                    .resourceIds(List.of("123")));
+    final var authorizationFilter =
+        AuthorizationBasedResourceAccessFilter.requiredAuthorizationCheck(expectedAuthorization);
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("id");
+              assertThat(t.value().value()).isEqualTo("123");
+            });
+  }
+
+  @Test
+  public void shouldApplyAuthorizationFilterWithGranted() {
+    // given
+    final var filter = FilterBuilders.authorization(b -> b);
+    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.successful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchAllQuery.class);
+  }
+
+  @Test
+  public void shouldApplyAuthorizationFilterWithForbidden() {
+    // given
+    final var filter = FilterBuilders.authorization(b -> b);
+    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.unsuccessful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldApplyTenantFilterWithGranted() {
+    // given
+    final var filter = FilterBuilders.authorization(b -> b);
+    final var tenantFilter = TenantBasedResourceAccessFilter.successful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchAllQuery.class);
+  }
+
+  @Test
+  public void shouldApplyTenantFilterWithForbidden() {
+    // given
+    final var filter = FilterBuilders.authorization(b -> b);
+    final var tenantFilter = TenantBasedResourceAccessFilter.unsuccessful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldIgnoreTenantFilterWithTenantIds() {
+    // given
+    final var filter = FilterBuilders.authorization(b -> b);
+    final var tenantFilter = TenantBasedResourceAccessFilter.tenantCheckRequired(List.of("bar"));
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchAllQuery.class);
+  }
+
+  @Test
+  public void shouldApplyAllFilters() {
+    // given
+    final var filter = FilterBuilders.authorization(b -> b.ownerType("foo"));
+    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.successful();
+    final var tenantFilter = TenantBasedResourceAccessFilter.successful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter,
+            ResourceAccessFilter.of(
+                b -> b.authorizationFilter(authorizationFilter).tenantFilter(tenantFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final var must = ((SearchBoolQuery) queryVariant).must();
+    assertThat(must).hasSize(3);
   }
 
   public static Stream<Arguments> queryFilterParameters() {

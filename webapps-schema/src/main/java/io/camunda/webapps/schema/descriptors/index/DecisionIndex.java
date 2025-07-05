@@ -11,7 +11,6 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
-import java.util.Optional;
 
 public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backup {
 
@@ -31,11 +30,6 @@ public class DecisionIndex extends AbstractIndexDescriptor implements Prio4Backu
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override

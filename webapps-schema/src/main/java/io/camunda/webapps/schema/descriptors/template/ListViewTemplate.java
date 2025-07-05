@@ -11,7 +11,6 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
-import java.util.Optional;
 
 public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio2Backup {
 
@@ -64,11 +63,6 @@ public class ListViewTemplate extends AbstractTemplateDescriptor implements Prio
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override

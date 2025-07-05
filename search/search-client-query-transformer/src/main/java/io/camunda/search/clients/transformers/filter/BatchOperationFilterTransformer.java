@@ -8,17 +8,44 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
+import static io.camunda.search.exception.ErrorMessages.ERROR_UNSUPPORTED_BATCH_OPERATION_AUTHORIZATION_FILTER;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.*;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public final class BatchOperationFilterTransformer
     extends IndexFilterTransformer<BatchOperationFilter> {
 
   public BatchOperationFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public BatchOperationFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+    super(indexDescriptor, resourceAccessManager);
+  }
+
+  @Override
+  public BatchOperationFilterTransformer withResourceAccessFilter(
+      final ResourceAccessFilter resourceAccessFilter) {
+    return new BatchOperationFilterTransformer(indexDescriptor, resourceAccessFilter);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    throw new CamundaSearchException(ERROR_UNSUPPORTED_BATCH_OPERATION_AUTHORIZATION_FILTER);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    // no tenant concept to apply yet
+    return matchAll();
   }
 
   @Override

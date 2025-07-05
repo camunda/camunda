@@ -14,6 +14,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.IS_PREVIEW;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
@@ -26,6 +27,8 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +36,29 @@ import java.util.List;
 public class VariableFilterTransformer extends IndexFilterTransformer<VariableFilter> {
 
   public VariableFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public VariableFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+    super(indexDescriptor, resourceAccessManager);
+  }
+
+  @Override
+  public VariableFilterTransformer withResourceAccessFilter(
+      final ResourceAccessFilter resourceAccessFilter) {
+    return new VariableFilterTransformer(indexDescriptor, resourceAccessFilter);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(BPMN_PROCESS_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

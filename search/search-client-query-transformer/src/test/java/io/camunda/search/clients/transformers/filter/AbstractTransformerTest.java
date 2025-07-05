@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 
 public class AbstractTransformerTest {
@@ -19,5 +20,13 @@ public class AbstractTransformerTest {
 
   protected <F extends FilterBase> SearchQuery transformQuery(final F filter) {
     return transformers.getFilterTransformer(filter.getClass()).apply(filter);
+  }
+
+  protected <F extends FilterBase> SearchQuery transformQueryWithResourceAccessFilter(
+      final F filter, final ResourceAccessFilter resourceAccessFilter) {
+    return transformers
+        .getFilterTransformer(filter.getClass())
+        .withResourceAccessFilter(resourceAccessFilter)
+        .apply(filter);
   }
 }

@@ -14,7 +14,7 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
-import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
+import io.camunda.search.clients.security.policy.SearchQueryBasedResourceAccessPolicy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -403,7 +403,10 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   private SearchClientBasedQueryExecutor getSearchExecutor() {
     return new SearchClientBasedQueryExecutor(
-        searchClient, transformers, new DocumentAuthorizationQueryStrategy(this), securityContext);
+        searchClient,
+        transformers,
+        new SearchQueryBasedResourceAccessPolicy(this),
+        securityContext);
   }
 
   @Override
@@ -443,7 +446,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
         new SearchClientBasedQueryExecutor(
                 searchClient,
                 transformers,
-                new DocumentAuthorizationQueryStrategy(this),
+                new SearchQueryBasedResourceAccessPolicy(this),
                 securityContext)
             .findAll(filter, io.camunda.webapps.schema.entities.UsageMetricsEntity.class);
     return metrics.stream().map(UsageMetricsEntity::value).distinct().count();

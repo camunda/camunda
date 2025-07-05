@@ -13,31 +13,22 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
-import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
-import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
-import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.filter.ProcessDefinitionFilter;
-import io.camunda.search.filter.UserFilter;
-import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.UserQuery;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.resource.AuthorizationBasedResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessPolicy;
+import io.camunda.security.resource.TenantBasedResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,7 +52,7 @@ class SearchClientBasedQueryExecutorTest {
           .setIncident(false);
 
   @Mock private DocumentBasedSearchClient searchClient;
-  @Mock private AuthorizationQueryStrategy authorizationQueryStrategy;
+  @Mock private ResourceAccessPolicy resourceAccessPolicy;
   private final ServiceTransformers serviceTransformers =
       ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
@@ -73,7 +64,7 @@ class SearchClientBasedQueryExecutorTest {
         new SearchClientBasedQueryExecutor(
             searchClient,
             serviceTransformers,
-            authorizationQueryStrategy,
+            resourceAccessPolicy,
             SecurityContext.withoutAuthentication());
   }
 
@@ -89,9 +80,12 @@ class SearchClientBasedQueryExecutorTest {
     when(searchClient.search(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
+    when(resourceAccessPolicy.applySecurityContext(any(SecurityContext.class)))
+        .thenReturn(
+            ResourceAccessFilter.of(
+                b ->
+                    b.authorizationFilter(AuthorizationBasedResourceAccessFilter.successful())
+                        .tenantFilter(TenantBasedResourceAccessFilter.successful())));
 
     // When we search
     final SearchQueryResult<ProcessInstanceEntity> searchResult =
@@ -115,9 +109,12 @@ class SearchClientBasedQueryExecutorTest {
     when(searchClient.findAll(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
+    when(resourceAccessPolicy.applySecurityContext(any(SecurityContext.class)))
+        .thenReturn(
+            ResourceAccessFilter.of(
+                b ->
+                    b.authorizationFilter(AuthorizationBasedResourceAccessFilter.successful())
+                        .tenantFilter(TenantBasedResourceAccessFilter.successful())));
 
     // When we search
     final List<ProcessInstanceEntity> searchResult =
@@ -126,78 +123,6 @@ class SearchClientBasedQueryExecutorTest {
     assertThat(searchResult).hasSize(1);
     assertThat(searchResult.getFirst().processInstanceKey())
         .isEqualTo(demoProcessInstance.getProcessInstanceKey());
-  }
-
-  @Test
-  void shouldIncludeTenantFilterForTenantScopedEntities() {
-    // given
-    final var tenantIds = List.of("<default>", "T1");
-    final SearchClientBasedQueryExecutor queryExecutor =
-        new SearchClientBasedQueryExecutor(
-            searchClient,
-            serviceTransformers,
-            AuthorizationQueryStrategy.NONE,
-            SecurityContext.of(
-                builder ->
-                    builder.withAuthentication(
-                        CamundaAuthentication.of(a -> a.user("foo").tenants(tenantIds)))));
-
-    final var query =
-        new ProcessDefinitionQuery.Builder()
-            .filter(new ProcessDefinitionFilter.Builder().processDefinitionIds("x").build())
-            .build();
-
-    // when
-    final SearchQueryRequest searchQueryRequest =
-        queryExecutor.executeSearch(query, Function.identity());
-
-    // then
-    assertThat(searchQueryRequest.query())
-        .isEqualTo(
-            SearchQuery.of(
-                q ->
-                    q.bool(
-                        b ->
-                            b.must(
-                                List.of(
-                                    new ProcessDefinitionFilterTransformer(
-                                            new ProcessIndex("", true))
-                                        .toSearchQuery(query.filter()),
-                                    SearchQuery.of(
-                                        q2 ->
-                                            q2.terms(
-                                                t ->
-                                                    t.field(ProcessIndex.TENANT_ID)
-                                                        .terms(
-                                                            TypedValue.of(
-                                                                tenantIds, TypedValue::of)))))))));
-  }
-
-  @Test
-  void shouldNotIncludeTenantFilterForNonTenantScopedEntities() {
-    // given
-    final var tenantIds = List.of("<default>", "T1");
-    final SearchClientBasedQueryExecutor queryExecutor =
-        new SearchClientBasedQueryExecutor(
-            searchClient,
-            serviceTransformers,
-            AuthorizationQueryStrategy.NONE,
-            SecurityContext.of(
-                builder ->
-                    builder.withAuthentication(
-                        CamundaAuthentication.of(a -> a.user("foo").tenants(tenantIds)))));
-
-    final var query =
-        new UserQuery.Builder().filter(new UserFilter.Builder().usernames("x").build()).build();
-
-    // when
-    final SearchQueryRequest searchQueryRequest =
-        queryExecutor.executeSearch(query, Function.identity());
-
-    // then
-    assertThat(searchQueryRequest.query())
-        .isEqualTo(
-            new UserFilterTransformer(new UserIndex("", true)).toSearchQuery(query.filter()));
   }
 
   private SearchQueryResponse<ProcessInstanceForListViewEntity> createProcessInstanceEntityResponse(

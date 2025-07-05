@@ -37,6 +37,8 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +51,33 @@ public final class ProcessInstanceFilterTransformer
 
   public ProcessInstanceFilterTransformer(
       final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(transformers, indexDescriptor, null);
+  }
+
+  public ProcessInstanceFilterTransformer(
+      final ServiceTransformers transformers,
+      final IndexDescriptor indexDescriptor,
+      final ResourceAccessFilter resourceAccessManager) {
+    super(indexDescriptor, resourceAccessManager);
     this.transformers = transformers;
+  }
+
+  @Override
+  public ProcessInstanceFilterTransformer withResourceAccessFilter(
+      final ResourceAccessFilter resourceAccessFilter) {
+    return new ProcessInstanceFilterTransformer(
+        transformers, indexDescriptor, resourceAccessFilter);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(BPMN_PROCESS_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   public ArrayList<SearchQuery> toSearchQueryFields(final ProcessInstanceFilter filter) {

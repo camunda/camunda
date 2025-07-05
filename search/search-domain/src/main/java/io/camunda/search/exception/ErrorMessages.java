@@ -33,4 +33,14 @@ public class ErrorMessages {
   public static final String ERROR_NOT_UNIQUE_ENTITY = "Found %s with key %s more than once";
   public static final String ERROR_NOT_UNIQUE_FORM = "Found form with key %d more than once";
   public static final String ERROR_NOT_UNIQUE_TENANT = "Found multiple tenants matching %s";
+
+  public static final String ERROR_APPLY_TENANT_FILTER =
+      "Unexpectedly failed to apply a tenant filter to query, transformer %s did not provide a Search Query: %s";
+  public static final String ERROR_UNSUPPORTED_TENANT_FILTER = "Unsupported tenant filter: %s";
+  public static final String ERROR_APPLY_AUTHORIZATION_FILTER =
+      "Unexpectedly failed to apply an authorization filter to query, transformer %s did not provide a Search Query: %s";
+  public static final String ERROR_UNSUPPORTED_AUTHORIZATION_FILTER =
+      "Unsupported authorization filter: %s";
+  public static final String ERROR_UNSUPPORTED_BATCH_OPERATION_AUTHORIZATION_FILTER =
+      "Cannot apply authorization filter to batch operation; only wildcard authorizations are allowed";
 }

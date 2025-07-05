@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
-import java.util.Optional;
 
 public class TaskTemplate extends AbstractTemplateDescriptor
     implements Prio2Backup, ProcessInstanceDependant {
@@ -75,11 +74,6 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override

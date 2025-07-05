@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -20,14 +21,40 @@ import static io.camunda.webapps.schema.descriptors.index.TenantIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
+import java.util.List;
 
 public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter> {
 
   public TenantFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public TenantFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+    super(indexDescriptor, resourceAccessManager);
+  }
+
+  @Override
+  public TenantFilterTransformer withResourceAccessFilter(
+      final ResourceAccessFilter resourceAccessFilter) {
+    return new TenantFilterTransformer(indexDescriptor, resourceAccessFilter);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(TENANT_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    // Tenants are not tenant-owned => no tenant check required
+    return matchAll();
   }
 
   @Override
