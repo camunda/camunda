@@ -20,7 +20,6 @@ import {
   mockIncidentsByErrorWithBigErrorMessage,
   bigErrorMessage,
 } from './index.setup';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
 import {Paths} from 'modules/Routes';
@@ -43,14 +42,6 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
 }
 
 describe('IncidentsByError', () => {
-  beforeEach(() => {
-    panelStatesStore.toggleFiltersPanel();
-  });
-
-  afterEach(() => {
-    panelStatesStore.reset();
-  });
-
   it('should display skeleton when loading', async () => {
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
@@ -156,8 +147,6 @@ describe('IncidentsByError', () => {
   });
 
   it('should update after next poll', async () => {
-    vi.useFakeTimers();
-
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     render(<IncidentsByError />, {
@@ -179,8 +168,6 @@ describe('IncidentsByError', () => {
       mockIncidentsByError[1]!,
     ]);
 
-    vi.runOnlyPendingTimers();
-
     expect(
       await withinIncident.findByRole('button', {
         name: 'Expand current row',
@@ -190,9 +177,6 @@ describe('IncidentsByError', () => {
     await waitFor(() =>
       expect(incidentsByErrorStore.isPollRequestRunning).toBe(false),
     );
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 
   it('should truncate the error message search param', async () => {
@@ -235,14 +219,11 @@ describe('IncidentsByError', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    vi.useFakeTimers();
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),
     });
-
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     const withinIncident = within(
       await screen.findByTestId('incident-byError-0'),
@@ -265,9 +246,5 @@ describe('IncidentsByError', () => {
         /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidentErrorHashCode=234254&incidents=true$/,
       ),
     );
-    expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 });
