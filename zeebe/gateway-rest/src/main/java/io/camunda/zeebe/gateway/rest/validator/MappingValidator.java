@@ -39,7 +39,7 @@ public class MappingValidator {
         violations -> {
           violations.addAll(validateClaims(request.getClaimName(), request.getClaimValue()));
           violations.addAll(validateName(request.getName()));
-          violations.addAll(validateId(request.getMappingId()));
+          violations.addAll(validateId(request.getMappingRuleId()));
         });
   }
 

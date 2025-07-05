@@ -29,7 +29,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(value = MappingController.class)
+@WebMvcTest(value = MappingRuleController.class)
 public class MappingQueryControllerTest extends RestControllerTest {
   private static final String MAPPING_BASE_URL = "/v2/mapping-rules";
 

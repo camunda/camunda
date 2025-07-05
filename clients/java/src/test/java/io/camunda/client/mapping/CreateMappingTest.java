@@ -47,7 +47,7 @@ public class CreateMappingTest extends ClientRestTest {
     assertThat(request.getClaimName()).isEqualTo(CLAIM_NAME);
     assertThat(request.getClaimValue()).isEqualTo(CLAIM_VALUE);
     assertThat(request.getName()).isEqualTo(NAME);
-    assertThat(request.getMappingId()).isEqualTo(MAPPING_ID);
+    assertThat(request.getMappingRuleId()).isEqualTo(MAPPING_ID);
   }
 
   @Test

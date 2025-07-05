@@ -23,8 +23,8 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchQueryRequest;
@@ -139,7 +139,7 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/mappings/{mappingId}")
+  @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
     return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING)
@@ -184,17 +184,17 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
-  @CamundaPostMapping(path = "/{tenantId}/mappings/search")
-  public ResponseEntity<MappingSearchQueryResult> searchMappingsInTenant(
+  @CamundaPostMapping(path = "/{tenantId}/mapping-rules/search")
+  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final MappingSearchQueryRequest query) {
+      @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mappingQuery -> searchMappingsInTenant(tenantId, mappingQuery));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantId}/mappings/{mappingId}")
+  @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
     return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING)
@@ -323,7 +323,7 @@ public class TenantController {
     }
   }
 
-  private ResponseEntity<MappingSearchQueryResult> searchMappingsInTenant(
+  private ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInTenant(
       final String tenantId, final MappingQuery mappingQuery) {
     try {
       final var composedMappingQuery = buildMappingQuery(tenantId, mappingQuery);
