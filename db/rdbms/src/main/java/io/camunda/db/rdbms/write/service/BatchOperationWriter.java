@@ -10,8 +10,8 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStatusUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateCountDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
-import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateTotalCountDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
@@ -21,9 +21,9 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,6 @@ public class BatchOperationWriter {
   private final BatchOperationReader reader;
 
   private final int itemInsertBlockSize;
-  private final boolean exportPendingBatchOperationItems;
 
   public BatchOperationWriter(
       final BatchOperationReader reader,
@@ -44,7 +43,6 @@ public class BatchOperationWriter {
     this.reader = reader;
     this.executionQueue = executionQueue;
     itemInsertBlockSize = config.batchOperationItemInsertBlockSize();
-    exportPendingBatchOperationItems = config.exportBatchOperationItemsOnCreation();
   }
 
   public void createIfNotAlreadyExists(final BatchOperationDbModel batchOperation) {
@@ -64,51 +62,66 @@ public class BatchOperationWriter {
     executionQueue.flush();
   }
 
-  public void updateBatchAndInsertItems(
-      final String batchOperationId, final List<BatchOperationItemDbModel> items) {
-    if (items != null && !items.isEmpty()) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.BATCH_OPERATION,
-              WriteStatementType.UPDATE,
-              batchOperationId,
-              "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementOperationsTotalCount",
-              new BatchOperationUpdateTotalCountDto(batchOperationId, items.size())));
-      if (exportPendingBatchOperationItems) {
-        insertItems(new BatchOperationItemsDto(batchOperationId, items));
-      }
-    }
+  public void incrementTotalItemCount(
+      final String batchOperationId, final int totalCountIncrement) {
+    incrementTotalCount(batchOperationId, totalCountIncrement);
   }
 
   public void updateItem(final BatchOperationItemDbModel item) {
-    if (exportPendingBatchOperationItems) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.BATCH_OPERATION,
-              WriteStatementType.UPDATE,
-              item.batchOperationId(),
-              "io.camunda.db.rdbms.sql.BatchOperationMapper.updateItem",
-              item));
-    } else {
-      insertItems(new BatchOperationItemsDto(item.batchOperationId(), List.of(item)));
-    }
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            item.batchOperationId(),
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.updateItem",
+            item));
 
     if (item.state() == BatchOperationItemState.FAILED) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.BATCH_OPERATION,
-              WriteStatementType.UPDATE,
-              item.batchOperationId(),
-              "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementFailedOperationsCount",
-              item.batchOperationId()));
+      incrementFailedCount(item.batchOperationId(), 1);
     } else if (item.state() == BatchOperationItemState.COMPLETED) {
+      incrementCompletedCount(item.batchOperationId(), 1);
+    }
+  }
+
+  /**
+   * Inserts a list of items into the batch operation. This also updates all counts of the batch
+   * operation depending on the state of the given items in the list.
+   *
+   * @param batchOperationId the batch operation id to which the items belong
+   * @param itemList the items
+   */
+  public void insertItems(
+      final String batchOperationId, final List<BatchOperationItemDbModel> itemList) {
+    for (int i = 0; i < itemList.size(); i += itemInsertBlockSize) {
+      final var block = itemList.subList(i, Math.min(i + itemInsertBlockSize, itemList.size()));
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.BATCH_OPERATION,
-              WriteStatementType.UPDATE,
-              item.batchOperationId(),
-              "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementCompletedOperationsCount",
-              item.batchOperationId()));
+              WriteStatementType.INSERT,
+              batchOperationId,
+              "io.camunda.db.rdbms.sql.BatchOperationMapper.insertItems",
+              new BatchOperationItemsDto(batchOperationId, block)));
+    }
+
+    final var stateCounts =
+        itemList.stream().collect(Collectors.groupingBy(BatchOperationItemDbModel::state));
+
+    final int activeCount =
+        stateCounts.getOrDefault(BatchOperationItemState.ACTIVE, List.of()).size();
+    final int completedCount =
+        stateCounts.getOrDefault(BatchOperationItemState.COMPLETED, List.of()).size();
+    final int failedCount =
+        stateCounts.getOrDefault(BatchOperationItemState.FAILED, List.of()).size();
+
+    if (activeCount > 0) {
+      incrementTotalCount(batchOperationId, activeCount);
+    }
+    if (completedCount > 0) {
+      incrementCompletedCount(batchOperationId, completedCount);
+    }
+
+    if (failedCount > 0) {
+      incrementFailedCount(batchOperationId, failedCount);
     }
   }
 
@@ -124,10 +137,8 @@ public class BatchOperationWriter {
         new BatchOperationUpdateDto(batchOperationId, BatchOperationState.CANCELED, endDate));
 
     // if we have exported pending items, we now need to set their state to canceled
-    if (exportPendingBatchOperationItems) {
-      updateItemsWithState(
-          batchOperationId, BatchOperationItemState.ACTIVE, BatchOperationItemState.CANCELED);
-    }
+    updateItemsWithState(
+        batchOperationId, BatchOperationItemState.ACTIVE, BatchOperationItemState.CANCELED);
   }
 
   public void suspend(final String batchOperationId) {
@@ -165,19 +176,33 @@ public class BatchOperationWriter {
             new BatchOperationItemStatusUpdateDto(batchOperationId, oldState, newState)));
   }
 
-  @VisibleForTesting
-  void insertItems(final BatchOperationItemsDto items) {
-    final var itemList = items.items();
+  private void incrementTotalCount(final String batchOperationId, final int totalCountIncrement) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationId,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementOperationsTotalCount",
+            new BatchOperationUpdateCountDto(batchOperationId, totalCountIncrement)));
+  }
 
-    for (int i = 0; i < itemList.size(); i += itemInsertBlockSize) {
-      final var block = itemList.subList(i, Math.min(i + itemInsertBlockSize, itemList.size()));
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.BATCH_OPERATION,
-              WriteStatementType.INSERT,
-              items.batchOperationId(),
-              "io.camunda.db.rdbms.sql.BatchOperationMapper.insertItems",
-              new BatchOperationItemsDto(items.batchOperationId(), block)));
-    }
+  private void incrementFailedCount(final String batchOperationId, final int failedCount) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationId,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementFailedOperationsCount",
+            new BatchOperationUpdateCountDto(batchOperationId, failedCount)));
+  }
+
+  private void incrementCompletedCount(final String batchOperationId, final int completedCount) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationId,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementCompletedOperationsCount",
+            new BatchOperationUpdateCountDto(batchOperationId, completedCount)));
   }
 }

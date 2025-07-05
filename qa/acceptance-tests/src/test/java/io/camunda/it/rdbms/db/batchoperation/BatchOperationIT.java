@@ -75,19 +75,25 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
-  public void shouldInsertBatchItems(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldInsertActiveBatchItems(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
     final RdbmsWriter writer = rdbmsService.createWriter(0);
     final var batchOperation =
-        createAndSaveBatchOperation(
-            writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null).operationsTotalCount(0));
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     // when
-    insertBatchOperationsItems(writer, batchOperation.batchOperationId(), Set.of(nextKey()));
     insertBatchOperationsItems(
-        writer, batchOperation.batchOperationId(), Set.of(nextKey(), nextKey()));
+        writer,
+        batchOperation.batchOperationId(),
+        BatchOperationItemState.ACTIVE,
+        Set.of(nextKey()));
+    insertBatchOperationsItems(
+        writer,
+        batchOperation.batchOperationId(),
+        BatchOperationItemState.ACTIVE,
+        Set.of(nextKey(), nextKey()));
 
     // then
     final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
@@ -109,6 +115,82 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldIncrementTotalCount(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+
+    // when
+    writer.getBatchOperationWriter().incrementTotalItemCount(batchOperation.batchOperationId(), 3);
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    // batch is updated
+    assertThat(updatedBatchOperation).isNotNull();
+    final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
+    assertThat(batchOperationEntity.operationsTotalCount()).isEqualTo(3);
+  }
+
+  @TestTemplate
+  public void shouldInsertCompletedBatchItems(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+
+    // when
+    insertBatchOperationsItems(
+        writer,
+        batchOperation.batchOperationId(),
+        BatchOperationItemState.COMPLETED,
+        Set.of(nextKey()));
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    // batch is updated
+    assertThat(updatedBatchOperation).isNotNull();
+    final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
+    assertThat(batchOperationEntity.endDate()).isNull();
+    assertThat(batchOperationEntity.operationsCompletedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.operationsFailedCount()).isEqualTo(0);
+  }
+
+  @TestTemplate
+  public void shouldInsertFailedBatchItems(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+
+    // when
+    insertBatchOperationsItems(
+        writer,
+        batchOperation.batchOperationId(),
+        BatchOperationItemState.FAILED,
+        Set.of(nextKey()));
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    // batch is updated
+    assertThat(updatedBatchOperation).isNotNull();
+    final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
+    assertThat(batchOperationEntity.endDate()).isNull();
+    assertThat(batchOperationEntity.operationsCompletedCount()).isEqualTo(0);
+    assertThat(batchOperationEntity.operationsFailedCount()).isEqualTo(1);
+  }
+
+  @TestTemplate
   public void shouldUpdateCompletedBatchItem(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -117,11 +199,7 @@ public class BatchOperationIT {
     final var batchOperation =
         createAndSaveBatchOperation(
             writer,
-            b ->
-                b.state(BatchOperationState.ACTIVE)
-                    .endDate(null)
-                    .operationsTotalCount(0)
-                    .operationsCompletedCount(0));
+            b -> b.state(BatchOperationState.ACTIVE).endDate(null).operationsCompletedCount(0));
 
     final var items =
         createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
@@ -181,11 +259,7 @@ public class BatchOperationIT {
     final var batchOperation =
         createAndSaveBatchOperation(
             writer,
-            b ->
-                b.state(BatchOperationState.ACTIVE)
-                    .endDate(null)
-                    .operationsTotalCount(0)
-                    .operationsFailedCount(0));
+            b -> b.state(BatchOperationState.ACTIVE).endDate(null).operationsFailedCount(0));
 
     final var items =
         createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);

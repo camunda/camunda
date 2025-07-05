@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
 import io.camunda.db.rdbms.read.mapper.BatchOperationEntityMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.columns.BatchOperationSearchColumn;
+import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -42,6 +43,11 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
     final var result =
         search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationIds(batchOperationId))));
     return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
+  }
+
+  // TODO better name?
+  public Optional<BatchOperationDbModel> findOneDbModel(final String batchOperationId) {
+    return batchOperationMapper.findById(batchOperationId);
   }
 
   public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {

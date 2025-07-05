@@ -282,7 +282,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             // Batch Operation Handler
             new BatchOperationCreatedHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
-                batchOperationCache),
+                batchOperationCache,
+                configuration.getBatchOperation().isExportItemsOnCreation()),
             new BatchOperationStartedHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new BatchOperationLifecycleManagementHandler(

@@ -30,6 +30,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   private BatchOperationState state;
   private Integer operationsFailedCount = 0; // Just failed / rejected operations
   private Integer operationsCompletedCount = 0; // Just successfully completed operations
+  private Boolean exportItemsOnCreation = false;
 
   @JsonIgnore private Object[] sortValues;
 
@@ -129,6 +130,15 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
 
   public BatchOperationEntity setOperationsCompletedCount(final Integer operationsCompletedCount) {
     this.operationsCompletedCount = operationsCompletedCount;
+    return this;
+  }
+
+  public Boolean isExportItemsOnCreation() {
+    return exportItemsOnCreation;
+  }
+
+  public BatchOperationEntity setExportItemsOnCreation(final Boolean exportItemsOnCreation) {
+    this.exportItemsOnCreation = exportItemsOnCreation;
     return this;
   }
 

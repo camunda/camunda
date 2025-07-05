@@ -8,7 +8,6 @@
 package io.camunda.exporter.rdbms;
 
 import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
-import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
@@ -65,6 +64,7 @@ public class RdbmsExporterWrapper implements Exporter {
   private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
   private static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
   private static final long DEFAULT_MAX_CACHE_SIZE = 10_000;
+  private static final boolean DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION = true;
 
   private static final String CONFIG_CACHE_PROCESS = "processCache";
   private static final String CONFIG_CACHE_BATCH_OPERATION = "batchOperationCache";
@@ -94,8 +94,6 @@ public class RdbmsExporterWrapper implements Exporter {
                 .minHistoryCleanupInterval(readMinHistoryCleanupInterval(context))
                 .maxHistoryCleanupInterval(readMaxHistoryCleanupInterval(context))
                 .batchOperationItemInsertBlockSize(readBatchOperationItemInsertBlockSize(context))
-                .exportBatchOperationItemsOnCreation(
-                    readExportBatchOperationItemsOnCreation(context))
                 .build());
 
     final var builder =
@@ -118,7 +116,7 @@ public class RdbmsExporterWrapper implements Exporter {
             new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", context.getMeterRegistry()));
 
     createHandlers(partitionId, rdbmsWriter, builder);
-    createBatchOperationHandlers(rdbmsWriter, builder);
+    createBatchOperationHandlers(rdbmsWriter, context, builder);
 
     exporter = new RdbmsExporter(builder.build());
   }
@@ -289,14 +287,19 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private void createBatchOperationHandlers(
-      final RdbmsWriter rdbmsWriter, final RdbmsExporterConfig.Builder builder) {
+      final RdbmsWriter rdbmsWriter,
+      final Context context,
+      final RdbmsExporterConfig.Builder builder) {
+    final var exportItemsOnCreation = readExportBatchOperationItemsOnCreation(context);
+
     builder.withHandler(
         ValueType.BATCH_OPERATION_CREATION,
         new BatchOperationCreatedExportHandler(
-            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
+            rdbmsWriter.getBatchOperationWriter(), batchOperationCache, exportItemsOnCreation));
     builder.withHandler(
         ValueType.BATCH_OPERATION_CHUNK,
-        new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
+        new BatchOperationChunkExportHandler(
+            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         new BatchOperationLifecycleManagementExportHandler(rdbmsWriter.getBatchOperationWriter()));

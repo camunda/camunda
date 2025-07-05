@@ -34,28 +34,29 @@ class BatchOperationWriterTest {
   @Test
   void testSplitCorrectly() {
     // given
-    final var itemsDto =
-        new BatchOperationItemsDto(
-            "42",
-            LongStream.range(0, 25)
-                .boxed()
-                .map(
-                    i ->
-                        new BatchOperationItemDbModel(
-                            "42", i, i, BatchOperationItemState.ACTIVE, OffsetDateTime.now(), null))
-                .toList());
+    final var items =
+        LongStream.range(0, 25)
+            .boxed()
+            .map(
+                i ->
+                    new BatchOperationItemDbModel(
+                        "42", i, i, BatchOperationItemState.ACTIVE, OffsetDateTime.now(), null))
+            .toList();
 
     // when
-    batchOperationWriter.insertItems(itemsDto);
+    batchOperationWriter.insertItems("42", items);
 
     final var payloadCaptor = ArgumentCaptor.forClass(QueueItem.class);
-    Mockito.verify(executionQueue, Mockito.times(3)).executeInQueue(payloadCaptor.capture());
+    Mockito.verify(executionQueue, Mockito.atLeastOnce()).executeInQueue(payloadCaptor.capture());
 
     final var capturedItems =
         payloadCaptor.getAllValues().stream()
+            // there is also an invocation to update counts, which we don't care about here
+            .filter(q -> q.parameter() instanceof BatchOperationItemsDto)
             .map(q -> (BatchOperationItemsDto) q.parameter())
             .toList();
 
+    assertThat(capturedItems).hasSize(3);
     assertThat(capturedItems.get(0).items()).hasSize(10);
     assertThat(capturedItems.get(1).items()).hasSize(10);
     assertThat(capturedItems.get(2).items()).hasSize(5);
