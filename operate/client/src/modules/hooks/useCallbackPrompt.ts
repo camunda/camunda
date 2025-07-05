@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useState} from 'react';
-import {useLocation, useNavigate} from 'react-router';
-import {useBlocker} from './useBlocker';
-import type {Location, Transition} from 'history';
+import {useCallback} from 'react';
+import {useBlocker} from 'react-router-dom';
+import type {Location} from 'react-router-dom';
 
 /**
  * This effect interrupts the browser navigation whenever changes are detected in the URL.
@@ -29,85 +28,66 @@ export function useCallbackPrompt({
    * - needs to return false if the navigation should be interrupted
    */
   onTransition?: ({
-    transition,
-    location,
+    currentLocation,
+    nextLocation,
+    historyAction,
   }: {
-    transition: Transition;
-    location: Pick<Location, 'pathname' | 'search'>;
+    currentLocation: Location;
+    nextLocation: Location;
+    historyAction: string;
   }) => boolean;
 }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [isNavigationInterrupted, setIsNavigationInterrupted] = useState(false);
-  const [lastLocation, setLastLocation] = useState<Location | null>(null);
-  const [confirmedNavigation, setConfirmedNavigation] = useState(false);
+  const shouldBlock = useCallback(
+    ({
+      currentLocation,
+      nextLocation,
+      historyAction,
+    }: {
+      currentLocation: Location;
+      nextLocation: Location;
+      historyAction: string;
+    }) => {
+      if (!shouldInterrupt) {
+        return false;
+      }
 
-  const cancelNavigation = useCallback(() => {
-    setIsNavigationInterrupted(false);
-  }, []);
-
-  const handleBlockedNavigation = useCallback(
-    (transition: Transition) => {
       const shouldPass = onTransition?.({
-        transition,
-        location: {pathname: location.pathname, search: location.search},
+        currentLocation,
+        nextLocation,
+        historyAction,
       });
 
       if (shouldPass === true) {
-        setLastLocation(transition.location);
-        transition.retry();
-        return;
-      }
-
-      if (
-        !confirmedNavigation &&
-        (transition.location.pathname !== location.pathname ||
-          transition.location.search !== location.search)
-      ) {
-        setIsNavigationInterrupted(true);
-        setLastLocation(transition.location);
         return false;
       }
-      return true;
+
+      return (
+        nextLocation.pathname !== currentLocation.pathname ||
+        nextLocation.search !== currentLocation.search
+      );
     },
-    [confirmedNavigation, location.pathname, location.search, onTransition],
+    [shouldInterrupt, onTransition],
   );
 
+  const blocker = useBlocker(shouldBlock);
+
   const confirmNavigation = useCallback(() => {
-    setIsNavigationInterrupted(false);
-    setConfirmedNavigation(true);
-  }, []);
-
-  useEffect(() => {
-    if (confirmedNavigation && lastLocation) {
-      const contextPath = window.clientConfig?.baseName;
-
-      if (contextPath !== undefined) {
-        const pathname = lastLocation.pathname.replace(contextPath, '');
-
-        navigate({
-          ...lastLocation,
-          pathname: pathname === '' ? '/' : pathname,
-        });
-      } else {
-        navigate(lastLocation);
-      }
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
     }
-  }, [confirmedNavigation, lastLocation, navigate]);
+  }, [blocker]);
 
-  useEffect(() => {
-    if (!shouldInterrupt && confirmedNavigation) {
-      setConfirmedNavigation(false);
+  const cancelNavigation = useCallback(() => {
+    if (blocker.state === 'blocked') {
+      blocker.reset();
     }
-  }, [shouldInterrupt, confirmedNavigation]);
-
-  useBlocker(handleBlockedNavigation, shouldInterrupt);
+  }, [blocker]);
 
   return {
     /**
      * Indicates if the browser navigation is currently interrupted
      */
-    isNavigationInterrupted,
+    isNavigationInterrupted: blocker.state === 'blocked',
     /**
      * Continues the navigation in case it is currently interrupted
      */
