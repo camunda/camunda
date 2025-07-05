@@ -20,6 +20,7 @@ import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.exception.CamundaSearchException;
@@ -84,7 +85,10 @@ class ElasticsearchSearchClientTest {
         .thenReturn(emptyScrollResponse);
 
     // when
-    final List<Object> result = searchClient.findAll(searchRequest, Object.class);
+    final List<Object> result =
+        searchClient.scroll(searchRequest, Object.class, true).hits().stream()
+            .map(SearchQueryHit::source)
+            .toList();
 
     // then
     assertThat(result).hasSize(2);
@@ -99,7 +103,7 @@ class ElasticsearchSearchClientTest {
 
     // when & Assert
     assertThrows(
-        CamundaSearchException.class, () -> searchClient.findAll(searchRequest, Object.class));
+        CamundaSearchException.class, () -> searchClient.scroll(searchRequest, Object.class, true));
     verify(client, never()).scroll(any(Function.class), any());
     verify(client, never()).clearScroll(any(Function.class));
   }
@@ -112,7 +116,7 @@ class ElasticsearchSearchClientTest {
 
     // when & Assert
     assertThrows(
-        CamundaSearchException.class, () -> searchClient.findAll(searchRequest, Object.class));
+        CamundaSearchException.class, () -> searchClient.scroll(searchRequest, Object.class, true));
     verify(client).clearScroll(any(Function.class));
   }
 }

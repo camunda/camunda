@@ -8,20 +8,48 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.PROCESS_INSTANCE_KEY;
 
+import io.camunda.search.clients.control.ResourceAccessControl;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public class ProcessInstanceStatisticsFilterTransformer
     extends IndexFilterTransformer<ProcessInstanceStatisticsFilter> {
 
   public ProcessInstanceStatisticsFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public ProcessInstanceStatisticsFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessControl resourceAccessControl) {
+    super(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  public ProcessInstanceStatisticsFilterTransformer withResourceAccessControl(
+      final ResourceAccessControl resourceAccessControl) {
+    return new ProcessInstanceStatisticsFilterTransformer(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(BPMN_PROCESS_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

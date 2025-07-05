@@ -30,11 +30,13 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.TENANT_ID;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.search.clients.control.ResourceAccessControl;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -44,7 +46,29 @@ public final class DecisionInstanceFilterTransformer
     extends IndexFilterTransformer<DecisionInstanceFilter> {
 
   public DecisionInstanceFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public DecisionInstanceFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessControl resourceAccessControl) {
+    super(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  public DecisionInstanceFilterTransformer withResourceAccessControl(
+      final ResourceAccessControl resourceAccessControl) {
+    return new DecisionInstanceFilterTransformer(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(DECISION_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

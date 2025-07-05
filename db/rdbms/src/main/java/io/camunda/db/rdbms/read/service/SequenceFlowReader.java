@@ -10,8 +10,8 @@ package io.camunda.db.rdbms.read.service;
 import io.camunda.db.rdbms.read.mapper.SequenceFlowEntityMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,10 +26,11 @@ public class SequenceFlowReader extends AbstractEntityReader<SequenceFlowEntity>
     this.sequenceFlowMapper = sequenceFlowMapper;
   }
 
-  public List<SequenceFlowEntity> search(final SequenceFlowQuery filter) {
+  public SearchQueryResult<SequenceFlowEntity> search(final SequenceFlowQuery filter) {
     LOG.trace("[RDBMS DB] Search for sequence flows with {}", filter);
-    return sequenceFlowMapper.search(filter).stream()
-        .map(SequenceFlowEntityMapper::toEntity)
-        .toList();
+    // TODO: Do we really need to execute a count query?
+    final var result =
+        sequenceFlowMapper.search(filter).stream().map(SequenceFlowEntityMapper::toEntity).toList();
+    return buildSearchQueryResult(result.size(), result, null);
   }
 }

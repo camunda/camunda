@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -17,14 +18,39 @@ import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_VAL
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.MAPPING_ID;
 import static io.camunda.webapps.schema.descriptors.index.MappingIndex.NAME;
 
+import io.camunda.search.clients.control.ResourceAccessControl;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MappingFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilter> {
 
   public MappingFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public MappingFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessControl resourceAccessControl) {
+    super(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  public MappingFilterTransformer withResourceAccessControl(
+      final ResourceAccessControl resourceAccessControl) {
+    return new MappingFilterTransformer(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(MAPPING_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return matchAll();
   }
 
   @Override

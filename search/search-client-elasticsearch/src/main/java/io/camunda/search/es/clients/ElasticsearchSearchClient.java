@@ -44,7 +44,6 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,48 +135,6 @@ public class ElasticsearchSearchClient
     } finally {
       clearScroll(scrollId);
     }
-  }
-
-  @Override
-  public <T> SearchQueryResponse<T> singleResult(
-      final SearchQueryRequest searchRequest, final Class<T> documentClass) {
-    final var response = search(searchRequest, documentClass);
-    if (response.hits().size() <= 1) {
-      return response;
-    }
-    throw new CamundaSearchException(
-        ErrorMessages.ERROR_NOT_UNIQUE_QUERY, CamundaSearchException.Reason.NOT_UNIQUE);
-  }
-
-  @Override
-  public <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass) {
-    final List<T> result = new ArrayList<>();
-    String scrollId = null;
-    try {
-      final var request =
-          getSearchRequestTransformer()
-              .toSearchRequestBuilder(searchRequest)
-              .scroll(s -> s.time(SCROLL_KEEP_ALIVE_TIME))
-              .build();
-      final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
-      scrollId = rawSearchResponse.scrollId();
-      var items = rawSearchResponse.hits().hits().stream().map(Hit::source).toList();
-      result.addAll(items);
-      final int pageSize = Optional.ofNullable(searchRequest.size()).orElse(items.size());
-      while (!items.isEmpty() && items.size() == pageSize) {
-        final ScrollResponse<T> scrollResponse = scroll(scrollId, documentClass);
-        scrollId = scrollResponse.scrollId();
-        items = scrollResponse.hits().hits().stream().map(Hit::source).toList();
-        result.addAll(items);
-      }
-    } catch (final IOException | ElasticsearchException e) {
-      LOGGER.warn(ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e);
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e, searchExceptionToReason(e));
-    } finally {
-      clearScroll(scrollId);
-    }
-    return result;
   }
 
   @Override

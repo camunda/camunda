@@ -15,6 +15,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.os.transformers.OpensearchTransformers;
@@ -84,7 +85,10 @@ public class OpensearchSearchClientTest {
         .thenReturn(emptyScrollResponse);
 
     // when
-    final List<Object> result = searchClient.findAll(searchRequest, Object.class);
+    final List<Object> result =
+        searchClient.scroll(searchRequest, Object.class, true).hits().stream()
+            .map(SearchQueryHit::source)
+            .toList();
 
     // then
     assertThat(result).hasSize(2);
@@ -99,7 +103,7 @@ public class OpensearchSearchClientTest {
 
     // when & Assert
     assertThrows(
-        CamundaSearchException.class, () -> searchClient.findAll(searchRequest, Object.class));
+        CamundaSearchException.class, () -> searchClient.scroll(searchRequest, Object.class, true));
     verify(client, never()).scroll(any(Function.class), any());
     verify(client, never()).clearScroll(any(Function.class));
   }
@@ -112,7 +116,7 @@ public class OpensearchSearchClientTest {
 
     // when & Assert
     assertThrows(
-        CamundaSearchException.class, () -> searchClient.findAll(searchRequest, Object.class));
+        CamundaSearchException.class, () -> searchClient.scroll(searchRequest, Object.class, true));
     verify(client).clearScroll(any(Function.class));
   }
 }

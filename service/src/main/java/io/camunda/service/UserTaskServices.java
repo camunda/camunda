@@ -25,6 +25,7 @@ import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.TypedPermissionCheck;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -35,6 +36,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequ
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -123,6 +126,13 @@ public final class UserTaskServices
   }
 
   public UserTaskEntity getByKey(final long userTaskKey) {
+    final TypedPermissionCheck<UserTaskEntity> permissionCheck =
+        TypedPermissionCheck.of(
+            b ->
+                b.permissionType(PermissionType.READ)
+                    .resourceType(AuthorizationResourceType.AUTHORIZATION)
+                    .resourceIdSupplier(UserTaskEntity::processDefinitionId));
+
     final var result =
         userTaskSearchClient
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))

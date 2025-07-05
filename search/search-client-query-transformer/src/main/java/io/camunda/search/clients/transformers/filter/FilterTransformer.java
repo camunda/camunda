@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
+import io.camunda.search.clients.control.ResourceAccessControl;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.filter.FilterBase;
@@ -24,5 +25,10 @@ public interface FilterTransformer<T extends FilterBase>
 
   default IndexDescriptor getIndex() {
     throw new IllegalArgumentException("Filter does not support indices");
+  }
+
+  default FilterTransformer<T> withResourceAccessControl(
+      final ResourceAccessControl resourceAccessControl) {
+    return this;
   }
 }

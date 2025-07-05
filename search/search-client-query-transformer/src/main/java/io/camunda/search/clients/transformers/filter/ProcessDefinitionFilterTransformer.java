@@ -19,15 +19,40 @@ import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.RESOURCE_
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_TAG;
 
+import io.camunda.search.clients.control.ResourceAccessControl;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public class ProcessDefinitionFilterTransformer
     extends IndexFilterTransformer<ProcessDefinitionFilter> {
 
   public ProcessDefinitionFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public ProcessDefinitionFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessControl resourceAccessControl) {
+    super(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  public ProcessDefinitionFilterTransformer withResourceAccessControl(
+      final ResourceAccessControl resourceAccessControl) {
+    return new ProcessDefinitionFilterTransformer(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(BPMN_PROCESS_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

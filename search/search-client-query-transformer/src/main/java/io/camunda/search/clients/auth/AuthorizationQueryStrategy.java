@@ -7,6 +7,9 @@
  */
 package io.camunda.search.clients.auth;
 
+import io.camunda.search.clients.control.ResourceAccessControl;
+import io.camunda.search.clients.control.ResourceAccessControl.ResourceAccess;
+import io.camunda.search.clients.control.ResourceAccessControl.TenantAccess;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.security.auth.SecurityContext;
@@ -28,4 +31,17 @@ public interface AuthorizationQueryStrategy {
       SearchQueryRequest searchQueryRequest,
       SecurityContext securityContext,
       Class<? extends SearchQueryBase> queryClass);
+
+  default ResourceAccessControl determineResourceAccessControl(
+      final SecurityContext securityContext) {
+    return ResourceAccessControl.of(
+        b ->
+            b.resourceAccess(ResourceAccess.unsuccessful())
+                .tenantAccess(TenantAccess.unsuccessful()));
+  }
+
+  default boolean canAccessResource(
+      final String resourceId, final SecurityContext securityContext) {
+    return false;
+  }
 }

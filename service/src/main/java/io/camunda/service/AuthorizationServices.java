@@ -9,13 +9,12 @@ package io.camunda.service;
 
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.entities.AuthorizationEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.TypedPermissionCheck;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -33,11 +32,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class AuthorizationServices
     extends SearchQueryService<AuthorizationServices, AuthorizationQuery, AuthorizationEntity> {
 
+  static final Function<AuthorizationEntity, String> FOO =
+      (a) -> String.valueOf(a.authorizationKey());
   private final AuthorizationSearchClient authorizationSearchClient;
   private final SecurityConfiguration securityConfiguration;
 
@@ -116,12 +118,17 @@ public class AuthorizationServices
   }
 
   public AuthorizationEntity getAuthorization(final long authorizationKey) {
-    return findAuthorization(authorizationKey)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_AUTHORIZATION_BY_KEY.formatted(authorizationKey),
-                    CamundaSearchException.Reason.NOT_FOUND));
+    final TypedPermissionCheck<AuthorizationEntity> check =
+        TypedPermissionCheck.of(
+            b ->
+                b.resourceType(AuthorizationResourceType.AUTHORIZATION)
+                    .permissionType(PermissionType.READ)
+                    .resourceIdSupplier((a -> String.valueOf(a.authorizationKey()))));
+    return authorizationSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(b -> b.authorization().read()), check))
+        .getAuthorizationByKey(authorizationKey);
   }
 
   public Optional<AuthorizationEntity> findAuthorization(final long authorizationKey) {

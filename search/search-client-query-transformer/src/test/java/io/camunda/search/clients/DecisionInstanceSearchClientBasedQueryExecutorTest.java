@@ -80,12 +80,12 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
   private final ServiceTransformers serviceTransformers =
       ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
-  private SearchClientBasedQueryExecutor queryExecutor;
+  private SearchQueryRequestExecutor queryExecutor;
 
   @BeforeEach
   void setUp() {
     queryExecutor =
-        new SearchClientBasedQueryExecutor(
+        new SearchQueryRequestExecutor(
             searchClient,
             serviceTransformers,
             authorizationQueryStrategy,
@@ -122,12 +122,21 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
   @Test
   void shouldFindAllUsingTransformers() {
     // Given our search Query
-    final var searchAllQuery = new DecisionInstanceQuery.Builder().build();
+    final var searchAllQuery = new DecisionInstanceQuery.Builder().unlimited().build();
 
     // And our search client returns stuff
-    final var decisionInstanceEntityResponse = List.of(documentEntity);
+    final SearchQueryResponse<io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity>
+        decisionInstanceEntityResponse =
+            SearchQueryResponse.of(
+                b ->
+                    b.hits(
+                        List.of(
+                            new SearchQueryHit.Builder<
+                                    io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity>()
+                                .source(documentEntity)
+                                .build())));
 
-    when(searchClient.findAll(
+    when(searchClient.search(
             any(SearchQueryRequest.class),
             eq(io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class)))
         .thenReturn(decisionInstanceEntityResponse);
@@ -136,12 +145,12 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
         .thenAnswer(i -> i.getArgument(0));
 
     // When we search
-    final List<DecisionInstanceEntity> searchResult =
-        queryExecutor.findAll(
+    final SearchQueryResult<DecisionInstanceEntity> searchResult =
+        queryExecutor.search(
             searchAllQuery, io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
 
-    assertThat(searchResult).hasSize(1);
-    assertThat(searchResult.getFirst()).isEqualTo(domainEntity);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst()).isEqualTo(domainEntity);
   }
 
   private SearchQueryResponse<io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity>

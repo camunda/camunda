@@ -8,6 +8,7 @@
 package io.camunda.search.query;
 
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.page.SearchQueryPage.PageResultType;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
@@ -27,6 +28,16 @@ public interface SearchQueryBase {
 
     protected SearchQueryPage page() {
       return Objects.requireNonNullElse(page, DEFAULT_PAGE);
+    }
+
+    public T singleResult() {
+      page(new SearchQueryPage(0, 2, null, null, PageResultType.SINGLE_RESULT));
+      return self();
+    }
+
+    public T unlimited() {
+      page(new SearchQueryPage(0, 0, null, null, PageResultType.UNLIMITED_RESULT));
+      return self();
     }
 
     public T page(final SearchQueryPage value) {

@@ -132,7 +132,7 @@ abstract class AbstractEntityReader<T> {
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
     final var result = new SearchQueryResult.Builder<T>().total(totalHits).items(hits);
 
-    if (!hits.isEmpty()) {
+    if (!hits.isEmpty() && dbSort != null) {
       final var columns = dbSort.columns();
       result
           .startCursor(Cursor.encode(hits.getFirst(), columns))

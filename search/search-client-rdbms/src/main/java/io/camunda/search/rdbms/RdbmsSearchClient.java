@@ -95,23 +95,12 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<AuthorizationEntity> findAllAuthorizations(final AuthorizationQuery query) {
-    LOG.debug("[RDBMS Search Client] Search for all authorizations: {}", query);
-
-    // search without size boundary to find all items
-    return rdbmsService
-        .getAuthorizationReader()
-        .search(
-            AuthorizationQuery.of(
-                b ->
-                    b.filter(query.filter())
-                        .sort(query.sort())
-                        .page(p -> p.size(Integer.MAX_VALUE))))
-        .items();
+  public AuthorizationEntity getAuthorizationByKey(final long authorizationKey) {
+    return null;
   }
 
   @Override
-  public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery query) {
+  public SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery query) {
     LOG.debug("[RDBMS Search Client] Search for sequence flow: {}", query);
     return rdbmsService.getSequenceFlowReader().search(query);
   }
@@ -144,22 +133,6 @@ public class RdbmsSearchClient implements SearchClientsProxy {
     LOG.debug("[RDBMS Search Client] Search for mappings: {}", filter);
 
     return rdbmsService.getMappingReader().search(filter);
-  }
-
-  @Override
-  public List<MappingEntity> findAllMappings(final MappingQuery query) {
-    LOG.debug("[RDBMS Search Client] Search for all mappings: {}", query);
-
-    // search without size boundary to find all items
-    return rdbmsService
-        .getMappingReader()
-        .search(
-            MappingQuery.of(
-                b ->
-                    b.filter(query.filter())
-                        .sort(query.sort())
-                        .page(p -> p.size(Integer.MAX_VALUE))))
-        .items();
   }
 
   @Override
@@ -224,11 +197,21 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
+  public GroupEntity getGroupById(final String groupId) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
     return rdbmsService
         .getUserTaskReader()
         .search(
             UserTaskQuery.of(b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
+  }
+
+  @Override
+  public UserTaskEntity getUserTaskByKey(final String key) {
+    return null;
   }
 
   @Override
@@ -251,11 +234,6 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<RoleEntity> findAllRoles(final RoleQuery filter) {
-    return List.of();
-  }
-
-  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
     LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
 
@@ -265,22 +243,6 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   @Override
   public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
     throw new UnsupportedOperationException("Tenant member search not implemented on RDBMS");
-  }
-
-  @Override
-  public List<TenantEntity> findAllTenants(final TenantQuery query) {
-    LOG.debug("[RDBMS Search Client] Search for all tenants: {}", query);
-
-    // search without size boundary to find all items
-    return rdbmsService
-        .getTenantReader()
-        .search(
-            TenantQuery.of(
-                b ->
-                    b.filter(query.filter())
-                        .sort(query.sort())
-                        .page(p -> p.size(Integer.MAX_VALUE))))
-        .items();
   }
 
   @Override

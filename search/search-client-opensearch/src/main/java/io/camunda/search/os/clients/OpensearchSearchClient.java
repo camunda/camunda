@@ -32,7 +32,6 @@ import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.WriteResponseBase;
@@ -84,7 +83,9 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
 
   @Override
   public <T> SearchQueryResponse<T> scroll(
-      final SearchQueryRequest searchRequest, final Class<T> documentClass, final boolean unlimited) {
+      final SearchQueryRequest searchRequest,
+      final Class<T> documentClass,
+      final boolean unlimited) {
     final List<Hit<T>> totalHits = new ArrayList<>();
     final var limit = searchRequest.size();
     String scrollId = null;
@@ -135,37 +136,6 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
   }
 
   @Override
-  public <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass) {
-    final List<T> result = new ArrayList<>();
-    String scrollId = null;
-    try {
-      final var request =
-          getSearchRequestTransformer()
-              .toSearchRequestBuilder(searchRequest)
-              .scroll(s -> s.time(SCROLL_KEEP_ALIVE_TIME))
-              .build();
-      final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
-      scrollId = rawSearchResponse.scrollId();
-      var items = rawSearchResponse.hits().hits().stream().map(Hit::source).toList();
-      result.addAll(items);
-      final int pageSize = Optional.ofNullable(searchRequest.size()).orElse(items.size());
-      while (!items.isEmpty() && pageSize == items.size()) {
-        final ScrollResponse<T> scrollResponse = scroll(scrollId, documentClass);
-        scrollId = scrollResponse.scrollId();
-        items = scrollResponse.hits().hits().stream().map(Hit::source).toList();
-        result.addAll(items);
-      }
-    } catch (final IOException | OpenSearchException e) {
-      LOGGER.warn(ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e);
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_FAILED_FIND_ALL_QUERY, e, searchExceptionToReason(e));
-    } finally {
-      clearScroll(scrollId);
-    }
-    return result;
-  }
-
-  @Override
   public <T> SearchGetResponse<T> get(
       final SearchGetRequest getRequest, final Class<T> documentClass) {
     try {
@@ -186,7 +156,7 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       final SearchQueryRequest searchRequest) {
     return getSearchRequestTransformer()
         .toSearchRequestBuilder(searchRequest)
-        // load in pages of max 10k
+        // load in batches of max 10k
         .size(QUERY_MAX_SIZE)
         .scroll(s -> s.time(SCROLL_KEEP_ALIVE_TIME))
         .build();

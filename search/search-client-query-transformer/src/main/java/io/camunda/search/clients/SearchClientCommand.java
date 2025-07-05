@@ -7,14 +7,7 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.query.MappingQuery;
-import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.SecurityContext;
+public class SearchClientCommand {
 
-public interface MappingSearchClient {
-
-  SearchQueryResult<MappingEntity> searchMappings(MappingQuery filter);
-
-  MappingSearchClient withSecurityContext(SecurityContext securityContext);
+  public static final class Builder {}
 }

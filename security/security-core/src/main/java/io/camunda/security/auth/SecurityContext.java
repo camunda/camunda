@@ -20,9 +20,10 @@ import java.util.function.Function;
  * later extended to more than one authorization (for composite permissions checks).
  */
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public record SecurityContext(
+public record SecurityContext<T>(
     @JsonProperty("authentication") CamundaAuthentication authentication,
-    @JsonProperty("authorization") Authorization authorization) {
+    @JsonProperty("authorization") Authorization authorization,
+    TypedPermissionCheck<T> typedPermissionCheck) {
 
   public boolean requiresAuthorizationChecks() {
     return authentication != null && authorization != null;
@@ -39,6 +40,7 @@ public record SecurityContext(
   public static class Builder {
     private CamundaAuthentication authentication;
     private Authorization authorization;
+    private TypedPermissionCheck<?> typedPermissionCheck;
 
     public Builder withAuthentication(final CamundaAuthentication authentication) {
       this.authentication = authentication;
@@ -61,8 +63,14 @@ public record SecurityContext(
       return withAuthorization(Authorization.of(builderFunction));
     }
 
+    public <T> Builder withTypedPermissionCheck(
+        final TypedPermissionCheck<T> typedPermissionCheck) {
+      this.typedPermissionCheck = typedPermissionCheck;
+      return this;
+    }
+
     public SecurityContext build() {
-      return new SecurityContext(authentication, authorization);
+      return new SecurityContext(authentication, authorization, typedPermissionCheck);
     }
   }
 }

@@ -107,14 +107,15 @@ public final class ProcessInstanceServiceTest {
         List.of(
             new SequenceFlowEntity("pi1_sequenceFlow1", "node1", 1L, 1L, "pd1", "<default>"),
             new SequenceFlowEntity("pi1_sequenceFlow2", "node1", 1L, 1L, "pd1", "<default>"));
-    when(sequenceFlowSearchClient.findAllSequenceFlows(any())).thenReturn(result);
+    when(sequenceFlowSearchClient.searchSequenceFlows(any()))
+        .thenReturn(new SearchQueryResult.Builder<SequenceFlowEntity>().items(result).build());
 
     // when
     final var actual = services.sequenceFlows(123L);
 
     // then
     verify(sequenceFlowSearchClient)
-        .findAllSequenceFlows(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(123L))));
+        .searchSequenceFlows(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(123L))));
     assertThat(actual).isEqualTo(result);
   }
 

@@ -12,12 +12,12 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
-import io.camunda.search.page.SearchQueryPage.Builder;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.TypedPermissionCheck;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -26,7 +26,9 @@ import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteReque
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,7 +55,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                 groupQuery ->
                     groupQuery
                         .filter(groupFilter -> groupFilter.memberIdsByType(memberTypesToMemberIds))
-                        .page(Builder::unlimited)))
+                        .unlimited()))
         .items();
   }
 
@@ -81,18 +83,21 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public GroupEntity getGroup(final String groupId) {
-    return findGroup(groupId)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_ID.formatted(groupId),
-                    CamundaSearchException.Reason.NOT_FOUND));
+    return groupSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                Authorization.of(a -> a.group().read().foo(GroupEntity::groupId)),
+                TypedPermissionCheck.of(
+                    (TypedPermissionCheck.Builder<GroupEntity> b) ->
+                        b.permissionType(PermissionType.READ)
+                            .resourceType(AuthorizationResourceType.GROUP)
+                            .resourceIdSupplier(GroupEntity::groupId))))
+        .getGroupById(groupId);
   }
 
   public Optional<GroupEntity> findGroupByName(final String name) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.name(name)).build())
-        .items()
-        .stream()
+    return search(GroupQuery.of(b -> b.filter(f -> f.name(name)).singleResult())).items().stream()
         .findFirst();
   }
 
@@ -111,7 +116,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                 groupQuery ->
                     groupQuery
                         .filter(f -> f.memberId(memberId).childMemberType(memberType))
-                        .page(Builder::unlimited)))
+                        .unlimited()))
         .items();
   }
 
@@ -122,7 +127,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
                 groupQuery ->
                     groupQuery
                         .filter(f -> f.memberIds(memberIds).childMemberType(memberType))
-                        .page(Builder::unlimited)))
+                        .unlimited()))
         .items();
   }
 

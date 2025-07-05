@@ -28,6 +28,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBase;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
@@ -51,7 +52,7 @@ class DocumentAuthorizationQueryStrategyTest {
   void setUp() {
     when(authorizationSearchClient.withSecurityContext(SecurityContext.withoutAuthentication()))
         .thenReturn(authorizationSearchClient);
-    queryStrategy = new DocumentAuthorizationQueryStrategy(authorizationSearchClient);
+    queryStrategy = new DocumentAuthorizationQueryStrategy(null);
   }
 
   @Test
@@ -102,11 +103,14 @@ class DocumentAuthorizationQueryStrategyTest {
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
                                 .resourceType(PROCESS_DEFINITION)));
-    when(authorizationSearchClient.findAllAuthorizations(any()))
+    when(authorizationSearchClient.searchAuthorizations(any()))
         .thenReturn(
-            List.of(
-                new AuthorizationEntity(
-                    null, null, null, null, "*", Set.of(READ_PROCESS_DEFINITION, CREATE))));
+            new SearchQueryResult.Builder<AuthorizationEntity>()
+                .items(
+                    List.of(
+                        new AuthorizationEntity(
+                            null, null, null, null, "*", Set.of(READ_PROCESS_DEFINITION, CREATE))))
+                .build());
 
     // when
     final SearchQueryRequest result =
@@ -130,7 +134,8 @@ class DocumentAuthorizationQueryStrategyTest {
                         a ->
                             a.permissionType(READ_PROCESS_DEFINITION)
                                 .resourceType(PROCESS_DEFINITION)));
-    when(authorizationSearchClient.findAllAuthorizations(any())).thenReturn(List.of());
+    when(authorizationSearchClient.searchAuthorizations(any()))
+        .thenReturn(new SearchQueryResult.Builder<AuthorizationEntity>().items(List.of()).build());
 
     // when
     final SearchQueryRequest result =
@@ -155,12 +160,15 @@ class DocumentAuthorizationQueryStrategyTest {
                             a.permissionType(READ_PROCESS_DEFINITION)
                                 .resourceType(PROCESS_DEFINITION)));
     final var authorizationQueryCaptor = ArgumentCaptor.forClass(AuthorizationQuery.class);
-    when(authorizationSearchClient.findAllAuthorizations(authorizationQueryCaptor.capture()))
+    when(authorizationSearchClient.searchAuthorizations(authorizationQueryCaptor.capture()))
         .thenReturn(
-            List.of(
-                new AuthorizationEntity(
-                    null, null, null, null, "foo", Set.of(READ_PROCESS_DEFINITION)),
-                new AuthorizationEntity(null, null, null, null, "bar", Set.of(CREATE))));
+            new SearchQueryResult.Builder<AuthorizationEntity>()
+                .items(
+                    List.of(
+                        new AuthorizationEntity(
+                            null, null, null, null, "foo", Set.of(READ_PROCESS_DEFINITION)),
+                        new AuthorizationEntity(null, null, null, null, "bar", Set.of(CREATE))))
+                .build());
 
     // when
     final SearchQueryRequest result =

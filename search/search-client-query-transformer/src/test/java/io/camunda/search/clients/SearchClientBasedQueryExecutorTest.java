@@ -65,12 +65,12 @@ class SearchClientBasedQueryExecutorTest {
   private final ServiceTransformers serviceTransformers =
       ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
-  private SearchClientBasedQueryExecutor queryExecutor;
+  private SearchQueryRequestExecutor queryExecutor;
 
   @BeforeEach
   void setUp() {
     queryExecutor =
-        new SearchClientBasedQueryExecutor(
+        new SearchQueryRequestExecutor(
             searchClient,
             serviceTransformers,
             authorizationQueryStrategy,
@@ -107,12 +107,19 @@ class SearchClientBasedQueryExecutorTest {
   @Test
   void shouldFindAllUsingTransformers() {
     // Given our search Query
-    final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
+    final var searchAllQuery = new ProcessInstanceQuery.Builder().unlimited().build();
 
     // And our search client returns stuff
-    final var processInstanceEntityResponse = List.of(demoProcessInstance);
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
+        SearchQueryResponse.of(
+            b ->
+                b.hits(
+                    List.of(
+                        new SearchQueryHit.Builder<ProcessInstanceForListViewEntity>()
+                            .source(demoProcessInstance)
+                            .build())));
 
-    when(searchClient.findAll(
+    when(searchClient.search(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
     when(authorizationQueryStrategy.applyAuthorizationToQuery(
@@ -120,11 +127,11 @@ class SearchClientBasedQueryExecutorTest {
         .thenAnswer(i -> i.getArgument(0));
 
     // When we search
-    final List<ProcessInstanceEntity> searchResult =
-        queryExecutor.findAll(searchAllQuery, ProcessInstanceForListViewEntity.class);
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(searchAllQuery, ProcessInstanceForListViewEntity.class);
 
-    assertThat(searchResult).hasSize(1);
-    assertThat(searchResult.getFirst().processInstanceKey())
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().processInstanceKey())
         .isEqualTo(demoProcessInstance.getProcessInstanceKey());
   }
 
@@ -132,8 +139,8 @@ class SearchClientBasedQueryExecutorTest {
   void shouldIncludeTenantFilterForTenantScopedEntities() {
     // given
     final var tenantIds = List.of("<default>", "T1");
-    final SearchClientBasedQueryExecutor queryExecutor =
-        new SearchClientBasedQueryExecutor(
+    final SearchQueryRequestExecutor queryExecutor =
+        new SearchQueryRequestExecutor(
             searchClient,
             serviceTransformers,
             AuthorizationQueryStrategy.NONE,
@@ -177,8 +184,8 @@ class SearchClientBasedQueryExecutorTest {
   void shouldNotIncludeTenantFilterForNonTenantScopedEntities() {
     // given
     final var tenantIds = List.of("<default>", "T1");
-    final SearchClientBasedQueryExecutor queryExecutor =
-        new SearchClientBasedQueryExecutor(
+    final SearchQueryRequestExecutor queryExecutor =
+        new SearchQueryRequestExecutor(
             searchClient,
             serviceTransformers,
             AuthorizationQueryStrategy.NONE,

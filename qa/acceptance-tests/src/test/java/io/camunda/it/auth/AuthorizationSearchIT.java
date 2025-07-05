@@ -104,7 +104,7 @@ class AuthorizationSearchIT {
             () -> {
               final var authorization =
                   adminClient
-                      .newAuthorizationGetRequest(response.getAuthorizationKey())
+                      .newAuthorizationGetRequest(response.getAuthorizationKey() + 111)
                       .send()
                       .join();
 

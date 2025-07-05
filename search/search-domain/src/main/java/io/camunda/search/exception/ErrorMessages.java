@@ -34,4 +34,10 @@ public class ErrorMessages {
   public static final String ERROR_NOT_UNIQUE_FORM = "Found form with key %d more than once";
   public static final String ERROR_NOT_UNIQUE_TENANT = "Found multiple tenants matching %s";
   public static final String ERROR_NOT_UNIQUE_QUERY = "Found more than one result for query";
+
+  public static final String ERROR_RESULT_TYPE_UNKNOWN =
+      "Failed to execute search query because of an unknown result type %s";
+
+  public static final String FORBIDDEN_ACCESS_TO_ENTITY_BY_KEY =
+      "Forbidden access to %s with key %s";
 }

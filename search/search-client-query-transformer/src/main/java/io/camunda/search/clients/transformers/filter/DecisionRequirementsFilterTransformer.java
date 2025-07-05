@@ -18,15 +18,40 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIn
 import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.RESOURCE_NAME;
 import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.VERSION;
 
+import io.camunda.search.clients.control.ResourceAccessControl;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public final class DecisionRequirementsFilterTransformer
     extends IndexFilterTransformer<DecisionRequirementsFilter> {
 
   public DecisionRequirementsFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public DecisionRequirementsFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessControl resourceAccessControl) {
+    super(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  public DecisionRequirementsFilterTransformer withResourceAccessControl(
+      final ResourceAccessControl resourceAccessControl) {
+    return new DecisionRequirementsFilterTransformer(indexDescriptor, resourceAccessControl);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(DECISION_REQUIREMENTS_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

@@ -31,12 +31,14 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
 import java.util.function.Function;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record Authorization(
     @JsonProperty("resource_type") AuthorizationResourceType resourceType,
-    @JsonProperty("permission_type") PermissionType permissionType) {
+    @JsonProperty("permission_type") PermissionType permissionType,
+    List<String> resourceIds) {
 
   public static final String WILDCARD = "*";
 
@@ -47,6 +49,7 @@ public record Authorization(
   public static class Builder {
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
+    private List<String> resourceIds;
 
     public Builder resourceType(final AuthorizationResourceType resourceType) {
       this.resourceType = resourceType;
@@ -134,8 +137,13 @@ public record Authorization(
       return resourceType(BATCH_OPERATION);
     }
 
+    public Builder resourceIds(final List<String> resourceIds) {
+      this.resourceIds = resourceIds;
+      return this;
+    }
+
     public Authorization build() {
-      return new Authorization(resourceType, permissionType);
+      return new Authorization(resourceType, permissionType, resourceIds);
     }
   }
 }

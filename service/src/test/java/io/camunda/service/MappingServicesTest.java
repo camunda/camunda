@@ -204,7 +204,7 @@ public class MappingServicesTest {
     services.getMatchingMappings(claims);
     // then
     final ArgumentCaptor<MappingQuery> queryCaptor = ArgumentCaptor.forClass(MappingQuery.class);
-    verify(client, times(1)).findAllMappings(queryCaptor.capture());
+    verify(client, times(1)).searchMappings(queryCaptor.capture());
     final MappingQuery query = queryCaptor.getValue();
     assertThat(query.filter().claimName()).isNull();
     assertThat(query.filter().claimValue()).isNull();

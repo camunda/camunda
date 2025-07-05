@@ -8,13 +8,13 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.SecurityContext;
-import java.util.List;
 
 public interface SequenceFlowSearchClient {
 
-  List<SequenceFlowEntity> findAllSequenceFlows(SequenceFlowQuery filter);
+  SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery filter);
 
-  SequenceFlowSearchClient withSecurityContext(SecurityContext securityContext);
+  SequenceFlowSearchClient withSecurityContext(final SecurityContext securityContext);
 }

@@ -34,8 +34,7 @@ public class AuthorizationChecker {
   private final AuthorizationSearchClient authorizationSearchClient;
 
   public AuthorizationChecker(final AuthorizationSearchClient authorizationSearchClient) {
-    this.authorizationSearchClient =
-        authorizationSearchClient.withSecurityContext(SecurityContext.withoutAuthentication());
+    this.authorizationSearchClient = authorizationSearchClient;
   }
 
   /**
@@ -51,15 +50,16 @@ public class AuthorizationChecker {
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     final var authorizationEntities =
-        authorizationSearchClient.findAllAuthorizations(
+        authorizationSearchClient.searchAuthorizations(
             AuthorizationQuery.of(
                 q ->
                     q.filter(
-                        f ->
-                            f.ownerTypeToOwnerIds(ownerIds)
-                                .resourceType(resourceType.name())
-                                .permissionTypes(permissionType))));
-    return authorizationEntities.stream()
+                            f ->
+                                f.ownerTypeToOwnerIds(ownerIds)
+                                    .resourceType(resourceType.name())
+                                    .permissionTypes(permissionType))
+                        .unlimited()));
+    return authorizationEntities.items().stream()
         .filter(e -> e.permissionTypes().contains(permissionType))
         .map(AuthorizationEntity::resourceId)
         .toList();
@@ -108,16 +108,17 @@ public class AuthorizationChecker {
       final CamundaAuthentication authentication) {
     final var ownerIds = collectOwnerTypeToOwnerIds(authentication);
     final var authorizationEntities =
-        authorizationSearchClient.findAllAuthorizations(
+        authorizationSearchClient.searchAuthorizations(
             AuthorizationQuery.of(
                 q ->
                     q.filter(
-                        f ->
-                            f.ownerTypeToOwnerIds(ownerIds)
-                                .resourceType(resourceType.name())
-                                .resourceIds(List.of(WILDCARD, resourceId)))));
+                            f ->
+                                f.ownerTypeToOwnerIds(ownerIds)
+                                    .resourceType(resourceType.name())
+                                    .resourceIds(List.of(WILDCARD, resourceId)))
+                        .unlimited()));
 
-    return collectPermissionTypes(authorizationEntities);
+    return collectPermissionTypes(authorizationEntities.items());
   }
 
   private Set<PermissionType> collectPermissionTypes(

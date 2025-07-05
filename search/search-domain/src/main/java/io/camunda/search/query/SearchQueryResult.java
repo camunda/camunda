@@ -15,8 +15,6 @@ import java.util.Objects;
 public record SearchQueryResult<T>(
     long total, List<T> items, String startCursor, String endCursor) {
 
-  public T singleResult()
-
   public static <T> SearchQueryResult<T> empty() {
     return new SearchQueryResult<>(0, Collections.emptyList(), null, null);
   }

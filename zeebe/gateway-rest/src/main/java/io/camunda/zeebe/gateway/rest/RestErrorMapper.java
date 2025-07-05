@@ -360,6 +360,11 @@ public class RestErrorMapper {
           REST_GATEWAY_LOGGER.debug(logPrefix, detail);
           return createProblemDetail(HttpStatus.INTERNAL_SERVER_ERROR, detail, title);
         }
+      case FORBIDDEN:
+        {
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(HttpStatus.FORBIDDEN, errorMessage, title);
+        }
       default:
         {
           REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);

@@ -19,6 +19,10 @@ public class CamundaSearchException extends RuntimeException {
     this(message, Reason.UNKNOWN);
   }
 
+  public CamundaSearchException(final Reason reason) {
+    this((String) null, reason);
+  }
+
   public CamundaSearchException(final Throwable cause) {
     this(cause, Reason.UNKNOWN);
   }
@@ -52,6 +56,7 @@ public class CamundaSearchException extends RuntimeException {
     CONNECTION_FAILED,
     SEARCH_CLIENT_FAILED,
     SEARCH_SERVER_FAILED,
-    UNKNOWN
+    UNKNOWN,
+    FORBIDDEN
   }
 }

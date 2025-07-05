@@ -11,6 +11,7 @@ import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 
 import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.clients.aggregator.SearchAggregator;
+import io.camunda.search.clients.control.ResourceAccessControl;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.source.SearchSourceConfig;
@@ -33,9 +34,16 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
     implements ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {
 
   private final ServiceTransformers transformers;
+  private final ResourceAccessControl resourceAccessControl;
 
   public TypedSearchQueryTransformer(final ServiceTransformers transformers) {
+    this(transformers, null);
+  }
+
+  public TypedSearchQueryTransformer(
+      final ServiceTransformers transformers, final ResourceAccessControl resourceAccessControl) {
     this.transformers = transformers;
+    this.resourceAccessControl = resourceAccessControl;
   }
 
   @Override
@@ -46,7 +54,6 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
 
     final var page = query.page();
     final var reverse = !page.isNextPage();
-    final var type = page.type();
 
     final var builder =
         searchRequest().index(indices).query(searchQueryFilter).from(page.from()).size(page.size());
@@ -76,6 +83,11 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
     return builder.build();
   }
 
+  public TypedSearchQueryTransformer<F, S> withResourceAccessControl(
+      final ResourceAccessControl resourceAccessControl) {
+    return new TypedSearchQueryTransformer<>(transformers, resourceAccessControl);
+  }
+
   private SearchSourceConfig toSearchSourceConfig(final QueryResultConfig resultConfig) {
     if (resultConfig == null) {
       return null;
@@ -86,7 +98,9 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
   }
 
   private SearchQuery toSearchQuery(final F filter) {
-    return getFilterTransformer(filter).apply(filter);
+    return getFilterTransformer(filter)
+        .withResourceAccessControl(resourceAccessControl)
+        .apply(filter);
   }
 
   private List<String> toIndices(final F filter) {

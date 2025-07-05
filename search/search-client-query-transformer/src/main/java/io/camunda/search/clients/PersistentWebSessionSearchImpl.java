@@ -10,6 +10,7 @@ package io.camunda.search.clients;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchIndexRequest;
+import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
@@ -59,8 +60,14 @@ public class PersistentWebSessionSearchImpl implements PersistentWebSessionClien
 
   @Override
   public List<PersistentWebSessionEntity> getAllPersistentWebSessions() {
-    return readClient.findAll(
-        SearchQueryRequest.of(b -> b.index(persistentWebSessionIndex.getFullQualifiedName())),
-        PersistentWebSessionEntity.class);
+    return readClient
+        .scroll(
+            SearchQueryRequest.of(b -> b.index(persistentWebSessionIndex.getFullQualifiedName())),
+            PersistentWebSessionEntity.class,
+            true)
+        .hits()
+        .stream()
+        .map(SearchQueryHit::source)
+        .toList();
   }
 }

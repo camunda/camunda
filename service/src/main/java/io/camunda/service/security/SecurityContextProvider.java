@@ -11,6 +11,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.SecurityContext.Builder;
+import io.camunda.security.auth.TypedPermissionCheck;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 
@@ -24,6 +25,18 @@ public class SecurityContextProvider {
       final AuthorizationChecker authorizationChecker) {
     this.securityConfiguration = securityConfiguration;
     this.authorizationChecker = authorizationChecker;
+  }
+
+  public <T> SecurityContext provideSecurityContext(
+      final CamundaAuthentication authentication,
+      final Authorization authorization,
+      final TypedPermissionCheck<T> permissionCheck) {
+    final SecurityContext.Builder securityContextbuilder =
+        new Builder().withAuthentication(authentication).withTypedPermissionCheck(permissionCheck);
+    if (securityConfiguration.getAuthorizations().isEnabled()) {
+      securityContextbuilder.withAuthorization(authorization);
+    }
+    return securityContextbuilder.build();
   }
 
   public SecurityContext provideSecurityContext(
@@ -45,6 +58,10 @@ public class SecurityContextProvider {
       final CamundaAuthentication authentication,
       final Authorization authorization) {
     final var securityContext = provideSecurityContext(authentication, authorization);
+    return isAuthorized(resourceKey, securityContext);
+  }
+
+  public boolean isAuthorized(final String resourceKey, final SecurityContext securityContext) {
     if (securityContext.requiresAuthorizationChecks()) {
       return authorizationChecker.isAuthorized(resourceKey, securityContext);
     }

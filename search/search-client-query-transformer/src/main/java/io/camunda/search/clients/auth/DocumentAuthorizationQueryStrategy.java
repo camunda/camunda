@@ -11,11 +11,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.security.auth.Authorization.WILDCARD;
 
-import io.camunda.search.clients.AuthorizationSearchClient;
+import io.camunda.search.clients.control.ResourceAccessControl;
+import io.camunda.search.clients.control.ResourceAccessControl.ResourceAccess;
+import io.camunda.search.clients.control.ResourceAccessControl.TenantAccess;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.auth.AuthorizationQueryTransformers;
 import io.camunda.search.query.SearchQueryBase;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
 
@@ -28,9 +31,8 @@ public class DocumentAuthorizationQueryStrategy implements AuthorizationQueryStr
 
   private final AuthorizationChecker authorizationChecker;
 
-  public DocumentAuthorizationQueryStrategy(
-      final AuthorizationSearchClient authorizationSearchClient) {
-    authorizationChecker = new AuthorizationChecker(authorizationSearchClient);
+  public DocumentAuthorizationQueryStrategy(final AuthorizationChecker authorizationSearchClient) {
+    authorizationChecker = authorizationSearchClient;
   }
 
   @Override
@@ -62,5 +64,57 @@ public class DocumentAuthorizationQueryStrategy implements AuthorizationQueryStr
                   .toSearchQuery(resourceType, permissionType, resourceKeys));
     }
     return searchQueryRequest.toBuilder().query(authorizedQuery).build();
+  }
+
+  @Override
+  public ResourceAccessControl determineResourceAccessControl(
+      final SecurityContext securityContext) {
+    final var resourceAccess = determineResourceAccess(securityContext);
+    final var tenantAccess = determineTenantAccess(securityContext);
+    return ResourceAccessControl.of(
+        b -> b.resourceAccess(resourceAccess).tenantAccess(tenantAccess));
+  }
+
+  @Override
+  public boolean canAccessResource(final String resourceId, final SecurityContext securityContext) {
+    return authorizationChecker.isAuthorized(resourceId, securityContext);
+  }
+
+  protected ResourceAccess determineResourceAccess(final SecurityContext securityContext) {
+    if (!securityContext.requiresAuthorizationChecks()) {
+      return ResourceAccess.successful();
+    }
+
+    // fetch the authorization entities for the authenticated user
+    final var resourceKeys = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+
+    if (resourceKeys.contains(WILDCARD)) {
+      return ResourceAccess.successful();
+    }
+
+    if (resourceKeys.isEmpty()) {
+      return ResourceAccess.unsuccessful();
+    }
+
+    final var givenAuthorization = securityContext.authorization();
+    final var requiredAuthorizationCheck =
+        new Authorization(
+            givenAuthorization.resourceType(), givenAuthorization.permissionType(), resourceKeys);
+    return ResourceAccess.required(requiredAuthorizationCheck);
+  }
+
+  protected TenantAccess determineTenantAccess(final SecurityContext securityContext) {
+    if (!securityContext.requiresAuthorizationChecks()) {
+      return TenantAccess.successful();
+    }
+
+    final var authentication = securityContext.authentication();
+    final var tenantIds = authentication.authenticatedTenantIds();
+
+    if (tenantIds.isEmpty()) {
+      return TenantAccess.unsuccessful();
+    }
+
+    return TenantAccess.required(tenantIds);
   }
 }

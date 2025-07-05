@@ -18,6 +18,7 @@ import io.camunda.db.rdbms.read.domain.DbQuerySorting.SortingEntry;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.page.SearchQueryPage.PageResultType;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.SortOption.FieldSorting;
@@ -69,7 +70,7 @@ class AbstractEntityReaderTest {
             b ->
                 b.addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC)
                     .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
-    final SearchQueryPage page = new SearchQueryPage(0, 10, null, null);
+    final SearchQueryPage page = SearchQueryPage.of(b -> b.from(0).size(10));
 
     final DbQueryPage result = reader.convertPaging(sort, page);
 
@@ -91,7 +92,8 @@ class AbstractEntityReaderTest {
 
     final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
 
-    final SearchQueryPage page = new SearchQueryPage(0, 10, result.endCursor(), null);
+    final SearchQueryPage page =
+        new SearchQueryPage(0, 10, result.endCursor(), null, PageResultType.LIMITED_RESULT);
 
     final DbQueryPage dbPage = reader.convertPaging(sort, page);
 
@@ -135,7 +137,7 @@ class AbstractEntityReaderTest {
 
     final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
 
-    final SearchQueryPage page = new SearchQueryPage(0, 10, null, result.startCursor());
+    final SearchQueryPage page = SearchQueryPage.of(b -> b.from(0).size(10));
 
     final DbQueryPage dbPage = reader.convertPaging(sort, page);
 
