@@ -12,8 +12,8 @@ import {EmptyState} from '.';
 
 describe('EmptyState', () => {
   it('should render EmptyState with button and link', async () => {
-    const buttonSpy = jest.fn();
-    const linkSpy = jest.fn();
+    const buttonSpy = vi.fn();
+    const linkSpy = vi.fn();
 
     const {user} = render(
       <EmptyState

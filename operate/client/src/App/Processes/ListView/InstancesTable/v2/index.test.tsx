@@ -21,7 +21,7 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {groupedProcessesMock, mockProcessInstances} from 'modules/testUtils';
 
-jest.mock('modules/utils/bpmn');
+vi.mock('modules/utils/bpmn');
 
 function getWrapper(initialPath: string = Paths.processes()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -50,7 +50,7 @@ function getWrapper(initialPath: string = Paths.processes()) {
 }
 
 describe('<InstancesTable />', () => {
-  const locationSpy = jest.spyOn(window, 'location', 'get');
+  const locationSpy = vi.spyOn(window, 'location', 'get');
 
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);

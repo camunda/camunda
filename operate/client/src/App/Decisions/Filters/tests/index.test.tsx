@@ -23,13 +23,7 @@ import {
 } from 'modules/testUtils/selectComboBoxOption';
 import {Paths} from 'modules/Routes';
 
-jest.unmock('modules/utils/date/formatDate');
-
-function reset() {
-  jest.clearAllTimers();
-  jest.useRealTimers();
-  localStorage.clear();
-}
+vi.unmock('modules/utils/date/formatDate');
 
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -70,10 +64,14 @@ describe('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     await groupedDecisionsStore.fetchDecisions();
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
-  afterEach(reset);
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    localStorage.clear();
+  });
 
   it('should render the correct elements', () => {
     render(<Filters />, {
@@ -504,7 +502,6 @@ describe('<Filters />', () => {
   });
 
   it('should omit all versions option', async () => {
-    reset();
     const firstDecision = groupedDecisions[0]!;
     const firstVersion = firstDecision.decisions[1]!;
 
@@ -514,7 +511,7 @@ describe('<Filters />', () => {
 
     await groupedDecisionsStore.fetchDecisions();
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(

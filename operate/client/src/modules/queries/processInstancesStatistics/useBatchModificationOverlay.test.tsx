@@ -14,8 +14,8 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
-jest.mock('modules/hooks/useProcessInstancesFilters');
-jest.mock('modules/hooks/useFilters');
+vi.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useFilters');
 
 describe('useBatchModificationOverlayData', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => (
@@ -25,11 +25,7 @@ describe('useBatchModificationOverlayData', () => {
   );
 
   beforeEach(() => {
-    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
   });
 
   it('should fetch batch modification overlay data successfully', async () => {

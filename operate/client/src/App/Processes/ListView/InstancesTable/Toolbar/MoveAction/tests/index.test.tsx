@@ -25,9 +25,9 @@ const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'MoveModificationProcess';
 const mockProcessXML = open('MoveModificationProcess.bpmn');
 
-jest.mock('modules/stores/processes/processes.list', () => ({
+vi.mock('modules/stores/processes/processes.list', () => ({
   processesStore: {
-    getPermissions: jest.fn(),
+    getPermissions: vi.fn(),
     state: {processes: []},
     versionsByProcessAndTenant: {
       [`{${PROCESS_ID}}-{<default>}`]: [

@@ -14,15 +14,15 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
 describe('Redirect to process instances page', () => {
   it('should redirect to instances page and display notification if instance is not found (404)', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockFetchProcessDefinitionXml().withServerError();
     mockFetchProcessInstance().withServerError(404);

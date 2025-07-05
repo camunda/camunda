@@ -28,8 +28,8 @@ describe('stores/authentication', () => {
       });
 
       const originalWindow = {...window};
-      const windowSpy = jest.spyOn(global, 'window', 'get');
-      const mockReload = jest.fn();
+      const windowSpy = vi.spyOn(global, 'window', 'get');
+      const mockReload = vi.fn();
 
       // @ts-expect-error
       windowSpy.mockImplementation(() => ({

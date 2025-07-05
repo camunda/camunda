@@ -117,7 +117,7 @@ describe('User info', () => {
 
   it('should render links', async () => {
     const originalWindowOpen = window.open;
-    const mockOpenFn = jest.fn();
+    const mockOpenFn = vi.fn();
     window.open = mockOpenFn;
 
     mockMe().withSuccess(mockUser);
@@ -175,15 +175,15 @@ describe('User info', () => {
 
   it('should cookie preferences with correct link', async () => {
     const originalWindowOpen = window.open;
-    const mockOpenFn = jest.fn();
-    const mockShowDrawer = jest.fn();
+    const mockOpenFn = vi.fn();
+    const mockShowDrawer = vi.fn();
 
     window.open = mockOpenFn;
     window.Osano = {
       cm: {
         analytics: false,
         showDrawer: mockShowDrawer,
-        addEventListener: jest.fn(),
+        addEventListener: vi.fn(),
       },
     };
 

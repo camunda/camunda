@@ -13,7 +13,7 @@ import {
 } from 'modules/testUtils/dateTimeRange';
 import {getWrapper, MockDateRangeField} from './mocks';
 
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
 
 describe('Date Range Field', () => {
   it('should close modal on cancel click', async () => {
@@ -146,7 +146,7 @@ describe('Date Range Field', () => {
   });
 
   it('should show validation error on invalid time format', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     const TIME_ERROR = 'Time has to be in the format hh:mm:ss';
@@ -168,13 +168,13 @@ describe('Date Range Field', () => {
     expect(screen.queryByText(TIME_ERROR)).not.toBeInTheDocument();
     expect(screen.queryByText('Apply')).not.toBeDisabled();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(await screen.findByText(TIME_ERROR)).toBeInTheDocument();
     expect(screen.getByTestId('fromTime')).toBeInvalid();
     expect(screen.getByText('Apply')).toBeDisabled();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

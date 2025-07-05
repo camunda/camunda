@@ -27,20 +27,18 @@ import * as operationsApi from 'modules/api/processInstances/operations';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
 
-jest.mock('modules/utils/getSearchString');
+vi.mock('modules/utils/getSearchString');
 
-const applyBatchOperationSpy = jest.spyOn(operationsApi, 'applyBatchOperation');
+const applyBatchOperationSpy = vi.spyOn(operationsApi, 'applyBatchOperation');
 
-const mockedGetSearchString = getSearchString as jest.MockedFunction<
-  typeof getSearchString
->;
+const mockedGetSearchString = getSearchString as ReturnType<typeof vi.fn>;
 
 function renderUseOperationApply() {
   const {result} = renderHook(() => useOperationApply());
 
   result.current.applyBatchOperation({
     operationType: 'RESOLVE_INCIDENT',
-    onSuccess: jest.fn(),
+    onSuccess: vi.fn(),
   });
 }
 
@@ -202,7 +200,7 @@ describe('useOperationApply', () => {
     const {expectedBody, ...context} = mockData.setFilterSelectAll;
     processInstancesSelectionStore.setMode('ALL');
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -238,7 +236,7 @@ describe('useOperationApply', () => {
       ),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(
@@ -249,15 +247,15 @@ describe('useOperationApply', () => {
       ); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should poll the selected instances', async () => {
     const {expectedBody, ...context} = mockData.setProcessFilterSelectOne;
     processInstancesSelectionStore.selectProcessInstance('2251799813685594');
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
     await waitFor(() =>
@@ -292,7 +290,7 @@ describe('useOperationApply', () => {
       ),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(
@@ -303,7 +301,7 @@ describe('useOperationApply', () => {
       ); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

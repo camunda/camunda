@@ -28,7 +28,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
-jest.mock('App/Processes/ListView/InstancesTable/useOperationApply');
+vi.mock('App/Processes/ListView/InstancesTable/useOperationApply');
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = observer(
   ({children}) => {
@@ -71,13 +71,11 @@ describe('BatchModificationSummaryModal', () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
+  afterEach(() => {});
 
   it('should render batch modification summary', async () => {
-    const applyBatchOperationMock = jest.fn();
-    jest.spyOn(hooks, 'default').mockImplementation(() => ({
+    const applyBatchOperationMock = vi.fn();
+    vi.spyOn(hooks, 'default').mockImplementation(() => ({
       applyBatchOperation: applyBatchOperationMock,
     }));
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
@@ -108,9 +106,9 @@ describe('BatchModificationSummaryModal', () => {
   it('should apply batch operation', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
 
-    const trackSpy = jest.spyOn(tracking, 'track');
-    const applyBatchOperationMock = jest.fn();
-    jest.spyOn(hooks, 'default').mockImplementation(() => ({
+    const trackSpy = vi.spyOn(tracking, 'track');
+    const applyBatchOperationMock = vi.fn();
+    vi.spyOn(hooks, 'default').mockImplementation(() => ({
       applyBatchOperation: applyBatchOperationMock,
     }));
 
@@ -148,7 +146,7 @@ describe('BatchModificationSummaryModal', () => {
   });
 
   it('should close the modal when cancel button is clicked', async () => {
-    const setOpenMock = jest.fn();
+    const setOpenMock = vi.fn();
 
     const {user} = render(
       <BatchModificationSummaryModal setOpen={setOpenMock} open={true} />,

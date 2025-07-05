@@ -10,14 +10,14 @@ import type {View} from 'dmn-js-shared/lib/base/Manager';
 
 const mockedModules: {[module: string]: any} = {
   canvas: {
-    zoom: jest.fn(),
-    resized: jest.fn(),
-    addMarker: jest.fn(),
-    removeMarker: jest.fn(),
+    zoom: vi.fn(),
+    resized: vi.fn(),
+    addMarker: vi.fn(),
+    removeMarker: vi.fn(),
   },
   overlays: {
-    add: jest.fn(),
-    remove: jest.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
   },
 };
 
@@ -26,12 +26,12 @@ class Manager {
   constructor({container}: any = {}) {
     this.container = container;
   }
-  destroy = jest.fn();
-  getViews = jest.fn(() => [
+  destroy = vi.fn();
+  getViews = vi.fn(() => [
     {id: 'invoiceClassification', type: 'decisionTable'},
     {id: 'calc-key-figures', type: 'literalExpression'},
   ]);
-  open = jest.fn((view: View) => {
+  open = vi.fn((view: View) => {
     if (view.type === 'decisionTable') {
       this.container.innerHTML = 'DecisionTable view mock';
     }
@@ -39,16 +39,16 @@ class Manager {
       this.container.innerHTML = 'LiteralExpression view mock';
     }
   });
-  importXML = jest.fn(() => {
+  importXML = vi.fn(() => {
     this.container.innerHTML = 'Default View mock';
     return Promise.resolve({});
   });
   getActiveViewer = () => ({
     get: (module: string) => mockedModules[module],
-    on: jest.fn(),
-    off: jest.fn(),
+    on: vi.fn(),
+    off: vi.fn(),
   });
-  getDefinitions = jest.fn(() => {
+  getDefinitions = vi.fn(() => {
     return {name: 'Definitions Name Mock', id: 'definitionId'};
   });
 }

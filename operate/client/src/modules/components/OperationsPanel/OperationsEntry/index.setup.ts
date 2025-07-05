@@ -117,7 +117,7 @@ const OPERATIONS: OperationsMock = {
 };
 
 const mockProps = {
-  onInstancesClick: jest.fn(),
+  onInstancesClick: vi.fn(),
 };
 
 export {OPERATIONS, mockProps};

@@ -22,7 +22,7 @@ describe('<Decision />', () => {
 
   it('should render decision table and panel header', async () => {
     const originalWindowPrompt = window.prompt;
-    window.prompt = jest.fn();
+    window.prompt = vi.fn();
 
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
 

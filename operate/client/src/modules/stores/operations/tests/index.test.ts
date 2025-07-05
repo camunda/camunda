@@ -88,12 +88,12 @@ describe('stores/operations', () => {
     mockFetchBatchOperations().withSuccess(operations);
 
     operationsStore.init();
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     await waitFor(() => expect(operationsStore.state.status).toBe('fetched'));
 
     // no polling occurs in the next 2 polling
-    jest.runOnlyPendingTimers();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     const runningOperation: OperationEntity = {
       id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
@@ -123,20 +123,20 @@ describe('stores/operations', () => {
       ...operations,
     ]);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(operationsStore.hasRunningOperations).toBe(false),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: any = {};
     const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
+    window.addEventListener = vi.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
     });
 

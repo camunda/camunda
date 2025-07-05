@@ -190,7 +190,7 @@ describe('<InstancesTable />', () => {
   });
 
   it('should navigate to decision instance page', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
@@ -214,12 +214,12 @@ describe('<InstancesTable />', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should navigate to process instance page', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockFetchDecisionInstances().withSuccess({
       totalCount: 1,
@@ -257,8 +257,8 @@ describe('<InstancesTable />', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should display loading skeleton when sorting is applied', async () => {

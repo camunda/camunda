@@ -61,10 +61,6 @@ describe('getStatisticsByFlowNode', () => {
     );
   };
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-  });
-
   it('should return statistics for valid flow nodes', () => {
     const data = [
       {

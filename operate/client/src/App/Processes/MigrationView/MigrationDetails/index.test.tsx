@@ -39,7 +39,7 @@ describe('MigrationDetails', () => {
 
     const originalWindow = {...window};
 
-    const locationSpy = jest.spyOn(window, 'location', 'get');
+    const locationSpy = vi.spyOn(window, 'location', 'get');
 
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,

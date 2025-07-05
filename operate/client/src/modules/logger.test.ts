@@ -19,7 +19,7 @@ function setNodeEnv(newValue: string) {
   });
 }
 
-const mockConsoleError = jest
+const mockConsoleError = vi
   .spyOn(console, 'error')
   .mockImplementation(() => {});
 

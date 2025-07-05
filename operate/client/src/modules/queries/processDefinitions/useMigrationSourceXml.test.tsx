@@ -14,7 +14,7 @@ import {useMigrationSourceXml} from './useMigrationSourceXml';
 import {open} from 'modules/mocks/diagrams';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 
-jest.mock('modules/stores/processes/processes.migration');
+vi.mock('modules/stores/processes/processes.migration');
 
 describe('useMigrationSourceXml', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => {

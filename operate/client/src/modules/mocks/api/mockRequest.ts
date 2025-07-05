@@ -39,7 +39,10 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
      */
     withSuccess: (
       responseData: Type,
-      options?: {expectPolling?: boolean; mockResolverFn?: jest.Mock},
+      options?: {
+        expectPolling?: boolean;
+        mockResolverFn?: ReturnType<typeof vi.fn>;
+      },
     ) => {
       mockServer.use(
         http.post(

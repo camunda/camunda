@@ -188,9 +188,9 @@ describe('<Login />', () => {
   });
 
   it('should handle request failures', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockLogin().withNetworkError();
 

@@ -28,9 +28,9 @@ import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -407,7 +407,7 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should handle modal close', async () => {
-    const mockOnClose = jest.fn();
+    const mockOnClose = vi.fn();
 
     const {user} = render(
       <ModificationSummaryModal open setOpen={mockOnClose} />,
@@ -556,7 +556,7 @@ describe('Modification Summary Modal', () => {
 
   it('should display success notification when modifications are applied with success', async () => {
     modificationsStore.enableModificationMode();
-    const mockOnClose = jest.fn();
+    const mockOnClose = vi.fn();
 
     mockModify().withSuccess(
       createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
@@ -599,7 +599,7 @@ describe('Modification Summary Modal', () => {
 
   it('should display error notification when modifications are applied with failure', async () => {
     modificationsStore.enableModificationMode();
-    const mockOnClose = jest.fn();
+    const mockOnClose = vi.fn();
 
     mockModify().withServerError();
 
@@ -641,7 +641,7 @@ describe('Modification Summary Modal', () => {
 
   it('should display error notification when modifications are applied with failure because of auth error', async () => {
     modificationsStore.enableModificationMode();
-    const mockOnClose = jest.fn();
+    const mockOnClose = vi.fn();
 
     mockModify().withServerError(403);
 
@@ -713,7 +713,7 @@ describe('Modification Summary Modal', () => {
       open('diagramForModifications.bpmn'),
     );
 
-    render(<ModificationSummaryModal open setOpen={jest.fn()} />, {
+    render(<ModificationSummaryModal open setOpen={vi.fn()} />, {
       wrapper: getWrapper(),
     });
 
@@ -807,7 +807,7 @@ describe('Modification Summary Modal', () => {
       open('diagramForModifications.bpmn'),
     );
 
-    render(<ModificationSummaryModal open setOpen={jest.fn()} />, {
+    render(<ModificationSummaryModal open setOpen={vi.fn()} />, {
       wrapper: getWrapper(),
     });
 

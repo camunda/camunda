@@ -46,13 +46,13 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
-const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
+const getOperationSpy = vi.spyOn(operationApi, 'getOperation');
 
 describe('InstanceHeader', () => {
   beforeEach(() => {
@@ -146,7 +146,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
@@ -171,8 +171,8 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render parent Process Instance Key', async () => {
@@ -199,7 +199,7 @@ describe('InstanceHeader', () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -209,12 +209,12 @@ describe('InstanceHeader', () => {
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should show spinner when operation is applied', async () => {
@@ -224,7 +224,7 @@ describe('InstanceHeader', () => {
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
@@ -244,12 +244,12 @@ describe('InstanceHeader', () => {
       screen.queryByTestId('operation-spinner'),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should show spinner when variables is added', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const mockVariable = createVariable();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
@@ -286,7 +286,7 @@ describe('InstanceHeader', () => {
 
     mockGetOperation().withSuccess([createOperation({state: 'COMPLETED'})]);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
 
@@ -296,8 +296,8 @@ describe('InstanceHeader', () => {
 
     expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should remove spinner when operation fails', async () => {
@@ -508,12 +508,12 @@ describe('InstanceHeader', () => {
   });
 
   it('should call onPollingFailure if delete operation is performed', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockFetchProcessInstance().withSuccess(mockCanceledInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    const onPollingFailure = jest.fn();
+    const onPollingFailure = vi.fn();
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
@@ -543,11 +543,11 @@ describe('InstanceHeader', () => {
 
     mockFetchProcessInstance().withServerError(404);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => expect(onPollingFailure).toHaveBeenCalled());
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

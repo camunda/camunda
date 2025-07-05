@@ -13,7 +13,7 @@ import {generateProcessKey} from 'modules/utils/generateProcessKey';
 
 describe('processes.migration store', () => {
   const originalWindow = {...window};
-  const locationSpy = jest.spyOn(window, 'location', 'get');
+  const locationSpy = vi.spyOn(window, 'location', 'get');
 
   afterEach(() => {
     processesStore.reset();

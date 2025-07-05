@@ -34,9 +34,9 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 
-jest.mock('modules/utils/bpmn');
-jest.mock('modules/bpmn-js/utils/isProcessEndEvent', () => ({
-  isProcessOrSubProcessEndEvent: jest.fn(() => true),
+vi.mock('modules/utils/bpmn');
+vi.mock('modules/bpmn-js/utils/isProcessEndEvent', () => ({
+  isProcessOrSubProcessEndEvent: vi.fn(() => true),
 }));
 
 function getWrapper(initialPath: string = Paths.dashboard()) {
@@ -76,7 +76,7 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 
 describe('DiagramPanel', () => {
   const originalWindow = {...window};
-  const locationSpy = jest.spyOn(window, 'location', 'get');
+  const locationSpy = vi.spyOn(window, 'location', 'get');
 
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
@@ -93,7 +93,7 @@ describe('DiagramPanel', () => {
 
   it('should render header', async () => {
     const originalWindowPrompt = window.prompt;
-    window.prompt = jest.fn();
+    window.prompt = vi.fn();
 
     const queryString = '?process=bigVarProcess&version=1';
 
@@ -205,9 +205,9 @@ describe('DiagramPanel', () => {
   });
 
   it('should show an error message', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withServerError();
@@ -253,7 +253,7 @@ describe('DiagramPanel', () => {
       search: queryString,
     }));
 
-    const mockProcessInstancesStatisticsResolver = jest.fn();
+    const mockProcessInstancesStatisticsResolver = vi.fn();
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics, {
       mockResolverFn: mockProcessInstancesStatisticsResolver,
     });

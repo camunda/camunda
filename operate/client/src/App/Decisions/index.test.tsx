@@ -29,11 +29,11 @@ import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
-const handleRefetchSpy = jest.spyOn(groupedDecisionsStore, 'handleRefetch');
+const handleRefetchSpy = vi.spyOn(groupedDecisionsStore, 'handleRefetch');
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -81,14 +81,14 @@ describe('<Decisions />', () => {
   });
 
   it('should poll 3 times for grouped decisions and redirect to initial decisions page if decision name does not exist', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const queryString =
       '?evaluated=true&failed=true&name=non-existing-decision&version=all';
 
     const originalWindow = {...window};
 
-    const locationSpy = jest.spyOn(window, 'location', 'get');
+    const locationSpy = vi.spyOn(window, 'location', 'get');
 
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,
@@ -120,12 +120,12 @@ describe('<Decisions />', () => {
 
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
@@ -138,7 +138,7 @@ describe('<Decisions />', () => {
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(groupedDecisionsStore.decisions.length).toBe(4);
@@ -154,8 +154,8 @@ describe('<Decisions />', () => {
       title: 'Decision could not be found',
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
 
     locationSpy.mockRestore();
   });

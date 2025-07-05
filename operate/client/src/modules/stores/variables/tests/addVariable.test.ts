@@ -16,8 +16,8 @@ import {createInstance, createOperation} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 
-jest.mock('modules/constants/variables', () => ({
-  ...jest.requireActual('modules/constants/variables'),
+vi.mock('modules/constants/variables', () => ({
+  ...vi.importActual('modules/constants/variables'),
   MAX_VARIABLES_STORED: 5,
   MAX_VARIABLES_PER_REQUEST: 3,
 }));
@@ -74,7 +74,7 @@ describe('Add Variable', () => {
 
     mockApplyOperation().withServerError();
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
     await variablesStore.addVariable({
       id: '1',
       name: 'test',
@@ -87,15 +87,15 @@ describe('Add Variable', () => {
   });
 
   it('should not add variable on network error', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     expect(variablesStore.state.items).toEqual([]);
 
     mockApplyOperation().withNetworkError();
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
     await variablesStore.addVariable({
       id: '1',
       name: 'test',

@@ -76,9 +76,9 @@ describe('IncidentsByError', () => {
   });
 
   it('should handle network errors', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchIncidentsByError().withNetworkError();
 
@@ -156,7 +156,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should update after next poll', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
@@ -179,7 +179,7 @@ describe('IncidentsByError', () => {
       mockIncidentsByError[1]!,
     ]);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(
       await withinIncident.findByRole('button', {
@@ -191,8 +191,8 @@ describe('IncidentsByError', () => {
       expect(incidentsByErrorStore.isPollRequestRunning).toBe(false),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should truncate the error message search param', async () => {
@@ -235,7 +235,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     const {user} = render(<IncidentsByError />, {
@@ -267,7 +267,7 @@ describe('IncidentsByError', () => {
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

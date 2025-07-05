@@ -77,10 +77,6 @@ describe('Footer', () => {
     });
   });
 
-  afterEach(async () => {
-    jest.clearAllMocks();
-  });
-
   it('should disable add variable button when loading', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -128,7 +124,7 @@ describe('Footer', () => {
   });
 
   it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockProcessInstanceDeprecated().withSuccess(instanceMock);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -169,8 +165,8 @@ describe('Footer', () => {
     await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should disable add variable button when selected flow node is not running', async () => {

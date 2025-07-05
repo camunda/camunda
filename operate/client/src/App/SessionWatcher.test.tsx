@@ -14,12 +14,12 @@ import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 
-jest.mock('modules/stores/notifications', () => {
-  const hideNotificationMock = jest.fn();
+vi.mock('modules/stores/notifications', () => {
+  const hideNotificationMock = vi.fn();
   return {
     notificationsStore: {
       hideNotification: hideNotificationMock,
-      displayNotification: jest.fn(() => hideNotificationMock),
+      displayNotification: vi.fn(() => hideNotificationMock),
     },
   };
 });

@@ -18,8 +18,8 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockProcessXML} from 'modules/testUtils';
 
-jest.mock('modules/hooks/useProcessInstancesFilters');
-jest.mock('modules/stores/processes/processes.list', () => ({
+vi.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/stores/processes/processes.list', () => ({
   processesStore: {
     getProcessIdByLocation: () => '123',
   },
@@ -49,7 +49,7 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 
 describe('BatchModificationNotification', () => {
   const originalWindow = {...window};
-  const locationSpy = jest.spyOn(window, 'location', 'get');
+  const locationSpy = vi.spyOn(window, 'location', 'get');
   const queryString = '?process=bigVarProcess&version=1';
   locationSpy.mockImplementation(() => ({
     ...originalWindow.location,
@@ -57,15 +57,11 @@ describe('BatchModificationNotification', () => {
   }));
 
   beforeEach(() => {
-    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 
   it('should render batch modification notification with instance count', async () => {
@@ -96,7 +92,7 @@ describe('BatchModificationNotification', () => {
   });
 
   it('should render Undo button if target is selected', async () => {
-    const undoMock = jest.fn();
+    const undoMock = vi.fn();
 
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [

@@ -12,7 +12,7 @@ import {Wrapper, mockIncidents} from './mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
 
 describe('Sorting', () => {
   beforeEach(async () => {
@@ -23,7 +23,7 @@ describe('Sorting', () => {
   });
 
   it('should sort by incident type', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
       wrapper: Wrapper,
     });
 
@@ -61,7 +61,7 @@ describe('Sorting', () => {
   });
 
   it('should sort by flow node', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
       wrapper: Wrapper,
     });
 
@@ -99,7 +99,7 @@ describe('Sorting', () => {
   });
 
   it('should sort by creation time', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
       wrapper: Wrapper,
     });
 

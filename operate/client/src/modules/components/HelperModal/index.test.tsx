@@ -12,16 +12,15 @@ import {getStateLocally} from 'modules/utils/localStorage';
 
 const localStorageKey = 'myStorageKey';
 
-let onCloseMock: jest.Mock;
-let onSubmitMock: jest.Mock;
-
 describe('HelperModal', () => {
-  beforeAll(() => {
-    onCloseMock = jest.fn();
-    onSubmitMock = jest.fn();
+  afterEach(() => {
+    localStorage.clear();
   });
 
-  beforeEach(() => {
+  it('should render modal content', async () => {
+    const onCloseMock = vi.fn();
+    const onSubmitMock = vi.fn();
+
     render(
       <HelperModal
         onClose={onCloseMock}
@@ -33,20 +32,27 @@ describe('HelperModal', () => {
         Modal Content
       </HelperModal>,
     );
-  });
 
-  afterEach(() => {
-    onCloseMock.mockClear();
-    onSubmitMock.mockClear();
-    localStorage.clear();
-  });
-
-  it('should render modal content', async () => {
     expect(screen.getByText('My Helper Modal')).toBeInTheDocument();
     expect(screen.getByText('Modal Content')).toBeInTheDocument();
   });
 
   it('should call onClose and onSubmit callbacks', () => {
+    const onCloseMock = vi.fn();
+    const onSubmitMock = vi.fn();
+
+    render(
+      <HelperModal
+        onClose={onCloseMock}
+        onSubmit={onSubmitMock}
+        localStorageKey={localStorageKey}
+        open={true}
+        title="My Helper Modal"
+      >
+        Modal Content
+      </HelperModal>,
+    );
+
     screen.getByRole('button', {name: /continue/i}).click();
     expect(onSubmitMock).toHaveBeenCalledTimes(1);
 
@@ -55,6 +61,21 @@ describe('HelperModal', () => {
   });
 
   it('should set local storage key', () => {
+    const onCloseMock = vi.fn();
+    const onSubmitMock = vi.fn();
+
+    render(
+      <HelperModal
+        onClose={onCloseMock}
+        onSubmit={onSubmitMock}
+        localStorageKey={localStorageKey}
+        open={true}
+        title="My Helper Modal"
+      >
+        Modal Content
+      </HelperModal>,
+    );
+
     expect(getStateLocally()[localStorageKey]).toBe(undefined);
 
     screen.getByRole('checkbox').click();

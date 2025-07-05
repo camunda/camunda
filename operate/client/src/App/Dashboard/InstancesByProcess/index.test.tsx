@@ -84,9 +84,9 @@ describe('InstancesByProcess', () => {
   });
 
   it('should handle network errors', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchProcessInstancesByName().withNetworkError();
     processInstancesByNameStore.getProcessInstancesByName();
@@ -237,7 +237,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
     processInstancesByNameStore.getProcessInstancesByName();
 
@@ -264,12 +264,12 @@ describe('InstancesByProcess', () => {
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should update after next poll', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
     processInstancesByNameStore.init();
@@ -291,7 +291,7 @@ describe('InstancesByProcess', () => {
       {...mockWithSingleVersion[0]!, activeInstancesCount: 142},
     ]);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(
       await withinIncident.findByText(
@@ -299,8 +299,8 @@ describe('InstancesByProcess', () => {
       ),
     ).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render modeler button', async () => {

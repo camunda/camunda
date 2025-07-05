@@ -24,11 +24,6 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 
-function reset() {
-  jest.clearAllTimers();
-  jest.useRealTimers();
-}
-
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
@@ -80,10 +75,13 @@ describe('<Filters />', () => {
     await authenticationStore.authenticate();
 
     await groupedDecisionsStore.fetchDecisions();
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
-  afterEach(reset);
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
 
   it('should write filters to url', async () => {
     window.clientConfig = {

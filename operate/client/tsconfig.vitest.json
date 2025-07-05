@@ -1,7 +1,11 @@
 {
-  "extends": "./tsconfig.base.json",
-  "include": ["src/**/*"],
-  "exclude": [
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
+  },
+  "include": [
+    "src/**/*",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.spec.ts",
@@ -15,10 +19,5 @@
     "src/modules/testUtils.tsx",
     "src/modules/testUtils/**/*"
   ],
-  "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "jsx": "react-jsx",
-    "baseUrl": "src"
-  }
+  "exclude": []
 }

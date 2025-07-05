@@ -355,7 +355,7 @@ describe('OperationsEntry', () => {
   });
 
   it('should render 50% progress and fake progress', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(
       <OperationsEntry
         operation={{
@@ -380,12 +380,12 @@ describe('OperationsEntry', () => {
         '55',
       ),
     );
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render 100% progress and hide progress bar', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     render(<FinishingOperationsEntry />, {wrapper: createWrapper()});
 
     await waitFor(() =>
@@ -397,7 +397,7 @@ describe('OperationsEntry', () => {
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByRole('progressbar'));
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

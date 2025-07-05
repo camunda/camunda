@@ -48,13 +48,8 @@ describe('modifications hooks', () => {
     return Wrapper;
   };
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('useWillAllFlowNodesBeCanceled', () => {
     beforeEach(() => {
-      jest.clearAllMocks();
       modificationsStore.reset();
     });
 

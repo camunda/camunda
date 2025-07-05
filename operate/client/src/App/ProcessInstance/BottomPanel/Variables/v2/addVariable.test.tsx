@@ -26,12 +26,10 @@ describe('Add variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
   });
 
-  afterEach(async () => {
-    jest.clearAllMocks();
-  });
+  afterEach(async () => {});
 
   it('should show/hide add variable inputs', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess(mockVariables);
@@ -81,12 +79,12 @@ describe('Add variable', () => {
       }),
     ).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should not allow empty value', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -130,12 +128,12 @@ describe('Add variable', () => {
     expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should not allow empty characters in variable name', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -235,12 +233,12 @@ describe('Add variable', () => {
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
     expect(screen.getByText('Name is invalid')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should not allow to add duplicate variables', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess(mockVariables);
@@ -326,12 +324,12 @@ describe('Add variable', () => {
 
     expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should not allow to add variable with invalid name', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -396,8 +394,8 @@ describe('Add variable', () => {
     );
 
     expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('clicking edit variables while add mode is open, should not display a validation error', async () => {

@@ -14,17 +14,17 @@ import {modificationsStore} from '../../modifications';
 import {PROCESS_INSTANCE_ID, mockFlowNodeInstances} from './mocks';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
-describe('polling', () => {
-  let pollInstancesSpy: jest.SpyInstance;
-  let stopPollingSpy: jest.SpyInstance;
+let pollInstancesSpy = vi.spyOn(flowNodeInstanceStore, 'pollInstances');
+let stopPollingSpy = vi.spyOn(flowNodeInstanceStore, 'stopPolling');
 
+describe('polling', () => {
   beforeEach(() => {
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level1);
 
-    pollInstancesSpy = jest.spyOn(flowNodeInstanceStore, 'pollInstances');
-    stopPollingSpy = jest.spyOn(flowNodeInstanceStore, 'stopPolling');
+    pollInstancesSpy = vi.spyOn(flowNodeInstanceStore, 'pollInstances');
+    stopPollingSpy = vi.spyOn(flowNodeInstanceStore, 'stopPolling');
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
@@ -33,8 +33,8 @@ describe('polling', () => {
     modificationsStore.reset();
     processInstanceDetailsStore.reset();
     flowNodeInstanceStore.reset();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should start polling when process instance is active', async () => {
@@ -54,7 +54,7 @@ describe('polling', () => {
     // polling
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level1);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(pollInstancesSpy).toHaveBeenCalled();
@@ -82,7 +82,7 @@ describe('polling', () => {
     // polling
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level1);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     expect(pollInstancesSpy).not.toHaveBeenCalled();
   });
 
@@ -107,7 +107,7 @@ describe('polling', () => {
       }),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     expect(stopPollingSpy).toHaveBeenCalled();
     expect(pollInstancesSpy).not.toHaveBeenCalled();
   });
@@ -130,7 +130,7 @@ describe('polling', () => {
     await waitFor(() =>
       expect(flowNodeInstanceStore.state.status).toBe('error'),
     );
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level1);
 

@@ -22,8 +22,8 @@ import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import {mockVariableOperation, mockVariables} from './mocks';
 
-jest.mock('modules/constants/variables', () => ({
-  ...jest.requireActual('modules/constants/variables'),
+vi.mock('modules/constants/variables', () => ({
+  ...vi.importActual('modules/constants/variables'),
   MAX_VARIABLES_STORED: 5,
   MAX_VARIABLES_PER_REQUEST: 3,
 }));
@@ -85,7 +85,7 @@ describe('stores/variables', () => {
   });
 
   it('should poll variables when instance is running', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     variablesStore.init('123');
 
@@ -98,7 +98,7 @@ describe('stores/variables', () => {
       createVariable({name: 'clientNo', value: '"CNT-1211132-02"'}),
     ]);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual([
         ...mockVariables,
@@ -120,7 +120,7 @@ describe('stores/variables', () => {
       createVariable({name: 'orderNo', value: '"CMD0001-01"'}),
     ]);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual([
         ...mockVariables,
@@ -148,8 +148,8 @@ describe('stores/variables', () => {
     processInstanceDetailsStore.setProcessInstance(
       createInstance({id: '123', state: 'CANCELED'}),
     );
-    jest.runOnlyPendingTimers();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual([
@@ -175,8 +175,8 @@ describe('stores/variables', () => {
       ]),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should clear items', async () => {
@@ -204,11 +204,11 @@ describe('stores/variables', () => {
   });
 
   it('should fetch variable', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
 
     // on success
     mockFetchVariable().withSuccess(createVariable({id: 'variable-id'}));
@@ -388,7 +388,7 @@ describe('stores/variables', () => {
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: Record<string, Function> = {};
     const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
+    window.addEventListener = vi.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
     });
 

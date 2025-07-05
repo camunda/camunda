@@ -39,10 +39,6 @@ describe('useFlownodeStatistics', () => {
     );
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should fetch parsed flownode statistics successfully', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [

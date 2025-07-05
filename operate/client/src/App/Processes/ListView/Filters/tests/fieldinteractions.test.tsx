@@ -22,7 +22,7 @@ import {
 import {ERRORS} from 'modules/validators';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
 
 describe('Interaction with other fields during validation', () => {
   beforeEach(async () => {
@@ -31,12 +31,12 @@ describe('Interaction with other fields during validation', () => {
 
     processesStore.fetchProcesses();
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('validation for Instance IDs field should not affect other fields validation errors', async () => {

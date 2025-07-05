@@ -36,9 +36,9 @@ import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -139,8 +139,7 @@ describe('VariablePanel', () => {
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
+    vi.clearAllTimers();
     await new Promise(process.nextTick);
   });
 
@@ -158,7 +157,7 @@ describe('VariablePanel', () => {
         instanceMetadata: null,
       });
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 
@@ -193,7 +192,7 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 
@@ -224,15 +223,15 @@ describe('VariablePanel', () => {
   it.each([true, false])(
     'should show failed placeholder if network error occurs while fetching variables - modification mode: %p',
     async (enableModificationMode) => {
-      const consoleErrorMock = jest
+      const consoleErrorMock = vi
         .spyOn(global.console, 'error')
-        .mockImplementation();
+        .mockImplementation(() => {});
 
       if (enableModificationMode) {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 

@@ -50,7 +50,7 @@ describe('Operations - Spinner', () => {
   });
 
   it('should display spinner if incident id is included in instances with active operations', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockFetchProcessInstances().withSuccess({
       processInstances: [ACTIVE_INSTANCE],
@@ -84,7 +84,7 @@ describe('Operations - Spinner', () => {
       totalCount: 1,
     });
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     // mock for refresh all instances
     mockFetchProcessInstances().withSuccess({
@@ -100,7 +100,7 @@ describe('Operations - Spinner', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

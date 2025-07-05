@@ -24,7 +24,7 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
 
 describe('Filters', () => {
   beforeEach(async () => {

@@ -15,17 +15,17 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {BatchModificationFooter} from '..';
 import {MemoryRouter} from 'react-router-dom';
 
-jest.mock('modules/hooks/useCallbackPrompt', () => {
+vi.mock('modules/hooks/useCallbackPrompt', () => {
   return {
     useCallbackPrompt: () => ({
       shouldInterrupt: false,
-      confirmNavigation: jest.fn(),
-      cancelNavigation: jest.fn(),
+      confirmNavigation: vi.fn(),
+      cancelNavigation: vi.fn(),
     }),
   };
 });
 
-jest.mock('../BatchModificationSummaryModal/v2', () => ({
+vi.mock('../BatchModificationSummaryModal/v2', () => ({
   BatchModificationSummaryModal: () => (
     <div>MockedBatchModificationSummaryModal</div>
   ),

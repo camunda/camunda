@@ -46,9 +46,9 @@ const clearPollingStates = () => {
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
 
-jest.mock('modules/utils/bpmn');
-jest.mock('modules/stores/process', () => ({
-  processStore: {state: {process: {}}, fetchProcess: jest.fn()},
+vi.mock('modules/utils/bpmn');
+vi.mock('modules/stores/process', () => ({
+  processStore: {state: {process: {}}, fetchProcess: vi.fn()},
 }));
 
 describe('ProcessInstance - modification mode', () => {
@@ -59,7 +59,6 @@ describe('ProcessInstance - modification mode', () => {
 
   afterEach(() => {
     window.clientConfig = undefined;
-    jest.clearAllMocks();
   });
 
   it('should display the modifications header and footer when modification mode is enabled', async () => {
@@ -234,20 +233,14 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should stop polling during the modification mode', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
-    const handlePollingVariablesSpy = jest.spyOn(
-      variablesStore,
-      'handlePolling',
-    );
+    const handlePollingVariablesSpy = vi.spyOn(variablesStore, 'handlePolling');
 
-    const handlePollingIncidentsSpy = jest.spyOn(
-      incidentsStore,
-      'handlePolling',
-    );
+    const handlePollingIncidentsSpy = vi.spyOn(incidentsStore, 'handlePolling');
 
-    const initFlowNodeInstanceSpy = jest.spyOn(flowNodeInstanceUtils, 'init');
-    const startPollingFlowNodeInstanceSpy = jest.spyOn(
+    const initFlowNodeInstanceSpy = vi.spyOn(flowNodeInstanceUtils, 'init');
+    const startPollingFlowNodeInstanceSpy = vi.spyOn(
       flowNodeInstanceUtils,
       'startPolling',
     );
@@ -265,7 +258,7 @@ describe('ProcessInstance - modification mode', () => {
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
     );
@@ -291,7 +284,7 @@ describe('ProcessInstance - modification mode', () => {
     clearPollingStates();
     mockRequests();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
@@ -299,7 +292,7 @@ describe('ProcessInstance - modification mode', () => {
     clearPollingStates();
     mockRequests();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
@@ -313,7 +306,7 @@ describe('ProcessInstance - modification mode', () => {
     clearPollingStates();
     mockRequests();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
@@ -322,8 +315,8 @@ describe('ProcessInstance - modification mode', () => {
 
     await waitForPollingsToBeComplete();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should display loading overlay when modifications are applied', async () => {
@@ -332,7 +325,7 @@ describe('ProcessInstance - modification mode', () => {
       createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
     );
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
@@ -391,8 +384,8 @@ describe('ProcessInstance - modification mode', () => {
       screen.queryByText('Process Instance Modification Mode'),
     ).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should block navigation when modification mode is enabled', async () => {

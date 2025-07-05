@@ -67,11 +67,11 @@ const mockSelectableProps: Pick<
   | 'selectionType'
   | 'rowOperationError'
 > = {
-  checkIsAllSelected: jest.fn(),
-  onSelectAll: jest.fn(),
-  onSelect: jest.fn(),
-  checkIsRowSelected: jest.fn(),
-  rowOperationError: jest.fn(),
+  checkIsAllSelected: vi.fn(),
+  onSelectAll: vi.fn(),
+  onSelect: vi.fn(),
+  checkIsRowSelected: vi.fn(),
+  rowOperationError: vi.fn(),
   selectionType: 'checkbox',
 };
 

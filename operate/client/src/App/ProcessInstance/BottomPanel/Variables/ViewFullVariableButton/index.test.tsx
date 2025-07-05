@@ -15,8 +15,8 @@ import {ViewFullVariableButton} from './index';
 
 describe('<ViewFullVariableButton />', () => {
   it('should load full value', async () => {
-    jest.useFakeTimers();
-    const mockOnClick: () => Promise<null | string> = jest.fn(function mock() {
+    vi.useFakeTimers();
+    const mockOnClick = vi.fn(function mock(): Promise<null | string> {
       return new Promise((resolve) => {
         setTimeout(() => resolve('foo'), 0);
       });
@@ -40,7 +40,7 @@ describe('<ViewFullVariableButton />', () => {
       screen.getByTestId('variable-operation-spinner'),
     ).toBeInTheDocument();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variable-operation-spinner'),
@@ -51,6 +51,6 @@ describe('<ViewFullVariableButton />', () => {
     expect(
       screen.getByRole('heading', {name: `Full value of ${mockVariableName}`}),
     ).toBeInTheDocument();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 });

@@ -31,9 +31,9 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -184,7 +184,7 @@ describe('Edit variable', () => {
       mockProcessInstanceDeprecated,
     );
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess(mockVariables);
 
@@ -232,8 +232,8 @@ describe('Edit variable', () => {
 
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should get variable details on edit button click if the variables value was a preview', async () => {
@@ -382,7 +382,7 @@ describe('Edit variable', () => {
       mockProcessInstanceDeprecated,
     );
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -414,7 +414,7 @@ describe('Edit variable', () => {
 
     expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('full-variable-loader'),
@@ -422,8 +422,8 @@ describe('Edit variable', () => {
 
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should load full value on json viewer click during modification mode if it was truncated', async () => {

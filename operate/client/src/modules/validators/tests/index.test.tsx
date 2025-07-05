@@ -29,17 +29,16 @@ import {
 } from '../index';
 import {mockMeta} from './mocks';
 
-describe('validators', () => {
-  let setTimeoutSpy: jest.SpyInstance;
+let setTimeoutSpy = vi.spyOn(window, 'setTimeout');
 
+describe('validators', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    setTimeoutSpy = jest.spyOn(window, 'setTimeout');
+    vi.useFakeTimers();
+    setTimeoutSpy = vi.spyOn(window, 'setTimeout');
   });
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should validate ids without delay', async () => {
@@ -424,7 +423,7 @@ describe('validators', () => {
   // more fine grained tests for parseFilterTime in utils/filter/index.test.ts
   it('should validate time with delay', async () => {
     const validate = validateTimeComplete('99:99:99', {});
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await expect(validate).resolves.toBe(ERRORS.time);
   });
 

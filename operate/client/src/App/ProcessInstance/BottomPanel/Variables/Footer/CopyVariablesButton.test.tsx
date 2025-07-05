@@ -44,7 +44,7 @@ describe('CopyVariableButton', () => {
   });
 
   it('should copy variables to clipboard', async () => {
-    const writeTextSpy = jest.spyOn(navigator.clipboard, 'writeText');
+    const writeTextSpy = vi.spyOn(navigator.clipboard, 'writeText');
 
     variablesStore.setItems([
       createVariable({

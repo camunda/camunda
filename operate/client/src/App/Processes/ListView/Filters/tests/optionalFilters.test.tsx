@@ -16,7 +16,7 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
 
 describe('Optional Filters', () => {
   beforeEach(async () => {
@@ -27,8 +27,8 @@ describe('Optional Filters', () => {
   });
 
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should initially hide optional filters', async () => {

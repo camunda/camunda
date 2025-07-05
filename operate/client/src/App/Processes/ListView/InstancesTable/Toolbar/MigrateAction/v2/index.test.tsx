@@ -29,9 +29,9 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'eventBasedGatewayProcess';
 
-jest.mock('modules/stores/processes/processes.list', () => ({
+vi.mock('modules/stores/processes/processes.list', () => ({
   processesStore: {
-    getPermissions: jest.fn(),
+    getPermissions: vi.fn(),
     getProcessId: () => PROCESS_ID,
     state: {processes: []},
     versionsByProcessAndTenant: {
@@ -261,7 +261,7 @@ describe('<MigrateAction />', () => {
     const SEARCH_STRING = `?process=${PROCESS_ID}&version=1&active=true&incidents=false`;
 
     const originalWindow = {...window};
-    const locationSpy = jest.spyOn(window, 'location', 'get');
+    const locationSpy = vi.spyOn(window, 'location', 'get');
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,
       search: SEARCH_STRING,
@@ -298,7 +298,7 @@ describe('<MigrateAction />', () => {
   });
 
   it('should track migrate click', async () => {
-    const trackSpy = jest.spyOn(tracking, 'track');
+    const trackSpy = vi.spyOn(tracking, 'track');
 
     const {user} = render(<MigrateAction />, {
       wrapper: getWrapperWithQueryClient(

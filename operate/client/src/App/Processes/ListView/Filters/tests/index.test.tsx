@@ -21,8 +21,7 @@ import {
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.setTimeout(10000);
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
 
 describe('Filters', () => {
   beforeEach(async () => {
@@ -31,12 +30,12 @@ describe('Filters', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     processesStore.fetchProcesses();
-    jest.useFakeTimers();
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should load the process and version fields', async () => {
@@ -361,7 +360,7 @@ describe('Filters', () => {
   });
 
   it('should enable the reset button', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),

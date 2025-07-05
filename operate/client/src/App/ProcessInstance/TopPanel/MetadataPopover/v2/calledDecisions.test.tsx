@@ -27,8 +27,8 @@ import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
-jest.mock('date-fns', () => ({
-  ...jest.requireActual('date-fns'),
+vi.mock('date-fns', () => ({
+  ...vi.importActual('date-fns'),
   formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
 }));
 
@@ -82,7 +82,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should render completed decision', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const {instanceMetadata} = calledDecisionMetadata;
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
@@ -123,12 +123,12 @@ describe('MetadataPopover', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useFakeTimers();
+    vi.clearAllTimers();
+    vi.useFakeTimers();
   });
 
   it('should render failed decision', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const {instanceMetadata} = calledFailedDecisionMetadata;
     const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;
@@ -180,8 +180,8 @@ describe('MetadataPopover', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render unevaluated decision', async () => {

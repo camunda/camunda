@@ -44,10 +44,6 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
     );
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should fetch total running instances for a single flow node', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [

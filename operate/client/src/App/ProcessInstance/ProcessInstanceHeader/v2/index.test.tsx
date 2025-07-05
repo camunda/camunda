@@ -32,9 +32,9 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -109,7 +109,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
     // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
@@ -135,8 +135,8 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render parent Process Instance Key', async () => {

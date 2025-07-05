@@ -14,22 +14,16 @@ import {
 import {getWrapper, MockDateRangeField} from './mocks';
 import {tracking} from 'modules/tracking';
 
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
+let trackSpy = vi.spyOn(tracking, 'track');
 
 describe('Date Range - tracking', () => {
-  let trackSpy: jest.SpyInstance;
-  let user: UserEvent;
-
   beforeEach(() => {
-    trackSpy = jest.spyOn(tracking, 'track');
-    user = render(<MockDateRangeField />, {wrapper: getWrapper()}).user;
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    trackSpy = vi.spyOn(tracking, 'track');
   });
 
   it('should track date picker, date input, time input', async () => {
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
       eventName: 'date-range-popover-opened',
@@ -64,6 +58,7 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date picker', async () => {
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
       eventName: 'date-range-popover-opened',
@@ -91,6 +86,7 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date input, time input', async () => {
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
       eventName: 'date-range-popover-opened',
@@ -118,6 +114,7 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date picker, time input', async () => {
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
       eventName: 'date-range-popover-opened',

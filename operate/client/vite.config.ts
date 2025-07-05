@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+/// <reference types="vitest" />
 /// <reference types="vite/client" />
 
 import {defineConfig, type PluginOption} from 'vite';
@@ -67,4 +68,31 @@ export default defineConfig(({mode}) => ({
     legalComments: 'none',
   },
   resolve: {alias: {src: path.resolve(__dirname, './src')}},
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+    setupFiles: ['./src/setupTests.tsx'],
+    restoreMocks: true,
+    mockReset: true,
+    coverage: {
+      provider: 'istanbul',
+      exclude: [
+        'playwright.config.ts',
+        'renameProdIndex.mjs',
+        'public/**',
+        'e2e/**',
+        `${outDir}/**`,
+        'src/modules/mockServer/startBrowserMocking.tsx',
+      ],
+      reporter: ['html', 'default', 'hanging-process'],
+      all: true,
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
+    },
+  },
 }));

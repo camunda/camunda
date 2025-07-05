@@ -87,9 +87,9 @@ describe('stores/statistics', () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics, {
       expectPolling: true,
     });
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     statisticsStore.init();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
     expect(statisticsStore.state.running).toBe(1087);
@@ -104,21 +104,21 @@ describe('stores/statistics', () => {
       },
       {expectPolling: true},
     );
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1088));
     expect(statisticsStore.state.active).toBe(211);
     expect(statisticsStore.state.withIncidents).toBe(878);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should fetch statistics depending on completed operations', async () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics, {
       expectPolling: true,
     });
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
@@ -136,7 +136,7 @@ describe('stores/statistics', () => {
 
     statisticsStore.init();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
     expect(statisticsStore.state.running).toBe(1087);
@@ -180,7 +180,7 @@ describe('stores/statistics', () => {
       }),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1088));
     await waitFor(() =>
@@ -189,14 +189,14 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.active).toBe(210);
     expect(statisticsStore.state.withIncidents).toBe(877);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: any = {};
     const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
+    window.addEventListener = vi.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
     });
 

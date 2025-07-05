@@ -623,8 +623,8 @@ describe('stores/processInstances', () => {
   });
 
   it('should refresh instances and and call handlers every time there is an instance with completed operation', async () => {
-    jest.useFakeTimers();
-    const handlerMock = jest.fn();
+    vi.useFakeTimers();
+    const handlerMock = vi.fn();
     processInstancesStore.addCompletedOperationsHandler(handlerMock);
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
@@ -678,7 +678,7 @@ describe('stores/processInstances', () => {
       ),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(3),
@@ -686,8 +686,8 @@ describe('stores/processInstances', () => {
 
     expect(handlerMock).toHaveBeenCalledTimes(1);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should poll instances by id when there are instances with active operations', async () => {
@@ -702,7 +702,7 @@ describe('stores/processInstances', () => {
       {expectPolling: false},
     );
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -758,7 +758,7 @@ describe('stores/processInstances', () => {
       }),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(processInstancesStore.state.filteredProcessInstancesCount).toEqual(
@@ -769,14 +769,14 @@ describe('stores/processInstances', () => {
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual([]);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: any = {};
     const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
+    window.addEventListener = vi.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
     });
 

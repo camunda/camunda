@@ -37,7 +37,7 @@ describe('Operations - Cancel Operation', () => {
         processDefinitionKey: 'process-key',
       },
     ]);
-    const onOperationMock = jest.fn();
+    const onOperationMock = vi.fn();
 
     const modalText =
       /To cancel this instance, the root instance.*needs to be canceled. When the root instance is canceled all the called instances will be canceled automatically/;

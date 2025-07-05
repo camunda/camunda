@@ -88,7 +88,7 @@ describe('stores/processInstancesByName', () => {
     mockFetchProcessInstancesByName().withSuccess(mockInstancesByProcess, {
       expectPolling: true,
     });
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     processInstancesByNameStore.init();
     await waitFor(() =>
       expect(processInstancesByNameStore.state.status).toBe('fetched'),
@@ -100,14 +100,14 @@ describe('stores/processInstancesByName', () => {
 
     mockFetchProcessInstancesByName().withSuccess([], {expectPolling: true});
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(processInstancesByNameStore.state.processInstances).toEqual([]);
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should set failed response on error', async () => {
@@ -133,7 +133,7 @@ describe('stores/processInstancesByName', () => {
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: any = {};
     const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
+    window.addEventListener = vi.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
     });
 

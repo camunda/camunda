@@ -11,9 +11,9 @@ import DiagramControls from './index';
 
 describe('<DiagramControls />', () => {
   it('should render diagram controls', async () => {
-    const handleZoomIn = jest.fn(),
-      handleZoomOut = jest.fn(),
-      handleZoomReset = jest.fn();
+    const handleZoomIn = vi.fn(),
+      handleZoomOut = vi.fn(),
+      handleZoomReset = vi.fn();
     const {user} = render(
       <DiagramControls
         handleZoomIn={handleZoomIn}

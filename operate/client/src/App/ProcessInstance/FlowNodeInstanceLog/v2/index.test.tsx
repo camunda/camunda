@@ -35,7 +35,7 @@ import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 
-jest.mock('modules/utils/bpmn');
+vi.mock('modules/utils/bpmn');
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 const mockProcessInstance: ProcessInstance = {
@@ -155,7 +155,7 @@ describe('FlowNodeInstanceLog', () => {
   it('should continue polling after poll failure', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     init(mockProcessInstance);
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
@@ -174,7 +174,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     mockFetchFlowNodeInstances().withServerError();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     // second poll
     mockFetchProcessInstanceDeprecated().withSuccess(
@@ -187,7 +187,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(screen.queryByTestId('INCIDENT-icon')).not.toBeInTheDocument();
@@ -198,12 +198,12 @@ describe('FlowNodeInstanceLog', () => {
       screen.queryByText('Instance History could not be fetched'),
     ).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render flow node instances tree', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
     );
@@ -220,7 +220,7 @@ describe('FlowNodeInstanceLog', () => {
     expect(
       await screen.findByText('Migrated 2018-12-12 00:00:00'),
     ).toBeInTheDocument();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

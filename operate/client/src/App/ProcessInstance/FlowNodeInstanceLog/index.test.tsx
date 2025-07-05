@@ -30,7 +30,7 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
-jest.mock('modules/utils/bpmn');
+vi.mock('modules/utils/bpmn');
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 
@@ -129,7 +129,7 @@ describe('FlowNodeInstanceLog', () => {
   it('should continue polling after poll failure', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     flowNodeInstanceStore.init();
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
@@ -148,7 +148,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     mockFetchFlowNodeInstances().withServerError();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     // second poll
     mockFetchProcessInstance().withSuccess(
@@ -161,7 +161,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(screen.queryByTestId('INCIDENT-icon')).not.toBeInTheDocument();
@@ -172,8 +172,8 @@ describe('FlowNodeInstanceLog', () => {
       screen.queryByText('Instance History could not be fetched'),
     ).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render flow node instances tree', async () => {

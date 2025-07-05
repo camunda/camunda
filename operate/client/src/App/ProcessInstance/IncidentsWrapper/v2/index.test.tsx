@@ -26,7 +26,7 @@ describe('IncidentsFilter', () => {
     render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -47,7 +47,7 @@ describe('IncidentsFilter', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,

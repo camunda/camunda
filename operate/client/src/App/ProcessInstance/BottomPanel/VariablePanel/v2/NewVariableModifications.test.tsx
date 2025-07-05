@@ -147,11 +147,11 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if fields are empty', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     modificationsStore.enableModificationMode();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -167,19 +167,19 @@ describe('New Variable Modifications', () => {
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
     expect(modificationsStore.state.modifications.length).toBe(0);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it.each(['textfield', 'jsoneditor'])(
     'should not create add variable modification if name field is empty - %p',
     async (type) => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       modificationsStore.enableModificationMode();
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() => {
@@ -203,15 +203,15 @@ describe('New Variable Modifications', () => {
       ).toBeInTheDocument();
       expect(modificationsStore.state.modifications.length).toBe(0);
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
+      vi.clearAllTimers();
+      vi.useRealTimers();
     },
   );
 
   it.each(['textfield', 'jsoneditor'])(
     'should not create add variable modification if name field is duplicate - %p',
     async (type) => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       modificationsStore.enableModificationMode();
       mockFetchProcessInstanceDeprecated().withSuccess(
         mockProcessInstanceDeprecated,
@@ -221,7 +221,7 @@ describe('New Variable Modifications', () => {
       mockFetchVariables().withSuccess([createVariable()]);
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() => {
@@ -304,17 +304,17 @@ describe('New Variable Modifications', () => {
         },
       ]);
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
+      vi.clearAllTimers();
+      vi.useRealTimers();
     },
   );
 
   it('should not create add variable modification if value field is empty or invalid', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     modificationsStore.enableModificationMode();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -338,20 +338,20 @@ describe('New Variable Modifications', () => {
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it.each(['textfield', 'jsoneditor'])(
     'should create add variable modification on blur and update same modification if name or value is changed - %p',
     async (type) => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       modificationsStore.enableModificationMode();
 
       const {user} = render(
         <>
-          <VariablePanel setListenerTabVisibility={jest.fn()} />
+          <VariablePanel setListenerTabVisibility={vi.fn()} />
           <LastModification />
         </>,
         {wrapper: getWrapper()},
@@ -525,19 +525,19 @@ describe('New Variable Modifications', () => {
         },
       ]);
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
+      vi.clearAllTimers();
+      vi.useRealTimers();
     },
   );
 
   it.each(['textfield', 'jsoneditor'])(
     'should not apply modification if value is the same as the last modification - %p',
     async (type) => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       modificationsStore.enableModificationMode();
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
 
@@ -587,13 +587,13 @@ describe('New Variable Modifications', () => {
         },
       ]);
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
+      vi.clearAllTimers();
+      vi.useRealTimers();
     },
   );
 
   it('should be able to remove the first added variable modification after switching between flow node instances', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     modificationsStore.enableModificationMode();
 
     mockFetchProcessInstanceDeprecated().withSuccess(
@@ -607,7 +607,7 @@ describe('New Variable Modifications', () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -674,12 +674,12 @@ describe('New Variable Modifications', () => {
     expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
     expect(screen.getByDisplayValue('456')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     modificationsStore.enableModificationMode();
     modificationsStore.addModification({
@@ -706,7 +706,7 @@ describe('New Variable Modifications', () => {
     );
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     expect(
@@ -757,7 +757,7 @@ describe('New Variable Modifications', () => {
     expect(await screen.findByDisplayValue('test1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('123')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

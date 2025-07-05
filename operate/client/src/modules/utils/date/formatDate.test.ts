@@ -8,7 +8,7 @@
 
 import {formatDate} from './formatDate';
 
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
 
 describe('formatDate', () => {
   it('should return default placeholder if date is null', () => {

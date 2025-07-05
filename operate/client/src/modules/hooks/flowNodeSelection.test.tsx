@@ -42,7 +42,6 @@ describe('useWillAllFlowNodesBeCanceled', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
     modificationsStore.reset();
   });
 

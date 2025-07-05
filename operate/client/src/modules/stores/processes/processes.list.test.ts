@@ -20,7 +20,7 @@ describe('stores/processes/processes.list', () => {
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: any = {};
     const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
+    window.addEventListener = vi.fn((event: string, cb: any) => {
       eventListeners[event] = cb;
     });
 

@@ -34,8 +34,8 @@ import {init} from 'modules/utils/flowNodeMetadata';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
-jest.mock('date-fns', () => ({
-  ...jest.requireActual('date-fns'),
+vi.mock('date-fns', () => ({
+  ...vi.importActual('date-fns'),
   formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
 }));
 

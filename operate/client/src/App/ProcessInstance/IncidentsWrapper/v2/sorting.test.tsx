@@ -13,7 +13,7 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockProcessInstance} from 'App/ProcessInstance/v2/mocks';
 
-jest.unmock('modules/utils/date/formatDate');
+vi.unmock('modules/utils/date/formatDate');
 
 describe('Sorting', () => {
   beforeEach(async () => {
@@ -27,7 +27,7 @@ describe('Sorting', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -71,7 +71,7 @@ describe('Sorting', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -115,7 +115,7 @@ describe('Sorting', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,

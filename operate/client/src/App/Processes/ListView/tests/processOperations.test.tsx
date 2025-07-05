@@ -22,7 +22,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 
 describe('<ListView /> - operations', () => {
   const originalWindow = {...window};
-  const locationSpy = jest.spyOn(window, 'location', 'get');
+  const locationSpy = vi.spyOn(window, 'location', 'get');
 
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess({

@@ -41,16 +41,16 @@ import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstan
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
-jest.mock('react-transition-group', () => {
-  const FakeTransition = jest.fn(({children}) => children);
-  const FakeCSSTransition = jest.fn((props) =>
+vi.mock('react-transition-group', () => {
+  const FakeTransition = vi.fn(({children}) => children);
+  const FakeCSSTransition = vi.fn((props) =>
     props.in ? <FakeTransition>{props.children}</FakeTransition> : null,
   );
 
   return {
     CSSTransition: FakeCSSTransition,
     Transition: FakeTransition,
-    TransitionGroup: jest.fn(({children}) => {
+    TransitionGroup: vi.fn(({children}) => {
       return children.map((transition: any) => {
         const completedTransition = {...transition};
         completedTransition.props = {...transition.props, in: true};
@@ -140,7 +140,6 @@ describe('TopPanel', () => {
     processInstanceDetailsStore.reset();
     flowNodeSelectionStore.reset();
     modificationsStore.reset();
-    jest.clearAllMocks();
   });
 
   it('should render spinner while loading', async () => {
@@ -186,9 +185,9 @@ describe('TopPanel', () => {
   });
 
   it('should show an error when a network error occurs', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchProcessDefinitionXml().withNetworkError();
 

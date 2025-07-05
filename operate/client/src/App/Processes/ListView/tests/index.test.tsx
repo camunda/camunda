@@ -36,11 +36,11 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.mock('modules/utils/bpmn');
-const handleRefetchSpy = jest.spyOn(processesStore, 'handleRefetch');
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/utils/bpmn');
+const handleRefetchSpy = vi.spyOn(processesStore, 'handleRefetch');
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -247,14 +247,14 @@ describe('Instances', () => {
   });
 
   it('should poll 3 times for grouped processes and redirect to initial processes page if process does not exist', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const queryString =
       '?active=true&incidents=true&process=non-existing-process&version=all';
 
     const originalWindow = {...window};
 
-    const locationSpy = jest.spyOn(window, 'location', 'get');
+    const locationSpy = vi.spyOn(window, 'location', 'get');
 
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,
@@ -276,13 +276,13 @@ describe('Instances', () => {
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -295,7 +295,7 @@ describe('Instances', () => {
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(processesStore.processes.length).toBe(5);
@@ -311,8 +311,8 @@ describe('Instances', () => {
       title: 'Process could not be found',
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
 
     locationSpy.mockRestore();
   });
@@ -330,7 +330,7 @@ describe('Instances', () => {
   it('should show Operation State column when Operation Id filter is set', async () => {
     const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
     const originalWindow = {...window};
-    const locationSpy = jest.spyOn(window, 'location', 'get');
+    const locationSpy = vi.spyOn(window, 'location', 'get');
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,
       search: queryString,
@@ -351,7 +351,7 @@ describe('Instances', () => {
   it('should show correct error message when error row is expanded', async () => {
     const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
     const originalWindow = {...window};
-    const locationSpy = jest.spyOn(window, 'location', 'get');
+    const locationSpy = vi.spyOn(window, 'location', 'get');
 
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,
@@ -390,7 +390,7 @@ describe('Instances', () => {
   it('should display correct operation from process instance with multiple operations', async () => {
     const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
     const originalWindow = {...window};
-    const locationSpy = jest.spyOn(window, 'location', 'get');
+    const locationSpy = vi.spyOn(window, 'location', 'get');
 
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,

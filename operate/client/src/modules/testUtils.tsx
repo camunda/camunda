@@ -15,14 +15,6 @@ import type {IncidentDto} from './api/processInstances/fetchProcessInstanceIncid
 import type {BatchOperationDto} from './api/sharedTypes';
 import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
-/**
- * @returns a jest mock function that resolves with given value
- * @param {*} value to resolve with
- */
-export const mockResolvedAsyncFn = (value: any) => {
-  return jest.fn(() => Promise.resolve(value));
-};
-
 const createRandomId = function* createRandomId(type: string) {
   let idx = 0;
   while (true) {
@@ -360,8 +352,6 @@ export const createDiagramNode = (options = {}) => {
     ...options,
   };
 };
-
-export const diObject = {set: jest.fn()};
 
 export const createSequenceFlows = () => {
   return [

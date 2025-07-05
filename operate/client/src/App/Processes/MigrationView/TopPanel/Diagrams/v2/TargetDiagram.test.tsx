@@ -27,16 +27,12 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
-jest.mock('modules/hooks/useFilters');
-jest.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useFilters');
+vi.mock('modules/hooks/useProcessInstancesFilters');
 
 describe('Target Diagram', () => {
   beforeEach(() => {
-    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
   });
 
   it('should display initial state in the diagram header and diagram panel', async () => {

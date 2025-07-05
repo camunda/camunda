@@ -27,7 +27,7 @@ describe('Filtering', () => {
     render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -45,7 +45,7 @@ describe('Filtering', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -79,7 +79,7 @@ describe('Filtering', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -113,7 +113,7 @@ describe('Filtering', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -155,7 +155,7 @@ describe('Filtering', () => {
     const {user, rerender} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -190,7 +190,7 @@ describe('Filtering', () => {
     rerender(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
     );
 
@@ -213,7 +213,7 @@ describe('Filtering', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,

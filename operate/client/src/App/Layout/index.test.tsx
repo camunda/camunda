@@ -34,7 +34,7 @@ function getWrapper(initialPath: string = '/') {
 
 const OperationsPanelMock: React.FC = () => <div>OperationsPanelMock</div>;
 
-jest.mock('modules/components/OperationsPanel', () => ({
+vi.mock('modules/components/OperationsPanel', () => ({
   OperationsPanel: OperationsPanelMock,
 }));
 

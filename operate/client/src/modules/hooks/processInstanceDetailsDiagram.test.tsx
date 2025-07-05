@@ -21,8 +21,9 @@ import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModification
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
-jest.mock('modules/stores/modifications', () => ({
+vi.mock('modules/stores/modifications', () => ({
   modificationsStore: {
     state: {
       status: 'idle',
@@ -31,9 +32,11 @@ jest.mock('modules/stores/modifications', () => ({
   },
 }));
 
-jest.mock('modules/bpmn-js/utils/isMoveModificationTarget', () => ({
-  isMoveModificationTarget: jest.fn(() => true),
+vi.mock('modules/bpmn-js/utils/isMoveModificationTarget', () => ({
+  isMoveModificationTarget: vi.fn(() => true),
 }));
+
+const mockedIsMoveModificationTarget = vi.mocked(isMoveModificationTarget);
 
 describe('processInstanceDetailsDiagram hooks', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
@@ -51,21 +54,17 @@ describe('processInstanceDetailsDiagram hooks', () => {
   };
 
   beforeEach(async () => {
-    jest.clearAllMocks();
-
-    jest
-      .spyOn(
-        require('modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics'),
-        'useFlownodeInstancesStatistics',
-      )
-      .mockReturnValue({
-        data: {
-          items: [
-            {elementId: 'StartEvent_1', active: 5, incidents: 0},
-            {elementId: 'Activity_0qtp1k6', active: 0, incidents: 1},
-          ],
-        },
-      });
+    vi.spyOn(
+      require('modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics'),
+      'useFlownodeInstancesStatistics',
+    ).mockReturnValue({
+      data: {
+        items: [
+          {elementId: 'StartEvent_1', active: 5, incidents: 0},
+          {elementId: 'Activity_0qtp1k6', active: 0, incidents: 1},
+        ],
+      },
+    });
   });
 
   describe('useFlowNodes', () => {
@@ -99,8 +98,9 @@ describe('processInstanceDetailsDiagram hooks', () => {
 
   describe('useAppendableFlowNodes', () => {
     it('should return appendable flow nodes', async () => {
-      (isMoveModificationTarget as jest.Mock).mockImplementation(
-        (flowNode) => flowNode.id === 'StartEvent_1',
+      mockedIsMoveModificationTarget.mockImplementation(
+        (flowNode: BusinessObject | null | undefined) =>
+          flowNode?.id === 'StartEvent_1',
       );
 
       const {result} = renderHook(() => useAppendableFlowNodes(), {

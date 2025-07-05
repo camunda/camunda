@@ -19,23 +19,22 @@ import {
 import {variablesStore} from 'modules/stores/variables';
 
 const MOCK_FIELD_META_STATE = {
-  blur: jest.fn(),
-  change: jest.fn(),
-  focus: jest.fn(),
+  blur: vi.fn(),
+  change: vi.fn(),
+  focus: vi.fn(),
   name: 'fieldName',
 } as const;
 
 describe('validators', () => {
-  let setTimeoutSpy: jest.SpyInstance;
+  let setTimeoutSpy: any;
 
   beforeEach(() => {
-    jest.useFakeTimers();
-    setTimeoutSpy = jest.spyOn(window, 'setTimeout');
+    vi.useFakeTimers();
+    setTimeoutSpy = vi.spyOn(global, 'setTimeout');
   });
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
   afterAll(() => {
     variablesStore.reset();
