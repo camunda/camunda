@@ -504,6 +504,34 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForDecisionsToBeDeployed(
+      final CamundaClient camundaClient,
+      final int expectedDecisionDefinitions,
+      final int expectedDecisionRequirements) {
+    Awaitility.await("should receive data from ES")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      camundaClient
+                          .newDecisionDefinitionSearchRequest()
+                          .send()
+                          .join()
+                          .items()
+                          .size())
+                  .isEqualTo(expectedDecisionDefinitions);
+              assertThat(
+                      camundaClient
+                          .newDecisionRequirementsSearchRequest()
+                          .send()
+                          .join()
+                          .items()
+                          .size())
+                  .isEqualTo(expectedDecisionRequirements);
+            });
+  }
+
   public static void waitUntilProcessInstanceHasIncidents(
       final CamundaClient camundaClient, final int expectedIncidents) {
     Awaitility.await("should wait until incidents are exists")

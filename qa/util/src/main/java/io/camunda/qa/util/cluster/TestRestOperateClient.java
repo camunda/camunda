@@ -139,11 +139,11 @@ public class TestRestOperateClient implements AutoCloseable {
       final long processInstanceKey,
       final String scopeId,
       final String variableName,
-      final String variableValue) {
+      final Object variableValue) {
     final var operationRequestBody = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     operationRequestBody.setVariableScopeId(scopeId);
     operationRequestBody.setVariableName(variableName);
-    operationRequestBody.setVariableValue(variableValue);
+    operationRequestBody.setVariableValue(String.valueOf(variableValue));
     return createProcessInstanceOperationRequest(processInstanceKey, operationRequestBody);
   }
 
