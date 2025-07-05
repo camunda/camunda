@@ -12,10 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
+import io.camunda.search.query.SearchQueryResult;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,13 +126,13 @@ class WebSessionRepositoryTest {
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
             Map.of()));
 
-    assertThat(persistentWebSessionClient.getAllPersistentWebSessions()).hasSize(3);
+    assertThat(persistentWebSessionClient.getAllPersistentWebSessions().items()).hasSize(3);
 
     // when
     webSessionRepository.deleteExpiredWebSessions();
 
     // then
-    assertThat(persistentWebSessionClient.getAllPersistentWebSessions()).isEmpty();
+    assertThat(persistentWebSessionClient.getAllPersistentWebSessions().items()).isEmpty();
   }
 
   static final class PersistentWebSessionClientStub implements PersistentWebSessionClient {
@@ -160,8 +160,8 @@ class WebSessionRepositoryTest {
     }
 
     @Override
-    public List<PersistentWebSessionEntity> getAllPersistentWebSessions() {
-      return new ArrayList<>(persistentWebSessions.values());
+    public SearchQueryResult<PersistentWebSessionEntity> getAllPersistentWebSessions() {
+      return SearchQueryResult.of(b -> b.items(new ArrayList<>(persistentWebSessions.values())));
     }
   }
 }

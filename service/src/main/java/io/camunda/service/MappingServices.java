@@ -24,7 +24,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -51,14 +50,6 @@ public class MappingServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.mapping().read())))
         .searchMappings(query);
-  }
-
-  public List<MappingEntity> findAll(final MappingQuery query) {
-    return mappingSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.mapping().read())))
-        .findAllMappings(query);
   }
 
   @Override
@@ -118,7 +109,8 @@ public class MappingServices
   }
 
   public Stream<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
-    return MappingRuleMatcher.matchingRules(findAll(MappingQuery.of(q -> q)).stream(), claims);
+    return MappingRuleMatcher.matchingRules(
+        search(MappingQuery.of(q -> q.unlimited())).items().stream(), claims);
   }
 
   public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}

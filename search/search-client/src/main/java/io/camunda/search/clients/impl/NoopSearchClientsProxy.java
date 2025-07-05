@@ -69,11 +69,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public List<AuthorizationEntity> findAllAuthorizations(final AuthorizationQuery filter) {
-    return List.of();
-  }
-
-  @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
     return SearchQueryResult.empty();
@@ -125,11 +120,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public List<GroupEntity> findAllGroups(final GroupQuery query) {
-    return List.of();
-  }
-
-  @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     return SearchQueryResult.empty();
   }
@@ -137,11 +127,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
     return SearchQueryResult.empty();
-  }
-
-  @Override
-  public List<MappingEntity> findAllMappings(final MappingQuery query) {
-    return List.of();
   }
 
   @Override
@@ -179,11 +164,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public List<RoleEntity> findAllRoles(final RoleQuery filter) {
-    return List.of();
-  }
-
-  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
     return SearchQueryResult.empty();
   }
@@ -191,11 +171,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
     return SearchQueryResult.empty();
-  }
-
-  @Override
-  public List<TenantEntity> findAllTenants(final TenantQuery query) {
-    return List.of();
   }
 
   @Override
@@ -214,8 +189,8 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public List<SequenceFlowEntity> findAllSequenceFlows(final SequenceFlowQuery filter) {
-    return List.of();
+  public SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery filter) {
+    return SearchQueryResult.empty();
   }
 
   @Override

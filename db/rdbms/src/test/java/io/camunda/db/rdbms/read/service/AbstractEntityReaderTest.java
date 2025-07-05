@@ -69,7 +69,7 @@ class AbstractEntityReaderTest {
             b ->
                 b.addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC)
                     .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
-    final SearchQueryPage page = new SearchQueryPage(0, 10, null, null);
+    final SearchQueryPage page = SearchQueryPage.of(p -> p.from(0).size(10));
 
     final DbQueryPage result = reader.convertPaging(sort, page);
 
@@ -91,7 +91,8 @@ class AbstractEntityReaderTest {
 
     final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
 
-    final SearchQueryPage page = new SearchQueryPage(0, 10, result.endCursor(), null);
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).after(result.endCursor()));
 
     final DbQueryPage dbPage = reader.convertPaging(sort, page);
 
@@ -135,7 +136,8 @@ class AbstractEntityReaderTest {
 
     final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
 
-    final SearchQueryPage page = new SearchQueryPage(0, 10, null, result.startCursor());
+    final SearchQueryPage page =
+        SearchQueryPage.of(p -> p.from(0).size(10).before(result.startCursor()));
 
     final DbQueryPage dbPage = reader.convertPaging(sort, page);
 
