@@ -237,7 +237,6 @@ describe('InstancesByProcess', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    vi.useFakeTimers();
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
     processInstancesByNameStore.getProcessInstancesByName();
 
@@ -263,13 +262,10 @@ describe('InstancesByProcess', () => {
       ),
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 
   it('should update after next poll', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
     processInstancesByNameStore.init();
