@@ -260,25 +260,6 @@ public class RoleIntegrationTest {
         .join();
   }
 
-  private static void createGroup(
-      final String groupId, final String groupName, final String description) {
-    camundaClient
-        .newCreateGroupCommand()
-        .groupId(groupId)
-        .name(groupName)
-        .description(description)
-        .send()
-        .join();
-
-    Awaitility.await("Group is created and exported")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () -> {
-              final var group = camundaClient.newGroupGetRequest(groupId).send().join();
-              assertThat(group).isNotNull();
-            });
-  }
-
   @Test
   void shouldUpdateRole() {
     // given

@@ -101,6 +101,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
+import io.camunda.client.api.fetch.TenantGetRequest;
 import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
@@ -2032,6 +2033,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the update tenant command
    */
   UpdateTenantCommandStep1 newUpdateTenantCommand(String tenantId);
+
+  /**
+   * Request to get a tenant by tenant ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newTenantGetRequest("tenantId")
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the request to get a tenant by ID
+   */
+  TenantGetRequest newTenantGetRequest(String tenantId);
 
   /**
    * Command to delete a tenant.
