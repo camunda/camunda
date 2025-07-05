@@ -30,6 +30,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingFilter;
+import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -54,6 +55,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
@@ -75,6 +77,7 @@ import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingSort;
+import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
@@ -1273,6 +1276,48 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
+  private static MessageSubscriptionFilter toMessageSubscriptionFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionFilter filter) {
+    final var builder = FilterBuilders.messageSubscription();
+
+    if (filter != null) {
+      ofNullable(filter.getMessageSubscriptionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::messageSubscriptionKeyOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::flowNodeInstanceKeyOperations);
+      ofNullable(filter.getMessageSubscriptionType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::messageSubscriptionTypeOperations);
+      ofNullable(filter.getLastUpdatedDate())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::dateTimeOperations);
+      ofNullable(filter.getMessageName())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::messageNameOperations);
+      ofNullable(filter.getCorrelationKey())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::correlationKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
+    }
+    return builder.build();
+  }
+
   private static List<String> applyProcessInstanceSortField(
       final ProcessInstanceSearchQuerySortRequest.FieldEnum field,
       final ProcessInstanceSort.Builder builder) {
@@ -1670,6 +1715,31 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
+  private static List<String> applyMessageSubscriptionSortField(
+      final MessageSubscriptionSearchQuerySortRequest.FieldEnum field,
+      final MessageSubscriptionSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case MESSAGE_SUBSCRIPTION_KEY -> builder.messageSubscriptionKey();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case ELEMENT_ID -> builder.flowNodeId();
+        case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
+        case MESSAGE_SUBSCRIPTION_TYPE -> builder.messageSubscriptionType();
+        case LAST_UPDATED_DATE -> builder.dateTime();
+        case MESSAGE_NAME -> builder.messageName();
+        case CORRELATION_KEY -> builder.correlationKey();
+        case TENANT_ID -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
       final List<VariableValueFilterProperty> filters) {
     if (CollectionUtils.isEmpty(filters)) {
@@ -1882,5 +1952,22 @@ public final class SearchQueryRequestMapper {
         new TenantQuery.Builder()
             .filter(f -> f.joinParentId(tenantId).memberType(EntityType.GROUP))
             .build());
+  }
+
+  public static Either<ProblemDetail, MessageSubscriptionQuery> toMessageSubscriptionQuery(
+      final MessageSubscriptionSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.messageSubscriptionSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromMessageSubscriptionSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::messageSubscription,
+            SearchQueryRequestMapper::applyMessageSubscriptionSortField);
+    final var filter = toMessageSubscriptionFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
   }
 }

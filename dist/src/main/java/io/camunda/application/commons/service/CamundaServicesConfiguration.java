@@ -20,6 +20,7 @@ import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.clients.MappingSearchClient;
+import io.camunda.search.clients.MessageSubscriptionSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
@@ -46,6 +47,7 @@ import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MessageServices;
+import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
@@ -302,6 +304,15 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final MappingSearchClient mappingSearchClient) {
     return new MappingServices(brokerClient, securityContextProvider, mappingSearchClient, null);
+  }
+
+  @Bean
+  public MessageSubscriptionServices messageSubscriptionServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final MessageSubscriptionSearchClient messageSubscriptionSearchClient) {
+    return new MessageSubscriptionServices(
+        brokerClient, securityContextProvider, messageSubscriptionSearchClient, null);
   }
 
   @Bean

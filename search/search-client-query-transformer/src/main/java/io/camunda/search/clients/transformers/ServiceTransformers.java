@@ -36,6 +36,7 @@ import io.camunda.search.clients.transformers.entity.GroupMemberEntityTransforme
 import io.camunda.search.clients.transformers.entity.IncidentEntityTransformer;
 import io.camunda.search.clients.transformers.entity.JobEntityTransformer;
 import io.camunda.search.clients.transformers.entity.MappingEntityTransformer;
+import io.camunda.search.clients.transformers.entity.MessageSubscriptionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTransfomer;
 import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.RoleEntityTransformer;
@@ -61,6 +62,7 @@ import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingFilterTransformer;
+import io.camunda.search.clients.transformers.filter.MessageSubscriptionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
@@ -90,6 +92,7 @@ import io.camunda.search.clients.transformers.sort.GroupFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.IncidentFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.JobFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.MappingFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.MessageSubscriptionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
@@ -112,6 +115,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingFilter;
+import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -136,6 +140,7 @@ import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
@@ -163,6 +168,7 @@ import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingSort;
+import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
@@ -187,6 +193,7 @@ import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
@@ -203,6 +210,7 @@ import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
@@ -305,7 +313,8 @@ public final class ServiceTransformers {
             VariableQuery.class,
             UsageMetricsQuery.class,
             SequenceFlowQuery.class,
-            JobQuery.class)
+            JobQuery.class,
+            MessageSubscriptionQuery.class)
         .forEach(cls -> mappers.put(cls, searchQueryTransformer));
 
     // document entity -> domain entity
@@ -333,6 +342,7 @@ public final class ServiceTransformers {
     mappers.put(OperationEntity.class, new BatchOperationItemEntityTransformer());
     mappers.put(SequenceFlowEntity.class, new SequenceFlowEntityTransformer());
     mappers.put(JobEntity.class, new JobEntityTransformer());
+    mappers.put(EventEntity.class, new MessageSubscriptionEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(DecisionDefinitionSort.class, new DecisionDefinitionFieldSortingTransformer());
@@ -356,6 +366,7 @@ public final class ServiceTransformers {
     mappers.put(BatchOperationSort.class, new BatchOperationFieldSortingTransformer());
     mappers.put(BatchOperationItemSort.class, new BatchOperationItemFieldSortingTransformer());
     mappers.put(JobSort.class, new JobFieldSortingTransformer());
+    mappers.put(MessageSubscriptionSort.class, new MessageSubscriptionFieldSortingTransformer());
 
     // filters -> search query
     mappers.put(
@@ -428,6 +439,9 @@ public final class ServiceTransformers {
         SequenceFlowFilter.class,
         new SequenceFlowFilterTransformer(indexDescriptors.get(SequenceFlowTemplate.class)));
     mappers.put(JobFilter.class, new JobFilterTransformer(indexDescriptors.get(JobTemplate.class)));
+    mappers.put(
+        MessageSubscriptionFilter.class,
+        new MessageSubscriptionFilterTransformer(indexDescriptors.get(EventTemplate.class)));
 
     // result config -> source config
     mappers.put(

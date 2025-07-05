@@ -194,4 +194,8 @@ public final class SearchQueryBuilders {
       final Function<JobQuery.Builder, ObjectBuilder<JobQuery>> fn) {
     return fn.apply(jobSearchQuery()).build();
   }
+
+  public static MessageSubscriptionQuery.Builder messageSubscriptionSearchQuery() {
+    return new MessageSubscriptionQuery.Builder();
+  }
 }
