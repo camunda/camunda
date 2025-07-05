@@ -16,7 +16,7 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
 
 const mockInstance = createInstance({id: '2251799813685625'});
@@ -150,43 +150,33 @@ describe('stores/statistics', () => {
       expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
-    // mock for next poll
-
     mockServer.use(
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            processInstances: [{...mockInstance}],
-            totalCount: 1,
-          }),
-        );
+      http.post('/api/process-instances', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          processInstances: [{...mockInstance}],
+          totalCount: 1,
+        });
       }),
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            processInstances: [{...mockInstance}],
-            totalCount: 2,
-          }),
-        );
+      http.post('/api/process-instances', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          processInstances: [{...mockInstance}],
+          totalCount: 2,
+        });
       }),
-      rest.get('/api/process-instances/core-statistics', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            ...statistics,
-          }),
-        );
+      http.get('/api/process-instances/core-statistics', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          ...statistics,
+        });
       }),
-      rest.get('/api/process-instances/core-statistics', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            ...statistics,
-            running: 1088,
-          }),
-        );
+      http.get('/api/process-instances/core-statistics', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          ...statistics,
+          running: 1088,
+        });
       }),
     );
 

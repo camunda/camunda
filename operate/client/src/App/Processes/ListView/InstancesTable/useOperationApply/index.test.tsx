@@ -25,7 +25,7 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
 import * as operationsApi from 'modules/api/processInstances/operations';
 import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 
 jest.mock('modules/utils/getSearchString');
 
@@ -218,31 +218,23 @@ describe('useOperationApply', () => {
     ).toEqual(['2251799813685594', '2251799813685596', '2251799813685598']);
 
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 100,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 100,
+        }),
       ),
-      // mock for refreshing instances when an instance operation is complete
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 200,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 200,
+        }),
       ),
-      // mock for refresh running process instances count
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 200,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 200,
+        }),
       ),
     );
 
@@ -280,31 +272,23 @@ describe('useOperationApply', () => {
     ).toEqual(['2251799813685594']);
 
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 100,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 100,
+        }),
       ),
-      // mock for refreshing instances when an instance operation is complete
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 200,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 200,
+        }),
       ),
-      // mock for refresh running process instances count
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 200,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 200,
+        }),
       ),
     );
 

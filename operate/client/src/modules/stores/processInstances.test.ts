@@ -13,7 +13,7 @@ import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
 
 const instance: ProcessInstanceEntity = {
@@ -497,7 +497,6 @@ describe('stores/processInstances', () => {
   });
 
   it('should unmark instances with active operations', async () => {
-    // when polling all visible instances
     mockFetchProcessInstances().withSuccess({
       totalCount: 100,
       processInstances: [
@@ -641,40 +640,41 @@ describe('stores/processInstances', () => {
     ).toEqual(['2251799813685627']);
 
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
+      http.post(
+        '/api/process-instances',
+        () =>
+          HttpResponse.json({
             processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
             totalCount: 2,
           }),
-        ),
+        {once: true},
       ),
-      // mock for refresh all instances
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
+      http.post(
+        '/api/process-instances',
+        () =>
+          HttpResponse.json({
             processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
             totalCount: 3,
           }),
-        ),
+        {once: true},
       ),
-      // mock for refresh running process instances count
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
+      http.post(
+        '/api/process-instances',
+        () =>
+          HttpResponse.json({
             processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
             totalCount: 3,
           }),
-        ),
+        {once: true},
       ),
     );
 
@@ -715,54 +715,46 @@ describe('stores/processInstances', () => {
     ).toEqual(['2']);
 
     mockServer.use(
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            processInstances: [
-              {
-                ...instanceWithActiveOperation,
-                hasActiveOperation: false,
-                id: '2',
-              },
-            ],
-            totalCount: 100,
-          }),
-        );
+      http.post('/api/process-instances', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          processInstances: [
+            {
+              ...instanceWithActiveOperation,
+              hasActiveOperation: false,
+              id: '2',
+            },
+          ],
+          totalCount: 100,
+        });
       }),
-      // mock for refreshing instances when an instance operation is complete
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            processInstances: [
-              {...instance, id: '1'},
-              {
-                ...instanceWithActiveOperation,
-                id: '2',
-                hasActiveOperation: false,
-              },
-            ],
-            totalCount: 2,
-          }),
-        );
+      http.post('/api/process-instances', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          processInstances: [
+            {...instance, id: '1'},
+            {
+              ...instanceWithActiveOperation,
+              id: '2',
+              hasActiveOperation: false,
+            },
+          ],
+          totalCount: 2,
+        });
       }),
-      // mock for refresh running process instances count
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            processInstances: [
-              {...instance, id: '1'},
-              {
-                ...instanceWithActiveOperation,
-                id: '2',
-                hasActiveOperation: false,
-              },
-            ],
-            totalCount: 2,
-          }),
-        );
+      http.post('/api/process-instances', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          processInstances: [
+            {...instance, id: '1'},
+            {
+              ...instanceWithActiveOperation,
+              id: '2',
+              hasActiveOperation: false,
+            },
+          ],
+          totalCount: 2,
+        });
       }),
     );
 
