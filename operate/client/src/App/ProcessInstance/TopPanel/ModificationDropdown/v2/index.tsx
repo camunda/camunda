@@ -55,7 +55,7 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
-  diagramCanvasRef?: React.RefObject<HTMLDivElement>;
+  diagramCanvasRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 const ModificationDropdown: React.FC<Props> = observer(

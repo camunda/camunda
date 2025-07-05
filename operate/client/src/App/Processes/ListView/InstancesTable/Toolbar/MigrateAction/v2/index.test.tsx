@@ -86,9 +86,10 @@ function getWrapper(initialPath: string = '') {
 
 function getWrapperWithQueryClient(initialPath: string = '') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    const InnerWrapper = getWrapper(initialPath);
     return (
       <QueryClientProvider client={getMockQueryClient()}>
-        {getWrapper(initialPath)({children})}
+        <InnerWrapper>{children}</InnerWrapper>
       </QueryClientProvider>
     );
   };

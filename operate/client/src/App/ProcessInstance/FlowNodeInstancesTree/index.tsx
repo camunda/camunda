@@ -39,7 +39,7 @@ type Props = {
   flowNodeInstance: FlowNodeInstance;
   isRoot?: boolean;
   rowRef?: React.Ref<HTMLDivElement>;
-  scrollableContainerRef: React.RefObject<HTMLElement>;
+  scrollableContainerRef: React.RefObject<HTMLElement | null>;
 };
 
 const getFilteredVisibleChildPlaceholders = ({
