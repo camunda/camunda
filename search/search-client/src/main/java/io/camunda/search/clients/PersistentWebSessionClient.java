@@ -8,7 +8,7 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.PersistentWebSessionEntity;
-import java.util.List;
+import io.camunda.search.query.SearchQueryResult;
 
 public interface PersistentWebSessionClient {
 
@@ -18,5 +18,5 @@ public interface PersistentWebSessionClient {
 
   void deletePersistentWebSession(final String sessionId);
 
-  List<PersistentWebSessionEntity> getAllPersistentWebSessions();
+  SearchQueryResult<PersistentWebSessionEntity> getAllPersistentWebSessions();
 }

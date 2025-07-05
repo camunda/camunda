@@ -47,11 +47,13 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
 
   public List<GroupEntity> getGroupsByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds) {
-    return findAll(
-        GroupQuery.of(
-            groupQuery ->
-                groupQuery.filter(
-                    groupFilter -> groupFilter.memberIdsByType(memberTypesToMemberIds))));
+    return search(
+            GroupQuery.of(
+                groupQuery ->
+                    groupQuery
+                        .filter(groupFilter -> groupFilter.memberIdsByType(memberTypesToMemberIds))
+                        .unlimited()))
+        .items();
   }
 
   @Override
@@ -61,14 +63,6 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.group().read())))
         .searchGroups(query);
-  }
-
-  public List<GroupEntity> findAll(final GroupQuery query) {
-    return groupSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.group().read())))
-        .findAllGroups(query);
   }
 
   @Override
@@ -111,18 +105,18 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public List<GroupEntity> getGroupsByMemberId(final String memberId, final EntityType memberType) {
-    return findAll(
-        SearchQueryBuilders.groupSearchQuery()
-            .filter(f -> f.memberId(memberId).childMemberType(memberType))
-            .build());
+    return search(
+            GroupQuery.of(
+                b -> b.filter(f -> f.memberId(memberId).childMemberType(memberType)).unlimited()))
+        .items();
   }
 
   public List<GroupEntity> getGroupsByMemberIds(
       final Set<String> memberIds, final EntityType memberType) {
-    return findAll(
-        SearchQueryBuilders.groupSearchQuery()
-            .filter(f -> f.memberIds(memberIds).childMemberType(memberType))
-            .build());
+    return search(
+            GroupQuery.of(
+                b -> b.filter(f -> f.memberIds(memberIds).childMemberType(memberType)).unlimited()))
+        .items();
   }
 
   public Optional<GroupEntity> findGroup(final String groupId) {
