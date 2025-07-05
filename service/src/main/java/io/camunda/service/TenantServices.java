@@ -63,14 +63,6 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         .searchTenantMembers(query);
   }
 
-  public List<TenantEntity> findAll(final TenantQuery query) {
-    return tenantSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.tenant().read())))
-        .findAllTenants(query);
-  }
-
   @Override
   public TenantServices withAuthentication(final CamundaAuthentication authentication) {
     return new TenantServices(
@@ -112,8 +104,10 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public List<TenantEntity> getTenantsByMemberIds(
       final Set<String> memberIds, final EntityType memberType) {
-    return findAll(
-        TenantQuery.of(q -> q.filter(b -> b.memberIds(memberIds).childMemberType(memberType))));
+    return search(
+            TenantQuery.of(
+                q -> q.filter(b -> b.memberIds(memberIds).childMemberType(memberType)).unlimited()))
+        .items();
   }
 
   public List<TenantEntity> getTenantsByUserAndGroupsAndRoles(
@@ -140,7 +134,10 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds) {
-    return findAll(TenantQuery.of(q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds))));
+    return search(
+            TenantQuery.of(
+                q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds)).unlimited()))
+        .items();
   }
 
   public TenantEntity getById(final String tenantId) {

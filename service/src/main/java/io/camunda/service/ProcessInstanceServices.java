@@ -147,8 +147,10 @@ public final class ProcessInstanceServices
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .findAllSequenceFlows(
-            SequenceFlowQuery.of(b -> b.filter(f -> f.processInstanceKey(processInstanceKey))));
+        .searchSequenceFlows(
+            SequenceFlowQuery.of(
+                b -> b.filter(f -> f.processInstanceKey(processInstanceKey)).unlimited()))
+        .items();
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {

@@ -27,6 +27,7 @@ import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryBase.AbstractQueryBuilder;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -155,12 +156,19 @@ class SearchClientBasedQueryExecutorTest {
   @Test
   void shouldFindAllUsingTransformers() {
     // Given our search Query
-    final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
+    final var searchAllQuery = ProcessInstanceQuery.of(AbstractQueryBuilder::unlimited);
 
     // And our search client returns stuff
-    final var processInstanceEntityResponse = List.of(demoProcessInstance);
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
+        SearchQueryResponse.of(
+            b ->
+                b.hits(
+                    List.of(
+                        new SearchQueryHit.Builder<ProcessInstanceForListViewEntity>()
+                            .source(demoProcessInstance)
+                            .build())));
 
-    when(searchClient.findAll(
+    when(searchClient.scroll(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
     when(authorizationQueryStrategy.applyAuthorizationToQuery(
@@ -168,11 +176,11 @@ class SearchClientBasedQueryExecutorTest {
         .thenAnswer(i -> i.getArgument(0));
 
     // When we search
-    final List<ProcessInstanceEntity> searchResult =
-        queryExecutor.findAll(searchAllQuery, ProcessInstanceForListViewEntity.class);
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(searchAllQuery, ProcessInstanceForListViewEntity.class);
 
-    assertThat(searchResult).hasSize(1);
-    assertThat(searchResult.getFirst().processInstanceKey())
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().processInstanceKey())
         .isEqualTo(demoProcessInstance.getProcessInstanceKey());
   }
 

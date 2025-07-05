@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.domain.DbQueryPage.Operator;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
@@ -76,6 +77,11 @@ abstract class AbstractEntityReader<T> {
       keySetPagination = createKeySetPagination(sort, page);
     }
 
+    if (SearchQueryResultType.UNLIMITED.equals(page.resultType())) {
+      // assuming Integer.MAX_VALUE is enough
+      return new DbQueryPage(Integer.MAX_VALUE, 0, keySetPagination);
+    }
+
     return new DbQueryPage(page.size(), page.from(), keySetPagination);
   }
 
@@ -132,7 +138,7 @@ abstract class AbstractEntityReader<T> {
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
     final var result = new SearchQueryResult.Builder<T>().total(totalHits).items(hits);
 
-    if (!hits.isEmpty()) {
+    if (!hits.isEmpty() && dbSort != null) {
       final var columns = dbSort.columns();
       result
           .startCursor(Cursor.encode(hits.getFirst(), columns))

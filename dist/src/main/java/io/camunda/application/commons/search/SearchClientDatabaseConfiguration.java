@@ -48,8 +48,8 @@ public class SearchClientDatabaseConfiguration {
       havingValue = DatabaseConfig.OPENSEARCH)
   public OpensearchSearchClient opensearchSearchClient(final ConnectConfiguration configuration) {
     final var connector = new OpensearchConnector(configuration);
-    final var elasticsearch = connector.createClient();
-    return new OpensearchSearchClient(elasticsearch);
+    final var opensearch = connector.createClient();
+    return new OpensearchSearchClient(opensearch);
   }
 
   @Bean

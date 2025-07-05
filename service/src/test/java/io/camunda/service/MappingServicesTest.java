@@ -49,13 +49,16 @@ public class MappingServicesTest {
   private MappingSearchClient client;
   private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
+  private SearchQueryResult<MappingEntity> result;
 
   @BeforeEach
   public void before() {
     authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(MappingSearchClient.class);
+    result = mock(SearchQueryResult.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.searchMappings(any())).thenReturn(result);
     mappingDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingDeleteRequest.class);
     mappingUpdateRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingUpdateRequest.class);
     services =
@@ -206,7 +209,7 @@ public class MappingServicesTest {
     services.getMatchingMappings(claims);
     // then
     final ArgumentCaptor<MappingQuery> queryCaptor = ArgumentCaptor.forClass(MappingQuery.class);
-    verify(client, times(1)).findAllMappings(queryCaptor.capture());
+    verify(client, times(1)).searchMappings(queryCaptor.capture());
     final MappingQuery query = queryCaptor.getValue();
     assertThat(query.filter().claimName()).isNull();
     assertThat(query.filter().claimValue()).isNull();

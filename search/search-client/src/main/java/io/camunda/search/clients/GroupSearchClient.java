@@ -12,15 +12,12 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
-import java.util.List;
 
 public interface GroupSearchClient {
 
   SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query);
 
   SearchQueryResult<GroupMemberEntity> searchGroupMembers(GroupQuery query);
-
-  List<GroupEntity> findAllGroups(final GroupQuery query);
 
   GroupSearchClient withSecurityContext(SecurityContext securityContext);
 }
