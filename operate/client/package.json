@@ -89,7 +89,6 @@
     "monaco-editor": "0.52.2",
     "msw": "2.10.3",
     "prettier": "3.6.2",
-    "react-test-renderer": "18.3.1",
     "rollup-plugin-license": "3.6.0",
     "sass": "1.89.2",
     "source-map-explorer": "2.5.3",
