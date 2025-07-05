@@ -10,14 +10,12 @@ package io.camunda.application.commons.console.ping;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import java.time.Duration;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +23,6 @@ import org.slf4j.LoggerFactory;
 public class PingConsoleTask implements Runnable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleTask.class);
-  private static final int NUMBER_OF_MAX_RETRIES = 10;
-  private static final int RETRY_DELAY_MULTIPLIER = 2;
-  private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(2);
   private static final int MAX_RESPONSE_BODY_LENGTH = 1000;
   private final HttpClient client;
   private final ConsolePingConfiguration pingConfiguration;
@@ -41,11 +36,7 @@ public class PingConsoleTask implements Runnable {
       final String licensePayload) {
     this.pingConfiguration = pingConfiguration;
     this.client = client;
-    final var retryConfiguration = new RetryConfiguration();
-    retryConfiguration.setMaxRetries(NUMBER_OF_MAX_RETRIES);
-    retryConfiguration.setRetryDelayMultiplier(RETRY_DELAY_MULTIPLIER);
-    retryConfiguration.setMaxRetryDelay(MAX_RETRY_DELAY);
-    retryDecorator = new RetryDecorator();
+    retryDecorator = new RetryDecorator(pingConfiguration.retry());
     this.licensePayload = licensePayload;
   }
 
