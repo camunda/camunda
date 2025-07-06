@@ -19,7 +19,7 @@ vi.mock('modules/feature-flags', () => ({
   IS_DECISION_DEFINITION_DELETION_ENABLED: true,
 }));
 
-describe.skip('<Decision /> - operations', () => {
+describe('<Decision /> - operations', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);

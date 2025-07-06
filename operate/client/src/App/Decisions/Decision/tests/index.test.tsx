@@ -15,7 +15,7 @@ import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupe
 import {createWrapper} from './mocks';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
-describe.skip('<Decision />', () => {
+describe('<Decision />', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
   });
