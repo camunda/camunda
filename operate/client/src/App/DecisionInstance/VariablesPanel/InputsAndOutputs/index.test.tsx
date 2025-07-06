@@ -30,7 +30,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return <>{children}</>;
 };
 
-describe.skip('<InputsAndOutputs />', () => {
+describe('<InputsAndOutputs />', () => {
   it('should have section panels', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
