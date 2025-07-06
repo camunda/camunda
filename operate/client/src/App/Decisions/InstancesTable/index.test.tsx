@@ -315,6 +315,11 @@ describe('<InstancesTable />', () => {
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {
+      mockFetchDecisionInstances().withSuccess({
+        totalCount: 0,
+        decisionInstances: [],
+      });
+
       vi.stubGlobal('clientConfig', {
         multiTenancyEnabled: true,
       });
@@ -336,6 +341,11 @@ describe('<InstancesTable />', () => {
   );
 
   it('should hide tenant column when multi tenancy is enabled and tenant filter is a specific tenant', async () => {
+    mockFetchDecisionInstances().withSuccess({
+      totalCount: 0,
+      decisionInstances: [],
+    });
+
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
     });
@@ -354,6 +364,11 @@ describe('<InstancesTable />', () => {
   });
 
   it('should hide tenant column when multi tenancy is disabled', async () => {
+    mockFetchDecisionInstances().withSuccess({
+      totalCount: 0,
+      decisionInstances: [],
+    });
+
     render(<InstancesTable />, {
       wrapper: createWrapper(
         `${Paths.decisions()}?${new URLSearchParams({tenant: 'all'})}`,

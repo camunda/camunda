@@ -38,7 +38,6 @@ vi.mock('dmn-js-literal-expression/lib/Viewer', () => ({
 
 vi.mock('@devbookhq/splitter', async () => {
   const actual = await vi.importActual('@devbookhq/splitter');
-  const mockModule = await import('./__mocks__/@devbookhq/splitter');
   return {
     ...actual,
     default: MockSplitter,
@@ -64,9 +63,7 @@ vi.mock('modules/stores/licenseTag', () => ({
   },
 }));
 
-vi.mock('bpmn-js/lib/features/outline', () => {
-  return () => {};
-});
+vi.mock('bpmn-js/lib/features/outline', () => ({}));
 
 vi.mock('@floating-ui/react-dom', () => {
   const originalModule = vi.importActual('@floating-ui/react-dom');
@@ -121,7 +118,6 @@ beforeEach(async () => {
     })),
   );
 
-  // Clear localStorage for each test
   localStorage.clear();
 });
 
