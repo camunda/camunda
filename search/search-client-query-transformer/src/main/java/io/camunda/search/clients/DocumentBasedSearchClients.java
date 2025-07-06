@@ -134,12 +134,6 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
-      final MessageSubscriptionQuery filter) {
-    return getSearchExecutor().search(filter, EventEntity.class);
-  }
-
-  @Override
   public DocumentBasedSearchClients withSecurityContext(final SecurityContext securityContext) {
     return new DocumentBasedSearchClients(searchClient, transformers, securityContext);
   }

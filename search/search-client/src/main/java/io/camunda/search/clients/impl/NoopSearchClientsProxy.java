@@ -202,12 +202,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
-      final MessageSubscriptionQuery filter) {
-    return SearchQueryResult.empty();
-  }
-
-  @Override
   public SearchClientsProxy withSecurityContext(final SecurityContext securityContext) {
     return this;
   }

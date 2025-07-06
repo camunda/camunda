@@ -124,6 +124,7 @@ import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequ
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingsByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
+import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
@@ -2574,4 +2575,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the job search request
    */
   JobSearchRequest newJobSearchRequest();
+
+  /**
+   * Executes a search request to query message subscriptions.
+   *
+   * <pre>
+   * camundaClient
+   *  .newMessageSubscriptionSearchRequest()
+   *  .filter((f) -> f.messageSubscriptionKey(messageSubscriptionKey))
+   *  .sort((s) -> s.messageName().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the message subscription search request
+   */
+  MessageSubscriptionSearchRequest newMessageSubscriptionSearchRequest();
 }
