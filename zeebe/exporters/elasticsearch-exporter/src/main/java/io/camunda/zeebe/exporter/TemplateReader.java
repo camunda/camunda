@@ -32,7 +32,7 @@ final class TemplateReader {
 
   /** Reads the shared component template from the resources. */
   Template readComponentTemplate() {
-    return readTemplate(ZEEBE_RECORD_TEMPLATE_JSON);
+    return readTemplate(zeebeRecordTemplateFile());
   }
 
   /**
@@ -52,6 +52,11 @@ final class TemplateReader {
     template.template().aliases().put(aliasName, Collections.emptyMap());
 
     return template;
+  }
+
+  // this is used purely for testing so spies can change the component template
+  public String zeebeRecordTemplateFile() {
+    return ZEEBE_RECORD_TEMPLATE_JSON;
   }
 
   private String findResourceForTemplate(final ValueType valueType) {
