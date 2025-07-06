@@ -19,5 +19,12 @@
     "src/modules/testUtils.tsx",
     "src/modules/testUtils/**/*"
   ],
-  "exclude": []
+  "exclude": [
+    "src/**/*.browser.test.ts",
+    "src/**/*.browser.test.tsx",
+    "src/**/*.browser.spec.ts",
+    "src/**/*.browser.spec.tsx",
+    "./vitest.browser.setup.ts",
+    "src/test-extend.ts"
+  ]
 }

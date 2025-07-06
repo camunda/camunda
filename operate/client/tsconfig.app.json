@@ -13,7 +13,9 @@
     "src/**/mocks.tsx",
     "src/**/*.setup.ts",
     "src/modules/testUtils.tsx",
-    "src/modules/testUtils/**/*"
+    "src/modules/testUtils/**/*",
+    "./vitest.browser.setup.ts",
+    "src/test-extend.ts"
   ],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",

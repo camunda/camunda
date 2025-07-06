@@ -17,6 +17,7 @@ import browserslistToEsbuild from 'browserslist-to-esbuild';
 import license from 'rollup-plugin-license';
 import path from 'node:path';
 import sbom from '@vzeta/rollup-plugin-sbom';
+import {configDefaults} from 'vitest/config';
 
 const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
 const outDir = 'build';
@@ -67,32 +68,53 @@ export default defineConfig(({mode}) => ({
     banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
     legalComments: 'none',
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['mixed-decls', 'global-builtin'],
+      },
+    },
+  },
   resolve: {alias: {src: path.resolve(__dirname, './src')}},
   test: {
     globals: true,
-    environment: 'jsdom',
-    include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
-    setupFiles: ['./src/setupTests.tsx'],
     restoreMocks: true,
     mockReset: true,
-    coverage: {
-      provider: 'istanbul',
-      exclude: [
-        'playwright.config.ts',
-        'renameProdIndex.mjs',
-        'public/**',
-        'e2e/**',
-        `${outDir}/**`,
-        'src/modules/mockServer/startBrowserMocking.tsx',
-      ],
-      reporter: ['html', 'default', 'hanging-process'],
-      all: true,
-      thresholds: {
-        lines: 80,
-        functions: 80,
-        branches: 80,
-        statements: 80,
+    unstubGlobals: true,
+    clearMocks: true,
+    resetMocks: true,
+    unstubEnvs: true,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          environment: 'jsdom',
+          include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+          exclude: [
+            ...configDefaults.exclude,
+            './src/**/*.browser.{test,spec}.?(c|m)[jt]s?(x)',
+          ],
+          setupFiles: ['./src/setupTests.tsx'],
+        },
       },
-    },
+      {
+        extends: true,
+        test: {
+          name: 'browser',
+          include: ['./src/**/*.browser.{test,spec}.?(c|m)[jt]s?(x)'],
+          setupFiles: ['./vitest.browser.setup.ts'],
+          browser: {
+            enabled: true,
+            provider: 'playwright',
+            instances: [
+              {
+                browser: 'chromium',
+              },
+            ],
+          },
+        },
+      },
+    ],
   },
 }));
