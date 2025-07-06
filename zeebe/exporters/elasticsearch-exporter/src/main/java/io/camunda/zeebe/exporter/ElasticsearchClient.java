@@ -187,6 +187,10 @@ class ElasticsearchClient implements AutoCloseable {
     return putComponentTemplate(template);
   }
 
+  public RestClient getRestClient() {
+    return client;
+  }
+
   private void exportBulk() {
     final BulkIndexResponse response;
     try {

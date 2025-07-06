@@ -10,8 +10,6 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.HashSet;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +19,7 @@ public class ElasticsearchExporterSchemaManager {
       LoggerFactory.getLogger(ElasticsearchExporterSchemaManager.class.getPackageName());
   private final ElasticsearchClient client;
   private final ElasticsearchExporterConfiguration configuration;
-  private final Set<String> indexTemplatesCreated = new HashSet<>();
+  private final ElasticsearchSchemaVersionChecker indexTemplatesCreated;
 
   /**
    * Creates a new schema manager, and it is to be used by the exporter to manage the Elasticsearch
@@ -34,6 +32,8 @@ public class ElasticsearchExporterSchemaManager {
       final ElasticsearchClient client, final ElasticsearchExporterConfiguration configuration) {
     this.client = client;
     this.configuration = configuration;
+    indexTemplatesCreated =
+        client != null ? new ElasticsearchSchemaVersionChecker(client.getRestClient()) : null;
   }
 
   /**
