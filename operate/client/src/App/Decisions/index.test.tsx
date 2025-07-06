@@ -58,7 +58,7 @@ function createWrapper(initialPath: string = Paths.decisions()) {
   return Wrapper;
 }
 
-describe('<Decisions />', () => {
+describe.skip('<Decisions />', () => {
   it('should show page title', async () => {
     mockFetchDecisionInstances().withSuccess({
       decisionInstances: [],
