@@ -51,7 +51,7 @@ const createWrapper = (initialPath: string = Paths.decisions()) => {
   return Wrapper;
 };
 
-describe.skip('<InstancesTable />', () => {
+describe('<InstancesTable />', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
   });
@@ -190,7 +190,7 @@ describe.skip('<InstancesTable />', () => {
   });
 
   it('should navigate to decision instance page', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
@@ -219,7 +219,7 @@ describe.skip('<InstancesTable />', () => {
   });
 
   it('should navigate to process instance page', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchDecisionInstances().withSuccess({
       totalCount: 1,
@@ -315,9 +315,9 @@ describe.skip('<InstancesTable />', () => {
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {
-      window.clientConfig = {
+      vi.stubGlobal('clientConfig', {
         multiTenancyEnabled: true,
-      };
+      });
 
       render(<InstancesTable />, {
         wrapper: createWrapper(
@@ -331,14 +331,14 @@ describe.skip('<InstancesTable />', () => {
         screen.getByRole('columnheader', {name: 'Tenant'}),
       ).toBeInTheDocument();
 
-      window.clientConfig = undefined;
+      vi.unstubAllGlobals();
     },
   );
 
   it('should hide tenant column when multi tenancy is enabled and tenant filter is a specific tenant', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     render(<InstancesTable />, {
       wrapper: createWrapper(
@@ -350,7 +350,7 @@ describe.skip('<InstancesTable />', () => {
       screen.queryByRole('columnheader', {name: 'Tenant'}),
     ).not.toBeInTheDocument();
 
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 
   it('should hide tenant column when multi tenancy is disabled', async () => {
