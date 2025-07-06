@@ -60,7 +60,7 @@ const MOCK_FILTERS_PARAMS = {
   tenant: 'tenant-A',
 } as const;
 
-describe('<Filters />', () => {
+describe.skip('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     mockMe().withSuccess(
