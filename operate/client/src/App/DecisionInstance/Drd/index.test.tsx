@@ -38,7 +38,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-describe.skip('<Drd />', () => {
+describe('<Drd />', () => {
   beforeEach(() => {
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDrdData().withSuccess(mockDrdData);
