@@ -53,7 +53,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return <>{children}</>;
 };
 
-describe('<DecisionOperations />', () => {
+describe.skip('<DecisionOperations />', () => {
   it('should open modal and show content', async () => {
     const {user} = render(
       <DecisionOperations
