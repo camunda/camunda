@@ -11,6 +11,7 @@ import {
   screen,
   waitForElementToBeRemoved,
   waitFor,
+  fireEvent,
 } from 'modules/testing-library';
 import {Link, MemoryRouter, type To} from 'react-router-dom';
 import {Login} from './index';
@@ -74,14 +75,14 @@ describe('<Login />', () => {
 
     await user.type(screen.getByLabelText(/^username$/i), 'demo');
     await user.type(screen.getByLabelText(/^password$/i), 'demo');
-    await user.click(screen.getByRole('button', {name: 'Login'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
 
     mockLogin().withSuccess(null);
 
-    await user.click(screen.getByRole('button', {name: 'Login'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
