@@ -60,11 +60,11 @@ const MOCK_FILTERS_PARAMS = {
   processInstanceId: '2251799813689549',
 } as const;
 
-describe.skip('<Filters />', () => {
+describe('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     await groupedDecisionsStore.fetchDecisions();
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
   afterEach(() => {
@@ -131,6 +131,7 @@ describe.skip('<Filters />', () => {
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -170,6 +171,7 @@ describe.skip('<Filters />', () => {
     });
     await user.click(screen.getByText('Apply'));
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         Object.fromEntries(

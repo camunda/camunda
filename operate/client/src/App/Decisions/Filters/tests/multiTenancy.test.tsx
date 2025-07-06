@@ -60,7 +60,7 @@ const MOCK_FILTERS_PARAMS = {
   tenant: 'tenant-A',
 } as const;
 
-describe.skip('<Filters />', () => {
+describe('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     mockMe().withSuccess(
@@ -75,7 +75,7 @@ describe.skip('<Filters />', () => {
     await authenticationStore.authenticate();
 
     await groupedDecisionsStore.fetchDecisions();
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
   afterEach(() => {
@@ -84,9 +84,9 @@ describe.skip('<Filters />', () => {
   });
 
   it('should write filters to url', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     const MOCK_VALUES = {
       name: 'invoice-assign-approver',
@@ -144,13 +144,13 @@ describe.skip('<Filters />', () => {
       ).toEqual(MOCK_VALUES),
     );
 
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 
   it('initialise filter values from url', () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     render(<Filters />, {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
@@ -165,7 +165,7 @@ describe.skip('<Filters />', () => {
       'Tenant A',
     );
 
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 
   it('should hide multi tenancy filter if its not enabled in client config', async () => {
@@ -198,13 +198,13 @@ describe.skip('<Filters />', () => {
     );
     expect(screen.getByLabelText('Name')).toBeDisabled();
 
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 
   it('should clear decision name and version field when tenant filter is changed', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
@@ -248,6 +248,6 @@ describe.skip('<Filters />', () => {
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a decision version/i);
 
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 });
