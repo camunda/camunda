@@ -20,14 +20,14 @@ import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetai
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 import {useEffect} from 'react';
 
-describe.skip('<VariablesPanel />', () => {
+describe('<VariablesPanel />', () => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => decisionInstanceDetailsStore.reset);
 
     return <>{children}</>;
   };
 
-  it('should have 2 tabs', () => {
+  it.skip('should have 2 tabs', () => {
     render(<VariablesPanel />, {wrapper: Wrapper});
 
     expect(
@@ -57,7 +57,7 @@ describe.skip('<VariablesPanel />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should switch tab content', async () => {
+  it.skip('should switch tab content', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
