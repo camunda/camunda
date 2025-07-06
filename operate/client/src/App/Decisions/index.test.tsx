@@ -58,7 +58,7 @@ function createWrapper(initialPath: string = Paths.decisions()) {
   return Wrapper;
 }
 
-describe.skip('<Decisions />', () => {
+describe('<Decisions />', () => {
   it('should show page title', async () => {
     mockFetchDecisionInstances().withSuccess({
       decisionInstances: [],
@@ -80,8 +80,8 @@ describe.skip('<Decisions />', () => {
     );
   });
 
-  it('should poll 3 times for grouped decisions and redirect to initial decisions page if decision name does not exist', async () => {
-    vi.useFakeTimers();
+  it.skip('should poll 3 times for grouped decisions and redirect to initial decisions page if decision name does not exist', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const queryString =
       '?evaluated=true&failed=true&name=non-existing-decision&version=all';
