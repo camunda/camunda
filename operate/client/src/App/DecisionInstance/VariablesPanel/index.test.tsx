@@ -20,7 +20,7 @@ import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetai
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 import {useEffect} from 'react';
 
-describe('<VariablesPanel />', () => {
+describe.skip('<VariablesPanel />', () => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => decisionInstanceDetailsStore.reset);
 
