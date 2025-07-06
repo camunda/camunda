@@ -50,7 +50,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-describe.skip('<DecisionInstance />', () => {
+describe('<DecisionInstance />', () => {
   beforeEach(() => {
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
@@ -200,7 +200,7 @@ describe.skip('<DecisionInstance />', () => {
     expect(screen.queryByTestId('drd')).not.toBeInTheDocument();
   });
 
-  it('should not keep same tab selected when page is completely refreshed', async () => {
+  it.skip('should not keep same tab selected when page is completely refreshed', async () => {
     const {user, unmount, rerender} = render(<DecisionInstance />, {
       wrapper: Wrapper,
     });

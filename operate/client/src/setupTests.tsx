@@ -9,15 +9,40 @@
 import '@testing-library/jest-dom';
 import {mockServer} from 'modules/mock-server/node';
 import {configure} from 'modules/testing-library';
-import React from 'react';
+import MockDmnJsSharedManager from '__mocks__/dmn-js-shared/lib/base/Manager';
+import MockDmnJsSharedDiUtil from '__mocks__/dmn-js-shared/lib/util/DiUtil';
+import MockDmnJsSharedModelUtil from '__mocks__/dmn-js-shared/lib/util/ModelUtil';
+import MockDmnJsDecisionTableViewer from '__mocks__/dmn-js-decision-table/lib/Viewer';
+import MockDmnJsDrdNavigatedViewer from '__mocks__/dmn-js-drd/lib/NavigatedViewer';
+import MockDmnJsLiteralExpressionViewer from '__mocks__/dmn-js-literal-expression/lib/Viewer';
+import MockSplitter, {SplitDirection} from './__mocks__/@devbookhq/splitter';
+
+vi.mock('dmn-js-shared/lib/base/Manager', () => ({
+  default: MockDmnJsSharedManager,
+}));
+vi.mock('dmn-js-shared/lib/util/DiUtil', () => ({
+  default: MockDmnJsSharedDiUtil,
+}));
+vi.mock('dmn-js-shared/lib/util/ModelUtil', () => ({
+  default: MockDmnJsSharedModelUtil,
+}));
+vi.mock('dmn-js-decision-table/lib/Viewer', () => ({
+  default: MockDmnJsDecisionTableViewer,
+}));
+vi.mock('dmn-js-drd/lib/NavigatedViewer', () => ({
+  default: MockDmnJsDrdNavigatedViewer,
+}));
+vi.mock('dmn-js-literal-expression/lib/Viewer', () => ({
+  default: MockDmnJsLiteralExpressionViewer,
+}));
 
 vi.mock('@devbookhq/splitter', async () => {
   const actual = await vi.importActual('@devbookhq/splitter');
   const mockModule = await import('./__mocks__/@devbookhq/splitter');
   return {
     ...actual,
-    default: mockModule.default,
-    SplitDirection: mockModule.SplitDirection,
+    default: MockSplitter,
+    SplitDirection: SplitDirection,
   };
 });
 
