@@ -9,6 +9,7 @@
 import {mockApplyDeleteDefinitionOperation} from 'modules/mocks/api/decisions/operations';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -53,7 +54,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return <>{children}</>;
 };
 
-describe.skip('<DecisionOperations />', () => {
+describe('<DecisionOperations />', () => {
   it('should open modal and show content', async () => {
     const {user} = render(
       <DecisionOperations
@@ -221,7 +222,7 @@ describe.skip('<DecisionOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -273,7 +274,7 @@ describe.skip('<DecisionOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
