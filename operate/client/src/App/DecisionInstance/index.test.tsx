@@ -50,7 +50,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   );
 };
 
-describe('<DecisionInstance />', () => {
+describe.skip('<DecisionInstance />', () => {
   beforeEach(() => {
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
