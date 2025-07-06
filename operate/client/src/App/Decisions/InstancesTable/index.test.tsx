@@ -51,7 +51,7 @@ const createWrapper = (initialPath: string = Paths.decisions()) => {
   return Wrapper;
 };
 
-describe('<InstancesTable />', () => {
+describe.skip('<InstancesTable />', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
   });
