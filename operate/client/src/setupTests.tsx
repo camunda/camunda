@@ -16,6 +16,10 @@ import MockDmnJsDecisionTableViewer from '__mocks__/dmn-js-decision-table/lib/Vi
 import MockDmnJsDrdNavigatedViewer from '__mocks__/dmn-js-drd/lib/NavigatedViewer';
 import MockDmnJsLiteralExpressionViewer from '__mocks__/dmn-js-literal-expression/lib/Viewer';
 import MockSplitter, {SplitDirection} from './__mocks__/@devbookhq/splitter';
+import MockBpmnJsNavigatedViewer from '__mocks__/bpmn-js/lib/NavigatedViewer';
+import MockBpmnJs from '__mocks__/bpmn-js';
+import MockBpmnIoElementTemplateIconRenderer from '__mocks__/@bpmn-io/element-template-icon-renderer';
+import MockReactMarkdown from '__mocks__/react-markdown';
 
 vi.mock('dmn-js-shared/lib/base/Manager', () => ({
   default: MockDmnJsSharedManager,
@@ -45,8 +49,6 @@ vi.mock('@devbookhq/splitter', async () => {
   };
 });
 
-vi.mock('modules/components/MonacoEditor');
-
 vi.mock('modules/components/InfiniteScroller', () => {
   const InfiniteScroller: React.FC<{children?: React.ReactNode}> = ({
     children,
@@ -63,7 +65,7 @@ vi.mock('modules/stores/licenseTag', () => ({
   },
 }));
 
-vi.mock('bpmn-js/lib/features/outline', () => ({}));
+vi.mock('bpmn-js/lib/features/outline', () => ({default: () => {}}));
 
 vi.mock('@floating-ui/react-dom', () => {
   const originalModule = vi.importActual('@floating-ui/react-dom');
@@ -73,6 +75,18 @@ vi.mock('@floating-ui/react-dom', () => {
     hide: () => {},
   };
 });
+
+vi.mock('bpmn-js/lib/NavigatedViewer', () => ({
+  default: MockBpmnJsNavigatedViewer,
+}));
+
+vi.mock('bpmn-js', () => MockBpmnJs);
+
+vi.mock('@bpmn-io/element-template-icon-renderer', () => ({
+  default: MockBpmnIoElementTemplateIconRenderer,
+}));
+
+vi.mock('react-markdown', () => MockReactMarkdown);
 
 const localStorageMock = (function () {
   let store: {[key: string]: string} = {};

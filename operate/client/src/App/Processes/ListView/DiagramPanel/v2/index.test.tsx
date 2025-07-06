@@ -75,9 +75,6 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 }
 
 describe('DiagramPanel', () => {
-  const originalWindow = {...window};
-  const locationSpy = vi.spyOn(window, 'location', 'get');
-
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -87,20 +84,14 @@ describe('DiagramPanel', () => {
     processesStore.fetchProcesses();
   });
 
-  afterEach(() => {
-    locationSpy.mockClear();
-  });
-
   it('should render header', async () => {
-    const originalWindowPrompt = window.prompt;
-    window.prompt = vi.fn();
-
     const queryString = '?process=bigVarProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
+    vi.stubGlobal('prompt', vi.fn());
 
     const {user} = render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -121,16 +112,16 @@ describe('DiagramPanel', () => {
     );
     expect(await screen.findByText('Copied to clipboard')).toBeInTheDocument();
 
-    window.prompt = originalWindowPrompt;
+    vi.unstubAllGlobals();
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     mockFetchProcessInstancesStatistics().withDelay(mockProcessStatistics);
 
@@ -143,6 +134,8 @@ describe('DiagramPanel', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 
   it('should show an empty state message when no process is selected', async () => {
@@ -164,10 +157,10 @@ describe('DiagramPanel', () => {
   it('should show a message when no process version is selected', async () => {
     const queryString = '?process=bigVarProcess&version=all';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -183,15 +176,17 @@ describe('DiagramPanel', () => {
     ).toBeInTheDocument();
 
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
     const queryString = '?process=eventBasedGatewayProcess&version=all';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -202,6 +197,8 @@ describe('DiagramPanel', () => {
         'There is more than one Version selected for Process "eventBasedGatewayProcess"',
       ),
     ).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 
   it('should show an error message', async () => {
@@ -229,10 +226,10 @@ describe('DiagramPanel', () => {
   it('should render statistics', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -243,15 +240,17 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(await screen.findByTestId(/^state-overlay/)).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 
   it('should not fetch batch modification data outside batch modification mode', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     const mockProcessInstancesStatisticsResolver = vi.fn();
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics, {
@@ -291,6 +290,8 @@ describe('DiagramPanel', () => {
     await waitFor(() =>
       expect(mockProcessInstancesStatisticsResolver).toHaveBeenCalledTimes(2),
     );
+
+    vi.unstubAllGlobals();
   });
 
   it('should render batch modification notification', async () => {
@@ -313,10 +314,10 @@ describe('DiagramPanel', () => {
   it('should still render diagram when useProcessInstancesOverlayData fails', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     mockFetchProcessInstancesStatistics().withServerError();
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -327,15 +328,17 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 
   it('should still render diagram when useBatchModificationOverlayData fails', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstancesStatistics().withServerError();
@@ -346,16 +349,18 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
+
+    vi.unstubAllGlobals();
   });
 
   it('should display statistics when active and incidents are selected in the filter', async () => {
     const queryString =
       '?process=bigVarProcess&version=1&active=true&incidents=true';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     mockFetchProcessInstancesStatistics().withSuccess(
       mockMultipleStatesStatistics,
@@ -373,16 +378,18 @@ describe('DiagramPanel', () => {
     expect(
       await screen.findByTestId('state-overlay-EndEvent_042s0oc-incidents'),
     ).toHaveTextContent('3');
+
+    vi.unstubAllGlobals();
   });
 
   it('should display statistics when completed and canceled are selected in the filter', async () => {
     const queryString =
       '?process=bigVarProcess&version=1&completed=true&canceled=true';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     mockFetchProcessInstancesStatistics().withSuccess(
       mockMultipleStatesStatistics,
@@ -402,16 +409,18 @@ describe('DiagramPanel', () => {
         'state-overlay-EndEvent_042s0oc-completedEndEvents',
       ),
     ).toHaveTextContent('4');
+
+    vi.unstubAllGlobals();
   });
 
   it('should display statistics when all states are selected', async () => {
     const queryString =
       '?process=bigVarProcess&version=1&active=true&incidents=true&completed=true&canceled=true';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     mockFetchProcessInstancesStatistics().withSuccess(
       mockMultipleStatesStatistics,
@@ -437,5 +446,7 @@ describe('DiagramPanel', () => {
         'state-overlay-EndEvent_042s0oc-completedEndEvents',
       ),
     ).toHaveTextContent('4');
+
+    vi.unstubAllGlobals();
   });
 });
