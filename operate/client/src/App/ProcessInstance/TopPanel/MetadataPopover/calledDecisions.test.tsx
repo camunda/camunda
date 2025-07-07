@@ -26,10 +26,13 @@ import {init} from 'modules/utils/flowNodeMetadata';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
-vi.mock('date-fns', () => ({
-  ...vi.importActual('date-fns'),
-  formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
-}));
+vi.mock('date-fns', async () => {
+  const actual = await vi.importActual('date-fns');
+  return {
+    ...actual,
+    formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
+  };
+});
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
@@ -78,7 +81,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should render completed decision', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     const {instanceMetadata} = calledDecisionMetadata;
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
@@ -124,7 +127,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should render failed decision', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {instanceMetadata} = calledFailedDecisionMetadata;
     const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;

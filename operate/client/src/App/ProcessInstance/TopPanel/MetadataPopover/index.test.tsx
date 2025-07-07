@@ -34,10 +34,13 @@ import {init} from 'modules/utils/flowNodeMetadata';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
-vi.mock('date-fns', () => ({
-  ...vi.importActual('date-fns'),
-  formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
-}));
+vi.mock('date-fns', async () => {
+  const actual = await vi.importActual('date-fns');
+  return {
+    ...actual,
+    formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
+  };
+});
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
@@ -298,7 +301,7 @@ describe('MetadataPopover', () => {
 
   it('should render link to tasklist', async () => {
     const tasklistUrl = 'https://tasklist:8080';
-    window.clientConfig = {tasklistUrl};
+    vi.stubGlobal('clientConfig', {tasklistUrl});
 
     mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
 
