@@ -14,7 +14,7 @@ import {act} from 'react';
 
 describe('TimeStampLabel', () => {
   it('should hide/display time stamp on time stamp toggle', async () => {
-    render(<TimeStampLabel timeStamp={'2020-07-09T12:26:22.237+0000'} />);
+    render(<TimeStampLabel timeStamp={MOCK_TIMESTAMP} />);
 
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
 
