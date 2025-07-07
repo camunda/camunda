@@ -207,8 +207,15 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   @Override
   public V get(final long timeout, final TimeUnit unit)
       throws InterruptedException, ExecutionException, TimeoutException {
-    countDownLatch.await(timeout, unit);
-    return get();
+    if (!countDownLatch.await(timeout, unit)) {
+      throw new TimeoutException("Timeout waiting for future to complete");
+    }
+
+    if (result.isRight()) {
+      return result.get();
+    } else {
+      throw new ExecutionException(result.getLeft());
+    }
   }
 
   public static <U> ActorFuture<U> completedFuture(final U value) {
