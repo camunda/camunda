@@ -69,6 +69,11 @@ public record ClusterConfiguration(
     return new ClusterConfiguration(version, newMembers, lastChange, pendingChanges, routingState);
   }
 
+  public ClusterConfiguration setRoutingState(final RoutingState updatedRoutingState) {
+    return new ClusterConfiguration(
+        version, members, lastChange, pendingChanges, Optional.of(updatedRoutingState));
+  }
+
   /**
    * Adds or updates a member in the configuration.
    *

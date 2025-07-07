@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 
 public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppliers {
 
@@ -106,6 +107,8 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
             case final AwaitRelocationCompletion relocation ->
                 new AwaitRelocationCompletionApplier(partitionScalingChangeExecutor, relocation);
           };
+      case final UpdateRoutingState updateRoutingState ->
+          new UpdateRoutingStateApplier(updateRoutingState, partitionScalingChangeExecutor);
     };
   }
 }

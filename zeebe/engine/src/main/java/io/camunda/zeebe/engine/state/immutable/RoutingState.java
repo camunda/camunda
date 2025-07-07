@@ -29,10 +29,13 @@ public interface RoutingState {
   long bootstrappedAt(int partitionCount);
 
   sealed interface MessageCorrelation {
+    int partitionCount();
+
     record HashMod(int partitionCount) implements MessageCorrelation {
       public HashMod {
         if (partitionCount <= 0) {
-          throw new IllegalArgumentException("Partition count must be positive");
+          throw new IllegalArgumentException(
+              "Partition count must be positive, was " + partitionCount);
         }
       }
     }
