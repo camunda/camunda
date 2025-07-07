@@ -28,7 +28,6 @@ import org.junit.rules.TestWatcher;
 public class MessagePublishRoutingTest {
 
   public static final String INTERMEDIATE_MSG_NAME = "intermediateMsg";
-  public static final String START_MSG_NAME = "startMsg";
   public static final String CORRELATION_KEY_VARIABLE = "correlationKey";
   private static final String PROCESS_ID = "processId";
 
