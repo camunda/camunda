@@ -46,6 +46,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should render process instance data', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {

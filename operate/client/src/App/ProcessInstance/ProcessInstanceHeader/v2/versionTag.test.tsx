@@ -27,6 +27,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
   });
   afterEach(() => {
