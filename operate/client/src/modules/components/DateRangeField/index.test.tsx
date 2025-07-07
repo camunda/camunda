@@ -99,8 +99,7 @@ describe('Date Range Field', () => {
     expect(screen.getByTestId('toTime')).toHaveValue('01:02:03');
   });
 
-  // Unskip when this bug on Carbon side is fixed: https://github.com/carbon-design-system/carbon/issues/16125
-  it.skip('should apply from and to dates', async () => {
+  it('should apply from and to dates', async () => {
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     await user.click(screen.getByLabelText('Start Date Range'));
@@ -146,7 +145,7 @@ describe('Date Range Field', () => {
   });
 
   it('should show validation error on invalid time format', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     const TIME_ERROR = 'Time has to be in the format hh:mm:ss';
