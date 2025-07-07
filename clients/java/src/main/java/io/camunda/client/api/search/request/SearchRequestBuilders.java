@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.AdHocSubProcessActivityFilter;
+import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
 import io.camunda.client.api.search.filter.BatchOperationItemFilter;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
@@ -34,6 +35,7 @@ import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
+import io.camunda.client.api.search.sort.AuthorizationSort;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
 import io.camunda.client.api.search.sort.ClientSort;
@@ -56,6 +58,7 @@ import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.impl.search.filter.AdHocSubProcessActivityFilterImpl;
+import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
@@ -75,6 +78,7 @@ import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableFilterImpl;
 import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
+import io.camunda.client.impl.search.sort.AuthorizationSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationItemSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationSortImpl;
 import io.camunda.client.impl.search.sort.ClientSortImpl;
@@ -316,6 +320,18 @@ public final class SearchRequestBuilders {
   public static BatchOperationItemSort batchOperationItemSort(
       final Consumer<BatchOperationItemSort> fn) {
     final BatchOperationItemSort sort = new BatchOperationItemSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static AuthorizationFilter authorizationFilter(final Consumer<AuthorizationFilter> fn) {
+    final AuthorizationFilter filter = new AuthorizationFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static AuthorizationSort authorizationSort(final Consumer<AuthorizationSort> fn) {
+    final AuthorizationSort sort = new AuthorizationSortImpl();
     fn.accept(sort);
     return sort;
   }

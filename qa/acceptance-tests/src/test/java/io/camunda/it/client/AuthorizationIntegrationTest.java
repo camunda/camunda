@@ -22,8 +22,10 @@ import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class AuthorizationIntegrationTest {
 
   private static CamundaClient camundaClient;
@@ -81,5 +83,145 @@ public class AuthorizationIntegrationTest {
         .hasMessageContaining(
             "Authorization with authorization key %d not found"
                 .formatted(nonExistingAuthorizationKey));
+  }
+
+  @Test
+  void searchShouldReturnAuthorizationsFilteredByOwnerId() {
+    // when
+    final var ownerId = Strings.newRandomValidIdentityId();
+
+    final CreateAuthorizationResponse authorization =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(ownerId)
+            .ownerType(OwnerType.USER)
+            .resourceId(Strings.newRandomValidIdentityId())
+            .resourceType(ResourceType.RESOURCE)
+            .permissionTypes(PermissionType.CREATE)
+            .send()
+            .join();
+
+    // create one more authorization
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId("anotherOwnerId")
+        .ownerType(OwnerType.USER)
+        .resourceId(Strings.newRandomValidIdentityId())
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE)
+        .send()
+        .join();
+
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var authorizationsSearchResponse =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(fn -> fn.ownerId(ownerId))
+                      .send()
+                      .join();
+              assertThat(authorizationsSearchResponse.items())
+                  .hasSize(1)
+                  .map(Authorization::getOwnerId)
+                  .containsExactly(ownerId);
+            });
+  }
+
+  @Test
+  void searchShouldReturnAuthorizationsFilteredByResourceId() {
+    // when
+    final var resourceId = "resourceId";
+
+    final CreateAuthorizationResponse authorization =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(Strings.newRandomValidIdentityId())
+            .ownerType(OwnerType.USER)
+            .resourceId(resourceId)
+            .resourceType(ResourceType.RESOURCE)
+            .permissionTypes(PermissionType.CREATE)
+            .send()
+            .join();
+
+    // create one more authorization
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId(Strings.newRandomValidIdentityId())
+        .ownerType(OwnerType.USER)
+        .resourceId("someOtherId")
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE)
+        .send()
+        .join();
+
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var authorizationsSearchResponse =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .filter(fn -> fn.resourceIds(resourceId))
+                      .send()
+                      .join();
+              assertThat(authorizationsSearchResponse.items())
+                  .hasSize(1)
+                  .map(Authorization::getResourceId)
+                  .containsExactly(resourceId);
+            });
+  }
+
+  @Test
+  void searchShouldReturnAuthorizationsSortedByOwnerId() {
+    // when
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId("aOwnerId")
+        .ownerType(OwnerType.USER)
+        .resourceId(Strings.newRandomValidIdentityId())
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE)
+        .send()
+        .join();
+
+    // when
+
+    camundaClient
+        .newCreateAuthorizationCommand()
+        .ownerId("bOwnerId")
+        .ownerType(OwnerType.USER)
+        .resourceId(Strings.newRandomValidIdentityId())
+        .resourceType(ResourceType.RESOURCE)
+        .permissionTypes(PermissionType.CREATE)
+        .send()
+        .join();
+
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var authorizationsSearchResponse =
+                  camundaClient
+                      .newAuthorizationSearchRequest()
+                      .sort(s -> s.ownerId().desc())
+                      .send()
+                      .join();
+              assertThat(authorizationsSearchResponse.items())
+                  .map(Authorization::getOwnerId)
+                  .contains("bOwnerId", "aOwnerId");
+            });
+  }
+
+  @Test
+  void searchShouldReturnEmptyListWhenSearchingForNonExistingAuthorizations() {
+    final var searchResponse =
+        camundaClient
+            .newAuthorizationSearchRequest()
+            .filter(fn -> fn.ownerId("nonExistingId"))
+            .send()
+            .join();
+    assertThat(searchResponse.items()).isEmpty();
   }
 }
