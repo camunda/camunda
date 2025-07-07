@@ -22,8 +22,20 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {Operations} from '.';
 import {INSTANCE, ACTIVE_INSTANCE, getWrapper} from './mocks';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {instance} from 'modules/mocks/instance';
 
 describe('Operations - Spinner', () => {
+  beforeEach(() => {
+    // Global mock for individual process instance fetch triggered by router
+    mockFetchProcessInstance().withSuccess({
+      ...instance,
+      id: '1',
+      processId: '1',
+      hasActiveOperation: false,
+    });
+  });
+
   it('should not display spinner', () => {
     render(
       <Operations
@@ -54,8 +66,17 @@ describe('Operations - Spinner', () => {
   });
 
   it('should display spinner if incident id is included in instances with active operations', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
+    // Additional mock for this specific test (since it makes multiple requests)
+    mockFetchProcessInstance().withSuccess({
+      ...instance,
+      id: '1',
+      processId: '1',
+      hasActiveOperation: true,
+    });
+
+    // Main fetch call
     mockFetchProcessInstances().withSuccess({
       processInstances: [
         createInstance({
@@ -88,6 +109,17 @@ describe('Operations - Spinner', () => {
       expect(processInstancesStore.state.status).toBe('fetched'),
     );
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
+
+    // Mock for refresh after timer
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [
+        createInstance({
+          id: 'instance_1',
+          hasActiveOperation: false,
+        }),
+      ],
+      totalCount: 1,
+    });
 
     vi.runOnlyPendingTimers();
 

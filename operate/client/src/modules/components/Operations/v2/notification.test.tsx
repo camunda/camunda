@@ -12,6 +12,8 @@ import {createBatchOperation} from 'modules/testUtils';
 import {Operations} from '.';
 import {INSTANCE, getWrapper} from './mocks';
 import {notificationsStore} from 'modules/stores/notifications';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {instance} from 'modules/mocks/instance';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -20,6 +22,16 @@ vi.mock('modules/stores/notifications', () => ({
 }));
 
 describe('Operations - Notification', () => {
+  beforeEach(() => {
+    // Mock individual process instance fetch triggered by router
+    mockFetchProcessInstance().withSuccess({
+      ...instance,
+      id: '1',
+      processId: '1',
+      hasActiveOperation: false,
+    });
+  });
+
   it('should not display notification and redirect if delete operation is performed on instances page', async () => {
     const {user} = render(
       <Operations

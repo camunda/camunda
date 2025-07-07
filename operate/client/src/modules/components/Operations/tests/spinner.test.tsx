@@ -50,7 +50,7 @@ describe('Operations - Spinner', () => {
   });
 
   it('should display spinner if incident id is included in instances with active operations', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchProcessInstances().withSuccess({
       processInstances: [ACTIVE_INSTANCE],

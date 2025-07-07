@@ -14,14 +14,19 @@ import {Paths} from 'modules/Routes';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
+import {instance} from 'modules/mocks/instance';
 
 describe('Operations - Cancel Operation', () => {
   beforeEach(() => {
+    // Mock for default process instance (triggered by router)
     mockFetchProcessInstance().withSuccess(
       createInstance({
         operations: [SENT_OPERATION],
       }),
     );
+
+    // Default call hierarchy mock (empty - no parent instances)
+    mockFetchCallHierarchy().withSuccess([]);
   });
 
   it('should show modal when trying to cancel called instance', async () => {
@@ -72,6 +77,18 @@ describe('Operations - Cancel Operation', () => {
 
   it('should redirect to linked parent instance', async () => {
     const rootInstanceId = '6755399441058622';
+
+    // Mock for the root instance that will be navigated to
+    mockFetchProcessInstance().withSuccess({
+      ...instance,
+      id: rootInstanceId,
+      processId: rootInstanceId,
+      hasActiveOperation: false,
+    });
+
+    // Mock call hierarchy for the root instance
+    mockFetchCallHierarchy().withSuccess([]);
+
     mockFetchCallHierarchy().withSuccess([
       {
         processInstanceKey: rootInstanceId,
