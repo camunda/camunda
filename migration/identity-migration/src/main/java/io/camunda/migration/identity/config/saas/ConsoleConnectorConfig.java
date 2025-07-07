@@ -11,6 +11,7 @@ import io.camunda.migration.identity.client.ConsoleClient;
 import io.camunda.migration.identity.config.ConsoleProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +24,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
@@ -70,11 +69,11 @@ public class ConsoleConnectorConfig {
       final var headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_JSON);
 
-      final MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
-      form.add("client_id", consoleProperties.getClientId());
-      form.add("client_secret", consoleProperties.getClientSecret());
-      form.add("audience", consoleProperties.getAudience());
-      form.add("grant_type", "client_credentials");
+      final Map<String, String> form = new HashMap<>();
+      form.put("client_id", consoleProperties.getClientId());
+      form.put("client_secret", consoleProperties.getClientSecret());
+      form.put("audience", consoleProperties.getAudience());
+      form.put("grant_type", "client_credentials");
 
       final var entity = new HttpEntity<>(form, headers);
       final var response =

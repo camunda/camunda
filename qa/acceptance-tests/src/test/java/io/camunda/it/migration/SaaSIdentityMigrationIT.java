@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.camunda.client.CamundaClient;
@@ -79,10 +80,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(parallel = true)
 public class SaaSIdentityMigrationIT {
 
+  public static final String CONSOLE_CLIENT_ID = "client-id";
+  public static final String CONSOLE_CLIENT_SECRET = "client-secret";
+  public static final String CONSOLE_AUDIENCE = "test-audience";
+
   @TestZeebe(autoStart = false)
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
 
+  private static final String AUTH_TOKEN_BODY =
+      """
+      {
+          "client_id":"%s",
+          "client_secret":"%s",
+          "audience":"%s",
+          "grant_type":"client_credentials"
+        }
+      """;
   private static final String TOKEN = loadFixture("jwt-identity-client.txt");
 
   @Container
@@ -139,9 +153,9 @@ public class SaaSIdentityMigrationIT {
     migrationProperties
         .getConsole()
         .setIssuerBackendUrl(wmRuntimeInfo.getHttpBaseUrl() + "/oauth/token");
-    migrationProperties.getConsole().setClientId("client-id");
-    migrationProperties.getConsole().setClientSecret("client-secret");
-    migrationProperties.getConsole().setAudience("test-audience");
+    migrationProperties.getConsole().setClientId(CONSOLE_CLIENT_ID);
+    migrationProperties.getConsole().setClientSecret(CONSOLE_CLIENT_SECRET);
+    migrationProperties.getConsole().setAudience(CONSOLE_AUDIENCE);
     migrationProperties.getConsole().setClusterId("cluster123");
     migrationProperties.getConsole().setInternalClientId("client123");
 
@@ -697,8 +711,28 @@ public class SaaSIdentityMigrationIT {
                 ok().withHeader("Content-Type", "application/json")
                     .withBody(loadFixture("jwks.json"))));
 
+    // console auth token
     stubFor(
         post(urlEqualTo("/oauth/token"))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withRequestBody(
+                WireMock.equalToJson(
+                    AUTH_TOKEN_BODY.formatted(
+                        CONSOLE_CLIENT_ID, CONSOLE_CLIENT_SECRET, CONSOLE_AUDIENCE)))
+            .willReturn(
+                aResponse()
+                    .withStatus(200)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody("{\"access_token\": \"" + TOKEN + "\"}")));
+
+    // management identity auth token
+    stubFor(
+        post(urlEqualTo("/oauth/token"))
+            .withHeader("Content-Type", equalTo("application/json"))
+            .withRequestBody(
+                WireMock.equalToJson(
+                    AUTH_TOKEN_BODY.formatted(
+                        IDENTITY_CLIENT, IDENTITY_CLIENT_SECRET, CAMUNDA_IDENTITY_RESOURCE_SERVER)))
             .willReturn(
                 aResponse()
                     .withStatus(200)
