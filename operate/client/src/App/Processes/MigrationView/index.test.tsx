@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {render, screen, within} from 'modules/testing-library';
 import {Paths} from 'modules/Routes';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
@@ -37,33 +37,36 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
       };
     }, []);
 
+    const router = createMemoryRouter(
+      [
+        {
+          path: Paths.processes(),
+          element: (
+            <>
+              <AppHeader />
+              {children}
+            </>
+          ),
+        },
+        {
+          path: Paths.dashboard(),
+          element: (
+            <>
+              <AppHeader />
+              dashboard page
+            </>
+          ),
+        },
+      ],
+      {
+        initialEntries: [initialPath],
+        basename: contextPath ?? '',
+      },
+    );
+
     return (
       <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter
-          initialEntries={[initialPath]}
-          basename={contextPath ?? ''}
-        >
-          <Routes>
-            <Route
-              path={Paths.processes()}
-              element={
-                <>
-                  <AppHeader />
-                  {children}
-                </>
-              }
-            />
-            <Route
-              path={Paths.dashboard()}
-              element={
-                <>
-                  <AppHeader />
-                  dashboard page
-                </>
-              }
-            />
-          </Routes>
-        </MemoryRouter>
+        <RouterProvider router={router} />
       </QueryClientProvider>
     );
   };
@@ -76,15 +79,15 @@ describe('MigrationView', () => {
   });
 
   afterEach(() => {
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 
   it.each(['/custom', ''])(
     'should block navigation to dashboard page when migration mode is enabled - context path: %p',
     async (contextPath) => {
-      window.clientConfig = {
+      vi.stubGlobal('clientConfig', {
         contextPath,
-      };
+      });
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(
         open('orderProcess.bpmn'),
       );
@@ -150,9 +153,9 @@ describe('MigrationView', () => {
     'should block navigation to processes page when migration mode is enabled - context path: %p',
 
     async (contextPath) => {
-      window.clientConfig = {
+      vi.stubGlobal('clientConfig', {
         contextPath,
-      };
+      });
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(
         open('orderProcess.bpmn'),
       );
