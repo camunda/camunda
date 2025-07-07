@@ -97,7 +97,7 @@ vi.mock('@bpmn-io/element-template-icon-renderer', () => ({
   default: MockBpmnIoElementTemplateIconRenderer,
 }));
 
-vi.mock('react-markdown', () => MockReactMarkdown);
+vi.mock('react-markdown', () => ({default: MockReactMarkdown}));
 
 const localStorageMock = (function () {
   let store: {[key: string]: string} = {};
