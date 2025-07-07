@@ -9,11 +9,9 @@ package io.camunda.operate.modules;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.modules.ModulesTestApplication;
-import io.camunda.operate.webapp.security.UserService;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -30,6 +28,4 @@ import org.springframework.test.context.junit4.SpringRunner;
 public abstract class ModuleAbstractIT {
 
   @Autowired protected ApplicationContext applicationContext;
-
-  @MockBean protected UserService userService;
 }
