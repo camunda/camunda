@@ -23,8 +23,11 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -136,6 +139,17 @@ final class Utils {
       final int partitionsCount,
       final boolean deployProcess,
       final String processId) {
+    return createInstanceWithAJobOnAllPartitions(
+        camundaClient, jobType, partitionsCount, deployProcess, processId, Map::of);
+  }
+
+  static List<Long> createInstanceWithAJobOnAllPartitions(
+      final CamundaClient camundaClient,
+      final String jobType,
+      final int partitionsCount,
+      final boolean deployProcess,
+      final String processId,
+      final Supplier<Map<String, Object>> variables) {
 
     if (deployProcess) {
       deployProcessModel(camundaClient, jobType, processId);
@@ -152,6 +166,7 @@ final class Utils {
                       .newCreateInstanceCommand()
                       .bpmnProcessId(processId)
                       .latestVersion()
+                      .variables(variables.get())
                       .send()
                       .join();
               createdProcessInstances.add(result.getProcessInstanceKey());
@@ -159,8 +174,7 @@ final class Utils {
               final var partitions =
                   createdProcessInstances.stream()
                       .map(Protocol::decodePartitionId)
-                      .distinct()
-                      .toList();
+                      .collect(Collectors.toSet());
               assertThat(partitions)
                   .containsExactlyInAnyOrderElementsOf(
                       IntStream.rangeClosed(1, partitionsCount).boxed().toList());

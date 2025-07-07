@@ -20,12 +20,14 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.client.CamundaClient;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -40,6 +42,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -319,6 +326,81 @@ public class ScaleUpPartitionsTest {
     } else {
       assertThatRoutingStateMatches(routingStateAfterScaling);
     }
+  }
+
+  @Test
+  public void shouldNotBreakMessageCorrelation() {
+    // given
+    cluster.awaitHealthyTopology();
+    final var messageId = new AtomicInteger();
+    final var correlationKeyVariable = "correlationKey";
+    final var correlationKeys = new ArrayBlockingQueue<Integer>(1024);
+    final var processId = "PROCESS_WITH_MESSAGE";
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .intermediateCatchEvent(
+                "catch-me",
+                b ->
+                    b.message(
+                        m ->
+                            m.name("message")
+                                .zeebeCorrelationKeyExpression(correlationKeyVariable)))
+            .endEvent()
+            .done();
+
+    final var deploymentKey =
+        camundaClient
+            .newDeployResourceCommand()
+            .addProcessModel(process, "process.bpmn")
+            .send()
+            .join()
+            .getKey();
+    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
+    final var targetPartitionCount = PARTITIONS_COUNT + 1;
+
+    final Supplier<Map<String, Object>> variableProvider =
+        () -> {
+          final var key = messageId.incrementAndGet();
+          if (!correlationKeys.add(key)) {
+            throw new IllegalStateException("Too many correlation keys created");
+          }
+          return Map.of(correlationKeyVariable, key);
+        };
+
+    createInstanceWithAJobOnAllPartitions(
+        camundaClient, JOB_TYPE, PARTITIONS_COUNT, false, processId, variableProvider);
+
+    // when
+    scaleToPartitions(targetPartitionCount);
+    awaitScaleUpCompletion(targetPartitionCount);
+
+    createInstanceWithAJobOnAllPartitions(
+        camundaClient, JOB_TYPE, targetPartitionCount, false, processId, variableProvider);
+
+    // then
+    // After creating instances, wait for subscriptions to be established
+    Awaitility.await("until all messages can be correlated successfully")
+        .timeout(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(
+            () -> {
+              // Try to correlate one message to verify subscriptions are ready
+              final var testKey = correlationKeys.peek();
+              if (testKey != null) {
+                try {
+                  camundaClient
+                      .newCorrelateMessageCommand()
+                      .messageName("message")
+                      .correlationKey(String.valueOf(testKey))
+                      .send()
+                      .join(1, TimeUnit.SECONDS);
+                  correlationKeys.poll(); // Remove the successfully correlated key
+                } catch (final Exception e) {
+                  throw new AssertionError("Message subscriptions not ready yet", e);
+                }
+              }
+            });
   }
 
   public void assertThatRoutingStateMatches(final RoutingState routingState) {
