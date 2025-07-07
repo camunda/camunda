@@ -99,7 +99,13 @@ final class TestClient implements CloseableSilently {
 
   Optional<ComponentTemplateWrapper> getComponentTemplate() {
     try {
-      final var request = new Request("GET", "/_component_template/" + config.index.prefix);
+      final var request =
+          new Request(
+              "GET",
+              "/_component_template/"
+                  + config.index.prefix
+                  + "-"
+                  + VersionUtil.getVersionLowerCase());
       final var response = restClient.performRequest(request);
       final var templates =
           MAPPER.readValue(response.getEntity().getContent(), ComponentTemplatesDto.class);
