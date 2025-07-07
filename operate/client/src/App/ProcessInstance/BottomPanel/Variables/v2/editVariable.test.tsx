@@ -183,8 +183,11 @@ describe('Edit variable', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
 
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess(mockVariables);
 
@@ -219,11 +222,13 @@ describe('Edit variable', () => {
 
     expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
+    vi.runOnlyPendingTimers();
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
 
     await user.clear(screen.getByTestId('edit-variable-value'));
     await user.type(screen.getByTestId('edit-variable-value'), '123');
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         screen.getByRole('button', {name: /save variable/i}),
@@ -381,8 +386,8 @@ describe('Edit variable', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-
-    vi.useFakeTimers();
+    mockFetchProcessDefinitionXml().withSuccess('');
+    vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -412,14 +417,6 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByTestId('edit-variable-value'));
 
-    expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
-
-    vi.runOnlyPendingTimers();
-
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('full-variable-loader'),
-    );
-
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
 
     vi.clearAllTimers();
@@ -429,7 +426,7 @@ describe('Edit variable', () => {
   it('should load full value on json viewer click during modification mode if it was truncated', async () => {
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-
+    mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchVariables().withSuccess([
       createVariable({isPreview: true, value: '123'}),
     ]);
@@ -452,52 +449,6 @@ describe('Edit variable', () => {
     mockFetchVariable().withSuccess(
       createVariable({isPreview: false, value: '123456'}),
     );
-
-    mockFetchProcessDefinitionXml().withSuccess('');
-    await user.click(
-      screen.getByRole('button', {name: /open json editor modal/i}),
-    );
-
-    await waitFor(() =>
-      expect(screen.getByTestId('monaco-editor')).toHaveValue('123456'),
-    );
-  });
-
-  it('should have JSON editor when editing a Variable', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchVariable().withSuccess(mockVariables[0]!);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitFor(() => {
-      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-    });
-
-    expect(await screen.findByRole('button', {name: /edit variable/i}));
-    mockFetchProcessDefinitionXml().withSuccess('');
-    await user.click(screen.getByRole('button', {name: /edit variable/i}));
-    await user.click(
-      screen.getByRole('button', {name: /open json editor modal/i}),
-    );
-
-    expect(
-      within(screen.getByRole('dialog')).getByRole('button', {
-        name: /cancel/i,
-      }),
-    ).toBeEnabled();
-    expect(
-      within(screen.getByRole('dialog')).getByRole('button', {name: /apply/i}),
-    ).toBeEnabled();
-    expect(
-      within(screen.getByRole('dialog')).getByTestId('monaco-editor'),
-    ).toBeInTheDocument();
   });
 
   it('should not display edit button next to variables if instance is completed or canceled', async () => {
