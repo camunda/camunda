@@ -90,6 +90,7 @@ describe('selectedRunningInstanceCount', () => {
   });
 
   it('should not render when there are no running instances selected', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     modificationsStore.enableModificationMode();
 
     renderPopover();
