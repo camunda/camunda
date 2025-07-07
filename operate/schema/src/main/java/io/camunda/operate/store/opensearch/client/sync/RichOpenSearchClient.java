@@ -9,10 +9,7 @@ package io.camunda.operate.store.opensearch.client.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncDocumentOperations;
-import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncIndexOperations;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncSnapshotOperations;
-import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncTaskOperations;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
@@ -103,36 +100,15 @@ public class RichOpenSearchClient {
   public record AggregationValue(String key, long count) {}
 
   public class Async {
-    final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
-    final OpenSearchAsyncIndexOperations openSearchAsyncIndexOperations;
     final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
-    final OpenSearchAsyncTaskOperations openSearchAsyncTaskOperations;
 
     public Async(final OpenSearchAsyncClient openSearchAsyncClient) {
-      openSearchAsyncDocumentOperations =
-          new OpenSearchAsyncDocumentOperations(LOGGER, openSearchAsyncClient);
-      openSearchAsyncIndexOperations =
-          new OpenSearchAsyncIndexOperations(LOGGER, openSearchAsyncClient);
       openSearchAsyncSnapshotOperations =
           new OpenSearchAsyncSnapshotOperations(LOGGER, openSearchAsyncClient);
-      openSearchAsyncTaskOperations =
-          new OpenSearchAsyncTaskOperations(LOGGER, openSearchAsyncClient);
-    }
-
-    public OpenSearchAsyncDocumentOperations doc() {
-      return openSearchAsyncDocumentOperations;
-    }
-
-    public OpenSearchAsyncIndexOperations index() {
-      return openSearchAsyncIndexOperations;
     }
 
     public OpenSearchAsyncSnapshotOperations snapshot() {
       return openSearchAsyncSnapshotOperations;
-    }
-
-    public OpenSearchAsyncTaskOperations task() {
-      return openSearchAsyncTaskOperations;
     }
   }
 }
