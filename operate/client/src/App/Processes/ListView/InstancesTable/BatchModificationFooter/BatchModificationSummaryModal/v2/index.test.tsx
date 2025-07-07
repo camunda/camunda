@@ -71,8 +71,6 @@ describe('BatchModificationSummaryModal', () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatisticsV2);
   });
 
-  afterEach(() => {});
-
   it('should render batch modification summary', async () => {
     const applyBatchOperationMock = vi.fn();
     vi.spyOn(hooks, 'default').mockImplementation(() => ({

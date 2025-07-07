@@ -25,17 +25,22 @@ const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'MoveModificationProcess';
 const mockProcessXML = open('MoveModificationProcess.bpmn');
 
-vi.mock('modules/stores/processes/processes.list', () => ({
-  processesStore: {
-    getPermissions: vi.fn(),
-    state: {processes: []},
-    versionsByProcessAndTenant: {
-      [`{${PROCESS_ID}}-{<default>}`]: [
-        {id: PROCESS_DEFINITION_ID, version: 1},
-      ],
+vi.mock('modules/stores/processes/processes.list', () => {
+  const PROCESS_DEFINITION_ID = '2251799813685249';
+  const PROCESS_ID = 'MoveModificationProcess';
+
+  return {
+    processesStore: {
+      getPermissions: vi.fn(),
+      state: {processes: []},
+      versionsByProcessAndTenant: {
+        [`{${PROCESS_ID}}-{<default>}`]: [
+          {id: PROCESS_DEFINITION_ID, version: 1},
+        ],
+      },
     },
-  },
-}));
+  };
+});
 
 describe('<MoveAction />', () => {
   it('should disable button when no process version is selected', () => {

@@ -64,7 +64,6 @@
     "@playwright/test": "1.53.2",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.3.0",
-    "@testing-library/react-hooks": "8.0.1",
     "@testing-library/user-event": "14.6.1",
     "@types/carbon__elements": "11.10.3",
     "@types/carbon-components-react": "7.55.13",

@@ -21,9 +21,8 @@ vi.mock('modules/hooks/useCallbackPrompt', () => {
 });
 
 describe('BatchModificationFooter - tracking', () => {
-  const trackSpy = vi.spyOn(tracking, 'track');
-
   it('should track exit click', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
     const {user} = render(<BatchModificationFooter />);
 
     await user.click(screen.getByRole('button', {name: /exit/i}));
