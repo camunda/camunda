@@ -20,13 +20,15 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 
 const TARGET_PROCESS_DEFINITION_KEY = '2';
 
-vi.mock('modules/stores/processes/processes.migration', () => ({
-  processesStore: {
-    migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
-    getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
-    selectedTargetProcessId: TARGET_PROCESS_DEFINITION_KEY,
-  },
-}));
+vi.mock('modules/stores/processes/processes.migration', () => {
+  return {
+    processesStore: {
+      migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
+      getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
+      selectedTargetProcessId: '2',
+    },
+  };
+});
 
 const {
   requestForPayment,
