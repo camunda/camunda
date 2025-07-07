@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.scaling.InMemoryRoutingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -36,7 +37,7 @@ public class MessagePublishRoutingTest {
       EngineRule.multiplePartition(2)
           // only partition one is included in MessageCorrelation
           .withInitialRoutingState(
-              RoutingState.of(
+              new InMemoryRoutingState(
                   Map.of(1, 0L, 2, 0L),
                   Set.of(1, 2),
                   // partition 2 is not included in message correlation
