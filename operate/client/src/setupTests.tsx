@@ -85,8 +85,8 @@ vi.mock('modules/stores/licenseTag', () => ({
 
 vi.mock('bpmn-js/lib/features/outline', () => ({default: () => {}}));
 
-vi.mock('@floating-ui/react-dom', () => {
-  const originalModule = vi.importActual('@floating-ui/react-dom');
+vi.mock('@floating-ui/react-dom', async () => {
+  const originalModule = await vi.importActual('@floating-ui/react-dom');
 
   return {
     ...originalModule,
