@@ -48,8 +48,6 @@ import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
-const getOperationSpy = vi.spyOn(operationApi, 'getOperation');
-
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
@@ -111,6 +109,9 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
 
     const statistics = [
       {
@@ -136,6 +137,7 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
@@ -327,7 +329,8 @@ describe('VariablePanel', () => {
   });
 
   it('should display error notification if add variable operation fails', async () => {
-    vi.useFakeTimers();
+    const getOperationSpy = vi.spyOn(operationApi, 'getOperation');
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
