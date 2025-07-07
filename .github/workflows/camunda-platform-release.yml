@@ -196,8 +196,8 @@ jobs:
             exit 0
           fi
 
-          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}"
-          FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
+          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}" -P\!include-optimize
+          FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout -P\!include-optimize)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
           git commit -am "build(project): update java compat versions"
       - name: Delete version-specific allowed API breaking changes
