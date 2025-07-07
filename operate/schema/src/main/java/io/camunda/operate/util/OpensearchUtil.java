@@ -43,7 +43,7 @@ public final class OpensearchUtil {
     if (error != null) {
       final var message =
           String.format(
-              "Exception occurred, while performing operation %s on source index %s. the documents: %s",
+              "Exception occurred, while performing operation %s on source index %s. Error: %s",
               operation, sourceIndexName, error.getMessage());
       return Either.left(new ArchiverException(message, error));
     }
