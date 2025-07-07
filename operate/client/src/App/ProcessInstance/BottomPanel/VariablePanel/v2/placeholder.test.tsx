@@ -122,6 +122,7 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -218,10 +219,6 @@ describe('VariablePanel', () => {
   it.each([true, false])(
     'should show failed placeholder if network error occurs while fetching variables - modification mode: %p',
     async (enableModificationMode) => {
-      const consoleErrorMock = vi
-        .spyOn(global.console, 'error')
-        .mockImplementation(() => {});
-
       if (enableModificationMode) {
         modificationsStore.enableModificationMode();
       }
@@ -251,8 +248,6 @@ describe('VariablePanel', () => {
       expect(
         screen.queryByRole('button', {name: /add variable/i}),
       ).not.toBeInTheDocument();
-
-      consoleErrorMock.mockRestore();
     },
   );
 });
