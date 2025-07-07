@@ -16,5 +16,7 @@ public interface UserTaskSearchClient {
 
   SearchQueryResult<UserTaskEntity> searchUserTasks(UserTaskQuery filter);
 
+  UserTaskEntity getUserTaskByKey(Long userTaskKey);
+
   UserTaskSearchClient withSecurityContext(SecurityContext securityContext);
 }

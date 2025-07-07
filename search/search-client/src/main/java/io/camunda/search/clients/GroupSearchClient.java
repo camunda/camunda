@@ -20,6 +20,8 @@ public interface GroupSearchClient {
 
   SearchQueryResult<GroupMemberEntity> searchGroupMembers(GroupQuery query);
 
+  GroupEntity getGroupById(final String groupId);
+
   List<GroupEntity> findAllGroups(final GroupQuery query);
 
   GroupSearchClient withSecurityContext(SecurityContext securityContext);

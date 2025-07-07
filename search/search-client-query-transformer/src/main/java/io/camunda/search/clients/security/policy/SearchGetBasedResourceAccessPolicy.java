@@ -7,11 +7,8 @@
  */
 package io.camunda.search.clients.security.policy;
 
-import static io.camunda.security.auth.Authorization.WILDCARD;
-
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.resource.AuthorizationResult;
@@ -20,18 +17,22 @@ import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.security.resource.TenantResult;
 import java.util.Optional;
 
-/**
- * Document-based datastore (ES/OS) policy implementation of {@link ResourceAccessPolicy}. It
- * fetches the authorized resources for the authenticated user and returns an instance of {@link
- * ResourceAccessResult}.
- */
-public class SearchQueryBasedResourceAccessPolicy implements ResourceAccessPolicy<Object> {
+public class SearchGetBasedResourceAccessPolicy<D> implements ResourceAccessPolicy<D> {
 
   private final AuthorizationChecker authorizationChecker;
+  private final AuthorizationSearchClient authorizationSearchClient;
+  private final D resource;
 
-  public SearchQueryBasedResourceAccessPolicy(
+  public SearchGetBasedResourceAccessPolicy(
       final AuthorizationSearchClient authorizationSearchClient) {
+    this(authorizationSearchClient, null);
+  }
+
+  public SearchGetBasedResourceAccessPolicy(
+      final AuthorizationSearchClient authorizationSearchClient, final D resource) {
     authorizationChecker = new AuthorizationChecker(authorizationSearchClient);
+    this.authorizationSearchClient = authorizationSearchClient;
+    this.resource = resource;
   }
 
   @Override
@@ -42,49 +43,36 @@ public class SearchQueryBasedResourceAccessPolicy implements ResourceAccessPolic
         b -> b.authorizationResult(authorizationFilter).tenantResult(tenantFilter));
   }
 
+  @Override
+  public ResourceAccessPolicy<D> withResource(final D resource) {
+    return new SearchGetBasedResourceAccessPolicy<>(authorizationSearchClient, resource);
+  }
+
   protected AuthorizationResult applySecurityContextToAuthorizationFilter(
       final SecurityContext securityContext) {
     if (!securityContext.requiresAuthorizationChecks()) {
       return AuthorizationResult.successful();
     }
 
-    // fetch the authorization entities for the authenticated user
-    final var resourceIds = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+    final var authorization = (Authorization<D>) securityContext.authorization();
+    final var givenResourceIds = authorization.resourceIds();
+    final var givenResourceIdsSupplier = authorization.resourceIdsSupplier();
 
-    if (resourceIds.contains(WILDCARD)) {
+    final var resourceIds =
+        Optional.ofNullable(givenResourceIds)
+            .filter(p -> !p.isEmpty())
+            .orElseGet(() -> givenResourceIdsSupplier.apply(resource));
+
+    final var allowed = authorizationChecker.isAuthorized(resourceIds.getFirst(), securityContext);
+
+    if (allowed) {
       return AuthorizationResult.successful();
-    }
-
-    if (resourceIds.isEmpty()) {
+    } else {
       return AuthorizationResult.unsuccessful();
     }
-
-    final var givenAuthorization = securityContext.authorization();
-    final var givenResourceType = givenAuthorization.resourceType();
-    final var givenPermissionType = givenAuthorization.permissionType();
-
-    final var requiredAuthorizationCheck =
-        Authorization.of(
-            b ->
-                b.resourceType(givenResourceType)
-                    .permissionType(givenPermissionType)
-                    .resourceIds(resourceIds));
-    return AuthorizationResult.requiredAuthorizationCheck(requiredAuthorizationCheck);
   }
 
   protected TenantResult applySecurityContextToTenantFilter(final SecurityContext securityContext) {
-    final boolean shouldCheckTenant =
-        Optional.ofNullable(securityContext.authentication())
-            .map(CamundaAuthentication::authenticatedTenantIds)
-            .filter(tenantIds -> !tenantIds.isEmpty())
-            .isPresent();
-
-    final var authentication = securityContext.authentication();
-    if (!shouldCheckTenant) {
-      return TenantResult.successful();
-    }
-
-    final var tenantIds = authentication.authenticatedTenantIds();
-    return TenantResult.tenantCheckRequired(tenantIds);
+    return TenantResult.successful();
   }
 }

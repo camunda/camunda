@@ -49,9 +49,9 @@ class SearchQueryBasedResourceAccessPolicyTest {
     final var result = policy.applySecurityContext(securityContextWithoutAuthentication);
 
     // then
-    assertThat(result.authorizationFilter().granted()).isTrue();
-    assertThat(result.authorizationFilter().forbidden()).isFalse();
-    assertThat(result.authorizationFilter().requiresCheck()).isFalse();
+    assertThat(result.authorizationResult().granted()).isTrue();
+    assertThat(result.authorizationResult().forbidden()).isFalse();
+    assertThat(result.authorizationResult().requiresCheck()).isFalse();
 
     assertThat(result.tenantFilter().granted()).isTrue();
     assertThat(result.tenantFilter().forbidden()).isFalse();
@@ -77,9 +77,9 @@ class SearchQueryBasedResourceAccessPolicyTest {
     final var result = policy.applySecurityContext(securityContext);
 
     // then
-    assertThat(result.authorizationFilter().granted()).isTrue();
-    assertThat(result.authorizationFilter().forbidden()).isFalse();
-    assertThat(result.authorizationFilter().requiresCheck()).isFalse();
+    assertThat(result.authorizationResult().granted()).isTrue();
+    assertThat(result.authorizationResult().forbidden()).isFalse();
+    assertThat(result.authorizationResult().requiresCheck()).isFalse();
 
     assertThat(result.tenantFilter().granted()).isTrue();
     assertThat(result.tenantFilter().forbidden()).isFalse();
@@ -101,9 +101,9 @@ class SearchQueryBasedResourceAccessPolicyTest {
     final var result = policy.applySecurityContext(securityContext);
 
     // then
-    assertThat(result.authorizationFilter().granted()).isFalse();
-    assertThat(result.authorizationFilter().forbidden()).isTrue();
-    assertThat(result.authorizationFilter().requiresCheck()).isFalse();
+    assertThat(result.authorizationResult().granted()).isFalse();
+    assertThat(result.authorizationResult().forbidden()).isTrue();
+    assertThat(result.authorizationResult().requiresCheck()).isFalse();
 
     assertThat(result.tenantFilter().granted()).isTrue();
     assertThat(result.tenantFilter().forbidden()).isFalse();
@@ -129,14 +129,14 @@ class SearchQueryBasedResourceAccessPolicyTest {
     final var result = policy.applySecurityContext(securityContext);
 
     // then
-    assertThat(result.authorizationFilter().granted()).isFalse();
-    assertThat(result.authorizationFilter().forbidden()).isFalse();
-    assertThat(result.authorizationFilter().requiresCheck()).isTrue();
-    assertThat(result.authorizationFilter().requiredAuthorization().resourceType())
+    assertThat(result.authorizationResult().granted()).isFalse();
+    assertThat(result.authorizationResult().forbidden()).isFalse();
+    assertThat(result.authorizationResult().requiresCheck()).isTrue();
+    assertThat(result.authorizationResult().requiredAuthorization().resourceType())
         .isEqualTo(PROCESS_DEFINITION);
-    assertThat(result.authorizationFilter().requiredAuthorization().permissionType())
+    assertThat(result.authorizationResult().requiredAuthorization().permissionType())
         .isEqualTo(READ);
-    assertThat(result.authorizationFilter().requiredAuthorization().resourceIds())
+    assertThat(result.authorizationResult().requiredAuthorization().resourceIds())
         .contains("invoice");
 
     assertThat(result.tenantFilter().granted()).isTrue();
@@ -163,9 +163,9 @@ class SearchQueryBasedResourceAccessPolicyTest {
     final var result = policy.applySecurityContext(securityContextWithoutAuthentication);
 
     // then
-    assertThat(result.authorizationFilter().granted()).isFalse();
-    assertThat(result.authorizationFilter().forbidden()).isFalse();
-    assertThat(result.authorizationFilter().requiresCheck()).isTrue();
+    assertThat(result.authorizationResult().granted()).isFalse();
+    assertThat(result.authorizationResult().forbidden()).isFalse();
+    assertThat(result.authorizationResult().requiresCheck()).isTrue();
 
     assertThat(result.tenantFilter().granted()).isFalse();
     assertThat(result.tenantFilter().forbidden()).isFalse();

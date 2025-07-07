@@ -18,4 +18,9 @@ public record AuthorizationEntity(
     String ownerType,
     String resourceType,
     String resourceId,
-    Set<PermissionType> permissionTypes) {}
+    Set<PermissionType> permissionTypes) {
+
+  public void foo() {
+    AuthorizationCheck.of(b -> b.authorization().bar((authorization) -> "abc"));
+  }
+}

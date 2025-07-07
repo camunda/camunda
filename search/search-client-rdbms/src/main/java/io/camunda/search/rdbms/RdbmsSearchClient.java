@@ -224,6 +224,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
+  public GroupEntity getGroupById(final String groupId) {
+    return null;
+  }
+
+  @Override
   public List<GroupEntity> findAllGroups(final GroupQuery query) {
     LOG.debug("[RDBMS Search Client] Search for all groups: {}", query);
 
@@ -245,6 +250,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
         .getUserTaskReader()
         .search(
             UserTaskQuery.of(b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
+  }
+
+  @Override
+  public UserTaskEntity getUserTaskByKey(final Long userTaskKey) {
+    return null;
   }
 
   @Override

@@ -19,9 +19,9 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.AuthorizationBasedResourceAccessFilter;
-import io.camunda.security.resource.ResourceAccessFilter;
-import io.camunda.security.resource.TenantBasedResourceAccessFilter;
+import io.camunda.security.resource.AuthorizationResult;
+import io.camunda.security.resource.ResourceAccessResult;
+import io.camunda.security.resource.TenantResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 import java.util.Optional;
@@ -33,25 +33,25 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
   private static final Logger LOG = LoggerFactory.getLogger(IndexFilterTransformer.class);
 
   protected final IndexDescriptor indexDescriptor;
-  protected final ResourceAccessFilter resourceAccessFilter;
+  protected final ResourceAccessResult resourceAccessResult;
 
   public IndexFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessFilter) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessResult) {
     this.indexDescriptor = indexDescriptor;
-    this.resourceAccessFilter = resourceAccessFilter;
+    this.resourceAccessResult = resourceAccessResult;
   }
 
   @Override
   public SearchQuery apply(final T filter) {
     final var filterSearchQuery = toSearchQuery(filter);
     final var authorizationFilterSearchQuery =
-        Optional.ofNullable(resourceAccessFilter)
-            .map(ResourceAccessFilter::authorizationFilter)
+        Optional.ofNullable(resourceAccessResult)
+            .map(ResourceAccessResult::authorizationResult)
             .map(this::applyAuthorizationFilter)
             .orElse(null);
     final var tenantFilterSearchQuery =
-        Optional.ofNullable(resourceAccessFilter)
-            .map(ResourceAccessFilter::tenantFilter)
+        Optional.ofNullable(resourceAccessResult)
+            .map(ResourceAccessResult::tenantFilter)
             .map(this::applyTenantFilter)
             .orElse(null);
 
@@ -65,10 +65,9 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
 
   @Override
   public abstract FilterTransformer<T> withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult);
 
-  private SearchQuery applyAuthorizationFilter(
-      final AuthorizationBasedResourceAccessFilter authorizationFilter) {
+  private SearchQuery applyAuthorizationFilter(final AuthorizationResult authorizationFilter) {
     if (authorizationFilter.forbidden()) {
       return matchNone();
     }
@@ -95,7 +94,7 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
             });
   }
 
-  private SearchQuery applyTenantFilter(final TenantBasedResourceAccessFilter tenantFilter) {
+  private SearchQuery applyTenantFilter(final TenantResult tenantFilter) {
     if (tenantFilter.forbidden()) {
       return matchNone();
     }

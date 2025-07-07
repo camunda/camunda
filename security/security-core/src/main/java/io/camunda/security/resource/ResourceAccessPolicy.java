@@ -10,7 +10,11 @@ package io.camunda.security.resource;
 import io.camunda.security.auth.SecurityContext;
 
 @FunctionalInterface
-public interface ResourceAccessPolicy {
+public interface ResourceAccessPolicy<T> {
 
-  ResourceAccessFilter applySecurityContext(SecurityContext securityContext);
+  ResourceAccessResult applySecurityContext(SecurityContext securityContext);
+
+  default ResourceAccessPolicy<T> withResource(final T resource) {
+    throw new UnsupportedOperationException();
+  }
 }

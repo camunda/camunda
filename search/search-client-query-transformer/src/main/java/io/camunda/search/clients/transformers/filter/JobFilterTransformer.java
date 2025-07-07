@@ -40,7 +40,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,14 +52,14 @@ public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
   }
 
   public JobFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
   }
 
   @Override
   public JobFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new JobFilterTransformer(indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new JobFilterTransformer(indexDescriptor, resourceAccessResult);
   }
 
   @Override

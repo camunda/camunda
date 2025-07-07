@@ -18,7 +18,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FormFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
@@ -29,14 +29,14 @@ public class FormFilterTransformer extends IndexFilterTransformer<FormFilter> {
   }
 
   public FormFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
   }
 
   @Override
   public FormFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new FormFilterTransformer(indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new FormFilterTransformer(indexDescriptor, resourceAccessResult);
   }
 
   @Override

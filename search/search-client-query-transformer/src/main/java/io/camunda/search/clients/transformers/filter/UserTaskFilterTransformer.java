@@ -25,7 +25,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -46,15 +46,15 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   public UserTaskFilterTransformer(
       final ServiceTransformers transformers,
       final IndexDescriptor indexDescriptor,
-      final ResourceAccessFilter resourceAccessManager) {
+      final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
     this.transformers = transformers;
   }
 
   @Override
   public UserTaskFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new UserTaskFilterTransformer(transformers, indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new UserTaskFilterTransformer(transformers, indexDescriptor, resourceAccessResult);
   }
 
   @Override

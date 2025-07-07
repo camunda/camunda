@@ -25,7 +25,7 @@ import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -123,17 +123,24 @@ public final class UserTaskServices
   }
 
   public UserTaskEntity getByKey(final long userTaskKey) {
-    final var result =
-        userTaskSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchUserTasks(userTaskSearchQuery(q -> q.filter(f -> f.userTaskKeys(userTaskKey))));
-    final var userTaskEntity = getSingleResultOrThrow(result, userTaskKey, "User task");
-    final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
-    if (!securityContextProvider.isAuthorized(
-        userTaskEntity.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
-    }
-    return userTaskEntity;
+    final Authorization<UserTaskEntity> authorization =
+        Authorization.of(
+            a ->
+                a.processDefinition()
+                    .readUserTask()
+                    .resourceIdsSupplier(r -> List.of(String.valueOf(r.processDefinitionId()))));
+    return userTaskSearchClient
+        .withSecurityContext(
+            SecurityContext.of(
+                b -> b.withAuthentication(authentication).withAuthorization(authorization)))
+        .getUserTaskByKey(userTaskKey);
+    //    final var userTaskEntity = getSingleResultOrThrow(result, userTaskKey, "User task");
+    //    final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
+    //    if (!securityContextProvider.isAuthorized(
+    //        userTaskEntity.processDefinitionId(), authentication, authorization)) {
+    //      throw new ForbiddenException(authorization);
+    //    }
+    //    return userTaskEntity;
   }
 
   public Optional<FormEntity> getUserTaskForm(final long userTaskKey) {
