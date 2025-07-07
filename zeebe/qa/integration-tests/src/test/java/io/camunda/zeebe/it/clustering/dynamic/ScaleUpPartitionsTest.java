@@ -402,7 +402,107 @@ public class ScaleUpPartitionsTest {
               }
             });
   }
+  @Test
+  public void shouldNotBreakMessageStartEvents() {
+    // given
+    cluster.awaitHealthyTopology();
+    final var messageId = new AtomicInteger();
+    final var correlationKeyVariable = "correlationKey";
+    final var correlationKeys = new ArrayBlockingQueue<Integer>(1024);
+    final var processId = "PROCESS_WITH_MESSAGE_START";
+    final var startMessageName = "startMessage";
 
+    // Create process with message start event and intermediate message event
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("start-message")
+            .message(
+                m -> m.name(startMessageName).zeebeCorrelationKeyExpression(correlationKeyVariable))
+            .intermediateCatchEvent(
+                "intermediate-message",
+                b ->
+                    b.message(
+                        m ->
+                            m.name("continueMessage")
+                                .zeebeCorrelationKeyExpression(correlationKeyVariable)))
+            .endEvent()
+            .done();
+
+    final var deploymentKey =
+        camundaClient
+            .newDeployResourceCommand()
+            .addProcessModel(process, "process-with-message-start.bpmn")
+            .send()
+            .join()
+            .getKey();
+    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
+
+    final var targetPartitionCount = PARTITIONS_COUNT + 1;
+
+    final Supplier<String> correlationKeyProvider =
+        () -> {
+          final var key = messageId.incrementAndGet();
+          if (!correlationKeys.add(key)) {
+            throw new IllegalStateException("Too many correlation keys created");
+          }
+          return String.valueOf(key);
+        };
+
+    // Start some instances before scaling by publishing messages
+    startProcessInstancesWithMessages(
+        startMessageName, correlationKeyVariable, correlationKeyProvider, PARTITIONS_COUNT * 5);
+
+    // when
+    scaleToPartitions(targetPartitionCount);
+    awaitScaleUpCompletion(targetPartitionCount);
+
+    // Start instances after scaling by publishing messages
+    startProcessInstancesWithMessages(
+        startMessageName, correlationKeyVariable, correlationKeyProvider, targetPartitionCount * 5);
+
+    // then - verify that message start events work and intermediate messages can be correlated
+    Awaitility.await("until all intermediate message events can be correlated")
+        .timeout(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofMillis(100))
+        .untilAsserted(
+            () -> {
+              // Try to correlate messages to the intermediate catch events
+              final var testKey = correlationKeys.peek();
+              if (testKey != null) {
+                try {
+                  camundaClient
+                      .newCorrelateMessageCommand()
+                      .messageName("continueMessage")
+                      .correlationKey(String.valueOf(testKey))
+                      .send()
+                      .join(1, TimeUnit.SECONDS);
+                  correlationKeys.poll(); // Remove the successfully correlated key
+                } catch (final Exception e) {
+                  throw new AssertionError("Message subscriptions not ready yet", e);
+                }
+              }
+            });
+  }
+
+
+
+  private void startProcessInstancesWithMessages(
+      final String messageName,
+      final String correlationKeyVariable,
+      final Supplier<String> correlationKeyProvider,
+      final int instanceCount) {
+
+    for (int i = 0; i < instanceCount; i++) {
+      final var correlationKey = correlationKeyProvider.get();
+      camundaClient
+          .newPublishMessageCommand()
+          .messageName(messageName)
+          .correlationKey(correlationKey)
+          .variables(Map.of(correlationKeyVariable, correlationKey))
+          .send()
+          .join();
+    }
+  }
   public void assertThatRoutingStateMatches(final RoutingState routingState) {
     Awaitility.await("until topology is restored correctly")
         .atMost(Duration.ofSeconds(30))
