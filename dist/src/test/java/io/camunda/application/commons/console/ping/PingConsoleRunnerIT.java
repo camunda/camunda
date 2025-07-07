@@ -37,25 +37,6 @@ public class PingConsoleRunnerIT {
 
   private WireMockServer wireMockServer;
   private ManagementServices managementServices;
-  private final boolean validLicense = true;
-  private final boolean isCommercial = true;
-  private final LicenseType licenseType = LicenseType.SAAS;
-  private final String clusterId = "test-cluster-id";
-  private final String clusterName = "test-cluster-name";
-  private final String expectedBody =
-      String.format(
-          """
-    {
-      "license": {
-        "validLicense": %s,
-        "licenseType": "%s",
-        "isCommercial": %s
-      },
-      "clusterId": "%s",
-      "clusterName": "%s"
-    }
-  """,
-          validLicense, licenseType, isCommercial, clusterId, clusterName);
 
   @BeforeEach
   void setup() {
@@ -63,11 +44,6 @@ public class PingConsoleRunnerIT {
     wireMockServer.start();
     configureFor("localhost", wireMockServer.port());
     stubFor(post(urlEqualTo("/ping")).willReturn(aResponse().withStatus(200).withBody("PONG")));
-
-    managementServices = mock(ManagementServices.class);
-    when(managementServices.getCamundaLicenseType()).thenReturn(licenseType);
-    when(managementServices.isCommercialCamundaLicense()).thenReturn(isCommercial);
-    when(managementServices.isCamundaLicenseValid()).thenReturn(validLicense);
   }
 
   @AfterEach
@@ -81,10 +57,30 @@ public class PingConsoleRunnerIT {
     final String mockUrl = "http://localhost:" + wireMockServer.port() + "/ping";
     final Duration pingPeriod = Duration.ofMillis(200);
     final RetryConfiguration retryConfig = new RetryConfiguration();
+    final String expectedBody =
+        """
+      {
+        "license": {
+          "validLicense": true,
+          "licenseType": "saas"
+        },
+        "clusterId": "test-cluster-id",
+        "clusterName": "test-cluster-name"
+      }
+    """;
+    managementServices = mock(ManagementServices.class);
+    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
 
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
-            true, URI.create(mockUrl), clusterId, clusterName, pingPeriod, retryConfig, null);
+            true,
+            URI.create(mockUrl),
+            "test-cluster-id",
+            "test-cluster-name",
+            pingPeriod,
+            retryConfig,
+            null);
 
     final PingConsoleRunner pingConsoleRunner = new PingConsoleRunner(config, managementServices);
 
