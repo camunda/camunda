@@ -40,6 +40,17 @@ vi.mock('dmn-js-literal-expression/lib/Viewer', () => ({
   default: MockDmnJsLiteralExpressionViewer,
 }));
 
+vi.mock('modules/components/JSONEditor', () => {
+  return {
+    useMonaco: () => {},
+    JSONEditor: () => <div data-testid="monaco-editor" />,
+  };
+});
+
+vi.mock('modules/loadMonaco', () => ({
+  loadMonaco: () => {},
+}));
+
 vi.mock('@devbookhq/splitter', async () => {
   const actual = await vi.importActual('@devbookhq/splitter');
   return {

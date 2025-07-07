@@ -21,8 +21,6 @@ import {
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-vi.unmock('modules/utils/date/formatDate');
-
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(
@@ -30,7 +28,7 @@ describe('Filters', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     processesStore.fetchProcesses();
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
   afterEach(() => {
@@ -246,6 +244,8 @@ describe('Filters', () => {
     await user.click(screen.getByRole('checkbox', {name: 'Incidents'}));
     await user.click(screen.getByRole('checkbox', {name: 'Completed'}));
     await user.click(screen.getByRole('checkbox', {name: 'Canceled'}));
+
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(

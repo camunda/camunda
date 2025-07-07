@@ -16,14 +16,13 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-vi.unmock('modules/utils/date/formatDate');
-
 describe('Optional Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     processesStore.fetchProcesses();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
   afterEach(() => {
@@ -271,6 +270,8 @@ describe('Optional Filters', () => {
       label: 'Process Instance Key(s)',
     });
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
@@ -303,6 +304,8 @@ describe('Optional Filters', () => {
       label: 'Parent Process Instance Key',
     });
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
@@ -330,6 +333,8 @@ describe('Optional Filters', () => {
 
     await removeOptionalFilter({user, screen, label: 'Error Message'});
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
@@ -354,6 +359,8 @@ describe('Optional Filters', () => {
 
     await removeOptionalFilter({user, screen, label: 'Start Date Range'});
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
         `?${new URLSearchParams(
@@ -375,6 +382,8 @@ describe('Optional Filters', () => {
     expect(screen.queryByLabelText('Start Date Range')).not.toBeInTheDocument();
 
     await removeOptionalFilter({user, screen, label: 'End Date Range'});
+
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
@@ -424,6 +433,8 @@ describe('Optional Filters', () => {
     ).not.toBeInTheDocument();
 
     await removeOptionalFilter({user, screen, label: 'Operation Id'});
+
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(

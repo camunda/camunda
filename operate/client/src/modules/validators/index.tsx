@@ -31,7 +31,8 @@ const ERRORS = {
     nameUnfilled: 'Name has to be filled',
     valueUnfilled: 'Value has to be filled',
     valueInvalid: 'Value has to be JSON',
-    mulipleValueInvalid: 'Values have to be in JSON format, separated by comma',
+    multipleValueInvalid:
+      'Values have to be in JSON format, separated by comma',
   },
 } as const;
 
@@ -244,7 +245,7 @@ const validateMultipleVariableValuesValid: FieldValidator<
     return undefined;
   }
 
-  return ERRORS.variables.mulipleValueInvalid;
+  return ERRORS.variables.multipleValueInvalid;
 }, VALIDATION_TIMEOUT);
 
 const validateOperationIdCharacters: FieldValidator<

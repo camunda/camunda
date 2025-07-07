@@ -31,7 +31,7 @@ describe('Interaction with other fields during validation', () => {
 
     processesStore.fetchProcesses();
 
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
   afterEach(() => {
@@ -48,6 +48,8 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Operation Id'));
     await user.type(screen.getByLabelText(/^operation id$/i), 'a');
 
+    vi.runOnlyPendingTimers();
+
     expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -56,6 +58,8 @@ describe('Interaction with other fields during validation', () => {
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
     expect(screen.getByText(ERRORS.operationId)).toBeInTheDocument();
+
+    vi.runOnlyPendingTimers();
 
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
@@ -71,6 +75,8 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
+    vi.runOnlyPendingTimers();
+
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -78,6 +84,8 @@ describe('Interaction with other fields during validation', () => {
     await user.type(screen.getByLabelText(/^operation id$/i), 'abc');
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    vi.runOnlyPendingTimers();
 
     expect(await screen.findByText(ERRORS.operationId)).toBeInTheDocument();
 
@@ -93,6 +101,8 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
+    vi.runOnlyPendingTimers();
+
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -100,6 +110,8 @@ describe('Interaction with other fields during validation', () => {
     await user.type(screen.getByLabelText(/value/i), 'a');
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    vi.runOnlyPendingTimers();
 
     expect(
       await screen.findByText('Name has to be filled'),
@@ -119,6 +131,8 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
 
+    vi.runOnlyPendingTimers();
+
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
@@ -126,6 +140,8 @@ describe('Interaction with other fields during validation', () => {
     await user.type(screen.getByTestId('optional-filter-variable-name'), 'a');
 
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
+
+    vi.runOnlyPendingTimers();
 
     expect(
       await screen.findByText('Value has to be filled'),
@@ -142,6 +158,8 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
+
+    vi.runOnlyPendingTimers();
 
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
@@ -168,6 +186,8 @@ describe('Interaction with other fields during validation', () => {
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
     await user.click(screen.getByText('Process Instance Key(s)'));
     await user.type(screen.getByLabelText(/^process instance key\(s\)$/i), '1');
+
+    vi.runOnlyPendingTimers();
 
     expect(await screen.findByText(ERRORS.ids)).toBeInTheDocument();
 
@@ -212,6 +232,8 @@ describe('Interaction with other fields during validation', () => {
       screen.getByLabelText(/^parent process instance key$/i),
       '1',
     );
+
+    vi.runOnlyPendingTimers();
 
     expect(
       await screen.findByText('Key has to be a 16 to 19 digit number'),

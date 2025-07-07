@@ -24,8 +24,6 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-vi.unmock('modules/utils/date/formatDate');
-
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -44,9 +42,9 @@ describe('Filters', () => {
   });
 
   it('should load values from the URL when multi tenancy is enabled', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     const MOCK_PARAMS = {
       process: 'bigVarProcess',
@@ -80,6 +78,8 @@ describe('Filters', () => {
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('1');
+
+    vi.unstubAllGlobals();
   });
 
   it('should hide multi tenancy filter if its not enabled in client config', async () => {
@@ -112,9 +112,9 @@ describe('Filters', () => {
   });
 
   it('should set modified values to the URL when multi tenancy is enabled', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     const MOCK_VALUES = {
       process: 'bigVarProcess',
@@ -168,13 +168,13 @@ describe('Filters', () => {
       ).toEqual(expect.objectContaining(MOCK_VALUES)),
     );
 
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 
   it('should disable processes field when tenant is not selected', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     render(<Filters />, {
       wrapper: getWrapper(),
@@ -185,13 +185,13 @@ describe('Filters', () => {
     await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
     expect(screen.getByLabelText('Name')).toBeDisabled();
 
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 
   it('should clear process and version field when tenant filter is changed', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
@@ -231,6 +231,6 @@ describe('Filters', () => {
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a process version/i);
 
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 });
