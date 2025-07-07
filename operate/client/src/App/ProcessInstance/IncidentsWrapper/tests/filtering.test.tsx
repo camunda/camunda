@@ -12,10 +12,21 @@ import {Wrapper, mockIncidents, mockResolvedIncidents} from './mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {act} from 'react';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {createInstance, createProcessInstance} from 'modules/testUtils';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('Filtering', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstance().withSuccess(createInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({
+        hasIncident: true,
+      }),
+    );
 
     await incidentsStore.fetchIncidents('1');
 
