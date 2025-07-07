@@ -40,6 +40,8 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
 
 vi.mock('react-transition-group', () => {
   const FakeTransition = vi.fn(({children}) => children);
@@ -133,7 +135,11 @@ describe('TopPanel', () => {
         },
       ],
     });
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+    mockServer.use(
+      http.post('/api/process-instances/:instanceId/flow-node-metadata', () => {
+        return HttpResponse.json(calledInstanceMetadata);
+      }),
+    );
   });
 
   afterEach(() => {
