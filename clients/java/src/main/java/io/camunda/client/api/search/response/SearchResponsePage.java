@@ -20,6 +20,23 @@ public interface SearchResponsePage {
   /** Total number of items that matches the query */
   Long totalItems();
 
+  /**
+   * Whether more than 10,000 results exist in Elasticsearch (ES) or OpenSearch (OS) searches.
+   *
+   * <p>In ES or OS, total hits are capped at 10,000. If the result set is greater than or equal to
+   * this, this method returns {@code true}; otherwise, it returns {@code false}.
+   *
+   * <p>For RDBMS-backed searches, this is always {@code false} because there is no such limitation.
+   *
+   * <p>This helps clients understand when total item counts may be incomplete due to ES or OS
+   * limits.
+   *
+   * @return {@code true} if more than 10,000 items exist in ES or OS; {@code false} otherwise.
+   */
+  default Boolean hasMoreTotalItems() {
+    return false;
+  }
+
   /** The cursor to the first item in the returned page. */
   String startCursor();
 

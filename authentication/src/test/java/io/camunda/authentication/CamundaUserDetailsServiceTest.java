@@ -61,6 +61,7 @@ public class CamundaUserDetailsServiceTest {
         .thenReturn(
             new SearchQueryResult<>(
                 1,
+                false,
                 List.of(new UserEntity(100L, TEST_USER_ID, "Foo Bar", "email@tested", "password1")),
                 null,
                 null));
@@ -110,7 +111,7 @@ public class CamundaUserDetailsServiceTest {
   public void testUserDetailsNotFound() {
     // given
     when(userService.search(any()))
-        .thenReturn(new SearchQueryResult<>(0, Collections.emptyList(), null, null));
+        .thenReturn(new SearchQueryResult<>(0, false, Collections.emptyList(), null, null));
     // when/then
     assertThatThrownBy(() -> userDetailsService.loadUserByUsername(TEST_USER_ID))
         .isInstanceOf(UsernameNotFoundException.class);

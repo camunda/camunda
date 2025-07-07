@@ -16,11 +16,13 @@ import io.camunda.search.os.transformers.aggregator.SearchAggregationResultTrans
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TotalHits;
+import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
 public final class SearchResponseTransformer<T>
     extends OpensearchTransformer<SearchResponse<T>, SearchQueryResponse<T>> {
@@ -37,13 +39,15 @@ public final class SearchResponseTransformer<T>
 
     final var total = hits.total();
     final var totalHits = of(total);
+    final var hasMoreTotalItems =
+        Objects.nonNull(total) && total.relation() == TotalHitsRelation.Gte;
 
     final var sourceHits = hits.hits();
     final var transformedHits = of(sourceHits);
     final var transformedAggregations = of(aggregations);
 
     return new SearchQueryResponse.Builder<T>()
-        .totalHits(totalHits)
+        .totalHits(totalHits, hasMoreTotalItems)
         .scrollId(scrollId)
         .hits(transformedHits)
         .aggregations(transformedAggregations)

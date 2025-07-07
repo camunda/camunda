@@ -113,7 +113,7 @@ public class AuthorizationServiceTest {
   public void shouldReturnSingleAuthorizationForGet() {
     // given
     final var entity = mock(AuthorizationEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
     when(client.searchAuthorizations(any())).thenReturn(result);
 
     // when
@@ -128,7 +128,7 @@ public class AuthorizationServiceTest {
     // given
     final var authorizationKey = 100L;
     when(client.searchAuthorizations(any()))
-        .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
+        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
 
     // when / then
     assertThat(services.findAuthorization(authorizationKey)).isEmpty();

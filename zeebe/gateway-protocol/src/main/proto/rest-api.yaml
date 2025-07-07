@@ -9029,6 +9029,10 @@ components:
           description: Total items matching the criteria.
           type: integer
           format: int64
+        hasMoreTotalItems:
+          description: |
+            Indicates if more results exist beyond the reported totalItems value. If ElasticSearch or OpenSearch is used, the totalItems value is capped at 10,000 due to search limitations. This field is true if additional results exist beyond this cap; otherwise, it is false.
+          type: boolean
         startCursor:
           description: The cursor value for getting the previous page of results. Use this in the `before` field of an ensuing request.
           type: string

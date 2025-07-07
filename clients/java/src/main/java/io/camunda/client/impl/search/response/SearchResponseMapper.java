@@ -149,7 +149,10 @@ public final class SearchResponseMapper {
   private static SearchResponsePage toSearchResponsePage(
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
-        pageResponse.getTotalItems(), pageResponse.getStartCursor(), pageResponse.getEndCursor());
+        pageResponse.getTotalItems(),
+        Boolean.TRUE.equals(pageResponse.getHasMoreTotalItems()),
+        pageResponse.getStartCursor(),
+        pageResponse.getEndCursor());
   }
 
   public static SearchResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(

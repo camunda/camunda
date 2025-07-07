@@ -67,7 +67,7 @@ public final class ElementInstanceServiceTest {
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchFlowNodeInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
     when(securityContextProvider.isAuthorized(
             processId,
             authentication,
@@ -87,7 +87,7 @@ public final class ElementInstanceServiceTest {
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchFlowNodeInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
     when(securityContextProvider.isAuthorized(
             processId,
             authentication,
