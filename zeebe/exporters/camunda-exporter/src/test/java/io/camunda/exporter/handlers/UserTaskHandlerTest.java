@@ -750,6 +750,7 @@ public class UserTaskHandlerTest {
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
+    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
 
     // then
     assertThat(taskEntity.getAssignee()).isEqualTo(taskRecordValue.getAssignee());
@@ -792,6 +793,7 @@ public class UserTaskHandlerTest {
     final Map<String, Object> expectedUpdates = new HashMap<>();
     expectedUpdates.put(TaskTemplate.ASSIGNEE, null);
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("assignee"));
+    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
 
     // then
     assertThat(taskEntity.getAssignee()).isEqualTo(null);
@@ -893,6 +895,7 @@ public class UserTaskHandlerTest {
         TaskTemplate.CHANGED_ATTRIBUTES,
         List.of(
             "priority", "dueDate", "followUpDate", "candidateUsersList", "candidateGroupsList"));
+    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
@@ -958,6 +961,7 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.PRIORITY, taskEntity.getPriority());
     expectedUpdates.put(TaskTemplate.ASSIGNEE, taskEntity.getAssignee());
     expectedUpdates.put(TaskTemplate.CHANGED_ATTRIBUTES, List.of("priority", "assignee"));
+    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
 
     // then
     assertThat(taskEntity.getPriority()).isEqualTo(taskRecordValue.getPriority());
@@ -1019,14 +1023,15 @@ public class UserTaskHandlerTest {
   private TaskState mapIntentToExpectedState(final UserTaskIntent intent) {
     return switch (intent) {
       case CREATING -> TaskState.CREATING;
-      case CREATED, ASSIGNMENT_DENIED, COMPLETION_DENIED, UPDATE_DENIED -> TaskState.CREATED;
+      case CREATED, ASSIGNED, ASSIGNMENT_DENIED, UPDATED, UPDATE_DENIED, COMPLETION_DENIED ->
+          TaskState.CREATED;
       case ASSIGNING, CLAIMING -> TaskState.ASSIGNING;
       case UPDATING -> TaskState.UPDATING;
       case COMPLETING -> TaskState.COMPLETING;
       case COMPLETED -> TaskState.COMPLETED;
       case CANCELING -> TaskState.CANCELING;
       case CANCELED -> TaskState.CANCELED;
-      case ASSIGNED, CORRECTED, MIGRATED, UPDATED -> /* doesn't affect the state */ null;
+      case CORRECTED, MIGRATED -> /* doesn't affect the state */ null;
       default ->
           throw new IllegalArgumentException(
               """

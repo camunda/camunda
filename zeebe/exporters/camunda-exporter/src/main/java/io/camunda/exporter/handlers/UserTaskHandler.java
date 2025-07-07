@@ -114,8 +114,10 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     switch ((UserTaskIntent) record.getIntent()) {
       case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
       case UserTaskIntent.CREATED -> handleCreated(record, entity);
-      case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED ->
-          updateChangedAttributes(record, entity);
+      case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
+        updateChangedAttributes(record, entity);
+        entity.setState(TaskState.CREATED);
+      }
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
       case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
       case UserTaskIntent.MIGRATED -> handleMigration(record, entity);
