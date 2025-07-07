@@ -113,6 +113,11 @@ public final class PublishMessageClient {
     return this;
   }
 
+  public Record<MessageRecordValue> publish(final int partitionId) {
+    this.partitionId = partitionId;
+    return publish();
+  }
+
   public Record<MessageRecordValue> publish() {
 
     if (partitionId == DEFAULT_VALUE) {

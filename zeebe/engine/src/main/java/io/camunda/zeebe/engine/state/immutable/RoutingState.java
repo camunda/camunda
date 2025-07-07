@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public interface RoutingState {
@@ -27,6 +29,38 @@ public interface RoutingState {
    *     specified number of partitions
    */
   long bootstrappedAt(int partitionCount);
+
+  static RoutingState of(
+      final Map<Integer, Long> activePartitions,
+      final Set<Integer> desiredPartitions,
+      final MessageCorrelation messageCorrelation) {
+    return new RoutingState() {
+      @Override
+      public Set<Integer> currentPartitions() {
+        return activePartitions.keySet();
+      }
+
+      @Override
+      public Set<Integer> desiredPartitions() {
+        return desiredPartitions;
+      }
+
+      @Override
+      public MessageCorrelation messageCorrelation() {
+        return messageCorrelation;
+      }
+
+      @Override
+      public boolean isInitialized() {
+        return true;
+      }
+
+      @Override
+      public long bootstrappedAt(final int partitionCount) {
+        return Optional.of(activePartitions.get(partitionCount)).orElse(-1L);
+      }
+    };
+  }
 
   sealed interface MessageCorrelation {
     record HashMod(int partitionCount) implements MessageCorrelation {

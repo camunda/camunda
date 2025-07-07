@@ -126,6 +126,14 @@ public final class DbRoutingState implements MutableRoutingState {
     }
   }
 
+  @Override
+  public void setMessageCorrelation(final MessageCorrelation messageCorrelation) {
+    key.wrapString(CURRENT_KEY);
+    final var current = columnFamily.get(key);
+    current.setMessageCorrelation(messageCorrelation);
+    columnFamily.upsert(key, current);
+  }
+
   private void setBootstrappedAt(final int partitionCount, final long key) {
     partitionIdKey.wrapInt(partitionCount);
     dbLong.wrapLong(key);

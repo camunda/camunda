@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
@@ -121,6 +122,7 @@ public final class EngineRule extends ExternalResource {
       cfg -> cfg.getAuthorizations().setEnabled(false);
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
   private SearchClientsProxy searchClientsProxy;
+  private Optional<RoutingState> initialRoutingState = Optional.empty();
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -223,6 +225,12 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withInitialRoutingState(final RoutingState routingInfo) {
+    initializeRoutingState = false;
+    initialRoutingState = Optional.of(routingInfo);
+    return this;
+  }
+
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
@@ -243,6 +251,13 @@ public final class EngineRule extends ExternalResource {
                           null);
 
                   migrator.runMigrations();
+                } else if (initialRoutingState.isPresent()) {
+                  final var state = initialRoutingState.get();
+                  final var dbRoutingState =
+                      recordProcessorContext.getProcessingState().getRoutingState();
+                  dbRoutingState.initializeRoutingInfo(state.currentPartitions().size());
+                  dbRoutingState.setMessageCorrelation(state.messageCorrelation());
+                  dbRoutingState.setDesiredPartitions(state.desiredPartitions(), 0L);
                 }
 
                 securityConfigModifier.accept(recordProcessorContext.getSecurityConfig());
