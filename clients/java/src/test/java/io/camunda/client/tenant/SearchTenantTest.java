@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.sort.TenantSort;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -52,5 +53,41 @@ public class SearchTenantTest extends ClientRestTest {
     assertThatThrownBy(() -> client.newTenantGetRequest("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
+  }
+
+  @Test
+  public void shouldSearchTenants() {
+    // when
+    client
+        .newTenantsSearchRequest()
+        .filter(fn -> fn.name("tenantName"))
+        .sort(TenantSort::name)
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/tenants/search");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  void shouldIncludeSortAndFilterInTenantsSearchRequestBody() {
+    // when
+    client
+        .newTenantsSearchRequest()
+        .filter(fn -> fn.name("tenantName"))
+        .sort(s -> s.name().desc())
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest lastRequest = gatewayService.getLastRequest();
+    final String requestBody = lastRequest.getBodyAsString();
+
+    assertThat(requestBody).contains("\"sort\":[{\"field\":\"name\",\"order\":\"DESC\"}]");
+    assertThat(requestBody).contains("\"filter\":{\"name\"");
   }
 }
