@@ -16,16 +16,12 @@ import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /** Update the variable. */
 @Component
 public class UpdateVariableHandler extends AbstractOperationHandler implements OperationHandler {
 
-  @Autowired
-  @Qualifier("operateObjectMapper")
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
