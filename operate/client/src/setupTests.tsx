@@ -132,10 +132,7 @@ beforeAll(() =>
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
 beforeEach(async () => {
-  vi.stubGlobal(
-    'ResizeObserver',
-    (await import('resize-observer-polyfill')).default,
-  );
+  vi.stubGlobal('ResizeObserver', await import('resize-observer-polyfill'));
   vi.stubGlobal('localStorage', localStorageMock);
   vi.stubGlobal('MutationObserver', MutationObserver);
   vi.stubGlobal('clientConfig', {

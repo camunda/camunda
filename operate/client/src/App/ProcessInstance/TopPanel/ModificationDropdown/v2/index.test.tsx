@@ -417,7 +417,7 @@ describe('Modification Dropdown', () => {
       );
     });
 
-    expect(await screen.findByTestId('dropdown-spinner')).toBeInTheDocument();
+    expect(screen.getByTestId('dropdown-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('dropdown-spinner'),
     );
