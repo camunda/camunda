@@ -21,9 +21,9 @@ import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.AuthorizationBasedResourceAccessFilter;
-import io.camunda.security.resource.ResourceAccessFilter;
-import io.camunda.security.resource.TenantBasedResourceAccessFilter;
+import io.camunda.security.resource.AuthorizationResult;
+import io.camunda.security.resource.ResourceAccessResult;
+import io.camunda.security.resource.TenantResult;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -311,12 +311,12 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
                     .permissionType(PermissionType.READ)
                     .resourceIds(List.of("123")));
     final var authorizationFilter =
-        AuthorizationBasedResourceAccessFilter.requiredAuthorizationCheck(expectedAuthorization);
+        AuthorizationResult.requiredAuthorizationCheck(expectedAuthorization);
 
     // when
     final var searchRequest =
         transformQueryWithResourceAccessFilter(
-            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+            filter, ResourceAccessResult.of(b -> b.authorizationResult(authorizationFilter)));
 
     // then
     final var queryVariant = searchRequest.queryOption();
@@ -333,12 +333,12 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationFilterWithGranted() {
     // given
     final var filter = FilterBuilders.job(b -> b);
-    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.successful();
+    final var authorizationFilter = AuthorizationResult.successful();
 
     // when
     final var searchRequest =
         transformQueryWithResourceAccessFilter(
-            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+            filter, ResourceAccessResult.of(b -> b.authorizationResult(authorizationFilter)));
 
     // then
     final var queryVariant = searchRequest.queryOption();
@@ -349,12 +349,12 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationFilterWithForbidden() {
     // given
     final var filter = FilterBuilders.job(b -> b);
-    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.unsuccessful();
+    final var authorizationFilter = AuthorizationResult.unsuccessful();
 
     // when
     final var searchRequest =
         transformQueryWithResourceAccessFilter(
-            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+            filter, ResourceAccessResult.of(b -> b.authorizationResult(authorizationFilter)));
 
     // then
     final var queryVariant = searchRequest.queryOption();
@@ -365,12 +365,12 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyTenantFilterWithGranted() {
     // given
     final var filter = FilterBuilders.job(b -> b);
-    final var tenantFilter = TenantBasedResourceAccessFilter.successful();
+    final var tenantFilter = TenantResult.successful();
 
     // when
     final var searchRequest =
         transformQueryWithResourceAccessFilter(
-            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+            filter, ResourceAccessResult.of(b -> b.tenantResult(tenantFilter)));
 
     // then
     final var queryVariant = searchRequest.queryOption();
@@ -381,12 +381,12 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyTenantFilterWithForbidden() {
     // given
     final var filter = FilterBuilders.job(b -> b);
-    final var tenantFilter = TenantBasedResourceAccessFilter.unsuccessful();
+    final var tenantFilter = TenantResult.unsuccessful();
 
     // when
     final var searchRequest =
         transformQueryWithResourceAccessFilter(
-            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+            filter, ResourceAccessResult.of(b -> b.tenantResult(tenantFilter)));
 
     // then
     final var queryVariant = searchRequest.queryOption();
@@ -397,12 +397,12 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldIgnoreTenantFilterWithTenantIds() {
     // given
     final var filter = FilterBuilders.job(b -> b);
-    final var tenantFilter = TenantBasedResourceAccessFilter.tenantCheckRequired(List.of("bar"));
+    final var tenantFilter = TenantResult.tenantCheckRequired(List.of("bar"));
 
     // when
     final var searchRequest =
         transformQueryWithResourceAccessFilter(
-            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+            filter, ResourceAccessResult.of(b -> b.tenantResult(tenantFilter)));
 
     // then
     final var queryVariant = searchRequest.queryOption();
@@ -419,15 +419,15 @@ public class JobQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAllFilters() {
     // given
     final var filter = FilterBuilders.job(b -> b.errorMessages("foo"));
-    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.successful();
-    final var tenantFilter = TenantBasedResourceAccessFilter.successful();
+    final var authorizationFilter = AuthorizationResult.successful();
+    final var tenantFilter = TenantResult.successful();
 
     // when
     final var searchRequest =
         transformQueryWithResourceAccessFilter(
             filter,
-            ResourceAccessFilter.of(
-                b -> b.authorizationFilter(authorizationFilter).tenantFilter(tenantFilter)));
+            ResourceAccessResult.of(
+                b -> b.authorizationResult(authorizationFilter).tenantResult(tenantFilter)));
 
     // then
     final var queryVariant = searchRequest.queryOption();

@@ -15,7 +15,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
@@ -27,14 +27,14 @@ public final class BatchOperationFilterTransformer
   }
 
   public BatchOperationFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
   }
 
   @Override
   public BatchOperationFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new BatchOperationFilterTransformer(indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new BatchOperationFilterTransformer(indexDescriptor, resourceAccessResult);
   }
 
   @Override

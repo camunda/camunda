@@ -17,6 +17,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -86,12 +87,19 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public GroupEntity getGroup(final String groupId) {
-    return findGroup(groupId)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_ID.formatted(groupId),
-                    CamundaSearchException.Reason.NOT_FOUND));
+    final Authorization<GroupEntity> authorization =
+        Authorization.of(a -> a.group().read().resourceIdsSupplier(g -> List.of(g.groupId())));
+    return groupSearchClient
+        .withSecurityContext(
+            SecurityContext.of(
+                b -> b.withAuthentication(authentication).withAuthorization(authorization)))
+        .getGroupById(groupId);
+    //        findGroup(groupId)
+    //        .orElseThrow(
+    //            () ->
+    //                new CamundaSearchException(
+    //                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_ID.formatted(groupId),
+    //                    CamundaSearchException.Reason.NOT_FOUND));
   }
 
   public Optional<GroupEntity> findGroupByName(final String name) {

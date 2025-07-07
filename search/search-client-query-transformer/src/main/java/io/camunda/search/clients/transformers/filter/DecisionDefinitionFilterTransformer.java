@@ -22,7 +22,7 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.VERSION;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
@@ -34,14 +34,14 @@ public final class DecisionDefinitionFilterTransformer
   }
 
   public DecisionDefinitionFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
   }
 
   @Override
   public DecisionDefinitionFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new DecisionDefinitionFilterTransformer(indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new DecisionDefinitionFilterTransformer(indexDescriptor, resourceAccessResult);
   }
 
   @Override

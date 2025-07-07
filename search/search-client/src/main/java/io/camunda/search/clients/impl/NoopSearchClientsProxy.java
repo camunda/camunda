@@ -125,6 +125,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public GroupEntity getGroupById(final String groupId) {
+    return null;
+  }
+
+  @Override
   public List<GroupEntity> findAllGroups(final GroupQuery query) {
     return List.of();
   }
@@ -206,6 +211,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public UserTaskEntity getUserTaskByKey(final Long userTaskKey) {
+    return null;
   }
 
   @Override

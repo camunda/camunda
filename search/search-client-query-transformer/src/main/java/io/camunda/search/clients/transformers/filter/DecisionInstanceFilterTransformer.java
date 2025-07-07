@@ -36,7 +36,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -50,14 +50,14 @@ public final class DecisionInstanceFilterTransformer
   }
 
   public DecisionInstanceFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
   }
 
   @Override
   public DecisionInstanceFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new DecisionInstanceFilterTransformer(indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new DecisionInstanceFilterTransformer(indexDescriptor, resourceAccessResult);
   }
 
   @Override

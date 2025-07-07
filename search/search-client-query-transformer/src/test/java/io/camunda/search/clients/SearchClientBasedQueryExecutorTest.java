@@ -21,10 +21,10 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.resource.AuthorizationBasedResourceAccessFilter;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.AuthorizationResult;
 import io.camunda.security.resource.ResourceAccessPolicy;
-import io.camunda.security.resource.TenantBasedResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
+import io.camunda.security.resource.TenantResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.time.OffsetDateTime;
@@ -82,10 +82,10 @@ class SearchClientBasedQueryExecutorTest {
         .thenReturn(processInstanceEntityResponse);
     when(resourceAccessPolicy.applySecurityContext(any(SecurityContext.class)))
         .thenReturn(
-            ResourceAccessFilter.of(
+            ResourceAccessResult.of(
                 b ->
-                    b.authorizationFilter(AuthorizationBasedResourceAccessFilter.successful())
-                        .tenantFilter(TenantBasedResourceAccessFilter.successful())));
+                    b.authorizationResult(AuthorizationResult.successful())
+                        .tenantResult(TenantResult.successful())));
 
     // When we search
     final SearchQueryResult<ProcessInstanceEntity> searchResult =
@@ -111,10 +111,10 @@ class SearchClientBasedQueryExecutorTest {
         .thenReturn(processInstanceEntityResponse);
     when(resourceAccessPolicy.applySecurityContext(any(SecurityContext.class)))
         .thenReturn(
-            ResourceAccessFilter.of(
+            ResourceAccessResult.of(
                 b ->
-                    b.authorizationFilter(AuthorizationBasedResourceAccessFilter.successful())
-                        .tenantFilter(TenantBasedResourceAccessFilter.successful())));
+                    b.authorizationResult(AuthorizationResult.successful())
+                        .tenantResult(TenantResult.successful())));
 
     // When we search
     final List<ProcessInstanceEntity> searchResult =

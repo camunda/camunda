@@ -28,7 +28,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,14 +40,14 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
   }
 
   public VariableFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
   }
 
   @Override
   public VariableFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new VariableFilterTransformer(indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new VariableFilterTransformer(indexDescriptor, resourceAccessResult);
   }
 
   @Override

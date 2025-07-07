@@ -20,7 +20,7 @@ import static io.camunda.webapps.schema.descriptors.index.UserIndex.USERNAME;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,14 +32,14 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
   }
 
   public UserFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
   }
 
   @Override
   public UserFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new UserFilterTransformer(indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new UserFilterTransformer(indexDescriptor, resourceAccessResult);
   }
 
   @Override

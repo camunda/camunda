@@ -25,7 +25,7 @@ import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
@@ -34,20 +34,20 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
     implements ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {
 
   private final ServiceTransformers transformers;
-  private final ResourceAccessFilter resourceAccessFilter;
+  private final ResourceAccessResult resourceAccessResult;
 
   public TypedSearchQueryTransformer(final ServiceTransformers transformers) {
     this(transformers, null);
   }
 
   public TypedSearchQueryTransformer(
-      final ServiceTransformers transformers, final ResourceAccessFilter resourceAccessFilter) {
+      final ServiceTransformers transformers, final ResourceAccessResult resourceAccessResult) {
     this.transformers = transformers;
-    this.resourceAccessFilter = resourceAccessFilter;
+    this.resourceAccessResult = resourceAccessResult;
   }
 
   public TypedSearchQueryTransformer<F, S> withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessManager) {
+      final ResourceAccessResult resourceAccessManager) {
     return new TypedSearchQueryTransformer<>(transformers, resourceAccessManager);
   }
 
@@ -99,7 +99,7 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
 
   private SearchQuery toSearchQuery(final F filter) {
     return getFilterTransformer(filter)
-        .withResourceAccessFilter(resourceAccessFilter)
+        .withResourceAccessFilter(resourceAccessResult)
         .apply(filter);
   }
 

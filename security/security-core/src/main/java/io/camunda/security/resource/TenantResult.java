@@ -9,23 +9,22 @@ package io.camunda.security.resource;
 
 import java.util.List;
 
-public record TenantBasedResourceAccessFilter(
+public record TenantResult(
     boolean granted, boolean requiresCheck, List<String> authenticatedTenants) {
 
   public boolean forbidden() {
     return !granted && !requiresCheck;
   }
 
-  public static TenantBasedResourceAccessFilter successful() {
-    return new TenantBasedResourceAccessFilter(true, false, List.of());
+  public static TenantResult successful() {
+    return new TenantResult(true, false, List.of());
   }
 
-  public static TenantBasedResourceAccessFilter unsuccessful() {
-    return new TenantBasedResourceAccessFilter(false, false, List.of());
+  public static TenantResult unsuccessful() {
+    return new TenantResult(false, false, List.of());
   }
 
-  public static TenantBasedResourceAccessFilter tenantCheckRequired(
-      final List<String> authenticatedTenants) {
-    return new TenantBasedResourceAccessFilter(false, true, authenticatedTenants);
+  public static TenantResult tenantCheckRequired(final List<String> authenticatedTenants) {
+    return new TenantResult(false, true, authenticatedTenants);
   }
 }

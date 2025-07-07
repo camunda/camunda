@@ -13,7 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.SequenceFlowFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import java.util.List;
@@ -26,14 +26,14 @@ public final class SequenceFlowFilterTransformer
   }
 
   public SequenceFlowFilterTransformer(
-      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+      final IndexDescriptor indexDescriptor, final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
   }
 
   @Override
   public SequenceFlowFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
-    return new SequenceFlowFilterTransformer(indexDescriptor, resourceAccessFilter);
+      final ResourceAccessResult resourceAccessResult) {
+    return new SequenceFlowFilterTransformer(indexDescriptor, resourceAccessResult);
   }
 
   @Override

@@ -46,7 +46,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessResult;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,16 +66,16 @@ public class ProcessDefinitionStatisticsFilterTransformer
   public ProcessDefinitionStatisticsFilterTransformer(
       final ServiceTransformers transformers,
       final IndexDescriptor indexDescriptor,
-      final ResourceAccessFilter resourceAccessManager) {
+      final ResourceAccessResult resourceAccessManager) {
     super(indexDescriptor, resourceAccessManager);
     this.transformers = transformers;
   }
 
   @Override
   public ProcessDefinitionStatisticsFilterTransformer withResourceAccessFilter(
-      final ResourceAccessFilter resourceAccessFilter) {
+      final ResourceAccessResult resourceAccessResult) {
     return new ProcessDefinitionStatisticsFilterTransformer(
-        transformers, indexDescriptor, resourceAccessFilter);
+        transformers, indexDescriptor, resourceAccessResult);
   }
 
   @Override
