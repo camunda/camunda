@@ -10,7 +10,7 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockIncidents} from 'modules/mocks/incidents';
-import {testData} from '../index.setup';
+import {testData} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createVariable,
@@ -31,7 +31,7 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
-import {mockProcess} from '../ProcessInstanceHeader/index.setup';
+import {mockProcess} from '../ProcessInstanceHeader/v2/index.setup';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';

@@ -7,7 +7,7 @@
  */
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {testData} from '../index.setup';
+import {testData} from './index.setup';
 import {ProcessInstance} from './index';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {variablesStore} from 'modules/stores/variables';
