@@ -24,8 +24,8 @@ public class RoleIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String MEMBER_TYPE = "memberType";
   public static final String JOIN = "join";
 
-  public static final EntityJoinRelationFactory<String> JOIN_RELATION_FACTORY =
-      new EntityJoinRelationFactory<>(
+  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
+      new EntityJoinRelationFactory(
           IdentityJoinRelationshipType.ROLE, IdentityJoinRelationshipType.MEMBER);
 
   public RoleIndex(final String indexPrefix, final boolean isElasticsearch) {

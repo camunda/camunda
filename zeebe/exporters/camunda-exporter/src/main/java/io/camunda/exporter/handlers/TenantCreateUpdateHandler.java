@@ -46,7 +46,8 @@ public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, Te
 
   @Override
   public List<String> generateIds(final Record<TenantRecordValue> record) {
-    return List.of(record.getValue().getTenantId());
+    return List.of(
+        TenantIndex.JOIN_RELATION_FACTORY.createParentId(record.getValue().getTenantId()));
   }
 
   @Override
