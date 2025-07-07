@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter;
 
+import static org.mockito.Mockito.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -16,7 +18,6 @@ import org.elasticsearch.client.Request;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -40,15 +41,8 @@ public class ElasticsearchExporterSchemaManagerIT {
 
   @Test
   public void shouldNotOverwriteNewerComponentTemplate() throws IOException {
-    // broker 1 schema manager
-    // I need to mock the template reader and make it return different things for 8.6.0 and 8.5.0
-    // and check it is set to the 8.5 one
-    // this means mockito
-
-    // I don't pass in just the config, I pass in config and elasticsearch client
-    // in the elasticsearch client I build my own template reader
-
-    final var templateReader = Mockito.spy(new TemplateReader(CONFIG));
+    // given
+    final var templateReader = spy(new TemplateReader(CONFIG));
 
     final var esClient =
         new ElasticsearchClient(
@@ -58,21 +52,27 @@ public class ElasticsearchExporterSchemaManagerIT {
             new RecordIndexRouter(CONFIG.index),
             templateReader,
             new ElasticsearchMetrics(new SimpleMeterRegistry()));
+
+    // when
+    // we create an 8.5 component template
     final var schemaManager = new ElasticsearchExporterSchemaManager(esClient, CONFIG);
     schemaManager.createSchema("8.5.0");
 
-    Mockito.doReturn("/zeebe-record-template-with-foo-field.json")
+    // create a future version of the component template (8.6.0) with a new foo field
+    doReturn("/zeebe-record-template-with-foo-field.json")
         .when(templateReader)
         .zeebeRecordTemplateFile();
     final var schemaManager2 = new ElasticsearchExporterSchemaManager(esClient, CONFIG);
     schemaManager2.createSchema("8.6.0");
 
-    Mockito.reset(templateReader);
-
+    // Use a new schema manager to mock 8.5 broker restart which then triggers schema manager.
+    // 8.5 schema manager runs again and attempts to create old component template
+    reset(templateReader);
     final var schemaManager3 = new ElasticsearchExporterSchemaManager(esClient, CONFIG);
     schemaManager3.createSchema("8.5.0");
 
-    // check the foo field exists in the component template
+    // then
+    // verify component template is still the upgraded 8.6 version
     final var request = new Request("GET", "/_component_template/" + CONFIG.index.prefix);
     final var response = esClient.getRestClient().performRequest(request);
     final var componentTemplateInElasticsearch =
