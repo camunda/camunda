@@ -194,7 +194,7 @@ describe('New Variable Modifications', () => {
     vi.useRealTimers();
   });
 
-  it.skip('should not create add variable modification if name field is duplicate', async () => {
+  it('should not create add variable modification if name field is duplicate', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     mockFetchProcessInstanceDeprecated().withSuccess(
@@ -233,17 +233,6 @@ describe('New Variable Modifications', () => {
         payload: {
           flowNodeName: 'someProcessName',
           id: expect.any(String),
-          name: 'testVariableName',
-          newValue: '123',
-          operation: 'ADD_VARIABLE',
-          scopeId: 'instance_id',
-        },
-        type: 'variable',
-      },
-      {
-        payload: {
-          flowNodeName: 'someProcessName',
-          id: expect.any(String),
           name: 'test2',
           newValue: '123',
           operation: 'ADD_VARIABLE',
@@ -260,17 +249,6 @@ describe('New Variable Modifications', () => {
       await screen.findByText(/Name should be unique/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications).toEqual([
-      {
-        payload: {
-          flowNodeName: 'someProcessName',
-          id: expect.any(String),
-          name: 'testVariableName',
-          newValue: '123',
-          operation: 'ADD_VARIABLE',
-          scopeId: 'instance_id',
-        },
-        type: 'variable',
-      },
       {
         payload: {
           flowNodeName: 'someProcessName',
