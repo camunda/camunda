@@ -9,7 +9,6 @@ package io.camunda.operate.store.opensearch.client.sync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncDocumentOperations;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncSnapshotOperations;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -101,18 +100,11 @@ public class RichOpenSearchClient {
   public record AggregationValue(String key, long count) {}
 
   public class Async {
-    final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations;
     final OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
 
     public Async(final OpenSearchAsyncClient openSearchAsyncClient) {
-      openSearchAsyncDocumentOperations =
-          new OpenSearchAsyncDocumentOperations(LOGGER, openSearchAsyncClient);
       openSearchAsyncSnapshotOperations =
           new OpenSearchAsyncSnapshotOperations(LOGGER, openSearchAsyncClient);
-    }
-
-    public OpenSearchAsyncDocumentOperations doc() {
-      return openSearchAsyncDocumentOperations;
     }
 
     public OpenSearchAsyncSnapshotOperations snapshot() {
