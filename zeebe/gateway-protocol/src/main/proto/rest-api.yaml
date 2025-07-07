@@ -10688,7 +10688,6 @@ components:
           type: string
           enum:
             - QUERY_FAILED
-            - APPEND_CHUNKS_FAILED
         message:
           description: The error message that occurred during the batch operation.
           type: string

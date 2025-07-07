@@ -126,26 +126,17 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return;
     }
 
-    try {
-      // Then append the chunks
-      appendChunks(batchOperation, taskResultBuilder, keys);
+    // Then append the chunks
+    appendChunks(batchOperation, taskResultBuilder, keys);
 
-      metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
+    metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
 
-      appendExecution(batchOperation.getKey(), taskResultBuilder);
+    appendExecution(batchOperation.getKey(), taskResultBuilder);
 
-      metrics.startStartExecuteLatencyMeasure(
-          batchOperation.getKey(), batchOperation.getBatchOperationType());
-      metrics.startTotalExecutionLatencyMeasure(
-          batchOperation.getKey(), batchOperation.getBatchOperationType());
-    } catch (final Exception e) {
-      LOG.error(
-          "Failed to append chunks for batch operation with key {}. It will be removed from queue",
-          batchOperation.getKey(),
-          e);
-      appendFailedCommand(
-          taskResultBuilder, batchOperation, BatchOperationErrorType.APPEND_CHUNKS_FAILED, e);
-    }
+    metrics.startStartExecuteLatencyMeasure(
+        batchOperation.getKey(), batchOperation.getBatchOperationType());
+    metrics.startTotalExecutionLatencyMeasure(
+        batchOperation.getKey(), batchOperation.getBatchOperationType());
   }
 
   private void appendChunks(

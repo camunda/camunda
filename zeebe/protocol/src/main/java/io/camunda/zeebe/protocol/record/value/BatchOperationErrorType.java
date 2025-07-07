@@ -17,6 +17,5 @@ package io.camunda.zeebe.protocol.record.value;
 
 public enum BatchOperationErrorType {
   QUERY_FAILED,
-  APPEND_CHUNKS_FAILED,
   UNKNOWN
 }
