@@ -28,6 +28,8 @@ import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.AbstractStartEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -374,22 +376,18 @@ public class ScaleUpPartitionsTest {
     // After creating instances, wait for subscriptions to be established
     variableProvider.correlateAllMessages(camundaClient, "message");
   }
-  @Test
-  public void shouldNotBreakMessageStartEvents() {
+  @ParameterizedTest
+  @EnumSource(value = TestCase.class)
+  public void shouldNotBreakMessageStartEvents(final TestCase testCase) {
     // given
     cluster.awaitHealthyTopology();
-    final var messageId = new AtomicInteger();
     final var correlationKeyVariable = "correlationKey";
-    final var correlationKeys = new ArrayBlockingQueue<Integer>(1024);
     final var processId = "PROCESS_WITH_MESSAGE_START";
-    final var startMessageName = "startMessage";
     final var continueMessageName = "continueMessage";
     // Create process with message start event and intermediate message event
     final var process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start-message")
-            .message(
-                m -> m.name(startMessageName).zeebeCorrelationKeyExpression(correlationKeyVariable))
+        testCase
+            .setupStartEvent(Bpmn.createExecutableProcess(processId))
             .intermediateCatchEvent(
                 "intermediate-message",
                 b ->
@@ -410,114 +408,23 @@ public class ScaleUpPartitionsTest {
     new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
 
     final var targetPartitionCount = PARTITIONS_COUNT + 1;
+    final var variableProvider = new CorrelationKeyVariableProvider();
 
     final var correlationKeyProvider = new CorrelationKeyVariableProvider();
     // Start some instances before scaling by publishing messages
-    startProcessInstancesWithMessages(
-        startMessageName,
-        correlationKeyVariable,
-        correlationKeyProvider.supplier(correlationKeyVariable),
-        PARTITIONS_COUNT * 5);
+    testCase.startProcessInstances(
+        camundaClient, PARTITIONS_COUNT * 5, variableProvider.supplier(correlationKeyVariable));
 
     // when
     scaleToPartitions(targetPartitionCount);
     awaitScaleUpCompletion(targetPartitionCount);
 
     // Start instances after scaling by publishing messages
-    startProcessInstancesWithMessages(
-        startMessageName,
-        correlationKeyVariable,
-        correlationKeyProvider.supplier(correlationKeyVariable),
-        targetPartitionCount * 5);
+    testCase.startProcessInstances(
+        camundaClient, targetPartitionCount * 5, variableProvider.supplier(correlationKeyVariable));
 
     // then - verify that message start events work and intermediate messages can be correlated
     correlationKeyProvider.correlateAllMessages(camundaClient, continueMessageName);
-  }
-
-  @Test
-  public void shouldNotBreakSignalStartEvents() {
-    // given
-    cluster.awaitHealthyTopology();
-    final var processId = "PROCESS_WITH_SIGNAL_START";
-    final var startSignalName = "startSignal";
-    final var correlationKeyVariable = "correlationKey";
-
-    final var variableProvider = new CorrelationKeyVariableProvider();
-    // Create process with signal start event and intermediate signal event
-    final var process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent("start-signal")
-            .signal(startSignalName)
-            .intermediateCatchEvent(
-                "continueMessage",
-                b ->
-                    b.message(
-                        mb ->
-                            mb.name("message")
-                                .zeebeCorrelationKeyExpression(correlationKeyVariable)))
-            .endEvent()
-            .done();
-
-    final var deploymentKey =
-        camundaClient
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process-with-signal-start.bpmn")
-            .send()
-            .join()
-            .getKey();
-    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
-
-    final var targetPartitionCount = PARTITIONS_COUNT + 1;
-
-    // Start some instances before scaling by broadcasting signals
-    startProcessInstancesWithSignals(
-        startSignalName, PARTITIONS_COUNT * 5, variableProvider.supplier(correlationKeyVariable));
-
-    // when
-    scaleToPartitions(targetPartitionCount);
-    awaitScaleUpCompletion(targetPartitionCount);
-
-    // Start instances after scaling by broadcasting signals
-    startProcessInstancesWithSignals(
-        startSignalName,
-        targetPartitionCount * 5,
-        variableProvider.supplier(correlationKeyVariable));
-
-    // then
-    // verify that the messages can be correlated, indicating that the process instances
-    // were started by the signal
-    variableProvider.correlateAllMessages(camundaClient, "continueMessage");
-  }
-
-  private void startProcessInstancesWithSignals(
-      final String signalName,
-      final int instanceCount,
-      final Supplier<Map<String, Object>> correlationKeyProvider) {
-    for (int i = 0; i < instanceCount; i++) {
-      camundaClient
-          .newBroadcastSignalCommand()
-          .signalName(signalName)
-          .variables(correlationKeyProvider.get())
-          .send()
-          .join();
-    }
-  }
-
-  private void startProcessInstancesWithMessages(
-      final String messageName,
-      final String correlationKeyVariable,
-      final Supplier<Map<String, Object>> correlationKeyProvider,
-      final int instanceCount) {
-
-    for (int i = 0; i < instanceCount; i++) {
-      camundaClient
-          .newPublishMessageCommand()
-          .messageName(messageName)
-          .correlationKey(correlationKeyVariable)
-          .variables(correlationKeyProvider.get())
-          .send()
-          .join();
-    }
   }
   public void assertThatRoutingStateMatches(final RoutingState routingState) {
     Awaitility.await("until topology is restored correctly")
@@ -635,6 +542,83 @@ public class ScaleUpPartitionsTest {
                               .toCompletableFuture())
                       .succeedsWithin(Duration.ofSeconds(5));
                 });
+      }
+    }
+  }
+
+  enum TestCase {
+    MESSAGE,
+    SIGNAL;
+
+    String start() {
+      return "start";
+    }
+
+    String messageName() {
+      return "start";
+    }
+
+    String correlationKeyVariable() {
+      return "correlationKey";
+    }
+
+    AbstractStartEventBuilder<?> setupStartEvent(final ProcessBuilder builder) {
+      return switch (this) {
+        case MESSAGE ->
+            builder
+                .startEvent(start())
+                .message(
+                    m ->
+                        m.name(messageName())
+                            .zeebeCorrelationKeyExpression(correlationKeyVariable()));
+        case SIGNAL -> builder.startEvent(start()).signal(messageName());
+      };
+    }
+
+    void startProcessInstances(
+        final CamundaClient camundaClient,
+        final int count,
+        final Supplier<Map<String, Object>> correlationKeyProvider) {
+      switch (this) {
+        case MESSAGE ->
+            startProcessInstancesWithMessages(
+                camundaClient, messageName(), count, correlationKeyProvider);
+        case SIGNAL ->
+            startProcessInstancesWithSignals(
+                camundaClient, messageName(), count, correlationKeyProvider);
+      }
+    }
+
+    void startProcessInstancesWithSignals(
+        final CamundaClient camundaClient,
+        final String signalName,
+        final int instanceCount,
+        final Supplier<Map<String, Object>> correlationKeyProvider) {
+      for (int i = 0; i < instanceCount; i++) {
+        camundaClient
+            .newBroadcastSignalCommand()
+            .signalName(signalName)
+            .variables(correlationKeyProvider.get())
+            .send()
+            .join();
+      }
+    }
+
+    void startProcessInstancesWithMessages(
+        final CamundaClient camundaClient,
+        final String messageName,
+        final int instanceCount,
+        final Supplier<Map<String, Object>> correlationKeyProvider) {
+
+      for (int i = 0; i < instanceCount; i++) {
+        final var variables = correlationKeyProvider.get();
+        camundaClient
+            .newPublishMessageCommand()
+            .messageName(messageName)
+            .correlationKey(variables.keySet().iterator().next())
+            .variables(variables)
+            .send()
+            .join();
       }
     }
   }
