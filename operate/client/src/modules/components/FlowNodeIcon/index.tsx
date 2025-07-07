@@ -308,6 +308,7 @@ const FlowNodeIcon: React.FC<Props> = ({
       }
       className={className}
       $hasLeftMargin={hasLeftMargin}
+      data-testid="flow-node-icon"
     />
   );
 };
