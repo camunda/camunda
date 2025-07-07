@@ -40,6 +40,7 @@ import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {cancelAllTokens} from 'modules/utils/modifications';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -339,7 +340,7 @@ describe('VariablePanel', () => {
       instanceCount: 1,
       instanceMetadata: {
         ...singleInstanceMetadata.instanceMetadata!,
-        endDate: '2022-04-10T15:01:31.794+0000',
+        endDate: MOCK_TIMESTAMP,
       },
     });
 
