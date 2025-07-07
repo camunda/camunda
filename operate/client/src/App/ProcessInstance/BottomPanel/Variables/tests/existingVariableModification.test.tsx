@@ -22,6 +22,8 @@ import {useEffect} from 'react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockProcessXML} from 'modules/testUtils';
 
 type Props = {
   children?: React.ReactNode;
@@ -67,29 +69,10 @@ const editValueFromTextfieldAndBlur = async (
   await user.tab();
 };
 
-const editValueFromJSONEditor = async (user: UserEvent, value: string) => {
-  await user.click(
-    screen.getByRole('button', {name: /open json editor modal/i}),
-  );
-  await user.click(screen.getByTestId('monaco-editor'));
-  await waitFor(() =>
-    expect(screen.getByTestId('monaco-editor')).toHaveValue(),
-  );
-  await user.type(screen.getByTestId('monaco-editor'), value);
-  await user.click(screen.getByRole('button', {name: /apply/i}));
-};
-
-const editValue = async (type: string, user: UserEvent, value: string) => {
-  if (type === 'textfield') {
-    return editValueFromTextfieldAndBlur(user, value);
-  }
-  if (type === 'jsoneditor') {
-    return editValueFromJSONEditor(user, value);
-  }
-};
-
 describe('Variables', () => {
   beforeEach(() => {
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
     processInstanceDetailsStore.setProcessInstance(
       createInstance({id: 'process-instance-id'}),
     );
@@ -99,91 +82,85 @@ describe('Variables', () => {
     });
   });
 
-  it.each(['textfield', 'jsoneditor'])(
-    'should not apply modification if modification mode is not enabled - %p',
-    async (type) => {
-      const {user} = render(
-        <ExistingVariableValue variableName="foo" variableValue="123" />,
-        {wrapper: Wrapper},
-      );
+  it('should not apply modification if modification mode is not enabled', async () => {
+    const {user} = render(
+      <ExistingVariableValue variableName="foo" variableValue="123" />,
+      {wrapper: Wrapper},
+    );
 
-      await editValue(type, user, '4');
+    await editValueFromTextfieldAndBlur(user, '4');
 
-      expect(modificationsStore.state.modifications.length).toBe(0);
-    },
-  );
+    expect(modificationsStore.state.modifications.length).toBe(0);
+  });
 
-  it.each(['textfield', 'jsoneditor'])(
-    'should create edit variable modification on blur - %p',
-    async (type) => {
-      modificationsStore.enableModificationMode();
+  it('should create edit variable modification on blur', async () => {
+    modificationsStore.enableModificationMode();
 
-      const {user} = render(
-        <ExistingVariableValue variableName="foo" variableValue="123" />,
-        {wrapper: Wrapper},
-      );
+    const {user} = render(
+      <ExistingVariableValue variableName="foo" variableValue="123" />,
+      {wrapper: Wrapper},
+    );
 
-      await editValue(type, user, '4');
+    await editValueFromTextfieldAndBlur(user, '4');
 
-      expect(modificationsStore.state.modifications.length).toBe(1);
-      expect(modificationsStore.variableModifications).toEqual([
-        {
-          flowNodeName: 'some-scope',
-          id: 'foo',
-          name: 'foo',
-          newValue: '1234',
-          oldValue: '123',
-          operation: 'EDIT_VARIABLE',
-          scopeId: 'flow-node-instance-id',
-        },
-      ]);
+    expect(modificationsStore.state.modifications.length).toBe(1);
+    expect(modificationsStore.variableModifications).toEqual([
+      {
+        flowNodeName: 'some-scope',
+        id: 'foo',
+        name: 'foo',
+        newValue: '1234',
+        oldValue: '123',
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'flow-node-instance-id',
+      },
+    ]);
 
-      await editValue(type, user, '5');
+    await editValueFromTextfieldAndBlur(user, '5');
 
-      expect(modificationsStore.state.modifications.length).toBe(2);
-      expect(modificationsStore.variableModifications).toEqual([
-        {
-          flowNodeName: 'some-scope',
-          id: 'foo',
-          name: 'foo',
-          newValue: '12345',
-          oldValue: '123',
-          operation: 'EDIT_VARIABLE',
-          scopeId: 'flow-node-instance-id',
-        },
-      ]);
+    expect(modificationsStore.state.modifications.length).toBe(2);
+    expect(modificationsStore.variableModifications).toEqual([
+      {
+        flowNodeName: 'some-scope',
+        id: 'foo',
+        name: 'foo',
+        newValue: '12345',
+        oldValue: '123',
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'flow-node-instance-id',
+      },
+    ]);
 
-      await editValue(type, user, '{backspace}{backspace}');
+    await editValueFromTextfieldAndBlur(user, '{backspace}{backspace}');
 
-      expect(modificationsStore.state.modifications.length).toBe(3);
-      expect(modificationsStore.variableModifications).toEqual([
-        {
-          flowNodeName: 'some-scope',
-          id: 'foo',
-          name: 'foo',
-          newValue: '123',
-          oldValue: '123',
-          operation: 'EDIT_VARIABLE',
-          scopeId: 'flow-node-instance-id',
-        },
-      ]);
+    expect(modificationsStore.state.modifications.length).toBe(3);
+    expect(modificationsStore.variableModifications).toEqual([
+      {
+        flowNodeName: 'some-scope',
+        id: 'foo',
+        name: 'foo',
+        newValue: '123',
+        oldValue: '123',
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'flow-node-instance-id',
+      },
+    ]);
 
-      await user.click(screen.getByRole('button', {name: 'Undo'}));
+    await user.click(screen.getByRole('button', {name: 'Undo'}));
 
-      expect(modificationsStore.state.modifications.length).toBe(2);
-      expect(modificationsStore.variableModifications).toEqual([
-        {
-          flowNodeName: 'some-scope',
-          id: 'foo',
-          name: 'foo',
-          newValue: '12345',
-          oldValue: '123',
-          operation: 'EDIT_VARIABLE',
-          scopeId: 'flow-node-instance-id',
-        },
-      ]);
-    },
-  );
+    expect(modificationsStore.state.modifications.length).toBe(2);
+    expect(modificationsStore.variableModifications).toEqual([
+      {
+        flowNodeName: 'some-scope',
+        id: 'foo',
+        name: 'foo',
+        newValue: '12345',
+        oldValue: '123',
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'flow-node-instance-id',
+      },
+    ]);
+  });
 
   it('should not apply modification if value is invalid', async () => {
     modificationsStore.enableModificationMode();
@@ -193,7 +170,7 @@ describe('Variables', () => {
       {wrapper: Wrapper},
     );
 
-    await editValue('textfield', user, 'invalid value');
+    await editValueFromTextfieldAndBlur(user, 'invalid value');
 
     expect(modificationsStore.state.modifications).toEqual([]);
   });
@@ -206,7 +183,7 @@ describe('Variables', () => {
       {wrapper: Wrapper},
     );
 
-    await editValue('textfield', user, '{backspace}');
+    await editValueFromTextfieldAndBlur(user, '{backspace}');
 
     expect(modificationsStore.state.modifications).toEqual([]);
   });
@@ -225,22 +202,6 @@ describe('Variables', () => {
     expect(modificationsStore.state.modifications).toEqual([]);
   });
 
-  it('should not apply modification if value has not changed from json editor', async () => {
-    modificationsStore.enableModificationMode();
-
-    const {user} = render(
-      <ExistingVariableValue variableName="foo" variableValue="123" />,
-      {wrapper: Wrapper},
-    );
-
-    await user.click(
-      screen.getByRole('button', {name: /open json editor modal/i}),
-    );
-    await user.click(screen.getByRole('button', {name: /apply/i}));
-
-    expect(modificationsStore.state.modifications).toEqual([]);
-  });
-
   it('should not apply modification if value is the same as the last modification', async () => {
     modificationsStore.enableModificationMode();
 
@@ -249,7 +210,7 @@ describe('Variables', () => {
       {wrapper: Wrapper},
     );
 
-    await editValue('textfield', user, '4');
+    await editValueFromTextfieldAndBlur(user, '4');
 
     expect(modificationsStore.state.modifications).toEqual([
       {
@@ -288,34 +249,20 @@ describe('Variables', () => {
     ]);
   });
 
-  it.each(['textfield', 'jsoneditor'])(
-    'should apply modification if its different from last modification but same as the initial value - %p',
-    async (type) => {
-      modificationsStore.enableModificationMode();
+  it('should apply modification if its different from last modification but same as the initial value', async () => {
+    modificationsStore.enableModificationMode();
 
-      const {user} = render(
-        <ExistingVariableValue variableName="foo" variableValue="123" />,
-        {wrapper: Wrapper},
-      );
+    const {user} = render(
+      <ExistingVariableValue variableName="foo" variableValue="123" />,
+      {wrapper: Wrapper},
+    );
 
-      await editValue(type, user, '4');
+    await editValueFromTextfieldAndBlur(user, '4');
 
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          type: 'variable',
-          payload: {
-            flowNodeName: 'some-scope',
-            id: 'foo',
-            name: 'foo',
-            newValue: '1234',
-            oldValue: '123',
-            operation: 'EDIT_VARIABLE',
-            scopeId: 'flow-node-instance-id',
-          },
-        },
-      ]);
-      expect(modificationsStore.variableModifications).toEqual([
-        {
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        type: 'variable',
+        payload: {
           flowNodeName: 'some-scope',
           id: 'foo',
           name: 'foo',
@@ -324,37 +271,37 @@ describe('Variables', () => {
           operation: 'EDIT_VARIABLE',
           scopeId: 'flow-node-instance-id',
         },
-      ]);
+      },
+    ]);
+    expect(modificationsStore.variableModifications).toEqual([
+      {
+        flowNodeName: 'some-scope',
+        id: 'foo',
+        name: 'foo',
+        newValue: '1234',
+        oldValue: '123',
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'flow-node-instance-id',
+      },
+    ]);
 
-      await editValue(type, user, '{backspace}');
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          type: 'variable',
-          payload: {
-            flowNodeName: 'some-scope',
-            id: 'foo',
-            name: 'foo',
-            newValue: '1234',
-            oldValue: '123',
-            operation: 'EDIT_VARIABLE',
-            scopeId: 'flow-node-instance-id',
-          },
+    await editValueFromTextfieldAndBlur(user, '{backspace}');
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        type: 'variable',
+        payload: {
+          flowNodeName: 'some-scope',
+          id: 'foo',
+          name: 'foo',
+          newValue: '1234',
+          oldValue: '123',
+          operation: 'EDIT_VARIABLE',
+          scopeId: 'flow-node-instance-id',
         },
-        {
-          type: 'variable',
-          payload: {
-            flowNodeName: 'some-scope',
-            id: 'foo',
-            name: 'foo',
-            newValue: '123',
-            oldValue: '123',
-            operation: 'EDIT_VARIABLE',
-            scopeId: 'flow-node-instance-id',
-          },
-        },
-      ]);
-      expect(modificationsStore.variableModifications).toEqual([
-        {
+      },
+      {
+        type: 'variable',
+        payload: {
           flowNodeName: 'some-scope',
           id: 'foo',
           name: 'foo',
@@ -363,7 +310,18 @@ describe('Variables', () => {
           operation: 'EDIT_VARIABLE',
           scopeId: 'flow-node-instance-id',
         },
-      ]);
-    },
-  );
+      },
+    ]);
+    expect(modificationsStore.variableModifications).toEqual([
+      {
+        flowNodeName: 'some-scope',
+        id: 'foo',
+        name: 'foo',
+        newValue: '123',
+        oldValue: '123',
+        operation: 'EDIT_VARIABLE',
+        scopeId: 'flow-node-instance-id',
+      },
+    ]);
+  });
 });
