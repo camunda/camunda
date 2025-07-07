@@ -15,7 +15,7 @@ import {ViewFullVariableButton} from './index';
 
 describe('<ViewFullVariableButton />', () => {
   it('should load full value', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     const mockOnClick = vi.fn(function mock(): Promise<null | string> {
       return new Promise((resolve) => {
         setTimeout(() => resolve('foo'), 0);
