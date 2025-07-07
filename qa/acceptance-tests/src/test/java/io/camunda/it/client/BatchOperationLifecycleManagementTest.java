@@ -53,7 +53,7 @@ public class BatchOperationLifecycleManagementTest {
                 b.getExperimental()
                     .getEngine()
                     .getBatchOperations()
-                    .setSchedulerInterval(Duration.ofSeconds(3));
+                    .setSchedulerInterval(Duration.ofDays(1));
               });
 
   String testScopeId;
