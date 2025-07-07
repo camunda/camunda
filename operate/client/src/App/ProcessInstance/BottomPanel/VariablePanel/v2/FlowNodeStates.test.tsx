@@ -40,6 +40,7 @@ import {
   init as initFlowNodeSelection,
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -165,7 +166,7 @@ describe('VariablePanel', () => {
     await new Promise(process.nextTick);
   });
 
-  it.skip('should display correct state for a flow node that has only one running token on it', async () => {
+  it('should display correct state for a flow node that has only one running token on it', async () => {
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
       flowNodeInstanceId: '2251799813695856',
@@ -193,6 +194,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
       selectFlowNode(
@@ -202,7 +204,6 @@ describe('VariablePanel', () => {
         },
       );
     });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     // initial state
     act(() => {
@@ -273,7 +274,7 @@ describe('VariablePanel', () => {
       instanceMetadata: {
         ...singleInstanceMetadata.instanceMetadata!,
         endDate: null,
-        startDate: '2022-09-30T15:00:31.772+0000',
+        startDate: MOCK_TIMESTAMP,
       },
     });
 
