@@ -12,9 +12,11 @@ import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Wrapper, incidentsMock, firstIncident} from './mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Selection', () => {
   it('should deselect selected incident', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents({
       ...incidentsMock,
       incidents: [firstIncident],
@@ -33,6 +35,7 @@ describe('Selection', () => {
   });
 
   it('should select single incident when multiple incidents are selected', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     const incidents = [
       createIncident({flowNodeId: 'myTask'}),
       createIncident({flowNodeId: 'myTask'}),
