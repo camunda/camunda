@@ -240,8 +240,13 @@ You can run the Camunda distribution via IntelliJ for development purposes.
      ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200
      ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false
      ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter
+     CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo
+     CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo
+     CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com
+     CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo
+     CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0_=demo
      ```
-6. The webapps should be available on the following URLs with default credentials (`demo`/`demo`):
+6. The webapps should be available on the following URLs with the credentials specified above (`demo`/`demo`):
    - [Tasklist](http://localhost:8080/tasklist)
    - [Operate](http://localhost:8080/operate)
    - [Identity](http://localhost:8080/identity)
