@@ -72,7 +72,8 @@ public final class JobEventProcessors {
                 processingState,
                 bpmnBehaviors.eventPublicationBehavior(),
                 keyGenerator,
-                jobMetrics))
+                jobMetrics,
+                writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,
