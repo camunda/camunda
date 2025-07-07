@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {renderHook} from '@testing-library/react-hooks';
+import {renderHook} from 'modules/testing-library';
 import {useFilters} from 'modules/hooks/useFilters';
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
