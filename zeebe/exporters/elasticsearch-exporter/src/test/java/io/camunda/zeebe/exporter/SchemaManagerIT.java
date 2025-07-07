@@ -86,6 +86,7 @@ public class SchemaManagerIT {
     final var indexTemplates =
         MAPPER.readValue(templateRes.getEntity().getContent().readAllBytes(), JsonNode.class);
 
+    assertThat(indexTemplates.at("/index_templates").size()).isGreaterThan(0);
     assertThat(indexTemplates.at("/index_templates"))
         .allSatisfy(
             node -> {
