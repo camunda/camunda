@@ -47,6 +47,13 @@ vi.mock('modules/components/JSONEditor', () => {
   };
 });
 
+vi.mock('modules/components/DiffEditor', () => {
+  return {
+    useMonaco: () => {},
+    DiffEditor: () => <textarea data-testid="monaco-diff-editor" />,
+  };
+});
+
 vi.mock('modules/loadMonaco', () => ({
   loadMonaco: () => {},
 }));
