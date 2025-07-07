@@ -174,6 +174,29 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
+  void shouldRequestTokenWithResourceAndAddToCall() throws IOException {
+    // given
+    final String resource = "https://api.example.com";
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .resource(resource)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentialsWithResource(ACCESS_TOKEN, null, resource);
+
+    // when
+    provider.applyCredentials(applier);
+
+    // then
+    assertThat(applier.credentials)
+        .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+  }
+
+  @Test
   void shouldRefreshCredentialsOnRetry() throws IOException {
     // given
     final OAuthCredentialsProvider provider =
@@ -364,6 +387,11 @@ public final class OAuthCredentialsProviderTest {
   }
 
   private void mockCredentials(final String token, final String scope) {
+    mockCredentialsWithResource(token, scope, null);
+  }
+
+  private void mockCredentialsWithResource(
+      final String token, final String scope, final String resource) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
     map.put("client_id", CLIENT_ID);
@@ -371,6 +399,9 @@ public final class OAuthCredentialsProviderTest {
     map.put("grant_type", "client_credentials");
     if (scope != null) {
       map.put("scope", scope);
+    }
+    if (resource != null) {
+      map.put("resource", resource);
     }
 
     final String encodedBody =
