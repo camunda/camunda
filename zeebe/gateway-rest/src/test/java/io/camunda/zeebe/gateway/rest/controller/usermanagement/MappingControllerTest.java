@@ -55,7 +55,6 @@ public class MappingControllerTest extends RestControllerTest {
     final var request =
         new MappingRuleCreateRequest(
             dto.mappingId(), dto.claimName(), dto.claimValue(), dto.name());
-    ;
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(1L)
