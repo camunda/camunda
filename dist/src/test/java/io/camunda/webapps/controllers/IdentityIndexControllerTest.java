@@ -7,90 +7,86 @@
  */
 package io.camunda.webapps.controllers;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import io.camunda.identity.webapp.controllers.IdentityIndexController;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.entity.AuthenticationMethod;
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Map;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.ui.ExtendedModelMap;
+import jakarta.servlet.http.HttpServletRequest;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletPath;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
+@WebMvcTest(
+    controllers = IdentityIndexController.class,
+    excludeAutoConfiguration = {
+      org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration.class
+    })
+@Import(IdentityIndexControllerTest.TestConfig.class)
 class IdentityIndexControllerTest {
 
-  private static final HttpServletResponse RESPONSE = mock(HttpServletResponse.class);
-  private SecurityConfiguration securityConfiguration;
-  private IdentityIndexController controller;
+  @Autowired private MockMvc mockMvc;
 
-  @BeforeEach
-  void setUp() {
-    securityConfiguration = new SecurityConfiguration();
-    final var context = mock(ServletContext.class);
-    controller = new IdentityIndexController(context, null, securityConfiguration);
-    when(context.getContextPath()).thenReturn("");
+  @MockitoBean private ServletContext servletContext;
+
+  @MockitoBean private WebappsRequestForwardManager webappsRequestForwardManager;
+
+  @Test
+  void shouldReturnIdentityIndexView() throws Exception {
+    // Given
+    when(servletContext.getContextPath()).thenReturn("/camunda");
+
+    // When & Then
+    mockMvc
+        .perform(get("/identity"))
+        .andExpect(status().isOk())
+        .andExpect(view().name("identity/index"))
+        .andExpect(model().attribute("contextPath", "/camunda/identity/"))
+        .andExpect(header().doesNotExist(CONTENT_SECURITY_POLICY));
   }
 
-  @ParameterizedTest
-  @MethodSource("provideSecurityConfig")
-  void viteIsOidcShouldBeTrueIfAuthenticationMethodIsOidc(
-      final Consumer<SecurityConfiguration> consumer, final String entry, final String value)
-      throws IOException {
-    // given
-    consumer.accept(securityConfiguration);
-    final var model = new ExtendedModelMap();
+  @Test
+  void shouldForwardToIdentityForRootPath() throws Exception {
+    // Given
+    when(webappsRequestForwardManager.forward(any(HttpServletRequest.class), eq("identity")))
+        .thenReturn("forward:/identity/app");
 
-    // when
-    controller.identity(model, RESPONSE);
-
-    // then
-    assertThat(model.getAttribute("clientConfig"))
-        .isInstanceOf(Map.class)
-        .extracting(m -> (Map<String, String>) m)
-        .satisfies(m -> assertThat(m.get(entry)).isEqualTo(value));
+    // When & Then
+    mockMvc
+        .perform(get("/identity/"))
+        .andExpect(status().isOk())
+        .andExpect(header().doesNotExist(CONTENT_SECURITY_POLICY));
   }
 
-  private static Stream<Arguments> provideSecurityConfig() {
-    return Stream.of(
-        Arguments.of(
-            (Consumer<SecurityConfiguration>)
-                sc -> sc.getAuthentication().setMethod(AuthenticationMethod.OIDC),
-            "VITE_IS_OIDC",
-            "true"),
-        Arguments.of(
-            (Consumer<SecurityConfiguration>)
-                sc -> sc.getAuthentication().setMethod(AuthenticationMethod.BASIC),
-            "VITE_IS_OIDC",
-            "false"),
-        Arguments.of(
-            (Consumer<SecurityConfiguration>) sc -> sc.getAuthentication().setOidc(null),
-            "VITE_INTERNAL_GROUPS_ENABLED",
-            "true"),
-        Arguments.of(
-            (Consumer<SecurityConfiguration>)
-                sc -> sc.getAuthentication().getOidc().setGroupsClaim(null),
-            "VITE_INTERNAL_GROUPS_ENABLED",
-            "true"),
-        Arguments.of(
-            (Consumer<SecurityConfiguration>)
-                sc -> sc.getAuthentication().getOidc().setGroupsClaim("claim"),
-            "VITE_INTERNAL_GROUPS_ENABLED",
-            "false"),
-        Arguments.of(
-            (Consumer<SecurityConfiguration>) sc -> sc.getMultiTenancy().setApiEnabled(true),
-            "VITE_TENANTS_API_ENABLED",
-            "true"),
-        Arguments.of(
-            (Consumer<SecurityConfiguration>) sc -> sc.getMultiTenancy().setApiEnabled(false),
-            "VITE_TENANTS_API_ENABLED",
-            "false"));
+  @SpringBootApplication
+  static class TestApplication {
+    @Bean
+    public IdentityIndexController identityIndexController(
+        final ServletContext servletContext,
+        final WebappsRequestForwardManager webappsRequestForwardManager) {
+      return new IdentityIndexController(servletContext, webappsRequestForwardManager);
+    }
+  }
+
+  @TestConfiguration
+  static class TestConfig {
+    @Bean
+    public DispatcherServletPath dispatcherServletPath() {
+      return () -> "";
+    }
   }
 }

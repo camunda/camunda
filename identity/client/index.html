@@ -11,6 +11,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
   <head>
     <base href="/" th:attr="href=${contextPath}"/>
+    <script type="text/javascript" src="/identity/config.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Camunda Identity</title>
@@ -18,10 +19,5 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script th:inline="javascript" type="text/javascript" th:nonce="${clientConfigNonce}">
-      /*<![CDATA[*/
-        window.clientConfig = /*[[${clientConfig}]]*/ {};
-      /*]]>*/
-    </script>
   </body>
 </html>
