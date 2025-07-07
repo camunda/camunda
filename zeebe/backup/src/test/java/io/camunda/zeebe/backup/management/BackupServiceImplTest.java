@@ -26,9 +26,11 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +56,9 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(backupStore);
+    backupService =
+        new BackupServiceImpl(
+            backupStore, (context, entries, source) -> Either.left(WriteFailure.CLOSED));
 
     lenient()
         .when(notExistingBackupStatus.statusCode())

@@ -12,8 +12,18 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.Either;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,10 +39,12 @@ final class BackupServiceImpl {
   private static final Logger LOG = LoggerFactory.getLogger(BackupServiceImpl.class);
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
+  private final LogStreamWriter logStreamWriter;
   private ConcurrencyControl concurrencyControl;
 
-  BackupServiceImpl(final BackupStore backupStore) {
+  BackupServiceImpl(final BackupStore backupStore, final LogStreamWriter logStreamWriter) {
     this.backupStore = backupStore;
+    this.logStreamWriter = logStreamWriter;
   }
 
   void close() {
@@ -66,6 +78,8 @@ final class BackupServiceImpl {
         concurrencyControl::run);
 
     backupSaved.onComplete((ignore, error) -> closeInProgressBackup(inProgressBackup));
+    backupSaved.onSuccess(ignore -> confirmBackup(inProgressBackup));
+
     return backupSaved;
   }
 
@@ -146,6 +160,32 @@ final class BackupServiceImpl {
   private void closeInProgressBackup(final InProgressBackup inProgressBackup) {
     backupsInProgress.remove(inProgressBackup);
     inProgressBackup.close();
+  }
+
+  private void confirmBackup(final InProgressBackup inProgressBackup) {
+    final var checkpointId = inProgressBackup.checkpointId();
+    final var checkpointPosition = inProgressBackup.checkpointPosition();
+    final var confirmationWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.CONFIRM_BACKUP),
+                new CheckpointRecord()
+                    .setCheckpointId(checkpointId)
+                    .setCheckpointPosition(checkpointPosition)));
+    switch (confirmationWritten) {
+      case Either.Left(final var error) ->
+          LOG.warn(
+              "Could not confirm backup {} at position {}: {}",
+              checkpointId,
+              checkpointPosition,
+              error);
+      case final Either.Right<WriteFailure, Long> ignored ->
+          LOG.debug("Confirmed backup {} at position {}", checkpointId, ignored);
+    }
   }
 
   private BiConsumer<Void, Throwable> proceed(
