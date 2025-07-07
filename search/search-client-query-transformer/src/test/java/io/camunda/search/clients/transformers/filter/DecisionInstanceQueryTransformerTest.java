@@ -10,11 +10,19 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchMatchAllQuery;
+import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.AuthorizationBasedResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.TenantBasedResourceAccessFilter;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -220,5 +228,141 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
               assertThat(t.gte()).isEqualTo("2024-01-02T03:04:05.000+0000");
               assertThat(t.lt()).isEqualTo("2024-02-03T04:05:06.000+0000");
             });
+  }
+
+  @Test
+  public void shouldApplyAuthorizationFilterWithResourceIds() {
+    // given
+    final var filter = FilterBuilders.decisionInstance(b -> b);
+    final var expectedAuthorization =
+        Authorization.of(
+            a ->
+                a.resourceType(AuthorizationResourceType.DECISION_DEFINITION)
+                    .permissionType(PermissionType.READ)
+                    .resourceIds(List.of("123")));
+    final var authorizationFilter =
+        AuthorizationBasedResourceAccessFilter.requiredAuthorizationCheck(expectedAuthorization);
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("decisionId");
+              assertThat(t.value().value()).isEqualTo("123");
+            });
+  }
+
+  @Test
+  public void shouldApplyAuthorizationFilterWithGranted() {
+    // given
+    final var filter = FilterBuilders.decisionInstance(b -> b);
+    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.successful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchAllQuery.class);
+  }
+
+  @Test
+  public void shouldApplyAuthorizationFilterWithForbidden() {
+    // given
+    final var filter = FilterBuilders.decisionInstance(b -> b);
+    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.unsuccessful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.authorizationFilter(authorizationFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldApplyTenantFilterWithGranted() {
+    // given
+    final var filter = FilterBuilders.decisionInstance(b -> b);
+    final var tenantFilter = TenantBasedResourceAccessFilter.successful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchAllQuery.class);
+  }
+
+  @Test
+  public void shouldApplyTenantFilterWithForbidden() {
+    // given
+    final var filter = FilterBuilders.decisionInstance(b -> b);
+    final var tenantFilter = TenantBasedResourceAccessFilter.unsuccessful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldIgnoreTenantFilterWithTenantIds() {
+    // given
+    final var filter = FilterBuilders.decisionInstance(b -> b);
+    final var tenantFilter = TenantBasedResourceAccessFilter.tenantCheckRequired(List.of("bar"));
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter, ResourceAccessFilter.of(b -> b.tenantFilter(tenantFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("tenantId");
+              assertThat(t.value().value()).isEqualTo("bar");
+            });
+  }
+
+  @Test
+  public void shouldApplyAllFilters() {
+    // given
+    final var filter = FilterBuilders.decisionInstance(b -> b.decisionDefinitionIds("foo"));
+    final var authorizationFilter = AuthorizationBasedResourceAccessFilter.successful();
+    final var tenantFilter = TenantBasedResourceAccessFilter.successful();
+
+    // when
+    final var searchRequest =
+        transformQueryWithResourceAccessFilter(
+            filter,
+            ResourceAccessFilter.of(
+                b -> b.authorizationFilter(authorizationFilter).tenantFilter(tenantFilter)));
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    final var must = ((SearchBoolQuery) queryVariant).must();
+    assertThat(must).hasSize(3);
   }
 }

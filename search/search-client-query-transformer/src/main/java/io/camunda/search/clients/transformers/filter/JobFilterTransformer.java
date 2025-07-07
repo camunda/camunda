@@ -12,6 +12,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperat
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.JobTemplate.BPMN_PROCESS_ID;
@@ -38,13 +39,38 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.JobFilter;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
+import java.util.List;
 
 public class JobFilterTransformer extends IndexFilterTransformer<JobFilter> {
 
   public JobFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public JobFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+    super(indexDescriptor, resourceAccessManager);
+  }
+
+  @Override
+  public JobFilterTransformer withResourceAccessFilter(
+      final ResourceAccessFilter resourceAccessFilter) {
+    return new JobFilterTransformer(indexDescriptor, resourceAccessFilter);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(BPMN_PROCESS_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

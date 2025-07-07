@@ -12,7 +12,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
@@ -23,6 +22,10 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.resource.AuthorizationBasedResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessFilter;
+import io.camunda.security.resource.ResourceAccessPolicy;
+import io.camunda.security.resource.TenantBasedResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import java.time.OffsetDateTime;
@@ -76,7 +79,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           .setEvaluatedInputs(null);
 
   @Mock private DocumentBasedSearchClient searchClient;
-  @Mock private AuthorizationQueryStrategy authorizationQueryStrategy;
+  @Mock private ResourceAccessPolicy resourceAccessPolicy;
   private final ServiceTransformers serviceTransformers =
       ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
@@ -88,7 +91,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
         new SearchClientBasedQueryExecutor(
             searchClient,
             serviceTransformers,
-            authorizationQueryStrategy,
+            resourceAccessPolicy,
             SecurityContext.withoutAuthentication());
   }
 
@@ -104,9 +107,12 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
             any(SearchQueryRequest.class),
             eq(io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class)))
         .thenReturn(decisionInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
+    when(resourceAccessPolicy.applySecurityContext(any(SecurityContext.class)))
+        .thenReturn(
+            ResourceAccessFilter.of(
+                b ->
+                    b.authorizationFilter(AuthorizationBasedResourceAccessFilter.successful())
+                        .tenantFilter(TenantBasedResourceAccessFilter.successful())));
 
     // When we search
     final SearchQueryResult<DecisionInstanceEntity> searchResult =
@@ -131,9 +137,12 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
             any(SearchQueryRequest.class),
             eq(io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class)))
         .thenReturn(decisionInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
+    when(resourceAccessPolicy.applySecurityContext(any(SecurityContext.class)))
+        .thenReturn(
+            ResourceAccessFilter.of(
+                b ->
+                    b.authorizationFilter(AuthorizationBasedResourceAccessFilter.successful())
+                        .tenantFilter(TenantBasedResourceAccessFilter.successful())));
 
     // When we search
     final List<DecisionInstanceEntity> searchResult =

@@ -7,14 +7,9 @@
  */
 package io.camunda.search.clients;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-
 import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.result.AggregationResultBase;
-import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
@@ -25,7 +20,7 @@ import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.security.resource.ResourceAccessPolicy;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.List;
 import java.util.function.Function;
@@ -35,16 +30,23 @@ public final class SearchClientBasedQueryExecutor {
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
   private final SecurityContext securityContext;
-  private final AuthorizationQueryStrategy authorizationQueryStrategy;
+  private final ResourceAccessPolicy resourceAccessPolicy;
 
   public SearchClientBasedQueryExecutor(
       final DocumentBasedSearchClient searchClient,
       final ServiceTransformers transformers,
-      final AuthorizationQueryStrategy authorizationQueryStrategy,
+      final ResourceAccessPolicy resourceAccessPolicy) {
+    this(searchClient, transformers, resourceAccessPolicy, null);
+  }
+
+  public SearchClientBasedQueryExecutor(
+      final DocumentBasedSearchClient searchClient,
+      final ServiceTransformers transformers,
+      final ResourceAccessPolicy resourceAccessPolicy,
       final SecurityContext securityContext) {
     this.searchClient = searchClient;
     this.transformers = transformers;
-    this.authorizationQueryStrategy = authorizationQueryStrategy;
+    this.resourceAccessPolicy = resourceAccessPolicy;
     this.securityContext = securityContext;
   }
 
@@ -83,33 +85,11 @@ public final class SearchClientBasedQueryExecutor {
   @VisibleForTesting
   <T extends FilterBase, S extends SortOption, R> R executeSearch(
       final TypedSearchQuery<T, S> query, final Function<SearchQueryRequest, R> searchExecutor) {
+    final var resourceAccessFilter = resourceAccessPolicy.applySecurityContext(securityContext);
     final var transformer = getSearchQueryRequestTransformer(query);
-    final var searchRequest = transformer.apply(query);
-    final var authenticatedSearchRequest = applyTenantFilter(searchRequest, query);
-    final var authorizedSearchRequest =
-        authorizationQueryStrategy.applyAuthorizationToQuery(
-            authenticatedSearchRequest, securityContext, query.getClass());
-    return searchExecutor.apply(authorizedSearchRequest);
-  }
-
-  private SearchQueryRequest applyTenantFilter(
-      final SearchQueryRequest request, final TypedSearchQuery<?, ?> query) {
-    if (securityContext.authentication() == null) {
-      return request;
-    }
-    final var tenantIds = securityContext.authentication().authenticatedTenantIds();
-    final IndexDescriptor indexDescriptor =
-        transformers.getFilterTransformer(query.filter().getClass()).getIndex();
-    return indexDescriptor
-        .getTenantIdField()
-        .map(
-            tenantField -> {
-              final SearchQuery tenantQuery = stringTerms(tenantField, tenantIds);
-              return request.toBuilder()
-                  .query(SearchQueryBuilders.and(request.query(), tenantQuery))
-                  .build();
-            })
-        .orElse(request);
+    final var searchRequest =
+        transformer.withResourceAccessFilter(resourceAccessFilter).apply(query);
+    return searchExecutor.apply(searchRequest);
   }
 
   private <T extends FilterBase, S extends SortOption>

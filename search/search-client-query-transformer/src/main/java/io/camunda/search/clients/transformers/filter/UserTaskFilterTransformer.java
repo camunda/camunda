@@ -24,6 +24,8 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -38,8 +40,32 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   public UserTaskFilterTransformer(
       final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(transformers, indexDescriptor, null);
+  }
+
+  public UserTaskFilterTransformer(
+      final ServiceTransformers transformers,
+      final IndexDescriptor indexDescriptor,
+      final ResourceAccessFilter resourceAccessManager) {
+    super(indexDescriptor, resourceAccessManager);
     this.transformers = transformers;
+  }
+
+  @Override
+  public UserTaskFilterTransformer withResourceAccessFilter(
+      final ResourceAccessFilter resourceAccessFilter) {
+    return new UserTaskFilterTransformer(transformers, indexDescriptor, resourceAccessFilter);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(BPMN_PROCESS_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

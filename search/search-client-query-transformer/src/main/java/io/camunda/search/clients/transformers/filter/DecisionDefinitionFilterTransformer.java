@@ -21,13 +21,38 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.VERSION;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionDefinitionFilter;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.resource.ResourceAccessFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public final class DecisionDefinitionFilterTransformer
     extends IndexFilterTransformer<DecisionDefinitionFilter> {
 
   public DecisionDefinitionFilterTransformer(final IndexDescriptor indexDescriptor) {
-    super(indexDescriptor);
+    this(indexDescriptor, null);
+  }
+
+  public DecisionDefinitionFilterTransformer(
+      final IndexDescriptor indexDescriptor, final ResourceAccessFilter resourceAccessManager) {
+    super(indexDescriptor, resourceAccessManager);
+  }
+
+  @Override
+  public DecisionDefinitionFilterTransformer withResourceAccessFilter(
+      final ResourceAccessFilter resourceAccessFilter) {
+    return new DecisionDefinitionFilterTransformer(indexDescriptor, resourceAccessFilter);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationSearchQuery(final Authorization authorization) {
+    final var resourceIds = authorization.resourceIds();
+    return stringTerms(DECISION_ID, resourceIds);
+  }
+
+  @Override
+  protected SearchQuery toTenantSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override
