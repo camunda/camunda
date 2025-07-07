@@ -24,8 +24,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 public class IdentityIndexController {
-  private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
-
   private final ServletContext context;
 
   private final WebappsRequestForwardManager webappsRequestForwardManager;
@@ -60,7 +58,6 @@ public class IdentityIndexController {
                         == null));
 
     model.addAttribute("clientConfig", clientConfigMap);
-    setContentSecurePolicyHeader(response, envJsNonce);
     return "identity/index";
   }
 
@@ -68,20 +65,6 @@ public class IdentityIndexController {
       value = {"/identity/", "/identity/{regex:[\\w-]+}", "/identity/**/{regex:[\\w-]+}"})
   public String forwardToIdentity(final HttpServletRequest request) {
     return webappsRequestForwardManager.forward(request, "identity");
-  }
-
-  private void setContentSecurePolicyHeader(
-      final HttpServletResponse response, final String envJsNonce) {
-    response.addHeader(
-        CONTENT_SECURITY_POLICY_HEADER,
-        "default-src 'self';"
-            + "script-src 'self' 'nonce-"
-            + envJsNonce
-            + "';"
-            + "style-src 'self' 'unsafe-inline';"
-            + "frame-src 'none';"
-            + "object-src 'none';"
-            + "media-src 'none';");
   }
 
   private String generateNonce() {
