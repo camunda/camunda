@@ -136,7 +136,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should poll for instances on root level', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
