@@ -29,6 +29,7 @@ import io.camunda.client.api.search.filter.MappingFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.RoleFilter;
+import io.camunda.client.api.search.filter.TenantFilter;
 import io.camunda.client.api.search.filter.UserFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
@@ -50,6 +51,7 @@ import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.api.search.sort.RoleUserSort;
+import io.camunda.client.api.search.sort.TenantSort;
 import io.camunda.client.api.search.sort.TenantUserSort;
 import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
@@ -69,6 +71,7 @@ import io.camunda.client.impl.search.filter.MappingFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.RoleFilterImpl;
+import io.camunda.client.impl.search.filter.TenantFilterImpl;
 import io.camunda.client.impl.search.filter.UserFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.client.impl.search.filter.UserTaskVariableFilterImpl;
@@ -91,6 +94,7 @@ import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
 import io.camunda.client.impl.search.sort.RoleSortImpl;
 import io.camunda.client.impl.search.sort.RoleUserSortImpl;
+import io.camunda.client.impl.search.sort.TenantSortImpl;
 import io.camunda.client.impl.search.sort.TenantUserSortImpl;
 import io.camunda.client.impl.search.sort.UserSortImpl;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
@@ -328,6 +332,18 @@ public final class SearchRequestBuilders {
 
   public static RoleSort roleSort(final Consumer<RoleSort> fn) {
     final RoleSort sort = new RoleSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static TenantFilter tenantFilter(final Consumer<TenantFilter> fn) {
+    final TenantFilter filter = new TenantFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static TenantSort tenantSort(final Consumer<TenantSort> fn) {
+    final TenantSort sort = new TenantSortImpl();
     fn.accept(sort);
     return sort;
   }
