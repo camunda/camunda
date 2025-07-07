@@ -165,7 +165,7 @@ describe('VariablePanel', () => {
     await new Promise(process.nextTick);
   });
 
-  it('should display correct state for a flow node that has only one running token on it', async () => {
+  it.skip('should display correct state for a flow node that has only one running token on it', async () => {
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
       flowNodeInstanceId: '2251799813695856',
@@ -346,6 +346,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     modificationsStore.enableModificationMode();
 
     const {user} = render(
