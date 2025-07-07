@@ -21,7 +21,6 @@ import {
   Wrapper,
   mockInstanceDeprecated,
 } from './index.setup';
-import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -43,7 +42,7 @@ describe('InstanceHeader', () => {
     mockFetchCallHierarchy().withSuccess([]);
   });
   afterEach(() => {
-    window.clientConfig = undefined;
+    vi.unstubAllGlobals();
   });
 
   it('should render process instance data', async () => {
@@ -72,7 +71,7 @@ describe('InstanceHeader', () => {
         }" instances`,
       }),
     ).toHaveTextContent(mockInstance.processDefinitionVersion.toString());
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(mockInstance.endDate ?? '--')).toBeInTheDocument();
     expect(screen.getByText('--')).toBeInTheDocument();
     expect(
       screen.getByTestId(`${mockInstance.state}-icon`),
@@ -109,7 +108,6 @@ describe('InstanceHeader', () => {
   });
 
   it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
-    vi.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
     // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
@@ -134,9 +132,6 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 
   it('should render parent Process Instance Key', async () => {
@@ -316,9 +311,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should hide delete operation button when user has no resource based permission for delete process instance', async () => {
-    window.clientConfig = {
-      resourcePermissionsEnabled: true,
-    };
+    vi.stubGlobal('clientConfig', {resourcePermissionsEnabled: true});
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
@@ -354,9 +347,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should hide operation buttons when user has no resource based permission for update process instance', async () => {
-    window.clientConfig = {
-      resourcePermissionsEnabled: true,
-    };
+    vi.stubGlobal('clientConfig', {resourcePermissionsEnabled: true});
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
