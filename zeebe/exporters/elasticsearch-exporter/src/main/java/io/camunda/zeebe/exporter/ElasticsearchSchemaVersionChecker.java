@@ -16,7 +16,7 @@ import org.elasticsearch.client.RestClient;
 
 public class ElasticsearchSchemaVersionChecker {
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final String indexName = "index-template-created";
+  private static final String indexName = "index-templates-created";
   private final RestClient client;
 
   public ElasticsearchSchemaVersionChecker(final RestClient client) {
@@ -41,8 +41,22 @@ public class ElasticsearchSchemaVersionChecker {
       final var request = new Request("PUT", "/" + indexName + "/_doc/" + encodedValue);
       request.setJsonEntity(MAPPER.writeValueAsString(doc));
       client.performRequest(request);
+      setIndexToNoReplicas();
     } catch (final Exception e) {
       throw new RuntimeException("Failed to add value: " + value, e);
+    }
+  }
+
+  private void setIndexToNoReplicas() {
+    final var settings = Map.of("settings", Map.of("number_of_replicas", 0));
+    final var request = new Request("PUT", "/" + indexName + "/_settings");
+
+    try {
+      request.setJsonEntity(MAPPER.writeValueAsString(settings));
+      client.performRequest(request);
+    } catch (final Exception e) {
+      throw new RuntimeException(
+          String.format("Failed to create index [%s] to track schema versions", e), e);
     }
   }
 }
