@@ -100,6 +100,13 @@ public final class CheckpointRecordsProcessor
         && record.getIntent() == CheckpointIntent.CREATE) {
       return checkpointCreateProcessor.process(record, resultBuilder);
     }
+
+    if (record.getValueType() == ValueType.CHECKPOINT
+        && record.getIntent() == CheckpointIntent.CONFIRM_BACKUP) {
+      // TODO: Not implemented yet
+      return resultBuilder.build();
+    }
+
     // Should never reach here. StreamProcessor must choose the right processor always.
     throw new IllegalArgumentException("Unknown record");
   }
