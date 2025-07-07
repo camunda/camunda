@@ -43,7 +43,7 @@ vi.mock('dmn-js-literal-expression/lib/Viewer', () => ({
 vi.mock('modules/components/JSONEditor', () => {
   return {
     useMonaco: () => {},
-    JSONEditor: () => <div data-testid="monaco-editor" />,
+    JSONEditor: () => <textarea data-testid="monaco-editor" />,
   };
 });
 
