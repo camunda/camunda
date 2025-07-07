@@ -239,7 +239,18 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                 ? null
                 : record.getValue().getAction())
         .setCreationTime(
-            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
+        .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
+        .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
+        .setPriority(record.getValue().getPriority());
+
+    if (!record.getValue().getCandidateGroupsList().isEmpty()) {
+      entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));
+    }
+
+    if (!record.getValue().getCandidateUsersList().isEmpty()) {
+      entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
+    }
 
     if (!ExporterUtil.isEmpty(formKey)) {
       formCache
@@ -306,10 +317,14 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     if (!record.getValue().getCandidateGroupsList().isEmpty()) {
       entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));
+    } else {
+      entity.setCandidateGroups(null);
     }
 
     if (!record.getValue().getCandidateUsersList().isEmpty()) {
       entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
+    } else {
+      entity.setCandidateUsers(null);
     }
   }
 
