@@ -30,6 +30,7 @@ import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
@@ -39,7 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Objects;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -47,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,7 @@ public class ScaleUpPartitionsTest {
   @TempDir private static Path backupPath;
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
+  private static final MemberId MEMBER_0 = MemberId.from("0");
   @AutoClose CamundaClient camundaClient;
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
@@ -228,15 +230,15 @@ public class ScaleUpPartitionsTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"partition1Leader", "bootstrapNode"})
-  public void shouldSucceedScaleUpWhenCriticalNodesRestart(final String restartTarget) {
+  @EnumSource(RestartTarget.class)
+  public void shouldSucceedScaleUpWhenCriticalNodesRestart(final RestartTarget restartTarget) {
     // given - healthy cluster
     cluster.awaitCompleteTopology();
     deployProcessModel(camundaClient, JOB_TYPE, PROCESS_ID);
     final var targetPartitionCount = PARTITIONS_COUNT + 1;
 
     final var member0 = MemberId.from("0");
-    if ("bootstrapNode".equals(restartTarget)
+    if (RestartTarget.BOOTSTRAP_NODE == restartTarget
         && cluster.leaderForPartition(1).nodeId().equals(member0)) {
       // if we need to restart the bootstrap node, make sure that it's not the same as the
       // leader for partition 1`
@@ -250,12 +252,7 @@ public class ScaleUpPartitionsTest {
     scaleToPartitions(targetPartitionCount);
 
     // Restart the appropriate node based on the test argument
-    final var brokerToRestart =
-        switch (restartTarget) {
-          case "partition1Leader" -> cluster.leaderForPartition(1);
-          case "bootstrapNode" -> cluster.brokers().get(member0);
-          default -> throw new IllegalArgumentException("Unknown restart target: " + restartTarget);
-        };
+    final var brokerToRestart = restartTarget.restart(cluster);
 
     LOG.info("Restarting node {} ", brokerToRestart.nodeId());
     brokerToRestart.stop().start();
@@ -395,5 +392,17 @@ public class ScaleUpPartitionsTest {
               final var allPartitions = (RequestHandlingAllPartitions) requestHandling;
               assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
             });
+  }
+
+  enum RestartTarget {
+    PARTITION_1_LEADER,
+    BOOTSTRAP_NODE;
+
+    public TestStandaloneBroker restart(final TestCluster cluster) {
+      return switch (this) {
+        case PARTITION_1_LEADER -> cluster.leaderForPartition(1);
+        case BOOTSTRAP_NODE -> cluster.brokers().get(MEMBER_0);
+      };
+    }
   }
 }
