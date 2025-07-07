@@ -306,7 +306,7 @@ public class CommandDistributionIdempotencyTest {
                   final var batchOperation = createBatchOperation(2);
                   return ENGINE
                       .batchOperation()
-                      .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+                      .newPartitionLifecycle()
                       .withBatchOperationKey(batchOperation.getKey())
                       .fail();
                 }),

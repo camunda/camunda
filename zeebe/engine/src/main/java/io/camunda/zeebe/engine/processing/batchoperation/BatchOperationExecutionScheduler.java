@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -121,8 +122,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
           "Failed to query keys for batch operation with key {}. It will be removed from queue",
           batchOperation.getKey(),
           e);
-      appendFailedCommand(
-          taskResultBuilder, batchOperation, BatchOperationErrorType.QUERY_FAILED, e);
+      appendQueryFailedCommand(taskResultBuilder, batchOperation, e);
       return;
     }
 
@@ -177,18 +177,16 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
-  private void appendFailedCommand(
+  private void appendQueryFailedCommand(
       final TaskResultBuilder taskResultBuilder,
       final PersistedBatchOperation batchOperation,
-      final BatchOperationErrorType errorType,
       final Exception exception) {
     final var batchOperationKey = batchOperation.getKey();
-    final var command = new BatchOperationCreationRecord();
+    final var command = new BatchOperationPartitionLifecycleRecord();
     command.setBatchOperationKey(batchOperationKey);
-    command.setBatchOperationType(batchOperation.getBatchOperationType());
 
     final var error = new BatchOperationError();
-    error.setType(errorType);
+    error.setType(BatchOperationErrorType.QUERY_FAILED);
     error.setPartitionId(partitionId);
     error.setMessage(ExceptionUtils.getStackTrace(exception));
     command.setError(error);

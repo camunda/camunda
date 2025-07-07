@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -68,7 +69,9 @@ public class BatchOperationExecutionSchedulerTest {
 
   @Captor private ArgumentCaptor<Task> taskCaptor;
   @Captor private ArgumentCaptor<BatchOperationChunkRecord> chunkRecordCaptor;
-  @Captor private ArgumentCaptor<BatchOperationCreationRecord> creationRecordCaptor;
+
+  @Captor
+  private ArgumentCaptor<BatchOperationPartitionLifecycleRecord> lifecycleRecordArgumentCaptor;
 
   private BatchOperationExecutionScheduler scheduler;
 
@@ -109,7 +112,7 @@ public class BatchOperationExecutionSchedulerTest {
   public void shouldAppendFailedEvent() {
     // given
     when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
-        .thenThrow(new RuntimeException("error", new RuntimeException()));
+        .thenThrow(new RuntimeException("errors", new RuntimeException()));
 
     // when our scheduler fires
     execute();
@@ -124,7 +127,10 @@ public class BatchOperationExecutionSchedulerTest {
             any());
     verify(taskResultBuilder)
         .appendCommandRecord(
-            anyLong(), eq(BatchOperationIntent.FAIL), creationRecordCaptor.capture(), any());
+            anyLong(),
+            eq(BatchOperationIntent.FAIL),
+            lifecycleRecordArgumentCaptor.capture(),
+            any());
 
     // and should NOT append an execute command
     verify(taskResultBuilder, times(0))
@@ -134,12 +140,12 @@ public class BatchOperationExecutionSchedulerTest {
             any(UnifiedRecordValue.class),
             any());
 
-    // and should contain an error
-    final var error = creationRecordCaptor.getValue().getError();
+    // and should contain an errors
+    final var error = lifecycleRecordArgumentCaptor.getValue().getError();
     assertThat(error).isNotNull();
     assertThat(error.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(error.getType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
-    assertThat(error.getMessage()).contains("error");
+    assertThat(error.getMessage()).contains("errors");
   }
 
   @Test
