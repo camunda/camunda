@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
-import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
@@ -30,12 +29,14 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,7 +73,16 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testProcessInstanceQuery() throws Exception {
-    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_1));
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(
+            new CamundaAuthentication(
+                USER_1,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
 
     final ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
     final MvcResult mvcResult = postRequest(queryProcessInstances(), processInstanceQueryDto);
@@ -94,7 +104,16 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testQueryIncidentsByProcessInstanceId() throws Exception {
-    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_1));
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(
+            new CamundaAuthentication(
+                USER_1,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
 
     final MvcResult mvcResult = getRequest(queryIncidentsByProcessInstanceId(processInstanceId1));
     final IncidentResponseDto response =
@@ -115,8 +134,16 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testGetVariables() throws Exception {
-    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_3));
-
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(
+            new CamundaAuthentication(
+                USER_3,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
     final MvcResult mvcResult = getVariables(processInstanceId2);
     final List<VariableDto> variables =
         mockMvcTestRule.listFromResponse(mvcResult, VariableDto.class);
@@ -132,8 +159,16 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testQueryProcessInstanceById() throws Exception {
-    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_4));
-
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(
+            new CamundaAuthentication(
+                USER_4,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
     final MvcResult mvcResult = getRequest(queryProcessInstanceById(processInstanceId3));
     final ListViewProcessInstanceDto processInstance =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});

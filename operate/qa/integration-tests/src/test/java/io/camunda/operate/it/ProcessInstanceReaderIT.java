@@ -14,7 +14,7 @@ import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.security.UserService;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
@@ -35,7 +35,7 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
 
   @Autowired private ProcessInstanceReader processInstanceReader;
 
-  @Autowired private UserService userService;
+  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   private ProcessInstanceForListViewEntity processInstanceData;
   private OperationEntity operationData;
@@ -67,7 +67,8 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
 
     operationData = new OperationEntity();
     operationData.setProcessInstanceKey(processInstanceData.getProcessInstanceKey());
-    operationData.setUsername(userService.getCurrentUser().getUsername());
+    operationData.setUsername(
+        camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
     operationData.setState(OperationState.SCHEDULED);
 
     testSearchRepository.createOrUpdateDocumentFromObject(

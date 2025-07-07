@@ -35,7 +35,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
-import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Permission;
@@ -88,7 +87,6 @@ import org.springframework.web.client.RestTemplate;
       C8ConsoleService.class,
       SSOController.class,
       SSOUserService.class,
-      AuthenticationRestService.class,
       RolePermissionService.class,
       OperateURIs.class,
       DatabaseInfo.class,
@@ -418,7 +416,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Test
   public void testLoginToAPIResource() throws Exception {
     // Step 1 try to access user info
-    final String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL + "/user";
+    final String userInfoUrl = "/user";
     ResponseEntity<String> response = get(userInfoUrl);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);

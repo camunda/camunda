@@ -17,7 +17,7 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import io.camunda.operate.webapp.security.UserService;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.io.IOException;
@@ -47,9 +47,9 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
 
-  @Autowired private UserService userService;
-
   @Autowired private RestHighLevelClient esClient;
+
+  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -90,7 +90,9 @@ public class BatchOperationReader implements io.camunda.operate.webapp.reader.Ba
   private SearchRequest createSearchRequest(
       final BatchOperationRequestDto batchOperationRequestDto) {
     final QueryBuilder queryBuilder =
-        termQuery(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername());
+        termQuery(
+            BatchOperationTemplate.USERNAME,
+            camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
 
     final SortBuilder sort1, sort2;
     final Object[] querySearchAfter;

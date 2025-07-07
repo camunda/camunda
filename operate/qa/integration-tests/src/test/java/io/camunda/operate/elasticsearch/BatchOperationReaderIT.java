@@ -14,14 +14,15 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
-import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.junit.Before;
@@ -64,7 +65,16 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testUser1Operations() throws Exception {
-    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_1));
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(
+            new CamundaAuthentication(
+                USER_1,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
 
     final BatchOperationDto op1 = assert3Pages();
 
@@ -117,8 +127,16 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testUser2Operations() throws Exception {
-    when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_2));
-
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(
+            new CamundaAuthentication(
+                USER_2,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
     final List<BatchOperationDto> page1 =
         mockMvcTestRule.listFromResponse(
             postRequest(new BatchOperationRequestDto(2, null, null)), BatchOperationDto.class);
