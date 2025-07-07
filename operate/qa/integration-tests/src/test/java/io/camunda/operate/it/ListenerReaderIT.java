@@ -10,7 +10,6 @@ package io.camunda.operate.it;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -21,7 +20,6 @@ import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
@@ -30,7 +28,6 @@ import io.camunda.webapps.schema.entities.listener.ListenerState;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Collections;
 import java.util.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
@@ -55,16 +52,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderFlowNodeId() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                DEFAULT_USER,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
     final ListenerRequestDto request =
         new ListenerRequestDto().setPageSize(20).setFlowNodeId("test_task");
     final ListenerResponseDto response = postListenerRequest("111", request);
@@ -112,16 +99,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderFlowNodeInstanceId() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                DEFAULT_USER,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
     final ListenerRequestDto request =
         new ListenerRequestDto().setPageSize(20).setFlowNodeInstanceId(1L);
     final ListenerResponseDto response = postListenerRequest("111", request);
@@ -155,16 +132,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderPaging() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                DEFAULT_USER,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
     final ListenerRequestDto request1 =
         new ListenerRequestDto().setPageSize(3).setFlowNodeId("test_task");
     final ListenerResponseDto response1 = postListenerRequest("111", request1);
@@ -213,16 +180,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderWithTypeFilters() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                DEFAULT_USER,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
     // request only Execution Listeners
     final ListenerRequestDto elRequest =
         new ListenerRequestDto()

@@ -9,7 +9,6 @@ package io.camunda.operate.rest;
 
 import static io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper.createFrom;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -19,7 +18,6 @@ import io.camunda.operate.webapp.rest.BatchOperationRestService;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.UserService;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -29,7 +27,6 @@ import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
@@ -57,16 +54,6 @@ public class BatchOperationRestServiceIT extends OperateSearchAbstractIT {
 
   @Test
   public void testBatchOperationsCount() throws Exception {
-    when(camundaAuthenticationProvider.getCamundaAuthentication())
-        .thenReturn(
-            new CamundaAuthentication(
-                DEFAULT_USER,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyMap()));
     final List<BatchOperationDto> actual =
         postBatchOperationsRequest(new BatchOperationRequestDto().setPageSize(10));
 
