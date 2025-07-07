@@ -51,8 +51,6 @@ class PingConsoleConfigurationTest {
   static void setUp() {
     when(MANAGEMENT_SERVICES.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(MANAGEMENT_SERVICES.isCamundaLicenseValid()).thenReturn(true);
-    when(MANAGEMENT_SERVICES.isCommercialCamundaLicense()).thenReturn(true);
-    when(MANAGEMENT_SERVICES.getCamundaLicenseExpiresAt()).thenReturn(null);
   }
 
   @Test

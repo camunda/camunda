@@ -17,7 +17,6 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.net.URI;
 import java.time.Duration;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +35,6 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "camunda.console.ping", name = "enabled", havingValue = "true")
 public class PingConsoleRunner implements ApplicationRunner {
   private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleRunner.class);
-  private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
   private final ConsolePingConfiguration pingConfiguration;
   private final ManagementServices managementServices;
   private final Either<Exception, String> licensePayload;
@@ -113,11 +111,7 @@ public class PingConsoleRunner implements ApplicationRunner {
     final LicensePayload.License license =
         new LicensePayload.License(
             managementServices.isCamundaLicenseValid(),
-            managementServices.getCamundaLicenseType().toString(),
-            managementServices.isCommercialCamundaLicense(),
-            managementServices.getCamundaLicenseExpiresAt() == null
-                ? null
-                : DATE_TIME_FORMATTER.format(managementServices.getCamundaLicenseExpiresAt()));
+            managementServices.getCamundaLicenseType().toString());
     final LicensePayload payload =
         new LicensePayload(
             license,

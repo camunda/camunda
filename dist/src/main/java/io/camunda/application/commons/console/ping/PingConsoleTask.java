@@ -99,8 +99,7 @@ public class PingConsoleTask implements Runnable {
   public record LicensePayload(
       License license, String clusterId, String clusterName, Map<String, String> properties) {
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record License(
-        boolean validLicense, String licenseType, boolean isCommercial, String expiresAt) {}
+    public record License(boolean validLicense, String licenseType) {}
   }
 
   @VisibleForTesting
