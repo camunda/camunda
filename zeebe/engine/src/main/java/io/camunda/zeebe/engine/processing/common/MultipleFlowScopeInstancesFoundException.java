@@ -13,7 +13,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
  * Exception that can be thrown during processing of a command, in case the engine found more than
  * one instance of a flow scope, but it expects only one. This exception can be handled by the
  * processor in {@link
- * io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor#tryHandleError(TypedRecord,
+ * io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor#tryHandleError(TypedRecord,
  * Throwable)}.
  */
 public final class MultipleFlowScopeInstancesFoundException extends RuntimeException {
