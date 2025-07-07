@@ -24,14 +24,29 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
+  });
+
+  afterEach(() => {
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
   });
 
   it('should load the instance history', async () => {
@@ -141,7 +156,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should poll for instances on root level', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();

@@ -25,6 +25,7 @@ import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstanc
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('FlowNodeInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
@@ -32,7 +33,13 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       eventSubprocessProcessInstance,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      eventSubprocessProcessInstance,
+    );
     mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
