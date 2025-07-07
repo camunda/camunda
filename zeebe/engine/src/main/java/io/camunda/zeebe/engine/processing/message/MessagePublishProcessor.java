@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -39,6 +40,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private static final String ALREADY_PUBLISHED_MESSAGE =
       "Expected to publish a new message with id '%s', but a message with that id was already published";
 
+  private final int partitionId;
   private final MessageState messageState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -49,8 +51,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final RoutingInfo routingInfo;
 
   public MessagePublishProcessor(
+      final int partitionId,
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
@@ -61,13 +65,16 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final ProcessState processState,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final RoutingInfo routingInfo) {
+    this.partitionId = partitionId;
     this.messageState = messageState;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.authCheckBehavior = authCheckBehavior;
+    this.routingInfo = routingInfo;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -104,7 +111,14 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
 
     messageRecord = command.getValue();
-
+    if (routingInfo.partitionForCorrelationKey(messageRecord.getCorrelationKeyBuffer())
+        != partitionId) {
+      final var reason =
+          "The message has not been routed to the right partition. This is probably a temporary issue, please retry in a few seconds";
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      return;
+    }
     if (messageRecord.hasMessageId()
         && messageState.exist(
             messageRecord.getNameBuffer(),

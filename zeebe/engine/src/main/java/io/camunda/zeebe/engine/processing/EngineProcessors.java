@@ -174,6 +174,7 @@ public final class EngineProcessors {
         authCheckBehavior,
         routingInfo);
     addMessageProcessors(
+        typedRecordProcessorContext.getPartitionId(),
         bpmnBehaviors,
         subscriptionCommandSender,
         processingState,
@@ -184,7 +185,8 @@ public final class EngineProcessors {
         featureFlags,
         commandDistributionBehavior,
         clock,
-        authCheckBehavior);
+        authCheckBehavior,
+        routingInfo);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -504,6 +506,7 @@ public final class EngineProcessors {
   }
 
   private static void addMessageProcessors(
+      final int partitionId,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableProcessingState processingState,
@@ -514,8 +517,10 @@ public final class EngineProcessors {
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior commandDistributionBehavior,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final RoutingInfo routingInfo) {
     MessageEventProcessors.addMessageProcessors(
+        partitionId,
         bpmnBehaviors,
         typedRecordProcessors,
         processingState,
@@ -526,7 +531,8 @@ public final class EngineProcessors {
         featureFlags,
         commandDistributionBehavior,
         clock,
-        authCheckBehavior);
+        authCheckBehavior,
+        routingInfo);
   }
 
   private static void addDecisionProcessors(

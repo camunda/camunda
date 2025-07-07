@@ -38,4 +38,6 @@ public interface MutableRoutingState extends RoutingState {
    *     state, false otherwise
    */
   boolean activatePartition(int partitionId);
+
+  void setMessageCorrelation(MessageCorrelation messageCorrelation);
 }
