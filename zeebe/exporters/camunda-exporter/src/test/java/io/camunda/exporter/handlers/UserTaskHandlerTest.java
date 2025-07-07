@@ -63,6 +63,7 @@ public class UserTaskHandlerTest {
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED,
           UserTaskIntent.ASSIGNING,
+          UserTaskIntent.CLAIMING,
           UserTaskIntent.ASSIGNED,
           UserTaskIntent.UPDATING,
           UserTaskIntent.UPDATED,

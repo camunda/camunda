@@ -47,6 +47,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED,
           UserTaskIntent.ASSIGNING,
+          UserTaskIntent.CLAIMING,
           UserTaskIntent.ASSIGNED,
           UserTaskIntent.UPDATING,
           UserTaskIntent.UPDATED,
