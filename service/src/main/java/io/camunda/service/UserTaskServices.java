@@ -126,14 +126,16 @@ public final class UserTaskServices
     final var result =
         userTaskSearchClient
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchUserTasks(userTaskSearchQuery(q -> q.filter(f -> f.userTaskKeys(userTaskKey))));
-    final var userTaskEntity = getSingleResultOrThrow(result, userTaskKey, "User task");
+            .searchUserTasks(
+                userTaskSearchQuery(q -> q.filter(f -> f.userTaskKeys(userTaskKey)).singleResult()))
+            .items()
+            .getFirst();
     final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
     if (!securityContextProvider.isAuthorized(
-        userTaskEntity.processDefinitionId(), authentication, authorization)) {
+        result.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return userTaskEntity;
+    return result;
   }
 
   public Optional<FormEntity> getUserTaskForm(final long userTaskKey) {
@@ -142,12 +144,11 @@ public final class UserTaskServices
       return Optional.empty();
     }
     return Optional.of(
-        getSingleResultOrThrow(
-            formSearchClient
-                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-                .searchForms(formSearchQuery(q -> q.filter(f -> f.formKeys(formKey)))),
-            formKey,
-            "Form"));
+        formSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchForms(formSearchQuery(q -> q.filter(f -> f.formKeys(formKey)).singleResult()))
+            .items()
+            .getFirst());
   }
 
   public SearchQueryResult<VariableEntity> searchUserTaskVariables(
@@ -180,14 +181,13 @@ public final class UserTaskServices
   }
 
   private String fetchFlowNodeTreePath(final long flowNodeInstanceKey) {
-    return getSingleResultOrThrow(
-            flowNodeInstanceSearchClient
-                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-                .searchFlowNodeInstances(
-                    flownodeInstanceSearchQuery(
-                        q -> q.filter(f -> f.flowNodeInstanceKeys(flowNodeInstanceKey)))),
-            flowNodeInstanceKey,
-            "Flow node instance")
+    return flowNodeInstanceSearchClient
+        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+        .searchFlowNodeInstances(
+            flownodeInstanceSearchQuery(
+                q -> q.filter(f -> f.flowNodeInstanceKeys(flowNodeInstanceKey)).singleResult()))
+        .items()
+        .getFirst()
         .treePath();
   }
 }

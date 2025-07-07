@@ -44,6 +44,7 @@ public class FlowNodeInstanceReader extends AbstractEntityReader<FlowNodeInstanc
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = flowNodeInstanceMapper.count(dbQuery);
     final var hits = flowNodeInstanceMapper.search(dbQuery);
+    ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 }

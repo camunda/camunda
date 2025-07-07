@@ -42,6 +42,7 @@ public class IncidentReader extends AbstractEntityReader<IncidentEntity> {
     LOG.trace("[RDBMS DB] Search for incident with filter {}", dbQuery);
     final var totalHits = incidentMapper.count(dbQuery);
     final var hits = incidentMapper.search(dbQuery);
+    ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 }

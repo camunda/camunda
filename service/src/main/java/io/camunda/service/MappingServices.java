@@ -9,8 +9,6 @@ package io.camunda.service;
 
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -77,20 +75,13 @@ public class MappingServices
   }
 
   public MappingEntity getMapping(final String mappingId) {
-    return findMapping(mappingId)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_ID.formatted(mappingId),
-                    CamundaSearchException.Reason.NOT_FOUND));
-  }
-
-  public Optional<MappingEntity> findMapping(final String mappingId) {
     return search(
-            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingId(mappingId)).build())
+            SearchQueryBuilders.mappingSearchQuery()
+                .filter(f -> f.mappingId(mappingId))
+                .singleResult()
+                .build())
         .items()
-        .stream()
-        .findFirst();
+        .getFirst();
   }
 
   public Optional<MappingEntity> findMapping(final MappingDTO request) {

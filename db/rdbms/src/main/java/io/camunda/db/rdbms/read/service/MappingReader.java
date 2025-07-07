@@ -44,6 +44,7 @@ public class MappingReader extends AbstractEntityReader<MappingEntity> {
     LOG.trace("[RDBMS DB] Search for mapping with filter {}", dbQuery);
     final var totalHits = mappingMapper.count(dbQuery);
     final var hits = mappingMapper.search(dbQuery);
+    ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 }

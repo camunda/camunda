@@ -115,7 +115,8 @@ class IncidentSearchTest {
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
     assertThat(exception.details().getStatus()).isEqualTo(404);
-    assertThat(exception.details().getDetail()).isEqualTo("Incident with key 51966 not found");
+    assertThat(exception.details().getDetail())
+        .contains("A single result was expected, but none was found matching");
   }
 
   @Test

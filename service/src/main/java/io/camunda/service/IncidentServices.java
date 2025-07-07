@@ -63,14 +63,16 @@ public class IncidentServices
     final var result =
         incidentSearchClient
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchIncidents(incidentSearchQuery(q -> q.filter(f -> f.incidentKeys(key))));
-    final var incidentEntity = getSingleResultOrThrow(result, key, "Incident");
+            .searchIncidents(
+                incidentSearchQuery(q -> q.filter(f -> f.incidentKeys(key)).singleResult()))
+            .items()
+            .getFirst();
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
-        incidentEntity.processDefinitionId(), authentication, authorization)) {
+        result.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return incidentEntity;
+    return result;
   }
 
   public CompletableFuture<IncidentRecord> resolveIncident(

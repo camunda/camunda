@@ -10,10 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -28,7 +25,6 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -80,28 +76,15 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public GroupEntity getGroup(final String groupId) {
-    return findGroup(groupId)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_ID.formatted(groupId),
-                    CamundaSearchException.Reason.NOT_FOUND));
-  }
-
-  public Optional<GroupEntity> findGroupByName(final String name) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.name(name)).build())
+    return search(GroupQuery.of(b -> b.filter(f -> f.groupIds(groupId)).singleResult()))
         .items()
-        .stream()
-        .findFirst();
+        .getFirst();
   }
 
   public GroupEntity getGroupByName(final String name) {
-    return findGroupByName(name)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_GROUP_BY_NAME.formatted(name),
-                    CamundaSearchException.Reason.NOT_FOUND));
+    return search(GroupQuery.of(b -> b.filter(f -> f.name(name)).singleResult()))
+        .items()
+        .getFirst();
   }
 
   public List<GroupEntity> getGroupsByMemberId(final String memberId, final EntityType memberType) {
@@ -117,13 +100,6 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             GroupQuery.of(
                 b -> b.filter(f -> f.memberIds(memberIds).childMemberType(memberType)).unlimited()))
         .items();
-  }
-
-  public Optional<GroupEntity> findGroup(final String groupId) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupIds(groupId)).build())
-        .items()
-        .stream()
-        .findFirst();
   }
 
   public CompletableFuture<GroupRecord> updateGroup(

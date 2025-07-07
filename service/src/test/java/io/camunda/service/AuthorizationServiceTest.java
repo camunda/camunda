@@ -117,20 +117,9 @@ public class AuthorizationServiceTest {
     when(client.searchAuthorizations(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findAuthorization(entity.authorizationKey());
+    final var searchQueryResult = services.getAuthorization(entity.authorizationKey());
 
     // then
-    assertThat(searchQueryResult).contains(entity);
-  }
-
-  @Test
-  public void shouldThrownExceptionIfAuthorizationNotFound() {
-    // given
-    final var authorizationKey = 100L;
-    when(client.searchAuthorizations(any()))
-        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
-
-    // when / then
-    assertThat(services.findAuthorization(authorizationKey)).isEmpty();
+    assertThat(searchQueryResult).isEqualTo(entity);
   }
 }

@@ -66,14 +66,16 @@ public final class ElementInstanceServices
         flowNodeInstanceSearchClient
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchFlowNodeInstances(
-                flownodeInstanceSearchQuery(q -> q.filter(f -> f.flowNodeInstanceKeys(key))));
-    final var flowNodeInstance = getSingleResultOrThrow(result, key, "Flow node instance");
+                flownodeInstanceSearchQuery(
+                    q -> q.filter(f -> f.flowNodeInstanceKeys(key)).singleResult()))
+            .items()
+            .getFirst();
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
-        flowNodeInstance.processDefinitionId(), authentication, authorization)) {
+        result.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return flowNodeInstance;
+    return result;
   }
 
   public CompletableFuture<VariableDocumentRecord> setVariables(

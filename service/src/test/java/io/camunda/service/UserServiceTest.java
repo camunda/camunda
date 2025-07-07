@@ -99,20 +99,9 @@ public class UserServiceTest {
     when(client.searchUsers(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findUser(entity.username());
+    final var searchQueryResult = services.getUser(entity.username());
 
     // then
-    assertThat(searchQueryResult).contains(entity);
-  }
-
-  @Test
-  public void shouldThrownExceptionIfUserNotFoundByUsername() {
-    // given
-    final var username = "username";
-    when(client.searchUsers(any()))
-        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
-
-    // when / then
-    assertThat(services.findUser(username)).isEmpty();
+    assertThat(searchQueryResult).isEqualTo(entity);
   }
 }

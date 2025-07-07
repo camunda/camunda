@@ -61,13 +61,15 @@ public final class VariableServices
     final var result =
         variableSearchClient
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchVariables(variableSearchQuery(q -> q.filter(f -> f.variableKeys(key))));
-    final var variableEntity = getSingleResultOrThrow(result, key, "Variable");
+            .searchVariables(
+                variableSearchQuery(q -> q.filter(f -> f.variableKeys(key)).singleResult()))
+            .items()
+            .getFirst();
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
-        variableEntity.processDefinitionId(), authentication, authorization)) {
+        result.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return variableEntity;
+    return result;
   }
 }

@@ -77,14 +77,15 @@ public final class DecisionInstanceServices
                 decisionInstanceSearchQuery(
                     q ->
                         q.filter(f -> f.decisionInstanceIds(decisionInstanceId))
-                            .resultConfig(Builder::includeAll)));
-    final var decisionInstanceEntity =
-        getSingleResultOrThrow(result, decisionInstanceId, "Decision instance");
+                            .resultConfig(Builder::includeAll)
+                            .singleResult()))
+            .items()
+            .getFirst();
     final var authorization = Authorization.of(a -> a.decisionDefinition().readDecisionInstance());
     if (!securityContextProvider.isAuthorized(
-        decisionInstanceEntity.decisionDefinitionId(), authentication, authorization)) {
+        result.decisionDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return decisionInstanceEntity;
+    return result;
   }
 }
