@@ -30,8 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class CamundaProcessTestExtensionIT {
 
   @RegisterExtension
-  private CamundaProcessTestExtension extension =
-      new CamundaProcessTestExtension();
+  private CamundaProcessTestExtension extension = new CamundaProcessTestExtension();
 
   // to be injected
   private ZeebeClient client;
