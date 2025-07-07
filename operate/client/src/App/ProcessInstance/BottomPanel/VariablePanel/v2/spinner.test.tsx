@@ -154,11 +154,6 @@ describe('VariablePanel spinner', () => {
     );
   });
 
-  afterEach(async () => {
-    vi.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it('should display spinner for variables tab when switching between tabs', async () => {
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,

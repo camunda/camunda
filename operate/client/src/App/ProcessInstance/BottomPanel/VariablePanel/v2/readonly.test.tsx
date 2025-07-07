@@ -152,11 +152,6 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
-    vi.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [

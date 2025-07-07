@@ -108,10 +108,6 @@ describe('Modification Dropdown', () => {
     modificationsStore.enableModificationMode();
   });
 
-  afterEach(async () => {
-    await new Promise(process.nextTick);
-  });
-
   it('should not support add modification for events attached to event based gateway', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [

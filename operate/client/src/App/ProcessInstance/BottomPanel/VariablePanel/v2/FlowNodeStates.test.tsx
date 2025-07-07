@@ -161,11 +161,6 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
-    vi.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it('should display correct state for a flow node that has only one running token on it', async () => {
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,

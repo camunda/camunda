@@ -94,10 +94,6 @@ describe('FlowNodeInstanceLog', () => {
     processInstanceDetailsStore.init({id: '1'});
   });
 
-  afterEach(async () => {
-    await new Promise(process.nextTick);
-  });
-
   it('should render skeleton when instance tree is not loaded', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');

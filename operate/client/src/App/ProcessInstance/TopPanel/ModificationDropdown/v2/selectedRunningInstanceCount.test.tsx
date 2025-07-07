@@ -89,10 +89,6 @@ describe('selectedRunningInstanceCount', () => {
     );
   });
 
-  afterEach(async () => {
-    await new Promise(process.nextTick);
-  });
-
   it('should not render when there are no running instances selected', async () => {
     modificationsStore.enableModificationMode();
 

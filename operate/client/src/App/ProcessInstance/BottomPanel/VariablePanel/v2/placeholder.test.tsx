@@ -138,11 +138,6 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
-    vi.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it.each([true, false])(
     'should show multiple scope placeholder when multiple nodes are selected - modification mode: %p',
     async (enableModificationMode) => {
