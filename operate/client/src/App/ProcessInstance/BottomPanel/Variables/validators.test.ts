@@ -26,11 +26,8 @@ const MOCK_FIELD_META_STATE = {
 } as const;
 
 describe('validators', () => {
-  let setTimeoutSpy: any;
-
   beforeEach(() => {
-    vi.useFakeTimers();
-    setTimeoutSpy = vi.spyOn(global, 'setTimeout');
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
   afterEach(() => {
     vi.clearAllTimers();
@@ -41,6 +38,7 @@ describe('validators', () => {
   });
 
   it('should validate name without delay', async () => {
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     expect(validateNameCharacters('', {})).toBeUndefined();
     expect(validateNameCharacters('test', {})).toBeUndefined();
     expect(validateNameCharacters('"test"', {})).toBe('Name is invalid');
@@ -52,6 +50,7 @@ describe('validators', () => {
   });
 
   it('should validate name with delay', async () => {
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     variablesStore.setItems([
       {
         id: '2251799813686037-clientNo',
@@ -64,11 +63,11 @@ describe('validators', () => {
       },
     ]);
 
-    expect(validateNameComplete('', {value: '"something"'})).resolves.toBe(
-      'Name has to be filled',
-    );
+    await expect(
+      validateNameComplete('', {value: '"something"'}),
+    ).resolves.toBe('Name has to be filled');
 
-    expect(
+    await expect(
       validateNameComplete(
         'clientNo',
         {value: '"something"'},
@@ -92,6 +91,7 @@ describe('validators', () => {
   });
 
   it('should validate value with delay', async () => {
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     expect(validateValueComplete('', {name: ''})).toBeUndefined();
 
     expect(validateValueComplete('123', {name: 'name'})).toBeUndefined();
@@ -112,12 +112,12 @@ describe('validators', () => {
       validateValueComplete('invalid json', {name: 'name'}),
     ).toBeUndefined();
 
-    expect(validateValueValid('invalid json', {name: 'name'})).resolves.toBe(
-      'Value has to be JSON',
-    );
+    await expect(
+      validateValueValid('invalid json', {name: 'name'}),
+    ).resolves.toBe('Value has to be JSON');
 
-    expect(validateValueComplete('', {name: 'name'})).resolves.toBe(
-      'Name has to be filled',
+    await expect(validateValueComplete('', {name: 'name'})).resolves.toBe(
+      'Value has to be filled',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
