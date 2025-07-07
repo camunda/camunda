@@ -38,7 +38,6 @@ import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchISMOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -298,47 +297,43 @@ public class OpensearchArchiverRepositoryTest {
         when(searchRequestBuilder.sort((SortOptions) any())).thenReturn(searchRequestBuilder);
         when(searchRequestBuilder.requestCache(false)).thenReturn(searchRequestBuilder);
 
-        final RichOpenSearchClient.Async asyncClient = mock(RichOpenSearchClient.Async.class);
-        final OpenSearchAsyncDocumentOperations openSearchAsyncDocumentOperations =
-            mock(OpenSearchAsyncDocumentOperations.class);
-        when(richOpenSearchClient.async()).thenReturn(asyncClient);
-        when(asyncClient.doc()).thenReturn(openSearchAsyncDocumentOperations);
         final SearchResponse searchResponse = mock(SearchResponse.class);
         final CompletableFuture<SearchResponse<Object>> completableFuture =
             new CompletableFuture<>();
         completableFuture.complete(searchResponse);
-        when(openSearchAsyncDocumentOperations.search(any(), any(), any()))
-            .thenReturn(completableFuture);
-        final Map<String, Aggregate> aggregations = new HashMap<>();
-        when(searchResponse.aggregations()).thenReturn(aggregations);
-        final Aggregate aggregate = mock(Aggregate.class);
-        aggregations.put(DATES_AGG, aggregate);
-        final DateHistogramAggregate dateHistogramAggregate = mock(DateHistogramAggregate.class);
-        when(aggregate.dateHistogram()).thenReturn(dateHistogramAggregate);
-        final Buckets buckets = mock(Buckets.class);
-        when(dateHistogramAggregate.buckets()).thenReturn(buckets);
-        final Map<String, String> bucketsMap = new HashMap<>();
-        when(buckets.keyed()).thenReturn(bucketsMap);
-        final Timer timer = mock(Timer.class);
-        final Timer.Sample timerSample = mock(Timer.Sample.class);
-        when(metrics.getTimer(any())).thenReturn(timer);
-        timerMockedStatic.when(Timer::start).thenReturn(timerSample);
-        when(timerSample.stop(any())).thenReturn(5L);
-        final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
-        assertThat(res).isCompleted();
-        verify(searchRequestBuilder, times(1)).query(query);
-        verify(searchRequestBuilder, times(1)).aggregations(DATES_AGG, aggregation);
-        verify(searchRequestBuilder, times(1)).source((SourceConfig) any());
-        verify(searchRequestBuilder, times(1)).size(0);
-        verify(searchRequestBuilder, times(1)).sort(sortOptions("endDate", Asc));
-        verify(searchRequestBuilder, times(1)).requestCache(false);
-        verify(bucketSortAggregation, times(1))._toAggregation();
-        verify(topHitsAggregation, times(1))._toAggregation();
-        verify(asyncClient, times(1)).doc();
-        verify(openSearchAsyncDocumentOperations, times(1)).search(any(), any(), any());
-        verify(searchResponse, times(1)).aggregations();
-        verify(aggregate, times(1)).dateHistogram();
-        verify(dateHistogramAggregate, times(1)).buckets();
+        try (final MockedStatic<OpensearchUtil> opensearchUtil = mockStatic(OpensearchUtil.class)) {
+          opensearchUtil
+              .when(() -> OpensearchUtil.searchAsync(any(), any(), any()))
+              .thenReturn(completableFuture);
+          final Map<String, Aggregate> aggregations = new HashMap<>();
+          when(searchResponse.aggregations()).thenReturn(aggregations);
+          final Aggregate aggregate = mock(Aggregate.class);
+          aggregations.put(DATES_AGG, aggregate);
+          final DateHistogramAggregate dateHistogramAggregate = mock(DateHistogramAggregate.class);
+          when(aggregate.dateHistogram()).thenReturn(dateHistogramAggregate);
+          final Buckets buckets = mock(Buckets.class);
+          when(dateHistogramAggregate.buckets()).thenReturn(buckets);
+          final Map<String, String> bucketsMap = new HashMap<>();
+          when(buckets.keyed()).thenReturn(bucketsMap);
+          final Timer timer = mock(Timer.class);
+          final Timer.Sample timerSample = mock(Timer.Sample.class);
+          when(metrics.getTimer(any())).thenReturn(timer);
+          timerMockedStatic.when(Timer::start).thenReturn(timerSample);
+          when(timerSample.stop(any())).thenReturn(5L);
+          final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
+          assertThat(res).isCompleted();
+          verify(searchRequestBuilder, times(1)).query(query);
+          verify(searchRequestBuilder, times(1)).aggregations(DATES_AGG, aggregation);
+          verify(searchRequestBuilder, times(1)).source((SourceConfig) any());
+          verify(searchRequestBuilder, times(1)).size(0);
+          verify(searchRequestBuilder, times(1)).sort(sortOptions("endDate", Asc));
+          verify(searchRequestBuilder, times(1)).requestCache(false);
+          verify(bucketSortAggregation, times(1))._toAggregation();
+          verify(topHitsAggregation, times(1))._toAggregation();
+          verify(searchResponse, times(1)).aggregations();
+          verify(aggregate, times(1)).dateHistogram();
+          verify(dateHistogramAggregate, times(1)).buckets();
+        }
       }
     }
   }

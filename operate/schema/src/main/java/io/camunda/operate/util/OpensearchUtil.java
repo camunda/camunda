@@ -25,6 +25,8 @@ import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.core.ReindexResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,6 +67,15 @@ public final class OpensearchUtil {
         response instanceof ReindexResponse
             ? ((ReindexResponse) response).total()
             : ((DeleteByQueryResponse) response).total());
+  }
+
+  public static <T> CompletableFuture<SearchResponse<T>> searchAsync(
+      final SearchRequest request, final Class<T> tClass, final OpenSearchAsyncClient client) {
+    try {
+      return client.search(request, tClass);
+    } catch (final IOException e) {
+      throw new OperateRuntimeException(e);
+    }
   }
 
   public static CompletableFuture<ReindexResponse> reindexAsync(
