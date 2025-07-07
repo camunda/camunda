@@ -34,6 +34,11 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   private final LongProperty bootstrappedAt = new LongProperty("bootstrappedAt", -1L);
   private final LongProperty scalingPosition = new LongProperty("scalingPosition", -1L);
+
+  /**
+   * Represent the number of partitions that participate in message correlation. The set of
+   * partitions is in the range [1, messageCorrelationPartitions]
+   */
   private final IntegerProperty messageCorrelationPartitions =
       new IntegerProperty("messageCorrelationPartitions", -1);
 

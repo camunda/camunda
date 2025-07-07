@@ -54,7 +54,7 @@ public sealed interface ClusterConfigurationChangeOperation {
   /**
    * Represents an operation to update the routing state of a member in the cluster configuration.
    *
-   * @param memberId the identifier of the member for which the routing state is being updated
+   * @param memberId the identifier of the member who will update the routing state
    * @param routingState the new routing state to be applied to the member, or {@link
    *     Optional#empty()} if the routing state is to be fetched from the runtime state of {@link
    *     io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION} leader
