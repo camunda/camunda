@@ -27,7 +27,7 @@ describe('<VariablesPanel />', () => {
     return <>{children}</>;
   };
 
-  it.skip('should have 2 tabs', () => {
+  it('should have 2 tabs', () => {
     render(<VariablesPanel />, {wrapper: Wrapper});
 
     expect(
@@ -57,7 +57,7 @@ describe('<VariablesPanel />', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should switch tab content', async () => {
+  it('should switch tab content', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
@@ -74,7 +74,7 @@ describe('<VariablesPanel />', () => {
       }),
     );
 
-    expect(screen.getByTestId('results-json-viewer')).toBeVisible();
+    expect(await screen.findByTestId('monaco-editor')).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('tab', {
@@ -82,7 +82,7 @@ describe('<VariablesPanel />', () => {
       }),
     );
 
-    expect(screen.getByTestId('results-json-viewer')).not.toBeVisible();
+    expect(screen.getByTestId('monaco-editor')).not.toBeVisible();
 
     expect(
       screen.getByRole('heading', {

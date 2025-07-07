@@ -152,7 +152,7 @@ describe('<Login />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
     await user.type(screen.getByLabelText(/^username$/i), 'demo');
-    await user.click(screen.getByRole('button', {name: /login/i}));
+    fireEvent.click(screen.getByRole('button', {name: /login/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
     await waitFor(() =>

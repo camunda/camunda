@@ -86,14 +86,10 @@ describe('<Decisions />', () => {
     const queryString =
       '?evaluated=true&failed=true&name=non-existing-decision&version=all';
 
-    const originalWindow = {...window};
-
-    const locationSpy = vi.spyOn(window, 'location', 'get');
-
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     mockFetchBatchOperations().withSuccess([]);
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
@@ -157,6 +153,6 @@ describe('<Decisions />', () => {
     vi.clearAllTimers();
     vi.useRealTimers();
 
-    locationSpy.mockRestore();
+    vi.unstubAllGlobals();
   });
 });

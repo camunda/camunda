@@ -48,20 +48,21 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
 }
 
 describe('BatchModificationNotification', () => {
-  const originalWindow = {...window};
-  const locationSpy = vi.spyOn(window, 'location', 'get');
-  const queryString = '?process=bigVarProcess&version=1';
-  locationSpy.mockImplementation(() => ({
-    ...originalWindow.location,
-    search: queryString,
-  }));
-
   beforeEach(() => {
+    const queryString = '?process=bigVarProcess&version=1';
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: queryString,
+    });
     vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('should render batch modification notification with instance count', async () => {

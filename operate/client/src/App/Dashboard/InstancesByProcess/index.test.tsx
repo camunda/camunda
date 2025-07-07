@@ -120,7 +120,7 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should render items with more than one processes versions', async () => {
+  it('should render items with more than one processes versions', async () => {
     mockFetchProcessInstancesByName().withSuccess(mockWithMultipleVersions);
     processInstancesByNameStore.getProcessInstancesByName();
 

@@ -200,7 +200,7 @@ describe('<DecisionInstance />', () => {
     expect(screen.queryByTestId('drd')).not.toBeInTheDocument();
   });
 
-  it.skip('should not keep same tab selected when page is completely refreshed', async () => {
+  it('should not keep same tab selected when page is completely refreshed', async () => {
     const {user, unmount, rerender} = render(<DecisionInstance />, {
       wrapper: Wrapper,
     });
