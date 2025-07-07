@@ -52,6 +52,25 @@ message ActivateJobsResponse {
 }
 
 message ActivatedJob {
+  // Describes the kind of job.
+  enum JobKind {
+    BPMN_ELEMENT = 0;
+    EXECUTION_LISTENER = 1;
+    TASK_LISTENER = 2;
+  }
+
+  // Describes the listener event type of the job.
+  enum ListenerEventType {
+    ASSIGNING = 0;
+    CANCELING = 1;
+    COMPLETING = 2;
+    CREATING = 3;
+    END = 4;
+    START = 5;
+    UNSPECIFIED = 6;
+    UPDATING = 7;
+  }
+
   // the key, a unique identifier for the job
   int64 key = 1;
   // the type of the job (should match what was requested)
@@ -85,6 +104,10 @@ message ActivatedJob {
   string tenantId = 14;
   // Contains user task properties if the job is of kind TASK_LISTENER
   optional UserTaskProperties userTask = 15;
+  // the kind of the job.
+  JobKind kind = 16;
+  // the listener event type of the job.
+  ListenerEventType listenerEventType = 17;
 }
 
 message UserTaskProperties {

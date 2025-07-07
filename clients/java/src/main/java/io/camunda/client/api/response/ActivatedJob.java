@@ -17,6 +17,8 @@ package io.camunda.client.api.response;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.search.enums.JobKind;
+import io.camunda.client.api.search.enums.ListenerEventType;
 import java.util.Map;
 
 public interface ActivatedJob {
@@ -110,6 +112,16 @@ public interface ActivatedJob {
    *     BPMN_ELEMENT} or {@code EXECUTION_LISTENER}.
    */
   UserTaskProperties getUserTask();
+
+  /**
+   * @return the kind of the job.
+   */
+  JobKind getKind();
+
+  /**
+   * @return the listener event type of the job.
+   */
+  ListenerEventType getListenerEventType();
 
   /**
    * @return the record encoded as JSON

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
 import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
@@ -24,6 +25,7 @@ import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
@@ -90,7 +92,6 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
-import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.Either;
@@ -199,13 +200,13 @@ public final class ResponseMapper {
         .customHeaders(job.getCustomHeadersObjectMap())
         .userTask(toUserTaskProperties(job))
         .tenantId(job.getTenantId())
-        .kind(JobKindEnum.valueOf(job.getJobKind().name()))
-        .listenerEventType(JobListenerEventTypeEnum.valueOf(job.getJobListenerEventType().name()));
+        .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
+        .listenerEventType(
+            EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class));
   }
 
   private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
-    if (job.getJobKind() != JobKind.TASK_LISTENER
-        || CollectionUtils.isEmpty(job.getCustomHeaders())) {
+    if (job.getJobKind() != TASK_LISTENER || CollectionUtils.isEmpty(job.getCustomHeaders())) {
       return null;
     }
 

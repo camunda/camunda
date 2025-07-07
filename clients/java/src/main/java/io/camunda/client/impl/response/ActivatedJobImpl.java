@@ -20,6 +20,9 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.UserTaskProperties;
+import io.camunda.client.api.search.enums.JobKind;
+import io.camunda.client.api.search.enums.ListenerEventType;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,6 +48,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final long deadline;
   private final String variables;
   private final UserTaskProperties userTask;
+  private final JobKind kind;
+  private final ListenerEventType listenerEventType;
 
   private Map<String, Object> variablesAsMap;
 
@@ -71,6 +76,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementInstanceKey = job.getElementInstanceKey();
     tenantId = job.getTenantId();
     userTask = job.hasUserTask() ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
+    kind = EnumUtil.convert(job.getKind(), JobKind.class);
+    listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
   }
 
   public ActivatedJobImpl(
@@ -103,6 +110,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementInstanceKey = parseLongOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
     userTask = job.getUserTask() != null ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
+    kind = EnumUtil.convert(job.getKind(), JobKind.class);
+    listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
   }
 
   @Override
@@ -195,6 +204,16 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public UserTaskProperties getUserTask() {
     return userTask;
+  }
+
+  @Override
+  public JobKind getKind() {
+    return kind;
+  }
+
+  @Override
+  public ListenerEventType getListenerEventType() {
+    return listenerEventType;
   }
 
   @Override
