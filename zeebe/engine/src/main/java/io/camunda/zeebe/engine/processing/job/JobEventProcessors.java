@@ -81,7 +81,8 @@ public final class JobEventProcessors {
                 bpmnBehaviors.eventPublicationBehavior(),
                 keyGenerator,
                 jobMetrics,
-                authCheckBehavior))
+                authCheckBehavior,
+                writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,
