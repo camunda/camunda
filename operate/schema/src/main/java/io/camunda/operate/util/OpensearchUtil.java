@@ -19,8 +19,12 @@ import org.opensearch.client.opensearch.core.ReindexResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class OpensearchUtil {
+public final class OpensearchUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchUtil.class);
+
+  private OpensearchUtil() {
+    // Utility class, no instantiation
+  }
 
   public static <T> Either<Throwable, Long> handleResponse(
       final T response, final Throwable error, final String sourceIndexName) {
