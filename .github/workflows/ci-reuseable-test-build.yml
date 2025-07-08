@@ -1,5 +1,5 @@
-# description: tbh
-# test location:
+# description: This is a reuseable workflow used to run Unit tests for Optimize, Tasklist, and Operate. Uses Junit5 Suite to determine which set of tests to run
+# test location: Optimize, Tasklist, Operate
 # type: CI
 # owner: @camunda/core-features
 ---
