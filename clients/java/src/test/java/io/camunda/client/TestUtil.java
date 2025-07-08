@@ -20,8 +20,8 @@ import java.io.IOException;
 
 public class TestUtil {
   public static byte[] getBytes(final String filename) {
-    try {
-      return StreamUtil.readInputStream(TestUtil.class.getResourceAsStream(filename));
+    try (final InputStream is = TestUtil.class.getResourceAsStream(filename)) {
+      return StreamUtil.readInputStream(is);
     } catch (final IOException e) {
       throw new AssertionError("Failed to read bytes of file: " + filename, e);
     }
