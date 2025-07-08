@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.DEFAULT_PROCESS_ID;
+import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceOnAllPartitions;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.deployProcessModel;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -362,15 +363,21 @@ public class ScaleUpPartitionsTest {
 
     final var variableProvider = new CorrelationKeyVariableProvider();
 
-    createInstanceWithAJobOnAllPartitions(
-        camundaClient, JOB_TYPE, PARTITIONS_COUNT, false, processId, variableProvider);
+    createInstanceOnAllPartitions(
+        camundaClient,
+        PARTITIONS_COUNT,
+        processId,
+        variableProvider.supplier(correlationKeyVariable));
 
     // when
     scaleToPartitions(targetPartitionCount);
     awaitScaleUpCompletion(targetPartitionCount);
 
-    createInstanceWithAJobOnAllPartitions(
-        camundaClient, JOB_TYPE, targetPartitionCount, false, processId, variableProvider);
+    createInstanceOnAllPartitions(
+        camundaClient,
+        targetPartitionCount,
+        processId,
+        variableProvider.supplier(correlationKeyVariable));
 
     // then
     // After creating instances, wait for subscriptions to be established
@@ -379,7 +386,7 @@ public class ScaleUpPartitionsTest {
 
   @ParameterizedTest
   @EnumSource(value = TestCase.class)
-  public void shouldNotBreakMessageStartEvents(final TestCase testCase) {
+  public void shouldNotBreakProcessWIthStartEvents(final TestCase testCase) {
     // given
     cluster.awaitHealthyTopology();
     final var correlationKeyVariable = "correlationKey";
@@ -501,18 +508,6 @@ public class ScaleUpPartitionsTest {
             });
   }
 
-  enum RestartTarget {
-    PARTITION_1_LEADER,
-    BOOTSTRAP_NODE;
-
-    public TestStandaloneBroker restart(final TestCluster cluster) {
-      return switch (this) {
-        case PARTITION_1_LEADER -> cluster.leaderForPartition(1);
-        case BOOTSTRAP_NODE -> cluster.brokers().get(MEMBER_0);
-      };
-    }
-  }
-
   static class CorrelationKeyVariableProvider {
 
     final AtomicInteger messageId = new AtomicInteger();
@@ -548,6 +543,18 @@ public class ScaleUpPartitionsTest {
                       .satisfies(r -> assertThat(r.getMessageKey()).isNotNull().isPositive());
                 });
       }
+    }
+  }
+
+  enum RestartTarget {
+    PARTITION_1_LEADER,
+    BOOTSTRAP_NODE;
+
+    public TestStandaloneBroker restart(final TestCluster cluster) {
+      return switch (this) {
+        case PARTITION_1_LEADER -> cluster.leaderForPartition(1);
+        case BOOTSTRAP_NODE -> cluster.brokers().get(MEMBER_0);
+      };
     }
   }
 

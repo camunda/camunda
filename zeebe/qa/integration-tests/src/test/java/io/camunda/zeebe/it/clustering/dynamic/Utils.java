@@ -150,10 +150,18 @@ final class Utils {
       final boolean deployProcess,
       final String processId,
       final Supplier<Map<String, Object>> variables) {
-
     if (deployProcess) {
       deployProcessModel(camundaClient, jobType, processId);
     }
+    return createInstanceOnAllPartitions(camundaClient, partitionsCount, processId, variables);
+  }
+
+  static List<Long> createInstanceOnAllPartitions(
+      final CamundaClient camundaClient,
+      final int partitionsCount,
+      final String processId,
+      final Supplier<Map<String, Object>> variables) {
+
     final List<Long> createdProcessInstances = new ArrayList<>();
     Awaitility.await("Process instances are created in all partitions")
         // Might throw exception when a partition has not yet received deployment distribution
