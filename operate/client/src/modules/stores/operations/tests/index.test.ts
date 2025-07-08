@@ -88,7 +88,7 @@ describe('stores/operations', () => {
     mockFetchBatchOperations().withSuccess(operations);
 
     operationsStore.init();
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     await waitFor(() => expect(operationsStore.state.status).toBe('fetched'));
 
     // no polling occurs in the next 2 polling
