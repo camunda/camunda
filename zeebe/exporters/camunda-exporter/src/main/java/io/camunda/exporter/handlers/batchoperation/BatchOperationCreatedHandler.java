@@ -21,6 +21,12 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import java.util.List;
 
+/**
+ * Handles the creation of a batch operation by inserting the corresponding {@link
+ * BatchOperationEntity} with the batch operation details. This handler is responsible for
+ * initializing the batch operation state and type, and updating the local cache for immediate
+ * access.
+ */
 public class BatchOperationCreatedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationCreationRecordValue> {
 

@@ -21,6 +21,11 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Handles the creation of batch operation chunk items by inserting the corresponding {@link
+ * OperationEntity} with the item details and scheduling state. This is only done when the
+ * configuration <code>exportItemsOnCreation</code> is set to <code>true</code>.
+ */
 public class BatchOperationChunkCreatedItemHandler extends AbstractOperationHandler
     implements ExportHandler<OperationEntity, BatchOperationChunkRecordValue> {
 
