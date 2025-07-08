@@ -26,7 +26,7 @@ public interface RoutingState {
    *     count. Returns 0 for the initial partition count, or -1 if the system has never scaled to
    *     the specified number of partitions
    */
-  long bootstrappedAt(int partitionCount);
+  long scalingStartedAt(int partitionCount);
 
   sealed interface MessageCorrelation {
     int partitionCount();
