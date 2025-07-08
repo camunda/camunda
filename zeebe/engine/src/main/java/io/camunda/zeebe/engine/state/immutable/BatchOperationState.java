@@ -17,13 +17,13 @@ public interface BatchOperationState {
 
   Optional<PersistedBatchOperation> get(final long batchKey);
 
-  void foreachPendingBatchOperation(BatchOperationVisitor visitor);
+  /**
+   * returns the next pending batch operation, or an empty <code>Optional</code> if there are no
+   * pending batch operations.
+   *
+   * @return the next pending batch operation
+   */
+  Optional<PersistedBatchOperation> getNextPendingBatchOperation();
 
   List<Long> getNextItemKeys(long batchOperationKey, int batchSize);
-
-  @FunctionalInterface
-  interface BatchOperationVisitor {
-
-    void visit(PersistedBatchOperation batchOperation);
-  }
 }

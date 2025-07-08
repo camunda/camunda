@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
-import io.camunda.zeebe.engine.state.immutable.BatchOperationState.BatchOperationVisitor;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
@@ -39,6 +38,7 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -80,14 +80,8 @@ public class BatchOperationExecutionSchedulerTest {
     lenient()
         .when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
         .thenReturn(filter);
-    doAnswer(
-            invocation -> {
-              final BatchOperationVisitor visitor = invocation.getArgument(0);
-              visitor.visit(batchOperation);
-              return null;
-            })
-        .when(batchOperationState)
-        .foreachPendingBatchOperation(any(BatchOperationVisitor.class));
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     lenient().when(batchOperationState.exists(anyLong())).thenReturn(true);
 
     final var engineConfiguration = mock(EngineConfiguration.class);
@@ -113,7 +107,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -146,7 +140,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -248,7 +242,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -276,7 +270,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -304,7 +298,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),

@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,15 +222,21 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void foreachPendingBatchOperation(final BatchOperationVisitor visitor) {
+  public Optional<PersistedBatchOperation> getNextPendingBatchOperation() {
+    final var pendingBatchOperation = new AtomicReference<PersistedBatchOperation>();
+
     pendingBatchOperationColumnFamily.whileTrue(
         (key, nil) -> {
           final var batchOperation = batchOperationColumnFamily.get(key);
           if (batchOperation != null) {
-            visitor.visit(batchOperation);
+            pendingBatchOperation.set(batchOperation);
           }
-          return true;
+          // only return the first pending batch operation
+          return false;
         });
+
+    // return that first pending batch operation if it exists
+    return Optional.ofNullable(pendingBatchOperation.get());
   }
 
   @Override
