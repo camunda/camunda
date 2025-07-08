@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.ThrowingConsumer;
 
 /** The assertion object to verify a process instance. */
 public interface ProcessInstanceAssert {
@@ -389,6 +391,103 @@ public interface ProcessInstanceAssert {
    * @return the assertion object
    */
   ProcessInstanceAssert hasVariables(Map<String, Object> variables);
+
+  /**
+   * Verifies that the process instance has a variable with a value that satisfies the given
+   * requirements. The verification fails if the variable doesn't exist or the value doesn't satisfy
+   * all requirements.
+   *
+   * <p>The assertion waits until the variable exists and the value satisfies all requirements.
+   *
+   * @param variableName the variable name
+   * @param jsonMappedClass the class to map the JSON value to
+   * @param requirements the requirements that the value must satisfy
+   * @param <T> the type of the variable value
+   * @return the assertion object
+   */
+  @SuppressWarnings("unchecked")
+  <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName, Class<T> jsonMappedClass, List<ThrowingConsumer<T>> requirements);
+
+  /**
+   * Verifies that the process instance has a variable with a value that satisfies the given
+   * requirement. The verification fails if the variable doesn't exist or the value doesn't satisfy
+   * the requirement.
+   *
+   * <p>The assertion waits until the variable exists and the value satisfies the requirement.
+   *
+   * @param variableName the variable name
+   * @param jsonMappedClass the class to map the JSON value to
+   * @param requirement the requirement that the value must satisfy
+   * @param <T> the type of the variable value
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName, final Class<T> jsonMappedClass, final ThrowingConsumer<T> requirement);
+
+  /**
+   * TODO
+   *
+   * @param elementId
+   * @param variableName
+   * @param jsonMappedClass
+   * @param requirement
+   * @return
+   * @param <T>
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      String elementId,
+      String variableName,
+      Class<T> jsonMappedClass,
+      ThrowingConsumer<T> requirement);
+
+  /**
+   * TODO
+   *
+   * @param elementId
+   * @param variableName
+   * @param jsonMappedClass
+   * @param requirements
+   * @return
+   * @param <T>
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      String elementId,
+      String variableName,
+      Class<T> jsonMappedClass,
+      List<ThrowingConsumer<T>> requirements);
+
+  /**
+   * TODO
+   *
+   * @param selector
+   * @param variableName
+   * @param jsonMappedClass
+   * @param requirement
+   * @return
+   * @param <T>
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      ElementSelector selector,
+      String variableName,
+      Class<T> jsonMappedClass,
+      ThrowingConsumer<T> requirement);
+
+  /**
+   * TODO
+   *
+   * @param selector
+   * @param variableName
+   * @param jsonMappedClass
+   * @param requirement
+   * @return
+   * @param <T>
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      ElementSelector selector,
+      String variableName,
+      Class<T> jsonMappedClass,
+      List<ThrowingConsumer<T>> requirement);
 
   /**
    * Verifies that the given element associated with the process instance has the given local
