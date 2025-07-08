@@ -26,6 +26,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +36,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.ThrowingConsumer;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
@@ -278,6 +280,83 @@ public class ProcessInstanceAssertj
       final ElementSelector selector, final String variableName, final Object variableValue) {
     variableAssertj.hasLocalVariable(
         getProcessInstanceKey(), selector, variableName, variableValue);
+    return this;
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      final String elementId,
+      final String variableName,
+      final Class<T> jsonMappedClass,
+      final ThrowingConsumer<T> requirement) {
+
+    return hasLocalVariableSatisfies(
+        elementSelector.apply(elementId),
+        variableName,
+        jsonMappedClass,
+        Collections.singletonList(requirement));
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      final String elementId,
+      final String variableName,
+      final Class<T> jsonMappedClass,
+      final List<ThrowingConsumer<T>> requirements) {
+
+    return hasLocalVariableSatisfies(
+        elementSelector.apply(elementId), variableName, jsonMappedClass, requirements);
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      final ElementSelector selector,
+      final String variableName,
+      final Class<T> jsonMappedClass,
+      final ThrowingConsumer<T> requirement) {
+
+    return hasLocalVariableSatisfies(
+        selector, variableName, jsonMappedClass, Collections.singletonList(requirement));
+  }
+
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      final ElementSelector selector,
+      final String variableName,
+      final Class<T> jsonMappedClass,
+      final List<ThrowingConsumer<T>> requirements) {
+    variableAssertj.hasLocalVariableSatisfies(
+        getProcessInstanceKey(), selector, variableName, jsonMappedClass, requirements);
+    return this;
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasVariableSatisfies(
+      final String variableName,
+
+      final Class<T> jsonMappedClass,
+      final List<ThrowingConsumer<T>> requirements) {
+
+    variableAssertj.hasVariableSatisfies(
+        getProcessInstanceKey(), variableName, jsonMappedClass, requirements);
+    return this;
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasVariableSatisfies(
+      final String variableName,
+      final Class<T> jsonMappedClass,
+      final ThrowingConsumer<T> requirement) {
+
+    variableAssertj.hasVariableSatisfies(
+        getProcessInstanceKey(),
+        variableName,
+        jsonMappedClass,
+        Collections.singletonList(requirement));
     return this;
   }
 
