@@ -19,28 +19,24 @@ import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
-describe('useWillAllFlowNodesBeCanceled', () => {
-  const getWrapper = (
-    _initialEntries: React.ComponentProps<
-      typeof MemoryRouter
-    >['initialEntries'] = [Paths.processInstance('processId')],
-  ) => {
-    const Wrapper = ({children}: {children: React.ReactNode}) => {
-      return (
-        <ProcessDefinitionKeyContext.Provider value="123">
-          <QueryClientProvider client={getMockQueryClient()}>
-            <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-              <Routes>
-                <Route path={Paths.processInstance()} element={children} />
-              </Routes>
-            </MemoryRouter>
-          </QueryClientProvider>
-        </ProcessDefinitionKeyContext.Provider>
-      );
-    };
-    return Wrapper;
+const getWrapper = () => {
+  const Wrapper = ({children}: {children: React.ReactNode}) => {
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
   };
+  return Wrapper;
+};
 
+describe('useWillAllFlowNodesBeCanceled', () => {
   beforeEach(() => {
     modificationsStore.reset();
   });
@@ -90,6 +86,10 @@ describe('useWillAllFlowNodesBeCanceled', () => {
       },
     });
 
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
+
     const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
       wrapper: getWrapper(),
     });
@@ -118,6 +118,9 @@ describe('useWillAllFlowNodesBeCanceled', () => {
     };
 
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
       wrapper: getWrapper(),
@@ -147,6 +150,9 @@ describe('useWillAllFlowNodesBeCanceled', () => {
     };
 
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
       wrapper: getWrapper(),
@@ -157,6 +163,9 @@ describe('useWillAllFlowNodesBeCanceled', () => {
 
   it('should return false if there are no statistics', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
       wrapper: getWrapper(),
