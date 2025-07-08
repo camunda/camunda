@@ -16,7 +16,7 @@ describe('<JSONEditorModal />', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('should render modal', () => {
+  it('should render modal', async () => {
     const mockValue = '"fooo"';
     const mockTitle = 'i am a title';
 
@@ -30,7 +30,7 @@ describe('<JSONEditorModal />', () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
-    expect(screen.getByDisplayValue(mockValue)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(mockValue)).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
 
     rerender(
