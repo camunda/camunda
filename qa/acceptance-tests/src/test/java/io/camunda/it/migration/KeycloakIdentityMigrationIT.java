@@ -117,6 +117,17 @@ public class KeycloakIdentityMigrationIT {
           .withEnv("IDENTITY_AUTHORIZATIONS_1_RESOURCE_TYPE", "decision-definition")
           .withEnv("IDENTITY_AUTHORIZATIONS_1_PERMISSIONS_0", "READ")
           .withEnv("IDENTITY_AUTHORIZATIONS_1_PERMISSIONS_1", "DELETE")
+          // assign authorizations to users
+          .withEnv("IDENTITY_AUTHORIZATIONS_2_USERNAME", "user0")
+          .withEnv("IDENTITY_AUTHORIZATIONS_2_RESOURCE_KEY", "*")
+          .withEnv("IDENTITY_AUTHORIZATIONS_2_RESOURCE_TYPE", "process-definition")
+          .withEnv("IDENTITY_AUTHORIZATIONS_2_PERMISSIONS_0", "READ")
+          .withEnv("IDENTITY_AUTHORIZATIONS_2_PERMISSIONS_1", "UPDATE_PROCESS_INSTANCE")
+          .withEnv("IDENTITY_AUTHORIZATIONS_3_USERNAME", "user1")
+          .withEnv("IDENTITY_AUTHORIZATIONS_3_RESOURCE_KEY", "*")
+          .withEnv("IDENTITY_AUTHORIZATIONS_3_RESOURCE_TYPE", "decision-definition")
+          .withEnv("IDENTITY_AUTHORIZATIONS_3_PERMISSIONS_0", "READ")
+          .withEnv("IDENTITY_AUTHORIZATIONS_3_PERMISSIONS_1", "DELETE")
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
@@ -403,6 +414,53 @@ public class KeycloakIdentityMigrationIT {
     assertThat(identityUsers)
         .extracting(RoleUser::getUsername)
         .containsExactlyInAnyOrder("user0@email.com");
+  }
+
+  @Test
+  public void canMigrateAuthorizations()
+      throws URISyntaxException, IOException, InterruptedException {
+    // when
+    migration.start();
+
+    final var restAddress = client.getConfiguration().getRestAddress().toString();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations = searchAuthorizations(restAddress);
+              assertThat(authorizations.items())
+                  .extracting(AuthorizationResponse::ownerId)
+                  .contains("user0@email.com", "user1@email.com");
+            });
+
+    final var authorizations = searchAuthorizations(restAddress);
+    assertThat(authorizations.items())
+        .extracting(
+            AuthorizationResponse::ownerId,
+            AuthorizationResponse::ownerType,
+            AuthorizationResponse::resourceId,
+            AuthorizationResponse::resourceType,
+            AuthorizationResponse::permissionTypes)
+        .contains(
+            tuple(
+                "user0@email.com",
+                OwnerType.USER,
+                "*",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_PROCESS_INSTANCE)),
+            tuple(
+                "user1@email.com",
+                OwnerType.USER,
+                "*",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.DELETE_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_DEFINITION)));
   }
 
   // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
