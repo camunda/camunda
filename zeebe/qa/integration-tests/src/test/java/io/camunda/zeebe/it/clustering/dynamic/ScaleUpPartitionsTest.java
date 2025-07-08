@@ -8,7 +8,7 @@
 package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.DEFAULT_PROCESS_ID;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
+import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceOnAllPartitions;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.deployProcessModel;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -127,7 +127,7 @@ public class ScaleUpPartitionsTest {
     scaleToPartitions(desiredPartitionCount);
 
     awaitScaleUpCompletion(desiredPartitionCount);
-    createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount);
+    Utils.createInstanceOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount);
   }
 
   @ParameterizedTest
@@ -144,7 +144,7 @@ public class ScaleUpPartitionsTest {
     awaitScaleUpCompletion(desiredPartitionCount);
 
     for (int i = 0; i < 20; i++) {
-      createInstanceWithAJobOnAllPartitions(
+      Utils.createInstanceOnAllPartitions(
           camundaClient, JOB_TYPE, desiredPartitionCount, false, PROCESS_ID);
     }
 
@@ -174,7 +174,7 @@ public class ScaleUpPartitionsTest {
 
     // then
     for (final var processId : processIds) {
-      createInstanceWithAJobOnAllPartitions(
+      Utils.createInstanceOnAllPartitions(
           camundaClient, JOB_TYPE, desiredPartitionCount, false, processId);
     }
 
@@ -193,7 +193,7 @@ public class ScaleUpPartitionsTest {
     scaleToPartitions(firstScaleUp);
     awaitScaleUpCompletion(firstScaleUp);
 
-    createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, firstScaleUp, true, PROCESS_ID);
+    Utils.createInstanceOnAllPartitions(camundaClient, JOB_TYPE, firstScaleUp, true, PROCESS_ID);
 
     // when
     // Scale up to second partition count
@@ -201,7 +201,7 @@ public class ScaleUpPartitionsTest {
     awaitScaleUpCompletion(secondScaleUp);
 
     // then
-    createInstanceWithAJobOnAllPartitions(
+    Utils.createInstanceOnAllPartitions(
         camundaClient, JOB_TYPE, secondScaleUp, false, PROCESS_ID);
     cluster.awaitHealthyTopology();
   }
@@ -279,7 +279,7 @@ public class ScaleUpPartitionsTest {
     awaitScaleUpCompletion(targetPartitionCount);
 
     // Verify the new partition is functional
-    createInstanceWithAJobOnAllPartitions(
+    Utils.createInstanceOnAllPartitions(
         camundaClient, JOB_TYPE, targetPartitionCount, false, PROCESS_ID);
     cluster.awaitHealthyTopology();
   }
@@ -368,14 +368,14 @@ public class ScaleUpPartitionsTest {
           return Map.of(correlationKeyVariable, key);
         };
 
-    createInstanceWithAJobOnAllPartitions(
+    createInstanceOnAllPartitions(
         camundaClient, JOB_TYPE, PARTITIONS_COUNT, false, processId, variableProvider);
 
     // when
     scaleToPartitions(targetPartitionCount);
     awaitScaleUpCompletion(targetPartitionCount);
 
-    createInstanceWithAJobOnAllPartitions(
+    createInstanceOnAllPartitions(
         camundaClient, JOB_TYPE, targetPartitionCount, false, processId, variableProvider);
 
     // then

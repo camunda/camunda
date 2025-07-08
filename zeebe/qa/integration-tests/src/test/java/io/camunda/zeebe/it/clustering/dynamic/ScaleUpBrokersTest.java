@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertThatAllJobsCanBeCompleted;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.scaleAndWait;
 
 import io.atomix.cluster.MemberId;
@@ -72,7 +71,7 @@ final class ScaleUpBrokersTest {
     final int newBrokerId = newClusterSize - 1;
 
     final var processInstanceKeys =
-        createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
+        Utils.createInstanceOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
     // when
     createNewBroker(newClusterSize, newBrokerId);
@@ -133,7 +132,7 @@ final class ScaleUpBrokersTest {
     final int newClusterSize = currentClusterSize + 2;
 
     final var processInstanceKeys =
-        createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
+        Utils.createInstanceOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
     // when
     createNewBroker(newClusterSize, currentClusterSize);

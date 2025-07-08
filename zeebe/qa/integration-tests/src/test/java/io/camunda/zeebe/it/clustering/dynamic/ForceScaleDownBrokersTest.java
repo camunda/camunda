@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.assertThatAllJobsCanBeCompleted;
-import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
@@ -46,7 +45,7 @@ class ForceScaleDownBrokersTest {
       final var brokersToKeep = IntStream.range(0, newClusterSize).boxed().toList();
 
       final var createdInstances =
-          createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
+          Utils.createInstanceOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
 
       // when
       brokersToShutdown.forEach(TestApplication::close);

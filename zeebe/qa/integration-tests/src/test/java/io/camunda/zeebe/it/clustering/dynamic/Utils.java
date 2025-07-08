@@ -127,23 +127,23 @@ final class Utils {
     return deploymentKey;
   }
 
-  static List<Long> createInstanceWithAJobOnAllPartitions(
+  static List<Long> createInstanceOnAllPartitions(
       final CamundaClient camundaClient, final String jobType, final int partitionsCount) {
-    return createInstanceWithAJobOnAllPartitions(
+    return createInstanceOnAllPartitions(
         camundaClient, jobType, partitionsCount, true, DEFAULT_PROCESS_ID);
   }
 
-  static List<Long> createInstanceWithAJobOnAllPartitions(
+  static List<Long> createInstanceOnAllPartitions(
       final CamundaClient camundaClient,
       final String jobType,
       final int partitionsCount,
       final boolean deployProcess,
       final String processId) {
-    return createInstanceWithAJobOnAllPartitions(
+    return createInstanceOnAllPartitions(
         camundaClient, jobType, partitionsCount, deployProcess, processId, Map::of);
   }
 
-  static List<Long> createInstanceWithAJobOnAllPartitions(
+  static List<Long> createInstanceOnAllPartitions(
       final CamundaClient camundaClient,
       final String jobType,
       final int partitionsCount,
