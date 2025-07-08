@@ -289,7 +289,7 @@ public class ZeebeClientCloudBuilderImpl
     if (isNeedToSetCloudRestAddress()) {
       ensureNotNull("cluster id", clusterId);
       final String cloudRestAddress =
-          String.format("https://%s.zeebe.%s:443/%s", region, BASE_ADDRESS, clusterId);
+          String.format("https://%s.%s:443/%s", region, BASE_ADDRESS, clusterId);
       return getURIFromString(cloudRestAddress);
     } else {
       Loggers.LOGGER.debug(
