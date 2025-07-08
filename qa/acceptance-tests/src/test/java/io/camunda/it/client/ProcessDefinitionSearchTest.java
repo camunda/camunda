@@ -33,7 +33,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -896,7 +895,7 @@ public class ProcessDefinitionSearchTest {
   record ProcessDefinitionTestContext(
       String processId, String resourceName, int version, String tenantId) {
     @Override
-    public @NotNull String toString() {
+    public String toString() {
       return "ProcessTestContext{"
           + "processId='"
           + processId
