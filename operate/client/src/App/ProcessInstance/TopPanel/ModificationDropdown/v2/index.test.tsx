@@ -21,67 +21,94 @@ import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
-describe('Modification Dropdown', () => {
-  const statisticsData = [
-    {
-      elementId: 'StartEvent_1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      elementId: 'service-task-1',
-      active: 5,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      elementId: 'multi-instance-subprocess',
-      active: 0,
-      canceled: 0,
-      incidents: 1,
-      completed: 0,
-    },
-    {
-      elementId: 'subprocess-start-1',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      elementId: 'subprocess-service-task',
-      active: 0,
-      canceled: 0,
-      incidents: 1,
-      completed: 0,
-    },
-    {
-      elementId: 'service-task-3',
-      active: 0,
-      canceled: 0,
-      incidents: 0,
-      completed: 1,
-    },
-    {
-      elementId: 'service-task-7',
-      active: 1,
-      canceled: 0,
-      incidents: 0,
-      completed: 0,
-    },
-    {
-      elementId: 'message-boundary',
-      active: 1,
-      canceled: 0,
-      incidents: 0,
-      completed: 0,
-    },
-  ];
+const statisticsData = [
+  {
+    elementId: 'StartEvent_1',
+    active: 0,
+    canceled: 0,
+    incidents: 0,
+    completed: 1,
+  },
+  {
+    elementId: 'service-task-1',
+    active: 5,
+    canceled: 0,
+    incidents: 0,
+    completed: 1,
+  },
+  {
+    elementId: 'multi-instance-subprocess',
+    active: 0,
+    canceled: 0,
+    incidents: 1,
+    completed: 0,
+  },
+  {
+    elementId: 'subprocess-start-1',
+    active: 0,
+    canceled: 0,
+    incidents: 0,
+    completed: 1,
+  },
+  {
+    elementId: 'subprocess-service-task',
+    active: 0,
+    canceled: 0,
+    incidents: 1,
+    completed: 0,
+  },
+  {
+    elementId: 'service-task-3',
+    active: 0,
+    canceled: 0,
+    incidents: 0,
+    completed: 1,
+  },
+  {
+    elementId: 'service-task-7',
+    active: 1,
+    canceled: 0,
+    incidents: 0,
+    completed: 0,
+  },
+  {
+    elementId: 'message-boundary',
+    active: 1,
+    canceled: 0,
+    incidents: 0,
+    completed: 0,
+  },
+];
 
+describe('Modification Dropdown', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class ResizeObserver {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+
+        constructor(callback: ResizeObserverCallback) {
+          setTimeout(() => {
+            try {
+              callback([], this);
+            } catch {}
+          }, 0);
+        }
+      },
+    );
+    vi.stubGlobal(
+      'SVGElement',
+      class MockSVGElement extends Element {
+        getBBox = vi.fn(() => ({
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+        }));
+      },
+    );
     const mockProcessInstance: ProcessInstance = {
       processInstanceKey: 'instance_id',
       state: 'ACTIVE',

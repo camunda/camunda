@@ -30,6 +30,33 @@ const mockProcessInstance: ProcessInstance = {
 
 describe('selectedRunningInstanceCount', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class ResizeObserver {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+
+        constructor(callback: ResizeObserverCallback) {
+          setTimeout(() => {
+            try {
+              callback([], this);
+            } catch {}
+          }, 0);
+        }
+      },
+    );
+    vi.stubGlobal(
+      'SVGElement',
+      class MockSVGElement extends Element {
+        getBBox = vi.fn(() => ({
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+        }));
+      },
+    );
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
