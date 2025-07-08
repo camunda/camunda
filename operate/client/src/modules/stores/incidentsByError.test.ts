@@ -86,11 +86,15 @@ describe('stores/incidentsByError', () => {
   });
 
   it('should start polling on init', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError, {
       expectPolling: true,
     });
-    vi.useFakeTimers();
+
     incidentsByErrorStore.init();
+
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(incidentsByErrorStore.state.status).toBe('fetched'),
     );
