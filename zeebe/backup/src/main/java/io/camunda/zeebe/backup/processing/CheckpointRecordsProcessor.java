@@ -39,6 +39,7 @@ public final class CheckpointRecordsProcessor
 
   private final BackupManager backupManager;
   private CheckpointCreateProcessor checkpointCreateProcessor;
+  private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
 
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
@@ -63,6 +64,7 @@ public final class CheckpointRecordsProcessor
 
     checkpointCreateProcessor =
         new CheckpointCreateProcessor(checkpointState, backupManager, checkpointListeners, metrics);
+    checkpointConfirmBackupProcessor = new CheckpointConfirmBackupProcessor(checkpointState);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);
 
@@ -103,8 +105,7 @@ public final class CheckpointRecordsProcessor
 
     if (record.getValueType() == ValueType.CHECKPOINT
         && record.getIntent() == CheckpointIntent.CONFIRM_BACKUP) {
-      // TODO: Not implemented yet
-      return resultBuilder.build();
+      return checkpointConfirmBackupProcessor.process(record, resultBuilder);
     }
 
     // Should never reach here. StreamProcessor must choose the right processor always.
