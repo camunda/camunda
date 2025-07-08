@@ -38,9 +38,9 @@ public final class BatchOperationFixtures {
             .operationType("some-operation" + RANDOM.nextInt(1000))
             .startDate(OffsetDateTime.now())
             .endDate(OffsetDateTime.now().plusSeconds(1))
-            .operationsTotalCount(RANDOM.nextInt(1000))
-            .operationsFailedCount(RANDOM.nextInt(1000))
-            .operationsCompletedCount(RANDOM.nextInt(1000));
+            .operationsTotalCount(0)
+            .operationsFailedCount(0)
+            .operationsCompletedCount(0);
     return builderFunction.apply(builder).build();
   }
 

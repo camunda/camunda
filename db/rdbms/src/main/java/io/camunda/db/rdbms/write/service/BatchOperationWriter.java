@@ -81,17 +81,13 @@ public class BatchOperationWriter {
   }
 
   public void updateItem(final BatchOperationItemDbModel item) {
-    if (exportPendingBatchOperationItems) {
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.BATCH_OPERATION,
-              WriteStatementType.UPDATE,
-              item.batchOperationId(),
-              "io.camunda.db.rdbms.sql.BatchOperationMapper.updateItem",
-              item));
-    } else {
-      insertItems(new BatchOperationItemsDto(item.batchOperationId(), List.of(item)));
-    }
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            item.batchOperationId(),
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.upsertItem",
+            item));
 
     if (item.state() == BatchOperationItemState.FAILED) {
       executionQueue.executeInQueue(
