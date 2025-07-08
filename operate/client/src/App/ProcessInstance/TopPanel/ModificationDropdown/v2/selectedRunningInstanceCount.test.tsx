@@ -41,7 +41,9 @@ describe('selectedRunningInstanceCount', () => {
           setTimeout(() => {
             try {
               callback([], this);
-            } catch {}
+            } catch {
+              // Ignore errors in mock
+            }
           }, 0);
         }
       },

@@ -59,7 +59,7 @@ describe('<ListView /> - operations', () => {
       await screen.findByRole('heading', {
         name: 'Process Instances',
       }),
-    );
+    ).toBeInTheDocument();
     expect(
       await screen.findByRole('button', {
         name: /^delete process definition "new demo process - version 1"$/i,
@@ -79,7 +79,7 @@ describe('<ListView /> - operations', () => {
       await screen.findByRole('heading', {
         name: 'Process Instances',
       }),
-    );
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
@@ -106,7 +106,7 @@ describe('<ListView /> - operations', () => {
       await screen.findByRole('heading', {
         name: 'Process Instances',
       }),
-    );
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
@@ -141,7 +141,9 @@ describe('<ListView /> - operations', () => {
         name: /delete process definition/i,
       }),
     ).toBeInTheDocument();
-    expect(await screen.findByRole('button', {name: 'Zoom in diagram'}));
+    expect(
+      await screen.findByRole('button', {name: 'Zoom in diagram'}),
+    ).toBeInTheDocument();
   });
 
   it('should not show delete button when user has no resource based permissions', async () => {

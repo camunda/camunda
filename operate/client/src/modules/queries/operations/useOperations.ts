@@ -7,6 +7,10 @@
  */
 
 import {useProcessInstanceDeprecated} from '../processInstance/deprecated/useProcessInstanceDeprecated';
+import type {
+  ProcessInstanceEntity,
+  InstanceOperationEntity,
+} from 'modules/types/operate';
 
 const operationsParser = (data: ProcessInstanceEntity) => {
   return data.operations;

@@ -7,6 +7,7 @@
  */
 
 import {requestAndParse, requestWithThrow} from 'modules/request';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const fetchProcessInstance = async (
   processInstanceId: ProcessInstanceEntity['id'],

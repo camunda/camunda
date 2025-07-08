@@ -96,6 +96,7 @@ const clearComboBox = async ({
   user: UserEvent;
   fieldName: string;
 }) => {
+  // eslint-disable-next-line testing-library/no-node-access
   const parentElement = screen.getByLabelText(fieldName).parentElement;
 
   await waitFor(() => expect(parentElement).toBeInTheDocument());

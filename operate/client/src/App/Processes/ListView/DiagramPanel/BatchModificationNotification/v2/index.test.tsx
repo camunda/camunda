@@ -103,7 +103,7 @@ describe('BatchModificationNotification', () => {
       ],
     });
 
-    render(
+    const {user} = render(
       <BatchModificationNotification
         sourceFlowNodeId="userTask"
         targetFlowNodeId="endEvent"
@@ -120,7 +120,7 @@ describe('BatchModificationNotification', () => {
     const undoButton = screen.getByRole('button', {name: /undo/i});
     expect(undoButton).toBeInTheDocument();
 
-    undoButton.click();
+    await user.click(undoButton);
     expect(undoMock).toHaveBeenCalled();
   });
 

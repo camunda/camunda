@@ -8,6 +8,7 @@
 
 import {type Incident} from 'modules/stores/incidents';
 import {compareAsc} from 'date-fns';
+import type {SortOrder} from 'modules/types/operate';
 
 const SECONDARY_SORT_KEY = 'id';
 

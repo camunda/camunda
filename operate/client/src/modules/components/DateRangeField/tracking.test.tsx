@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, type UserEvent} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {
   applyDateRange,
   pickDateTimeRange,
@@ -14,14 +14,9 @@ import {
 import {getWrapper, MockDateRangeField} from './mocks';
 import {tracking} from 'modules/tracking';
 
-let trackSpy = vi.spyOn(tracking, 'track');
-
 describe('Date Range - tracking', () => {
-  beforeEach(() => {
-    trackSpy = vi.spyOn(tracking, 'track');
-  });
-
   it('should track date picker, date input, time input', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
@@ -57,6 +52,7 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date picker', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
@@ -85,6 +81,7 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date input, time input', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
@@ -113,6 +110,7 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date picker, time input', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {

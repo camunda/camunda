@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken} from '@tanstack/react-query';
-import type {UseQueryOptions} from '@tanstack/react-query';
+import {skipToken, type UseQueryOptions} from '@tanstack/react-query';
 import type {RequestError, RequestResult} from 'modules/request';
 
 function genericQueryOptions<T, TSelect = T>(

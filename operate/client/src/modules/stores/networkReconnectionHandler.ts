@@ -9,19 +9,21 @@
 import {action, makeObservable} from 'mobx';
 
 class NetworkReconnectionHandler {
-  boundCallback?: Function;
+  boundCallback?: (() => void) | (() => Promise<void>);
   constructor() {
     makeObservable(this, {reset: action.bound});
   }
   handleReconnection = () => {
     this.boundCallback?.();
   };
-  retryOnConnectionLost(callback: (...params: any[]) => any) {
+  retryOnConnectionLost<T extends unknown[], R>(
+    callback: (...params: T) => R,
+  ): (...params: T) => R {
     this.boundCallback = callback;
-    return (...params: any[]) => {
+    return (...params: T) => {
       window.removeEventListener('online', this.handleReconnection);
       window.addEventListener('online', this.handleReconnection);
-      this.boundCallback = callback.bind(this, ...params);
+      this.boundCallback = () => callback(...params);
       return callback(...params);
     };
   }

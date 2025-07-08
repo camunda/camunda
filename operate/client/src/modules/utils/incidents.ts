@@ -8,8 +8,7 @@
 
 import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {autorun} from 'mobx';
-import {incidentsStore} from 'modules/stores/incidents';
-import type {Incident} from 'modules/stores/incidents';
+import {incidentsStore, type Incident} from 'modules/stores/incidents';
 import {isInstanceRunning} from './instance';
 
 const init = (processInstance?: ProcessInstance) => {

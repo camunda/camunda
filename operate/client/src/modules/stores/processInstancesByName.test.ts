@@ -137,11 +137,12 @@ describe('stores/processInstancesByName', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = vi.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     processInstancesByNameStore.getProcessInstancesByName();
 
@@ -171,7 +172,5 @@ describe('stores/processInstancesByName', () => {
         newMockInstancesByProcess,
       ),
     );
-
-    window.addEventListener = originalEventListener;
   });
 });

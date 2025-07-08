@@ -8,8 +8,10 @@
 
 import {makeObservable, override, action, observable} from 'mobx';
 import {logger} from 'modules/logger';
-import {fetchDecisionInstance} from 'modules/api/decisionInstances/fetchDecisionInstance';
-import type {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
+import {
+  fetchDecisionInstance,
+  type DecisionInstanceDto,
+} from 'modules/api/decisionInstances/fetchDecisionInstance';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {

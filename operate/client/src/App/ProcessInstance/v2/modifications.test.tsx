@@ -263,8 +263,10 @@ describe('ProcessInstance - modification mode', () => {
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
-      expect(variablesStore.state.status).toBe('fetched');
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+      expect([
+        variablesStore.state.status,
+        flowNodeInstanceStore.state.status,
+      ]).toEqual(['fetched', 'fetched']);
     });
 
     expect(
@@ -305,10 +307,10 @@ describe('ProcessInstance - modification mode', () => {
 
     vi.runOnlyPendingTimers();
 
-    await waitFor(() => {
-      expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3);
-    });
+    await waitFor(() =>
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3),
+    );
+    expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
 
     await waitForPollingsToBeComplete();
 
@@ -374,7 +376,7 @@ describe('ProcessInstance - modification mode', () => {
     expect(screen.getByTestId('loading-overlay')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('loading-overlay'),
+      screen.queryByTestId('loading-overlay'),
     );
 
     expect(

@@ -175,7 +175,7 @@ describe('VariablePanel spinner', () => {
     });
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('variables-spinner'));
     expect(screen.getByText('test2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
@@ -183,7 +183,7 @@ describe('VariablePanel spinner', () => {
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('variables-spinner'));
   });
 
   it('should display spinner on second variable fetch', async () => {
@@ -206,7 +206,7 @@ describe('VariablePanel spinner', () => {
     expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-spinner'),
+      screen.queryByTestId('variables-spinner'),
     );
   });
 

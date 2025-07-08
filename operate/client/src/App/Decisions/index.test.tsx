@@ -73,7 +73,7 @@ describe('<Decisions />', () => {
     expect(document.title).toBe('Operate: Decision Instances');
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('data-table-skeleton'),
+      screen.queryByTestId('data-table-skeleton'),
     );
     await waitFor(() =>
       expect(groupedDecisionsStore.state.status).toBe('fetched'),
@@ -138,11 +138,11 @@ describe('<Decisions />', () => {
 
     await waitFor(() => {
       expect(groupedDecisionsStore.decisions.length).toBe(4);
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions/);
-      expect(screen.getByTestId('search').textContent).toBe(
-        '?evaluated=true&failed=true',
-      );
     });
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions/);
+    expect(screen.getByTestId('search').textContent).toBe(
+      '?evaluated=true&failed=true',
+    );
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       isDismissable: true,

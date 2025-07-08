@@ -8,6 +8,11 @@
 
 import type {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
+import type {
+  InstanceEntityState,
+  OperationEntityType,
+  DecisionInstanceEntityState,
+} from 'modules/types/operate';
 
 const EVENT_PREFIX = 'operate:';
 

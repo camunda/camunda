@@ -13,6 +13,10 @@ import {Restricted} from 'modules/components/Restricted';
 import {useOperations} from 'modules/queries/operations/useOperations';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
+import type {
+  ResourceBasedPermissionDto,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];

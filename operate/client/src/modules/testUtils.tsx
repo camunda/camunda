@@ -14,6 +14,12 @@ import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
 import type {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import type {BatchOperationDto} from './api/sharedTypes';
 import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
+  OperationEntity,
+  InstanceOperationEntity,
+} from 'modules/types/operate';
 
 const createRandomId = function* createRandomId(type: string) {
   let idx = 0;
@@ -348,7 +354,7 @@ export const createDiagramNode = (options = {}) => {
     name: 'Start Event',
     $type: 'bpmn:StartEvent',
 
-    $instanceOf: (type: any) => type === 'bpmn:StartEvent',
+    $instanceOf: (type: string) => type === 'bpmn:StartEvent',
     ...options,
   };
 };

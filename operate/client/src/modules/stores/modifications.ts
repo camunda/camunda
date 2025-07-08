@@ -8,10 +8,10 @@
 
 import {makeAutoObservable} from 'mobx';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {modify} from 'modules/api/processInstances/modify';
-import type {
-  ModificationPayload,
-  FlowNodeVariables,
+import {
+  modify,
+  type ModificationPayload,
+  type FlowNodeVariables,
 } from 'modules/api/processInstances/modify';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';

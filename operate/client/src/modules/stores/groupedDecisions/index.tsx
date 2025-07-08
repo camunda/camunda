@@ -6,10 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {action, computed, makeObservable, observable, override} from 'mobx';
-import type {IReactionDisposer} from 'mobx';
-import {fetchGroupedDecisions} from 'modules/api/decisions/fetchGroupedDecisions';
-import type {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
+import {
+  action,
+  computed,
+  makeObservable,
+  observable,
+  override,
+  type IReactionDisposer,
+} from 'mobx';
+import {
+  fetchGroupedDecisions,
+  type DecisionDto,
+} from 'modules/api/decisions/fetchGroupedDecisions';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {getSearchString} from 'modules/utils/getSearchString';
@@ -35,7 +43,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   disposer: IReactionDisposer | null = null;
   retryCount: number = 0;
-  retryDecisionsFetchTimeout: NodeJS.Timeout | null = null;
+  retryDecisionsFetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super();

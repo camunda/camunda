@@ -13,6 +13,7 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const instance: ProcessInstanceEntity = {
   id: '2251799813685625',
@@ -759,10 +760,10 @@ describe('stores/processInstances', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
+    const eventListeners: Record<string, () => void> = {};
     vi.spyOn(window, 'addEventListener').mockImplementation(
-      (event: string, cb: any) => {
-        eventListeners[event] = cb;
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
       },
     );
 

@@ -13,8 +13,8 @@ import {
   computed,
   autorun,
   override,
+  type IReactionDisposer,
 } from 'mobx';
-import type {IReactionDisposer} from 'mobx';
 import {fetchProcessInstance} from 'modules/api/processInstances/fetchProcessInstance';
 import {createOperation, getProcessName} from 'modules/utils/instance';
 import {isInstanceRunning} from './utils/isInstanceRunning';
@@ -25,6 +25,11 @@ import {hasActiveOperations} from './utils/hasActiveOperations';
 import {tracking} from 'modules/tracking';
 import isEqual from 'lodash/isEqual';
 import isNil from 'lodash/isNil';
+import type {
+  ProcessInstanceEntity,
+  ResourceBasedPermissionDto,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type State = {
   processInstance: null | ProcessInstanceEntity;
@@ -50,7 +55,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
   intervalId: null | ReturnType<typeof setInterval> = null;
   disposer: null | IReactionDisposer = null;
   retryCount: number = 0;
-  refetchTimeout: NodeJS.Timeout | null = null;
+  refetchTimeout: ReturnType<typeof setTimeout> | null = null;
   onRefetchFailure?: () => void;
   onPollingFailure?: () => void;
 
@@ -251,7 +256,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     }
   };
 
-  handlePolling = async (instanceId: any) => {
+  handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {
     this.isPollRequestRunning = true;
     const response = await fetchProcessInstance(instanceId, {isPolling: true});
 

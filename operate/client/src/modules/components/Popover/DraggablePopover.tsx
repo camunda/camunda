@@ -6,9 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-type Props = {};
-
-const DraggablePopover: React.FC<Props> = () => {
+const DraggablePopover: React.FC = () => {
   return null;
 };
 

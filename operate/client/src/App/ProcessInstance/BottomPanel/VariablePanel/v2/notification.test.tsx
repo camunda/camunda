@@ -215,7 +215,7 @@ describe('VariablePanel', () => {
     );
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -309,7 +309,7 @@ describe('VariablePanel', () => {
     );
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -402,7 +402,7 @@ describe('VariablePanel', () => {
 
     vi.runOnlyPendingTimers();
 
-    await waitForElementToBeRemoved(screen.getByTestId('foo'));
+    await waitForElementToBeRemoved(screen.queryByTestId('foo'));
 
     expect(
       screen.getByRole('button', {

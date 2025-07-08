@@ -16,7 +16,6 @@ import type {
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isProcessOrSubProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
-
 type FlowNodeState =
   | 'active'
   | 'incidents'

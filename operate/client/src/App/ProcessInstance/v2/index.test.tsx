@@ -83,15 +83,11 @@ describe('ProcessInstance', () => {
 
     vi.runOnlyPendingTimers();
 
-    await waitFor(() => {
-      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId('instance-history-skeleton'),
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId('variables-skeleton'),
-      ).not.toBeInTheDocument();
-    });
+    expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('instance-history-skeleton'),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('variables-skeleton')).not.toBeInTheDocument();
 
     vi.clearAllTimers();
     vi.useRealTimers();
@@ -249,8 +245,8 @@ describe('ProcessInstance', () => {
 
     await waitFor(() => {
       expect(variablesStore.state.status).toBe('fetched');
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
+    expect(flowNodeInstanceStore.state.status).toBe('fetched');
 
     triggerVisibilityChange('hidden');
 
@@ -282,9 +278,10 @@ describe('ProcessInstance', () => {
 
     await waitFor(() => {
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(4);
-      expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(4);
     });
+
+    expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(4);
 
     await waitForPollingsToBeComplete();
 

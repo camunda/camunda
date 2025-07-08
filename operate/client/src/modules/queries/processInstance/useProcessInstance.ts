@@ -25,7 +25,7 @@ const useProcessInstance = <T = ProcessInstance>(
 
   return useQuery({
     queryKey: getQueryKey(processInstanceId),
-    queryFn: !!processInstanceId
+    queryFn: processInstanceId
       ? async () => {
           const {response, error} =
             await fetchProcessInstance(processInstanceId);

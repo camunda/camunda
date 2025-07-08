@@ -6,8 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {action, computed, makeObservable, observable, override} from 'mobx';
-import type {IReactionDisposer} from 'mobx';
+import {
+  action,
+  computed,
+  makeObservable,
+  observable,
+  override,
+  type IReactionDisposer,
+} from 'mobx';
 import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 

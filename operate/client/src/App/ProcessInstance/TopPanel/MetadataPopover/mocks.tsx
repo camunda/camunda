@@ -47,14 +47,14 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 const renderPopover = () => {
-  const {container} = render(<svg />);
-
-  return render(
-    <MetadataPopover selectedFlowNodeRef={container.querySelector('svg')} />,
-    {
-      wrapper: Wrapper,
-    },
+  const svgElement = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'svg',
   );
+
+  return render(<MetadataPopover selectedFlowNodeRef={svgElement} />, {
+    wrapper: Wrapper,
+  });
 };
 
 const {

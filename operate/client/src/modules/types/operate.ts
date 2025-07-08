@@ -119,3 +119,19 @@ interface ListenerEntity {
   time: string;
   sortValues: ReadonlyArray<string>;
 }
+type SortOrder = 'asc' | 'desc';
+
+export type {
+  VariableEntity,
+  OperationEntityType,
+  FlowNodeState,
+  InstanceEntityState,
+  DecisionInstanceEntityState,
+  OperationEntity,
+  InstanceOperationEntity,
+  ResourceBasedPermissionDto,
+  ProcessInstanceEntity,
+  DecisionInstanceEntity,
+  ListenerEntity,
+  SortOrder,
+};

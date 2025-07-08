@@ -62,7 +62,7 @@ describe('Operations - Cancel Operation', () => {
       screen.getByRole('button', {name: 'Cancel Instance instance_1'}),
     );
 
-    expect(await screen.findByText(modalText));
+    expect(await screen.findByText(modalText)).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: 'Cancel'}),
     ).not.toBeInTheDocument();
@@ -117,7 +117,7 @@ describe('Operations - Cancel Operation', () => {
       await screen.findByRole('link', {
         description: `View root instance ${rootInstanceId}`,
       }),
-    );
+    ).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('link', {

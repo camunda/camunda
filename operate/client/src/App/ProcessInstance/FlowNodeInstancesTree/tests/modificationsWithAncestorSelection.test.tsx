@@ -40,8 +40,10 @@ describe.skip('FlowNodeInstancesTree - modifications with ancestor selection', (
     flowNodeInstanceStore.init();
 
     await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-      expect(processInstanceDetailsStore.state.status).toBe('fetched');
+      expect([
+        flowNodeInstanceStore.state.status,
+        processInstanceDetailsStore.state.status,
+      ]).toEqual(['fetched', 'fetched']);
     });
 
     modificationsStore.enableModificationMode();

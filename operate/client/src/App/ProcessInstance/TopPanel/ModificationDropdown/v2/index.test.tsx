@@ -93,7 +93,9 @@ describe('Modification Dropdown', () => {
           setTimeout(() => {
             try {
               callback([], this);
-            } catch {}
+            } catch {
+              // Ignore errors in mock
+            }
           }, 0);
         }
       },
@@ -445,9 +447,7 @@ describe('Modification Dropdown', () => {
     });
 
     expect(screen.getByTestId('dropdown-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('dropdown-spinner'),
-    );
+    await waitForElementToBeRemoved(screen.queryByTestId('dropdown-spinner'));
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     expect(await screen.findByText(/Move instance/)).toBeInTheDocument();
     expect(screen.getByText(/Cancel instance/)).toBeInTheDocument();

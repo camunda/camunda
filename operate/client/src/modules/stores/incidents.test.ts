@@ -122,10 +122,10 @@ describe('stores/incidents', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
+    const eventListeners: Record<string, () => void> = {};
     vi.spyOn(window, 'addEventListener').mockImplementation(
-      (event: string, cb: any) => {
-        eventListeners[event] = cb;
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
       },
     );
 

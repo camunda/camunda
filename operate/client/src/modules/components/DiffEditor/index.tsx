@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  useMonaco,
-  DiffEditor as BaseDiffEditor,
-} from 'modules/components/MonacoEditor';
+import {DiffEditor as BaseDiffEditor} from '@monaco-editor/react';
 import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {options} from 'modules/utils/editor/options';
@@ -43,4 +40,4 @@ const DiffEditor: React.FC<Props> = observer(
   },
 );
 
-export {DiffEditor, useMonaco};
+export {DiffEditor};

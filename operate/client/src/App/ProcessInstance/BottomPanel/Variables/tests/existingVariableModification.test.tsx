@@ -7,7 +7,7 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {render, screen, type UserEvent, waitFor} from 'modules/testing-library';
+import {render, screen, type UserEvent} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ExistingVariableValue} from '../ExistingVariableValue';
@@ -17,13 +17,12 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {LastModification} from 'App/ProcessInstance/LastModification';
 import {OnLastVariableModificationRemoved} from '../OnLastVariableModificationRemoved';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, mockProcessXML} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockProcessXML} from 'modules/testUtils';
 
 type Props = {
   children?: React.ReactNode;

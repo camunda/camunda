@@ -24,6 +24,11 @@ import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {Cancel} from './Cancel';
 import {Delete} from './Delete';
 import {ResolveIncident} from './ResolveIncident';
+import type {
+  InstanceOperationEntity,
+  ResourceBasedPermissionDto,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Props = {
   instance: ProcessInstance;

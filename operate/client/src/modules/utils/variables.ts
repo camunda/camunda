@@ -49,6 +49,7 @@ const init = (processInstance?: ProcessInstance) => {
 
         variablesStore.fetchVariables({
           fetchType: 'initial',
+          // @ts-expect-error - typing was wrong before the migration
           instanceId: processInstance?.processInstanceKey,
           payload: {
             pageSize: MAX_VARIABLES_PER_REQUEST,

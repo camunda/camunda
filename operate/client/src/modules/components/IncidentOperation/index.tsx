@@ -40,7 +40,7 @@ const IncidentOperation: React.FC<Props> = observer(
       });
     };
 
-    const handleOnClick = async (e: any) => {
+    const handleOnClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       setHasActiveOperation(true);
 

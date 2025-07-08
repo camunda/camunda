@@ -15,6 +15,7 @@ import {
   getSortParams,
 } from 'modules/utils/filter';
 import {tracking} from 'modules/tracking';
+import type {DecisionInstanceEntity} from 'modules/types/operate';
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
@@ -220,8 +221,8 @@ class DecisionInstances extends NetworkReconnectionHandler {
     decisionInstances: DecisionInstanceEntity[],
   ) => {
     switch (fetchType) {
-      case 'next':
-        const allDecisionInstances = [
+      case 'next': {
+        const allDecisionInstances: DecisionInstanceEntity[] = [
           ...this.state.decisionInstances,
           ...decisionInstances,
         ];
@@ -232,6 +233,7 @@ class DecisionInstances extends NetworkReconnectionHandler {
             0,
           ),
         );
+      }
       case 'prev':
         return [...decisionInstances, ...this.state.decisionInstances].slice(
           0,

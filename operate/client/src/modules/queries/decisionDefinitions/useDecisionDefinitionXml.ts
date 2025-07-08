@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {fetchDecisionDefinitionXml} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
-import type {DecisionDefinitionKey} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
+import {
+  fetchDecisionDefinitionXml,
+  type DecisionDefinitionKey,
+} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
 import {genericQueryOptions} from '../genericQuery';
 
 const DECISION_DEFINITION_XML_QUERY_KEY = 'DecisionDefinitionXml';

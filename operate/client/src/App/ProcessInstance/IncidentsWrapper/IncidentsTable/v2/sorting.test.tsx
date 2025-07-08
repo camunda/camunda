@@ -42,7 +42,7 @@ describe('Sorting', () => {
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Creation Date')).toBeEnabled();
     expect(screen.getByText('Error Message')).toBeEnabled();
-    expect(await screen.findByText('Operations'));
+    expect(await screen.findByText('Operations')).toBeInTheDocument();
   });
 
   it('should disable sorting for jobId', () => {

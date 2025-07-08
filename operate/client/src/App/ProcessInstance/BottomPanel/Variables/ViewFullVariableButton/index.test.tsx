@@ -43,7 +43,7 @@ describe('<ViewFullVariableButton />', () => {
     vi.runOnlyPendingTimers();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variable-operation-spinner'),
+      screen.queryByTestId('variable-operation-spinner'),
     );
 
     expect(mockOnClick).toHaveBeenCalled();

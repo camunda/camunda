@@ -162,7 +162,7 @@ describe('MetadataPopover', () => {
       screen.getByText(
         `${incident.rootCauseInstance.processDefinitionName} - ${incident.rootCauseInstance.instanceId}`,
       ),
-    );
+    ).toBeInTheDocument();
   });
 
   it('should render meta data modal', async () => {

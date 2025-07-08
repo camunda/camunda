@@ -389,11 +389,12 @@ describe('stores/variables', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: Record<string, Function> = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = vi.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     variablesStore.init('1');
 
@@ -416,8 +417,6 @@ describe('stores/variables', () => {
     await waitFor(() =>
       expect(variablesStore.state.items).toEqual(newMockVariables),
     );
-
-    window.addEventListener = originalEventListener;
   });
 
   it('should fetch prev/next variables', async () => {

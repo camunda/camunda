@@ -106,9 +106,15 @@ describe('Source Diagram', () => {
     render(<SourceDiagram />, {wrapper: Wrapper});
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /reset diagram zoom/i}));
-    expect(screen.getByRole('button', {name: /zoom in diagram/i}));
-    expect(screen.getByRole('button', {name: /zoom out diagram/i}));
+    expect(
+      screen.getByRole('button', {name: /reset diagram zoom/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /zoom in diagram/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /zoom out diagram/i}),
+    ).toBeInTheDocument();
   });
 
   it('should render statistics overlays', async () => {

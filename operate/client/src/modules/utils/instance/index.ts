@@ -7,6 +7,11 @@
  */
 
 import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {
+  ProcessInstanceEntity,
+  InstanceOperationEntity,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 /**
  * @returns a boolean showing if the current instance has an incident

@@ -10,6 +10,7 @@ import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchProcessInstanceDeprecated} from 'modules/api/processInstances/fetchProcessInstance';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const PROCESS_INSTANCE_DEPRECATED_QUERY_KEY = 'processInstanceDeprecated';
 
@@ -25,7 +26,7 @@ const useProcessInstanceDeprecated = <T = ProcessInstanceEntity>(
 
   return useQuery({
     queryKey: getQueryKey(processInstanceId),
-    queryFn: !!processInstanceId
+    queryFn: processInstanceId
       ? async () => {
           const {response, error} =
             await fetchProcessInstanceDeprecated(processInstanceId);

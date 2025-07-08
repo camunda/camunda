@@ -7,8 +7,7 @@
  */
 
 import useOperationApply from '.';
-import {renderHook} from 'modules/testing-library';
-import {waitFor} from 'modules/testing-library';
+import {renderHook, waitFor} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {operationsStore} from 'modules/stores/operations';
 import {processInstancesStore} from 'modules/stores/processInstances';
@@ -260,9 +259,12 @@ describe('useOperationApply', () => {
       expect(
         processInstancesStore.processInstanceIdsWithActiveOperations,
       ).toEqual([]);
+    });
+
+    await waitFor(() => {
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(
         200,
-      ); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
+      );
     });
 
     vi.clearAllTimers();
@@ -314,9 +316,12 @@ describe('useOperationApply', () => {
       expect(
         processInstancesStore.processInstanceIdsWithActiveOperations,
       ).toEqual([]);
+    });
+
+    await waitFor(() => {
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(
         200,
-      ); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
+      );
     });
 
     vi.clearAllTimers();

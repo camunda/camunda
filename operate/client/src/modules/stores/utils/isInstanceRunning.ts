@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {ProcessInstanceEntity} from 'modules/types/operate';
+
 const isInstanceRunning = (instance: ProcessInstanceEntity | null) => {
   return instance?.state === 'ACTIVE' || instance?.state === 'INCIDENT';
 };

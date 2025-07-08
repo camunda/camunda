@@ -270,7 +270,7 @@ describe('VariablePanel', () => {
     expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -387,7 +387,7 @@ describe('VariablePanel', () => {
         await screen.findByTestId('variables-spinner'),
       ).toBeInTheDocument();
       await waitForElementToBeRemoved(() =>
-        screen.getByTestId('variables-spinner'),
+        screen.queryByTestId('variables-spinner'),
       );
       expect(
         screen.queryByTestId('variable-operation-spinner'),
@@ -580,7 +580,7 @@ describe('VariablePanel', () => {
 
       vi.runOnlyPendingTimers();
       await waitForElementToBeRemoved(
-        screen.getByTestId('variable-operation-spinner'),
+        screen.queryByTestId('variable-operation-spinner'),
       );
       expect(
         await screen.findByRole('cell', {name: 'foo'}),

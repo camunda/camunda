@@ -51,12 +51,15 @@ const renderPopover = (
     typeof MemoryRouter
   >['initialEntries'] = [Paths.processInstance('1')],
 ) => {
-  const {container} = render(<svg />);
+  const svgElement = document.createElementNS(
+    'http://www.w3.org/2000/svg',
+    'svg',
+  );
   const ref = createRef<HTMLDivElement>();
 
   return render(
     <ModificationDropdown
-      selectedFlowNodeRef={container.querySelector('svg') ?? undefined}
+      selectedFlowNodeRef={svgElement}
       diagramCanvasRef={ref}
     />,
     {

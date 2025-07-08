@@ -24,10 +24,6 @@ type ParsedXmlData = {
   selectableFlowNodes: BusinessObject[];
 };
 
-function getQueryKey(processDefinitionKey?: ProcessDefinitionKey) {
-  return [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey];
-}
-
 async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
   const diagramModel = await parseDiagramXML(data);
   const selectableFlowNodes = getFlowNodes(diagramModel?.elementsById);
@@ -44,10 +40,8 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
   select?: (data: ParsedXmlData) => T;
   enabled?: boolean;
 }) {
-  const queryKey = getQueryKey(processDefinitionKey);
-
-  return useQuery<ParsedXmlData, Error, T>({
-    queryKey,
+  return useQuery({
+    queryKey: [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey],
     queryFn:
       enabled && !!processDefinitionKey
         ? async () => {

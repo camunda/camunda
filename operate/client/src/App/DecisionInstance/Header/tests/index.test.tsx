@@ -43,7 +43,7 @@ describe('<Header />', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
   });
 

@@ -64,7 +64,7 @@ describe('MigrationConfirmationModal', () => {
     await user.type(screen.getByRole('textbox'), 'MIGRATE');
 
     expect(screen.getByRole('button', {name: /confirm/i})).toBeEnabled();
-    screen.getByRole('button', {name: /confirm/i}).click();
+    await user.click(screen.getByRole('button', {name: /confirm/i}));
 
     expect(onSubmitMock).toHaveBeenCalledTimes(1);
 

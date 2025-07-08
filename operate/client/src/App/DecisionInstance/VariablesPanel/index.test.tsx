@@ -65,7 +65,7 @@ describe('<VariablesPanel />', () => {
     const {user} = render(<VariablesPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton'),
+      screen.queryByTestId('inputs-skeleton'),
     );
 
     await user.click(

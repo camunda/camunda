@@ -78,14 +78,14 @@ describe('<Login />', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('spinner'));
 
     mockLogin().withSuccess(null);
 
     fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('spinner'));
   });
 
   it('should redirect to the previous page', async () => {

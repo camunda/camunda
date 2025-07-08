@@ -9,7 +9,6 @@
 import {
   render,
   screen,
-  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 
@@ -109,7 +108,7 @@ describe('FlowNodeInstanceLog', () => {
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-history-skeleton'),
+      screen.queryByTestId('instance-history-skeleton'),
     );
   });
 
@@ -124,7 +123,7 @@ describe('FlowNodeInstanceLog', () => {
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-history-skeleton'),
+      screen.queryByTestId('instance-history-skeleton'),
     );
   });
 
@@ -167,7 +166,7 @@ describe('FlowNodeInstanceLog', () => {
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-history-skeleton'),
+      screen.queryByTestId('instance-history-skeleton'),
     );
 
     expect(await screen.findAllByTestId('INCIDENT-icon')).toHaveLength(1);

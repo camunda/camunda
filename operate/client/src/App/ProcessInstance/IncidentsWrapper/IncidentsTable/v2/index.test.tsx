@@ -73,7 +73,9 @@ describe('IncidentsTable', () => {
     expect(
       withinRow.getByText(secondIncident.errorMessage),
     ).toBeInTheDocument();
-    expect(await withinRow.findByRole('button', {name: 'Retry Incident'}));
+    expect(
+      await withinRow.findByRole('button', {name: 'Retry Incident'}),
+    ).toBeInTheDocument();
   });
 
   it('should render the right column headers', async () => {
@@ -87,7 +89,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Job Id')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(await screen.findByText('Operations'));
+    expect(await screen.findByText('Operations')).toBeInTheDocument();
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
@@ -111,7 +113,7 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Job Id')).toBeInTheDocument();
     expect(screen.getByText('Creation Date')).toBeInTheDocument();
     expect(screen.getByText('Error Message')).toBeInTheDocument();
-    expect(await screen.findByText('Operations'));
+    expect(await screen.findByText('Operations')).toBeInTheDocument();
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 

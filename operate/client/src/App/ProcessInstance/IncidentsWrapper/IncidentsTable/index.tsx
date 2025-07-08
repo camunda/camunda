@@ -87,13 +87,17 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
             return;
           }
 
-          isSingleIncidentSelected(incidents, incident.flowNodeInstanceId)
-            ? flowNodeSelectionStore.clearSelection()
-            : flowNodeSelectionStore.selectFlowNode({
-                flowNodeId: incident.flowNodeId,
-                flowNodeInstanceId: incident.flowNodeInstanceId,
-                isMultiInstance: false,
-              });
+          if (
+            isSingleIncidentSelected(incidents, incident.flowNodeInstanceId)
+          ) {
+            flowNodeSelectionStore.clearSelection();
+          } else {
+            flowNodeSelectionStore.selectFlowNode({
+              flowNodeId: incident.flowNodeId,
+              flowNodeInstanceId: incident.flowNodeInstanceId,
+              isMultiInstance: false,
+            });
+          }
         }}
         checkIsRowSelected={(rowId) => {
           const incident = sortedIncidents.find(({id}) => id === rowId);

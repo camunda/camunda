@@ -26,6 +26,12 @@ import {OperationsContainer} from './styled';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {ModificationHelperModal} from './ModificationHelperModal';
+import type {
+  ProcessInstanceEntity,
+  InstanceOperationEntity,
+  ResourceBasedPermissionDto,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Props = {
   instance: ProcessInstanceEntity;

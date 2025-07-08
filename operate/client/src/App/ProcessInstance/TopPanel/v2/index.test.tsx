@@ -53,7 +53,7 @@ vi.mock('react-transition-group', () => {
     CSSTransition: FakeCSSTransition,
     Transition: FakeTransition,
     TransitionGroup: vi.fn(({children}) => {
-      return children.map((transition: any) => {
+      return children.map((transition: {props: object}) => {
         const completedTransition = {...transition};
         completedTransition.props = {...transition.props, in: true};
         return completedTransition;
@@ -97,12 +97,14 @@ const getWrapper = (
 
 describe('TopPanel', () => {
   beforeAll(() => {
-    //@ts-ignore
+    //@ts-expect-error - Use to mute act warnings
+    // eslint-disable-next-line no-undef
     IS_REACT_ACT_ENVIRONMENT = false;
   });
 
   afterAll(() => {
-    //@ts-ignore
+    //@ts-expect-error - Use to mute act warnings
+    // eslint-disable-next-line no-undef
     IS_REACT_ACT_ENVIRONMENT = true;
   });
 
@@ -161,7 +163,7 @@ describe('TopPanel', () => {
     processInstanceDetailsStore.init({id: 'active_instance'});
 
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('diagram-spinner'));
   });
 
   it('should render incident bar', async () => {

@@ -21,6 +21,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {createInstance} from 'modules/testUtils';
+import type {VariableEntity} from 'modules/types/operate';
 
 const mockProcessInstance: ProcessInstance = {
   processInstanceKey: '1',

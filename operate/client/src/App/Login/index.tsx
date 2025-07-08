@@ -37,7 +37,7 @@ import {Paths} from 'modules/Routes';
 import {LoadingSpinner} from './LoadingSpinner';
 
 function stateHasReferrer(state: unknown): state is {referrer: Location} {
-  if (typeof state === 'object' && state?.hasOwnProperty('referrer')) {
+  if (typeof state === 'object' && state && 'referrer' in state) {
     return true;
   }
 

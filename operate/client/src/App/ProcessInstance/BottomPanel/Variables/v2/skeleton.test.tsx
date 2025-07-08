@@ -13,14 +13,18 @@ import {
 } from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import Variables from './index';
-import {getWrapper, mockVariables, mockMetaData} from './mocks';
+import {
+  getWrapper,
+  mockVariables,
+  mockMetaData,
+  mockProcessInstanceDeprecated,
+} from './mocks';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {mockProcessInstanceDeprecated} from './mocks';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -54,7 +58,7 @@ describe('Skeleton', () => {
 
     render(<Variables />, {wrapper: getWrapper()});
 
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('variables-skeleton'));
     expect(await screen.findByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
   });
 
@@ -87,6 +91,6 @@ describe('Skeleton', () => {
     render(<Variables />, {wrapper: getWrapper()});
 
     expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('variables-skeleton'));
   });
 });

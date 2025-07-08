@@ -53,7 +53,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     const processDefinitionName = getProcessDefinitionName(mockInstance);
@@ -97,7 +97,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -118,7 +118,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
@@ -150,7 +150,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -170,7 +170,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
@@ -189,7 +189,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -216,7 +216,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -254,7 +254,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -286,7 +286,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
@@ -305,7 +305,9 @@ describe('InstanceHeader', () => {
       }),
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    await waitFor(() => {
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    });
   });
 
   it('should hide delete operation button when user has no resource based permission for delete process instance', async () => {
@@ -336,7 +338,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -367,7 +369,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(

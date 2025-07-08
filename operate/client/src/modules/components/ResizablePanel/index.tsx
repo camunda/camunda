@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// @ts-ignore - CSS imports
 import './index.css';
 import Splitter, {SplitDirection} from '@devbookhq/splitter';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';

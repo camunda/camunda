@@ -396,7 +396,7 @@ describe('OperationsEntry', () => {
       ),
     );
     expect(screen.queryByText(OPERATIONS_TIMESTAMP)).not.toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByRole('progressbar'));
+    await waitForElementToBeRemoved(screen.queryByRole('progressbar'));
     expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     vi.clearAllTimers();
     vi.useRealTimers();

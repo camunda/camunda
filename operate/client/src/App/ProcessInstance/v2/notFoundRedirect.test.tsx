@@ -35,14 +35,17 @@ describe('Redirect to process instances page', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-      expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?active=true&incidents=true$/,
-      );
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Instance 123 could not be found',
-        isDismissable: true,
-      });
     });
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?active=true&incidents=true$/,
+    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Instance 123 could not be found',
+      isDismissable: true,
+    });
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

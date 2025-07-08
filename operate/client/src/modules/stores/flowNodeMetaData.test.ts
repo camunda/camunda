@@ -85,10 +85,10 @@ describe('stores/flowNodeMetaData', () => {
     mockFetchFlowNodeMetadata().withSuccess(metaData);
     mockFetchFlowNodeMetadata().withSuccess(metaData);
 
-    const eventListeners: any = {};
+    const eventListeners: Record<string, () => void> = {};
     vi.spyOn(window, 'addEventListener').mockImplementation(
-      (event: string, cb: any) => {
-        eventListeners[event] = cb;
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
       },
     );
 

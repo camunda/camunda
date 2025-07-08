@@ -12,10 +12,15 @@ import type {
 } from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import type {ModificationPlaceholder} from 'modules/stores/instanceHistoryModification';
-import {modificationsStore} from 'modules/stores/modifications';
-import type {FlowNodeModification} from 'modules/stores/modifications';
+import {
+  instanceHistoryModificationStore,
+  type ModificationPlaceholder,
+} from 'modules/stores/instanceHistoryModification';
+
+import {
+  modificationsStore,
+  type FlowNodeModification,
+} from 'modules/stores/modifications';
 
 const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
   const {operation} = modificationPayload;

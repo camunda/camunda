@@ -13,10 +13,13 @@ import type {Mixpanel} from 'mixpanel-browser';
 type Appcues = {
   debug: () => void;
   page: () => void;
-  identify: (userId: string, properties?: {[property: string]: any}) => void;
+  identify: (
+    userId: string,
+    properties?: {[property: string]: unknown},
+  ) => void;
   track: (
     eventName: string,
-    properties?: {[eventProperty: string]: any},
+    properties?: {[eventProperty: string]: unknown},
   ) => void;
 };
 
@@ -42,15 +45,13 @@ export declare global {
         showDrawer: (arg: string) => void;
         addEventListener: (
           eventType: string,
-          callback: (arg: any) => void,
+          callback: (arg: {ANALYTICS: 'ACCEPT' | 'DENY'}) => void,
         ) => void;
       };
     };
     Appcues?: Appcues;
     mixpanel?: Mixpanel;
   }
-
-  type SortOrder = 'asc' | 'desc';
 
   namespace NodeJS {
     interface ProcessEnv {

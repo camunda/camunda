@@ -26,7 +26,7 @@ const useCallHierarchy = <T = GetProcessInstanceCallHierarchyResponseBody>(
 
   return useQuery({
     queryKey: getQueryKey(processInstanceId),
-    queryFn: !!processInstanceId
+    queryFn: processInstanceId
       ? async () => {
           const {response, error} = await fetchCallHierarchy(processInstanceId);
 

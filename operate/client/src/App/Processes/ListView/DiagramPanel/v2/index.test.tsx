@@ -130,7 +130,7 @@ describe('DiagramPanel', () => {
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('diagram-spinner'));
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
   });
 

@@ -365,7 +365,7 @@ describe('validators', () => {
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('should validate decision ids without delay ', () => {
+  it('should validate decision ids without delay', () => {
     [
       '2251799813685543-1',
       '2251799813685543',

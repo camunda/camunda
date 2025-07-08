@@ -7,6 +7,7 @@
  */
 
 import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import type {VariableEntity} from 'modules/types/operate';
 
 const mockVariables: VariableEntity[] = [
   {

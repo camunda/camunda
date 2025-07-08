@@ -13,14 +13,15 @@ import {
   when,
   autorun,
   override,
+  type IReactionDisposer,
 } from 'mobx';
-import type {IReactionDisposer} from 'mobx';
 import {fetchSequenceFlows} from 'modules/api/processInstances/sequenceFlows';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessedSequenceFlows} from './mappers';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import isEqual from 'lodash/isEqual';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 type State = {
   items: string[];

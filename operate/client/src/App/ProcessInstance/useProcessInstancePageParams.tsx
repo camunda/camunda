@@ -7,6 +7,7 @@
  */
 
 import {useParams} from 'react-router-dom';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const useProcessInstancePageParams = () => {
   return useParams<{processInstanceId: ProcessInstanceEntity['id']}>();

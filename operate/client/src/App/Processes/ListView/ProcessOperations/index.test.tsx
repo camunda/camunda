@@ -20,6 +20,7 @@ import {useEffect} from 'react';
 import {ProcessOperations} from '.';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import type {OperationEntity} from 'modules/types/operate';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -308,7 +309,7 @@ describe('<ProcessOperations />', () => {
     ).toBeDisabled();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('delete-operation-spinner'),
+      screen.queryByTestId('delete-operation-spinner'),
     );
 
     expect(

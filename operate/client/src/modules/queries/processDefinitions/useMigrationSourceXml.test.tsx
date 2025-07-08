@@ -16,6 +16,8 @@ import {processesStore} from 'modules/stores/processes/processes.migration';
 
 vi.mock('modules/stores/processes/processes.migration');
 
+const mockedProcessesStore = vi.mocked(processesStore);
+
 describe('useMigrationSourceXml', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => {
     return (
@@ -26,8 +28,11 @@ describe('useMigrationSourceXml', () => {
   };
 
   it('should filter selectable flow nodes', async () => {
-    // @ts-expect-error
-    processesStore.getSelectedProcessDetails.mockReturnValue({
+    mockedProcessesStore.getSelectedProcessDetails.mockReturnValue({
+      key: '27589024892748902347',
+      processName: 'orderProcess',
+      version: '1.0.0',
+      versionTag: null,
       bpmnProcessId: 'orderProcess',
     });
 
@@ -93,8 +98,11 @@ describe('useMigrationSourceXml', () => {
   });
 
   it('should filter selectable flow nodes (ParticipantMigrationA)', async () => {
-    // @ts-expect-error
-    processesStore.getSelectedProcessDetails.mockReturnValue({
+    mockedProcessesStore.getSelectedProcessDetails.mockReturnValue({
+      key: '27589024892748902347',
+      processName: 'ParticipantMigrationA',
+      version: '1.0.0',
+      versionTag: null,
       bpmnProcessId: 'ParticipantMigrationA',
     });
 
@@ -121,8 +129,11 @@ describe('useMigrationSourceXml', () => {
   });
 
   it('should filter selectable flow nodes (ParticipantMigrationB)', async () => {
-    // @ts-expect-error
-    processesStore.getSelectedProcessDetails.mockReturnValue({
+    mockedProcessesStore.getSelectedProcessDetails.mockReturnValue({
+      key: '27589024892748902347',
+      processName: 'ParticipantMigrationB',
+      version: '1.0.0',
+      versionTag: null,
       bpmnProcessId: 'ParticipantMigrationB',
     });
 

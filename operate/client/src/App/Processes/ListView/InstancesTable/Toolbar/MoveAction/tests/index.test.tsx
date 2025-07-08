@@ -21,7 +21,6 @@ import {open} from 'modules/mocks/diagrams';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-const PROCESS_DEFINITION_ID = '2251799813685249';
 const PROCESS_ID = 'MoveModificationProcess';
 const mockProcessXML = open('MoveModificationProcess.bpmn');
 

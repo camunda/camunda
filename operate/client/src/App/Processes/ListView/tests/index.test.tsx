@@ -140,7 +140,9 @@ describe('Instances', () => {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     const withinRow = within(
       screen.getByRole('row', {
@@ -159,7 +161,7 @@ describe('Instances', () => {
 
     mockFetchProcessInstances().withDelay(mockProcessInstances);
     await user.click(screen.getByText(/go to active/i));
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
+    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
 
     expect(
       withinRow.getByRole('checkbox', {name: /select row/i}),
@@ -196,7 +198,7 @@ describe('Instances', () => {
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
+    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
 
     expect(
       withinRow.getByRole('checkbox', {name: /select row/i}),
@@ -214,7 +216,9 @@ describe('Instances', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     await waitFor(() =>
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
@@ -296,12 +300,16 @@ describe('Instances', () => {
     vi.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(processesStore.processes.length).toBe(5);
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes/);
+    });
+
+    await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
         '?active=true&incidents=true',
-      );
-    });
+      ),
+    );
+
+    expect(processesStore.processes.length).toBe(5);
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       isDismissable: true,
@@ -335,7 +343,9 @@ describe('Instances', () => {
     });
 
     mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByText('Operation State')).toBeInTheDocument();
   });
@@ -353,7 +363,9 @@ describe('Instances', () => {
 
     mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByText('0000000000000002')).toBeInTheDocument();
     expect(
@@ -386,7 +398,9 @@ describe('Instances', () => {
     });
 
     mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     const withinRow = within(
       screen.getByRole('row', {

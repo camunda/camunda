@@ -8,8 +8,10 @@
 
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import {modificationsStore} from 'modules/stores/modifications';
-import type {FlowNodeModification} from 'modules/stores/modifications';
+import {
+  modificationsStore,
+  type FlowNodeModification,
+} from 'modules/stores/modifications';
 import {getVisibleChildPlaceholders} from 'modules/utils/instanceHistoryModification';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 

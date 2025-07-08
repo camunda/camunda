@@ -8,7 +8,9 @@
 
 const diObject = {set: vi.fn()};
 
-const createMockedModules = (container: any): {[module: string]: any} => ({
+const createMockedModules = (
+  container: HTMLElement,
+): {[module: string]: unknown} => ({
   canvas: {
     zoom: vi.fn(),
     addMarker: vi.fn(),
@@ -37,18 +39,28 @@ const createMockedModules = (container: any): {[module: string]: any} => ({
   graphicsFactory: {update: vi.fn(() => {})},
   eventBus: {on: vi.fn()},
   overlays: {
-    add: vi.fn((_elementId: string, _type: string, {html: children}: any) => {
-      container.appendChild(children);
-    }),
+    add: vi.fn(
+      (_: string, __: string, {html: children}: {html: HTMLElement}) => {
+        container.appendChild(children);
+      },
+    ),
     remove: vi.fn(),
     clear: vi.fn(),
   },
 });
 
 class Viewer {
-  bpmnRenderer: any;
-  container: any;
-  constructor({container, bpmnRenderer}: any = {}) {
+  bpmnRenderer: unknown;
+  container: HTMLElement;
+  constructor(
+    {
+      container,
+      bpmnRenderer,
+    }: {container: HTMLElement; bpmnRenderer: unknown} = {
+      container: document.createElement('div'),
+      bpmnRenderer: {},
+    },
+  ) {
     this.container = container;
     this.bpmnRenderer = bpmnRenderer;
   }

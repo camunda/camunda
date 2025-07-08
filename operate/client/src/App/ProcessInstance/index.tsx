@@ -39,6 +39,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {Frame} from 'modules/components/Frame';
 import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
   variablesStore.startPolling(processInstanceId, {runImmediately: true});

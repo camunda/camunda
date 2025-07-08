@@ -13,16 +13,17 @@ import {
   observable,
   autorun,
   override,
+  type IReactionDisposer,
 } from 'mobx';
-import type {IReactionDisposer} from 'mobx';
-import {fetchProcessInstanceIncidents} from 'modules/api/processInstances/fetchProcessInstanceIncidents';
-import type {
-  ProcessInstanceIncidentsDto,
-  IncidentDto,
+import {
+  fetchProcessInstanceIncidents,
+  type ProcessInstanceIncidentsDto,
+  type IncidentDto,
 } from 'modules/api/processInstances/fetchProcessInstanceIncidents';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {tracking} from 'modules/tracking';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 type Incident = IncidentDto & {isSelected: boolean; flowNodeName: string};
 type ProcessInstanceIncidents = Omit<

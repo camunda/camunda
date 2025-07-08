@@ -26,6 +26,7 @@ import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {Listeners as ListenersLegacy} from '../Listeners';
 import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
+import type {ListenerEntity} from 'modules/types/operate';
 
 type Props = {
   setListenerTabVisibility: React.Dispatch<React.SetStateAction<boolean>>;

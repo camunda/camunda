@@ -63,7 +63,9 @@ describe('<InstancesTable />', () => {
 
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
   });
 
   it('should render error message', async () => {
@@ -71,7 +73,9 @@ describe('<InstancesTable />', () => {
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
@@ -85,7 +89,9 @@ describe('<InstancesTable />', () => {
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(
       screen.getByText('There are no Instances matching this filter set'),
@@ -109,7 +115,9 @@ describe('<InstancesTable />', () => {
       wrapper: createWrapper(`${Paths.decisions()}?evaluated=true&failed=true`),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(
       screen.getByText('There are no Instances matching this filter set'),
@@ -129,7 +137,9 @@ describe('<InstancesTable />', () => {
     render(<InstancesTable />, {wrapper: createWrapper()});
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(
       screen.getByRole('columnheader', {
@@ -198,7 +208,9 @@ describe('<InstancesTable />', () => {
       wrapper: createWrapper(Paths.decisions()),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
 
@@ -241,7 +253,9 @@ describe('<InstancesTable />', () => {
       wrapper: createWrapper(Paths.decisions()),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
 
@@ -266,7 +280,9 @@ describe('<InstancesTable />', () => {
 
     const {user} = render(<InstancesTable />, {wrapper: createWrapper()});
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
 
@@ -276,7 +292,7 @@ describe('<InstancesTable />', () => {
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
+    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
   });
 
   it('should refetch data when navigated from header', async () => {
@@ -291,7 +307,9 @@ describe('<InstancesTable />', () => {
       {wrapper: createWrapper()},
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     mockFetchDecisionInstances().withDelay(mockDecisionInstances);
 

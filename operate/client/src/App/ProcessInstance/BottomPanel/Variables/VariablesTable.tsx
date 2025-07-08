@@ -30,6 +30,10 @@ import {Operation as OperationV2} from './NewVariableModification/v2/Operation';
 import {ViewFullVariableButton} from './ViewFullVariableButton';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {notificationsStore} from 'modules/stores/notifications';
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
+} from 'modules/types/operate';
 
 type Props = {
   scopeId: string | null;

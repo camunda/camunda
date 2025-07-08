@@ -8,7 +8,7 @@
 
 import type {View} from 'dmn-js-shared/lib/base/Manager';
 
-const mockedModules: {[module: string]: any} = {
+const mockedModules: {[module: string]: unknown} = {
   canvas: {
     zoom: vi.fn(),
     resized: vi.fn(),
@@ -22,8 +22,12 @@ const mockedModules: {[module: string]: any} = {
 };
 
 class Manager {
-  container: any;
-  constructor({container}: any = {}) {
+  container: HTMLElement;
+  constructor(
+    {container}: {container: HTMLElement} = {
+      container: document.createElement('div'),
+    },
+  ) {
     this.container = container;
   }
   destroy = vi.fn();

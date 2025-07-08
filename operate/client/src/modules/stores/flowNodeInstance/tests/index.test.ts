@@ -101,7 +101,9 @@ describe('stores/flowNodeInstance', () => {
         [PROCESS_INSTANCE_ID]: {
           ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID],
           children: [
+            // eslint-disable-next-line testing-library/no-node-access
             ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID]!.children,
+            // eslint-disable-next-line testing-library/no-node-access
             ...mockFlowNodeInstances.level1Next[PROCESS_INSTANCE_ID]!.children,
           ],
         },
@@ -139,7 +141,9 @@ describe('stores/flowNodeInstance', () => {
         [PROCESS_INSTANCE_ID]: {
           ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID],
           children: [
+            // eslint-disable-next-line testing-library/no-node-access
             ...mockFlowNodeInstances.level1Prev[PROCESS_INSTANCE_ID]!.children,
+            // eslint-disable-next-line testing-library/no-node-access
             ...mockFlowNodeInstances.level1[PROCESS_INSTANCE_ID]!.children,
           ],
         },
@@ -150,11 +154,12 @@ describe('stores/flowNodeInstance', () => {
   it('should retry fetch on network reconnection', async () => {
     mockFetchFlowNodeInstances().withSuccess(mockFlowNodeInstances.level1);
 
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = vi.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -180,7 +185,5 @@ describe('stores/flowNodeInstance', () => {
         ...mockFlowNodeInstances.level2,
       }),
     );
-
-    window.addEventListener = originalEventListener;
   });
 });

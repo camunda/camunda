@@ -31,6 +31,10 @@ import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
+} from 'modules/types/operate';
 
 type Props = {
   scopeId: string | null;

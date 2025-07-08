@@ -20,6 +20,7 @@ import {DecisionOperations} from '.';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {operationsStore} from 'modules/stores/operations';
 import {notificationsStore} from 'modules/stores/notifications';
+import type {OperationEntity} from 'modules/types/operate';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -231,7 +232,7 @@ describe('<DecisionOperations />', () => {
     ).toBeDisabled();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('delete-operation-spinner'),
+      screen.queryByTestId('delete-operation-spinner'),
     );
 
     expect(
@@ -283,7 +284,7 @@ describe('<DecisionOperations />', () => {
     ).toBeDisabled();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('delete-operation-spinner'),
+      screen.queryByTestId('delete-operation-spinner'),
     );
 
     expect(

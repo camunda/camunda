@@ -98,7 +98,7 @@ describe('Operations - Spinner', () => {
       totalCount: 1,
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('operation-spinner'));
 
     vi.clearAllTimers();
     vi.useRealTimers();

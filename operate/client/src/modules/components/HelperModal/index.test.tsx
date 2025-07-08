@@ -37,11 +37,11 @@ describe('HelperModal', () => {
     expect(screen.getByText('Modal Content')).toBeInTheDocument();
   });
 
-  it('should call onClose and onSubmit callbacks', () => {
+  it('should call onClose and onSubmit callbacks', async () => {
     const onCloseMock = vi.fn();
     const onSubmitMock = vi.fn();
 
-    render(
+    const {user} = render(
       <HelperModal
         onClose={onCloseMock}
         onSubmit={onSubmitMock}
@@ -53,18 +53,18 @@ describe('HelperModal', () => {
       </HelperModal>,
     );
 
-    screen.getByRole('button', {name: /continue/i}).click();
+    await user.click(screen.getByRole('button', {name: /continue/i}));
     expect(onSubmitMock).toHaveBeenCalledTimes(1);
 
-    screen.getByRole('button', {name: /cancel/i}).click();
+    await user.click(screen.getByRole('button', {name: /cancel/i}));
     expect(onCloseMock).toHaveBeenCalledTimes(1);
   });
 
-  it('should set local storage key', () => {
+  it('should set local storage key', async () => {
     const onCloseMock = vi.fn();
     const onSubmitMock = vi.fn();
 
-    render(
+    const {user} = render(
       <HelperModal
         onClose={onCloseMock}
         onSubmit={onSubmitMock}
@@ -78,13 +78,13 @@ describe('HelperModal', () => {
 
     expect(getStateLocally()[localStorageKey]).toBe(undefined);
 
-    screen.getByRole('checkbox').click();
+    await user.click(screen.getByRole('checkbox'));
     expect(getStateLocally()[localStorageKey]).toBe(true);
 
-    screen.getByRole('checkbox').click();
+    await user.click(screen.getByRole('checkbox'));
     expect(getStateLocally()[localStorageKey]).toBe(false);
 
-    screen.getByRole('checkbox').click();
+    await user.click(screen.getByRole('checkbox'));
     expect(getStateLocally()[localStorageKey]).toBe(true);
   });
 });

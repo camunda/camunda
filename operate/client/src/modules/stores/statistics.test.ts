@@ -155,47 +155,71 @@ describe('stores/statistics', () => {
     );
 
     mockServer.use(
-      http.post('/api/process-instances', ({request}) => {
-        checkPollingHeader({req: request, expectPolling: true});
-        return HttpResponse.json({
-          processInstances: [{...mockInstance}],
-          totalCount: 1,
-        });
-      }, {once: true}),
-      http.post('/api/process-instances', ({request}) => {
-        checkPollingHeader({req: request, expectPolling: true});
-        return HttpResponse.json({
-          processInstances: [{...mockInstance}],
-          totalCount: 2,
-        });
-      }, {once: true}),
-      http.post('/api/process-instances', ({request}) => {
-        checkPollingHeader({req: request, expectPolling: true});
-        return HttpResponse.json({
-          processInstances: [{...mockInstance}],
-          totalCount: 2,
-        });
-      }, {once: true}),
-      http.get('/api/process-instances/core-statistics', ({request}) => {
-        checkPollingHeader({req: request, expectPolling: true});
-        return HttpResponse.json({
-          ...statistics,
-        });
-      }, {once: true}),
-      http.get('/api/process-instances/core-statistics', ({request}) => {
-        checkPollingHeader({req: request, expectPolling: true});
-        return HttpResponse.json({
-          ...statistics,
-          running: 1088,
-        });
-      }, {once: true}),
-      http.get('/api/process-instances/core-statistics', ({request}) => {
-        checkPollingHeader({req: request, expectPolling: true});
-        return HttpResponse.json({
-          ...statistics,
-          running: 1088,
-        });
-      }, {once: true}),
+      http.post(
+        '/api/process-instances',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
+            processInstances: [{...mockInstance}],
+            totalCount: 1,
+          });
+        },
+        {once: true},
+      ),
+      http.post(
+        '/api/process-instances',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
+            processInstances: [{...mockInstance}],
+            totalCount: 2,
+          });
+        },
+        {once: true},
+      ),
+      http.post(
+        '/api/process-instances',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
+            processInstances: [{...mockInstance}],
+            totalCount: 2,
+          });
+        },
+        {once: true},
+      ),
+      http.get(
+        '/api/process-instances/core-statistics',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
+            ...statistics,
+          });
+        },
+        {once: true},
+      ),
+      http.get(
+        '/api/process-instances/core-statistics',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
+            ...statistics,
+            running: 1088,
+          });
+        },
+        {once: true},
+      ),
+      http.get(
+        '/api/process-instances/core-statistics',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
+            ...statistics,
+            running: 1088,
+          });
+        },
+        {once: true},
+      ),
     );
 
     vi.runOnlyPendingTimers();
@@ -212,11 +236,12 @@ describe('stores/statistics', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = vi.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     statisticsStore.fetchStatistics();
 
@@ -230,7 +255,5 @@ describe('stores/statistics', () => {
     eventListeners.online();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1000));
-
-    window.addEventListener = originalEventListener;
   });
 });

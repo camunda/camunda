@@ -190,8 +190,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     flowNodeInstanceStore.init();
 
     await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-      expect(processInstanceDetailsStore.state.status).toBe('fetched');
+      expect([
+        flowNodeInstanceStore.state.status,
+        processInstanceDetailsStore.state.status,
+      ]).toEqual(['fetched', 'fetched']);
     });
 
     const {user} = render(
@@ -370,8 +372,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     flowNodeInstanceStore.init();
 
     await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-      expect(processInstanceDetailsStore.state.status).toBe('fetched');
+      expect([
+        flowNodeInstanceStore.state.status,
+        processInstanceDetailsStore.state.status,
+      ]).toEqual(['fetched', 'fetched']);
     });
 
     const {user} = render(

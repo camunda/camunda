@@ -13,10 +13,9 @@ import {
   makeObservable,
   observable,
   override,
+  type IReactionDisposer,
 } from 'mobx';
-import type {IReactionDisposer} from 'mobx';
-import {ProcessesBase} from './processes.base';
-import type {Process} from './processes.base';
+import {ProcessesBase, type Process} from './processes.base';
 
 type MigrationState = {
   selectedTargetProcess: Omit<Process, 'permissions' | 'processes'> | null;

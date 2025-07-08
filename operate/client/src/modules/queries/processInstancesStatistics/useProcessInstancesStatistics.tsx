@@ -12,8 +12,7 @@ import type {
   GetProcessDefinitionStatisticsResponseBody,
 } from '@vzeta/camunda-api-zod-schemas';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
-import {skipToken} from '@tanstack/react-query';
-import type {UseQueryOptions} from '@tanstack/react-query';
+import {skipToken, type UseQueryOptions} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
 
 const PROCESS_INSTANCES_STATISTICS_QUERY_KEY = 'processInstancesStatistics';
@@ -54,7 +53,7 @@ function useProcessInstancesStatisticsOptions<
 
   return {
     queryKey: getQueryKey(combinedFilters, processDefinitionKey),
-    queryFn: !!processDefinitionKey
+    queryFn: processDefinitionKey
       ? async () => {
           const {response, error} = await fetchProcessInstancesStatistics(
             combinedFilters,

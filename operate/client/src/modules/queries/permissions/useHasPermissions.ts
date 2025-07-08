@@ -8,6 +8,10 @@
 
 import {useProcessInstanceDeprecated} from '../processInstance/deprecated/useProcessInstanceDeprecated';
 import {permissionsParser} from './usePermissions';
+import type {
+  ProcessInstanceEntity,
+  ResourceBasedPermissionDto,
+} from 'modules/types/operate';
 
 const hasPermissionsParser =
   (scopes: ResourceBasedPermissionDto[]) =>

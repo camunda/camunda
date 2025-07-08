@@ -19,6 +19,7 @@ import {type UserEvent} from '@testing-library/user-event';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const fetchProcessInstances = async (screen: Screen, user: UserEvent) => {
   await user.click(

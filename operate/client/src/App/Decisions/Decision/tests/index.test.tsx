@@ -33,7 +33,9 @@ describe('<Decision />', () => {
     expect(
       await screen.findByText('DecisionTable view mock'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', {name: 'invoiceClassification'}));
+    expect(
+      screen.getByRole('heading', {name: 'invoiceClassification'}),
+    ).toBeInTheDocument();
     expect(screen.getAllByText('invoiceClassification')).toHaveLength(2);
 
     await user.click(
@@ -62,7 +64,7 @@ describe('<Decision />', () => {
         /to see a decision table or a literal expression, select a decision in the filters panel/i,
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', {name: 'Decision'}));
+    expect(screen.getByRole('heading', {name: 'Decision'})).toBeInTheDocument();
 
     await waitFor(() =>
       expect(groupedDecisionsStore.state.status).toBe('fetched'),
@@ -88,7 +90,9 @@ describe('<Decision />', () => {
         /to see a decision table or a literal expression, select a single version/i,
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', {name: 'invoiceClassification'}));
+    expect(
+      screen.getByRole('heading', {name: 'invoiceClassification'}),
+    ).toBeInTheDocument();
   });
 
   it('should render text on error', async () => {
@@ -105,6 +109,6 @@ describe('<Decision />', () => {
       screen.getByRole('heading', {
         name: 'Calculate Credit History Key Figures',
       }),
-    );
+    ).toBeInTheDocument();
   });
 });

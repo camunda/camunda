@@ -51,7 +51,7 @@ async function addLicenseBanner() {
 
     console.log('build successful');
   } catch (error) {
-    console.error('Error adding license banner:', error.message);
+    console.error('Error adding license banner:', error);
     process.exit(1);
   }
 }

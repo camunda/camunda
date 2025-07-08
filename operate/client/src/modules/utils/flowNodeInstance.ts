@@ -12,21 +12,20 @@ import {
   flowNodeInstanceStore,
   MAX_INSTANCES_PER_REQUEST,
   MAX_INSTANCES_STORED,
-} from 'modules/stores/flowNodeInstance';
-import type {
-  FlowNodeInstance,
-  FlowNodeInstances,
+  type FlowNodeInstance,
+  type FlowNodeInstances,
 } from 'modules/stores/flowNodeInstance';
 import {isInstanceRunning} from './instance';
 import {fetchFlowNodeInstances} from 'modules/api/fetchFlowNodeInstances';
 import {modificationsStore} from 'modules/stores/modifications';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const init = (processInstance?: ProcessInstance) => {
   flowNodeInstanceStore.instanceExecutionHistoryDisposer = when(
     () => processInstance?.processInstanceKey !== undefined,
     () => {
       const instanceId = processInstance?.processInstanceKey;
-      fetchInstanceExecutionHistory(processInstance)(instanceId);
+      fetchInstanceExecutionHistory(processInstance)(instanceId!);
       startPolling(processInstance);
     },
   );

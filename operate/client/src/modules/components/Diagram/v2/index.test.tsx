@@ -19,11 +19,10 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const OVERLAY_TYPE = 'myType';
 
-const Overlay: React.FC<{container: HTMLElement; data: any}> = observer(
-  ({container, data}) => {
+const Overlay: React.FC<{container: HTMLElement; data: React.ReactNode}> =
+  observer(({container, data}) => {
     return createPortal(<div>{data}</div>, container);
-  },
-);
+  });
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   return (
@@ -75,7 +74,11 @@ describe('<Diagram />', () => {
       >
         {diagramOverlaysStore.state.overlays.map(
           ({container, payload, flowNodeId}) => (
-            <Overlay key={flowNodeId} container={container} data={payload} />
+            <Overlay
+              key={flowNodeId}
+              container={container}
+              data={payload as React.ReactNode}
+            />
           ),
         )}
       </Diagram>

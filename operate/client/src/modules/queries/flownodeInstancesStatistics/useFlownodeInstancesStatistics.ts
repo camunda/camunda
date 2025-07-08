@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery} from '@tanstack/react-query';
-import type {UseQueryResult} from '@tanstack/react-query';
+import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
 import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {fetchFlownodeInstancesStatistics} from 'modules/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';

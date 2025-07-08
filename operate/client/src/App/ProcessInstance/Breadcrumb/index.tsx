@@ -12,6 +12,7 @@ import {Link} from 'modules/components/Link';
 import {OverflowMenu, OverflowMenuItem, BreadcrumbItem} from '@carbon/react';
 import {useNavigate} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 type Props = {
   processInstance: ProcessInstanceEntity;

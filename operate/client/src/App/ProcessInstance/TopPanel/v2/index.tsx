@@ -67,6 +67,7 @@ import {
   useIsRootNodeSelected,
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
+import type {FlowNodeState} from 'modules/types/operate';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';

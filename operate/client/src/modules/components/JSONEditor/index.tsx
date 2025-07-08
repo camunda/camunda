@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import Editor, {useMonaco} from 'modules/components/MonacoEditor';
+import Editor, {useMonaco} from '@monaco-editor/react';
 import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useLayoutEffect} from 'react';
@@ -80,4 +80,4 @@ const JSONEditor: React.FC<Props> = observer(
   },
 );
 
-export {JSONEditor, useMonaco};
+export {JSONEditor};

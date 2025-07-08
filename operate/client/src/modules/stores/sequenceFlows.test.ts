@@ -152,11 +152,12 @@ describe('stores/sequenceFlows', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = vi.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -196,6 +197,6 @@ describe('stores/sequenceFlows', () => {
       ]),
     );
 
-    window.addEventListener = originalEventListener;
+    eventListeners.online();
   });
 });

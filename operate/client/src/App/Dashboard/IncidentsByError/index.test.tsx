@@ -51,7 +51,9 @@ describe('IncidentsByError', () => {
 
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
   });
 
   it('should handle server errors', async () => {

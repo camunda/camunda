@@ -129,9 +129,15 @@ describe('Target Diagram', () => {
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /reset diagram zoom/i}));
-    expect(screen.getByRole('button', {name: /zoom in diagram/i}));
-    expect(screen.getByRole('button', {name: /zoom out diagram/i}));
+    expect(
+      screen.getByRole('button', {name: /reset diagram zoom/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /zoom in diagram/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /zoom out diagram/i}),
+    ).toBeInTheDocument();
 
     mockFetchProcessDefinitionXml().withDelay(
       mockProcessWithInputOutputMappingsXML,
@@ -143,7 +149,7 @@ describe('Target Diagram', () => {
     expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('diagram-spinner'),
+      screen.queryByTestId('diagram-spinner'),
     );
   });
 

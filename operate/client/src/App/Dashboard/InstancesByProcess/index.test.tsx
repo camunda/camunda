@@ -204,7 +204,7 @@ describe('InstancesByProcess', () => {
       wrapper: createWrapper(),
     });
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('data-table-skeleton'),
+      screen.queryByTestId('data-table-skeleton'),
     );
 
     const withinIncident = within(
@@ -247,7 +247,7 @@ describe('InstancesByProcess', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('data-table-skeleton'),
+      screen.queryByTestId('data-table-skeleton'),
     );
 
     const processLink = screen.getByRole('link', {
@@ -320,6 +320,7 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
 
     expect(
+      // eslint-disable-next-line testing-library/no-node-access
       screen.getByRole('button', {name: 'Go to Modeler'}).closest('a'),
     ).toHaveAttribute('href', 'https://link-to-modeler');
   });

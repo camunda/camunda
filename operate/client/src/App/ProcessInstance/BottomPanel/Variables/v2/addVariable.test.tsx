@@ -441,7 +441,11 @@ describe('Add variable', () => {
 
     mockFetchVariables().withSuccess(mockVariables);
 
-    variablesStore.fetchVariables('1');
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitFor(() => {

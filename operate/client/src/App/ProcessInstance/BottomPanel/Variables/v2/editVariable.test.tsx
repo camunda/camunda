@@ -81,7 +81,7 @@ describe('Edit variable', () => {
     expect(inactiveOperationVariable).toBeDefined();
     expect(
       await screen.findByTestId(`variable-${inactiveOperationVariable!.name}`),
-    );
+    ).toBeInTheDocument();
     expect(
       within(
         screen.getByTestId(`variable-${inactiveOperationVariable!.name}`),
@@ -124,7 +124,7 @@ describe('Edit variable', () => {
 
     expect(
       await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
-    );
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
@@ -167,7 +167,7 @@ describe('Edit variable', () => {
 
     expect(
       await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
-    );
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
@@ -273,7 +273,7 @@ describe('Edit variable', () => {
       }),
     );
 
-    expect(await screen.findByTestId('variable-clientNo'));
+    expect(await screen.findByTestId('variable-clientNo')).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-clientNo')).getByRole('button', {
@@ -287,7 +287,9 @@ describe('Edit variable', () => {
       }),
     ).toBeDisabled();
 
-    await waitForElementToBeRemoved(screen.getByTestId('full-variable-loader'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('full-variable-loader'),
+    );
 
     expect(screen.queryByText('"value-preview"')).not.toBeInTheDocument();
 
@@ -324,7 +326,9 @@ describe('Edit variable', () => {
 
     mockFetchVariable().withDelayedServerError();
 
-    expect(await screen.findByTestId('variable-testVariableName'));
+    expect(
+      await screen.findByTestId('variable-testVariableName'),
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
@@ -336,7 +340,9 @@ describe('Edit variable', () => {
     );
     expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('full-variable-loader'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('full-variable-loader'),
+    );
 
     expect(screen.getByText('"value-preview"')).toBeInTheDocument();
 
@@ -365,7 +371,9 @@ describe('Edit variable', () => {
 
     expect(screen.getByText('"full-value"')).toBeInTheDocument();
 
-    expect(await screen.findByTestId('variable-testVariableName'));
+    expect(
+      await screen.findByTestId('variable-testVariableName'),
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
@@ -437,7 +445,7 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables isVariableModificationAllowed />, {
+    render(<Variables isVariableModificationAllowed />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {

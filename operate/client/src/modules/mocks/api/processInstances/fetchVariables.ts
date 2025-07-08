@@ -7,6 +7,7 @@
  */
 
 import {mockPostRequest} from '../mockRequest';
+import type {VariableEntity} from 'modules/types/operate';
 
 const mockFetchVariables = (contextPath = '') =>
   mockPostRequest<VariableEntity[]>(

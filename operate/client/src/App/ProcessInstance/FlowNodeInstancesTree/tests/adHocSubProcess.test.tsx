@@ -49,9 +49,7 @@ describe('FlowNodeInstancesTree - Ad Hoc Sub Process', () => {
           endDate: null,
           sortValues: [],
         }}
-        scrollableContainerRef={
-          createRef<HTMLElement>()
-        }
+        scrollableContainerRef={createRef<HTMLElement>()}
         isRoot
       />,
       {

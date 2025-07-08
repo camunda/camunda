@@ -8,10 +8,10 @@
 
 import {makeObservable, action, observable, computed, override} from 'mobx';
 
-import {fetchGroupedProcesses} from 'modules/api/processes/fetchGroupedProcesses';
-import type {
-  ProcessDto,
-  ProcessVersionDto,
+import {
+  fetchGroupedProcesses,
+  type ProcessDto,
+  type ProcessVersionDto,
 } from 'modules/api/processes/fetchGroupedProcesses';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {getSearchString} from 'modules/utils/getSearchString';
@@ -35,7 +35,7 @@ const INITIAL_STATE: State = {
 class ProcessesBase extends NetworkReconnectionHandler {
   state: State = INITIAL_STATE;
   retryCount: number = 0;
-  retryProcessesFetchTimeout: NodeJS.Timeout | null = null;
+  retryProcessesFetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super();

@@ -7,10 +7,9 @@
  */
 
 import {formatISODate} from 'modules/components/DateRangeField/formatDate';
-import {waitFor} from 'modules/testing-library';
-import type {UserEvent, Screen} from 'modules/testing-library';
+import {waitFor, type UserEvent, type Screen} from 'modules/testing-library';
 
-const pad = (value: String | Number) => {
+const pad = (value: string | number) => {
   return String(value).padStart(2, '0');
 };
 
@@ -30,7 +29,9 @@ const pickDateTimeRange = async ({
   toTime?: string;
 }) => {
   expect(screen.getByTestId('date-range-modal')).toHaveClass('is-visible');
+  // eslint-disable-next-line testing-library/no-node-access
   const monthName = document.querySelector('.cur-month')?.textContent;
+  // eslint-disable-next-line testing-library/no-node-access
   const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
   const month = new Date(`${monthName} 01, ${year}`).getMonth() + 1;
 

@@ -9,6 +9,10 @@
 import {requestAndParse} from 'modules/request';
 import {type BatchOperationDto} from '../sharedTypes';
 import {type RequestFilters} from 'modules/utils/filter';
+import type {
+  ProcessInstanceEntity,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Modifications = {
   modification: 'MOVE_TOKEN';

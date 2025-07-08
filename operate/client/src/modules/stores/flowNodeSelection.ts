@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {makeAutoObservable, when, reaction} from 'mobx';
-import type {IReactionDisposer} from 'mobx';
+import {makeAutoObservable, when, reaction, type IReactionDisposer} from 'mobx';
 import type {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from './modifications';

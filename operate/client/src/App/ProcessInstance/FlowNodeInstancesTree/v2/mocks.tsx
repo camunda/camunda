@@ -26,6 +26,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
   createInstance({

@@ -14,6 +14,7 @@ import {drdDataStore} from 'modules/stores/drdData';
 import {OutlineModule} from './modules/Outline';
 import {Viewer} from './Viewer';
 import {drdRendererColors} from './styled';
+import type {DecisionInstanceEntityState} from 'modules/types/operate';
 
 type DecisionStates = {
   decisionId: string;

@@ -19,6 +19,7 @@ import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesSt
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {getProcessInstanceKey} from 'modules/utils/statistics/processInstances';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
+import type {FlowNodeState} from 'modules/types/operate';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();

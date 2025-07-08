@@ -46,7 +46,7 @@ describe('<Result />', () => {
     expect(screen.getByTestId('result-loading-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('result-loading-spinner'),
+      screen.queryByTestId('result-loading-spinner'),
     );
   });
 

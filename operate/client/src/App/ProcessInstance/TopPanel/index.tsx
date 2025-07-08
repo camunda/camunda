@@ -61,6 +61,7 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
+import type {FlowNodeState} from 'modules/types/operate';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';

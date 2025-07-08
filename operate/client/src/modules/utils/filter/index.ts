@@ -21,8 +21,8 @@ import {getProcessInstanceFilters} from './getProcessInstanceFilters';
 import {
   PROCESS_INSTANCE_FILTER_FIELDS,
   BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS,
+  type ProcessInstanceFilters,
 } from './shared';
-import type {ProcessInstanceFilters} from './shared';
 
 type DecisionInstanceFilterField =
   | 'tenant'

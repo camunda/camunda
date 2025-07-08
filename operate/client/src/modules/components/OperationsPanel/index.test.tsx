@@ -45,7 +45,7 @@ describe('OperationsPanel', () => {
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('skeleton'));
   });
 
   it('should render operation entries', async () => {
@@ -56,7 +56,7 @@ describe('OperationsPanel', () => {
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 
-    await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('skeleton'));
 
     const [firstOperation, secondOperation] =
       screen.getAllByTestId('operations-entry');
