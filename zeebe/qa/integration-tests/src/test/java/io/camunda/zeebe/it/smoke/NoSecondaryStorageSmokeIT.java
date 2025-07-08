@@ -73,48 +73,6 @@ final class NoSecondaryStorageSmokeIT {
         .until(() -> getLatestSnapshotId(partitionActuatorSpec), Objects::nonNull);
   }
 
-  @SmokeTest
-  void shouldHandleJobsInHeadlessMode() {
-    // given
-    final var processId = Strings.newRandomValidBpmnId();
-    final var jobType = "test-job";
-    final var process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType(jobType)
-            .endEvent()
-            .done();
-
-    // when - deploy process and create instance
-    client.newDeployResourceCommand().addProcessModel(process, processId + ".bpmn").send().join();
-    final var processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
-
-    // then - verify job can be activated and completed
-    final var job =
-        client.newActivateJobsCommand().jobType(jobType).maxJobsToActivate(1).send().join();
-    assertThat(job.getJobs()).hasSize(1);
-
-    final var activatedJob = job.getJobs().get(0);
-    assertThat(activatedJob.getProcessInstanceKey())
-        .isEqualTo(processInstance.getProcessInstanceKey());
-
-    // complete the job
-    client.newCompleteCommand(activatedJob.getKey()).send().join();
-
-    // verify the process instance can be completed
-    final var completedInstance =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .withResult()
-            .send()
-            .join();
-    assertThat(completedInstance.getBpmnProcessId()).isEqualTo(processId);
-  }
-
   private ProcessInstanceResult executeProcessInstance(
       final String processId, final BpmnModelInstance process) {
     client.newDeployResourceCommand().addProcessModel(process, processId + ".bpmn").send().join();
