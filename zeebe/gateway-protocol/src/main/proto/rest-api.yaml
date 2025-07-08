@@ -4213,6 +4213,7 @@ paths:
   /message-subscriptions/search:
     post:
       tags:
+        - Message
         - Message subscription
       operationId: searchMessageSubscriptions
       summary: Search message subscriptions

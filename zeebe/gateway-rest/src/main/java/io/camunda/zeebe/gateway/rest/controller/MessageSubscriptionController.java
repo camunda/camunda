@@ -18,8 +18,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import jakarta.validation.ValidationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -54,13 +52,6 @@ public class MessageSubscriptionController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(result));
-    } catch (final ValidationException e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Validation failed for Message Subscription Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
