@@ -112,8 +112,8 @@ public record MessageSubscriptionEntity(
   }
 
   public enum MessageSubscriptionType {
+    CORRELATED,
     CREATED,
     MIGRATED,
-    CORRELATED,
   }
 }
