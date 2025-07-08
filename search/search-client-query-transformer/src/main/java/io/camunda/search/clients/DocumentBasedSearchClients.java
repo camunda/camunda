@@ -197,7 +197,11 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
           getSearchExecutor()
               .aggregate(filter, ProcessDefinitionLatestVersionAggregationResult.class);
       return new SearchQueryResult<>(
-          aggResult.items().size(), false, aggResult.items(), null, aggResult.endCursor());
+          aggResult.items().size(),
+          !aggResult.items().isEmpty(),
+          aggResult.items(),
+          null,
+          aggResult.endCursor());
     }
     return getSearchExecutor().search(filter, ProcessEntity.class);
   }
