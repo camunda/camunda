@@ -5,13 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.connect.configuration;
+package io.camunda.operate.conditions;
 
-public final class DatabaseConfig {
-  public static final String ELASTICSEARCH = "elasticsearch";
-  public static final String RDBMS = "rdbms";
-  public static final String OPENSEARCH = "opensearch";
-  public static final String NONE = "none";
+public class NoneCondition extends DatabaseCondition {
 
-  private DatabaseConfig() {}
+  private static final String DATABASE = "none";
+
+  @Override
+  public boolean getDefaultIfEmpty() {
+    return false;
+  }
+
+  @Override
+  public String getDatabase() {
+    return DATABASE;
+  }
 }

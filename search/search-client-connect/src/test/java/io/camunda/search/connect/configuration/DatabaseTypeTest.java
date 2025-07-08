@@ -19,6 +19,7 @@ public class DatabaseTypeTest {
     assertThat(DatabaseConfig.ELASTICSEARCH).isEqualTo(DatabaseType.ELASTICSEARCH.toString());
     assertThat(DatabaseConfig.OPENSEARCH).isEqualTo(DatabaseType.OPENSEARCH.toString());
     assertThat(DatabaseConfig.RDBMS).isEqualTo(DatabaseType.RDBMS.toString());
+    assertThat(DatabaseConfig.NONE).isEqualTo(DatabaseType.NONE.toString());
   }
 
   @EnumSource(DatabaseType.class)
@@ -44,5 +45,11 @@ public class DatabaseTypeTest {
   @ParameterizedTest
   public void shouldReturnCorrectIsRdbms(final DatabaseType databaseType) {
     assertThat(databaseType.isRdbms()).isEqualTo(databaseType.toString().equals("rdbms"));
+  }
+
+  @EnumSource(DatabaseType.class)
+  @ParameterizedTest
+  public void shouldReturnCorrectIsNone(final DatabaseType databaseType) {
+    assertThat(databaseType.isNone()).isEqualTo(databaseType.toString().equals("none"));
   }
 }

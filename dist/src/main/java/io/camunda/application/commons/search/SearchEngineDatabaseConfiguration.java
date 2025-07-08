@@ -51,7 +51,15 @@ public class SearchEngineDatabaseConfiguration {
       final SearchEngineConnectProperties searchEngineConnectProperties,
       final SearchEngineIndexProperties searchEngineIndexProperties,
       final SearchEngineRetentionProperties searchEngineRetentionProperties,
-      final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
+      final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties,
+      final org.springframework.core.env.Environment environment) {
+    
+    // Override schema creation if database type is "none"
+    final var databaseType = environment.getProperty("camunda.database.type");
+    if (DatabaseConfig.NONE.equals(databaseType)) {
+      searchEngineSchemaManagerProperties.setCreateSchema(false);
+    }
+    
     return SearchEngineConfiguration.of(
         b ->
             b.connect(searchEngineConnectProperties)

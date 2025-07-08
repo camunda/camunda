@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.util.configuration;
 
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTICSEARCH_DATABASE_PROPERTY;
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.NONE_DATABASE_PROPERTY;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.OPENSEARCH_DATABASE_PROPERTY;
 
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -15,7 +16,8 @@ import java.util.Locale;
 
 public enum DatabaseType {
   ELASTICSEARCH(ELASTICSEARCH_DATABASE_PROPERTY),
-  OPENSEARCH(OPENSEARCH_DATABASE_PROPERTY);
+  OPENSEARCH(OPENSEARCH_DATABASE_PROPERTY),
+  NONE(NONE_DATABASE_PROPERTY);
 
   private final String id;
 

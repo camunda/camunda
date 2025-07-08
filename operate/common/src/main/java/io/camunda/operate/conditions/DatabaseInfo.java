@@ -52,6 +52,10 @@ public class DatabaseInfo implements ApplicationContextAware, DisposableBean {
     return isCurrent(DatabaseType.Opensearch);
   }
 
+  public static boolean isNone() {
+    return isCurrent(DatabaseType.None);
+  }
+
   // Helper methods that allow the component to be autowired and safely check the db type instead of
   // using static methods
   public boolean isOpensearchDb() {
@@ -60,6 +64,10 @@ public class DatabaseInfo implements ApplicationContextAware, DisposableBean {
 
   public boolean isElasticsearchDb() {
     return isElasticsearch();
+  }
+
+  public boolean isNoneDb() {
+    return isNone();
   }
 
   @Override
