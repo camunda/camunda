@@ -22,11 +22,14 @@ import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import {mockVariableOperation, mockVariables} from './mocks';
 
-vi.mock('modules/constants/variables', () => ({
-  ...vi.importActual('modules/constants/variables'),
-  MAX_VARIABLES_STORED: 5,
-  MAX_VARIABLES_PER_REQUEST: 3,
-}));
+vi.mock('modules/constants/variables', async () => {
+  const actual = await vi.importActual('modules/constants/variables');
+  return {
+    ...actual,
+    MAX_VARIABLES_STORED: 5,
+    MAX_VARIABLES_PER_REQUEST: 3,
+  };
+});
 
 describe('stores/variables', () => {
   beforeEach(async () => {
@@ -85,7 +88,7 @@ describe('stores/variables', () => {
   });
 
   it('should poll variables when instance is running', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     variablesStore.init('123');
 
