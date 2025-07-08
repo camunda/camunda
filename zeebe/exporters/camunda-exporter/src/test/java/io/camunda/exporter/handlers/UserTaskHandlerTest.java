@@ -275,6 +275,8 @@ public class UserTaskHandlerTest {
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
             .from(factory.generateObject(UserTaskRecordValue.class))
+            .withAssignee("")
+            .withChangedAttributes(List.of())
             .withFollowUpDate(dateTime)
             .withDueDate(dateTime)
             .withCandidateGroupsList(Arrays.asList("group1", "group2"))
@@ -344,7 +346,7 @@ public class UserTaskHandlerTest {
         .isEqualTo(taskRecordValue.getCandidateGroupsList());
     assertThat(Arrays.stream(taskEntity.getCandidateUsers()).toList())
         .isEqualTo(taskRecordValue.getCandidateUsersList());
-    assertThat(taskEntity.getAssignee()).isEqualTo(taskRecordValue.getAssignee());
+    assertThat(taskEntity.getAssignee()).isNull();
     assertThat(taskEntity.getJoin()).isNotNull();
     assertThat(taskEntity.getJoin().getParent()).isEqualTo(processInstanceKey);
     assertThat(taskEntity.getJoin().getName()).isEqualTo(TaskJoinRelationshipType.TASK.getType());
@@ -354,6 +356,49 @@ public class UserTaskHandlerTest {
             ExporterUtil.toZonedOffsetDateTime(
                 Instant.ofEpochMilli(taskCreatingRecord.getTimestamp())));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+  }
+
+  @Test
+  void shouldUpdateEntityFromRecordForCreatedIntentWithCorrections() {
+    // given
+    final long processInstanceKey = 123;
+    final UserTaskRecordValue createdTaskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .from(factory.generateObject(UserTaskRecordValue.class))
+            .withAssignee("correctedAssignee")
+            .withCandidateGroupsList(List.of("group1"))
+            .withCandidateUsersList(List.of("user1", "user2"))
+            .withPriority(10)
+            .withChangedAttributes(
+                List.of("assignee", "candidateGroupsList", "candidateUsersList", "priority"))
+            .withProcessInstanceKey(processInstanceKey)
+            .build();
+
+    final Record<UserTaskRecordValue> createdTaskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.CREATED)
+                    .withValue(createdTaskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final TaskEntity taskEntity =
+        new TaskEntity()
+            .setId(String.valueOf(createdTaskRecordValue.getElementInstanceKey()))
+            .setState(TaskState.CREATING)
+            .setCandidateGroups(new String[] {"groupA", "groupB"})
+            .setCandidateUsers(new String[] {"userA"})
+            .setPriority(55);
+
+    // when
+    underTest.updateEntity(createdTaskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
+    assertThat(taskEntity.getAssignee()).isEqualTo("correctedAssignee");
+    assertThat(taskEntity.getCandidateGroups()).containsExactly("group1");
+    assertThat(taskEntity.getCandidateUsers()).containsExactly("user1", "user2");
+    assertThat(taskEntity.getPriority()).isEqualTo(10);
   }
 
   @Test

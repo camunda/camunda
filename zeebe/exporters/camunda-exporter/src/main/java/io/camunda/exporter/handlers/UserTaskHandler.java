@@ -113,10 +113,9 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     switch ((UserTaskIntent) record.getIntent()) {
       case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
-      case UserTaskIntent.CREATED -> handleCreated(record, entity);
-      case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
-        updateChangedAttributes(record, entity);
+      case UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
         entity.setState(TaskState.CREATED);
+        updateChangedAttributes(record, entity);
       }
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
       case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
@@ -299,19 +298,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         default -> LOGGER.warn(UNMAPPED_USER_TASK_ATTRIBUTE_WARNING, attribute);
       }
     }
-  }
-
-  private void handleCreated(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
-    entity
-        .setState(TaskState.CREATED)
-        .setAssignee(getAssigneeOrNull(record))
-        .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
-        .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
-        .setPriority(record.getValue().getPriority())
-        .setCandidateGroups(
-            ExporterUtil.toStringArrayOrNull(record.getValue().getCandidateGroupsList()))
-        .setCandidateUsers(
-            ExporterUtil.toStringArrayOrNull(record.getValue().getCandidateUsersList()));
   }
 
   private void handleCompletion(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
