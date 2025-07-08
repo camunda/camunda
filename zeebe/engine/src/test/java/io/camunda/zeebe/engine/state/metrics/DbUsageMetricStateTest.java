@@ -52,6 +52,7 @@ public class DbUsageMetricStateTest {
     assertThat(actual.getFromTime()).isEqualTo(1L);
     assertThat(actual.getToTime()).isEqualTo(1001L);
     assertThat(actual.getTenantRPIMap()).isEmpty();
+    assertThat(actual.getTenantEDIMap()).isEmpty();
   }
 
   @Test

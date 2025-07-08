@@ -3452,6 +3452,30 @@ final class JsonSerializableToJsonTest {
       """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord eDI //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UsageMetricRecord eDI",
+        (Supplier<UsageMetricRecord>)
+            () ->
+                new UsageMetricRecord()
+                    .setIntervalType(IntervalType.ACTIVE)
+                    .setEventType(EventType.EDI)
+                    .setStartTime(123L)
+                    .setEndTime(124L)
+                    .setValues(USAGE_METRICS_MSGPACK),
+        """
+      {
+        "intervalType": "ACTIVE",
+        "eventType": "EDI",
+        "resetTime": -1,
+        "startTime": 123,
+        "endTime": 124,
+        "values": {"tenant1":5}
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty UsageMetricRecord ///////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
