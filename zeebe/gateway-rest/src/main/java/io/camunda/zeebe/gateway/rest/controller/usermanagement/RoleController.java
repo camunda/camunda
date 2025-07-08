@@ -275,7 +275,7 @@ public class RoleController {
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
-  public CompletableFuture<ResponseEntity<Object>> removeMappingFromRole(
+  public CompletableFuture<ResponseEntity<Object>> removeRoleFromMapping(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
     return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
@@ -296,7 +296,7 @@ public class RoleController {
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/groups/{groupId}")
-  public CompletableFuture<ResponseEntity<Object>> removeGroupFromRole(
+  public CompletableFuture<ResponseEntity<Object>> removeRoleFromGroup(
       @PathVariable final String roleId, @PathVariable final String groupId) {
     return RequestMapper.toRoleMemberRequest(roleId, groupId, EntityType.GROUP)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
