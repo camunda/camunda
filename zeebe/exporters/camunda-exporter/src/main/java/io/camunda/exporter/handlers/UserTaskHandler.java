@@ -288,7 +288,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     final var value = record.getValue();
 
     for (final String attribute : value.getChangedAttributes()) {
-      entity.getChangedAttributes().add(attribute);
+      entity.addChangedAttribute(attribute);
 
       switch (attribute) {
         case "assignee" -> entity.setAssignee(getAssigneeOrNull(record));
