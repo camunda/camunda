@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.auth;
+package io.camunda.it.task;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
@@ -181,7 +181,7 @@ public class UserTaskRestrictionsIT {
       final TaskSearchResponse[] tasksUser1 =
           TestRestTasklistClient.OBJECT_MAPPER.readValue(
               user1Response.body(), TaskSearchResponse[].class);
-      assertThat(tasksUser1.length).isEqualTo(1);
+      assertThat(tasksUser1).hasSize(1);
       assertThat(tasksUser1[0].getCandidateUsers()).containsExactly(USER1);
       final var tasksUser2 =
           TestRestTasklistClient.OBJECT_MAPPER.readValue(
@@ -217,7 +217,7 @@ public class UserTaskRestrictionsIT {
       final TaskSearchResponse[] tasksUser3 =
           TestRestTasklistClient.OBJECT_MAPPER.readValue(
               user3Response.body(), TaskSearchResponse[].class);
-      assertThat(tasksUser3.length).isEqualTo(1);
+      assertThat(tasksUser3).hasSize(1);
       assertThat(tasksUser3[0].getCandidateGroups()).containsExactly(GROUP1);
       final var tasksUser4 =
           TestRestTasklistClient.OBJECT_MAPPER.readValue(
