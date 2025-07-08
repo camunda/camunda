@@ -66,7 +66,7 @@ public record SearchCompositeAggregator(
           size,
           after,
           aggregations,
-          sources);
+          Objects.requireNonNull(sources, "Expected non-null field for sources."));
     }
   }
 }
