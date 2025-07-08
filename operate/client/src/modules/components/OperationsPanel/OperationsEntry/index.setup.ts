@@ -33,7 +33,7 @@ const OPERATIONS: OperationsMock = {
   CANCEL: {
     id: '393ad666-d7f0-45c9-a679-ffa0ef82f88a',
     type: 'CANCEL_PROCESS_INSTANCE',
-    endDate: '2020-02-06T14:56:17.932+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
     operationsTotalCount: 2,
     operationsFinishedCount: 2,
     instancesCount: 1,
@@ -44,7 +44,7 @@ const OPERATIONS: OperationsMock = {
   EDIT: {
     id: 'df325d44-6a4c-4428-b017-24f923f1d052',
     type: 'UPDATE_VARIABLE',
-    endDate: '2020-02-06T14:56:17.932+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
     operationsTotalCount: 4,
     operationsFinishedCount: 4,
     instancesCount: 1,
@@ -55,7 +55,7 @@ const OPERATIONS: OperationsMock = {
   DELETE_PROCESS_INSTANCE: {
     id: 'df325d44-6a4c-4428-b017-24f923f1d052',
     type: 'DELETE_PROCESS_INSTANCE',
-    endDate: '2020-02-06T14:56:17.932+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
     operationsTotalCount: 4,
     operationsFinishedCount: 4,
     instancesCount: 1,
@@ -66,7 +66,7 @@ const OPERATIONS: OperationsMock = {
   MODIFY: {
     id: 'df325d44-6a4c-4428-b017-24f923f1d052',
     type: 'MODIFY_PROCESS_INSTANCE',
-    endDate: '2020-02-06T14:56:17.932+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
     operationsTotalCount: 4,
     operationsFinishedCount: 4,
     instancesCount: 1,
@@ -79,7 +79,7 @@ const OPERATIONS: OperationsMock = {
     name: 'ProcessDefinitionA - version 1',
     type: 'DELETE_PROCESS_DEFINITION',
     startDate: '2020-02-06T14:56:17.932+0100',
-    endDate: '2023-02-16T14:23:45.306+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
     instancesCount: 1,
     operationsTotalCount: 1,
     operationsFinishedCount: 1,
@@ -98,7 +98,7 @@ const OPERATIONS: OperationsMock = {
     id: '8ba1a9a7-8537-4af3-97dc-f7249743b20b',
     name: null,
     type: 'MIGRATE_PROCESS_INSTANCE',
-    startDate: '2023-11-22T09:02:30.178+0100',
+    startDate: '2023-10-22T09:02:30.178+0100',
     endDate: '2023-11-22T09:03:29.564+0100',
     instancesCount: 1,
     operationsTotalCount: 1,
