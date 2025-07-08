@@ -89,15 +89,17 @@ public final class BatchOperationLeadPartitionFailProcessor
       } else {
 
         // we need this event for every partition that failed, so that the lead partition state can
-        // collect all of them.
-        // that's why in this case, we don't append this event in the normal FailProcessor. (Would
-        // be duplicated otherwise)
+        // collect all of them. That's why in this case, we don't append this event in the normal
+        // FailProcessor. (Would be duplicated otherwise)
+        // This information is directly applied and present in the batch operation state
         stateWriter.appendFollowUpEvent(
             batchOperationKey,
             BatchOperationIntent.PARTITION_FAILED,
             command.getValue(),
             FollowUpEventMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
 
+        // after the source partition is marked as finished, we check if now all partitions are
+        // finished (either completed or failed). If yes, we can append the final COMPLETED event
         if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
           LOGGER.debug(
               "All partitions finished, but some with errors, appending COMPLETED event with errors for batch operation {}",

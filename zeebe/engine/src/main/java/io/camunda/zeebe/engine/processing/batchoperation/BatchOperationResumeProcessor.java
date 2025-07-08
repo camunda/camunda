@@ -38,6 +38,10 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Processes commands to resume batch operations. It validates the command and checks for
+ * authorization. The RESUME command is then distributed to all other partitions.
+ */
 @ExcludeAuthorizationCheck
 public final class BatchOperationResumeProcessor
     implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {
