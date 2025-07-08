@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.application.commons.search.condition.ConditionalOnDatabaseNone;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
@@ -75,10 +76,7 @@ public class SearchClientDatabaseConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.database",
-      name = "type",
-      havingValue = DatabaseConfig.NONE)
+  @ConditionalOnDatabaseNone
   public NoopSearchClientsProxy noopSearchClientsProxy() {
     return new NoopSearchClientsProxy();
   }
