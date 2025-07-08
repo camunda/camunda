@@ -32,4 +32,18 @@ public interface CheckpointState {
    * @param checkpointPosition position of the checkpoint
    */
   void setLatestCheckpointInfo(final long checkpointId, final long checkpointPosition);
+
+  /**
+   * Set id and position of the last checkpoint with a successful backup.
+   *
+   * @param backupId id of the checkpoint for this backup.
+   * @param backupPosition position of the checkpoint for this backup.
+   */
+  void setLatestBackupInfo(long backupId, long backupPosition);
+
+  /** Returns the id of the last checkpoint with a successful backup. */
+  long getLatestBackupId();
+
+  /** Returns the position of the last checkpoint with a successful backup. */
+  long getLatestBackupPosition();
 }
