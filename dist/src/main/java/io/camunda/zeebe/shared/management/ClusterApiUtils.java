@@ -157,7 +157,7 @@ final class ClusterApiUtils {
     return operations.stream().map(ClusterApiUtils::mapOperation).toList();
   }
 
-  private static Operation mapOperation(final ClusterConfigurationChangeOperation operation) {
+  static Operation mapOperation(final ClusterConfigurationChangeOperation operation) {
     return switch (operation) {
       case final MemberJoinOperation join ->
           new Operation()
