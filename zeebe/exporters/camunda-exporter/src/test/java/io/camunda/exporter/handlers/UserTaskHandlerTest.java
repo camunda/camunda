@@ -419,12 +419,69 @@ public class UserTaskHandlerTest {
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
+    final TaskEntity taskEntity =
+        new TaskEntity()
+            .setId("id")
+            .setState(TaskState.CANCELING)
+            .setAssignee("initialAssignee")
+            .setCandidateGroups(new String[] {"initialGroup"})
+            .setCandidateUsers(new String[] {"initialUser"})
+            .setPriority(55);
+
     // when
-    final TaskEntity taskEntity = new TaskEntity().setId("id");
     underTest.updateEntity(taskRecord, taskEntity);
 
     // then
     assertThat(taskEntity.getState()).isEqualTo(TaskState.CANCELED);
+    assertThat(taskEntity.getAssignee()).isEqualTo("initialAssignee");
+    assertThat(taskEntity.getCandidateGroups()).containsExactly("initialGroup");
+    assertThat(taskEntity.getCandidateUsers()).containsExactly("initialUser");
+    assertThat(taskEntity.getPriority()).isEqualTo(55);
+    assertThat(taskEntity.getCompletionTime())
+        .isEqualTo(
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+  }
+
+  @Test
+  void shouldUpdateEntityFromRecordForCanceledIntentWithCorrections() {
+    // given
+    final long processInstanceKey = 123;
+    final UserTaskRecordValue taskRecordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .from(factory.generateObject(UserTaskRecordValue.class))
+            .withProcessInstanceKey(processInstanceKey)
+            .withAssignee("correctedAssignee")
+            .withCandidateUsersList(List.of("correctedUser1", "correctedUser2"))
+            .withPriority(10)
+            .withChangedAttributes(List.of("assignee", "candidateUsersList", "priority"))
+            .build();
+
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.CANCELED)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final TaskEntity taskEntity =
+        new TaskEntity()
+            .setId("id")
+            .setState(TaskState.CANCELING)
+            .setAssignee("initialAssignee")
+            .setCandidateGroups(new String[] {"initialGroup"})
+            .setCandidateUsers(new String[] {"initialUser"})
+            .setPriority(55);
+
+    // when
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // then
+    assertThat(taskEntity.getState()).isEqualTo(TaskState.CANCELED);
+    assertThat(taskEntity.getAssignee()).isEqualTo("correctedAssignee");
+    assertThat(taskEntity.getCandidateGroups()).containsExactly("initialGroup");
+    assertThat(taskEntity.getCandidateUsers()).containsExactly("correctedUser1", "correctedUser2");
+    assertThat(taskEntity.getPriority()).isEqualTo(10);
     assertThat(taskEntity.getCompletionTime())
         .isEqualTo(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));

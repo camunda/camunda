@@ -314,6 +314,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setState(TaskState.CANCELED)
         .setCompletionTime(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    updateChangedAttributes(record, entity);
   }
 
   private void handleMigration(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
