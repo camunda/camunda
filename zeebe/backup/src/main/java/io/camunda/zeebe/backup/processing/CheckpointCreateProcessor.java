@@ -46,11 +46,11 @@ public final class CheckpointCreateProcessor {
 
     final var checkpointRecord = record.getValue();
     final long checkpointId = checkpointRecord.getCheckpointId();
-    if (checkpointState.getCheckpointId() < checkpointId) {
+    if (checkpointState.getLatestCheckpointId() < checkpointId) {
       // Only take a checkpoint if it is newer
       final var checkpointPosition = record.getPosition();
       backupManager.takeBackup(checkpointId, checkpointPosition);
-      checkpointState.setCheckpointInfo(checkpointId, checkpointPosition);
+      checkpointState.setLatestCheckpointInfo(checkpointId, checkpointPosition);
 
       // Notify listeners immediately
       listeners.forEach(l -> l.onNewCheckpointCreated(checkpointId));
@@ -72,8 +72,8 @@ public final class CheckpointCreateProcessor {
           record,
           CheckpointIntent.IGNORED,
           new CheckpointRecord()
-              .setCheckpointId(checkpointState.getCheckpointId())
-              .setCheckpointPosition(checkpointState.getCheckpointPosition()),
+              .setCheckpointId(checkpointState.getLatestCheckpointId())
+              .setCheckpointPosition(checkpointState.getLatestCheckpointPosition()),
           resultBuilder);
     }
   }

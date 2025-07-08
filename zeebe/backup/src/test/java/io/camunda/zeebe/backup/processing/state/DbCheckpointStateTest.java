@@ -51,30 +51,30 @@ final class DbCheckpointStateTest {
     // given
 
     // when-then
-    assertThat(state.getCheckpointId()).isEqualTo(NO_CHECKPOINT);
-    assertThat(state.getCheckpointPosition()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(NO_CHECKPOINT);
   }
 
   @Test
-  void shouldSetAndGetCheckpointIdAndPosition() {
+  void shouldSetAndGetLatestCheckpointIdAndPosition() {
     // when
-    state.setCheckpointInfo(5L, 10L);
+    state.setLatestCheckpointInfo(5L, 10L);
 
     // then
-    assertThat(state.getCheckpointId()).isEqualTo(5L);
-    assertThat(state.getCheckpointPosition()).isEqualTo(10L);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(5L);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(10L);
   }
 
   @Test
   void shouldOverwriteCheckpointIdAndPosition() {
     // given
-    state.setCheckpointInfo(5L, 10L);
+    state.setLatestCheckpointInfo(5L, 10L);
 
     // when
-    state.setCheckpointInfo(15L, 20L);
+    state.setLatestCheckpointInfo(15L, 20L);
 
     // then
-    assertThat(state.getCheckpointId()).isEqualTo(15L);
-    assertThat(state.getCheckpointPosition()).isEqualTo(20L);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(15L);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(20L);
   }
 }

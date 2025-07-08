@@ -122,8 +122,8 @@ final class CheckpointRecordsProcessorTest {
     assertThat(followupRecord.getCheckpointPosition()).isEqualTo(checkpointPosition);
 
     // state is updated
-    assertThat(state.getCheckpointId()).isEqualTo(checkpointId);
-    assertThat(state.getCheckpointPosition()).isEqualTo(checkpointPosition);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
   }
 
   @Test
@@ -131,7 +131,7 @@ final class CheckpointRecordsProcessorTest {
     // given
     final long checkpointId = 1;
     final long checkpointPosition = 10;
-    state.setCheckpointInfo(checkpointId, checkpointPosition);
+    state.setLatestCheckpointInfo(checkpointId, checkpointPosition);
 
     final CheckpointRecord value = new CheckpointRecord().setCheckpointId(checkpointId);
     final MockTypedCheckpointRecord record =
@@ -153,8 +153,8 @@ final class CheckpointRecordsProcessorTest {
     assertThat(followupEvent.type()).isEqualTo(RecordType.EVENT);
 
     // state not changed
-    assertThat(state.getCheckpointId()).isEqualTo(checkpointId);
-    assertThat(state.getCheckpointPosition()).isEqualTo(checkpointPosition);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
   }
 
   @Test
@@ -162,7 +162,7 @@ final class CheckpointRecordsProcessorTest {
     // given
     final long checkpointId = 10;
     final long checkpointPosition = 10;
-    state.setCheckpointInfo(checkpointId, checkpointPosition);
+    state.setLatestCheckpointInfo(checkpointId, checkpointPosition);
 
     final int lowerCheckpointId = 1;
     final CheckpointRecord value = new CheckpointRecord().setCheckpointId(lowerCheckpointId);
@@ -190,8 +190,8 @@ final class CheckpointRecordsProcessorTest {
     assertThat(followupRecord.getCheckpointPosition()).isEqualTo(checkpointPosition);
 
     // state not changed
-    assertThat(state.getCheckpointId()).isEqualTo(checkpointId);
-    assertThat(state.getCheckpointPosition()).isEqualTo(checkpointPosition);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
   }
 
   @Test
@@ -216,8 +216,8 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     // state is updated
-    assertThat(state.getCheckpointId()).isEqualTo(checkpointId);
-    assertThat(state.getCheckpointPosition()).isEqualTo(checkpointPosition);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
   }
 
   @Test
@@ -225,7 +225,7 @@ final class CheckpointRecordsProcessorTest {
     // given
     final long checkpointId = 2;
     final long checkpointPosition = 10;
-    state.setCheckpointInfo(checkpointId, checkpointPosition);
+    state.setLatestCheckpointInfo(checkpointId, checkpointPosition);
     final CheckpointRecord value = new CheckpointRecord().setCheckpointId(1);
     final MockTypedCheckpointRecord record =
         new MockTypedCheckpointRecord(21, 20, CheckpointIntent.IGNORED, RecordType.EVENT, value);
@@ -235,8 +235,8 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     // state is not changed
-    assertThat(state.getCheckpointId()).isEqualTo(checkpointId);
-    assertThat(state.getCheckpointPosition()).isEqualTo(checkpointPosition);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
   }
 
   @Test
@@ -293,7 +293,7 @@ final class CheckpointRecordsProcessorTest {
     processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
     final long checkpointId = 3;
     final long checkpointPosition = 30;
-    state.setCheckpointInfo(checkpointId, checkpointPosition);
+    state.setLatestCheckpointInfo(checkpointId, checkpointPosition);
 
     // when
     final AtomicLong checkpoint = new AtomicLong();
@@ -309,7 +309,7 @@ final class CheckpointRecordsProcessorTest {
     // given
     final long checkpointId = 3;
     final long checkpointPosition = 30;
-    state.setCheckpointInfo(checkpointId, checkpointPosition);
+    state.setLatestCheckpointInfo(checkpointId, checkpointPosition);
 
     doAnswer(
             invocation -> {

@@ -66,10 +66,10 @@ public final class CheckpointRecordsProcessor
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);
 
-    final long checkpointId = checkpointState.getCheckpointId();
+    final long checkpointId = checkpointState.getLatestCheckpointId();
     if (checkpointId != CheckpointState.NO_CHECKPOINT) {
       checkpointListeners.forEach(listener -> listener.onNewCheckpointCreated(checkpointId));
-      metrics.setCheckpointId(checkpointId, checkpointState.getCheckpointPosition());
+      metrics.setCheckpointId(checkpointId, checkpointState.getLatestCheckpointPosition());
     }
 
     recordProcessorContext.addLifecycleListeners(List.of(this));
@@ -137,9 +137,9 @@ public final class CheckpointRecordsProcessor
       executor.runDelayed(
           Duration.ZERO,
           () -> {
-            final var checkpointId = checkpointState.getCheckpointId();
+            final var checkpointId = checkpointState.getLatestCheckpointId();
             if (checkpointId != CheckpointState.NO_CHECKPOINT) {
-              checkpointListener.onNewCheckpointCreated(checkpointState.getCheckpointId());
+              checkpointListener.onNewCheckpointCreated(checkpointState.getLatestCheckpointId());
             }
           });
     }
@@ -150,6 +150,6 @@ public final class CheckpointRecordsProcessor
     // After a leader change, the new leader will not continue taking the backup initiated by
     // previous leader. So mark them as failed, so that the users do not wait forever for it to be
     // completed.
-    backupManager.failInProgressBackup(checkpointState.getCheckpointId());
+    backupManager.failInProgressBackup(checkpointState.getLatestCheckpointId());
   }
 }

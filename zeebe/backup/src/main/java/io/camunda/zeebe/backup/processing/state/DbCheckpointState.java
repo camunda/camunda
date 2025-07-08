@@ -14,7 +14,7 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 public final class DbCheckpointState implements CheckpointState {
-  private static final String CHECKPOINT_KEY = "checkpoint";
+  private static final String LATEST_CHECKPOINT_KEY = "checkpoint";
 
   private final CheckpointInfo checkpointInfo = new CheckpointInfo();
   private final ColumnFamily<DbString, CheckpointInfo> checkpointColumnFamily;
@@ -23,26 +23,29 @@ public final class DbCheckpointState implements CheckpointState {
   public DbCheckpointState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     checkpointInfoKey = new DbString();
-    checkpointInfoKey.wrapString(CHECKPOINT_KEY);
+    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
     checkpointColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DEFAULT, transactionContext, checkpointInfoKey, checkpointInfo);
   }
 
   @Override
-  public long getCheckpointId() {
+  public long getLatestCheckpointId() {
+    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
     return info != null ? info.getId() : NO_CHECKPOINT;
   }
 
   @Override
-  public long getCheckpointPosition() {
+  public long getLatestCheckpointPosition() {
+    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
     return info != null ? info.getPosition() : NO_CHECKPOINT;
   }
 
   @Override
-  public void setCheckpointInfo(final long checkpointId, final long checkpointPosition) {
+  public void setLatestCheckpointInfo(final long checkpointId, final long checkpointPosition) {
+    checkpointInfoKey.wrapString(LATEST_CHECKPOINT_KEY);
     checkpointInfo.setId(checkpointId).setPosition(checkpointPosition);
     checkpointColumnFamily.upsert(checkpointInfoKey, checkpointInfo);
   }
