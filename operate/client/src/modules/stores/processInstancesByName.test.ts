@@ -70,6 +70,8 @@ describe('stores/processInstancesByName', () => {
 
   afterEach(() => {
     processInstancesByNameStore.reset();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should get process instances by name', async () => {
@@ -88,8 +90,12 @@ describe('stores/processInstancesByName', () => {
     mockFetchProcessInstancesByName().withSuccess(mockInstancesByProcess, {
       expectPolling: true,
     });
-    vi.useFakeTimers();
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstancesByNameStore.init();
+
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(processInstancesByNameStore.state.status).toBe('fetched'),
     );
