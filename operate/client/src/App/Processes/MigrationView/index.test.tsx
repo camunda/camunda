@@ -78,10 +78,6 @@ describe('MigrationView', () => {
     processInstanceMigrationStore.enable();
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it.each(['/custom', ''])(
     'should block navigation to dashboard page when migration mode is enabled - context path: %p',
     async (contextPath) => {

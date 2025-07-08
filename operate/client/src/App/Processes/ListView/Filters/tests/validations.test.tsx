@@ -17,8 +17,6 @@ import {ERRORS} from 'modules/validators';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {act} from 'react';
 
-vi.unmock('modules/utils/date/formatDate');
-
 describe('Validations', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);

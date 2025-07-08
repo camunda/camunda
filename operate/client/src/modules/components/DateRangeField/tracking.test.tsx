@@ -14,7 +14,6 @@ import {
 import {getWrapper, MockDateRangeField} from './mocks';
 import {tracking} from 'modules/tracking';
 
-vi.unmock('modules/utils/date/formatDate');
 let trackSpy = vi.spyOn(tracking, 'track');
 
 describe('Date Range - tracking', () => {

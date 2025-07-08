@@ -23,8 +23,6 @@ import {
 } from 'modules/testUtils/selectComboBoxOption';
 import {Paths} from 'modules/Routes';
 
-vi.unmock('modules/utils/date/formatDate');
-
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {

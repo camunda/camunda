@@ -14,7 +14,6 @@ import {generateProcessKey} from 'modules/utils/generateProcessKey';
 describe('processes.migration store', () => {
   afterEach(() => {
     processesStore.reset();
-    vi.unstubAllGlobals();
   });
 
   it('should get targetProcessVersions', async () => {

@@ -66,10 +66,6 @@ describe('<InstancesTable />', () => {
     processesStore.fetchProcesses();
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {

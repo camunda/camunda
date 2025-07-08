@@ -61,10 +61,6 @@ describe('BatchModificationNotification', () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it('should render batch modification notification with instance count', async () => {
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [

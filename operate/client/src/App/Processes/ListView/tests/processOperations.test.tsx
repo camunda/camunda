@@ -39,10 +39,6 @@ describe('<ListView /> - operations', () => {
     });
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it('should show delete button when version is selected', async () => {
     const queryString = '?process=demoProcess&version=1';
 

@@ -111,8 +111,6 @@ describe('DiagramPanel', () => {
       }),
     );
     expect(await screen.findByText('Copied to clipboard')).toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should show the loading indicator, when diagram is loading', async () => {
@@ -134,8 +132,6 @@ describe('DiagramPanel', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should show an empty state message when no process is selected', async () => {
@@ -176,8 +172,6 @@ describe('DiagramPanel', () => {
     ).toBeInTheDocument();
 
     expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should display bpmnProcessId as process name in the message when no process version is selected', async () => {
@@ -197,8 +191,6 @@ describe('DiagramPanel', () => {
         'There is more than one Version selected for Process "eventBasedGatewayProcess"',
       ),
     ).toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should show an error message', async () => {
@@ -240,8 +232,6 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(await screen.findByTestId(/^state-overlay/)).toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should not fetch batch modification data outside batch modification mode', async () => {
@@ -290,8 +280,6 @@ describe('DiagramPanel', () => {
     await waitFor(() =>
       expect(mockProcessInstancesStatisticsResolver).toHaveBeenCalledTimes(2),
     );
-
-    vi.unstubAllGlobals();
   });
 
   it('should render batch modification notification', async () => {
@@ -328,8 +316,6 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should still render diagram when useBatchModificationOverlayData fails', async () => {
@@ -349,8 +335,6 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should display statistics when active and incidents are selected in the filter', async () => {
@@ -378,8 +362,6 @@ describe('DiagramPanel', () => {
     expect(
       await screen.findByTestId('state-overlay-EndEvent_042s0oc-incidents'),
     ).toHaveTextContent('3');
-
-    vi.unstubAllGlobals();
   });
 
   it('should display statistics when completed and canceled are selected in the filter', async () => {
@@ -409,8 +391,6 @@ describe('DiagramPanel', () => {
         'state-overlay-EndEvent_042s0oc-completedEndEvents',
       ),
     ).toHaveTextContent('4');
-
-    vi.unstubAllGlobals();
   });
 
   it('should display statistics when all states are selected', async () => {
@@ -446,7 +426,5 @@ describe('DiagramPanel', () => {
         'state-overlay-EndEvent_042s0oc-completedEndEvents',
       ),
     ).toHaveTextContent('4');
-
-    vi.unstubAllGlobals();
   });
 });

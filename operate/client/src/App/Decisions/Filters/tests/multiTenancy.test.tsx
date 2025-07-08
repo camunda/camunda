@@ -143,8 +143,6 @@ describe('<Filters />', () => {
         ),
       ).toEqual(MOCK_VALUES),
     );
-
-    vi.unstubAllGlobals();
   });
 
   it('initialise filter values from url', () => {
@@ -164,8 +162,6 @@ describe('<Filters />', () => {
     expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
       'Tenant A',
     );
-
-    vi.unstubAllGlobals();
   });
 
   it('should hide multi tenancy filter if its not enabled in client config', async () => {
@@ -197,8 +193,6 @@ describe('<Filters />', () => {
       expect(groupedDecisionsStore.state.status).toBe('fetched'),
     );
     expect(screen.getByLabelText('Name')).toBeDisabled();
-
-    vi.unstubAllGlobals();
   });
 
   it('should clear decision name and version field when tenant filter is changed', async () => {
@@ -247,7 +241,5 @@ describe('<Filters />', () => {
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a decision version/i);
-
-    vi.unstubAllGlobals();
   });
 });

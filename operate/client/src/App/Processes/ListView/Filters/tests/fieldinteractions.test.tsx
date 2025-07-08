@@ -22,8 +22,6 @@ import {
 import {ERRORS} from 'modules/validators';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-vi.unmock('modules/utils/date/formatDate');
-
 describe('Interaction with other fields during validation', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);

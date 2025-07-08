@@ -15,10 +15,6 @@ import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('IncidentsTable', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it('should render the right column headers', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents(incidentsMock);

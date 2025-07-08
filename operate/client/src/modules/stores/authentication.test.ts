@@ -17,7 +17,6 @@ const mockUserResponse = createUser();
 describe('stores/authentication', () => {
   afterEach(() => {
     authenticationStore.reset();
-    vi.unstubAllGlobals();
   });
 
   it.each([{canLogout: false}, {canLogout: true, isLoginDelegated: true}])(

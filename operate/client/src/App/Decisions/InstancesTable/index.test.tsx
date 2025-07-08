@@ -335,8 +335,6 @@ describe('<InstancesTable />', () => {
       expect(
         screen.getByRole('columnheader', {name: 'Tenant'}),
       ).toBeInTheDocument();
-
-      vi.unstubAllGlobals();
     },
   );
 
@@ -359,8 +357,6 @@ describe('<InstancesTable />', () => {
     expect(
       screen.queryByRole('columnheader', {name: 'Tenant'}),
     ).not.toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should hide tenant column when multi tenancy is disabled', async () => {

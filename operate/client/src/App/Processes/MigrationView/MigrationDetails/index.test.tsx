@@ -72,7 +72,5 @@ describe('MigrationDetails', () => {
     expect(
       screen.getByText(/Big variable process - version 1/i),
     ).toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 });

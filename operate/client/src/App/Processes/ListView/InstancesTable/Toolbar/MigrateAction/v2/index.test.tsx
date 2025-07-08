@@ -294,8 +294,6 @@ describe('<MigrateAction />', () => {
       processIds: [PROCESS_DEFINITION_ID],
       running: true,
     });
-
-    vi.unstubAllGlobals();
   });
 
   it('should track migrate click', async () => {

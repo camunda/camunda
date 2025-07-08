@@ -8,8 +8,6 @@
 
 import {formatDate} from './formatDate';
 
-vi.unmock('modules/utils/date/formatDate');
-
 describe('formatDate', () => {
   it('should return default placeholder if date is null', () => {
     expect(formatDate(null)).toBe('--');

@@ -78,8 +78,6 @@ describe('Filters', () => {
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('1');
-
-    vi.unstubAllGlobals();
   });
 
   it('should hide multi tenancy filter if its not enabled in client config', async () => {
@@ -167,8 +165,6 @@ describe('Filters', () => {
         ),
       ).toEqual(expect.objectContaining(MOCK_VALUES)),
     );
-
-    vi.unstubAllGlobals();
   });
 
   it('should disable processes field when tenant is not selected', async () => {
@@ -184,8 +180,6 @@ describe('Filters', () => {
 
     await waitFor(() => expect(processesStore.state.status).toBe('fetched'));
     expect(screen.getByLabelText('Name')).toBeDisabled();
-
-    vi.unstubAllGlobals();
   });
 
   it('should clear process and version field when tenant filter is changed', async () => {
@@ -230,7 +224,5 @@ describe('Filters', () => {
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a process version/i);
-
-    vi.unstubAllGlobals();
   });
 });

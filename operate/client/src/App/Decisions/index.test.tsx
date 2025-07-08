@@ -152,7 +152,5 @@ describe('<Decisions />', () => {
 
     vi.clearAllTimers();
     vi.useRealTimers();
-
-    vi.unstubAllGlobals();
   });
 });

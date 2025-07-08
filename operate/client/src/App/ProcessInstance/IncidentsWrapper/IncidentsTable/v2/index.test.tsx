@@ -29,10 +29,6 @@ describe('IncidentsTable', () => {
     );
   });
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
   it('should render incident details', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents(incidentsMock);

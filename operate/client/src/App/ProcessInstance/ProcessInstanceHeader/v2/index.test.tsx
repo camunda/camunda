@@ -41,9 +41,6 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchCallHierarchy().withSuccess([]);
   });
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
 
   it('should render process instance data', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);

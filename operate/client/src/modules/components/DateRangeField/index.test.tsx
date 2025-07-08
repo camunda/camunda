@@ -13,8 +13,6 @@ import {
 } from 'modules/testUtils/dateTimeRange';
 import {getWrapper, MockDateRangeField} from './mocks';
 
-vi.unmock('modules/utils/date/formatDate');
-
 describe('Date Range Field', () => {
   it('should close modal on cancel click', async () => {
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
