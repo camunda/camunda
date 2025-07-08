@@ -210,49 +210,44 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   private void createTaskEntity(final TaskEntity entity, final Record<UserTaskRecordValue> record) {
-    final var formKey =
-        record.getValue().getFormKey() > 0 ? String.valueOf(record.getValue().getFormKey()) : null;
+    final var taskValue = record.getValue();
+    final var formKey = taskValue.getFormKey() > 0 ? String.valueOf(taskValue.getFormKey()) : null;
 
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
         .setState(TaskState.CREATING)
-        .setFlowNodeInstanceId(String.valueOf(record.getValue().getElementInstanceKey()))
-        .setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()))
-        .setFlowNodeBpmnId(record.getValue().getElementId())
+        .setFlowNodeInstanceId(String.valueOf(taskValue.getElementInstanceKey()))
+        .setProcessInstanceId(String.valueOf(taskValue.getProcessInstanceKey()))
+        .setFlowNodeBpmnId(taskValue.getElementId())
         .setName(
             ProcessCacheUtil.getFlowNodeName(
-                    processCache,
-                    record.getValue().getProcessDefinitionKey(),
-                    record.getValue().getElementId())
+                    processCache, taskValue.getProcessDefinitionKey(), taskValue.getElementId())
                 .orElse(null))
-        .setBpmnProcessId(record.getValue().getBpmnProcessId())
-        .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
-        .setProcessDefinitionVersion(record.getValue().getProcessDefinitionVersion())
+        .setBpmnProcessId(taskValue.getBpmnProcessId())
+        .setProcessDefinitionId(String.valueOf(taskValue.getProcessDefinitionKey()))
+        .setProcessDefinitionVersion(taskValue.getProcessDefinitionVersion())
         .setFormKey(!ExporterUtil.isEmpty(formKey) ? formKey : null)
         .setExternalFormReference(
-            ExporterUtil.isEmpty(record.getValue().getExternalFormReference())
+            ExporterUtil.isEmpty(taskValue.getExternalFormReference())
                 ? null
-                : record.getValue().getExternalFormReference())
-        .setCustomHeaders(record.getValue().getCustomHeaders())
+                : taskValue.getExternalFormReference())
+        .setCustomHeaders(taskValue.getCustomHeaders())
         .setPartitionId(record.getPartitionId())
-        .setTenantId(record.getValue().getTenantId())
+        .setTenantId(taskValue.getTenantId())
         .setPosition(record.getPosition())
-        .setAction(
-            ExporterUtil.isEmpty(record.getValue().getAction())
-                ? null
-                : record.getValue().getAction())
+        .setAction(ExporterUtil.isEmpty(taskValue.getAction()) ? null : taskValue.getAction())
         .setCreationTime(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
-        .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
-        .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
-        .setPriority(record.getValue().getPriority());
+        .setDueDate(ExporterUtil.toOffsetDateTime(taskValue.getDueDate()))
+        .setFollowUpDate(ExporterUtil.toOffsetDateTime(taskValue.getFollowUpDate()))
+        .setPriority(taskValue.getPriority());
 
-    if (!record.getValue().getCandidateGroupsList().isEmpty()) {
-      entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));
+    if (!taskValue.getCandidateGroupsList().isEmpty()) {
+      entity.setCandidateGroups(taskValue.getCandidateGroupsList().toArray(new String[0]));
     }
 
-    if (!record.getValue().getCandidateUsersList().isEmpty()) {
-      entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
+    if (!taskValue.getCandidateUsersList().isEmpty()) {
+      entity.setCandidateUsers(taskValue.getCandidateUsersList().toArray(new String[0]));
     }
 
     if (!ExporterUtil.isEmpty(formKey)) {
