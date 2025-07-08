@@ -148,7 +148,7 @@ public class ProtoBufSerializer
 
     final Optional<RoutingState> routingState =
         encodedClusterTopology.hasRoutingState()
-            ? Optional.of(decodeRoutingState(encodedClusterTopology.getRoutingState()))
+            ? decodeRoutingState(encodedClusterTopology.getRoutingState())
             : Optional.empty();
 
     return new ClusterConfiguration(
@@ -513,11 +513,16 @@ public class ProtoBufSerializer
         pendingOperations);
   }
 
-  private RoutingState decodeRoutingState(final Topology.RoutingState routingState) {
-    return new RoutingState(
-        routingState.getVersion(),
-        decodeRequestHandling(routingState.getRequestHandling()),
-        decodeMessageCorrelation(routingState.getMessageCorrelation()));
+  private Optional<RoutingState> decodeRoutingState(final Topology.RoutingState routingState) {
+    if (routingState.equals(Topology.RoutingState.getDefaultInstance())) {
+      return Optional.empty();
+    } else {
+      return Optional.of(
+          new RoutingState(
+              routingState.getVersion(),
+              decodeRequestHandling(routingState.getRequestHandling()),
+              decodeMessageCorrelation(routingState.getMessageCorrelation())));
+    }
   }
 
   private RequestHandling decodeRequestHandling(final Topology.RequestHandling requestHandling) {
@@ -681,11 +686,8 @@ public class ProtoBufSerializer
     } else if (topologyChangeOperation.hasUpdateRoutingState()) {
       final var protoRoutingState =
           topologyChangeOperation.getUpdateRoutingState().getRoutingState();
-      final var routingState =
-          protoRoutingState.equals(Topology.RoutingState.getDefaultInstance())
-              ? null
-              : decodeRoutingState(protoRoutingState);
-      return new UpdateRoutingState(memberId, Optional.ofNullable(routingState));
+      final var routingState = decodeRoutingState(protoRoutingState);
+      return new UpdateRoutingState(memberId, routingState);
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -834,6 +836,20 @@ public class ProtoBufSerializer
         .setDryRun(forceRemoveBrokersRequest.dryRun())
         .build()
         .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeUpdateRoutingStateRequest(
+      final UpdateRoutingStateRequest updateRoutingStateRequest) {
+    final var builder =
+        Requests.UpdateRoutingStateRequest.newBuilder()
+            .setDryRun(updateRoutingStateRequest.dryRun());
+
+    updateRoutingStateRequest
+        .routingState()
+        .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
+
+    return builder.build().toByteArray();
   }
 
   @Override
@@ -1111,7 +1127,7 @@ public class ProtoBufSerializer
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
-    final RoutingState routingState = decodeRoutingState(proto.getRoutingState());
+    final var routingState = decodeRoutingState(proto.getRoutingState());
     return new UpdateRoutingStateRequest(routingState, proto.getDryRun());
   }
 

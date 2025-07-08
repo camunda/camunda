@@ -61,7 +61,7 @@ public sealed interface ClusterConfigurationManagementRequest {
       boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
-  record UpdateRoutingStateRequest(RoutingState routingState, boolean dryRun)
+  record UpdateRoutingStateRequest(Optional<RoutingState> routingState, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
   record ForceRemoveBrokersRequest(Set<MemberId> membersToRemove, boolean dryRun)

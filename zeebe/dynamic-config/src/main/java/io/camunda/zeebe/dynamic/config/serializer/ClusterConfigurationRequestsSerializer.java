@@ -52,6 +52,8 @@ public interface ClusterConfigurationRequestsSerializer {
   byte[] encodeForceRemoveBrokersRequest(
       ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest forceRemoveBrokersRequest);
 
+  byte[] encodeUpdateRoutingStateRequest(UpdateRoutingStateRequest updateRoutingStateRequest);
+
   ClusterConfigurationManagementRequest.AddMembersRequest decodeAddMembersRequest(
       byte[] encodedState);
 

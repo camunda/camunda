@@ -18,11 +18,22 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.ActivePartitions;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
+import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
+import io.camunda.zeebe.management.cluster.RequestHandlingActivePartitions;
+import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
+import io.camunda.zeebe.management.cluster.RoutingState;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -373,6 +384,49 @@ public class ClusterEndpoint {
           .exceptionally(ClusterApiUtils::mapError);
     } catch (final Exception error) {
       return CompletableFuture.completedFuture(ClusterApiUtils.mapError(error));
+    }
+  }
+
+  @PatchMapping(path = "/routing-state", consumes = "application/json")
+  public ResponseEntity<?> updateRoutingState(
+      @RequestBody(required = false) final RoutingState routingState,
+      @RequestParam(defaultValue = "false") final boolean dryRun) {
+    try {
+      Optional<io.camunda.zeebe.dynamic.config.state.RoutingState> internalRoutingState =
+          Optional.empty();
+      if (routingState != null) {
+        final RequestHandling requestHandling =
+            switch (routingState.getRequestHandling()) {
+              case final RequestHandlingAllPartitions req ->
+                  new AllPartitions(req.getPartitionCount());
+              case final RequestHandlingActivePartitions req ->
+                  new ActivePartitions(
+                      req.getBasePartitionCount(),
+                      new HashSet<>(req.getAdditionalActivePartitions()),
+                      new HashSet<>(req.getInactivePartitions()));
+              default ->
+                  throw new IllegalStateException(
+                      "Unexpected value: " + routingState.getRequestHandling());
+            };
+        final MessageCorrelation messageCorrelation =
+            switch (routingState.getMessageCorrelation()) {
+              case final MessageCorrelationHashMod req -> new HashMod(req.getPartitionCount());
+              default ->
+                  throw new IllegalStateException(
+                      "Unexpected value: " + routingState.getMessageCorrelation());
+            };
+        internalRoutingState =
+            Optional.of(
+                new io.camunda.zeebe.dynamic.config.state.RoutingState(
+                    Optional.ofNullable(routingState.getVersion()).orElse(0L),
+                    requestHandling,
+                    messageCorrelation));
+      }
+      final var updateRequest = new UpdateRoutingStateRequest(internalRoutingState, dryRun);
+      return ClusterApiUtils.mapOperationResponse(
+          requestSender.updateRoutingState(updateRequest).join());
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
     }
   }
 

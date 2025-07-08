@@ -155,6 +155,35 @@ paths:
         '504':
           $ref: 'components.yaml#/responses/TimeoutError'
 
+  /routing-state:
+    patch:
+      summary:
+        Force an update of the routing state using the user provided routing state
+        or by fetching the routing state from the engine first and then
+        applying it to the configuration.
+        No validation is performed on the user provided routing state, so it must be
+        used only in the rare circumstances when it's not possible to fetch it from the engine.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/RoutingState"
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          description: Accepted
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
 components:
   parameters:
     BrokerId:
