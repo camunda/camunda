@@ -90,12 +90,20 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
             .setResetTime(record.getTimestamp());
 
     final var bucket = usageMetricState.getActiveBucket();
-    if (bucket != null && !bucket.getTenantRPIMap().isEmpty()) {
-      eventRecord
-          .setEventType(EventType.RPI)
-          .setStartTime(bucket.getFromTime())
-          .setEndTime(bucket.getToTime())
-          .setValues(bucket.getTenantRPIMapValue());
+    if (bucket != null) {
+      if (!bucket.getTenantRPIMap().isEmpty()) {
+        eventRecord
+            .setEventType(EventType.RPI)
+            .setStartTime(bucket.getFromTime())
+            .setEndTime(bucket.getToTime())
+            .setValues(bucket.getTenantRPIMapValue());
+      } else if (!bucket.getTenantEDIMap().isEmpty()) {
+        eventRecord
+            .setEventType(EventType.EDI)
+            .setStartTime(bucket.getFromTime())
+            .setEndTime(bucket.getToTime())
+            .setValues(bucket.getTenantEDIMapValue());
+      }
     }
 
     checkRecordLength(eventRecord).forEach(this::appendFollowUpEvent);
