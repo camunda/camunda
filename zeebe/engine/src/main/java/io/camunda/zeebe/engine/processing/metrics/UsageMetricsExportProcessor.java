@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
@@ -22,6 +23,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,22 +94,56 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
 
     final var bucket = usageMetricState.getActiveBucket();
     if (bucket != null) {
-      if (!bucket.getTenantRPIMap().isEmpty()) {
-        eventRecord
-            .setEventType(EventType.RPI)
-            .setStartTime(bucket.getFromTime())
-            .setEndTime(bucket.getToTime())
-            .setValues(bucket.getTenantRPIMapValue());
-      } else if (!bucket.getTenantEDIMap().isEmpty()) {
-        eventRecord
-            .setEventType(EventType.EDI)
-            .setStartTime(bucket.getFromTime())
-            .setEndTime(bucket.getToTime())
-            .setValues(bucket.getTenantEDIMapValue());
-      }
+      processMetricType(
+          bucket,
+          eventRecord,
+          EventType.RPI,
+          bucket.getTenantRPIMap(),
+          bucket.getTenantRPIMapValue());
+      processMetricType(
+          bucket,
+          eventRecord,
+          EventType.EDI,
+          bucket.getTenantEDIMap(),
+          bucket.getTenantEDIMapValue());
+    } else {
+      checkRecordLength(eventRecord).forEach(this::appendFollowUpEvent);
     }
+  }
 
-    checkRecordLength(eventRecord).forEach(this::appendFollowUpEvent);
+  /** Processes a specific metric type and appends the resulting records. */
+  private void processMetricType(
+      final PersistedUsageMetrics bucket,
+      final UsageMetricRecord baseRecord,
+      final EventType eventType,
+      final Map<?, ?> conditionMap,
+      final DirectBuffer valuesBuffer) {
+    if (!conditionMap.isEmpty()) {
+      final UsageMetricRecord clonedRecord = cloneEventRecord(baseRecord);
+      enhanceEventRecord(clonedRecord, bucket, eventType, valuesBuffer);
+      checkRecordLength(clonedRecord).forEach(this::appendFollowUpEvent);
+    }
+  }
+
+  /** Creates a deep clone of the given UsageMetricRecord. */
+  private UsageMetricRecord cloneEventRecord(final UsageMetricRecord original) {
+    return new UsageMetricRecord()
+        .setIntervalType(original.getIntervalType())
+        .setEventType(original.getEventType())
+        .setResetTime(original.getResetTime());
+  }
+
+  /** Composes the event record with additional information. */
+  private void enhanceEventRecord(
+      final UsageMetricRecord record,
+      final PersistedUsageMetrics bucket,
+      final EventType eventType,
+      final DirectBuffer valuesBuffer) {
+    record
+        .setEventType(eventType)
+        .setStartTime(bucket.getFromTime())
+        .setEndTime(bucket.getToTime())
+        .setValues(valuesBuffer);
   }
 
   private void appendFollowUpEvent(final UsageMetricRecord eventRecord) {

@@ -173,6 +173,40 @@ class UsageMetricsExportProcessorTest {
   }
 
   @Test
+  void shouldAppendMixedExportedEvents() {
+    // given
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics()
+                .setFromTime(1)
+                .setToTime(10)
+                .setTenantRPIMap(Map.of("tenant1", 10L))
+                .setTenantEDIMap(Map.of("tenant1", 10L)));
+    // when
+    processor.processRecord(record);
+
+    // then
+    verify(state).getActiveBucket();
+    verify(stateWriter, times(2))
+        .appendFollowUpEvent(
+            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
+    final List<UsageMetricRecord> actual = recordArgumentCaptor.getAllValues();
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .extracting(UsageMetricRecord::getIntervalType)
+        .containsOnly(IntervalType.ACTIVE);
+    assertThat(actual).extracting(UsageMetricRecord::getResetTime).containsOnly(2L);
+    assertThat(actual).extracting(UsageMetricRecord::getStartTime).containsOnly(1L);
+    assertThat(actual).extracting(UsageMetricRecord::getEndTime).containsOnly(10L);
+    assertThat(actual)
+        .extracting(UsageMetricRecord::getEventType)
+        .contains(EventType.RPI, EventType.EDI);
+    assertThat(actual)
+        .extracting(UsageMetricRecord::getValues)
+        .containsOnly(Map.of("tenant1", 10L));
+  }
+
+  @Test
   void shouldAppendMultipleExportedEventsWhenRecordTooLongEDI() {
     // given
     when(stateWriter.canWriteEventOfLength(anyInt())).thenReturn(true);
