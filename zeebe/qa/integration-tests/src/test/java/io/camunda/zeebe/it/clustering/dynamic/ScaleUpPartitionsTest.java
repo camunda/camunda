@@ -526,7 +526,7 @@ public class ScaleUpPartitionsTest {
     void correlateAllMessages(final CamundaClient camundaClient, final String messageName) {
       while (!correlationKeys.isEmpty()) {
         final var key = correlationKeys.poll();
-        Awaitility.await("until all signal start events are processed")
+        Awaitility.await("until process instance with variable" + key + " is started")
             .timeout(Duration.ofSeconds(5))
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(
@@ -592,46 +592,29 @@ public class ScaleUpPartitionsTest {
         final int count,
         final Supplier<Map<String, Object>> correlationKeyProvider) {
       switch (this) {
-        case MESSAGE ->
-            startProcessInstancesWithMessages(
-                camundaClient, messageName(), count, correlationKeyProvider);
-        case SIGNAL ->
-            startProcessInstancesWithSignals(
-                camundaClient, messageName(), count, correlationKeyProvider);
+        case MESSAGE -> {
+          for (int i = 0; i < count; i++) {
+            final var variables = correlationKeyProvider.get();
+            camundaClient
+                .newPublishMessageCommand()
+                .messageName(messageName())
+                .correlationKey(variables.keySet().iterator().next())
+                .variables(variables)
+                .send()
+                .join();
+          }
+        }
+        case SIGNAL -> {
+          for (int i = 0; i < count; i++) {
+            camundaClient
+                .newBroadcastSignalCommand()
+                .signalName(messageName())
+                .variables(correlationKeyProvider.get())
+                .send()
+                .join();
+          }
+        }
         default -> throw new IllegalArgumentException("Invalid enum case " + this);
-      }
-    }
-
-    void startProcessInstancesWithSignals(
-        final CamundaClient camundaClient,
-        final String signalName,
-        final int instanceCount,
-        final Supplier<Map<String, Object>> correlationKeyProvider) {
-      for (int i = 0; i < instanceCount; i++) {
-        camundaClient
-            .newBroadcastSignalCommand()
-            .signalName(signalName)
-            .variables(correlationKeyProvider.get())
-            .send()
-            .join();
-      }
-    }
-
-    void startProcessInstancesWithMessages(
-        final CamundaClient camundaClient,
-        final String messageName,
-        final int instanceCount,
-        final Supplier<Map<String, Object>> correlationKeyProvider) {
-
-      for (int i = 0; i < instanceCount; i++) {
-        final var variables = correlationKeyProvider.get();
-        camundaClient
-            .newPublishMessageCommand()
-            .messageName(messageName)
-            .correlationKey(variables.keySet().iterator().next())
-            .variables(variables)
-            .send()
-            .join();
       }
     }
   }
