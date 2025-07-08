@@ -268,14 +268,14 @@ public class RoleController {
   @CamundaPutMapping(
       path = "/{roleId}/mapping-rules/{mappingRuleId}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> assignRoleToMapping(
+  public CompletableFuture<ResponseEntity<Object>> addRoleToMappingRule(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
     return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
-  public CompletableFuture<ResponseEntity<Object>> removeRoleFromMapping(
+  public CompletableFuture<ResponseEntity<Object>> removeRoleFromMappingRule(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
     return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
