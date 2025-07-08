@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -30,47 +31,57 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceRecord extends UnifiedRecordValue
     implements ProcessInstanceRecordValue {
 
-  public static final String PROP_PROCESS_BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String PROP_PROCESS_INSTANCE_KEY = "processInstanceKey";
-  public static final String PROP_PROCESS_ELEMENT_ID = "elementId";
-  public static final String PROP_PROCESS_VERSION = "version";
-  public static final String PROP_PROCESS_KEY = "processDefinitionKey";
-  public static final String PROP_PROCESS_BPMN_TYPE = "bpmnElementType";
-  public static final String PROP_PROCESS_SCOPE_KEY = "flowScopeKey";
-  public static final String PROP_PROCESS_EVENT_TYPE = "bpmnEventType";
-  public static final String PROP_TENANT_ID = "tenantId";
+  // Static StringValue keys for property names
+  public static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  public static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  public static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+  public static final StringValue VERSION_KEY = new StringValue("version");
+  public static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+  public static final StringValue BPMN_ELEMENT_TYPE_KEY = new StringValue("bpmnElementType");
+  public static final StringValue FLOW_SCOPE_KEY_KEY = new StringValue("flowScopeKey");
+  public static final StringValue BPMN_EVENT_TYPE_KEY = new StringValue("bpmnEventType");
+  public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  public static final StringValue PARENT_PROCESS_INSTANCE_KEY_KEY =
+      new StringValue("parentProcessInstanceKey");
+  public static final StringValue PARENT_ELEMENT_INSTANCE_KEY_KEY =
+      new StringValue("parentElementInstanceKey");
+  public static final StringValue ELEMENT_INSTANCE_PATH_KEY =
+      new StringValue("elementInstancePath");
+  public static final StringValue PROCESS_DEFINITION_PATH_KEY =
+      new StringValue("processDefinitionPath");
+  public static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
 
-  private final StringProperty bpmnProcessIdProp =
-      new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, "");
-  private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION, -1);
+  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
+  private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
   private final StringProperty tenantIdProp =
-      new StringProperty(PROP_TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty processDefinitionKeyProp = new LongProperty(PROP_PROCESS_KEY, -1L);
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
 
   private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROP_PROCESS_INSTANCE_KEY, -1L);
-  private final StringProperty elementIdProp = new StringProperty(PROP_PROCESS_ELEMENT_ID, "");
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
 
-  private final LongProperty flowScopeKeyProp = new LongProperty(PROP_PROCESS_SCOPE_KEY, -1L);
+  private final LongProperty flowScopeKeyProp = new LongProperty(FLOW_SCOPE_KEY_KEY, -1L);
 
   private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
-      new EnumProperty<>(
-          PROP_PROCESS_BPMN_TYPE, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+      new EnumProperty<>(BPMN_ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   private final EnumProperty<BpmnEventType> bpmnEventTypeProp =
-      new EnumProperty<>(PROP_PROCESS_EVENT_TYPE, BpmnEventType.class, BpmnEventType.UNSPECIFIED);
+      new EnumProperty<>(BPMN_EVENT_TYPE_KEY, BpmnEventType.class, BpmnEventType.UNSPECIFIED);
 
   private final LongProperty parentProcessInstanceKeyProp =
-      new LongProperty("parentProcessInstanceKey", -1L);
+      new LongProperty(PARENT_PROCESS_INSTANCE_KEY_KEY, -1L);
   private final LongProperty parentElementInstanceKeyProp =
-      new LongProperty("parentElementInstanceKey", -1L);
+      new LongProperty(PARENT_ELEMENT_INSTANCE_KEY_KEY, -1L);
 
   private final ArrayProperty<ArrayValue<LongValue>> elementInstancePathProp =
-      new ArrayProperty<>("elementInstancePath", () -> new ArrayValue<>(LongValue::new));
+      new ArrayProperty<>(ELEMENT_INSTANCE_PATH_KEY, () -> new ArrayValue<>(LongValue::new));
   private final ArrayProperty<LongValue> processDefinitionPathProp =
-      new ArrayProperty<>("processDefinitionPath", LongValue::new);
+      new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
   private final ArrayProperty<IntegerValue> callingElementPathProp =
-      new ArrayProperty<>("callingElementPath", IntegerValue::new);
+      new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
 
   public ProcessInstanceRecord() {
     super(14);

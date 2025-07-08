@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
@@ -24,15 +25,24 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceResultRecord extends UnifiedRecordValue
     implements ProcessInstanceResultRecordValue {
 
-  private final StringProperty bpmnProcessIdProperty = new StringProperty("bpmnProcessId", "");
+  // Static StringValue keys for property names
+  public static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  public static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+  public static final StringValue VERSION_KEY = new StringValue("version");
+  public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  public static final StringValue VARIABLES_KEY = new StringValue("variables");
+  public static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+
+  private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
-      new LongProperty("processDefinitionKey", -1);
-  private final IntegerProperty versionProperty = new IntegerProperty("version", -1);
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1);
+  private final IntegerProperty versionProperty = new IntegerProperty(VERSION_KEY, -1);
   private final StringProperty tenantIdProperty =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final DocumentProperty variablesProperty = new DocumentProperty(VARIABLES_KEY);
   private final LongProperty processInstanceKeyProperty =
-      new LongProperty("processInstanceKey", -1);
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
 
   public ProcessInstanceResultRecord() {
     super(6);

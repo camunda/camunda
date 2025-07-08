@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
@@ -19,14 +20,22 @@ import org.agrona.DirectBuffer;
 
 public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetricRecordValue {
 
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue INTERVAL_TYPE_KEY = new StringValue("intervalType");
+  private static final StringValue EVENT_TYPE_KEY = new StringValue("eventType");
+  private static final StringValue START_TIME_KEY = new StringValue("startTime");
+  private static final StringValue END_TIME_KEY = new StringValue("endTime");
+  private static final StringValue VALUES_KEY = new StringValue("values");
+  private static final StringValue RESET_TIME_KEY = new StringValue("resetTime");
+
   private final EnumProperty<IntervalType> intervalTypeProp =
-      new EnumProperty<>("intervalType", IntervalType.class, IntervalType.ACTIVE);
+      new EnumProperty<>(INTERVAL_TYPE_KEY, IntervalType.class, IntervalType.ACTIVE);
   private final EnumProperty<EventType> eventTypeProp =
-      new EnumProperty<>("eventType", EventType.class, EventType.NONE);
-  private final LongProperty resetTimeProp = new LongProperty("resetTime", -1);
-  private final LongProperty startTimeProp = new LongProperty("startTime", -1);
-  private final LongProperty endTimeProp = new LongProperty("endTime", -1);
-  private final DocumentProperty valuesProp = new DocumentProperty("values");
+      new EnumProperty<>(EVENT_TYPE_KEY, EventType.class, EventType.NONE);
+  private final LongProperty resetTimeProp = new LongProperty(RESET_TIME_KEY, -1);
+  private final LongProperty startTimeProp = new LongProperty(START_TIME_KEY, -1);
+  private final LongProperty endTimeProp = new LongProperty(END_TIME_KEY, -1);
+  private final DocumentProperty valuesProp = new DocumentProperty(VALUES_KEY);
 
   public UsageMetricRecord() {
     super(6);
