@@ -71,18 +71,19 @@ public final class ElementInstanceServices
   }
 
   public FlowNodeInstanceEntity getByKey(final Long key) {
-    final var query = FlowNodeInstanceQuery.of(q -> q.filter(f -> f.flowNodeInstanceKeys(key)));
-    final var result =
-        search(query, securityContextProvider.provideSecurityContext(authentication));
-
-    final var flowNodeInstance = getSingleResultOrThrow(result, key, "Flow node instance");
+    final var query =
+        FlowNodeInstanceQuery.of(q -> q.filter(f -> f.flowNodeInstanceKeys(key)).singleResult());
+    final var flowNodeInstance =
+        search(query, securityContextProvider.provideSecurityContext(authentication))
+            .items()
+            .getFirst();
 
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
-        result.processDefinitionId(), authentication, authorization)) {
+        flowNodeInstance.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return result;
+    return flowNodeInstance;
   }
 
   private SearchQueryResult<FlowNodeInstanceEntity> search(

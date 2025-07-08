@@ -165,16 +165,19 @@ public final class UserTaskServices
   }
 
   public UserTaskEntity getByKey(final long userTaskKey) {
-    final var query = UserTaskQuery.of(q -> q.filter(f -> f.userTaskKeys(userTaskKey)));
-    final var result =
-        search(query, securityContextProvider.provideSecurityContext(authentication));
+    final var query =
+        UserTaskQuery.of(q -> q.filter(f -> f.userTaskKeys(userTaskKey)).singleResult());
+    final var userTask =
+        search(query, securityContextProvider.provideSecurityContext(authentication))
+            .items()
+            .getFirst();
 
-    final var userTask = getSingleResultOrThrow(result, userTaskKey, "User task");
     final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
     if (!securityContextProvider.isAuthorized(
         userTask.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
+
     return userTask;
   }
 
