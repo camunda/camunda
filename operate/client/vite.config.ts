@@ -16,7 +16,7 @@ import svgr from 'vite-plugin-svgr';
 import browserslistToEsbuild from 'browserslist-to-esbuild';
 import license from 'rollup-plugin-license';
 import path from 'node:path';
-import sbom from '@vzeta/rollup-plugin-sbom';
+import sbom from 'rollup-plugin-sbom';
 import {configDefaults} from 'vitest/config';
 
 const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
@@ -24,7 +24,7 @@ const outDir = 'build';
 
 export default defineConfig(({mode}) => ({
   base: mode === 'production' ? './' : undefined,
-  plugins: mode === 'sbom' ? [...plugins, sbom() as PluginOption] : plugins,
+  plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
   server: {
     port: 3000,
     open: true,
@@ -58,7 +58,7 @@ export default defineConfig(({mode}) => ({
               `./${outDir}/assets/vendor.LICENSE.txt`,
             ),
           },
-        }) as PluginOption,
+        }),
       ],
     },
     target: browserslistToEsbuild(),
