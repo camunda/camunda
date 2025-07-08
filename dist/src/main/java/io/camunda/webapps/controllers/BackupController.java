@@ -23,7 +23,6 @@ import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.zeebe.util.VisibleForTesting;
-import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import org.slf4j.Logger;
@@ -35,6 +34,7 @@ import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
