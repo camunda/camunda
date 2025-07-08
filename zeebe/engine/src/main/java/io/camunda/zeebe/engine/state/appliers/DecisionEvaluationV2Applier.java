@@ -12,12 +12,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 
-public final class DecisionEvaluationV1Applier
+public final class DecisionEvaluationV2Applier
     implements TypedEventApplier<DecisionEvaluationIntent, DecisionEvaluationRecord> {
 
   private final MutableUsageMetricState usageMetricState;
 
-  public DecisionEvaluationV1Applier(final MutableUsageMetricState usageMetricState) {
+  public DecisionEvaluationV2Applier(final MutableUsageMetricState usageMetricState) {
     this.usageMetricState = usageMetricState;
   }
 

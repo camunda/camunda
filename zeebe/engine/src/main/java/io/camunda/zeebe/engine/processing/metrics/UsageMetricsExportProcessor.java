@@ -107,7 +107,7 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
           bucket.getTenantEDIMap(),
           bucket.getTenantEDIMapValue());
     } else {
-      checkRecordLength(eventRecord).forEach(this::appendFollowUpEvent);
+      appendFollowUpEvent(eventRecord);
     }
   }
 
@@ -116,17 +116,17 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
       final PersistedUsageMetrics bucket,
       final UsageMetricRecord baseRecord,
       final EventType eventType,
-      final Map<?, ?> conditionMap,
+      final Map<?, ?> valuesMap,
       final DirectBuffer valuesBuffer) {
-    if (!conditionMap.isEmpty()) {
-      final UsageMetricRecord clonedRecord = cloneEventRecord(baseRecord);
+    if (!valuesMap.isEmpty()) {
+      final UsageMetricRecord clonedRecord = initializeEventRecord(baseRecord);
       enhanceEventRecord(clonedRecord, bucket, eventType, valuesBuffer);
       checkRecordLength(clonedRecord).forEach(this::appendFollowUpEvent);
     }
   }
 
-  /** Creates a deep clone of the given UsageMetricRecord. */
-  private UsageMetricRecord cloneEventRecord(final UsageMetricRecord original) {
+  /** Creates a UsageMetricRecord with original properties. */
+  private UsageMetricRecord initializeEventRecord(final UsageMetricRecord original) {
     return new UsageMetricRecord()
         .setIntervalType(original.getIntervalType())
         .setEventType(original.getEventType())

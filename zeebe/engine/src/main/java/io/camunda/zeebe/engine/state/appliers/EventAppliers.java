@@ -446,10 +446,11 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerDecisionEvaluationAppliers(final MutableProcessingState state) {
+    register(DecisionEvaluationIntent.EVALUATED, 1, NOOP_EVENT_APPLIER);
     register(
         DecisionEvaluationIntent.EVALUATED,
-        1,
-        new DecisionEvaluationV1Applier(state.getUsageMetricState()));
+        2,
+        new DecisionEvaluationV2Applier(state.getUsageMetricState()));
     register(DecisionEvaluationIntent.FAILED, NOOP_EVENT_APPLIER);
   }
 
