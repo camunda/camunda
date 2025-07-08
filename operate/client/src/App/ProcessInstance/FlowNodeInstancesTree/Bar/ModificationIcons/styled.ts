@@ -13,7 +13,7 @@ const Container = styled.div`
   display: flex;
   align-items: center;
   justify-self: flex-end;
-  margin: 0 var(--cds-spacing-05);
+  margin: 0 var(--cds-spacing-04);
 `;
 
 const iconStyles = css`
