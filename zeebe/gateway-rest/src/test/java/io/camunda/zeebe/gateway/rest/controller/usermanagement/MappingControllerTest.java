@@ -31,7 +31,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-@WebMvcTest(MappingController.class)
+@WebMvcTest(MappingRuleController.class)
 public class MappingControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
@@ -51,7 +51,10 @@ public class MappingControllerTest extends RestControllerTest {
   @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
   void createMappingShouldReturnCreated(final String id) {
     // given
-    final var dto = validCreateMappingRequest();
+    final var dto = validCreateMappingDTO();
+    final var request =
+        new MappingRuleCreateRequest(
+            dto.mappingId(), dto.claimName(), dto.claimValue(), dto.name());
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(1L)
@@ -69,7 +72,7 @@ public class MappingControllerTest extends RestControllerTest {
         .uri(MAPPING_RULES_PATH)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isCreated();
@@ -107,7 +110,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("claim")
             .claimValue("claimValue")
             .name("name")
-            .mappingId("");
+            .mappingRuleId("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -128,7 +131,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimName() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingId("id");
+        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -153,7 +156,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("")
             .claimValue("claimValue")
             .name("name")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -174,7 +177,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimValue() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingId("id");
+        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -199,7 +202,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("claimName")
             .claimValue("")
             .name("name")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -223,7 +226,7 @@ public class MappingControllerTest extends RestControllerTest {
         new MappingRuleCreateRequest()
             .claimName("claimName")
             .claimValue("claimValue")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -251,7 +254,7 @@ public class MappingControllerTest extends RestControllerTest {
     // given
     final var request =
         new MappingRuleCreateRequest()
-            .mappingId(id)
+            .mappingRuleId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -277,7 +280,7 @@ public class MappingControllerTest extends RestControllerTest {
     final var id = "x".repeat(257);
     final var request =
         new MappingRuleCreateRequest()
-            .mappingId(id)
+            .mappingRuleId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -459,7 +462,7 @@ public class MappingControllerTest extends RestControllerTest {
     verifyNoInteractions(mappingServices);
   }
 
-  private MappingDTO validCreateMappingRequest() {
+  private MappingDTO validCreateMappingDTO() {
     return new MappingDTO("newClaimName", "newClaimValue", "mapName", "mapId");
   }
 

@@ -36,7 +36,7 @@ public class AssignRoleToMappingTest extends ClientRestTest {
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/roles/" + ROLE_ID + "/mappings/" + MAPPING_ID);
+        .isEqualTo(REST_API_PATH + "/roles/" + ROLE_ID + "/mapping-rules/" + MAPPING_ID);
   }
 
   @Test

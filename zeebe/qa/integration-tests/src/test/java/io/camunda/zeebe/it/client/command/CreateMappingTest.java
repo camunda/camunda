@@ -92,7 +92,7 @@ public class CreateMappingTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId");
+        .hasMessageContaining("mappingRuleId");
   }
 
   @Test

@@ -28,7 +28,7 @@ public class CreateMappingResponseImpl implements CreateMappingResponse {
   }
 
   public CreateMappingResponseImpl setResponse(final MappingRuleCreateResult response) {
-    mappingId = response.getMappingId();
+    mappingId = response.getMappingRuleId();
     return this;
   }
 }

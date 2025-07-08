@@ -77,8 +77,8 @@ import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
@@ -333,10 +333,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(List::of));
   }
 
-  public static MappingSearchQueryResult toMappingSearchQueryResponse(
+  public static MappingRuleSearchQueryResult toMappingSearchQueryResponse(
       final SearchQueryResult<MappingEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new MappingSearchQueryResult()
+    return new MappingRuleSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -662,15 +662,15 @@ public final class SearchQueryResponseMapper {
     return new RoleClientResult().clientId(roleMember.id());
   }
 
-  private static List<MappingResult> toMappings(final List<MappingEntity> mappings) {
+  private static List<MappingRuleResult> toMappings(final List<MappingEntity> mappings) {
     return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
   }
 
-  public static MappingResult toMapping(final MappingEntity mappingEntity) {
-    return new MappingResult()
+  public static MappingRuleResult toMapping(final MappingEntity mappingEntity) {
+    return new MappingRuleResult()
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
-        .mappingId(mappingEntity.mappingId())
+        .mappingRuleId(mappingEntity.mappingId())
         .name(mappingEntity.name());
   }
 

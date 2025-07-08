@@ -515,7 +515,7 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, MappingQuery> toMappingQuery(
-      final MappingSearchQueryRequest request) {
+      final MappingRuleSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.mappingSearchQuery().build());
     }
@@ -1061,13 +1061,13 @@ public final class SearchQueryRequestMapper {
   }
 
   private static MappingFilter toMappingFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.MappingFilter filter) {
+      final io.camunda.zeebe.gateway.protocol.rest.MappingRuleFilter filter) {
     final var builder = FilterBuilders.mapping();
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
       ofNullable(filter.getName()).ifPresent(builder::name);
-      ofNullable(filter.getMappingId()).ifPresent(builder::mappingId);
+      ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingId);
     }
     return builder.build();
   }
@@ -1489,13 +1489,13 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyMappingSortField(
-      final MappingSearchQuerySortRequest.FieldEnum field, final MappingSort.Builder builder) {
+      final MappingRuleSearchQuerySortRequest.FieldEnum field, final MappingSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case MAPPING_ID -> builder.mappingId();
+        case MAPPING_RULE_ID -> builder.mappingId();
         case CLAIM_NAME -> builder.claimName();
         case CLAIM_VALUE -> builder.claimValue();
         case NAME -> builder.name();

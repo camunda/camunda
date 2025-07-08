@@ -445,7 +445,7 @@ public class RoleControllerTest extends RestControllerTest {
     // when
     webClient
         .put()
-        .uri("%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -460,7 +460,7 @@ public class RoleControllerTest extends RestControllerTest {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
     final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
     when(roleServices.addMember(request))
         .thenReturn(
@@ -490,7 +490,7 @@ public class RoleControllerTest extends RestControllerTest {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
     final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
     when(roleServices.addMember(request))
         .thenReturn(
@@ -517,7 +517,7 @@ public class RoleControllerTest extends RestControllerTest {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = "mappingId!";
-    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
 
     // when
     webClient
@@ -547,7 +547,7 @@ public class RoleControllerTest extends RestControllerTest {
     // given
     final String roleId = "roleId!";
     final String mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
 
     // when
     webClient
@@ -584,7 +584,7 @@ public class RoleControllerTest extends RestControllerTest {
     // when
     webClient
         .delete()
-        .uri("%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -599,7 +599,7 @@ public class RoleControllerTest extends RestControllerTest {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
     final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
     when(roleServices.removeMember(request))
         .thenReturn(
@@ -629,7 +629,7 @@ public class RoleControllerTest extends RestControllerTest {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mappings/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
     final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
     when(roleServices.removeMember(request))
         .thenReturn(
