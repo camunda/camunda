@@ -20,6 +20,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.search.query.TypedSearchQuery;
@@ -27,7 +28,6 @@ import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.util.List;
 import java.util.function.Function;
 
 public final class SearchClientBasedQueryExecutor {
@@ -52,23 +52,17 @@ public final class SearchClientBasedQueryExecutor {
       final TypedSearchQuery<F, S> query, final Class<T> documentClass) {
     final SearchQueryResultTransformer<T, R> responseTransformer =
         (SearchQueryResultTransformer<T, R>) getSearchResultTransformer(documentClass);
+    final var type = query.page().resultType();
     return executeSearch(
         query,
-        q ->
-            responseTransformer.apply(
-                searchClient.search(q, documentClass), !query.page().isNextPage()));
-  }
-
-  public <F extends FilterBase, S extends SortOption, T, R> List<R> findAll(
-      final TypedSearchQuery<F, S> query, final Class<T> documentClass) {
-    final ServiceTransformer<T, R> documentTransformer =
-        (ServiceTransformer<T, R>) getDocumentTransformer(documentClass);
-    return executeSearch(
-        query,
-        q ->
-            searchClient.findAll(q, documentClass).stream()
-                .map(documentTransformer::apply)
-                .toList());
+        q -> {
+          if (SearchQueryResultType.UNLIMITED.equals(type)) {
+            return responseTransformer.apply(searchClient.scroll(q, documentClass), false);
+          } else {
+            return responseTransformer.apply(
+                searchClient.search(q, documentClass), !query.page().isNextPage());
+          }
+        });
   }
 
   public <F extends FilterBase, A extends AggregationBase, R extends AggregationResultBase>

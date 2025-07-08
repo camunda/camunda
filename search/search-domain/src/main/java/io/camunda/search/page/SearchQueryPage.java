@@ -10,13 +10,15 @@ package io.camunda.search.page;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public record SearchQueryPage(Integer from, Integer size, String after, String before) {
+public record SearchQueryPage(
+    Integer from, Integer size, String after, String before, SearchQueryResultType resultType) {
 
   public static final Integer DEFAULT_FROM = 0;
   public static final Integer DEFAULT_SIZE = 100;
 
-  public static final SearchQueryPage DEFAULT = new Builder().build();
-  public static final SearchQueryPage NO_ENTITIES_QUERY = new SearchQueryPage(0, 0, null, null);
+  public static final SearchQueryPage DEFAULT = of(b -> b);
+  public static final SearchQueryPage NO_ENTITIES_QUERY =
+      of(b -> b.from(0).size(0).after(null).before(null));
 
   public boolean isNextPage() {
     return after != null || !isPreviousPage();
@@ -74,7 +76,13 @@ public record SearchQueryPage(Integer from, Integer size, String after, String b
     public SearchQueryPage build() {
       final var sanitizedFrom = (from == null) ? DEFAULT_FROM : Math.max(0, from);
       final var sanitizedSize = (size == null) ? DEFAULT_SIZE : Math.max(0, size);
-      return new SearchQueryPage(sanitizedFrom, sanitizedSize, after, before);
+      return new SearchQueryPage(
+          sanitizedFrom, sanitizedSize, after, before, SearchQueryResultType.PAGINATED);
     }
+  }
+
+  public enum SearchQueryResultType {
+    UNLIMITED,
+    PAGINATED
   }
 }

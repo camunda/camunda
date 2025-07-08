@@ -33,4 +33,7 @@ public class ErrorMessages {
   public static final String ERROR_NOT_UNIQUE_ENTITY = "Found %s with key %s more than once";
   public static final String ERROR_NOT_UNIQUE_FORM = "Found form with key %d more than once";
   public static final String ERROR_NOT_UNIQUE_TENANT = "Found multiple tenants matching %s";
+
+  public static final String ERROR_QUERY_MAX_BATCH_SIZE_EXCEEDS_LIMIT =
+      "Given query max batch %d exceeds the limit of %d";
 }

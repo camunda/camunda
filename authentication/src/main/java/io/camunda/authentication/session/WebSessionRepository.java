@@ -74,7 +74,7 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   }
 
   public void deleteExpiredWebSessions() {
-    Optional.ofNullable(persistentWebSessionClient.getAllPersistentWebSessions())
+    Optional.ofNullable(persistentWebSessionClient.getAllPersistentWebSessions().items())
         .ifPresent(
             persistentWebSessionEntities ->
                 persistentWebSessionEntities.forEach(this::deletePersistentWebSessionIfExpired));
