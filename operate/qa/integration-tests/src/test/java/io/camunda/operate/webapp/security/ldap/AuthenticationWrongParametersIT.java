@@ -19,7 +19,6 @@ import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
-import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
@@ -47,7 +46,6 @@ import org.springframework.util.MultiValueMap;
       OperateProperties.class,
       TestApplicationWithNoBeans.class,
       AuthenticationRestService.class,
-      RolePermissionService.class,
       LDAPWebSecurityConfig.class,
       OAuth2WebConfigurer.class,
       Jwt2AuthenticationTokenConverter.class,

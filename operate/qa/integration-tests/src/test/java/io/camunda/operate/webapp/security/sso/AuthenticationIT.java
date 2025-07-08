@@ -38,7 +38,6 @@ import io.camunda.operate.webapp.controllers.OperateIndexController;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
@@ -86,7 +85,6 @@ import org.springframework.web.client.RestTemplate;
       C8ConsoleService.class,
       SSOController.class,
       SSOUserService.class,
-      RolePermissionService.class,
       OperateURIs.class,
       DatabaseInfo.class,
       OperateProperties.class,
