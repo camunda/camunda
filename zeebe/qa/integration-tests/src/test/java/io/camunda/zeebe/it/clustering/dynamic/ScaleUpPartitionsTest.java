@@ -544,7 +544,8 @@ public class ScaleUpPartitionsTest {
                               .correlationKey(String.valueOf(key))
                               .send()
                               .toCompletableFuture())
-                      .succeedsWithin(Duration.ofSeconds(5));
+                      .succeedsWithin(Duration.ofSeconds(5))
+                      .satisfies(r -> assertThat(r.getMessageKey()).isNotNull().isPositive());
                 });
       }
     }
