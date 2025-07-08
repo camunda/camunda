@@ -20,6 +20,7 @@ import MockBpmnJsNavigatedViewer from '__mocks__/bpmn-js/lib/NavigatedViewer';
 import MockBpmnJs from '__mocks__/bpmn-js';
 import MockBpmnIoElementTemplateIconRenderer from '__mocks__/@bpmn-io/element-template-icon-renderer';
 import MockReactMarkdown from '__mocks__/react-markdown';
+import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
 vi.mock('dmn-js-shared/lib/base/Manager', () => ({
   default: MockDmnJsSharedManager,
@@ -132,7 +133,7 @@ beforeAll(() =>
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
 beforeEach(async () => {
-  vi.stubGlobal('ResizeObserver', await import('resize-observer-polyfill'));
+  vi.stubGlobal('ResizeObserver', ResizeObserverPolyfill);
   vi.stubGlobal('localStorage', localStorageMock);
   vi.stubGlobal('MutationObserver', MutationObserver);
   vi.stubGlobal('clientConfig', {
