@@ -68,11 +68,11 @@ public class SearchCompositeAggregatorTransformer
   }
 
   private Builder buildTerms(final SearchTermsAggregator terms, final Builder termsBuilder) {
-    var bulder = termsBuilder.field(terms.field());
+    var builder = termsBuilder.field(terms.field());
     if (terms.sorting() != null && !terms.sorting().isEmpty()) {
-      bulder = bulder.order(toSortOrder(terms.field(), terms.sorting()));
+      builder = builder.order(toSortOrder(terms.field(), terms.sorting()));
     }
-    return bulder;
+    return builder;
   }
 
   private SortOrder toSortOrder(final String termsField, final List<FieldSorting> sortings) {
