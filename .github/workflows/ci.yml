@@ -742,7 +742,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[IT] ${{ matrix.name }}"
+    name: "[IT] ${{ matrix.name }} ${{ matrix.suite }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -759,54 +759,61 @@ jobs:
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
+            suite: ""
           - group: modules
-            name: "Zeebe Module Integration Tests"
+            name: "Zeebe Module"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-longrunning
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
+            suite: "Core Features"
           - group: schema-manager
-            name: "Schema Manager Integration Tests"
+            name: "Schema Manager"
             maven-modules: "schema-manager"
             maven-build-threads: 1
             maven-test-fork-count: 3
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
+            suite: "Data Layer"
           - group: qa-integration
-            name: "Zeebe QA - Integration Tests"
+            name: "Zeebe QA"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-16-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
+            suite: ""
           - group: qa-migration-integration
-            name: "Migration QA - Integration Tests"
+            name: "Migration QA"
             maven-modules: "migration/process-migration"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
+            suite: "Data Layer"
           - group: qa-update
-            name: "Zeebe QA - Update Tests"
+            name: "Zeebe QA - Update"
             maven-modules: "zeebe/qa/update-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
+            suite: ""
           - group: qa-camunda-process-test
-            name: "Camunda Process Test"
+            name: "Camunda Process"
             maven-modules: "testing/camunda-process-test-java,testing/camunda-process-test-spring,testing/camunda-process-test-example"
             maven-build-threads: 1
             maven-test-fork-count: 3
             runs-on: gcp-perf-core-8-default
             docker-repository: localhost:5000/camunda/camunda
             docker-file: camunda.Dockerfile
+            suite: ""
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
