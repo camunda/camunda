@@ -168,7 +168,7 @@ public abstract sealed class BackupControllerTest {
 
   @Test
   public void shouldGetBackupsWithNullParameters() {
-    when(backupService.getBackups(anyBoolean(), any()))
+    when(backupService.getBackups(true, "*"))
         .thenReturn(
             List.of(
                 new GetBackupStateResponseDto()

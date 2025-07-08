@@ -23,8 +23,7 @@ import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.micrometer.common.lang.NonNull;
-import io.micrometer.common.lang.Nullable;
+import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import org.slf4j.Logger;
@@ -72,7 +71,7 @@ public class BackupController {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> getBackupState(@Selector @NonNull final long backupId) {
+  public WebEndpointResponse<?> getBackupState(@Selector final long backupId) {
     try {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
@@ -102,7 +101,7 @@ public class BackupController {
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> deleteBackup(@Selector @NonNull final long backupId) {
+  public WebEndpointResponse<?> deleteBackup(@Selector final long backupId) {
     try {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();

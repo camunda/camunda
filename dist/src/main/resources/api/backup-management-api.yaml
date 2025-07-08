@@ -155,7 +155,8 @@ paths:
             type: string
             default: '*'
           description: |
-            Provide a possible prefix number for filtering the backups, can end with a wildcard('*').
+            Provide a possible prefix for filtering the backups. Since the backupId is a number,
+            this pattern can only contain digits and the wildcard '*'.
       responses:
         '200':
           description: OK
