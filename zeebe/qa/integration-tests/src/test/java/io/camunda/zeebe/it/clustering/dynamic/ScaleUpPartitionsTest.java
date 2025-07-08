@@ -376,6 +376,7 @@ public class ScaleUpPartitionsTest {
     // After creating instances, wait for subscriptions to be established
     variableProvider.correlateAllMessages(camundaClient, "message");
   }
+
   @ParameterizedTest
   @EnumSource(value = TestCase.class)
   public void shouldNotBreakMessageStartEvents(final TestCase testCase) {
@@ -426,6 +427,7 @@ public class ScaleUpPartitionsTest {
     // then - verify that message start events work and intermediate messages can be correlated
     correlationKeyProvider.correlateAllMessages(camundaClient, continueMessageName);
   }
+
   public void assertThatRoutingStateMatches(final RoutingState routingState) {
     Awaitility.await("until topology is restored correctly")
         .atMost(Duration.ofSeconds(30))
@@ -481,6 +483,7 @@ public class ScaleUpPartitionsTest {
         false,
         false);
   }
+
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
         .atMost(Duration.ofMinutes(2))
@@ -509,6 +512,7 @@ public class ScaleUpPartitionsTest {
       };
     }
   }
+
   static class CorrelationKeyVariableProvider {
 
     final AtomicInteger messageId = new AtomicInteger();
@@ -586,6 +590,7 @@ public class ScaleUpPartitionsTest {
         case SIGNAL ->
             startProcessInstancesWithSignals(
                 camundaClient, messageName(), count, correlationKeyProvider);
+        default -> throw new IllegalArgumentException("Invalid enum case " + this);
       }
     }
 
