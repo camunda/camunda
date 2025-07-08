@@ -14,8 +14,6 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetch
 
 const currentInstanceMock = createInstance();
 
-vi.unmock('modules/utils/date/formatDate');
-
 describe('stores/currentInstance', () => {
   afterEach(() => {
     processInstanceDetailsStore.reset();
@@ -35,7 +33,7 @@ describe('stores/currentInstance', () => {
   });
 
   it('should poll if current instance is running', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.init({id: '1'});
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
@@ -312,7 +310,7 @@ describe('stores/currentInstance', () => {
   });
 
   it('should poll with polling header', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     // expect the first request not to be a polling request
     mockFetchProcessInstance().withSuccess(currentInstanceMock, {
