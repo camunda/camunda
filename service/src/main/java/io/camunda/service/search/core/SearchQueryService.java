@@ -7,8 +7,6 @@
  */
 package io.camunda.service.search.core;
 
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -27,22 +25,4 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
   }
 
   public abstract SearchQueryResult<D> search(final Q query);
-
-  protected <E> E getSingleResultOrThrow(
-      final SearchQueryResult<E> searchQueryResult,
-      final Object key,
-      final String entityTypeLabel) {
-    if (searchQueryResult.total() < 1) {
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_NOT_FOUND_ENTITY_BY_KEY.formatted(entityTypeLabel, key),
-          CamundaSearchException.Reason.NOT_FOUND);
-    } else if (searchQueryResult.total() > 1) {
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_NOT_UNIQUE_ENTITY.formatted(entityTypeLabel, key),
-          CamundaSearchException.Reason.NOT_UNIQUE);
-
-    } else {
-      return searchQueryResult.items().stream().findFirst().orElseThrow();
-    }
-  }
 }

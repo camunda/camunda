@@ -9,8 +9,6 @@ package io.camunda.service;
 
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
@@ -24,7 +22,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -81,19 +78,13 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   }
 
   public UserEntity getUser(final String username) {
-    return findUser(username)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_USER_BY_USERNAME.formatted(username),
-                    CamundaSearchException.Reason.NOT_FOUND));
-  }
-
-  public Optional<UserEntity> findUser(final String username) {
-    return search(SearchQueryBuilders.userSearchQuery().filter(f -> f.usernames(username)).build())
+    return search(
+            SearchQueryBuilders.userSearchQuery()
+                .filter(f -> f.usernames(username))
+                .singleResult()
+                .build())
         .items()
-        .stream()
-        .findFirst();
+        .getFirst();
   }
 
   public CompletableFuture<UserRecord> updateUser(final UserDTO request) {

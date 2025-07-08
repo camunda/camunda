@@ -91,7 +91,8 @@ class DecisionInstanceServiceTest {
                 q ->
                     q.filter(f -> f.decisionInstanceIds(decisionInstanceId))
                         .resultConfig(
-                            c -> c.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))));
+                            c -> c.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))
+                        .singleResult()));
   }
 
   @Test

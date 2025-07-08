@@ -209,7 +209,7 @@ public class ProcessDefinitionSearchTest {
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
     assertThat(exception.details().getStatus()).isEqualTo(404);
     assertThat(exception.details().getDetail())
-        .isEqualTo("Process definition with key 3072 not found");
+        .contains("A single result was expected, but none was found matching");
   }
 
   @Test

@@ -108,21 +108,10 @@ public class RoleServicesTest {
     when(client.searchRoles(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findRole(entity.roleId());
+    final var searchQueryResult = services.getRole(entity.roleId());
 
     // then
-    assertThat(searchQueryResult).contains(entity);
-  }
-
-  @Test
-  public void shouldThrownExceptionIfNotFoundById() {
-    // given
-    final var roleId = "roleId";
-    when(client.searchRoles(any()))
-        .thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
-
-    // when / then
-    assertThat(services.findRole(roleId)).isEmpty();
+    assertThat(searchQueryResult).isEqualTo(entity);
   }
 
   @Test

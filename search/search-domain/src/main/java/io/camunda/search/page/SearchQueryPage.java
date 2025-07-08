@@ -83,6 +83,7 @@ public record SearchQueryPage(
 
   public enum SearchQueryResultType {
     UNLIMITED,
-    PAGINATED
+    PAGINATED,
+    SINGLE_RESULT
   }
 }

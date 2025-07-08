@@ -68,15 +68,16 @@ public final class DecisionRequirementsServices
                 decisionRequirementsSearchQuery(
                     q ->
                         q.filter(f -> f.decisionRequirementsKeys(key))
-                            .resultConfig(r -> r.includeXml(includeXml))));
-    final var decisionRequirementsEntity =
-        getSingleResultOrThrow(result, key, "Decision requirements");
+                            .resultConfig(r -> r.includeXml(includeXml))
+                            .singleResult()))
+            .items()
+            .getFirst();
     final var authorization = Authorization.of(a -> a.decisionRequirementsDefinition().read());
     if (!securityContextProvider.isAuthorized(
-        decisionRequirementsEntity.decisionRequirementsId(), authentication, authorization)) {
+        result.decisionRequirementsId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return decisionRequirementsEntity;
+    return result;
   }
 
   public SearchQueryResult<DecisionRequirementsEntity> search(

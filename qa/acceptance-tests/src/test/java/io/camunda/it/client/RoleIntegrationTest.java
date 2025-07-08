@@ -116,7 +116,7 @@ public class RoleIntegrationTest {
     assertThatThrownBy(() -> camundaClient.newRoleGetRequest("someRoleId").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining("Role with role ID someRoleId not found");
+        .hasMessageContaining("A single result was expected, but none was found matching");
   }
 
   @Test

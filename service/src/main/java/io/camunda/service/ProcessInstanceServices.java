@@ -159,15 +159,15 @@ public final class ProcessInstanceServices
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchProcessInstances(
                 processInstanceSearchQuery(
-                    q -> q.filter(f -> f.processInstanceKeys(processInstanceKey))));
-    final var processInstanceEntity =
-        getSingleResultOrThrow(result, processInstanceKey, "Process instance");
+                    q -> q.filter(f -> f.processInstanceKeys(processInstanceKey)).singleResult()))
+            .items()
+            .getFirst();
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
-        processInstanceEntity.processDefinitionId(), authentication, authorization)) {
+        result.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return processInstanceEntity;
+    return result;
   }
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(

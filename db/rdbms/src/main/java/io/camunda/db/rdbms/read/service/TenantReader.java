@@ -43,6 +43,7 @@ public class TenantReader extends AbstractEntityReader<TenantEntity> {
     LOG.trace("[RDBMS DB] Search for tenants with filter {}", dbQuery);
     final var totalHits = tenantMapper.count(dbQuery);
     final var hits = tenantMapper.search(dbQuery).stream().map(this::map).toList();
+    ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 

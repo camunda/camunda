@@ -80,9 +80,7 @@ public class AuthorizationIntegrationTest {
                 camundaClient.newAuthorizationGetRequest(nonExistingAuthorizationKey).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining(
-            "Authorization with authorization key %d not found"
-                .formatted(nonExistingAuthorizationKey));
+        .hasMessageContaining("A single result was expected, but none was found matching");
   }
 
   @Test

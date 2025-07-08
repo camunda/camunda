@@ -80,15 +80,14 @@ public final class DecisionDefinitionServices
         decisionRequirementsSearchQuery(
             q ->
                 q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
-                    .resultConfig(r -> r.includeXml(true)));
-    final var decisionRequirements =
-        getSingleResultOrThrow(
-            decisionRequirementSearchClient
-                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-                .searchDecisionRequirements(decisionRequirementsQuery),
-            decisionRequirementsKey,
-            "Decision requirements");
-    return decisionRequirements.xml();
+                    .resultConfig(r -> r.includeXml(true))
+                    .singleResult());
+    return decisionRequirementSearchClient
+        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+        .searchDecisionRequirements(decisionRequirementsQuery)
+        .items()
+        .getFirst()
+        .xml();
   }
 
   public DecisionDefinitionEntity getByKey(final long decisionKey) {
@@ -97,16 +96,16 @@ public final class DecisionDefinitionServices
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchDecisionDefinitions(
                 decisionDefinitionSearchQuery(
-                    q -> q.filter(f -> f.decisionDefinitionKeys(decisionKey))));
-    final var decisionDefinitionEntity =
-        getSingleResultOrThrow(result, decisionKey, "Decision definition");
+                    q -> q.filter(f -> f.decisionDefinitionKeys(decisionKey)).singleResult()))
+            .items()
+            .getFirst();
     final var authorization =
         Authorization.of(a -> a.decisionDefinition().readDecisionDefinition());
     if (!securityContextProvider.isAuthorized(
-        decisionDefinitionEntity.decisionDefinitionId(), authentication, authorization)) {
+        result.decisionDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return decisionDefinitionEntity;
+    return result;
   }
 
   public CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> evaluateDecision(

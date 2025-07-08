@@ -70,14 +70,15 @@ public final class BatchOperationServices
   }
 
   public BatchOperationEntity getById(final String batchOperationId) {
-    final var result =
-        batchOperationSearchClient
-            .withSecurityContext(
-                securityContextProvider.provideSecurityContext(
-                    authentication, Authorization.of(a -> a.batchOperation().read())))
-            .searchBatchOperations(
-                batchOperationQuery(q -> q.filter(f -> f.batchOperationIds(batchOperationId))));
-    return getSingleResultOrThrow(result, batchOperationId, "BatchOperation");
+    return batchOperationSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.batchOperation().read())))
+        .searchBatchOperations(
+            batchOperationQuery(
+                q -> q.filter(f -> f.batchOperationIds(batchOperationId)).singleResult()))
+        .items()
+        .getFirst();
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(

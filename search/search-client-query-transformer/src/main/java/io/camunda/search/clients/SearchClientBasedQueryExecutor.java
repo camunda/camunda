@@ -13,14 +13,16 @@ import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.filter.FilterBase;
-import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.search.query.TypedSearchQuery;
@@ -53,16 +55,25 @@ public final class SearchClientBasedQueryExecutor {
     final SearchQueryResultTransformer<T, R> responseTransformer =
         (SearchQueryResultTransformer<T, R>) getSearchResultTransformer(documentClass);
     final var type = query.page().resultType();
-    return executeSearch(
-        query,
-        q -> {
-          if (SearchQueryResultType.UNLIMITED.equals(type)) {
-            return responseTransformer.apply(searchClient.scroll(q, documentClass), false);
-          } else {
-            return responseTransformer.apply(
-                searchClient.search(q, documentClass), !query.page().isNextPage());
-          }
-        });
+    final boolean reverse;
+    final SearchQueryResponse<T> response;
+
+    switch (type) {
+      case UNLIMITED -> {
+        reverse = false;
+        response = executeUnlimitedSearch(query, documentClass);
+      }
+      case SINGLE_RESULT -> {
+        reverse = false;
+        response = executeSingleResultSearch(query, documentClass);
+      }
+      default -> {
+        reverse = !query.page().isNextPage();
+        response = executePaginatedSearch(query, documentClass);
+      }
+    }
+
+    return responseTransformer.apply(response, reverse);
   }
 
   public <F extends FilterBase, A extends AggregationBase, R extends AggregationResultBase>
@@ -72,6 +83,32 @@ public final class SearchClientBasedQueryExecutor {
     return transformers
         .getSearchAggregationResultTransformer(resultClass)
         .apply(searchQueryResponse.aggregations());
+  }
+
+  <F extends FilterBase, S extends SortOption, T> SearchQueryResponse<T> executePaginatedSearch(
+      final TypedSearchQuery<F, S> query, final Class<T> documentClass) {
+    return executeSearch(query, q -> searchClient.search(q, documentClass));
+  }
+
+  <F extends FilterBase, S extends SortOption, T> SearchQueryResponse<T> executeUnlimitedSearch(
+      final TypedSearchQuery<F, S> query, final Class<T> documentClass) {
+    return executeSearch(query, q -> searchClient.scroll(q, documentClass));
+  }
+
+  <F extends FilterBase, S extends SortOption, T> SearchQueryResponse<T> executeSingleResultSearch(
+      final TypedSearchQuery<F, S> query, final Class<T> documentClass) {
+    final var response = executePaginatedSearch(query, documentClass);
+    final var hits = response.hits().size();
+    if (hits < 1) {
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_SINGLE_RESULT_NOT_FOUND.formatted(query),
+          CamundaSearchException.Reason.NOT_FOUND);
+    } else if (hits > 1) {
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_SINGLE_RESULT_NOT_UNIQUE.formatted(query),
+          CamundaSearchException.Reason.NOT_UNIQUE);
+    }
+    return response;
   }
 
   @VisibleForTesting
