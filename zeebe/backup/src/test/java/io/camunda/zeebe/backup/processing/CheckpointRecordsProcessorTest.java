@@ -327,4 +327,153 @@ final class CheckpointRecordsProcessorTest {
     // then
     assertThat(checkpoint).hasValue(checkpointId);
   }
+
+  @Test
+  void shouldConfirmBackupWhenBackupIdIsNewer() {
+    // given
+    final var currentBackupId = 5;
+    final var currentBackupPosition = 50;
+    state.setLatestBackupInfo(currentBackupId, currentBackupPosition);
+
+    final var newCheckpointId = 10;
+    final var newCheckpointPosition = 100;
+    final var value = new CheckpointRecord().setCheckpointId(newCheckpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            newCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.CONFIRMED_BACKUP, Event::intent)
+        .returns(RecordType.EVENT, Event::type)
+        .returns(value, Event::value);
+  }
+
+  @Test
+  void shouldRejectBackupWhenBackupIdIsOlderOrSame() {
+    // given
+    final var currentBackupId = 10;
+    final var currentBackupPosition = 100;
+    state.setLatestBackupInfo(currentBackupId, currentBackupPosition);
+
+    final var oldCheckpointId = 5;
+    final var oldCheckpointPosition = 50;
+    final var value = new CheckpointRecord().setCheckpointId(oldCheckpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            oldCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then - command rejection is written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.CONFIRM_BACKUP, Event::intent)
+        .returns(RecordType.COMMAND_REJECTION, Event::type)
+        .returns(value, Event::value);
+  }
+
+  @Test
+  void shouldRejectBackupWhenBackupIdIsSame() {
+    // given
+    final var currentBackupId = 10;
+    final var currentBackupPosition = 100;
+    state.setLatestBackupInfo(currentBackupId, currentBackupPosition);
+
+    final var sameCheckpointId = 10;
+    final var sameCheckpointPosition = 100;
+    final var value = new CheckpointRecord().setCheckpointId(sameCheckpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            sameCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then - command rejection is written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.CONFIRM_BACKUP, Event::intent)
+        .returns(RecordType.COMMAND_REJECTION, Event::type)
+        .returns(value, Event::value);
+  }
+
+  @Test
+  void shouldConfirmBackupWhenNoBackupExists() {
+    // given - no backup exists (state is empty)
+    final var newCheckpointId = 5;
+    final var newCheckpointPosition = 50;
+    final var value = new CheckpointRecord().setCheckpointId(newCheckpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            newCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then - followup event is written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.CONFIRMED_BACKUP, Event::intent)
+        .returns(RecordType.EVENT, Event::type)
+        .returns(value, Event::value);
+  }
+
+  @Test
+  void shouldReplayConfirmedBackupRecord() {
+    // given
+    final var backupId = 15;
+    final var backupPosition = 150;
+    final var value =
+        new CheckpointRecord().setCheckpointId(backupId).setCheckpointPosition(backupPosition);
+    final var record =
+        new MockTypedCheckpointRecord(
+            backupPosition + 1,
+            backupPosition,
+            CheckpointIntent.CONFIRMED_BACKUP,
+            RecordType.EVENT,
+            value);
+
+    // when
+    processor.replay(record);
+
+    // then - backup state is updated
+    assertThat(state.getLatestBackupId()).isEqualTo(backupId);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(backupPosition);
+  }
+
+  @Test
+  void shouldReplayConfirmedBackupRecordWithoutAffectingCheckpointState() {
+    // given
+    final var checkpointId = 20;
+    final var checkpointPosition = 200;
+    state.setLatestCheckpointInfo(checkpointId, checkpointPosition);
+
+    final var backupId = 15;
+    final var backupPosition = 150;
+    final var value =
+        new CheckpointRecord().setCheckpointId(backupId).setCheckpointPosition(backupPosition);
+    final var record =
+        new MockTypedCheckpointRecord(
+            backupPosition + 1,
+            backupPosition,
+            CheckpointIntent.CONFIRMED_BACKUP,
+            RecordType.EVENT,
+            value);
+
+    // when
+    processor.replay(record);
+
+    // then - backup state is updated
+    assertThat(state.getLatestBackupId()).isEqualTo(backupId);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(backupPosition);
+    // then - checkpoint state is unchanged
+    assertThat(state.getLatestCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(checkpointPosition);
+  }
 }
