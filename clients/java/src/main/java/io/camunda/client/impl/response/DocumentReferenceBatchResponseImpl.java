@@ -76,7 +76,7 @@ public class DocumentReferenceBatchResponseImpl implements DocumentReferenceBatc
 
     @Override
     public String toString() {
-      return "FailedDocumentDetailImpl{" + "failedDocumentDetail=" + failedDocumentDetail + '}';
+      return "FailedDocumentDetailImpl{failedDocumentDetail=" + failedDocumentDetail + "}";
     }
   }
 }
