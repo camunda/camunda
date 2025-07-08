@@ -18,6 +18,23 @@ Key Features & Benefits:
   database procedures.
 * Enterprise Readiness: Addresses licensing constraints, compliance requirements, and cost concerns.
 
+### Database Configuration
+
+Camunda supports different database types for secondary storage through the `camunda.database.type` configuration property:
+
+* `elasticsearch` (default): Uses Elasticsearch for secondary storage
+* `opensearch`: Uses OpenSearch for secondary storage  
+* `rdbms`: Uses a relational database for secondary storage
+* `none`: Disables all secondary storage components for headless/engine-only deployments
+
+When `camunda.database.type=none`, all components dependent on secondary storage are disabled, including:
+- Search engine clients and connectors
+- Schema management and index creation
+- Webapps backend services (Operate, Tasklist)
+- Exporters (except custom exporters explicitly configured)
+
+This enables headless deployments where only the Zeebe engine is active.
+
 ### Requirements Overview
 
 ### Quality Goals
