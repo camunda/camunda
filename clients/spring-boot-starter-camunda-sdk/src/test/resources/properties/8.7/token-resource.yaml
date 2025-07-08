@@ -1,0 +1,5 @@
+camunda:
+  client:
+    auth:
+      resource: https://api.example.com
+
