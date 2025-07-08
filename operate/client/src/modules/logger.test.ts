@@ -19,22 +19,19 @@ function setNodeEnv(newValue: string) {
   });
 }
 
-const mockConsoleError = vi
-  .spyOn(console, 'error')
-  .mockImplementation(() => {});
-
 describe('logger', () => {
   beforeEach(() => {
     setNodeEnv(ORIGINAL_NODE_ENV);
-    mockConsoleError.mockReset();
   });
 
   afterAll(() => {
     setNodeEnv(ORIGINAL_NODE_ENV);
-    mockConsoleError.mockRestore();
   });
 
   it('should log an error', () => {
+    const mockConsoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     const mockError = 'a random error';
 
     setNodeEnv('production');
@@ -50,6 +47,9 @@ describe('logger', () => {
   });
 
   it('should not log an error', () => {
+    const mockConsoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => {});
     const mockError = 'a random error';
 
     setNodeEnv('test');
