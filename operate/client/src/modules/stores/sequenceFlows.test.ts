@@ -48,7 +48,7 @@ describe('stores/sequenceFlows', () => {
       createInstance({id: '123', state: 'ACTIVE'}),
     );
 
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     sequenceFlowsStore.init();
 
     await waitFor(() =>
