@@ -12,12 +12,9 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
 
 describe('processes.migration store', () => {
-  const originalWindow = {...window};
-  const locationSpy = vi.spyOn(window, 'location', 'get');
-
   afterEach(() => {
     processesStore.reset();
-    locationSpy.mockClear();
+    vi.unstubAllGlobals();
   });
 
   it('should get targetProcessVersions', async () => {
@@ -59,9 +56,9 @@ describe('processes.migration store', () => {
   });
 
   it('should get selectable target processes when resource based permissions are enabled', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
-    };
+    });
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     await processesStore.fetchProcesses();
@@ -102,11 +99,11 @@ describe('processes.migration store', () => {
   });
 
   it('should get selectable target processes when a process with single version is selected', async () => {
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search:
         '?active=true&incidents=true&process=bigVarProcess&version=1&tenant=<default>',
-    }));
+    });
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     await processesStore.fetchProcesses();
@@ -202,10 +199,10 @@ describe('processes.migration store', () => {
   });
 
   it('should get selectable target processes when a process with multiple versions is selected', async () => {
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: '?active=true&incidents=true&process=demoProcess&version=3',
-    }));
+    });
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
     await processesStore.fetchProcesses();
@@ -309,10 +306,10 @@ describe('processes.migration store', () => {
 
   it('should pre-set target process version', async () => {
     // given: demoProcess version 1 as source process
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: '?active=true&incidents=true&process=demoProcess&version=1',
-    }));
+    });
 
     // when initializing processesStore
     processesStore.init();
@@ -327,10 +324,10 @@ describe('processes.migration store', () => {
 
   it('should pre-set latest previous target process version', async () => {
     // given: demoProcess version 3 (latest version) as source process
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: '?active=true&incidents=true&process=demoProcess&version=3',
-    }));
+    });
 
     // when initializing processesStore
     processesStore.init();
