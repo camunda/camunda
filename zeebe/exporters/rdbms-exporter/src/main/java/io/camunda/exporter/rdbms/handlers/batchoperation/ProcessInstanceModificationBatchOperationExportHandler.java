@@ -16,7 +16,11 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 
-/** This aggregates the batch operation status of process instance modify tasks */
+/**
+ * This handles the batch operation item status of batch operations of type MODIFY_PROCESS_INSTANCE.
+ * It handles the migration of process instances by tracking their modification status and updating
+ * the corresponding batch operation item entity.
+ */
 public class ProcessInstanceModificationBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<ProcessInstanceModificationRecordValue> {
 

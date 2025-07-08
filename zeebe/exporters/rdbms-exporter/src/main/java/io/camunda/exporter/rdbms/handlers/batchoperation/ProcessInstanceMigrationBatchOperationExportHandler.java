@@ -16,7 +16,11 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 
-/** This aggregates the batch operation status of process instance cancellations */
+/**
+ * This handles the batch operation item status of batch operations of type
+ * MIGRATE_PROCESS_INSTANCE. It handles the migration of process instances by tracking their
+ * migration status and updating the corresponding batch operation item entity.
+ */
 public class ProcessInstanceMigrationBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<ProcessInstanceMigrationRecordValue> {
 

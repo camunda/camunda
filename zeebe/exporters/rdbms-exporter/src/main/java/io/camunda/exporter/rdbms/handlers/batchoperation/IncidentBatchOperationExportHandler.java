@@ -16,7 +16,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
-/** This aggregates the batch operation status of incident management tasks */
+/**
+ * This handles the batch operation status item of batch operations of type RESOLVE_INCIDENT. It
+ * tracks the resolution of incidents by updating the corresponding batch operation item entity.
+ */
 public class IncidentBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<IncidentRecordValue> {
 
