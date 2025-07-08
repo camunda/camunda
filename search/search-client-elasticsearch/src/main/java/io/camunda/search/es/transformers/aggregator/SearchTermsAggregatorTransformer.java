@@ -16,6 +16,7 @@ import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import java.util.List;
+import java.util.Optional;
 
 public final class SearchTermsAggregatorTransformer
     extends AggregatorTransformer<SearchTermsAggregator, Aggregation> {
@@ -27,15 +28,15 @@ public final class SearchTermsAggregatorTransformer
   @Override
   public Aggregation apply(final SearchTermsAggregator value) {
     // Create the TermsAggregation
-    final TermsAggregation termsAggregation =
+    final TermsAggregation.Builder termsAggregation =
         AggregationBuilders.terms()
             .field(value.field())
-            .order(toOrder(value.sorting()))
             .size(value.size())
-            .minDocCount(value.minDocCount())
-            .build();
+            .minDocCount(value.minDocCount());
+    Optional.ofNullable(value.sorting())
+        .ifPresent(sorting -> termsAggregation.order(toOrder(sorting)));
 
-    final var builder = new Aggregation.Builder().terms(termsAggregation);
+    final var builder = new Aggregation.Builder().terms(termsAggregation.build());
     applySubAggregations(builder, value);
     return builder.build();
   }
