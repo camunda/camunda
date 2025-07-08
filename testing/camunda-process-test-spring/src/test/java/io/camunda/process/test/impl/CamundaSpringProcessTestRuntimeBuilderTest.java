@@ -238,7 +238,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         getCamundaClientConfiguration(remoteClientBuilder);
 
     assertThat(configuration.getRestAddress())
-        .isEqualTo(URI.create("https://my-region.zeebe.zeebe.camunda.io:443/my-cluster"));
+        .isEqualTo(URI.create("https://my-region.zeebe.camunda.io:443/my-cluster"));
     assertThat(configuration.getGrpcAddress())
         .isEqualTo(URI.create("https://my-cluster.my-region.zeebe.camunda.io:443"));
 
