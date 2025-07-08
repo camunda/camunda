@@ -199,7 +199,6 @@ public final class ConfigurationServiceConstants {
   public static final String CAMUNDA_OPTIMIZE_DATABASE = "CAMUNDA_OPTIMIZE_DATABASE";
   public static final String ELASTICSEARCH_DATABASE_PROPERTY = "elasticsearch";
   public static final String OPENSEARCH_DATABASE_PROPERTY = "opensearch";
-  public static final String NONE_DATABASE_PROPERTY = "none";
   public static final String MULTITENANCY_ENABLED = "$.multitenancy.enabled";
 
   private ConfigurationServiceConstants() {}

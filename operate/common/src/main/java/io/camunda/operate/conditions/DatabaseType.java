@@ -12,16 +12,15 @@ import java.util.Optional;
 
 public enum DatabaseType {
   Elasticsearch("elasticsearch"),
-  Opensearch("opensearch"),
-  None("none");
+  Opensearch("opensearch");
 
   private final String code;
 
-  DatabaseType(String code) {
+  DatabaseType(final String code) {
     this.code = code;
   }
 
-  public static Optional<DatabaseType> byCode(String code) {
+  public static Optional<DatabaseType> byCode(final String code) {
     return Arrays.stream(values()).filter(dt -> dt.code.equals(code)).findFirst();
   }
 
