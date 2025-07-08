@@ -37,6 +37,7 @@ import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.PersistOperationHelper;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -95,6 +96,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
   @Autowired private BatchOperationTemplate batchOperationTemplate;
 
   @Autowired private UserService userService;
+
+  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   @Autowired private ProcessInstanceReader processInstanceReader;
 
@@ -382,7 +385,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
             .setType(operationType)
             .setState(OperationState.SCHEDULED)
             .setBatchOperationId(batchOperation.getId())
-            .setUsername(userService.getCurrentUser().getUsername());
+            .setUsername(
+                camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
 
     // Create request
     try {
@@ -432,7 +436,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
             .setType(operationType)
             .setState(OperationState.SCHEDULED)
             .setBatchOperationId(batchOperation.getId())
-            .setUsername(userService.getCurrentUser().getUsername());
+            .setUsername(
+                camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
 
     // Create request
     try {
@@ -532,7 +537,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
         .setType(operationType)
         .setName(name)
         .setStartDate(OffsetDateTime.now())
-        .setUsername(userService.getCurrentUser().getUsername());
+        .setUsername(
+            camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
   }
 
   private OperationEntity createOperationEntity(
@@ -565,7 +571,8 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
         .setType(operationType)
         .setState(OperationState.SCHEDULED)
         .setBatchOperationId(batchOperationId)
-        .setUsername(userService.getCurrentUser().getUsername());
+        .setUsername(
+            camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
   }
 
   private void validateTotalHits(final SearchHits hits) {

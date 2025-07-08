@@ -35,7 +35,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
-import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.Permission;
@@ -58,7 +57,6 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -88,7 +86,6 @@ import org.springframework.web.client.RestTemplate;
       C8ConsoleService.class,
       SSOController.class,
       SSOUserService.class,
-      AuthenticationRestService.class,
       RolePermissionService.class,
       OperateURIs.class,
       DatabaseInfo.class,
@@ -128,7 +125,6 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Autowired private OperateProperties operateProperties;
   @MockBean private AuthenticationController authenticationController;
   @SpyBean private Auth0Service auth0Service;
-  @Autowired private BeanFactory beanFactory;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -413,57 +409,6 @@ public class AuthenticationIT implements AuthenticationTestable {
     // Redirected to Login
     response = get(ROOT);
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-  }
-
-  @Test
-  public void testLoginToAPIResource() throws Exception {
-    // Step 1 try to access user info
-    final String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL + "/user";
-    ResponseEntity<String> response = get(userInfoUrl);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
-
-    HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>());
-    // Step 2 Get Login provider url
-    mockPermissionAllowed();
-    mockClusterMetadata();
-    response = get(LOGIN_RESOURCE, httpEntity);
-
-    assertThat(redirectLocationIn(response))
-        .contains(
-            operateProperties.getAuth0().getDomain(),
-            SSO_CALLBACK_URI,
-            operateProperties.getAuth0().getClientId(),
-            operateProperties.getAuth0().getDomain());
-    // Step 3 Call back uri
-    given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(
-            orgExtractor.apply(
-                operateProperties.getAuth0().getClaimName(),
-                operateProperties.getCloud().getOrganizationId()));
-
-    response = get(SSO_CALLBACK_URI, httpEntity);
-    httpEntity = httpEntityWithCookie(response);
-
-    // Test no ClusterMetadata
-    mockEmptyClusterMetadata();
-    response = get(userInfoUrl, httpEntity);
-    assertThat(response.getBody()).contains("\"c8Links\":{}");
-
-    mockClusterMetadata();
-    response = get(userInfoUrl, httpEntity);
-    final String c8Links =
-        "{\"console\":\"https://console.audience/org/3/cluster/test-clusterId\","
-            + "\"operate\":\"http://operate-url\","
-            + "\"optimize\":\"http://optimize-url\","
-            + "\"modeler\":\"https://modeler.audience/org/3\","
-            + "\"tasklist\":\"http://tasklist-url\","
-            + "\"zeebe\":\"grpc://zeebe-url\"}";
-    assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
-    assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
-    assertThat(response.getBody()).contains("\"salesPlanType\":\"test\"");
-    assertThat(response.getBody()).contains("\"roles\":[\"user\",\"analyst\"]");
-    assertThat(response.getBody()).contains("\"c8Links\":" + c8Links);
   }
 
   @Test

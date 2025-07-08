@@ -204,6 +204,7 @@ public class ProcessInstanceController extends ErrorController
   public ChangeStatus delete(
       @Parameter(description = "Key of process instance", required = true) @Valid @PathVariable
           final Long key) {
+    // TODO: check for permissions https://github.com/camunda/camunda/issues/32408
     return processInstanceDao.delete(key);
   }
 

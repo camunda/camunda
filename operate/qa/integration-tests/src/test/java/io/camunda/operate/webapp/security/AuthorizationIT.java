@@ -20,23 +20,20 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.web.WebAppConfiguration;
 
@@ -54,25 +51,21 @@ public class AuthorizationIT {
   protected static final String USER = "calculon";
   @MockBean private ProcessInstanceReader processInstanceReader;
   @MockBean private PermissionsService permissionsService;
-  @MockBean private UserService<? extends Authentication> userService;
   @MockBean private BatchOperationWriter batchOperationWriter;
   @Autowired private ProcessInstanceRestService processInstanceRestService;
 
   @Test
-  public void testNoWritePermissionsForBatchOperation() {
-    userHasPermission(Permission.READ);
-    assertThrows(
-        AccessDeniedException.class,
-        () ->
-            processInstanceRestService.createBatchOperation(new CreateBatchOperationRequestDto()));
-    verifyNoInteractions(batchOperationWriter);
-  }
-
-  @Test
   public void testNoWritePermissionsForSingleOperation() {
-    userHasPermission(Permission.READ);
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
+    final var processId = "23";
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processId)))
+        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(processId));
+    when(permissionsService.hasPermissionForProcess(
+            processId, PermissionType.DELETE_PROCESS_INSTANCE))
+        .thenReturn(false);
+
     assertThrows(
-        AccessDeniedException.class,
+        NotAuthorizedException.class,
         () ->
             processInstanceRestService.operation(
                 "23",
@@ -83,7 +76,6 @@ public class AuthorizationIT {
 
   @Test
   public void testWritePermissionsForBatchOperation() {
-    userHasPermission(Permission.WRITE);
     when(batchOperationWriter.scheduleBatchOperation(any())).thenReturn(new BatchOperationEntity());
 
     final BatchOperationEntity batchOperationEntity =
@@ -99,7 +91,6 @@ public class AuthorizationIT {
   @Test
   public void testWritePermissionsForSingleOperation() {
     // given
-    userHasPermission(Permission.WRITE);
     when(batchOperationWriter.scheduleSingleOperation(anyLong(), any()))
         .thenReturn(new BatchOperationEntity());
     final var processId = "23";
@@ -117,10 +108,5 @@ public class AuthorizationIT {
 
     assertThat(batchOperationEntity).isNotNull();
     verify(batchOperationWriter, times(1)).scheduleSingleOperation(anyLong(), any());
-  }
-
-  private void userHasPermission(final Permission permission) {
-    when(userService.getCurrentUser())
-        .thenReturn(new UserDto().setUserId(USER).setPermissions(List.of(permission)));
   }
 }
