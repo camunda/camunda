@@ -4,13 +4,15 @@
 
 ## Overview
 
-Metrics are aggregated measurements that reflect the performance and behavior of an application. For example:
-
-- Average duration of database queries.
-
-- Count of HTTP 401 errors over the past 5 minutes.
+Metrics are quantitative measurements that reflect the performance and behavior of an application. In observability systems like Prometheus and OpenTelemetry, a metric can refer to a single measured value (such as a counter or gauge) or to a more complex aggregation (such as a histogram or summary, which aggregate multiple observations over time).
+For example:
+- Average duration of database queries (aggregated via a histogram or summary)
+- Count of HTTP 401 errors over the past 5 minutes (counter, often aggregated in queries)
 
 These metrics help monitor application health and identify performance bottlenecks.
+
+> [!Note]
+> The term "metric" can be overloaded and may refer to different concepts depending on the context. In Prometheus, counters, gauges, histograms, and summaries are all considered metric types. Histograms and summaries are more complex, representing collections of time series derived from multiple measurements. For clarity, we use "metric" here to refer to both raw measured values and their aggregated forms.
 
 ### Micrometer in Camunda 8
 
@@ -21,15 +23,19 @@ In Camunda 8, we use [Micrometer](https://micrometer.io/) as a facade for metric
 
 ### Visualization
 
-The visualization of metrics is typically done using [Grafana](https://grafana.com/), which can be connected to any of the supported observability systems.
+The visualization of metrics is done using [Grafana](https://grafana.com/), which can be connected to any of the supported observability systems.
 
 By default, we use [Prometheus](https://prometheus.io/) to collect, store, and alert on metrics.
 
 ## Usage
 
-Metrics are stored in Meter Registries, which are automatically created by Spring Boot, one for each configured observability system.
+In Micrometer, a [MeterRegistry](https://docs.micrometer.io/micrometer/reference/concepts/registry.html) is the core component that tracks and manages all metrics (meters) in your application. Meters like counters, gauges, and timers are registered to a MeterRegistry, which then handles exporting these metrics to the configured monitoring systems.
+
+In Spring Boot, MeterRegistry instances are [auto-configured](https://docs.spring.io/spring-boot/docs/2.1.x/reference/html/production-ready-metrics.html#production-ready-metrics-getting-started) based on which observability system dependencies are present (e.g., Prometheus, InfluxDB).
 
 In the dist module, we typically use Autowiring to inject the registry where it's needed. In other cases, we pass it explicitly via constructor injection.
+
+This approach helps avoid spreading Spring dependencies throughout the codebase and improves testability by allowing easier mocking or substitution of the registry in tests.
 
 Example:
 
@@ -49,10 +55,13 @@ counter.increment(); // increments the counter by 1
 
 2. Pick a metric type
 
-- If you need to observe a value change over time, then use a `Counter`
-- If you need to observe the current value in time, then use a `Gauge`
-- If you need to observe frequencies or latencies distribution, use a `Histogram`
-- If you need to observe a distribution that is not time-based, use a `Summary`
+- If you need to observe a value change over time, use a `Counter`
+
+  > [!Note] Counters can only increment (they cannot be decremented). They reset when the application restarts, but time-derivative functions like Prometheus's rate() or increase() can accommodate this reset when used with time series data.
+
+- If you need to observe the current value at a specific moment in time, use a `Gauge`. Gauges can go up or down and are useful for things like memory usage, thread counts, or queue sizes
+- If you need to observe the distribution of values over time (e.g., request durations), use a `Histogram`. Histograms bucket observations and allow you to calculate percentiles and frequencies over a time window using Prometheus queries (like `histogram_quantile()`)
+- If you need to observe a distribution of values with pre-calculated quantiles (but not necessarily over time), use a `Summary`. Summaries record quantiles directly, but they [cannot be aggregated across instances](https://prometheus.io/docs/tutorials/understanding_metric_types/?utm_source=chatgpt.com#summary) in Prometheus.
 
 3. Name your metric
 
