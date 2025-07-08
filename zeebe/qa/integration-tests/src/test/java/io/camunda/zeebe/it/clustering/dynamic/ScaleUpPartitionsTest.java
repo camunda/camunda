@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.management.backups.StateCode;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
@@ -38,7 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Objects;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -46,6 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +66,7 @@ public class ScaleUpPartitionsTest {
   @TempDir private static Path backupPath;
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
+  private static final MemberId MEMBER_0 = MemberId.from("0");
   @AutoClose CamundaClient camundaClient;
   private ClusterActuator clusterActuator;
   private BackupActuator backupActuator;
@@ -227,6 +230,54 @@ public class ScaleUpPartitionsTest {
   }
 
   @ParameterizedTest
+  @EnumSource(RestartTarget.class)
+  public void shouldSucceedScaleUpWhenCriticalNodesRestart(final RestartTarget restartTarget) {
+    // given - healthy cluster
+    cluster.awaitCompleteTopology();
+    deployProcessModel(camundaClient, JOB_TYPE, PROCESS_ID);
+    final var targetPartitionCount = PARTITIONS_COUNT + 1;
+
+    final var member0 = MemberId.from("0");
+    if (RestartTarget.BOOTSTRAP_NODE == restartTarget
+        && cluster.leaderForPartition(1).nodeId().equals(member0)) {
+      // if we need to restart the bootstrap node, make sure that it's not the same as the
+      // leader for partition 1`
+      LOG.info(
+          "Restarting node {} because it's the leader for partition 1 and the target node for bootstrapping ",
+          member0);
+      cluster.leaderForPartition(1).stop().start();
+      cluster.awaitCompleteTopology();
+    }
+    // when - start scaling up
+    scaleToPartitions(targetPartitionCount);
+
+    // Restart the appropriate node based on the test argument
+    final var brokerToRestart = restartTarget.restart(cluster);
+
+    LOG.info("Restarting node {} ", brokerToRestart.nodeId());
+    brokerToRestart.stop().start();
+    LOG.info("Restarted node {} ", brokerToRestart.nodeId());
+    Awaitility.await("restarted broker is ready")
+        .until(
+            () -> {
+              try {
+                brokerToRestart.healthActuator().ready();
+                return true;
+              } catch (final Exception e) {
+                return false;
+              }
+            });
+
+    // then - scale up should still complete successfully
+    awaitScaleUpCompletion(targetPartitionCount);
+
+    // Verify the new partition is functional
+    createInstanceWithAJobOnAllPartitions(
+        camundaClient, JOB_TYPE, targetPartitionCount, false, PROCESS_ID);
+    cluster.awaitHealthyTopology();
+  }
+
+  @ParameterizedTest
   @ValueSource(booleans = {true, false})
   public void shouldBePossibleToRestoreAsAfterScalingUp(final boolean backupBeforeScaling)
       throws IOException {
@@ -268,23 +319,6 @@ public class ScaleUpPartitionsTest {
     } else {
       assertThatRoutingStateMatches(routingStateAfterScaling);
     }
-  }
-
-  private void awaitScaleUpCompletion(final int desiredPartitionCount) {
-    Awaitility.await("until scaling is done")
-        .timeout(Duration.ofMinutes(5))
-        .untilAsserted(
-            () -> {
-              final var topology = clusterActuator.getTopology();
-              if (Objects.requireNonNull(topology.getRouting().getRequestHandling())
-                  instanceof final RequestHandlingAllPartitions allPartitions) {
-                assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
-              } else {
-                throw new AssertionError(
-                    "Unexpected request handling mode: "
-                        + topology.getRouting().getRequestHandling());
-              }
-            });
   }
 
   public void assertThatRoutingStateMatches(final RoutingState routingState) {
@@ -341,5 +375,34 @@ public class ScaleUpPartitionsTest {
                     .replicationFactor(3)),
         false,
         false);
+  }
+
+  private void awaitScaleUpCompletion(final int desiredPartitionCount) {
+    Awaitility.await("until scaling is done")
+        .atMost(Duration.ofMinutes(2))
+        .catchUncaughtExceptions()
+        .logging()
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              final var topology = clusterActuator.getTopology();
+              assertThat(topology.getRouting()).isNotNull();
+              final var requestHandling = topology.getRouting().getRequestHandling();
+              assertThat(requestHandling).isInstanceOf(RequestHandlingAllPartitions.class);
+              final var allPartitions = (RequestHandlingAllPartitions) requestHandling;
+              assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
+            });
+  }
+
+  enum RestartTarget {
+    PARTITION_1_LEADER,
+    BOOTSTRAP_NODE;
+
+    public TestStandaloneBroker restart(final TestCluster cluster) {
+      return switch (this) {
+        case PARTITION_1_LEADER -> cluster.leaderForPartition(1);
+        case BOOTSTRAP_NODE -> cluster.brokers().get(MEMBER_0);
+      };
+    }
   }
 }

@@ -47,7 +47,11 @@ public final class DbRoutingState implements MutableRoutingState {
   @Override
   public Set<Integer> currentPartitions() {
     key.wrapString(CURRENT_KEY);
-    return columnFamily.get(key).getPartitions();
+    final var currentRoutingInfo = columnFamily.get(key);
+    if (currentRoutingInfo == null) {
+      return Set.of();
+    }
+    return currentRoutingInfo.getPartitions();
   }
 
   @Override
@@ -98,15 +102,15 @@ public final class DbRoutingState implements MutableRoutingState {
   }
 
   @Override
-  public void setDesiredPartitions(final Set<Integer> partitions, final long eventKey) {
+  public void setDesiredPartitions(final Set<Integer> partitions, final long position) {
     final var currentMessageCorrelation = messageCorrelation();
     desiredRoutingInfo.reset();
     desiredRoutingInfo.setPartitions(new TreeSet<>(partitions));
     desiredRoutingInfo.setMessageCorrelation(currentMessageCorrelation);
 
-    setBootstrappedAt(partitions.size(), eventKey);
     key.wrapString(DESIRED_KEY);
     columnFamily.upsert(key, desiredRoutingInfo);
+    setBootstrappedAt(partitions.size(), position);
   }
 
   @Override
@@ -134,9 +138,9 @@ public final class DbRoutingState implements MutableRoutingState {
     columnFamily.upsert(key, current);
   }
 
-  private void setBootstrappedAt(final int partitionCount, final long key) {
+  private void setBootstrappedAt(final int partitionCount, final long position) {
     partitionIdKey.wrapInt(partitionCount);
-    dbLong.wrapLong(key);
+    dbLong.wrapLong(position);
     if (bootstrappedAtColumnFamily.get(partitionIdKey) == null) {
       // do not override if it's already set
       bootstrappedAtColumnFamily.insert(partitionIdKey, dbLong);

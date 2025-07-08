@@ -12,12 +12,16 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
 public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord> {
+  private static final Logger LOG = LoggerFactory.getLogger(ScaleUpStatusProcessor.class);
 
   private final Writers writers;
   private final KeyGenerator keyGenerator;
@@ -37,6 +41,13 @@ public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord>
     final var desiredPartitions = routingState.desiredPartitions();
     final var response = new ScaleRecord();
     final var desiredPartitionCount = routingState.desiredPartitions().size();
+    final var bootstrappedAt = routingState.bootstrappedAt(desiredPartitionCount);
+    if (bootstrappedAt <= 0) {
+      final var reason =
+          "Scaling has not started for the desired partition count " + desiredPartitionCount;
+      writers.rejection().appendRejection(command, RejectionType.INVALID_STATE, reason);
+      writers.response().writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+    }
     response.statusResponse(
         desiredPartitions.size(),
         routingState.currentPartitions(),
