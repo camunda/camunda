@@ -11,8 +11,22 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.scss";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-);
+fetch("/identity/config")
+  .then((response) => response.json())
+  .then((config) => {
+    window.clientConfig = config;
+
+    ReactDOM.createRoot(document.getElementById("root")!).render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>,
+    );
+  })
+  .catch((error) => {
+    console.error("Failed to load configuration:", error);
+    ReactDOM.createRoot(document.getElementById("root")!).render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>,
+    );
+  });
