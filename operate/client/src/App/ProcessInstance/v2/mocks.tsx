@@ -16,7 +16,7 @@ import {
   createVariable,
 } from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
+import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {
@@ -184,23 +184,39 @@ function getWrapper(options?: {
       return flowNodeSelectionStore.reset;
     }, []);
 
+    const router = createMemoryRouter(
+      [
+        {
+          path: Paths.processInstance(),
+          element: (
+            <>
+              {children}
+              {selectableFlowNode && (
+                <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
+              )}
+              <LocationLog />
+            </>
+          ),
+        },
+        {
+          path: Paths.processes(),
+          element: <>instances page</>,
+        },
+        {
+          path: Paths.dashboard(),
+          element: <>dashboard page</>,
+        },
+      ],
+      {
+        initialEntries: [initialPath],
+        basename: contextPath ?? '',
+      },
+    );
+
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
         <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter
-            initialEntries={[initialPath]}
-            basename={contextPath ?? ''}
-          >
-            <Routes>
-              <Route path={Paths.processInstance()} element={children} />
-              <Route path={Paths.processes()} element={<>instances page</>} />
-              <Route path={Paths.dashboard()} element={<>dashboard page</>} />
-            </Routes>
-            {selectableFlowNode && (
-              <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
-            )}
-            <LocationLog />
-          </MemoryRouter>
+          <RouterProvider router={router} />
         </QueryClientProvider>
       </ProcessDefinitionKeyContext.Provider>
     );
