@@ -10,25 +10,14 @@ import {renderHook} from 'modules/testing-library';
 import {useFilters} from 'modules/hooks/useFilters';
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
-import {processesStore} from 'modules/stores/processes/processes.list';
 import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas';
 import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 
 vi.mock('modules/hooks/useFilters');
-vi.mock('modules/stores/processes/processes.list');
 
 const mockedUseFilters = vi.mocked(useFilters);
 
 describe('useProcessInstanceFilters', () => {
-  beforeEach(() => {
-    (processesStore as any).versionsByProcessAndTenant = {
-      '{process1}-{tenant1}': [
-        {id: 'processId1', version: 1},
-        {id: 'processId2', version: 1},
-      ],
-    };
-  });
-
   it('should map filters to request correctly with both state and incidents', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
@@ -204,39 +193,6 @@ describe('useProcessInstanceFilters', () => {
         },
         state: {
           $in: [ProcessInstanceState.ACTIVE],
-        },
-      },
-    };
-
-    const {result} = renderHook(() => useProcessInstanceFilters());
-    expect(result.current).toEqual(expectedRequest);
-  });
-
-  it('should handle process with version "all"', () => {
-    const mockFilters: ProcessInstanceFilters = {
-      process: 'process1',
-      version: 'all',
-      tenant: 'tenant1',
-    };
-
-    mockedUseFilters.mockReturnValue({
-      getFilters: () => mockFilters,
-      setFilters: vi.fn(),
-      areProcessInstanceStatesApplied: vi.fn(),
-      areDecisionInstanceStatesApplied: vi.fn(),
-    });
-
-    (processesStore as any).versionsByProcessAndTenant = {
-      '{process1}-{tenant1}': [
-        {id: 'processId1', version: 1},
-        {id: 'processId2', version: 2},
-      ],
-    };
-
-    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
-      filter: {
-        tenantId: {
-          $eq: 'tenant1',
         },
       },
     };
