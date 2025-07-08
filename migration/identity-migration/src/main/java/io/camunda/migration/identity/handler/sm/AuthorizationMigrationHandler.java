@@ -72,20 +72,23 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                   authorizationService.createAuthorization(request).join();
                   createdAuthorizationsCount.incrementAndGet();
                   logger.debug(
-                      "Migrating authorization: {} to an Authorization with ownerId: {}",
+                      "Migrated authorization: {} to an Authorization with ownerId: {}",
                       authorization,
                       request.ownerId());
                 } catch (final Exception e) {
                   if (!isConflictError(e)) {
                     throw new RuntimeException(
-                        "Failed to migrate authorization for entity ID: "
-                            + authorization.entityId(),
+                        "Failed to migrate authorization for entity with ID: "
+                            + authorization.entityId()
+                            + " and owner with ID: "
+                            + user.getEmail(),
                         e);
                   }
                   skippedAuthorizationsCount.incrementAndGet();
                   logger.debug(
-                      "Authorization already exists for entity ID: {}. Skipping creation.",
-                      authorization.entityId());
+                      "Authorization already exists for entity with ID: {} and owner with ID {}. Skipping creation.",
+                      authorization.entityId(),
+                      user.getEmail());
                 }
               });
         });
