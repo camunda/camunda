@@ -29,8 +29,7 @@ public class BatchOperationLifecycleManagementExportHandler
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.SUSPENDED,
           BatchOperationIntent.RESUMED,
-          BatchOperationIntent.COMPLETED,
-          BatchOperationIntent.PARTIALLY_COMPLETED);
+          BatchOperationIntent.COMPLETED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -55,13 +54,15 @@ public class BatchOperationLifecycleManagementExportHandler
     } else if (record.getIntent().equals(BatchOperationIntent.SUSPENDED)) {
       batchOperationWriter.suspend(batchOperationId);
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
-      batchOperationWriter.finish(
-          batchOperationId, DateUtil.toOffsetDateTime(record.getTimestamp()));
-    } else if (record.getIntent().equals(BatchOperationIntent.PARTIALLY_COMPLETED)) {
-      batchOperationWriter.finishWithErrors(
-          batchOperationId,
-          DateUtil.toOffsetDateTime(record.getTimestamp()),
-          mapErrors(batchOperationId, value.getErrors()));
+      if (value.getErrors().isEmpty()) {
+        batchOperationWriter.finish(
+            batchOperationId, DateUtil.toOffsetDateTime(record.getTimestamp()));
+      } else {
+        batchOperationWriter.finishWithErrors(
+            batchOperationId,
+            DateUtil.toOffsetDateTime(record.getTimestamp()),
+            mapErrors(batchOperationId, value.getErrors()));
+      }
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
       batchOperationWriter.resume(batchOperationId);
     }

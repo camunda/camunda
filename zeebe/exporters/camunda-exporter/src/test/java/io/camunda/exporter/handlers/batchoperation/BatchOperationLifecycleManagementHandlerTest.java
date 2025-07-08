@@ -13,10 +13,13 @@ import static org.mockito.Mockito.*;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.Instant;
@@ -162,7 +165,12 @@ class BatchOperationLifecycleManagementHandlerTest {
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            r -> r.withIntent(BatchOperationIntent.COMPLETED));
+            r ->
+                r.withIntent(BatchOperationIntent.COMPLETED)
+                    .withValue(
+                        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+                            .withErrors(List.of())
+                            .build()));
 
     final var entity = new BatchOperationEntity();
 
@@ -175,12 +183,22 @@ class BatchOperationLifecycleManagementHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityForPartiallyCompletedIntent() {
+  void shouldUpdateEntityForCompletedIntentWithErrors() {
     // given
+    final var errorRecord = new BatchOperationError();
+    errorRecord.setMessage("error message");
+    errorRecord.setType(BatchOperationErrorType.QUERY_FAILED);
+    errorRecord.setPartitionId(1);
+
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            r -> r.withIntent(BatchOperationIntent.PARTIALLY_COMPLETED));
+            r ->
+                r.withIntent(BatchOperationIntent.COMPLETED)
+                    .withValue(
+                        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+                            .withErrors(List.of(errorRecord))
+                            .build()));
 
     final var entity = new BatchOperationEntity();
 

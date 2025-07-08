@@ -7,6 +7,8 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static java.util.Collections.emptyList;
+
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -489,6 +491,27 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getBatchOperationCompletedRecord(
+      final Long batchOperationKey, final Long position) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(BatchOperationIntent.COMPLETED)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+                .from(
+                    (ImmutableBatchOperationLifecycleManagementRecordValue)
+                        recordValueRecord.getValue())
+                .withBatchOperationKey(batchOperationKey)
+                .withErrors(emptyList())
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getBatchOperationCompletedWithErrorsRecord(
       final Long batchOperationKey, final Long position) {
     final Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);

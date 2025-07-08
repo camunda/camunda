@@ -638,9 +638,6 @@ public final class EventAppliers implements EventApplier {
         BatchOperationIntent.COMPLETED,
         new BatchOperationCompletedApplier(state.getBatchOperationState()));
     register(
-        BatchOperationIntent.PARTIALLY_COMPLETED,
-        new BatchOperationCompletedApplier(state.getBatchOperationState()));
-    register(
         BatchOperationIntent.PARTITION_COMPLETED,
         new BatchOperationPartitionCompletedApplier(
             state.getBatchOperationState(), state.getPartitionId()));

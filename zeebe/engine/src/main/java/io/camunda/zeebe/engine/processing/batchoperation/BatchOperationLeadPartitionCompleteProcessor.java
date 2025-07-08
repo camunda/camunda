@@ -132,22 +132,19 @@ public final class BatchOperationLeadPartitionCompleteProcessor
 
     final var batchCompleted = new BatchOperationLifecycleManagementRecord();
     batchCompleted.setBatchOperationKey(batchOperationKey);
-
-    if (bo.getErrors().isEmpty()) {
+    if (!bo.getErrors().isEmpty()) {
       LOGGER.debug(
-          "All partitions finished, appending COMPLETED event for batch operation {}",
-          batchOperationKey);
-      stateWriter.appendFollowUpEvent(
-          batchOperationKey, BatchOperationIntent.COMPLETED, batchCompleted, metadata);
-    } else {
-      LOGGER.debug(
-          "Some partitions ({}) finished with errors, appending PARTIALLY_COMPLETED event for batch operation {}",
+          "Some partitions ({}) finished with errors, appending them to COMPLETED event for batch operation {}",
           bo.getErrors().size(),
           batchOperationKey);
       batchCompleted.setErrors(bo.getErrors());
-      stateWriter.appendFollowUpEvent(
-          batchOperationKey, BatchOperationIntent.PARTIALLY_COMPLETED, batchCompleted, metadata);
     }
+
+    LOGGER.debug(
+        "All partitions finished, appending COMPLETED event for batch operation {}",
+        batchOperationKey);
+    stateWriter.appendFollowUpEvent(
+        batchOperationKey, BatchOperationIntent.COMPLETED, batchCompleted, metadata);
 
     metrics.recordCompleted(bo.getBatchOperationType());
     metrics.stopTotalDurationMeasure(batchOperationKey);

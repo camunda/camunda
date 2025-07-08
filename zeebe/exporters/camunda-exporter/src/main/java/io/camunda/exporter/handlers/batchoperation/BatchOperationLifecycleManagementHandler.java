@@ -40,8 +40,7 @@ public class BatchOperationLifecycleManagementHandler
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.SUSPENDED,
           BatchOperationIntent.RESUMED,
-          BatchOperationIntent.COMPLETED,
-          BatchOperationIntent.PARTIALLY_COMPLETED);
+          BatchOperationIntent.COMPLETED);
   private final String indexName;
 
   public BatchOperationLifecycleManagementHandler(final String indexName) {
@@ -88,13 +87,15 @@ public class BatchOperationLifecycleManagementHandler
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
       entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
+      final var value = record.getValue();
       // set the endDate to null so that the BatchOperationUpdateTask does run again
-      entity.setEndDate(null).setState(BatchOperationState.COMPLETED);
-    } else if (record.getIntent().equals(BatchOperationIntent.PARTIALLY_COMPLETED)) {
-      entity
-          .setEndDate(null)
-          .setState(BatchOperationState.PARTIALLY_COMPLETED)
-          .setErrors(mapErrors(record.getValue().getErrors()));
+      entity.setEndDate(null);
+      if (value.getErrors().isEmpty()) {
+        entity.setState(BatchOperationState.COMPLETED);
+      } else {
+        entity.setErrors(mapErrors(value.getErrors()));
+        entity.setState(BatchOperationState.PARTIALLY_COMPLETED);
+      }
     }
   }
 
