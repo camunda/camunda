@@ -28,7 +28,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {useEffect} from 'react';
+import {act, useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -36,7 +36,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-vi.mock('modules/utils/bpmn');
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
@@ -273,7 +272,9 @@ describe('Instances', () => {
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
@@ -310,8 +311,6 @@ describe('Instances', () => {
 
     vi.clearAllTimers();
     vi.useRealTimers();
-
-    vi.unstubAllGlobals();
   });
 
   it('should hide Operation State column when Operation Id filter is not set', async () => {
@@ -339,8 +338,6 @@ describe('Instances', () => {
     await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
 
     expect(screen.getByText('Operation State')).toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 
   it('should show correct error message when error row is expanded', async () => {
@@ -375,8 +372,6 @@ describe('Instances', () => {
     await user.click(expandButton);
 
     expect(screen.getByText('Batch Operation Error Message')).toBeVisible();
-
-    vi.unstubAllGlobals();
   });
 
   it('should display correct operation from process instance with multiple operations', async () => {
@@ -401,7 +396,5 @@ describe('Instances', () => {
 
     expect(withinRow.getByText('FAILED')).toBeInTheDocument();
     expect(withinRow.queryByText('COMPLETED')).not.toBeInTheDocument();
-
-    vi.unstubAllGlobals();
   });
 });
