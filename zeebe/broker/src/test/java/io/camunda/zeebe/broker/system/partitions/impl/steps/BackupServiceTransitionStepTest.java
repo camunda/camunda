@@ -25,8 +25,11 @@ import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.util.Either;
 import java.nio.file.Path;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +51,7 @@ class BackupServiceTransitionStepTest {
   @Mock BackupManager backupManagerPreviousRole;
   @Mock CheckpointRecordsProcessor recordsProcessorPreviousRole;
   @Mock ActorSchedulingService actorSchedulingService;
+  @Mock LogStream logStream;
   @Mock BackupStore backupStore;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -65,6 +69,7 @@ class BackupServiceTransitionStepTest {
     transitionContext.setBackupStore(backupStore);
     transitionContext.setBrokerCfg(brokerCfg);
     transitionContext.setRaftPartition(raftPartition);
+    transitionContext.setLogStream(logStream);
 
     lenient().when(brokerCfg.getCluster().getPartitionsCount()).thenReturn(3);
     lenient()
@@ -79,6 +84,10 @@ class BackupServiceTransitionStepTest {
     lenient()
         .when(backupManagerPreviousRole.closeAsync())
         .thenReturn(TEST_CONCURRENCY_CONTROL.completedFuture(null));
+
+    lenient()
+        .when(logStream.newLogStreamWriter())
+        .thenReturn(((context, appendEntries, sourcePosition) -> Either.left(WriteFailure.CLOSED)));
 
     step = new BackupServiceTransitionStep();
   }
