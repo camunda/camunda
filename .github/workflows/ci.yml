@@ -303,6 +303,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/workflows/report-flaky-tests.yml
+        with:
+          job_name: "java-unit-tests/${{ matrix.group }}"
+          flaky_tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate
@@ -373,6 +378,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/workflows/report-flaky-tests.yml
+        with:
+          job_name: "consolidated-unit-tests/${{ matrix.component }}-${{matrix.suite}}"
+          flaky_tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
 
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -465,6 +475,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/workflows/report-flaky-tests.yml
+        with:
+          job_name: "[IT] Elasticsearch"
+          flaky_tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
 
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -564,6 +579,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/workflows/report-flaky-tests.yml
+        with:
+          job_name: "[IT] OpenSearch"
+          flaky_tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
 
   rdbms-h2-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -630,6 +650,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/workflows/report-flaky-tests.yml
+        with:
+          job_name: "[IT] RDBMS - H2"
+          flaky_tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -687,6 +712,11 @@ jobs:
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+    - name: Report Flaky Tests
+      uses: ./.github/workflows/report-flaky-tests.yml
+      with:
+        job_name: "[IT] RDBMS"
+        flaky_tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -843,6 +873,11 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/workflows/report-flaky-tests.yml
+        with:
+          job_name: "integration-tests/${{ matrix.group }}"
+          flaky_tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'

@@ -1,0 +1,41 @@
+name: Report Flak Tests
+on:
+  workflow_call:
+    inputs:
+      job_name:
+        required: true
+        type: string
+      flaky_tests:
+        required: true
+        type: string
+
+jobs:
+  find-comment-flaky:
+    runs-on: ubuntu-latest
+    outputs:
+      comment-id: ${{ steps.find-comment.outputs.comment-id }}
+    steps:
+      - name: Find existing comment
+        id: find-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: 'Flaky tests detected in job'
+          create-if-missing: true
+
+  report:
+    runs-on: ubuntu-latest
+    if: ${{ always() && github.event_name == 'pull_request' && inputs.flaky_tests != '' }}
+    needs: [find-comment-flaky]
+    steps:
+      - name: Comment on PR
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            🚨 **Flaky tests detected in job: `${{ inputs.job_name }}`**:
+            ```
+            ${{ inputs.flaky_tests }}
+            ```
+          comment-id: ${{ needs.find-comment-flaky.outputs.comment-id }}
+          edit-mode: replace
