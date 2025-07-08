@@ -134,10 +134,14 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     final var experimentalCfg = context.getBrokerCfg().getExperimental();
     final var engineCfg = experimentalCfg.getEngine().createEngineConfiguration();
+    final var featureFlags = experimentalCfg.getFeatures().toFeatureFlags();
 
     final var engine =
         new Engine(
-            context.getTypedRecordProcessorFactory(), engineCfg, context.getSecurityConfig());
+            context.getTypedRecordProcessorFactory(),
+            engineCfg,
+            context.getSecurityConfig(),
+            featureFlags);
     final List<RecordProcessor> recordProcessors =
         List.of(engine, context.getCheckpointProcessor());
     final var scheduledCommandCache =

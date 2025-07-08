@@ -23,13 +23,16 @@ public class DbUsageMetricState implements MutableUsageMetricState {
   private final ColumnFamily<DbEnumValue<IntervalType>, PersistedUsageMetrics>
       metricsBucketColumnFamily;
   private final DbEnumValue<IntervalType> metricsBucketKey;
+  private final boolean enableUsageMetrics;
 
   public DbUsageMetricState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final Duration exportInterval) {
+      final Duration exportInterval,
+      final boolean enableUsageMetrics) {
 
     this.exportInterval = exportInterval;
+    this.enableUsageMetrics = enableUsageMetrics;
 
     metricsBucketKey = new DbEnumValue<>(IntervalType.class);
     metricsBucketColumnFamily =
@@ -57,11 +60,17 @@ public class DbUsageMetricState implements MutableUsageMetricState {
 
   @Override
   public void recordRPIMetric(final String tenantId) {
+    if (!enableUsageMetrics) {
+      return;
+    }
     updateActiveBucket(getActiveBucket().recordRPI(tenantId));
   }
 
   @Override
   public void recordEDIMetric(final String tenantId) {
+    if (!enableUsageMetrics) {
+      return;
+    }
     updateActiveBucket(getActiveBucket().recordEDI(tenantId));
   }
 

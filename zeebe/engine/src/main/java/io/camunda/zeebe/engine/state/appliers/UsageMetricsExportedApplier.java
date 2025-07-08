@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
@@ -22,8 +21,8 @@ public class UsageMetricsExportedApplier
 
   private final MutableUsageMetricState usageMetricState;
 
-  public UsageMetricsExportedApplier(final MutableProcessingState processingState) {
-    usageMetricState = processingState.getUsageMetricState();
+  public UsageMetricsExportedApplier(final MutableUsageMetricState usageMetricState) {
+    this.usageMetricState = usageMetricState;
   }
 
   @Override

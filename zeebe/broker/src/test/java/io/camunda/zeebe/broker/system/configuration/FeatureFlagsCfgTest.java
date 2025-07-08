@@ -218,4 +218,27 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnableMessageBodyOnExpired()).isFalse();
   }
+
+  @Test
+  void shouldDisableUsageMetricsFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.features.enableUsageMetrics", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableUsageMetrics()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnableUsageMetricsByDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableUsageMetrics()).isTrue();
+  }
 }

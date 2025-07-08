@@ -39,6 +39,7 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
     final var transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
     final var zeebeDb = context.getZeebeDb();
     final var zeebeDbContext = zeebeDb.createContext();
+    final var experimentalCfg = context.getBrokerCfg().getExperimental();
     final var processingState =
         new ProcessingDbState(
             context.getPartitionId(),
@@ -47,12 +48,13 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             new DbKeyGenerator(context.getPartitionId(), zeebeDb, zeebeDbContext),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
-            context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
+            experimentalCfg.getEngine().createEngineConfiguration(),
+            experimentalCfg.getFeatures().toFeatureFlags(),
             InstantSource.system());
 
     final var dbMigrator =
         new DbMigratorImpl(
-            context.getBrokerCfg().getExperimental().isVersionCheckRestrictionEnabled(),
+            experimentalCfg.isVersionCheckRestrictionEnabled(),
             new ClusterContextImpl(context.getPartitionCount()),
             processingState,
             context.getBrokerVersion());

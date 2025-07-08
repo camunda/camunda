@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.ReflectUtil;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -168,6 +169,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
                 new EngineConfiguration(),
+                FeatureFlags.createDefaultForTests(),
                 InstantSource.system());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);

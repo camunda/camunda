@@ -20,6 +20,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -43,7 +44,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       final RecordProcessorContext context,
       final Writers writers,
       final EngineConfiguration config,
-      final SecurityConfiguration securityConfig) {
+      final SecurityConfiguration securityConfig,
+      final FeatureFlags featureFlags) {
     partitionId = context.getPartitionId();
     scheduleService = context.getScheduleService();
     zeebeDb = context.getZeebeDb();
@@ -59,6 +61,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
             config,
+            featureFlags,
             clock);
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
