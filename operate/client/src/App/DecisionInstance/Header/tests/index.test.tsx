@@ -90,7 +90,7 @@ describe('<Header />', () => {
     ).toHaveTextContent(invoiceClassification.decisionVersion.toString());
     expect(
       screen.getByRole('cell', {
-        name: '2022-01-20 14:26:52',
+        name: '2022-01-20 13:26:52',
       }),
     ).toBeInTheDocument();
     expect(

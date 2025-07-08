@@ -143,6 +143,7 @@ beforeAll(() =>
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
 beforeEach(async () => {
+  vi.stubEnv('TZ', 'UTC');
   vi.stubGlobal('ResizeObserver', ResizeObserverPolyfill);
   vi.stubGlobal('localStorage', localStorageMock);
   vi.stubGlobal('MutationObserver', MutationObserver);

@@ -53,7 +53,7 @@ const FinishingOperationsEntry: React.FC = () => {
   );
 };
 
-const OPERATIONS_TIMESTAMP = '2023-11-22 10:03:29';
+const OPERATIONS_TIMESTAMP = '2023-11-22 08:03:29';
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
