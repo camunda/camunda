@@ -28,6 +28,7 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -80,6 +81,9 @@ import io.camunda.zeebe.gateway.protocol.rest.JobStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
+import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionResult;
+import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
@@ -444,6 +448,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static MessageSubscriptionSearchQueryResult toMessageSubscriptionSearchQueryResponse(
+      final SearchQueryResult<MessageSubscriptionEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new MessageSubscriptionSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toMessageSubscriptions)
+                .orElseGet(Collections::emptyList));
+  }
+
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
@@ -784,6 +799,31 @@ public final class SearchQueryResponseMapper {
         .state(IncidentResult.StateEnum.fromValue(t.state().name()))
         .jobKey(KeyUtil.keyToString(t.jobKey()))
         .tenantId(t.tenantId());
+  }
+
+  public static List<MessageSubscriptionResult> toMessageSubscriptions(
+      final List<MessageSubscriptionEntity> messageSubscriptions) {
+    return messageSubscriptions.stream()
+        .map(SearchQueryResponseMapper::toMessageSubscription)
+        .toList();
+  }
+
+  public static MessageSubscriptionResult toMessageSubscription(
+      final MessageSubscriptionEntity messageSubscription) {
+    return new MessageSubscriptionResult()
+        .messageSubscriptionKey(KeyUtil.keyToString(messageSubscription.messageSubscriptionKey()))
+        .processDefinitionId(messageSubscription.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(messageSubscription.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(messageSubscription.processInstanceKey()))
+        .elementId(messageSubscription.flowNodeId())
+        .elementInstanceKey(KeyUtil.keyToString(messageSubscription.flowNodeInstanceKey()))
+        .messageSubscriptionType(
+            MessageSubscriptionTypeEnum.fromValue(
+                messageSubscription.messageSubscriptionType().name()))
+        .lastUpdatedDate(formatDate(messageSubscription.dateTime()))
+        .messageName(messageSubscription.messageName())
+        .correlationKey(messageSubscription.correlationKey())
+        .tenantId(messageSubscription.tenantId());
   }
 
   public static UserTaskResult toUserTask(final UserTaskEntity t, final String name) {

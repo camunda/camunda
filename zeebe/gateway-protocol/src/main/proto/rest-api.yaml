@@ -41,6 +41,7 @@ tags:
   - name: License
   - name: Mapping rule
   - name: Message
+  - name: Message subscription
   - name: Process definition
   - name: Process instance
   - name: Resource
@@ -4209,6 +4210,36 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /message-subscriptions/search:
+    post:
+      tags:
+        - Message
+        - Message subscription
+      operationId: searchMessageSubscriptions
+      summary: Search message subscriptions
+      description: |
+        Search for message subscriptions based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageSubscriptionSearchQuery"
+      responses:
+        "200":
+          description: The message subscription search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageSubscriptionSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /documents:
     post:
@@ -6959,6 +6990,176 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IncidentResult"
+    MessageSubscriptionSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching message subscriptions.
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionResult"
+    MessageSubscriptionResult:
+      type: object
+      properties:
+        messageSubscriptionKey:
+          description: The message subscription key associated with this message subscription.
+          type: string
+        processDefinitionId:
+          description: The process definition ID associated with this message subscription.
+          type: string
+        processDefinitionKey:
+          description: The process definition key associated with this message subscription.
+          type: string
+        processInstanceKey:
+          description: The process instance key associated with this message subscription.
+          type: string
+        elementId:
+          description: The element ID associated with this message subscription.
+          type: string
+        elementInstanceKey:
+          description: The element instance key associated with this message subscription.
+          type: string
+        messageSubscriptionType:
+          $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        lastUpdatedDate:
+          description: The last updated date of the message subscription.
+          type: string
+          format: date-time
+        messageName:
+          description: The name of the message associated with the message subscription.
+          type: string
+        correlationKey:
+          description: The correlation key of the message subscription.
+          type: string
+        tenantId:
+          description: The unique external tenant ID.
+          type: string
+    MessageSubscriptionSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - messageSubscriptionKey
+            - processDefinitionId
+            - processDefinitionKey
+            - processInstanceKey
+            - elementId
+            - elementInstanceKey
+            - messageSubscriptionType
+            - lastUpdatedDate
+            - messageName
+            - correlationKey
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+    MessageSubscriptionSearchQuery:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionSearchQuerySortRequest"
+        filter:
+          description: The incident search filters.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionFilter"
+    MessageSubscriptionFilter:
+      description: Message subscription search filter.
+      type: object
+      properties:
+        messageSubscriptionKey:
+          description: The message subscription key associated with this message subscription.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionId:
+          description: The process definition ID associated with this message subscription.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key associated with this message subscription.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processInstanceKey:
+          description: The process instance key associated with this message subscription.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementId:
+          description: The element ID associated with this message subscription.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementInstanceKey:
+          description: The element instance key associated with this message subscription.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        messageSubscriptionType:
+          description: The message subscription type.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionTypeFilterProperty"
+        lastUpdatedDate:
+          description: The last updated date of the message subscription.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
+        messageName:
+          description: The name of the message associated with the message subscription.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        correlationKey:
+          description: The correlation key of the message subscription.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        tenantId:
+          description: The unique external tenant ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+    MessageSubscriptionTypeFilterProperty:
+      description: MessageSubscriptionTypeEnum with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        - $ref: "#/components/schemas/AdvancedMessageSubscriptionTypeFilter"
+    MessageSubscriptionTypeEnum:
+      description: The type of message subscription.
+      type: string
+      enum:
+        - CREATED
+        - MIGRATED
+        - CORRELATED
+    AdvancedMessageSubscriptionTypeFilter:
+      title: Advanced filter
+      description: Advanced MessageSubscriptionTypeEnum filter
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        $like:
+          $ref: "#/components/schemas/LikeFilterProperty"
     IncidentResult:
       type: object
       properties:
