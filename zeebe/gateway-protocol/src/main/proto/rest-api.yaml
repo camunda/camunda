@@ -3591,7 +3591,7 @@ paths:
       operationId: searchMappingRulesForGroup
       summary: Search group mapping rules
       description: |
-        Search mapping rules to a group.
+        Search mapping rules assigned to a group.
       parameters:
         - name: groupId
           in: path
