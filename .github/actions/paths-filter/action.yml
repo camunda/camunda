@@ -184,7 +184,7 @@ outputs:
         steps.filter-common.outputs.rdbms-change == 'true'
       }}
   general-backend-changes:
-    description: Output whether Optimize backend tests should be run based on GitHub event and files changed
+    description: Output whether non-webapp or zeebe backend tests should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
