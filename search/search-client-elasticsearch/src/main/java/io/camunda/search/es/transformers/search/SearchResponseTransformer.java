@@ -19,6 +19,7 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.aggregator.SearchAggregationResultTransformer;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,14 +27,18 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 public final class SearchResponseTransformer<T>
-    extends ElasticsearchTransformer<SearchResponse<T>, SearchQueryResponse<T>> {
+    extends ElasticsearchTransformer<
+        Tuple<SearchResponse<T>, List<SearchAggregator>>, SearchQueryResponse<T>> {
 
   public SearchResponseTransformer(final ElasticsearchTransformers transformers) {
     super(transformers);
   }
 
+  @Override
   public SearchQueryResponse<T> apply(
-      final SearchResponse<T> value, final List<SearchAggregator> aggregators) {
+      final Tuple<SearchResponse<T>, List<SearchAggregator>> tuple) {
+    final var value = tuple.getLeft();
+    final var aggregators = tuple.getRight();
     final var hits = value.hits();
     final var scrollId = value.scrollId();
     final var responseAggregations = value.aggregations();

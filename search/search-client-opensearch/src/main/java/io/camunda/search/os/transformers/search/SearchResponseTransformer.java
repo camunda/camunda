@@ -14,6 +14,7 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.os.transformers.aggregator.SearchAggregationResultTransformer;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -26,14 +27,18 @@ import org.opensearch.client.opensearch.core.search.TotalHits;
 import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
 public final class SearchResponseTransformer<T>
-    extends OpensearchTransformer<SearchResponse<T>, SearchQueryResponse<T>> {
+    extends OpensearchTransformer<
+        Tuple<SearchResponse<T>, List<SearchAggregator>>, SearchQueryResponse<T>> {
 
   public SearchResponseTransformer(final OpensearchTransformers transformers) {
     super(transformers);
   }
 
+  @Override
   public SearchQueryResponse<T> apply(
-      final SearchResponse<T> value, final List<SearchAggregator> aggregators) {
+      final Tuple<SearchResponse<T>, List<SearchAggregator>> tuple) {
+    final var value = tuple.getLeft();
+    final var aggregators = tuple.getRight();
     final var hits = value.hits();
     final var scrollId = value.scrollId();
     final var responseAggregations = value.aggregations();

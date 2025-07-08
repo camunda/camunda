@@ -21,6 +21,7 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
@@ -40,6 +41,7 @@ import io.camunda.search.es.transformers.search.SearchResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchWriteResponseTransformer;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
@@ -76,7 +78,8 @@ public class ElasticsearchSearchClient
       final var request = requestTransformer.apply(searchRequest);
       final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
       final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
-      return searchResponseTransformer.apply(rawSearchResponse, searchRequest.aggregations());
+      return searchResponseTransformer.apply(
+          Tuple.of(rawSearchResponse, searchRequest.aggregations()));
     } catch (final IOException | ElasticsearchException e) {
       LOGGER.warn(ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e);
       throw new CamundaSearchException(
@@ -103,7 +106,8 @@ public class ElasticsearchSearchClient
         // stop early; no need to continue with scroll
         final SearchResponseTransformer<T> searchResponseTransformer =
             getSearchResponseTransformer();
-        return searchResponseTransformer.apply(rawSearchResponse);
+        return searchResponseTransformer.apply(
+            Tuple.of(rawSearchResponse, searchRequest.aggregations()));
       }
 
       List<Hit<T>> scrollResponseHits;
@@ -219,8 +223,8 @@ public class ElasticsearchSearchClient
   }
 
   private <T> SearchResponseTransformer<T> getSearchResponseTransformer() {
-    final SearchTransfomer<SearchResponse<T>, SearchQueryResponse<T>> transformer =
-        transformers.getTransformer(SearchQueryResponse.class);
+    final SearchTransfomer<Tuple<SearchResponse<T>, List<SearchAggregator>>, SearchQueryResponse<T>>
+        transformer = transformers.getTransformer(SearchQueryResponse.class);
     return (SearchResponseTransformer<T>) transformer;
   }
 
