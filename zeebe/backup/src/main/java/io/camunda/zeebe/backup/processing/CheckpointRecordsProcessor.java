@@ -41,6 +41,7 @@ public final class CheckpointRecordsProcessor
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
+  private CheckpointBackupConfirmedApplier checkpointBackupConfirmedApplier;
 
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
@@ -67,6 +68,7 @@ public final class CheckpointRecordsProcessor
     checkpointConfirmBackupProcessor = new CheckpointConfirmBackupProcessor(checkpointState);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);
+    checkpointBackupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     if (checkpointId != CheckpointState.NO_CHECKPOINT) {
@@ -89,10 +91,14 @@ public final class CheckpointRecordsProcessor
       throw new IllegalArgumentException("Unknown record");
     }
     final CheckpointIntent intent = (CheckpointIntent) record.getIntent();
-    if (intent == CheckpointIntent.CREATED) {
-      checkpointCreatedEventApplier.apply((CheckpointRecord) record.getValue());
+    switch (intent) {
+      case CREATED -> checkpointCreatedEventApplier.apply((CheckpointRecord) record.getValue());
+      case CONFIRMED_BACKUP ->
+          checkpointBackupConfirmedApplier.apply((CheckpointRecord) record.getValue());
+      default -> {
+        // Don't apply intents CREATE and IGNORED
+      }
     }
-    // Don't apply intents CREATE and IGNORED
   }
 
   @Override
