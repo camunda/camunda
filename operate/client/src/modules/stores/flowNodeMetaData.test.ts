@@ -61,6 +61,7 @@ describe('stores/flowNodeMetaData', () => {
 
   it('should fetch and set meta data', async () => {
     mockFetchFlowNodeMetadata().withSuccess(metaData);
+    mockFetchFlowNodeMetadata().withSuccess(metaData);
 
     init('process-instance', []);
     flowNodeSelectionStore.setSelection({
@@ -81,12 +82,15 @@ describe('stores/flowNodeMetaData', () => {
 
   it('should retry fetch on network reconnection', async () => {
     mockFetchFlowNodeMetadata().withSuccess(metaData);
+    mockFetchFlowNodeMetadata().withSuccess(metaData);
+    mockFetchFlowNodeMetadata().withSuccess(metaData);
 
     const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = vi.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: any) => {
+        eventListeners[event] = cb;
+      },
+    );
 
     init('process-instance', []);
     flowNodeSelectionStore.setSelection({
@@ -104,14 +108,13 @@ describe('stores/flowNodeMetaData', () => {
     };
 
     mockFetchFlowNodeMetadata().withSuccess(newMetaData);
+    mockFetchFlowNodeMetadata().withSuccess(newMetaData);
 
     eventListeners.online();
 
     await waitFor(() => {
       expect(flowNodeMetaDataStore.state.metaData).toEqual(newMetaData);
     });
-
-    window.addEventListener = originalEventListener;
   });
 
   it('should not fetch metadata in modification mode if flow node does not have any running/finished instances', async () => {
