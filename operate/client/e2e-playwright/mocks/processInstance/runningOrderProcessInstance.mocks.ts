@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {open} from 'modules/mocks/diagrams';
+import {openFile} from '@/utils/openFile';
 import {runningInstance} from './';
 import type {InstanceMock} from '.';
 
@@ -25,7 +25,7 @@ const runningOrderProcessInstance: InstanceMock = {
     processDefinitionId: 'orderProcess',
   },
   callHierarchy: [],
-  xml: open('orderProcess.bpmn'),
+  xml: openFile('./e2e-playwright/mocks/resources/orderProcess.bpmn'),
   statisticsV2: {
     items: [
       {

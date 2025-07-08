@@ -15,7 +15,7 @@ import {
   mockOrderProcessInstances,
   mockStatisticsV2,
 } from '../mocks/processes.mocks';
-import {open} from 'modules/mocks/diagrams';
+import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
@@ -37,7 +37,9 @@ test.describe('selections and operations', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
-        processXml: open('orderProcess.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess.bpmn',
+        ),
       }),
     );
 
@@ -85,7 +87,9 @@ test.describe('selections and operations', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
-        processXml: open('orderProcess.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess.bpmn',
+        ),
       }),
     );
 

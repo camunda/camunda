@@ -26,7 +26,7 @@ import {
   mockResponses as mockProcessInstanceDetailResponses,
   runningOrderProcessInstance,
 } from '../mocks/processInstance';
-import {open} from 'modules/mocks/diagrams';
+import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
@@ -65,7 +65,9 @@ test.describe('get familiar with operate', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
-        processXml: open('orderProcess.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess.bpmn',
+        ),
       }),
     );
 

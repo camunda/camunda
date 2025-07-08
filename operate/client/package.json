@@ -55,7 +55,7 @@
     "analyze-bundle": "npm run build && source-map-explorer 'build/assets/*.js'",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.53.2 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
-    "build:visual-regression": "cross-env VITE_VERSION=0.0.0-SNAPSHOT npm run build",
+    "build:visual-regression": "cross-env VITE_VERSION=0.0.0-SNAPSHOT vite build --mode visual-regression",
     "extract-sbom": "vite build --mode sbom"
   },
   "devDependencies": {

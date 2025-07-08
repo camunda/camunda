@@ -6,11 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
 
-const open = (fileName: string) => {
-  return fs.readFileSync(path.join(__dirname, fileName)).toString();
+const openFile = (fileName: string) => {
+  return fs.readFileSync(fileName).toString();
 };
 
-export {open};
+export {openFile};

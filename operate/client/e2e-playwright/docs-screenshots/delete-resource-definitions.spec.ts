@@ -19,7 +19,7 @@ import {
   mockDeleteDecision,
   mockGroupedDecisions,
 } from '../mocks/decisions.mocks';
-import {open} from 'modules/mocks/diagrams';
+import {openFile} from '@/utils/openFile';
 import {expect} from '@playwright/test';
 import {URL_API_PATTERN} from '../constants';
 
@@ -45,7 +45,9 @@ test.describe('delete resource definitions', () => {
         statisticsV2: {
           items: [],
         },
-        processXml: open('orderProcess.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess.bpmn',
+        ),
         deleteProcess: mockDeleteProcess,
       }),
     );
