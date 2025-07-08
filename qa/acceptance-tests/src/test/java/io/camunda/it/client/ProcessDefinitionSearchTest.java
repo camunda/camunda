@@ -489,7 +489,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(processDefinitionId);
   }
 
@@ -503,7 +503,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient.newProcessDefinitionSearchRequest().filter(f -> f.name(name)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(10);
     assertThat(result.items().getFirst().getName()).isEqualTo(name);
   }
 
@@ -521,7 +521,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(9);
     assertThat(result.items().getFirst().getVersion()).isEqualTo(version);
   }
 
@@ -539,7 +539,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items().getFirst().getResourceName()).isEqualTo(resourceName);
   }
 
@@ -557,7 +557,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(9);
     assertThat(result.items().getFirst().getTenantId()).isEqualTo(tenantId);
   }
 
@@ -575,7 +575,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(13);
     assertThat(result.items().getFirst().getVersionTag()).isEqualTo(versionTag);
   }
 
@@ -615,7 +615,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(13);
     assertThat(result.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedProcessDefinitionIds);
   }
@@ -790,7 +790,7 @@ public class ProcessDefinitionSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(2);
+    assertThat(resultAfter.items().size()).isEqualTo(11);
 
     // apply searchBefore
     final var resultBefore =
