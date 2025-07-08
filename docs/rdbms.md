@@ -23,7 +23,7 @@ Key Features & Benefits:
 Camunda supports different database types for secondary storage through the `camunda.database.type` configuration property:
 
 * `elasticsearch` (default): Uses Elasticsearch for secondary storage
-* `opensearch`: Uses OpenSearch for secondary storage  
+* `opensearch`: Uses OpenSearch for secondary storage
 * `rdbms`: Uses a relational database for secondary storage
 * `none`: Disables all secondary storage components for headless/engine-only deployments
 

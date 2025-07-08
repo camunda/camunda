@@ -24,14 +24,13 @@ public class SearchClientDatabaseConfigurationTest {
     runner
         .withUserConfiguration(SearchClientDatabaseConfiguration.class)
         .withPropertyValues(
-            "camunda.database.type=" + DatabaseConfig.NONE,
-            "zeebe.gateway.rest.enabled=true"
-            )
-        .run(context -> {
-          assertThat(context).hasSingleBean(SearchClientsProxy.class);
-          final var proxy = context.getBean(SearchClientsProxy.class);
-          assertThat(proxy).isInstanceOf(NoopSearchClientsProxy.class);
-        });
+            "camunda.database.type=" + DatabaseConfig.NONE, "zeebe.gateway.rest.enabled=true")
+        .run(
+            context -> {
+              assertThat(context).hasSingleBean(SearchClientsProxy.class);
+              final var proxy = context.getBean(SearchClientsProxy.class);
+              assertThat(proxy).isInstanceOf(NoopSearchClientsProxy.class);
+            });
   }
 
   @Test
@@ -40,12 +39,13 @@ public class SearchClientDatabaseConfigurationTest {
         .withUserConfiguration(SearchClientDatabaseConfiguration.class)
         .withPropertyValues(
             "camunda.database.type=" + DatabaseConfig.ELASTICSEARCH,
-            "zeebe.gateway.rest.enabled=true"
-            )
-        .run(context -> {
-          // Should not have SearchClientsProxy because DocumentBasedSearchClient bean is missing
-          assertThat(context).doesNotHaveBean(SearchClientsProxy.class);
-        });
+            "zeebe.gateway.rest.enabled=true")
+        .run(
+            context -> {
+              // Should not have SearchClientsProxy because DocumentBasedSearchClient bean is
+              // missing
+              assertThat(context).doesNotHaveBean(SearchClientsProxy.class);
+            });
   }
 
   @Test
@@ -53,12 +53,11 @@ public class SearchClientDatabaseConfigurationTest {
     runner
         .withUserConfiguration(SearchClientDatabaseConfiguration.class)
         .withPropertyValues(
-            "camunda.database.type=" + DatabaseConfig.NONE,
-            "zeebe.gateway.rest.enabled=false"
-            )
-        .run(context -> {
-          // No SearchClientsProxy should be created because RestGateway is disabled
-          assertThat(context).doesNotHaveBean(SearchClientsProxy.class);
-        });
+            "camunda.database.type=" + DatabaseConfig.NONE, "zeebe.gateway.rest.enabled=false")
+        .run(
+            context -> {
+              // No SearchClientsProxy should be created because RestGateway is disabled
+              assertThat(context).doesNotHaveBean(SearchClientsProxy.class);
+            });
   }
 }

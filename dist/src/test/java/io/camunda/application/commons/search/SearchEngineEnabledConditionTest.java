@@ -25,9 +25,10 @@ public class SearchEngineEnabledConditionTest {
     runner
         .withUserConfiguration(TestConfiguration.class)
         .withPropertyValues("camunda.database.type=" + DatabaseConfig.ELASTICSEARCH)
-        .run(context -> {
-          assertThat(context).hasBean("testBean");
-        });
+        .run(
+            context -> {
+              assertThat(context).hasBean("testBean");
+            });
   }
 
   @Test
@@ -35,9 +36,10 @@ public class SearchEngineEnabledConditionTest {
     runner
         .withUserConfiguration(TestConfiguration.class)
         .withPropertyValues("camunda.database.type=" + DatabaseConfig.OPENSEARCH)
-        .run(context -> {
-          assertThat(context).hasBean("testBean");
-        });
+        .run(
+            context -> {
+              assertThat(context).hasBean("testBean");
+            });
   }
 
   @Test
@@ -45,9 +47,10 @@ public class SearchEngineEnabledConditionTest {
     // Default should be enabled (elasticsearch)
     runner
         .withUserConfiguration(TestConfiguration.class)
-        .run(context -> {
-          assertThat(context).hasBean("testBean");
-        });
+        .run(
+            context -> {
+              assertThat(context).hasBean("testBean");
+            });
   }
 
   @Test
@@ -55,9 +58,10 @@ public class SearchEngineEnabledConditionTest {
     runner
         .withUserConfiguration(TestConfiguration.class)
         .withPropertyValues("camunda.database.type=" + DatabaseConfig.NONE)
-        .run(context -> {
-          assertThat(context).doesNotHaveBean("testBean");
-        });
+        .run(
+            context -> {
+              assertThat(context).doesNotHaveBean("testBean");
+            });
   }
 
   @Configuration

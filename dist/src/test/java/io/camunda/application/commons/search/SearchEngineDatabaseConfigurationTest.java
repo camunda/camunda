@@ -27,13 +27,15 @@ public class SearchEngineDatabaseConfigurationTest {
         .withUserConfiguration(TestConfiguration.class)
         .withPropertyValues(
             "camunda.database.type=" + DatabaseConfig.NONE,
-            "camunda.database.schema-manager.createSchema=true" // explicit true should be overridden
+            "camunda.database.schema-manager.createSchema=true" // explicit true should be
+            // overridden
             )
-        .run(context -> {
-          assertThat(context).hasSingleBean(SearchEngineConfiguration.class);
-          final var config = context.getBean(SearchEngineConfiguration.class);
-          assertThat(config.schemaManager().isCreateSchema()).isFalse();
-        });
+        .run(
+            context -> {
+              assertThat(context).hasSingleBean(SearchEngineConfiguration.class);
+              final var config = context.getBean(SearchEngineConfiguration.class);
+              assertThat(config.schemaManager().isCreateSchema()).isFalse();
+            });
   }
 
   @Test
@@ -42,13 +44,13 @@ public class SearchEngineDatabaseConfigurationTest {
         .withUserConfiguration(TestConfiguration.class)
         .withPropertyValues(
             "camunda.database.type=" + DatabaseConfig.ELASTICSEARCH,
-            "camunda.database.schema-manager.createSchema=true"
-            )
-        .run(context -> {
-          assertThat(context).hasSingleBean(SearchEngineConfiguration.class);
-          final var config = context.getBean(SearchEngineConfiguration.class);
-          assertThat(config.schemaManager().isCreateSchema()).isTrue();
-        });
+            "camunda.database.schema-manager.createSchema=true")
+        .run(
+            context -> {
+              assertThat(context).hasSingleBean(SearchEngineConfiguration.class);
+              final var config = context.getBean(SearchEngineConfiguration.class);
+              assertThat(config.schemaManager().isCreateSchema()).isTrue();
+            });
   }
 
   @Test
@@ -57,18 +59,18 @@ public class SearchEngineDatabaseConfigurationTest {
         .withUserConfiguration(TestConfiguration.class)
         .withPropertyValues(
             "camunda.database.type=" + DatabaseConfig.OPENSEARCH,
-            "camunda.database.schema-manager.createSchema=false"
-            )
-        .run(context -> {
-          assertThat(context).hasSingleBean(SearchEngineConfiguration.class);
-          final var config = context.getBean(SearchEngineConfiguration.class);
-          assertThat(config.schemaManager().isCreateSchema()).isFalse();
-        });
+            "camunda.database.schema-manager.createSchema=false")
+        .run(
+            context -> {
+              assertThat(context).hasSingleBean(SearchEngineConfiguration.class);
+              final var config = context.getBean(SearchEngineConfiguration.class);
+              assertThat(config.schemaManager().isCreateSchema()).isFalse();
+            });
   }
 
   @Configuration
   static class TestConfiguration extends SearchEngineDatabaseConfiguration {
-    
+
     @Bean
     @Override
     public SearchEngineConfiguration searchEngineConfiguration(

@@ -75,10 +75,7 @@ public class SearchClientDatabaseConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(
-      prefix = "camunda.database",
-      name = "type",
-      havingValue = "none")
+  @ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "none")
   public SearchClientsProxy noopSearchClientsProxy() {
     return SearchClientsProxy.noop();
   }
