@@ -103,24 +103,6 @@ Accept: application/json
 %}
 
 ###
-# @name test-delete-user-athorized
-< {%
-  import {wait} from "js/wait"
-  wait(4)
-%}
-DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/{{USERNAME}}
-Authorization: Basic {{BASIC_AUTH_TOKEN}}
-Content-Type: application/json
-Accept: application/json
-
-
-> {%
-  client.test("The user was deleted successfully.", function () {
-    client.assert(response.status === 204, "Response status is not 201");
-  });
-%}
-
-###
 # @name test-delete-fake-user-athorized
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/fake
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
@@ -301,5 +283,383 @@ Accept: application/json
   client.test("Authorization update should be successful", function () {
     client.assert(response.status === 204, "Response status is not 204");
     client.assert(response.body === "" || response.body === null, "Response body is not empty");
+  });
+%}
+
+###
+# @name create-test-user-without-authorizations
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "admin",
+  "username": "{{USERNAME_NO_AUTHORIZATIONS}}",
+  "name": "admin",
+  "email": "admin@test.com"
+}
+
+> {%
+  client.test("User creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("USERNAME_NO_AUTHORIZATIONS", response.body.username);
+  });
+%}
+
+###
+# @name process-instance-search-unauthorized
+< {%
+  import {wait} from "js/wait"
+  wait(3)
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/search
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "processInstanceKey",
+      "order": "ASC"
+    }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("Process instance search is successful without authorizations", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Response should be empty", function () {
+    client.assert(response.body.items.length === 0, "Process instances were returned");
+  });
+%}
+
+
+###
+# @name create-authorization-for-apps-positive
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "ACCESS"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME_NO_AUTHORIZATIONS}}",
+  "resourceType": "APPLICATION",
+  "resourceId": "*"
+}
+
+> {%
+  client.test("Authorization creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Authorization key should not be empty", function () {
+    client.assert(response.body.authorizationKey !== "", "Authorization key is empty");
+    client.global.set("AUTHORIZATION_KEY_APP", response.body.authorizationKey);
+  });
+%}
+
+###
+# @name create-user-without-authorizations
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "test1",
+  "username": "test1",
+  "name": "test1",
+  "email": "test1@test.com"
+}
+
+> {%
+  client.test("User creation should be Unauthorized", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("FORBIDDEN error message should be displayed", function () {
+    client.assert(response.body.detail.includes("FORBIDDEN"), "Incorrect error message");
+  });
+%}
+
+###
+# @name test-user-update-no-authorizations
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/{{USERNAME}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "password": "newStrongPassword123",
+  "name": "Sergii Updated",
+  "email": "sergii.updated@camunda.com"
+}
+
+> {%
+  client.test("User update should be unauthorized", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("FORBIDDEN error message should be displayed", function () {
+    client.assert(response.body.detail.includes("FORBIDDEN"), "Incorrect error message");
+  });
+%}
+
+###
+# @name test-user-search-no-authorizations
+< {%
+  import {wait} from "js/wait"
+  wait(4)
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/search
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "sort": [
+    {
+      "field": "username",
+      "order": "ASC"
+    }
+  ],
+  "filter": {
+    "username": "{{USERNAME}}"
+  },
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
+}
+
+> {%
+  client.test("User search is successful without authorizations", function () {
+    client.assert(response.status === 200, "Response status is not 200");
+  });
+
+  client.test("Response should be JSON", function () {
+    client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
+  });
+
+  client.test("Response should not contain user data", function () {
+    client.assert(response.body.items.length === 0, "Items array is not empty");
+  });
+%}
+
+###
+# @name create-process-definition-authorization-unauthorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ_USER_TASK",
+    "DELETE_PROCESS_INSTANCE",
+    "CREATE_PROCESS_INSTANCE",
+    "UPDATE_PROCESS_INSTANCE",
+    "READ_PROCESS_INSTANCE",
+    "READ_PROCESS_DEFINITION",
+    "UPDATE_USER_TASK"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME_NO_AUTHORIZATIONS}}",
+  "resourceType": "PROCESS_DEFINITION",
+  "resourceId": "test-resource"
+}
+
+> {%
+  client.test("Authorization creation should be unsuccessful", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("Response should be JSON", function () {
+    const contentType = response.headers.valueOf("Content-Type") || "";
+    client.assert(
+        contentType.toLowerCase().includes("application/problem+json"),
+        `Response is not JSON, Content-Type was: ${contentType}`
+    );
+  });
+
+  client.test("Forbidden error message should be displayed", function () {
+    client.assert(response.body.detail == "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE' on resource 'AUTHORIZATION'", "Incorrect error message");
+  });
+%}
+
+###
+# @name update-process-definition-authorization-unauthorized
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/{{AUTHORIZATION_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "permissionTypes": [
+    "READ_USER_TASK",
+    "UPDATE_USER_TASK"
+  ],
+  "ownerType": "USER",
+  "ownerId": "{{USERNAME_NO_AUTHORIZATIONS}}",
+  "resourceType": "PROCESS_DEFINITION",
+  "resourceId": "test-resource"
+}
+
+> {%
+  client.test("Authorization creation should be unsuccessful", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("Response should be JSON", function () {
+    const contentType = response.headers.valueOf("Content-Type") || "";
+    client.assert(
+        contentType.toLowerCase().includes("application/problem+json"),
+        `Response is not JSON, Content-Type was: ${contentType}`
+    );
+  });
+
+  client.test("Forbidden error message should be displayed", function () {
+    client.assert(response.body.detail == "Command 'UPDATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'UPDATE' on resource 'AUTHORIZATION'", "Incorrect error message");
+  });
+%}
+
+###
+# @name delete-process-definition-authorization-unauthorized
+< {%
+  import {wait} from "js/wait";
+  wait(4);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/{{AUTHORIZATION_KEY}}
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Content-Type: application/json
+Accept: application/json
+
+> {%
+  client.test("Authorization deletion should be unsuccessful", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("Response should be JSON", function () {
+    const contentType = response.headers.valueOf("Content-Type") || "";
+    client.assert(
+        contentType.toLowerCase().includes("application/problem+json"),
+        `Response is not JSON, Content-Type was: ${contentType}`
+    );
+  });
+
+  client.test("Forbidden error message should be displayed", function () {
+    client.assert(response.body.detail == "Command 'DELETE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'DELETE' on resource 'AUTHORIZATION'", "Incorrect error message");
+  });
+%}
+
+###
+# @name upload-document-authorized
+POST http://localhost:8080/v2/documents
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="file"; filename="test.pdf"
+Content-Type: application/pdf
+
+< ./test.pdf
+--boundary123
+
+> {%
+  client.test("Document upload should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+  });
+
+  client.test("Response should be JSON", function () {
+    const contentType = response.headers.valueOf("Content-Type") || "";
+    client.assert(
+        contentType.toLowerCase().includes("application/json"),
+        `Response is not JSON, Content-Type was: ${contentType}`
+    );
+  });
+
+  client.test("Response body should include document ID", function () {
+    client.assert(!!response.body.documentId, "Document ID found in response");
+  });
+%}
+
+###
+# @name upload-document-unauthorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/documents
+Authorization: Basic {{BASIC_AUTH_TOKEN_NO_AUTHORIZATIONS}}
+Accept: application/json
+Content-Type: multipart/form-data; boundary=boundary123
+
+--boundary123
+Content-Disposition: form-data; name="file"; filename="test.pdf"
+Content-Type: application/pdf
+
+< ./test.pdf
+--boundary123
+
+> {%
+  client.test("Document upload should be unsuccessful", function () {
+    client.assert(response.status === 403, "Response status is not 403");
+  });
+
+  client.test("Response should be JSON", function () {
+    const contentType = response.headers.valueOf("Content-Type") || "";
+    client.assert(
+        contentType.toLowerCase().includes("application/json"),
+        `Response is not JSON, Content-Type was: ${contentType}`
+    );
+  });
+
+  client.test("Forbidden error message should be displayed", function () {
+    client.assert(response.body.detail.includes("FORBIDDEN"), "Incorrect error message");
+  });
+%}
+
+###
+# @name delete-test-user-without-authorizations-athenticated
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/{{USERNAME_NO_AUTHORIZATIONS}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+
+> {%
+  client.test("The user was deleted successfully.", function () {
+    client.assert(response.status === 204, "Response status is not 201");
+  });
+%}
+
+###
+# @name test-delete-user-athorized
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/{{USERNAME}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+
+> {%
+  client.test("The user was deleted successfully.", function () {
+    client.assert(response.status === 204, "Response status is not 201");
   });
 %}
