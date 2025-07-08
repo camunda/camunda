@@ -7,12 +7,15 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.security.auth.Authorization.withResourceId;
+import static io.camunda.service.authorization.Authorizations.MAPPING_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.service.search.core.SearchQueryService;
@@ -46,7 +49,7 @@ public class MappingServices
     return mappingSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.mapping().read())))
+                authentication, with(MAPPING_READ_AUTHORIZATION)))
         .searchMappings(query);
   }
 
@@ -75,13 +78,11 @@ public class MappingServices
   }
 
   public MappingEntity getMapping(final String mappingId) {
-    return search(
-            SearchQueryBuilders.mappingSearchQuery()
-                .filter(f -> f.mappingId(mappingId))
-                .singleResult()
-                .build())
-        .items()
-        .getFirst();
+    return mappingSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, withResourceId(MAPPING_READ_AUTHORIZATION, mappingId)))
+        .getMappingByKey(mappingId);
   }
 
   public Optional<MappingEntity> findMapping(final MappingDTO request) {

@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.GroupReader;
+import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
@@ -48,7 +48,7 @@ public class GroupSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private GroupReader groupReader;
+  @Autowired private GroupDbReader groupReader;
 
   private RdbmsWriter rdbmsWriter;
 

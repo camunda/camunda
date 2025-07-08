@@ -22,7 +22,7 @@ import java.util.function.Function;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record SecurityContext(
     @JsonProperty("authentication") CamundaAuthentication authentication,
-    @JsonProperty("authorization") Authorization authorization) {
+    @JsonProperty("authorization") Authorization<?> authorization) {
 
   public boolean requiresAuthorizationChecks() {
     return authentication != null && authorization != null;
@@ -38,7 +38,7 @@ public record SecurityContext(
 
   public static class Builder {
     private CamundaAuthentication authentication;
-    private Authorization authorization;
+    private Authorization<?> authorization;
 
     public Builder withAuthentication(final CamundaAuthentication authentication) {
       this.authentication = authentication;
@@ -51,13 +51,13 @@ public record SecurityContext(
       return withAuthentication(CamundaAuthentication.of(builderFunction));
     }
 
-    public Builder withAuthorization(final Authorization authorization) {
+    public <T> Builder withAuthorization(final Authorization<T> authorization) {
       this.authorization = authorization;
       return this;
     }
 
-    public Builder withAuthorization(
-        final Function<Authorization.Builder, Authorization.Builder> builderFunction) {
+    public <T> Builder withAuthorization(
+        final Function<Authorization.Builder<T>, Authorization.Builder<T>> builderFunction) {
       return withAuthorization(Authorization.of(builderFunction));
     }
 

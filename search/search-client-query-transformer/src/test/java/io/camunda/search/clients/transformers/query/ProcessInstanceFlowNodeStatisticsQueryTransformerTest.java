@@ -7,15 +7,15 @@
  */
 package io.camunda.search.clients.transformers.query;
 
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_ACTIVE;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_CANCELED;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_COMPLETED;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_FILTER_FLOW_NODES;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FILTERS;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODES;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_INCIDENTS;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_ACTIVE;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_CANCELED;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_COMPLETED;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_FILTER_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_GROUP_FILTERS;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -32,11 +32,12 @@ import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.security.ResourceAccessChecks;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
-import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
+import io.camunda.search.query.ProcessInstanceStatisticsQuery;
 import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -49,7 +50,14 @@ public class ProcessInstanceFlowNodeStatisticsQueryTransformerTest {
 
   protected <Q extends TypedSearchAggregationQuery> SearchQueryRequest transformQuery(
       final Q query) {
-    return transformers.getTypedSearchQueryTransformer(query.getClass()).apply(query);
+    return transformQuery(query, ResourceAccessChecks.disabled());
+  }
+
+  protected <Q extends TypedSearchAggregationQuery> SearchQueryRequest transformQuery(
+      final Q query, final ResourceAccessChecks resourceAccessChecks) {
+    return transformers
+        .getTypedSearchQueryTransformer(query.getClass())
+        .apply(query, resourceAccessChecks);
   }
 
   @Test
@@ -57,7 +65,7 @@ public class ProcessInstanceFlowNodeStatisticsQueryTransformerTest {
     // given
     final var processInstanceKey = 123L;
     final var filter = new ProcessInstanceStatisticsFilter(processInstanceKey);
-    final var statisticsQuery = new ProcessInstanceFlowNodeStatisticsQuery(filter);
+    final var statisticsQuery = new ProcessInstanceStatisticsQuery(filter);
 
     // when
     final var searchRequest = transformQuery(statisticsQuery);

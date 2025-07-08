@@ -334,6 +334,11 @@ public class RestErrorMapper {
           REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
           return createProblemDetail(HttpStatus.NOT_FOUND, errorMessage, title);
         }
+      case FORBIDDEN:
+        {
+          REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);
+          return createProblemDetail(HttpStatus.FORBIDDEN, errorMessage, title);
+        }
       case NOT_UNIQUE:
         {
           REST_GATEWAY_LOGGER.debug(logPrefix, errorMessage);

@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.result;
 
+import io.camunda.search.clients.security.ResourceAccessChecks;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FilterBase;
@@ -23,7 +24,7 @@ public class AbstractResultConfigTest {
       final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {
     return transformers
         .getTypedSearchQueryTransformer(request.getClass())
-        .apply((TypedSearchQuery<FilterBase, SortOption>) request)
+        .apply((TypedSearchQuery<FilterBase, SortOption>) request, ResourceAccessChecks.disabled())
         .source();
   }
 }

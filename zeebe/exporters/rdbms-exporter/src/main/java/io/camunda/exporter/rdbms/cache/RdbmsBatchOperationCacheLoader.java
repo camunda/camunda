@@ -8,7 +8,7 @@
 package io.camunda.exporter.rdbms.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.db.rdbms.read.service.BatchOperationReader;
+import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import org.jetbrains.annotations.NotNull;
@@ -19,9 +19,9 @@ public class RdbmsBatchOperationCacheLoader
     implements CacheLoader<String, CachedBatchOperationEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsBatchOperationCacheLoader.class);
-  private final BatchOperationReader reader;
+  private final BatchOperationDbReader reader;
 
-  public RdbmsBatchOperationCacheLoader(final BatchOperationReader reader) {
+  public RdbmsBatchOperationCacheLoader(final BatchOperationDbReader reader) {
     this.reader = reader;
   }
 

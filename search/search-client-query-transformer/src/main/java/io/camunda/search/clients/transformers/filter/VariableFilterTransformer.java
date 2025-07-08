@@ -14,6 +14,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.IS_PREVIEW;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.VariableTemplate.NAME;
@@ -26,7 +27,9 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -75,5 +78,15 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
       return null;
     }
     return term(IS_PREVIEW, isTruncated);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TaskTemplate.TENANT_ID, tenantIds);
   }
 }

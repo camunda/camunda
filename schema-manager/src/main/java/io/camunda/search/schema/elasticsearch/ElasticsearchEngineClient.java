@@ -292,6 +292,11 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
             .refresh(true)
             .build();
     try {
+      // delete by query does a search which is by definition near-real time anything
+      // that has been refreshed/flushed won't be considered by delete by query So, first,
+      // we need to refresh and only then delete by query to ensure everything gets deleted
+      client.indices().refresh(builder -> builder.index(indexName));
+      LOG.debug("Refreshed index {}", indexName);
       final DeleteByQueryResponse response = client.deleteByQuery(deleteByQueryRequest);
       LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
     } catch (final IOException e) {

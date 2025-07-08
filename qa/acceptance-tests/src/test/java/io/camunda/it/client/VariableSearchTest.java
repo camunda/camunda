@@ -315,7 +315,7 @@ class VariableSearchTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .contains("A single result was expected, but none was found matching");
+        .isEqualTo("Variable with key '%s' not found".formatted(variableKey));
   }
 
   @Test

@@ -10,6 +10,7 @@ package io.camunda.authentication;
 import static io.camunda.security.auth.OidcGroupsLoader.DERIVED_GROUPS_ARE_NOT_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.AuthenticationContext;
@@ -18,6 +19,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -69,6 +71,16 @@ public class CamundaOAuthPrincipalServiceTest {
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
+      when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(mappingServices);
+      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(tenantServices);
+      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(roleServices);
+      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(groupServices);
+      when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(authorizationServices);
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
@@ -151,6 +163,16 @@ public class CamundaOAuthPrincipalServiceTest {
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
+      when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(mappingServices);
+      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(tenantServices);
+      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(roleServices);
+      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(groupServices);
+      when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(authorizationServices);
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
@@ -366,6 +388,16 @@ public class CamundaOAuthPrincipalServiceTest {
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("sub");
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn(GROUPS_CLAIM);
+      when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(mappingServices);
+      when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(tenantServices);
+      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(roleServices);
+      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(groupServices);
+      when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(authorizationServices);
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(

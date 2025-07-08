@@ -16,5 +16,7 @@ public interface DecisionInstanceSearchClient {
 
   SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(DecisionInstanceQuery filter);
 
+  DecisionInstanceEntity getDecisionInstanceById(String decisionInstanceId);
+
   DecisionInstanceSearchClient withSecurityContext(SecurityContext securityContext);
 }

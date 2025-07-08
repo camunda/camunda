@@ -16,5 +16,7 @@ public interface MappingSearchClient {
 
   SearchQueryResult<MappingEntity> searchMappings(MappingQuery filter);
 
+  MappingEntity getMappingByKey(String key);
+
   MappingSearchClient withSecurityContext(SecurityContext securityContext);
 }

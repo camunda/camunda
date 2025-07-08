@@ -7,12 +7,14 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.security.auth.Authorization.withResourceId;
+import static io.camunda.service.authorization.Authorizations.USER_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -47,7 +49,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
     return userSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.user().read())))
+                authentication, with(USER_READ_AUTHORIZATION)))
         .searchUsers(query);
   }
 
@@ -78,13 +80,11 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   }
 
   public UserEntity getUser(final String username) {
-    return search(
-            SearchQueryBuilders.userSearchQuery()
-                .filter(f -> f.usernames(username))
-                .singleResult()
-                .build())
-        .items()
-        .getFirst();
+    return userSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, withResourceId(USER_READ_AUTHORIZATION, username)))
+        .getUserByUsername(username);
   }
 
   public CompletableFuture<UserRecord> updateUser(final UserDTO request) {

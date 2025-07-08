@@ -19,4 +19,5 @@ public final record VariableEntity(
     Long scopeKey,
     Long processInstanceKey,
     String processDefinitionId,
-    String tenantId) {}
+    String tenantId)
+    implements TenantOwnedEntity {}

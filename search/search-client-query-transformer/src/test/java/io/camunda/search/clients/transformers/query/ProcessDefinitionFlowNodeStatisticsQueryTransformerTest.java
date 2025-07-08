@@ -7,13 +7,13 @@
  */
 package io.camunda.search.clients.transformers.query;
 
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -25,10 +25,11 @@ import io.camunda.search.clients.aggregator.SearchParentAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.security.ResourceAccessChecks;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
-import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionStatisticsQuery;
 import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -42,7 +43,9 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
 
   protected <Q extends TypedSearchAggregationQuery> SearchQueryRequest transformQuery(
       final Q query) {
-    return transformers.getTypedSearchQueryTransformer(query.getClass()).apply(query);
+    return transformers
+        .getTypedSearchQueryTransformer(query.getClass())
+        .apply(query, ResourceAccessChecks.disabled());
   }
 
   private void assertSubAggregations(final List<SearchAggregator> subAggregations) {
@@ -66,7 +69,7 @@ public class ProcessDefinitionFlowNodeStatisticsQueryTransformerTest {
     // given
     final var processDefinitionKey = 123L;
     final var filter = new ProcessDefinitionStatisticsFilter.Builder(processDefinitionKey).build();
-    final var statisticsQuery = new ProcessDefinitionFlowNodeStatisticsQuery(filter);
+    final var statisticsQuery = new ProcessDefinitionStatisticsQuery(filter);
 
     // when
     final var searchRequest = transformQuery(statisticsQuery);

@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
+import io.camunda.search.clients.security.ResourceAccessChecks;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.TypedSearchQuery;
@@ -22,9 +23,15 @@ public class AbstractSortTransformerTest {
 
   protected List<SearchSortOptions> transformRequest(
       final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {
+    return transformRequest(request, ResourceAccessChecks.disabled());
+  }
+
+  protected List<SearchSortOptions> transformRequest(
+      final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request,
+      final ResourceAccessChecks resourceAccessChecks) {
     return transformers
         .getTypedSearchQueryTransformer(request.getClass())
-        .apply((TypedSearchQuery<FilterBase, SortOption>) request)
+        .apply((TypedSearchQuery<FilterBase, SortOption>) request, resourceAccessChecks)
         .sort();
   }
 }

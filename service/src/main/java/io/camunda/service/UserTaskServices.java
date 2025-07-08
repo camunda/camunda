@@ -7,30 +7,24 @@
  */
 package io.camunda.service;
 
-import static io.camunda.search.query.SearchQueryBuilders.flownodeInstanceSearchQuery;
-import static io.camunda.search.query.SearchQueryBuilders.formSearchQuery;
-import static io.camunda.search.query.SearchQueryBuilders.userTaskSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.security.auth.Authorization.withResourceId;
+import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
 
-import io.camunda.search.clients.FlowNodeInstanceSearchClient;
-import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
-import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
-import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequest;
@@ -38,37 +32,35 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
 
   private final UserTaskSearchClient userTaskSearchClient;
-  private final FormSearchClient formSearchClient;
-  private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
-  private final VariableSearchClient variableSearchClient;
+  private final FormServices formServices;
+  private final ElementInstanceServices elementInstanceServices;
+  private final VariableServices variableServices;
   private final ProcessCache processCache;
 
   public UserTaskServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
-      final FormSearchClient formSearchClient,
-      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final VariableSearchClient variableSearchClient,
+      final FormServices formServices,
+      final ElementInstanceServices elementInstanceServices,
+      final VariableServices variableServices,
       final ProcessCache processCache,
       final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.userTaskSearchClient = userTaskSearchClient;
-    this.formSearchClient = formSearchClient;
-    this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
-    this.variableSearchClient = variableSearchClient;
+    this.formServices = formServices;
+    this.elementInstanceServices = elementInstanceServices;
+    this.variableServices = variableServices;
     this.processCache = processCache;
   }
 
@@ -78,9 +70,9 @@ public final class UserTaskServices
         brokerClient,
         securityContextProvider,
         userTaskSearchClient,
-        formSearchClient,
-        flowNodeInstanceSearchClient,
-        variableSearchClient,
+        formServices,
+        elementInstanceServices,
+        variableServices,
         processCache,
         authentication);
   }
@@ -90,7 +82,7 @@ public final class UserTaskServices
     return search(
         query,
         securityContextProvider.provideSecurityContext(
-            authentication, Authorization.of(a -> a.processDefinition().readUserTask())));
+            authentication, with(USER_TASK_READ_AUTHORIZATION)));
   }
 
   private SearchQueryResult<UserTaskEntity> search(
@@ -118,20 +110,15 @@ public final class UserTaskServices
 
     return result.withItems(
         result.items().stream()
-            .map(
-                item ->
-                    item.hasName()
-                        ? item
-                        : item.withName(
-                            cacheResult
-                                .getProcessItem(item.processDefinitionKey())
-                                .getElementName(item.elementId())))
+            .map(i -> enrichUserTask(i, cacheResult.getProcessItem(i.processDefinitionKey())))
             .collect(Collectors.toList()));
   }
 
-  public SearchQueryResult<UserTaskEntity> search(
-      final Function<Builder, ObjectBuilder<UserTaskQuery>> fn) {
-    return search(userTaskSearchQuery(fn));
+  private UserTaskEntity enrichUserTask(
+      final UserTaskEntity userTask, final ProcessCacheItem cacheResult) {
+    return userTask.hasName() || cacheResult == null
+        ? userTask
+        : userTask.withName(cacheResult.getElementName(userTask.elementId()));
   }
 
   public CompletableFuture<UserTaskRecord> assignUserTask(
@@ -165,33 +152,28 @@ public final class UserTaskServices
   }
 
   public UserTaskEntity getByKey(final long userTaskKey) {
-    final var query =
-        UserTaskQuery.of(q -> q.filter(f -> f.userTaskKeys(userTaskKey)).singleResult());
     final var userTask =
-        search(query, securityContextProvider.provideSecurityContext(authentication))
-            .items()
-            .getFirst();
+        userTaskSearchClient
+            .withSecurityContext(
+                securityContextProvider.provideSecurityContext(
+                    authentication,
+                    withResourceId(
+                        USER_TASK_READ_AUTHORIZATION, UserTaskEntity::processDefinitionId)))
+            .getUserTaskByKey(userTaskKey);
 
-    final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
-    if (!securityContextProvider.isAuthorized(
-        userTask.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
-    }
-
-    return userTask;
+    return enrichUserTask(userTask, processCache.getCacheItem(userTask.processDefinitionKey()));
   }
 
   public Optional<FormEntity> getUserTaskForm(final long userTaskKey) {
-    final Long formKey = getByKey(userTaskKey).formKey();
-    if (formKey == null) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        formSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchForms(formSearchQuery(q -> q.filter(f -> f.formKeys(formKey)).singleResult()))
-            .items()
-            .getFirst());
+    final var userTask = getByKey(userTaskKey);
+    return Optional.ofNullable(userTask)
+        .map(UserTaskEntity::formKey)
+        .flatMap(
+            formKey ->
+                Optional.ofNullable(
+                    formServices
+                        .withAuthentication(CamundaAuthentication.anonymous())
+                        .getByKey(formKey)));
   }
 
   public SearchQueryResult<VariableEntity> searchUserTaskVariables(
@@ -207,7 +189,7 @@ public final class UserTaskServices
     final List<Long> treePathList =
         treePath != null
             ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
-            : Collections.emptyList();
+            : List.of(userTask.elementInstanceKey());
 
     // Create a variable query with an additional filter for the scope keys
     final var variableQueryWithTreePathFilter =
@@ -218,19 +200,20 @@ public final class UserTaskServices
                     .page(variableQuery.page()));
 
     // Execute the search
-    return variableSearchClient
-        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-        .searchVariables(variableQueryWithTreePathFilter);
+    return getUserTaskVariablesByQuery(variableQueryWithTreePathFilter);
+  }
+
+  private SearchQueryResult<VariableEntity> getUserTaskVariablesByQuery(
+      final VariableQuery variableQuery) {
+    return variableServices
+        .withAuthentication(CamundaAuthentication.anonymous())
+        .search(variableQuery);
   }
 
   private String fetchFlowNodeTreePath(final long flowNodeInstanceKey) {
-    return flowNodeInstanceSearchClient
-        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-        .searchFlowNodeInstances(
-            flownodeInstanceSearchQuery(
-                q -> q.filter(f -> f.flowNodeInstanceKeys(flowNodeInstanceKey)).singleResult()))
-        .items()
-        .getFirst()
+    return elementInstanceServices
+        .withAuthentication(CamundaAuthentication.anonymous())
+        .getByKey(flowNodeInstanceKey)
         .treePath();
   }
 }

@@ -21,5 +21,7 @@ public interface BatchOperationSearchClient {
   SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       BatchOperationItemQuery query);
 
+  BatchOperationEntity getBatchOperationByKey(String key);
+
   BatchOperationSearchClient withSecurityContext(SecurityContext securityContext);
 }

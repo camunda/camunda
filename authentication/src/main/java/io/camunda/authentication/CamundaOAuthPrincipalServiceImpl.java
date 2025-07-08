@@ -17,6 +17,7 @@ import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -103,7 +104,8 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
       ownerTypeToIds.put(CLIENT, Set.of(clientId));
     }
 
-    final var mappings = mappingServices.getMatchingMappings(claims);
+    final var anonymous = CamundaAuthentication.anonymous();
+    final var mappings = mappingServices.withAuthentication(anonymous).getMatchingMappings(claims);
     final Set<String> mappingIds =
         mappings.map(MappingEntity::mappingId).collect(Collectors.toSet());
     if (mappingIds.isEmpty()) {
@@ -118,7 +120,10 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
       groups = new HashSet<>(oidcGroupsLoader.load(claims));
     } else {
       groups =
-          groupServices.getGroupsByMemberTypeAndMemberIds(ownerTypeToIds).stream()
+          groupServices
+              .withAuthentication(anonymous)
+              .getGroupsByMemberTypeAndMemberIds(ownerTypeToIds)
+              .stream()
               .map(GroupEntity::groupId)
               .collect(Collectors.toSet());
     }
@@ -127,19 +132,25 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
       ownerTypeToIds.put(GROUP, groups);
     }
 
-    final var roles = roleServices.getRolesByMemberTypeAndMemberIds(ownerTypeToIds);
+    final var roles =
+        roleServices.withAuthentication(anonymous).getRolesByMemberTypeAndMemberIds(ownerTypeToIds);
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
     if (!roleIds.isEmpty()) {
       ownerTypeToIds.put(EntityType.ROLE, roleIds);
     }
 
     final var tenants =
-        tenantServices.getTenantsByMemberTypeAndMemberIds(ownerTypeToIds).stream()
+        tenantServices
+            .withAuthentication(anonymous)
+            .getTenantsByMemberTypeAndMemberIds(ownerTypeToIds)
+            .stream()
             .map(TenantDTO::fromEntity)
             .toList();
 
     final var authorizedApplications =
-        authorizationServices.getAuthorizedApplications(ownerTypeToIds);
+        authorizationServices
+            .withAuthentication(anonymous)
+            .getAuthorizedApplications(ownerTypeToIds);
 
     authContextBuilder
         .withAuthorizedApplications(authorizedApplications)

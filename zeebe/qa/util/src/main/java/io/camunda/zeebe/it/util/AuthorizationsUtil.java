@@ -16,10 +16,12 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.search.clients.DocumentBasedSearchClients;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.UserReader;
+import io.camunda.search.clients.security.ResourceAccessChecks;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -33,7 +35,9 @@ public class AuthorizationsUtil implements CloseableSilently {
 
   private final TestGateway<?> gateway;
   private final CamundaClient client;
-  private final DocumentBasedSearchClients documentBasedSearchClients;
+  private final DocumentBasedSearchClient documentBasedSearchClients;
+  private final AuthorizationReader authorizationReader;
+  private final UserReader userReader;
 
   public AuthorizationsUtil(
       final TestGateway<?> gateway, final CamundaClient client, final String elasticsearchUrl) {
@@ -43,10 +47,12 @@ public class AuthorizationsUtil implements CloseableSilently {
   public AuthorizationsUtil(
       final TestGateway<?> gateway,
       final CamundaClient client,
-      final DocumentBasedSearchClients documentBasedSearchClients) {
+      final DocumentBasedSearchClient documentBasedSearchClients) {
     this.gateway = gateway;
     this.client = client;
     this.documentBasedSearchClients = documentBasedSearchClients;
+    authorizationReader = SearchClientsUtil.createAuthorizationReader(documentBasedSearchClients);
+    userReader = SearchClientsUtil.createUserReader(documentBasedSearchClients);
   }
 
   public static AuthorizationsUtil create(
@@ -99,21 +105,6 @@ public class AuthorizationsUtil implements CloseableSilently {
     }
   }
 
-  public void createTenant(
-      final String tenantId, final String tenantName, final String... usernames) {
-    client
-        .newCreateTenantCommand()
-        .tenantId(tenantId)
-        .name(tenantName)
-        .send()
-        .join()
-        .getTenantKey();
-    for (final var username : usernames) {
-      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
-    }
-    awaitTenantExistsInElasticsearch(tenantId);
-  }
-
   public CamundaClient createClient(final String username, final String password) {
     return createClient(gateway, username, password);
   }
@@ -150,14 +141,10 @@ public class AuthorizationsUtil implements CloseableSilently {
         .build();
   }
 
-  private void awaitTenantExistsInElasticsearch(final String tenantId) {
-    final var tenantQuery = TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId)));
-    awaitEntityExistsInElasticsearch(() -> documentBasedSearchClients.searchTenants(tenantQuery));
-  }
-
   public void awaitUserExistsInElasticsearch(final String username) {
     final var userQuery = UserQuery.of(b -> b.filter(f -> f.usernames(username)));
-    awaitEntityExistsInElasticsearch(() -> documentBasedSearchClients.searchUsers(userQuery));
+    awaitEntityExistsInElasticsearch(
+        () -> userReader.search(userQuery, ResourceAccessChecks.disabled()));
   }
 
   private void awaitPermissionExistsInElasticsearch(
@@ -181,7 +168,7 @@ public class AuthorizationsUtil implements CloseableSilently {
                               .resourceIds(resourceId)));
 
       awaitEntityExistsInElasticsearch(
-          () -> documentBasedSearchClients.searchAuthorizations(permissionQuery));
+          () -> authorizationReader.search(permissionQuery, ResourceAccessChecks.disabled()));
     }
   }
 

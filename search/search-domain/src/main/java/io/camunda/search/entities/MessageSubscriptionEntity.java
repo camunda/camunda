@@ -22,7 +22,8 @@ public record MessageSubscriptionEntity(
     OffsetDateTime dateTime,
     String messageName,
     String correlationKey,
-    String tenantId) {
+    String tenantId)
+    implements TenantOwnedEntity {
   public static Builder builder() {
     return new Builder();
   }

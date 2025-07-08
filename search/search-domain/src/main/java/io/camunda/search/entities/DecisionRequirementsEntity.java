@@ -17,4 +17,5 @@ public record DecisionRequirementsEntity(
     Integer version,
     String resourceName,
     String xml,
-    String tenantId) {}
+    String tenantId)
+    implements TenantOwnedEntity {}

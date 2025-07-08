@@ -13,10 +13,12 @@ import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.security.ResourceAccessChecks;
 import io.camunda.search.clients.source.SearchSourceConfig;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.FilterTransformer;
+import io.camunda.search.clients.transformers.filter.IndexFilterTransformer;
 import io.camunda.search.clients.transformers.result.ResultConfigTransformer;
 import io.camunda.search.clients.transformers.sort.SortingTransformer;
 import io.camunda.search.filter.FilterBase;
@@ -41,8 +43,14 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
 
   @Override
   public SearchQueryRequest apply(final TypedSearchQuery<F, S> query) {
+    throw new UnsupportedOperationException(
+        "Use #apply(query, resourceAccessChecks) instead of this method");
+  }
+
+  public SearchQueryRequest apply(
+      final TypedSearchQuery<F, S> query, final ResourceAccessChecks resourceAccessChecks) {
     final var filter = query.filter();
-    final var searchQueryFilter = toSearchQuery(filter);
+    final var searchQueryFilter = toSearchQuery(filter, resourceAccessChecks);
     final var indices = toIndices(filter);
 
     final var builder = searchRequest().index(indices).query(searchQueryFilter);
@@ -69,8 +77,10 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
     return resultConfigTransformer.apply(resultConfig);
   }
 
-  private SearchQuery toSearchQuery(final F filter) {
-    return getFilterTransformer(filter).apply(filter);
+  private SearchQuery toSearchQuery(
+      final F filter, final ResourceAccessChecks resourceAccessChecks) {
+    return ((IndexFilterTransformer<F>) getFilterTransformer(filter))
+        .toSearchQuery(filter, resourceAccessChecks);
   }
 
   private List<String> toIndices(final F filter) {

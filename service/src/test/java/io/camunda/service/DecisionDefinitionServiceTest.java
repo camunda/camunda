@@ -8,11 +8,9 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -20,18 +18,14 @@ import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
-import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 public final class DecisionDefinitionServiceTest {
 
@@ -81,18 +75,12 @@ public final class DecisionDefinitionServiceTest {
     final var definitionEntity = mock(DecisionDefinitionEntity.class);
     when(definitionEntity.decisionRequirementsKey()).thenReturn(42L);
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(definitionEntity), null, null));
+    when(client.getDecisionDefinitionByKey(any(Long.class))).thenReturn(definitionEntity);
 
     final var requirementEntity = mock(DecisionRequirementsEntity.class);
     when(requirementEntity.xml()).thenReturn("<foo>bar</foo>");
-    when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(requirementEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(true);
+    when(decisionRequirementSearchClient.getDecisionRequirementsByKey(any(Long.class), eq(true)))
+        .thenReturn(requirementEntity);
 
     // when
     final var xml = services.getDecisionDefinitionXml(42L);
@@ -109,70 +97,12 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, false, List.of(definitionEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(true);
+    when(client.getDecisionDefinitionByKey(any(Long.class))).thenReturn(definitionEntity);
 
     // when
     final DecisionDefinitionEntity decisionDefinition = services.getByKey(42L);
 
     // then
     assertThat(decisionDefinition.decisionDefinitionKey()).isEqualTo(42L);
-  }
-
-  @Test
-  void shouldGetByKeyThrowForbiddenExceptionOnUnauthorizedDecisionKey() {
-    // given
-    final var definitionEntity = mock(DecisionDefinitionEntity.class);
-    when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
-    final var definitionResult = mock(SearchQueryResult.class);
-    when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, false, List.of(definitionEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(false);
-
-    // when
-    final Executable executable = () -> services.getByKey(1L);
-
-    // then
-    final var exception = assertThrows(ForbiddenException.class, executable);
-    assertThat(exception.getMessage())
-        .isEqualTo(
-            "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
-  }
-
-  @Test
-  void shouldGetXmlThrowForbiddenExceptionOnUnauthorizedDecisionKey() {
-    // given
-    final var definitionEntity = mock(DecisionDefinitionEntity.class);
-    when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
-    final var definitionResult = mock(SearchQueryResult.class);
-    when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, false, List.of(definitionEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(false);
-
-    // when
-    final Executable executable = () -> services.getDecisionDefinitionXml(1L);
-
-    // then
-    final var exception = assertThrows(ForbiddenException.class, executable);
-    assertThat(exception.getMessage())
-        .isEqualTo(
-            "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
-    verify(decisionRequirementSearchClient, never())
-        .searchDecisionRequirements(any(DecisionRequirementsQuery.class));
   }
 }

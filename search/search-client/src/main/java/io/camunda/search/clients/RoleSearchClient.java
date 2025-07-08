@@ -17,6 +17,8 @@ public interface RoleSearchClient {
 
   SearchQueryResult<RoleEntity> searchRoles(RoleQuery filter);
 
+  RoleEntity getRoleByKey(String key);
+
   SearchQueryResult<RoleMemberEntity> searchRoleMembers(RoleQuery filter);
 
   RoleSearchClient withSecurityContext(SecurityContext securityContext);

@@ -8,9 +8,9 @@
 package io.camunda.search.clients.transformers;
 
 import io.camunda.search.aggregation.AggregationBase;
-import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation;
-import io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation;
+import io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation;
+import io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionLatestVersionAggregationResult;
@@ -145,10 +145,10 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
-import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.ProcessInstanceStatisticsQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
@@ -309,9 +309,9 @@ public final class ServiceTransformers {
             IncidentQuery.class,
             MappingQuery.class,
             ProcessDefinitionQuery.class,
-            ProcessDefinitionFlowNodeStatisticsQuery.class,
+            ProcessDefinitionStatisticsQuery.class,
             ProcessInstanceQuery.class,
-            ProcessInstanceFlowNodeStatisticsQuery.class,
+            ProcessInstanceStatisticsQuery.class,
             RoleQuery.class,
             TenantQuery.class,
             UserTaskQuery.class,
@@ -460,10 +460,10 @@ public final class ServiceTransformers {
 
     // aggregation
     mappers.put(
-        ProcessDefinitionFlowNodeStatisticsAggregation.class,
+        ProcessDefinitionStatisticsAggregation.class,
         new ProcessDefinitionFlowNodeStatisticsAggregationTransformer());
     mappers.put(
-        ProcessInstanceFlowNodeStatisticsAggregation.class,
+        ProcessInstanceStatisticsAggregation.class,
         new ProcessInstanceFlowNodeStatisticsAggregationTransformer());
     mappers.put(
         ProcessDefinitionLatestVersionAggregation.class,

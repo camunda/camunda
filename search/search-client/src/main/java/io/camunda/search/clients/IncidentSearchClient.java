@@ -16,5 +16,7 @@ public interface IncidentSearchClient {
 
   SearchQueryResult<IncidentEntity> searchIncidents(IncidentQuery filter);
 
+  IncidentEntity getIncidentByKey(long key);
+
   IncidentSearchClient withSecurityContext(SecurityContext securityContext);
 }

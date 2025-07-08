@@ -111,8 +111,7 @@ public class MappingServicesTest {
   public void shouldReturnSingleVariableForFind() {
     // given
     final var entity = mock(MappingEntity.class);
-    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchMappings(any())).thenReturn(result);
+    when(client.getMappingByKey(any(String.class))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getMapping("mappingId");

@@ -9,7 +9,6 @@ package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,11 +18,9 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheResult;
-import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Set;
@@ -31,7 +28,6 @@ import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 public final class ElementInstanceServiceTest {
 
@@ -115,38 +111,13 @@ public final class ElementInstanceServiceTest {
     public void shouldReturnFlowNodeInstanceByKey() {
       // given
       final var entity = Instancio.create(FlowNodeInstanceEntity.class);
-      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(securityContextProvider.isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readProcessInstance())))
-          .thenReturn(true);
+      when(client.getFlowNodeInstanceByKey(any(Long.class))).thenReturn(entity);
 
       // when
       final var searchQueryResult = services.getByKey(entity.flowNodeInstanceKey());
 
       // then
       assertThat(searchQueryResult).isEqualTo(entity);
-    }
-
-    @Test
-    public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
-      // given
-      final var entity = Instancio.create(FlowNodeInstanceEntity.class);
-      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(securityContextProvider.isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readProcessInstance())))
-          .thenReturn(false);
-
-      // when
-      final Executable executeGetByKey = () -> services.getByKey(entity.flowNodeInstanceKey());
-      // then
-      final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
-      assertThat(exception.getMessage())
-          .isEqualTo(
-              "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     }
 
     @Test
@@ -157,12 +128,7 @@ public final class ElementInstanceServiceTest {
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
               .create();
 
-      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(securityContextProvider.isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readProcessInstance())))
-          .thenReturn(true);
+      when(client.getFlowNodeInstanceByKey(any(Long.class))).thenReturn(entity);
       when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
           .thenReturn(
               ProcessCacheResult.of(
@@ -183,12 +149,7 @@ public final class ElementInstanceServiceTest {
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
               .create();
 
-      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(securityContextProvider.isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readProcessInstance())))
-          .thenReturn(true);
+      when(client.getFlowNodeInstanceByKey(any(Long.class))).thenReturn(entity);
 
       // when
       final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());

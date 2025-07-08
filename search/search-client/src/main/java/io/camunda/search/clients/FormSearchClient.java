@@ -16,5 +16,7 @@ public interface FormSearchClient {
 
   SearchQueryResult<FormEntity> searchForms(FormQuery filter);
 
+  FormEntity getFormByKey(long key);
+
   FormSearchClient withSecurityContext(SecurityContext securityContext);
 }

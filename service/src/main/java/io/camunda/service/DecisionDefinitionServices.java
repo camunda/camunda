@@ -8,16 +8,16 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionDefinitionSearchQuery;
-import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.security.auth.Authorization.withResourceId;
+import static io.camunda.service.authorization.Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -62,8 +62,7 @@ public final class DecisionDefinitionServices
     return decisionDefinitionSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication,
-                Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
+                authentication, with(DECISION_DEFINITION_READ_AUTHORIZATION)))
         .searchDecisionDefinitions(query);
   }
 
@@ -74,38 +73,23 @@ public final class DecisionDefinitionServices
 
   public String getDecisionDefinitionXml(final long decisionKey) {
     final var decisionDefinition = getByKey(decisionKey);
-
-    final Long decisionRequirementsKey = decisionDefinition.decisionRequirementsKey();
-    final var decisionRequirementsQuery =
-        decisionRequirementsSearchQuery(
-            q ->
-                q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
-                    .resultConfig(r -> r.includeXml(true))
-                    .singleResult());
+    final var decisionRequirementsKey = decisionDefinition.decisionRequirementsKey();
     return decisionRequirementSearchClient
-        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-        .searchDecisionRequirements(decisionRequirementsQuery)
-        .items()
-        .getFirst()
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()))
+        .getDecisionRequirementsByKey(decisionRequirementsKey, true)
         .xml();
   }
 
   public DecisionDefinitionEntity getByKey(final long decisionKey) {
-    final var result =
-        decisionDefinitionSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchDecisionDefinitions(
-                decisionDefinitionSearchQuery(
-                    q -> q.filter(f -> f.decisionDefinitionKeys(decisionKey)).singleResult()))
-            .items()
-            .getFirst();
-    final var authorization =
-        Authorization.of(a -> a.decisionDefinition().readDecisionDefinition());
-    if (!securityContextProvider.isAuthorized(
-        result.decisionDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
-    }
-    return result;
+    return decisionDefinitionSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                withResourceId(
+                    DECISION_DEFINITION_READ_AUTHORIZATION,
+                    DecisionDefinitionEntity::decisionDefinitionId)))
+        .getDecisionDefinitionByKey(decisionKey);
   }
 
   public CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> evaluateDecision(

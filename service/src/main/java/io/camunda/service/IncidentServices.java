@@ -7,23 +7,21 @@
  */
 package io.camunda.service;
 
-import static io.camunda.search.query.SearchQueryBuilders.incidentSearchQuery;
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.security.auth.Authorization.withResourceId;
+import static io.camunda.service.authorization.Authorizations.INCIDENT_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
 
 public class IncidentServices
     extends SearchQueryService<IncidentServices, IncidentQuery, IncidentEntity> {
@@ -39,17 +37,12 @@ public class IncidentServices
     this.incidentSearchClient = incidentSearchClient;
   }
 
-  public SearchQueryResult<IncidentEntity> search(
-      final Function<IncidentQuery.Builder, ObjectBuilder<IncidentQuery>> fn) {
-    return search(incidentSearchQuery(fn));
-  }
-
   @Override
   public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
     return incidentSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                authentication, with(INCIDENT_READ_AUTHORIZATION)))
         .searchIncidents(query);
   }
 
@@ -60,19 +53,12 @@ public class IncidentServices
   }
 
   public IncidentEntity getByKey(final Long key) {
-    final var result =
-        incidentSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchIncidents(
-                incidentSearchQuery(q -> q.filter(f -> f.incidentKeys(key)).singleResult()))
-            .items()
-            .getFirst();
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
-    if (!securityContextProvider.isAuthorized(
-        result.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
-    }
-    return result;
+    return incidentSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                withResourceId(INCIDENT_READ_AUTHORIZATION, IncidentEntity::processDefinitionId)))
+        .getIncidentByKey(key);
   }
 
   public CompletableFuture<IncidentRecord> resolveIncident(

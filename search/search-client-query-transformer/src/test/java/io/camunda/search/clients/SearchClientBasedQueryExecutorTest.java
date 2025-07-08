@@ -13,11 +13,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.security.ResourceAccessChecks;
+import io.camunda.search.clients.security.ResourceAccessChecks.AuthorizationChecks;
+import io.camunda.search.clients.security.ResourceAccessChecks.TenantChecks;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
@@ -30,8 +32,6 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryBase.AbstractQueryBuilder;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
@@ -62,7 +62,6 @@ class SearchClientBasedQueryExecutorTest {
           .setIncident(false);
 
   @Mock private DocumentBasedSearchClient searchClient;
-  @Mock private AuthorizationQueryStrategy authorizationQueryStrategy;
   private final ServiceTransformers serviceTransformers =
       ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
@@ -70,12 +69,7 @@ class SearchClientBasedQueryExecutorTest {
 
   @BeforeEach
   void setUp() {
-    queryExecutor =
-        new SearchClientBasedQueryExecutor(
-            searchClient,
-            serviceTransformers,
-            authorizationQueryStrategy,
-            SecurityContext.withoutAuthentication());
+    queryExecutor = new SearchClientBasedQueryExecutor(searchClient, serviceTransformers);
   }
 
   @Test
@@ -90,13 +84,13 @@ class SearchClientBasedQueryExecutorTest {
     when(searchClient.search(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
 
     // When we search
     final SearchQueryResult<ProcessInstanceEntity> searchResult =
-        queryExecutor.search(searchAllQuery, ProcessInstanceForListViewEntity.class);
+        queryExecutor.search(
+            searchAllQuery,
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
 
     assertThat(searchResult.total()).isEqualTo(1);
     final List<ProcessInstanceEntity> items = searchResult.items();
@@ -117,13 +111,13 @@ class SearchClientBasedQueryExecutorTest {
     when(searchClient.search(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
 
     // When we search
     final SearchQueryResult<ProcessInstanceEntity> searchResult =
-        queryExecutor.search(searchAllQuery, ProcessInstanceForListViewEntity.class);
+        queryExecutor.search(
+            searchAllQuery,
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hasMoreTotalItems()).isFalse();
@@ -141,13 +135,13 @@ class SearchClientBasedQueryExecutorTest {
     when(searchClient.search(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
 
     // When we search
     final SearchQueryResult<ProcessInstanceEntity> searchResult =
-        queryExecutor.search(searchAllQuery, ProcessInstanceForListViewEntity.class);
+        queryExecutor.search(
+            searchAllQuery,
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
 
     assertThat(searchResult.total()).isEqualTo(10000);
     assertThat(searchResult.hasMoreTotalItems()).isTrue();
@@ -171,13 +165,13 @@ class SearchClientBasedQueryExecutorTest {
     when(searchClient.scroll(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
 
     // When we search
     final SearchQueryResult<ProcessInstanceEntity> searchResult =
-        queryExecutor.search(searchAllQuery, ProcessInstanceForListViewEntity.class);
+        queryExecutor.search(
+            searchAllQuery,
+            ProcessInstanceForListViewEntity.class,
+            ResourceAccessChecks.disabled());
 
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst().processInstanceKey())
@@ -189,23 +183,22 @@ class SearchClientBasedQueryExecutorTest {
     // given
     final var tenantIds = List.of("<default>", "T1");
     final SearchClientBasedQueryExecutor queryExecutor =
-        new SearchClientBasedQueryExecutor(
-            searchClient,
-            serviceTransformers,
-            AuthorizationQueryStrategy.NONE,
-            SecurityContext.of(
-                builder ->
-                    builder.withAuthentication(
-                        CamundaAuthentication.of(a -> a.user("foo").tenants(tenantIds)))));
+        new SearchClientBasedQueryExecutor(searchClient, serviceTransformers);
 
     final var query =
         new ProcessDefinitionQuery.Builder()
             .filter(new ProcessDefinitionFilter.Builder().processDefinitionIds("x").build())
             .build();
 
+    final var authorizationChecks = AuthorizationChecks.notRequired();
+    final var tenantChecks = TenantChecks.required(tenantIds);
+
     // when
     final SearchQueryRequest searchQueryRequest =
-        queryExecutor.executeSearch(query, Function.identity());
+        queryExecutor.executeSearch(
+            query,
+            Function.identity(),
+            ResourceAccessChecks.with(null, authorizationChecks, tenantChecks));
 
     // then
     assertThat(searchQueryRequest.query())
@@ -234,21 +227,14 @@ class SearchClientBasedQueryExecutorTest {
     // given
     final var tenantIds = List.of("<default>", "T1");
     final SearchClientBasedQueryExecutor queryExecutor =
-        new SearchClientBasedQueryExecutor(
-            searchClient,
-            serviceTransformers,
-            AuthorizationQueryStrategy.NONE,
-            SecurityContext.of(
-                builder ->
-                    builder.withAuthentication(
-                        CamundaAuthentication.of(a -> a.user("foo").tenants(tenantIds)))));
+        new SearchClientBasedQueryExecutor(searchClient, serviceTransformers);
 
     final var query =
         new UserQuery.Builder().filter(new UserFilter.Builder().usernames("x").build()).build();
 
     // when
     final SearchQueryRequest searchQueryRequest =
-        queryExecutor.executeSearch(query, Function.identity());
+        queryExecutor.executeSearch(query, Function.identity(), ResourceAccessChecks.disabled());
 
     // then
     assertThat(searchQueryRequest.query())

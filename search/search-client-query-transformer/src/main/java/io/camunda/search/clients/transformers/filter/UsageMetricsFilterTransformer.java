@@ -12,15 +12,17 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperat
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMetricsFilter> {
+public class UsageMetricsFilterTransformer extends IndexFilterTransformer<UsageMetricsFilter> {
 
   private final TasklistMetricIndex tasklistMetricIndex;
   private final MetricIndex operateMetricIndex;
@@ -28,6 +30,7 @@ public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMet
 
   public UsageMetricsFilterTransformer(
       final TasklistMetricIndex tasklistMetricIndex, final MetricIndex metricIndex) {
+    super(metricIndex);
     this.tasklistMetricIndex = tasklistMetricIndex;
     operateMetricIndex = metricIndex;
   }
@@ -50,6 +53,21 @@ public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMet
       return tasklistMetricIndex;
     } else {
       return operateMetricIndex;
+    }
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    // not yet implemented
+    return SearchQueryBuilders.matchAll();
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    if (shouldUseTasklistIndex(filter)) {
+      return stringTerms(TasklistMetricIndex.TENANT_ID, tenantIds);
+    } else {
+      return stringTerms(MetricIndex.TENANT_ID, tenantIds);
     }
   }
 

@@ -15,12 +15,9 @@ import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.Operator;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
@@ -135,23 +132,6 @@ abstract class AbstractEntityReader<T> {
     }
 
     return keySetPagination;
-  }
-
-  protected void ensureSingleResultIfRequired(final List<T> hits, final TypedSearchQuery query) {
-    if (!SearchQueryResultType.SINGLE_RESULT.equals(query.page().resultType())) {
-      return;
-    }
-
-    // Requires some refactoring to move this check into a single place later
-    if (hits.isEmpty()) {
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_SINGLE_RESULT_NOT_FOUND.formatted(query),
-          CamundaSearchException.Reason.NOT_FOUND);
-    } else if (hits.size() > 1) {
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_SINGLE_RESULT_NOT_UNIQUE.formatted(query),
-          CamundaSearchException.Reason.NOT_UNIQUE);
-    }
   }
 
   protected final SearchQueryResult<T> buildSearchQueryResult(

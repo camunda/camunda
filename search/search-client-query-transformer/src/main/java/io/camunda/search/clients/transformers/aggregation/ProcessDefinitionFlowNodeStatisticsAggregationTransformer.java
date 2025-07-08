@@ -7,13 +7,13 @@
  */
 package io.camunda.search.clients.transformers.aggregation;
 
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.parent;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
@@ -24,7 +24,7 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.AC
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_STATE;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.INCIDENT;
 
-import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
+import io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -32,11 +32,11 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public class ProcessDefinitionFlowNodeStatisticsAggregationTransformer
-    implements AggregationTransformer<ProcessDefinitionFlowNodeStatisticsAggregation> {
+    implements AggregationTransformer<ProcessDefinitionStatisticsAggregation> {
 
   @Override
   public List<SearchAggregator> apply(
-      final Tuple<ProcessDefinitionFlowNodeStatisticsAggregation, ServiceTransformers> value) {
+      final Tuple<ProcessDefinitionStatisticsAggregation, ServiceTransformers> value) {
 
     // aggregate parent process instances
     final var filtersAgg = parent(AGGREGATION_TO_PARENT_PI, ACTIVITIES_JOIN_RELATION);

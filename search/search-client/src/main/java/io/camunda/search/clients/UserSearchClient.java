@@ -16,5 +16,7 @@ public interface UserSearchClient {
 
   SearchQueryResult<UserEntity> searchUsers(UserQuery userQuery);
 
+  UserEntity getUserByUsername(String username);
+
   UserSearchClient withSecurityContext(SecurityContext securityContext);
 }

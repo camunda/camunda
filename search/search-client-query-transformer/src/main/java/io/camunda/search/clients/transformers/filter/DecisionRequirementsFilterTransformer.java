@@ -20,7 +20,9 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIn
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public final class DecisionRequirementsFilterTransformer
     extends IndexFilterTransformer<DecisionRequirementsFilter> {
@@ -38,5 +40,15 @@ public final class DecisionRequirementsFilterTransformer
         stringTerms(DECISION_REQUIREMENTS_ID, filter.decisionRequirementsIds()),
         stringTerms(TENANT_ID, filter.tenantIds()),
         stringTerms(RESOURCE_NAME, filter.resourceNames()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(DECISION_REQUIREMENTS_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 }

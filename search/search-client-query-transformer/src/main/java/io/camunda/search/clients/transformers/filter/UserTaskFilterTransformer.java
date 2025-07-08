@@ -24,6 +24,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -156,7 +157,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
       final var transformer = getVariableValueFilterTransformer();
       final var queries =
           variableFilters.stream()
-              .map(transformer::apply)
+              .map(transformer::toSearchQuery)
               .map((q) -> hasChildQuery(TaskJoinRelationshipType.PROCESS_VARIABLE.getType(), q))
               .collect(Collectors.toList());
       return and(queries);
@@ -170,7 +171,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
       final var queries =
           variableFilters.stream()
-              .map(transformer::apply)
+              .map(transformer::toSearchQuery)
               .map((q) -> hasChildQuery(TaskJoinRelationshipType.LOCAL_VARIABLE.getType(), q))
               .collect(Collectors.toList());
       return and(queries);
@@ -180,5 +181,15 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private FilterTransformer<VariableValueFilter> getVariableValueFilterTransformer() {
     return transformers.getFilterTransformer(VariableValueFilter.class);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 }

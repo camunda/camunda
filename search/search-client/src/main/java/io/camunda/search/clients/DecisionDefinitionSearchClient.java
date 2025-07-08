@@ -17,5 +17,7 @@ public interface DecisionDefinitionSearchClient {
   SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       DecisionDefinitionQuery filter);
 
+  DecisionDefinitionEntity getDecisionDefinitionByKey(long definitionKey);
+
   DecisionDefinitionSearchClient withSecurityContext(SecurityContext securityContext);
 }

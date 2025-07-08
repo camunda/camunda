@@ -11,7 +11,7 @@ import static io.camunda.it.rdbms.db.fixtures.FormFixtures.createAndSaveRandomFo
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.FormReader;
+import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.it.rdbms.db.fixtures.FormFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -32,7 +32,7 @@ public class FormSortIT {
   @TestTemplate
   public void shouldSortFormsByVersionAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final FormReader formReader = rdbmsService.getFormReader();
+    final FormDbReader formReader = rdbmsService.getFormReader();
 
     final String id = FormFixtures.nextStringId();
     createAndSaveRandomForms(rdbmsService, id);
@@ -51,7 +51,7 @@ public class FormSortIT {
   @TestTemplate
   public void shouldSortFormsByVersionDesc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final FormReader formReader = rdbmsService.getFormReader();
+    final FormDbReader formReader = rdbmsService.getFormReader();
 
     final String id = FormFixtures.nextStringId();
     createAndSaveRandomForms(rdbmsService, id);

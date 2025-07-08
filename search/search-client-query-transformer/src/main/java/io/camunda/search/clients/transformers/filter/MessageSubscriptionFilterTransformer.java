@@ -24,6 +24,7 @@ import static io.camunda.webapps.schema.descriptors.template.EventTemplate.PROCE
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MessageSubscriptionFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
@@ -32,6 +33,16 @@ public class MessageSubscriptionFilterTransformer
 
   public MessageSubscriptionFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 
   @Override

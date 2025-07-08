@@ -18,6 +18,8 @@ public interface ProcessInstanceSearchClient {
 
   SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(ProcessInstanceQuery query);
 
+  ProcessInstanceEntity getProcessInstanceByKey(long processInstanceKey);
+
   List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
       final long processInstanceKey);
 

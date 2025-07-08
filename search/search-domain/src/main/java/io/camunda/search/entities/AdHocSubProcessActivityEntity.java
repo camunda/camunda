@@ -19,7 +19,8 @@ public record AdHocSubProcessActivityEntity(
     String elementName,
     ActivityType type,
     String documentation,
-    String tenantId) {
+    String tenantId)
+    implements TenantOwnedEntity {
 
   public enum ActivityType {
     UNSPECIFIED,

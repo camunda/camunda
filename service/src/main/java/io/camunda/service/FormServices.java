@@ -7,10 +7,12 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.service.authorization.Authorizations.UNSPECIFIED_AUTHORIZATION;
+
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.FormQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
@@ -40,31 +42,24 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
   @Override
   public SearchQueryResult<FormEntity> search(final FormQuery query) {
     return formSearchClient
-        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, with(UNSPECIFIED_AUTHORIZATION)))
         .searchForms(query);
   }
 
   public FormEntity getByKey(final Long key) {
-    return search(FormQuery.of(b -> b.filter(f -> f.formKeys(key)).singleResult()))
-        .items()
-        .getFirst();
+    return formSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, with(UNSPECIFIED_AUTHORIZATION)))
+        .getFormByKey(key);
   }
 
   public Optional<FormEntity> getLatestVersionByFormId(final String formId) {
-    final Optional<FormEntity> result =
-        search(
-                SearchQueryBuilders.formSearchQuery()
-                    .filter(f -> f.formIds(formId))
-                    .sort(s -> s.version().desc())
-                    .build())
-            .items()
-            .stream()
-            .findFirst();
-
-    if (result.isPresent()) {
-      return result;
-    } else {
-      return Optional.empty();
-    }
+    return search(FormQuery.of(b -> b.filter(f -> f.formIds(formId)).sort(s -> s.version().desc())))
+        .items()
+        .stream()
+        .findFirst();
   }
 }

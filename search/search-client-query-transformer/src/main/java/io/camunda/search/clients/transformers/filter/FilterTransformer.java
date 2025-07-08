@@ -17,7 +17,8 @@ public interface FilterTransformer<T extends FilterBase>
 
   @Override
   default SearchQuery apply(final T filter) {
-    return toSearchQuery(filter);
+    throw new UnsupportedOperationException(
+        "Not implemented for %s".formatted(filter.getClass().getSimpleName()));
   }
 
   SearchQuery toSearchQuery(final T filter);

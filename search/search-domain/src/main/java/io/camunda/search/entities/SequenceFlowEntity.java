@@ -19,7 +19,8 @@ public record SequenceFlowEntity(
     Long processInstanceKey,
     Long processDefinitionKey,
     String processDefinitionId,
-    String tenantId) {
+    String tenantId)
+    implements TenantOwnedEntity {
 
   public static class Builder implements ObjectBuilder<SequenceFlowEntity> {
 

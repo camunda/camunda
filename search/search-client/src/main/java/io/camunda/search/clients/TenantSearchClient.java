@@ -18,5 +18,7 @@ public interface TenantSearchClient {
 
   SearchQueryResult<TenantMemberEntity> searchTenantMembers(TenantQuery filter);
 
+  TenantEntity getTenantByKey(String tenantKey);
+
   TenantSearchClient withSecurityContext(SecurityContext securityContext);
 }

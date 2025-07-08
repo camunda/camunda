@@ -12,6 +12,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperat
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.CREATION_TIME;
@@ -29,7 +30,9 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.TR
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFilter> {
 
@@ -54,5 +57,15 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
         longOperations(JOB_KEY, filter.jobKeyOperations()),
         stringOperations(TENANT_ID, filter.tenantIdOperations()),
         intOperations(ERROR_MSG_HASH, filter.errorMessageHashOperations()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 }

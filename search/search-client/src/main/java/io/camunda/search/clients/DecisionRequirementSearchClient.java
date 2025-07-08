@@ -17,5 +17,8 @@ public interface DecisionRequirementSearchClient {
   SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       DecisionRequirementsQuery filter);
 
+  DecisionRequirementsEntity getDecisionRequirementsByKey(
+      long decisionRequirementsKey, boolean includeXml);
+
   DecisionRequirementSearchClient withSecurityContext(SecurityContext securityContext);
 }
