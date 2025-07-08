@@ -3299,7 +3299,7 @@ paths:
       tags:
         - Role
       operationId: addRoleToMappingRule
-      summary: Assign a role to a mapping rule.
+      summary: Assign a role to a mapping rule
       description: |
         Assigns a role to a mapping rule.
       parameters:
@@ -3340,7 +3340,7 @@ paths:
       tags:
         - Role
       operationId: removeRoleFromMappingRule
-      summary: Unassign a role from a mapping rule.
+      summary: Unassign a role from a mapping rule
       description: |
         Unassigns a role from a mapping rule.
       parameters:
