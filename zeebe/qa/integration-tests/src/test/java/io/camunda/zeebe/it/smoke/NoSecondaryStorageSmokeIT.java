@@ -29,8 +29,8 @@ import org.junit.jupiter.api.BeforeEach;
 
 /**
  * Integration test to verify that Zeebe can run successfully with no secondary storage
- * (database.type=none). This test ensures the broker operates in headless mode with only
- * the core engine functionality enabled.
+ * (database.type=none). This test ensures the broker operates in headless mode with only the core
+ * engine functionality enabled.
  */
 @ZeebeIntegration
 final class NoSecondaryStorageSmokeIT {
@@ -48,9 +48,9 @@ final class NoSecondaryStorageSmokeIT {
     client = broker.newClientBuilder().build();
   }
 
-  /** 
-   * A smoke test to ensure the broker starts and can perform basic functionality 
-   * when configured with database.type=none.
+  /**
+   * A smoke test to ensure the broker starts and can perform basic functionality when configured
+   * with database.type=none.
    */
   @SmokeTest
   void shouldOperateInHeadlessModeWithNoSecondaryStorage() {
@@ -78,7 +78,7 @@ final class NoSecondaryStorageSmokeIT {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var jobType = "test-job";
-    final var process = 
+    final var process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task")
@@ -88,23 +88,25 @@ final class NoSecondaryStorageSmokeIT {
 
     // when - deploy process and create instance
     client.newDeployResourceCommand().addProcessModel(process, processId + ".bpmn").send().join();
-    final var processInstance = 
+    final var processInstance =
         client.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
 
     // then - verify job can be activated and completed
-    final var job = 
+    final var job =
         client.newActivateJobsCommand().jobType(jobType).maxJobsToActivate(1).send().join();
     assertThat(job.getJobs()).hasSize(1);
 
     final var activatedJob = job.getJobs().get(0);
-    assertThat(activatedJob.getProcessInstanceKey()).isEqualTo(processInstance.getProcessInstanceKey());
+    assertThat(activatedJob.getProcessInstanceKey())
+        .isEqualTo(processInstance.getProcessInstanceKey());
 
     // complete the job
     client.newCompleteCommand(activatedJob.getKey()).send().join();
 
     // verify the process instance can be completed
-    final var completedInstance = 
-        client.newCreateInstanceCommand()
+    final var completedInstance =
+        client
+            .newCreateInstanceCommand()
             .bpmnProcessId(processId)
             .latestVersion()
             .withResult()

@@ -21,8 +21,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Acceptance test to verify that Camunda can run in headless mode with no secondary storage.
- * This test validates the complete engine-only deployment scenario where database.type=none.
+ * Acceptance test to verify that Camunda can run in headless mode with no secondary storage. This
+ * test validates the complete engine-only deployment scenario where database.type=none.
  */
 @ZeebeIntegration
 public class NoSecondaryStorageTest {
@@ -48,7 +48,7 @@ public class NoSecondaryStorageTest {
     final var process = createSimpleProcess(processId);
 
     // when - deploying and executing the process
-    final var deploymentEvent = 
+    final var deploymentEvent =
         camundaClient
             .newDeployResourceCommand()
             .addProcessModel(process, processId + ".bpmn")
@@ -97,23 +97,14 @@ public class NoSecondaryStorageTest {
 
     // then - verify job activation and completion work
     final var activateJobsResponse =
-        camundaClient
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(1)
-            .send()
-            .join();
+        camundaClient.newActivateJobsCommand().jobType(jobType).maxJobsToActivate(1).send().join();
 
     assertThat(activateJobsResponse.getJobs()).hasSize(1);
     final var job = activateJobsResponse.getJobs().get(0);
     assertThat(job.getProcessInstanceKey()).isEqualTo(processInstance.getProcessInstanceKey());
 
     // complete the job
-    final var completeJobResponse =
-        camundaClient
-            .newCompleteCommand(job.getKey())
-            .send()
-            .join();
+    final var completeJobResponse = camundaClient.newCompleteCommand(job.getKey()).send().join();
 
     assertThat(completeJobResponse).isNotNull();
   }
@@ -158,13 +149,11 @@ public class NoSecondaryStorageTest {
   }
 
   private BpmnModelInstance createSimpleProcess(final String processId) {
-    return Bpmn.createExecutableProcess(processId)
-        .startEvent("start")
-        .endEvent("end")
-        .done();
+    return Bpmn.createExecutableProcess(processId).startEvent("start").endEvent("end").done();
   }
 
-  private BpmnModelInstance createProcessWithServiceTask(final String processId, final String jobType) {
+  private BpmnModelInstance createProcessWithServiceTask(
+      final String processId, final String jobType) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent("start")
         .serviceTask("service")
