@@ -75,6 +75,8 @@ const pollInstances = async (processInstance?: ProcessInstance) => {
     if (flowNodeInstanceStore.intervalId !== null) {
       flowNodeInstanceStore.handlePollSuccess(response.data ?? {});
     }
+  } else {
+    flowNodeInstanceStore.handleFetchFailure();
   }
 
   flowNodeInstanceStore.isPollRequestRunning = false;

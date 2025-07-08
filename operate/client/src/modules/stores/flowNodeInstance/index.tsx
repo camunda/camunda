@@ -93,6 +93,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     );
   }
 
+  // Deprecated: v1 polling
   pollInstances = async () => {
     const processInstanceId =
       processInstanceDetailsStore.state.processInstance?.id;
@@ -129,6 +130,8 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       if (this.intervalId !== null) {
         this.handlePollSuccess(response.data ?? {});
       }
+    } else {
+      flowNodeInstanceStore.handleFetchFailure();
     }
 
     this.isPollRequestRunning = false;
@@ -379,8 +382,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         }
       },
     );
+    this.state.status = 'fetched';
   };
 
+  // Deprecated: v1 polling
   startPolling = (
     options: {runImmediately?: boolean} = {runImmediately: false},
   ) => {

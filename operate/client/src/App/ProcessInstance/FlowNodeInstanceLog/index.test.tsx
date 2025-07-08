@@ -124,7 +124,7 @@ describe('FlowNodeInstanceLog', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should continue polling after poll failure', async () => {
+  it('should continue polling after poll failure', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
     vi.useFakeTimers({shouldAdvanceTime: true});
@@ -139,7 +139,7 @@ describe('FlowNodeInstanceLog', () => {
     expect(await screen.findAllByTestId('INCIDENT-icon')).toHaveLength(1);
     expect(await screen.findAllByTestId('COMPLETED-icon')).toHaveLength(1);
 
-    // first poll
+    // first poll (server error)
     mockFetchProcessInstance().withSuccess(
       createInstance({
         id: '1',
@@ -149,10 +149,15 @@ describe('FlowNodeInstanceLog', () => {
       }),
     );
     mockFetchFlowNodeInstances().withServerError();
-
     vi.runOnlyPendingTimers();
+    expect(
+      await screen.findByText(/Instance History could not be fetched/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tree', {name: /processName instance history/i}),
+    ).not.toBeInTheDocument();
 
-    // second poll
+    // second poll (success)
     mockFetchProcessInstance().withSuccess(
       createInstance({
         id: '1',
@@ -162,17 +167,13 @@ describe('FlowNodeInstanceLog', () => {
       }),
     );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
-
     vi.runOnlyPendingTimers();
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('INCIDENT-icon')).not.toBeInTheDocument();
-      expect(screen.getAllByTestId('COMPLETED-icon')).toHaveLength(2);
-    });
-
+    await waitForElementToBeRemoved(
+      screen.queryByText(/Instance History could not be fetched/i),
+    );
     expect(
-      screen.queryByText('Instance History could not be fetched'),
-    ).not.toBeInTheDocument();
+      screen.getByRole('tree', {name: /processName instance history/i}),
+    ).toBeInTheDocument();
 
     vi.clearAllTimers();
     vi.useRealTimers();

@@ -34,6 +34,7 @@ import {init} from 'modules/utils/flowNodeInstance';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 vi.mock('modules/utils/bpmn');
 
@@ -151,17 +152,15 @@ describe('FlowNodeInstanceLog', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should continue polling after poll failure', async () => {
-    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+  it('should continue polling after poll failure', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
     );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockDeprecatedProcessInstance,
-    );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+
     vi.useFakeTimers({shouldAdvanceTime: true});
     init(mockProcessInstance);
 
@@ -174,9 +173,7 @@ describe('FlowNodeInstanceLog', () => {
     expect(await screen.findAllByTestId('INCIDENT-icon')).toHaveLength(1);
     expect(await screen.findAllByTestId('COMPLETED-icon')).toHaveLength(1);
 
-    vi.runOnlyPendingTimers();
-
-    // first poll
+    // first poll (server error)
     mockFetchProcessInstanceDeprecated().withSuccess(
       createInstance({
         id: '1',
@@ -186,10 +183,15 @@ describe('FlowNodeInstanceLog', () => {
       }),
     );
     mockFetchFlowNodeInstances().withServerError();
-
     vi.runOnlyPendingTimers();
+    expect(
+      await screen.findByText(/Instance History could not be fetched/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tree', {name: /processName instance history/i}),
+    ).not.toBeInTheDocument();
 
-    // second poll
+    // second poll (success)
     mockFetchProcessInstanceDeprecated().withSuccess(
       createInstance({
         id: '1',
@@ -199,18 +201,14 @@ describe('FlowNodeInstanceLog', () => {
       }),
     );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
-
     vi.runOnlyPendingTimers();
-
-    // it fails from here
-    await waitFor(() => {
-      expect(screen.queryByTestId('INCIDENT-icon')).toBeInTheDocument();
-      expect(screen.getAllByTestId('COMPLETED-icon')).toHaveLength(2);
-    });
+    await waitForElementToBeRemoved(
+      screen.queryByText(/Instance History could not be fetched/i),
+    );
 
     expect(
-      screen.queryByText('Instance History could not be fetched'),
-    ).not.toBeInTheDocument();
+      screen.getByRole('tree', {name: /processName instance history/i}),
+    ).toBeInTheDocument();
 
     vi.clearAllTimers();
     vi.useRealTimers();
