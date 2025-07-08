@@ -345,7 +345,7 @@ jobs:
     needs: [ detect-changes ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
-    runs-on: gcp-perf-core-8-default
+    runs-on: gcp-perf-core-16-default
     strategy:
       fail-fast: false
       matrix:
