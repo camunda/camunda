@@ -7,11 +7,9 @@
  */
 
 import {processInstancesStore} from './processInstances';
-import {groupedProcessesMock} from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockServer} from 'modules/mock-server/node';
 import {http, HttpResponse} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
@@ -60,10 +58,11 @@ const mockProcessInstances = {
 };
 
 describe('stores/processInstances', () => {
-  mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
   afterEach(() => {
     processInstancesStore.reset();
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should fetch initial instances', async () => {
@@ -623,7 +622,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should refresh instances and and call handlers every time there is an instance with completed operation', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     const handlerMock = vi.fn();
     processInstancesStore.addCompletedOperationsHandler(handlerMock);
 
@@ -691,6 +690,7 @@ describe('stores/processInstances', () => {
   });
 
   it('should poll instances by id when there are instances with active operations', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     mockFetchProcessInstances().withSuccess(
       {
         totalCount: 100,
@@ -701,8 +701,6 @@ describe('stores/processInstances', () => {
       },
       {expectPolling: false},
     );
-
-    vi.useFakeTimers();
 
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -715,19 +713,6 @@ describe('stores/processInstances', () => {
     ).toEqual(['2']);
 
     mockServer.use(
-      http.post('/api/process-instances', ({request}) => {
-        checkPollingHeader({req: request, expectPolling: true});
-        return HttpResponse.json({
-          processInstances: [
-            {
-              ...instanceWithActiveOperation,
-              hasActiveOperation: false,
-              id: '2',
-            },
-          ],
-          totalCount: 100,
-        });
-      }),
       http.post('/api/process-instances', ({request}) => {
         checkPollingHeader({req: request, expectPolling: true});
         return HttpResponse.json({
@@ -760,11 +745,11 @@ describe('stores/processInstances', () => {
 
     vi.runOnlyPendingTimers();
 
-    await waitFor(() => {
+    await waitFor(() =>
       expect(processInstancesStore.state.filteredProcessInstancesCount).toEqual(
         2,
-      );
-    });
+      ),
+    );
     expect(
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual([]);
@@ -775,10 +760,11 @@ describe('stores/processInstances', () => {
 
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = vi.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: any) => {
+        eventListeners[event] = cb;
+      },
+    );
 
     const mockedProcessInstances = {
       processInstances: [instance],
@@ -814,7 +800,5 @@ describe('stores/processInstances', () => {
         newProcessInstancesResponse.processInstances,
       ),
     );
-
-    window.addEventListener = originalEventListener;
   });
 });
