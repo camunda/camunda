@@ -166,6 +166,21 @@ public abstract sealed class BackupControllerTest {
     assertThat(response.getBody()).isEqualTo(List.of(EXPECTED_INFO));
   }
 
+  @Test
+  public void shouldGetBackupsWithNullParameters() {
+    when(backupService.getBackups(anyBoolean(), any()))
+        .thenReturn(
+            List.of(
+                new GetBackupStateResponseDto()
+                    .setBackupId(1L)
+                    .setState(BackupStateDto.FAILED)
+                    .setFailureReason("Out of disk space")
+                    .setDetails(List.of(DETAIL_DTO))));
+    final var response = backupController.getBackups(null, null);
+    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getBody()).isEqualTo(List.of(EXPECTED_INFO));
+  }
+
   @EnumSource(BackupStateDto.class)
   @ParameterizedTest
   public void testEnumConversion(final BackupStateDto backupStateDto) {
