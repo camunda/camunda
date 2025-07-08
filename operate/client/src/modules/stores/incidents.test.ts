@@ -29,7 +29,7 @@ describe('stores/incidents', () => {
       createInstance({id: '123', state: 'INCIDENT'}),
     );
 
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     incidentsStore.init();
 
     await waitFor(() =>
@@ -123,10 +123,11 @@ describe('stores/incidents', () => {
 
   it('should retry fetch on network reconnection', async () => {
     const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = vi.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: any) => {
+        eventListeners[event] = cb;
+      },
+    );
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -153,7 +154,5 @@ describe('stores/incidents', () => {
         count: 3,
       }),
     );
-
-    window.addEventListener = originalEventListener;
   });
 });
