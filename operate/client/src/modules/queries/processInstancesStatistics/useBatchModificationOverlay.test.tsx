@@ -14,9 +14,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
-vi.mock('modules/hooks/useProcessInstancesFilters');
-vi.mock('modules/hooks/useFilters');
-
 describe('useBatchModificationOverlayData', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => (
     <QueryClientProvider client={getMockQueryClient()}>
@@ -144,6 +141,10 @@ describe('useBatchModificationOverlayData', () => {
   });
 
   it('should handle loading state', async () => {
+    mockFetchProcessInstancesStatistics().withDelay({
+      items: [],
+    });
+
     const {result} = renderHook(
       () =>
         useBatchModificationOverlayData(

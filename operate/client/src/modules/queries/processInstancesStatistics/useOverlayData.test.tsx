@@ -16,7 +16,6 @@ import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
 vi.mock('modules/hooks/useFilters');
-vi.mock('modules/hooks/useProcessInstancesFilters');
 
 const mockedUseFilters = vi.mocked(useFilters);
 
@@ -158,6 +157,10 @@ describe('useProcessInstancesOverlayStatistics', () => {
   });
 
   it('should handle loading state', async () => {
+    mockFetchProcessInstancesStatistics().withDelay({
+      items: [],
+    });
+
     const {result} = renderHook(
       () => useProcessInstancesOverlayData({}, 'process1'),
       {

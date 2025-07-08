@@ -121,6 +121,10 @@ describe('useProcessInstancesFlowNodeStates', () => {
   });
 
   it('should handle loading state', async () => {
+    mockFetchProcessInstancesStatistics().withDelay({
+      items: [],
+    });
+
     const {result} = renderHook(
       () => useProcessInstancesFlowNodeStates({}, 'processId'),
       {
