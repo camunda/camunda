@@ -29,7 +29,9 @@ import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import java.util.function.Consumer;
 
 /** A holder for all rdbms services */
 public class RdbmsService {
@@ -187,5 +189,11 @@ public class RdbmsService {
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
     return rdbmsWriterFactory.createWriter(config);
+  }
+
+  public RdbmsWriter createWriter(final Consumer<Builder> configBuilder) {
+    final RdbmsWriterConfig.Builder builder = new RdbmsWriterConfig.Builder();
+    configBuilder.accept(builder);
+    return rdbmsWriterFactory.createWriter(builder.build());
   }
 }
