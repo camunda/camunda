@@ -175,7 +175,7 @@ public class SnapshotApiRequestHandler
               LOG.atLevel(Level.DEBUG)
                   .addKeyValue("transferId", transferId)
                   .log("Received response from broker {}", r.getResponse());
-              return r.getResponse().getBootstrappedAt();
+              return r.getResponse().getScalingPosition();
             })
         .whenComplete(lastProcessedPosition);
     return lastProcessedPosition;

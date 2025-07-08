@@ -34,7 +34,5 @@ public interface ScaleRecordValue extends RecordValue {
    */
   int getMessageCorrelationPartitions();
 
-  long getBootstrappedAt();
-
   long getScalingPosition();
 }
