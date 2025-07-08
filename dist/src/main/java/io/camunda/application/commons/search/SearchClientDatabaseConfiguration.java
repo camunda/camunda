@@ -10,7 +10,7 @@ package io.camunda.application.commons.search;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
-import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.clients.impl.NoopSearchClientsProxy;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -75,8 +75,11 @@ public class SearchClientDatabaseConfiguration {
   }
 
   @Bean
-  @ConditionalOnProperty(prefix = "camunda.database", name = "type", havingValue = "none")
-  public SearchClientsProxy noopSearchClientsProxy() {
-    return SearchClientsProxy.noop();
+  @ConditionalOnProperty(
+      prefix = "camunda.database",
+      name = "type",
+      havingValue = DatabaseConfig.NONE)
+  public NoopSearchClientsProxy noopSearchClientsProxy() {
+    return new NoopSearchClientsProxy();
   }
 }

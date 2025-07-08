@@ -13,6 +13,7 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
@@ -52,12 +53,11 @@ public class SearchEngineDatabaseConfiguration {
       final SearchEngineConnectProperties searchEngineConnectProperties,
       final SearchEngineIndexProperties searchEngineIndexProperties,
       final SearchEngineRetentionProperties searchEngineRetentionProperties,
-      final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties,
-      final org.springframework.core.env.Environment environment) {
+      final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
 
     // Override schema creation if database type is "none"
-    final var databaseType = environment.getProperty("camunda.database.type");
-    if (DatabaseConfig.NONE.equals(databaseType)) {
+    final DatabaseType databaseType = searchEngineConnectProperties.getTypeEnum();
+    if (DatabaseConfig.NONE.equals(databaseType.name())) {
       searchEngineSchemaManagerProperties.setCreateSchema(false);
     }
 

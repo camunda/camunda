@@ -29,7 +29,4 @@ public class SearchEngineEnabledCondition extends AnyNestedCondition {
       name = "type",
       havingValue = DatabaseConfig.OPENSEARCH)
   static class OpenSearchEnabled {}
-
-  // Note: We explicitly do NOT include a condition for NONE type
-  // because when database.type=none, we want the search engine to be disabled
 }

@@ -29,8 +29,3 @@ zeebe:
 spring:
   profiles:
     active: broker
-
-# Optional: Disable exporters (they are disabled by default anyway)
-# zeebe:
-#   broker:
-#     exporters: {}
