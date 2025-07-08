@@ -48,6 +48,8 @@ public class BatchOperationWriter {
   }
 
   public void createIfNotAlreadyExists(final BatchOperationDbModel batchOperation) {
+    // here we read if the batch operation already exists in the database to avoid PK violations.
+    // since we flush directly after the insert statement, this is transactionally safe
     if (reader.exists(batchOperation.batchOperationId())) {
       LOGGER.trace("Batch operation already exists: {}", batchOperation);
       return;
