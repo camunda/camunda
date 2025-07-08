@@ -439,12 +439,14 @@ public class KeycloakIdentityMigrationIT {
         .extracting(
             AuthorizationResponse::ownerId,
             AuthorizationResponse::ownerType,
+            AuthorizationResponse::resourceId,
             AuthorizationResponse::resourceType,
             AuthorizationResponse::permissionTypes)
         .contains(
             tuple(
                 "user0@email.com",
                 OwnerType.USER,
+                "*",
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
@@ -453,6 +455,7 @@ public class KeycloakIdentityMigrationIT {
             tuple(
                 "user1@email.com",
                 OwnerType.USER,
+                "*",
                 ResourceType.DECISION_DEFINITION,
                 Set.of(
                     PermissionType.DELETE_DECISION_INSTANCE,

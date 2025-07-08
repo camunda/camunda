@@ -20,7 +20,11 @@ import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -144,5 +148,47 @@ final class AuthorizationMigrationHandlerTest {
             PermissionType.READ_DECISION_DEFINITION,
             PermissionType.READ_DECISION_INSTANCE,
             PermissionType.DELETE_DECISION_INSTANCE));
+  }
+
+  @Test
+  public void shouldContinueMigrationWithConflicts() {
+    // given
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        GroupIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "authorization already exists"))));
+    final var users1 = List.of(new User("user1", "username1", "name1", "email1"));
+    when(managementIdentityClient.fetchUsers(any(Integer.class)))
+        .thenReturn(users1)
+        .thenReturn(List.of());
+
+    when(managementIdentityClient.fetchUserAuthorizations(anyString()))
+        .thenReturn(
+            List.of(
+                new Authorization(
+                    "email1",
+                    "USER",
+                    "process",
+                    "process-definition",
+                    Set.of("READ", "UPDATE_PROCESS_INSTANCE", "START_PROCESS_INSTANCE")),
+                new Authorization(
+                    "email1",
+                    "USER",
+                    "*",
+                    "decision-definition",
+                    Set.of("DELETE_PROCESS_INSTANCE", "READ", "DELETE"))))
+        .thenReturn(List.of());
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(authorizationServices, times(2))
+        .createAuthorization(any(CreateAuthorizationRequest.class));
   }
 }
