@@ -33,6 +33,8 @@ describe('stores/statistics', () => {
     processInstanceDetailsStore.reset();
     statisticsStore.reset();
     processInstancesStore.reset();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should reset state', async () => {
@@ -87,7 +89,9 @@ describe('stores/statistics', () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics, {
       expectPolling: true,
     });
-    vi.useFakeTimers();
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
     statisticsStore.init();
     vi.runOnlyPendingTimers();
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
@@ -118,7 +122,7 @@ describe('stores/statistics', () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics, {
       expectPolling: true,
     });
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
@@ -157,27 +161,41 @@ describe('stores/statistics', () => {
           processInstances: [{...mockInstance}],
           totalCount: 1,
         });
-      }),
+      }, {once: true}),
       http.post('/api/process-instances', ({request}) => {
         checkPollingHeader({req: request, expectPolling: true});
         return HttpResponse.json({
           processInstances: [{...mockInstance}],
           totalCount: 2,
         });
-      }),
+      }, {once: true}),
+      http.post('/api/process-instances', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          processInstances: [{...mockInstance}],
+          totalCount: 2,
+        });
+      }, {once: true}),
       http.get('/api/process-instances/core-statistics', ({request}) => {
         checkPollingHeader({req: request, expectPolling: true});
         return HttpResponse.json({
           ...statistics,
         });
-      }),
+      }, {once: true}),
       http.get('/api/process-instances/core-statistics', ({request}) => {
         checkPollingHeader({req: request, expectPolling: true});
         return HttpResponse.json({
           ...statistics,
           running: 1088,
         });
-      }),
+      }, {once: true}),
+      http.get('/api/process-instances/core-statistics', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          ...statistics,
+          running: 1088,
+        });
+      }, {once: true}),
     );
 
     vi.runOnlyPendingTimers();
