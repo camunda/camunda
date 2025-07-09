@@ -30,20 +30,12 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpRequest.BodyPublishers;
-import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Base64;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -64,6 +56,7 @@ class TenantAuthorizationIT {
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String UNAUTHORIZED = "unauthorizedUser";
+  private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -86,37 +79,43 @@ class TenantAuthorizationIT {
   @UserDefinition
   private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());
 
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-  private boolean initialized;
-
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     createTenant(adminClient, "tenant1");
     createTenant(adminClient, "tenant2");
-    // Expected count is 3 because a default tenant gets created
-    waitForTenantsToBeCreated(adminClient.getConfiguration().getRestAddress().toString(), ADMIN, 3);
+
+    Awaitility.await("should create tenants and import in ES")
+        .atMost(AWAIT_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var tenantsSearchResponse = adminClient.newTenantsSearchRequest().send().join();
+              Assertions.assertThat(
+                      tenantsSearchResponse.items().stream().map(Tenant::getTenantId).toList())
+                  .containsAll(Arrays.asList("tenant1", "tenant2"));
+            });
   }
 
   @Test
   void searchShouldReturnAuthorizedTenants(
-      @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
-    final var tenantSearchResponse =
-        searchTenants(userClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
+    final SearchResponse<Tenant> tenantSearchResponse =
+        userClient.newTenantsSearchRequest().send().join();
 
     // then
     assertThat(tenantSearchResponse.items())
         .hasSize(2)
-        .map(TenantResponse::tenantId)
+        .map(Tenant::getTenantId)
         .containsExactlyInAnyOrder("tenant1", "tenant2");
   }
 
   @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
-      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
+      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
     // when
-    final var tenantSearchResponse =
-        searchTenants(userClient.getConfiguration().getRestAddress().toString(), UNAUTHORIZED);
+    final SearchResponse<Tenant> tenantSearchResponse =
+        userClient.newTenantsSearchRequest().send().join();
 
     // then
     assertThat(tenantSearchResponse.items()).isEmpty();
@@ -124,7 +123,7 @@ class TenantAuthorizationIT {
 
   @Test
   void getByIdShouldReturnAuthorizedTenant(
-      @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
     final Tenant tenant = userClient.newTenantGetRequest("tenant1").send().join();
 
@@ -134,7 +133,7 @@ class TenantAuthorizationIT {
 
   @Test
   void getByIdShouldReturnForbiddenForUnauthorizedTenantId(
-      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
+      @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
     // when/then
     assertThatThrownBy(() -> userClient.newTenantGetRequest("tenant1").send().join())
         .isInstanceOf(ProblemException.class)
@@ -186,41 +185,4 @@ class TenantAuthorizationIT {
         .send()
         .join();
   }
-
-  private static void waitForTenantsToBeCreated(
-      final String restAddress, final String username, final int expectedCount) {
-    Awaitility.await("should create tenants and import in ES")
-        .atMost(Duration.ofSeconds(15))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var tenantSearchResponse = searchTenants(restAddress, username);
-
-              // Validate the response
-              assert tenantSearchResponse.items().size() == expectedCount;
-            });
-  }
-
-  // TODO once available, this test should use the client to make the request
-  private static TenantSearchResponse searchTenants(final String restAddress, final String username)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder().encodeToString("%s:%s".formatted(username, PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/tenants/search")))
-            .POST(BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    // Send the request and get the response
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-
-    return OBJECT_MAPPER.readValue(response.body(), TenantSearchResponse.class);
-  }
-
-  private record TenantSearchResponse(List<TenantResponse> items) {}
-
-  private record TenantResponse(String tenantId) {}
 }

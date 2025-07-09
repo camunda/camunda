@@ -204,6 +204,13 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
+  public static SearchResponse<Tenant> toTenantsResponse(final TenantSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Tenant> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toTenantResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
   public static Tenant toTenantResponse(final TenantResult response) {
     return new TenantImpl(response.getTenantId(), response.getName(), response.getDescription());
   }

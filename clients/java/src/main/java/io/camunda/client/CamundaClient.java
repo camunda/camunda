@@ -129,6 +129,7 @@ import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
+import io.camunda.client.api.search.request.TenantsSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
@@ -2049,6 +2050,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a tenant by ID
    */
   TenantGetRequest newTenantGetRequest(String tenantId);
+
+  /**
+   * Executes a search request to query tenants.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newTenantsSearchRequest()
+   *  .filter((f) -> f.name("tenantName"))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the tenants search request
+   */
+  TenantsSearchRequest newTenantsSearchRequest();
 
   /**
    * Command to delete a tenant.
