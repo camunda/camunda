@@ -120,8 +120,13 @@ class TaskDetailsPage {
 
   async clickCompleteTaskButton() {
     await this.completeTaskButton.click({timeout: 60000});
-    await expect(this.taskCompletedBanner).toBeVisible({
-      timeout: 200000,
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.taskCompletedBanner).toBeVisible({timeout: 120000});
+      },
+      onFailure: async () => {
+        console.log('Task completed banner not visible, retrying...');
+      },
     });
   }
 
