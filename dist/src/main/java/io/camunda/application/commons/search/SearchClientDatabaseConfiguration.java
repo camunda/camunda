@@ -7,7 +7,7 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.search.condition.ConditionalOnDatabaseNone;
+import io.camunda.application.commons.condition.ConditionalOnDatabaseNone;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;

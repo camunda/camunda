@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist;
 
+import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
@@ -46,6 +47,7 @@ import org.springframework.context.annotation.Profile;
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Profile("tasklist")
+@ConditionalOnSecondaryStorage
 public class TasklistModuleConfiguration {
   // if present, then it will ensure
   // that the broker is started first
