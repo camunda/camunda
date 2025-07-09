@@ -288,7 +288,7 @@ public final class HttpClient implements AutoCloseable {
       final Map<String, String> queryParams,
       final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
       final RequestConfig requestConfig,
-      final int retries,
+      final int maxRetries,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
@@ -296,8 +296,8 @@ public final class HttpClient implements AutoCloseable {
 
     final URI target = buildRequestURI(path);
 
-    // Create retry trigger to re-execute the same request
-    final Runnable retryTrigger =
+    // Create retry action to re-execute the same request
+    final Runnable retryAction =
         () -> {
           if (result.isCancelled()) {
             return;
@@ -308,7 +308,7 @@ public final class HttpClient implements AutoCloseable {
               queryParams,
               body,
               requestConfig,
-              retries, // Note: retries here are tracked internally in ApiCallback now
+              maxRetries,
               responseType,
               transformer,
               result,
@@ -368,7 +368,11 @@ public final class HttpClient implements AutoCloseable {
     if (apiCallback == null) {
       apiCallback =
           new ApiCallback<>(
-              result, transformer, credentialsProvider::shouldRetryRequest, retryTrigger, retries);
+              result,
+              transformer,
+              credentialsProvider::shouldRetryRequest,
+              retryAction,
+              maxRetries);
     }
 
     result.transportFuture(
