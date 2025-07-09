@@ -18,7 +18,7 @@ import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
 import globals from 'globals';
 import vitestPlugin from '@vitest/eslint-plugin';
-import {defineConfig} from 'eslint/config';
+import {defineConfig, globalIgnores} from 'eslint/config';
 
 const files = {
   browser: ['src/**/*.{js,jsx,ts,tsx}'],
@@ -193,24 +193,22 @@ const config = defineConfig([
     },
   },
 
-  {
-    ignores: [
-      'dist/*',
-      'node_modules/*',
-      'build/*',
-      'target/*',
-      'coverage/*',
-      'src/fonts/*',
-      'test-results/*',
-      'playwright-report/*',
-      'playwright/.cache/*',
-      'yarn.lock',
-      '.eslintcache',
-      '.env',
-      '.prettierignore',
-      'resources/license-header.js',
-    ],
-  },
+  globalIgnores([
+    'dist/*',
+    'node_modules/*',
+    'build/*',
+    'target/*',
+    'coverage/*',
+    'src/fonts/*',
+    'test-results/*',
+    'playwright-report/*',
+    'playwright/.cache/*',
+    'yarn.lock',
+    'package-lock.json',
+    '.eslintcache',
+    '.env',
+    '.prettierignore',
+  ]),
 ]);
 
 export default config;
