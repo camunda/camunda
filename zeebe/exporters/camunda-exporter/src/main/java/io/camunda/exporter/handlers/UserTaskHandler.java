@@ -90,7 +90,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   @Override
   public List<String> generateIds(final Record<UserTaskRecordValue> record) {
-    if (record.getIntent().equals(UserTaskIntent.CREATED)) {
+    if (record.getIntent().equals(UserTaskIntent.CREATING)) {
       exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, record.getKey());
     }
 
