@@ -32,9 +32,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class OperateAPICaller {
 
-  private static final String USERNAME = "demo";
-  private static final String PASSWORD = "demo";
-
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
 
   private StatefulRestTemplate restTemplate;
@@ -43,7 +40,6 @@ public class OperateAPICaller {
     restTemplate =
         statefulRestTemplateFactory.apply(
             testContext.getExternalOperateHost(), testContext.getExternalOperatePort());
-    restTemplate.loginWhenNeeded(USERNAME, PASSWORD);
     return restTemplate;
   }
 
