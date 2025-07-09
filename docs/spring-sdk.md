@@ -2,7 +2,7 @@
 
 ## Spring SDK usage in Camunda Saas staging environments
 
-To use a staging environment, the `camunda.client.cloud.base-url` can be updated to match the base url of the desired cloud environment.
+To use a staging environment, the `camunda.client.cloud.domain` can be updated to match the domain of the desired cloud environment.
 
 Example:
 
@@ -10,7 +10,7 @@ Example:
 camunda:
   client:
     cloud:
-      base-url: ultrawombat.com
+      domain: ultrawombat.com
 ```
 
 By default, the client will always point to the production Saas instance:
@@ -19,6 +19,6 @@ By default, the client will always point to the production Saas instance:
 camunda:
   client:
     cloud:
-      base-url: camunda.io
+      domain: camunda.io
 ```
 
