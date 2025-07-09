@@ -7,8 +7,11 @@
  */
 
 import {AxeResults} from 'axe-core';
-import isNil from 'lodash/isNil';
 import {expect} from '@playwright/test';
+
+function isNil(value: unknown): value is null | undefined {
+  return value === null || value === undefined;
+}
 
 function validateResults(results: AxeResults) {
   expect(
