@@ -9,7 +9,7 @@ package io.camunda.webapps.controllers;
 
 import io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled;
 import io.camunda.webapps.profiles.ProfileWebAppStandalone;
-import io.micrometer.common.lang.NonNull;
+import jakarta.annotation.Nullable;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -17,7 +17,6 @@ import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
 @WebEndpoint(id = "backups")
@@ -36,20 +35,18 @@ public class BackupControllerStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> getBackupState(@Selector @NonNull final long backupId) {
+  public WebEndpointResponse<?> getBackupState(@Selector final long backupId) {
     return backupController.getBackupState(backupId);
   }
 
   @ReadOperation
   public WebEndpointResponse<?> getBackups(
-      @RequestParam(value = "verbose", defaultValue = "true", required = false)
-          final boolean verbose,
-      @RequestParam(value = "pattern", defaultValue = "*", required = false) final String pattern) {
+      @Nullable final Boolean verbose, @Nullable final String pattern) {
     return backupController.getBackups(verbose, pattern);
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> deleteBackup(@Selector @NonNull final long backupId) {
+  public WebEndpointResponse<?> deleteBackup(@Selector final long backupId) {
     return backupController.deleteBackup(backupId);
   }
 }

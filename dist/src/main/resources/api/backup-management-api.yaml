@@ -149,6 +149,14 @@ paths:
             Set to false to improve the query performance. However, the response will not contain
             fields startTime, failures, failureReason.
             This parameter is forwarded to Elasticsearch/Opensearch /_snapshot/ API.
+        - in: query
+          name: pattern
+          schema:
+            type: string
+            default: '*'
+          description: |
+            Provide a possible prefix for filtering the backups. Since the backupId is a number,
+            this pattern can only contain digits and the wildcard '*'.
       responses:
         '200':
           description: OK

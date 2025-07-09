@@ -33,6 +33,8 @@ import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.TransportException;
 import co.elastic.clients.util.ObjectBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
@@ -674,6 +676,49 @@ public class BackupControllerIT {
                         assertThat(info.getStartTime()).isNull();
                       });
             });
+  }
+
+  @Test
+  public void shouldReturnBackupsWhenNoParameters() throws IOException {
+    final long backupId1 = 1L;
+    // COMPLETED
+    final SnapshotInfo snapshotInfo11 =
+        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 1, 2), SnapshotState.SUCCESS);
+
+    final SnapshotInfo snapshotInfo12 =
+        createSnapshotInfoMock(new Metadata(backupId1, "8.8.8", 2, 2), SnapshotState.SUCCESS);
+
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo11, snapshotInfo12);
+
+    mockGetWithReturn(
+        GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
+
+    final var res =
+        testRestTemplate.getForEntity(
+            "http://localhost:" + managementPort + "/actuator/backupHistory", String.class);
+    assertThat(res.getStatusCode().is2xxSuccessful()).isTrue();
+
+    final ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+    final List<HistoryBackupInfo> backups =
+        objectMapper.readValue(
+            res.getBody(),
+            objectMapper
+                .getTypeFactory()
+                .constructCollectionType(List.class, HistoryBackupInfo.class));
+
+    assertThat(backups).hasSize(1);
+
+    final var backup1 =
+        backups.stream()
+            .filter(response -> backupId1 == response.getBackupId().longValue())
+            .findAny()
+            .orElse(null);
+    assertThat(backup1).isNotNull();
+    assertThat(backup1.getState()).isEqualTo(COMPLETED);
+    assertThat(backup1.getBackupId()).isEqualTo(new BigDecimal(backupId1));
+    assertThat(backup1.getFailureReason()).isNull();
+    assertBackupDetails(List.of(snapshotInfo11, snapshotInfo12), backup1);
   }
 
   private void assertBackupDetails(
