@@ -57,7 +57,8 @@ public class TaskValidator {
     }
 
     validateTaskIsAssigned(task);
-    if (!task.getAssignee().equals(currentUser.getUserId())) {
+    if (!task.getAssignee().equals(currentUser.getUserId())
+        && !tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment()) {
       throw new InvalidRequestException("Task is not assigned to " + currentUser.getUserId());
     }
   }
