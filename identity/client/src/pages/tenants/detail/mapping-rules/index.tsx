@@ -33,7 +33,8 @@ const MappingRules: FC<MappingsProps> = ({ tenantId }) => {
     tenantId: tenantId,
   });
 
-  const isAssignedMappingRulesListEmpty = !mappingRules || mappingRules.items?.length === 0;
+  const isAssignedMappingRulesListEmpty =
+    !mappingRules || mappingRules.items?.length === 0;
 
   const [assignMappingRules, assignMappingRulesModal] = useEntityModal(
     AssignMappingRulesModal,
