@@ -192,22 +192,6 @@
       "enabled": false
     },
     {
-      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
-      "matchManagers": [
-        "npm",
-        "nvm"
-      ],
-      "matchFileNames": [
-        "operate/**"
-      ],
-      "matchPackageNames": [
-        "/react-router-dom/",
-        "/msw/",
-        "/@carbon/react/"
-      ],
-      "enabled": false
-    },
-    {
       "description": "This additional prefix is used to skip Operate backend tests.",
       "matchManagers": [
         "npm",
