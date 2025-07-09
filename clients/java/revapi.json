@@ -438,6 +438,13 @@
           "old": "field io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
           "new": "field io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum.UNKNOWN_DEFAULT_OPEN_API",
           "justification": "Added a missing enum EXECUTION_LISTENER_NO_RETRIES. The UNKNOWN_DEFAULT_OPEN_API enum is automatically added at the end of the list."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4 io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4::withRegion(java.lang.String)",
+          "new": "method io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4.ZeebeClientCloudBuilderStep5 io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4::withRegion(java.lang.String)",
+          "justification": "Added new layer to configure domain"
         }
       ]
     }
