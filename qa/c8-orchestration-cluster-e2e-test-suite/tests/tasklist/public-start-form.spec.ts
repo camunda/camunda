@@ -10,6 +10,7 @@ import {expect} from '@playwright/test';
 import {test} from 'fixtures';
 import {deploy} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {sleep} from 'utils/sleep';
 
 test.describe('public start process', () => {
   test.afterEach(async ({page}, testInfo) => {
@@ -22,8 +23,8 @@ test.describe('public start process', () => {
       './resources/subscribeFormProcess.bpmn',
       './resources/subscribeForm.form',
     ]);
+    await sleep(500);
     await publicFormsPage.goToPublicForm('subscribeFormProcess');
-
     await expect(publicFormsPage.nameInput).toBeVisible({timeout: 60000});
 
     const results = await makeAxeBuilder().analyze();
