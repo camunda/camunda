@@ -12,7 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.ProcessExecutor;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
 import io.camunda.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.TestDataGenerator;
@@ -65,6 +67,10 @@ public class ProcessExecutionRandomizedPropertyTest {
    */
   @Test
   public void shouldExecuteProcessToEnd() {
+    RecordingExporter.usageMetricsRecords(UsageMetricIntent.EXPORTED)
+        .withEventType(EventType.NONE)
+        .await();
+
     final var deployment = engineRule.deployment();
     record.getBpmnModels().forEach(deployment::withXmlResource);
     deployment.deploy();
