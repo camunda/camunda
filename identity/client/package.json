@@ -54,7 +54,7 @@
     "eslint-plugin-react-refresh": "0.4.19",
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
-    "prettier": "3.3.3",
+    "prettier": "3.6.2",
     "rollup": "4.44.1",
     "rollup-plugin-license": "^3.5.3",
     "sass": "1.89.2",
