@@ -1,5 +1,4 @@
-camunda:
-  client:
-    auth:
-      resource: https://api.example.com
+zeebe:
+  token:
+    resource: https://api.example.com
 

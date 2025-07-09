@@ -1263,6 +1263,19 @@ public class CamundaClientPropertiesPostProcessorTest {
               .isEqualTo("alias-password");
         }
       }
+
+      @SpringBootTest(
+          properties = "spring.config.location=classpath:properties/8.7/token-resource.yaml")
+      @Nested
+      class TokenResource {
+        @Autowired CamundaClientProperties camundaClientProperties;
+
+        @Test
+        void shouldReadTokenResource() {
+          assertThat(camundaClientProperties.getAuth().getResource())
+              .isEqualTo("https://api.example.com");
+        }
+      }
     }
   }
 }

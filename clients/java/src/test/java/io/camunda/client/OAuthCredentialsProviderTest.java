@@ -445,42 +445,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   private void mockCredentials(final String token, final String scope) {
-    final HashMap<String, String> map = new HashMap<>();
-    map.put("client_secret", SECRET);
-    map.put("client_id", CLIENT_ID);
-    map.put("audience", AUDIENCE);
-    map.put("grant_type", "client_credentials");
-    if (scope != null) {
-      map.put("scope", scope);
-    }
-
-    final String encodedBody =
-        map.entrySet().stream()
-            .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
-            .collect(Collectors.joining("&"));
-
-    map.put("access_token", token);
-    map.put("token_type", TOKEN_TYPE);
-    map.put(
-        "expires_in",
-        String.valueOf(
-            EXPIRY.getLong(ChronoField.INSTANT_SECONDS) - Instant.now().getEpochSecond()));
-
-    try {
-      final String body = jsonMapper.writeValueAsString(map);
-      currentWiremockRuntimeInfo
-          .getWireMock()
-          .register(
-              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
-                  .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
-                  .withHeader("Accept", equalTo("application/json"))
-                  .withHeader("User-Agent", matching("camunda-client-java/\\d+\\.\\d+\\.\\d+.*"))
-                  .withRequestBody(equalTo(encodedBody))
-                  .willReturn(
-                      WireMock.aResponse().withBody(body).withFixedDelay(0).withStatus(200)));
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    mockCredentialsWithResource(token, scope, null);
   }
 
   private void mockCredentialsWithResource(
@@ -532,38 +497,7 @@ public final class OAuthCredentialsProviderTest {
   }
 
   private void mockTokenRequest(final boolean withAssertion) {
-    final String assertionRegex = ".*client_assertion\\=[\\._\\-A-Za-z0-9]{400,500}.*";
-    final String assertionTypeRegex = ".*client_assertion_type.*";
-    final String clientSecret = ".*client_secret.*";
-    final HashMap<String, String> map = new HashMap<>();
-    map.put("access_token", ACCESS_TOKEN);
-    map.put("token_type", TOKEN_TYPE);
-    map.put("expires_in", "3600");
-
-    try {
-      currentWiremockRuntimeInfo
-          .getWireMock()
-          .register(
-              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
-                  .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
-                  .withHeader("Accept", equalTo("application/json"))
-                  .withHeader("User-Agent", matching("camunda-client-java/\\d+\\.\\d+\\.\\d+.*"))
-                  .withRequestBody(
-                      withAssertion ? matching(assertionRegex) : notMatching(assertionRegex))
-                  .withRequestBody(
-                      withAssertion
-                          ? matching(assertionTypeRegex)
-                          : notMatching(assertionTypeRegex))
-                  .withRequestBody(
-                      !withAssertion ? matching(clientSecret) : notMatching(clientSecret))
-                  .willReturn(
-                      WireMock.aResponse()
-                          .withBody(jsonMapper.writeValueAsString(map))
-                          .withHeader("Content-Type", "application/json")
-                          .withStatus(200)));
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    mockTokenRequestWithResource(withAssertion, null);
   }
 
   private void mockTokenRequestWithResource(final boolean withAssertion, final String resource) {
