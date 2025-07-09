@@ -25,7 +25,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
@@ -295,22 +294,22 @@ public final class HttpClient implements AutoCloseable {
 
     final URI target = buildRequestURI(path);
 
-    final Consumer<Integer> retryAction =
-        (remainingRetries) -> {
-          if (result.isCancelled()) {
-            return;
-          }
-          sendRequest(
-              httpMethod,
-              path,
-              queryParams,
-              body,
-              requestConfig,
-              remainingRetries,
-              responseType,
-              transformer,
-              result);
-        };
+    // Create retry trigger to re-execute the same request
+    final Runnable retryTrigger = () -> {
+      if (result.isCancelled()) {
+        return;
+      }
+      sendRequest(
+          httpMethod,
+          path,
+          queryParams,
+          body,
+          requestConfig,
+          retries, // Note: retries here are tracked internally in ApiCallback now
+          responseType,
+          transformer,
+          result);
+    };
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
@@ -361,16 +360,19 @@ public final class HttpClient implements AutoCloseable {
       entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
     }
 
+    final ApiCallback<HttpT, RespT> apiCallback =
+        new ApiCallback<>(
+            result,
+            transformer,
+            credentialsProvider::shouldRetryRequest,
+            retryTrigger,
+            retries);
+
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
-            new ApiCallback<>(
-                result,
-                transformer,
-                credentialsProvider::shouldRetryRequest,
-                retryAction,
-                retries)));
+            apiCallback));
   }
 
   private URI buildRequestURI(final String path) {
