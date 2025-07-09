@@ -20,7 +20,7 @@ import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestVal
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MappingValidator.validateMappingRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MappingValidator.validateMappingRuleRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
@@ -113,6 +113,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
+import io.camunda.zeebe.gateway.rest.validator.MappingValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -489,7 +490,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, MappingDTO> toMappingRuleDTO(
       final MappingRuleCreateRequest request) {
     return getResult(
-        validateMappingRequest(request),
+        MappingValidator.validateMappingRuleRequest(request),
         () ->
             new MappingDTO(
                 request.getClaimName(),
@@ -501,7 +502,7 @@ public class RequestMapper {
   public static Either<ProblemDetail, MappingDTO> toMappingRuleDTO(
       final String mappingId, final MappingRuleUpdateRequest request) {
     return getResult(
-        validateMappingRequest(request),
+        MappingValidator.validateMappingRuleRequest(request),
         () ->
             new MappingDTO(
                 request.getClaimName(), request.getClaimValue(), request.getName(), mappingId));
