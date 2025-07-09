@@ -337,7 +337,6 @@ public class ProcessInstanceAssertj
   @Override
   public <T> ProcessInstanceAssert hasVariableSatisfies(
       final String variableName,
-
       final Class<T> jsonMappedClass,
       final List<ThrowingConsumer<T>> requirements) {
 
