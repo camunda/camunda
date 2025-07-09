@@ -27,7 +27,7 @@ import {
   type OptionalFilter,
   OptionalFiltersFormGroup,
 } from './OptionalFiltersFormGroup';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 import {useState} from 'react';
 import {Locations} from 'modules/Routes';
 import {FiltersPanel} from 'modules/components/FiltersPanel';

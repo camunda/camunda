@@ -7,7 +7,7 @@
  */
 
 import {AxeResults} from 'axe-core';
-import {isNil} from 'lodash';
+import isNil from 'lodash/isNil';
 import {expect} from '@playwright/test';
 
 function validateResults(results: AxeResults) {

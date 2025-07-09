@@ -11,7 +11,7 @@ import type {RequestError} from 'modules/request';
 import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {fetchFlownodeInstancesStatistics} from 'modules/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {isEmpty} from 'lodash';
+import isEmpty from 'lodash/isEmpty';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
 const FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY = 'flownodeInstancesStatistics';
