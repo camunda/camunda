@@ -450,6 +450,25 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Test Check Run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
+        run: |
+          if [[ -n "$FLAKY_TESTS" ]]; then
+            gh api -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/${{ github.repository }}/check-runs \
+              -f name="consolidated-unit-tests/${{ matrix.component }}-${{matrix.suite}}" \
+              -f head_sha="${{ github.event.pull_request.head.sha }}" \
+              -f status="completed" \
+              -f conclusion="neutral" \
+              -f output[title]="Flaky Tests Detected" \
+              -f output[summary]="These tests were flaky in this job:" \
+              -f output[text]="$FLAKY_TESTS"
+          fi
 
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -542,6 +561,25 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Test Check Run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
+        run: |
+          if [[ -n "$FLAKY_TESTS" ]]; then
+            gh api -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/${{ github.repository }}/check-runs \
+              -f name="[IT] Elasticsearch" \
+              -f head_sha="${{ github.event.pull_request.head.sha }}" \
+              -f status="completed" \
+              -f conclusion="neutral" \
+              -f output[title]="Flaky Tests Detected" \
+              -f output[summary]="These tests were flaky in this job:" \
+              -f output[text]="$FLAKY_TESTS"
+          fi
 
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -640,14 +678,34 @@ jobs:
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID}}
+      - name: Report Flaky Test Check Run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
+        run: |
+          if [[ -n "$FLAKY_TESTS" ]]; then
+            gh api -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/${{ github.repository }}/check-runs \
+              -f name="[IT] OpenSearch" \
+              -f head_sha="${{ github.event.pull_request.head.sha }}" \
+              -f status="completed" \
+              -f conclusion="neutral" \
+              -f output[title]="Flaky Tests Detected" \
+              -f output[summary]="These tests were flaky in this job:" \
+              -f output[text]="$FLAKY_TESTS"
+          fi
 
   rdbms-h2-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] RDBMS - H2"
     timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      checks: write
     runs-on: gcp-perf-core-8-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -707,6 +765,25 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Test Check Run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
+        run: |
+          if [[ -n "$FLAKY_TESTS" ]]; then
+            gh api -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/${{ github.repository }}/check-runs \
+              -f name="[IT] RDBMS - H2" \
+              -f head_sha="${{ github.event.pull_request.head.sha }}" \
+              -f status="completed" \
+              -f conclusion="neutral" \
+              -f output[title]="Flaky Tests Detected" \
+              -f output[summary]="These tests were flaky in this job:" \
+              -f output[text]="$FLAKY_TESTS"
+          fi
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -927,6 +1004,25 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Test Check Run
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
+        run: |
+          if [[ -n "$FLAKY_TESTS" ]]; then
+            gh api -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/${{ github.repository }}/check-runs \
+              -f name="[IT] ${{ matrix.name }}"\
+              -f head_sha="${{ github.event.pull_request.head.sha }}" \
+              -f status="completed" \
+              -f conclusion="neutral" \
+              -f output[title]="Flaky Tests Detected" \
+              -f output[summary]="These tests were flaky in this job:" \
+              -f output[text]="$FLAKY_TESTS"
+          fi
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
