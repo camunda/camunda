@@ -23,5 +23,6 @@ public enum ListenerEventType {
   END,
   START,
   UNSPECIFIED,
-  UPDATING
+  UPDATING,
+  UNKNOWN_ENUM_VALUE;
 }

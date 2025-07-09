@@ -45,13 +45,16 @@ public class JobSearchTest {
         .addResourceFromClasspath("form/job_search_process.form")
         .send()
         .join();
-    final Process process =
+    final Process process1 =
         deployProcessAndWaitForIt(camundaClient, "process/job_search_process.bpmn");
-    startProcessInstance(camundaClient, process.getBpmnProcessId());
-    waitForProcessInstancesToStart(camundaClient, 1);
+    startProcessInstance(camundaClient, process1.getBpmnProcessId());
+    final Process process2 =
+        deployProcessAndWaitForIt(camundaClient, "process/service_tasks_v1.bpmn");
+    startProcessInstance(camundaClient, process2.getBpmnProcessId());
+    waitForProcessInstancesToStart(camundaClient, 2);
 
     // Wait until the total number of jobs in the system reaches 1
-    waitUntilNewJobHasBeenCreated(1);
+    waitUntilNewJobHasBeenCreated(2);
 
     final var executionStartListenerJob =
         camundaClient
@@ -66,7 +69,7 @@ public class JobSearchTest {
     camundaClient.newCompleteCommand(executionStartListenerJob.getJobKey()).send().join();
 
     // Wait until the total number of jobs in the system reaches 2
-    waitUntilNewJobHasBeenCreated(2);
+    waitUntilNewJobHasBeenCreated(3);
 
     final var taskABpmnJob =
         camundaClient
@@ -83,7 +86,7 @@ public class JobSearchTest {
     camundaClient.newCompleteCommand(taskABpmnJob.getKey()).send().join();
 
     // Wait until the total number of jobs in the system reaches 3
-    waitUntilNewJobHasBeenCreated(3);
+    waitUntilNewJobHasBeenCreated(4);
 
     final var executionEndListenerJob =
         camundaClient
@@ -113,7 +116,7 @@ public class JobSearchTest {
         .send();
 
     // Wait until the total number of jobs in the system reaches 4
-    waitUntilNewJobHasBeenCreated(4);
+    waitUntilNewJobHasBeenCreated(5);
 
     final var userTaskListenerAssigningJob1 =
         camundaClient
@@ -139,7 +142,7 @@ public class JobSearchTest {
     waitUntilNewUserTaskHasBeenCreated();
 
     // Wait until the total number of jobs in the system reaches 5
-    waitUntilNewJobHasBeenCreated(5);
+    waitUntilNewJobHasBeenCreated(6);
 
     final var userTaskListenerAssigningJob2 =
         camundaClient
@@ -171,7 +174,7 @@ public class JobSearchTest {
         .send();
 
     // Wait until the total number of jobs in the system reaches 6
-    waitUntilNewJobHasBeenCreated(6);
+    waitUntilNewJobHasBeenCreated(7);
 
     final var taskCBpmnJob =
         camundaClient
@@ -207,7 +210,7 @@ public class JobSearchTest {
     final var result = camundaClient.newJobSearchRequest().send().join();
     // then
     assertThat(result.items())
-        .hasSize(6)
+        .hasSize(7)
         .extracting(Job::getType)
         .containsExactlyInAnyOrderElementsOf(
             List.of(
@@ -216,7 +219,29 @@ public class JobSearchTest {
                 "taskBTaskListener",
                 "taskCBpmn",
                 "taskAExecutionListener",
-                "taskBTaskListener"));
+                "taskBTaskListener",
+                "taskA"));
+  }
+
+  @Test
+  void shouldReturnActivatedJobWithKindAndListenerEventType() {
+    // given
+    final var result =
+        camundaClient
+            .newActivateJobsCommand()
+            .jobType("taskA")
+            .maxJobsToActivate(1)
+            .workerName("worker2")
+            .timeout(Duration.ofSeconds(3))
+            .send()
+            .join()
+            .getJobs()
+            .getFirst();
+    // then
+    assertThat(result.getType()).isEqualTo("taskA");
+    assertThat(result.getWorker()).isEqualTo("worker2");
+    assertThat(result.getKind()).isEqualTo(JobKind.BPMN_ELEMENT);
+    assertThat(result.getListenerEventType()).isEqualTo(ListenerEventType.UNSPECIFIED);
   }
 
   @Test
@@ -436,7 +461,7 @@ public class JobSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(6);
+    assertThat(result.items()).hasSize(7);
     assertThat(result.items())
         .extracting(Job::getTenantId)
         .allMatch(t -> t.equals(taskABpmnJob.getTenantId()));
@@ -574,7 +599,7 @@ public class JobSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(6);
+    assertThat(result.items()).hasSize(7);
     assertThat(result.items().getFirst().getRetries()).isEqualTo(retries);
   }
 

@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
@@ -168,6 +169,7 @@ class ResponseMapperTest {
     private static JobRecord mockJobRecord(final ActivatedJobWithUserTaskPropsCase testCase) {
       final JobRecord jobRecord = mock(JobRecord.class);
       when(jobRecord.getJobKind()).thenReturn(testCase.jobKind);
+      when(jobRecord.getJobListenerEventType()).thenReturn(JobListenerEventType.START);
       when(jobRecord.getCustomHeaders()).thenReturn(testCase.headers);
       when(jobRecord.getTypeBuffer()).thenReturn(BufferUtil.wrapString("type"));
       when(jobRecord.getBpmnProcessId()).thenReturn("procId");

@@ -25,9 +25,12 @@ import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob.JobKind;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob.ListenerEventType;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UserTaskProperties;
 import java.time.Duration;
 import java.util.Arrays;
@@ -55,6 +58,8 @@ public final class ActivateJobsTest extends ClientTest {
             .setDeadline(1231)
             .setVariables("{\"key\": \"val\"}")
             .setTenantId("test-tenant-1")
+            .setKind(JobKind.BPMN_ELEMENT)
+            .setListenerEventType(ListenerEventType.START)
             .build();
 
     final ActivatedJob activatedJob2 =
@@ -73,6 +78,8 @@ public final class ActivateJobsTest extends ClientTest {
             .setDeadline(3131)
             .setVariables("{\"bar\": 3}")
             .setTenantId("test-tenant-2")
+            .setKind(JobKind.TASK_LISTENER)
+            .setListenerEventType(ListenerEventType.END)
             .build();
 
     gatewayService.onActivateJobsRequest(activatedJob1, activatedJob2);
@@ -109,6 +116,15 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getVariables()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getUserTask()).isNull();
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
+    assertThat(job.getKind())
+        .isEqualTo(
+            EnumUtil.convert(
+                activatedJob1.getKind(), io.camunda.client.api.search.enums.JobKind.class));
+    assertThat(job.getListenerEventType())
+        .isEqualTo(
+            EnumUtil.convert(
+                activatedJob1.getListenerEventType(),
+                io.camunda.client.api.search.enums.ListenerEventType.class));
 
     job = response.getJobs().get(1);
     assertThat(job.getKey()).isEqualTo(activatedJob2.getKey());
@@ -127,6 +143,15 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(job.getVariables()).isEqualTo(activatedJob2.getVariables());
     assertThat(job.getUserTask()).isNull();
     assertThat(job.getTenantId()).isEqualTo(activatedJob2.getTenantId());
+    assertThat(job.getKind())
+        .isEqualTo(
+            EnumUtil.convert(
+                activatedJob2.getKind(), io.camunda.client.api.search.enums.JobKind.class));
+    assertThat(job.getListenerEventType())
+        .isEqualTo(
+            EnumUtil.convert(
+                activatedJob2.getListenerEventType(),
+                io.camunda.client.api.search.enums.ListenerEventType.class));
 
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getType()).isEqualTo("foo");
