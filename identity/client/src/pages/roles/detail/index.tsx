@@ -24,6 +24,7 @@ import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
 import Members from "src/pages/roles/detail/members";
 import Mappings from "src/pages/roles/detail/mappings";
+import Groups from "src/pages/roles/detail/groups";
 import Clients from "src/pages/roles/detail/clients";
 import { isOIDC } from "src/configuration";
 
@@ -83,31 +84,36 @@ const Details: FC = () => {
         </Stack>
         {role && (
           <Section>
-            {!isOIDC ? (
-              <Members roleId={role.roleId} />
-            ) : (
-              <Tabs
-                tabs={[
-                  {
-                    key: "users",
-                    label: t("users"),
-                    content: <Members roleId={role.roleId} />,
-                  },
-                  {
-                    key: "mappings",
-                    label: t("mappings"),
-                    content: <Mappings roleId={role.roleId} />,
-                  },
-                  {
-                    key: "clients",
-                    label: t("clients"),
-                    content: <Clients roleId={role.roleId} />,
-                  },
-                ]}
-                selectedTabKey={tab}
-                path={`../${id}`}
-              />
-            )}
+            <Tabs
+              tabs={[
+                {
+                  key: "users",
+                  label: t("users"),
+                  content: <Members roleId={role.roleId} />,
+                },
+                {
+                  key: "groups",
+                  label: t("groups"),
+                  content: <Groups roleId={role.roleId} />,
+                },
+                ...(isOIDC
+                  ? [
+                      {
+                        key: "mappings",
+                        label: t("mappings"),
+                        content: <Mappings roleId={role.roleId} />,
+                      },
+                      {
+                        key: "clients",
+                        label: t("clients"),
+                        content: <Clients roleId={role.roleId} />,
+                      },
+                    ]
+                  : []),
+              ]}
+              selectedTabKey={tab}
+              path={`../${id}`}
+            />
           </Section>
         )}
       </>

@@ -14,6 +14,7 @@ import {
   apiPut,
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
+import { Group } from "src/utility/api/groups";
 import { Mapping } from "src/utility/api/mappings";
 
 export const ROLES_ENDPOINT = "/roles";
@@ -69,6 +70,32 @@ export const unassignRoleMapping: ApiDefinition<
   UnassignRoleMappingParams
 > = ({ roleId, mappingId }) =>
   apiDelete(`${ROLES_ENDPOINT}/${roleId}/mappings/${mappingId}`);
+
+// ----------------- Groups within a Role -----------------
+
+type GetRoleGroupsParams = {
+  roleId: string;
+};
+
+export const getGroupsByRoleId: ApiDefinition<
+  SearchResponse<Group>,
+  GetRoleGroupsParams
+> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/groups/search`);
+
+type AssignRoleGroupParams = GetRoleGroupsParams & Pick<Group, "groupId">;
+export const assignRoleGroup: ApiDefinition<
+  undefined,
+  AssignRoleGroupParams
+> = ({ roleId, groupId }) => {
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
+};
+
+type UnassignRoleGroupParams = AssignRoleGroupParams;
+export const unassignRoleGroup: ApiDefinition<
+  undefined,
+  UnassignRoleGroupParams
+> = ({ roleId, groupId }) =>
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
 
 // ----------------- Clients within a Role -----------------
 
