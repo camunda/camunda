@@ -10404,7 +10404,7 @@ components:
       type: object
       properties:
         batchOperationKey:
-          description: Id of the batch operation.
+          description: Key of the batch operation.
           type: string
         batchOperationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"

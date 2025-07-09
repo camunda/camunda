@@ -28,7 +28,7 @@ public interface BatchOperationItemFilter extends SearchRequestFilter {
   /**
    * Filters batch operation items by the specified batchOperationKey.
    *
-   * @param batchOperationKey the ID of the batch operation
+   * @param batchOperationKey the key of the batch operation
    * @return the updated filter
    */
   BatchOperationItemFilter batchOperationKey(final String batchOperationKey);
