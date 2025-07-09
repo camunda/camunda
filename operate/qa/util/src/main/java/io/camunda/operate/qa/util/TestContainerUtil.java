@@ -519,7 +519,12 @@ public class TestContainerUtil {
           .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.98")
           .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
-          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
+          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0", "demo");
 
       if (testContext.getPartitionCount() != null) {
         broker.withEnv(

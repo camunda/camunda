@@ -148,7 +148,8 @@ public class BackupRestoreTest {
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", INDEX_PREFIX)
             .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", INDEX_PREFIX)
             .withEnv("CAMUNDA_OPERATE_IMPORTERENABLED", "false")
-            .withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
+            .withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME)
+            .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth, operate");
 
     startOperate();
   }
