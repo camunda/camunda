@@ -15,11 +15,14 @@
  */
 package io.camunda.zeebe.spring.client.properties;
 
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
+
 public class CamundaClientCloudProperties {
   private String region;
   private String clusterId;
-  private String baseUrl;
+  @Deprecated private String baseUrl;
   private Integer port;
+  private String domain;
 
   public Integer getPort() {
     return port;
@@ -45,12 +48,23 @@ public class CamundaClientCloudProperties {
     this.clusterId = clusterId;
   }
 
+  @Deprecated
+  @DeprecatedConfigurationProperty(replacement = "camunda.client.cloud.domain")
   public String getBaseUrl() {
     return baseUrl;
   }
 
+  @Deprecated
   public void setBaseUrl(final String baseUrl) {
     this.baseUrl = baseUrl;
+  }
+
+  public String getDomain() {
+    return domain;
+  }
+
+  public void setDomain(final String domain) {
+    this.domain = domain;
   }
 
   @Override
@@ -62,8 +76,8 @@ public class CamundaClientCloudProperties {
         + ", clusterId='"
         + clusterId
         + '\''
-        + ", baseUrl='"
-        + baseUrl
+        + ", domain='"
+        + domain
         + '\''
         + ", port="
         + port
