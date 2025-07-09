@@ -195,6 +195,7 @@ jobs:
         id: build-operate-fe
         with:
           directory: ./operate/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         id: build-tasklist-fe
         with:

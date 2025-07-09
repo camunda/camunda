@@ -13,6 +13,10 @@ inputs:
   directory:
     description: Directory of the Yarn workspace to build
     required: true
+  package-manager:
+    description: Package manager to use (yarn or npm)
+    required: false
+    default: "yarn"
 
 runs:
   using: composite
@@ -22,12 +26,36 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Install node dependencies
+    - name: Setup yarn
+      if: ${{ inputs.package-manager == 'yarn' }}
+      shell: bash
+      run: npm install -g yarn
+
+    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+      if: ${{ inputs.package-manager == 'yarn' }}
+      with:
+        directory: ${{ inputs.directory }}
+
+    - name: Install node dependencies (yarn)
+      if: ${{ inputs.package-manager == 'yarn' }}
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: yarn
+
+    - name: Install node dependencies (npm)
+      if: ${{ inputs.package-manager == 'npm' }}
       working-directory: ${{ inputs.directory }}
       shell: bash
       run: npm ci
 
-    - name: Build frontend
+    - name: Build frontend (yarn)
+      if: ${{ inputs.package-manager == 'yarn' }}
+      working-directory: ${{ inputs.directory }}
+      shell: bash
+      run: yarn build
+
+    - name: Build frontend (npm)
+      if: ${{ inputs.package-manager == 'npm' }}
       working-directory: ${{ inputs.directory }}
       shell: bash
       run: npm run build
