@@ -24,6 +24,7 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
@@ -65,9 +66,11 @@ public class PingConsoleRunnerIT {
           "licenseType": "saas"
         },
         "clusterId": "test-cluster-id",
-        "clusterName": "test-cluster-name"
+        "clusterName": "test-cluster-name",
+        "version":"%s"
       }
-    """;
+    """
+            .formatted(VersionUtil.getVersion());
     managementServices = mock(ManagementServices.class);
     when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
