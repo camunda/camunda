@@ -334,9 +334,7 @@ public class ScaleUpPartitionsTest {
   public void shouldNotBreakMessageCorrelation() {
     // given
     cluster.awaitHealthyTopology();
-    final var messageId = new AtomicInteger();
     final var correlationKeyVariable = "correlationKey";
-    final var correlationKeys = new ArrayBlockingQueue<Integer>(1024);
     final var processId = "PROCESS_WITH_MESSAGE";
     final var process =
         Bpmn.createExecutableProcess(processId)
@@ -386,7 +384,7 @@ public class ScaleUpPartitionsTest {
 
   @ParameterizedTest
   @EnumSource(value = TestCase.class)
-  public void shouldNotBreakProcessWIthStartEvents(final TestCase testCase) {
+  public void shouldNotBreakProcessWithStartEvents(final TestCase testCase) {
     // given
     cluster.awaitHealthyTopology();
     final var correlationKeyVariable = "correlationKey";
