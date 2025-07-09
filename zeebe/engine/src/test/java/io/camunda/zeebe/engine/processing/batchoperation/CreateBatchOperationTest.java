@@ -17,7 +17,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -119,9 +118,9 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
     assertThat(
             RecordingExporter.batchOperationChunkRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .limit(record -> record.getIntent().equals(BatchOperationChunkIntent.CREATED)))
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.CHUNK_CREATED)))
         .extracting(Record::getIntent)
-        .containsSequence(BatchOperationChunkIntent.CREATE, BatchOperationChunkIntent.CREATED);
+        .containsSequence(BatchOperationIntent.CREATE_CHUNK, BatchOperationIntent.CHUNK_CREATED);
   }
 
   @Test

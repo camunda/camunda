@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -465,7 +464,7 @@ public class RecordFixtures {
 
     return ImmutableRecord.builder()
         .from(recordValueRecord)
-        .withIntent(BatchOperationChunkIntent.CREATE)
+        .withIntent(BatchOperationIntent.CREATE_CHUNK)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
         .withValue(

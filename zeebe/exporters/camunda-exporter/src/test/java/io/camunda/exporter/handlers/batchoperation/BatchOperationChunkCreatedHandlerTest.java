@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.HashMap;
@@ -53,7 +53,7 @@ class BatchOperationChunkCreatedHandlerTest {
     // given
     final Record<BatchOperationChunkRecordValue> record =
         factory.generateRecordWithIntent(
-            ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkIntent.CREATED);
+            ValueType.BATCH_OPERATION_CHUNK, BatchOperationIntent.CHUNK_CREATED);
 
     // when - then
     assertThat(underTest.handlesRecord(record)).isTrue();
@@ -64,7 +64,7 @@ class BatchOperationChunkCreatedHandlerTest {
     // given
     final Record<BatchOperationChunkRecordValue> record =
         factory.generateRecordWithIntent(
-            ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkIntent.CREATED);
+            ValueType.BATCH_OPERATION_CHUNK, BatchOperationIntent.CHUNK_CREATED);
 
     // when
     final var idList = underTest.generateIds(record);
@@ -93,7 +93,7 @@ class BatchOperationChunkCreatedHandlerTest {
     final Record<BatchOperationChunkRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_CHUNK,
-            r -> r.withIntent(BatchOperationChunkIntent.CREATED).withValue(recordValue));
+            r -> r.withIntent(BatchOperationIntent.CHUNK_CREATED).withValue(recordValue));
 
     final var entity = new BatchOperationEntity();
 

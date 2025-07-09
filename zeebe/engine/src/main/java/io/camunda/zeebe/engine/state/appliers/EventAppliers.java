@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
@@ -623,7 +622,7 @@ public final class EventAppliers implements EventApplier {
         new BatchOperationFailedApplier(state.getBatchOperationState()));
 
     register(
-        BatchOperationChunkIntent.CREATED,
+        BatchOperationIntent.CHUNK_CREATED,
         new BatchOperationChunkCreatedApplier(state.getBatchOperationState()));
     register(
         BatchOperationExecutionIntent.EXECUTING,

@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
@@ -86,7 +85,7 @@ public final class BatchOperationSetupProcessors {
                 processingState))
         .onCommand(
             ValueType.BATCH_OPERATION_CHUNK,
-            BatchOperationChunkIntent.CREATE,
+            BatchOperationIntent.CREATE_CHUNK,
             new BatchOperationCreateChunkProcessor(writers))
         .onCommand(
             ValueType.BATCH_OPERATION_EXECUTION,
