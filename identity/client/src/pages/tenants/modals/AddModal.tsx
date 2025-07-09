@@ -29,7 +29,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [description, setDescription] = useState("");
   const [isTenantIdValid, setIsTenantIdValid] = useState(true);
 
-  const submitDisabled = loading || !name || !tenantId || !isTenantIdValid;
+  const isSubmitDisabled = loading || !name || !tenantId || !isTenantIdValid;
 
   const validateTenantId = () => {
     setIsTenantIdValid(isValidTenantId(tenantId));
@@ -68,7 +68,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       open={open}
       onClose={onClose}
       loading={loading}
-      submitDisabled={submitDisabled}
+      submitDisabled={isSubmitDisabled}
       confirmLabel={t("createTenant")}
       onSubmit={handleSubmit}
     >
