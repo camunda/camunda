@@ -9,6 +9,7 @@
 import {mockApplyDeleteDefinitionOperation} from 'modules/mocks/api/decisions/operations';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -19,10 +20,11 @@ import {DecisionOperations} from '.';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {operationsStore} from 'modules/stores/operations';
 import {notificationsStore} from 'modules/stores/notifications';
+import type {OperationEntity} from 'modules/types/operate';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -221,7 +223,7 @@ describe('<DecisionOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -230,7 +232,7 @@ describe('<DecisionOperations />', () => {
     ).toBeDisabled();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('delete-operation-spinner'),
+      screen.queryByTestId('delete-operation-spinner'),
     );
 
     expect(
@@ -246,9 +248,9 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should enable button and remove spinner when delete operation failed', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockApplyDeleteDefinitionOperation().withNetworkError();
 
@@ -273,7 +275,7 @@ describe('<DecisionOperations />', () => {
       ),
     );
 
-    await user.click(screen.getByRole('button', {name: /danger Delete/}));
+    fireEvent.click(screen.getByRole('button', {name: /danger Delete/}));
     expect(screen.getByTestId('delete-operation-spinner')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -282,7 +284,7 @@ describe('<DecisionOperations />', () => {
     ).toBeDisabled();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('delete-operation-spinner'),
+      screen.queryByTestId('delete-operation-spinner'),
     );
 
     expect(

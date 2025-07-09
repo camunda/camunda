@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {OperationEntityType} from 'modules/types/operate';
+
 /**
  * This file contains types which are shared between multiple API endpoints.
  */

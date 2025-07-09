@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {useProcessInstance} from './useProcessInstance';
 import {PAGE_TITLE} from 'modules/constants';
 

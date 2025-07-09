@@ -87,10 +87,6 @@ describe('ProcessInstancesSelection - checkedProcessInstanceIds', () => {
     });
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should return selectedProcessInstanceIds when selectionMode is INCLUDE', () => {
     processInstancesSelectionStore.state = {
       selectedProcessInstanceIds: ['1', '3'],

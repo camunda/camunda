@@ -7,7 +7,7 @@
  */
 
 import isEqual from 'lodash/isEqual';
-import {IReactionDisposer, makeAutoObservable} from 'mobx';
+import {makeAutoObservable, type IReactionDisposer} from 'mobx';
 
 type Variable = {
   name: string;

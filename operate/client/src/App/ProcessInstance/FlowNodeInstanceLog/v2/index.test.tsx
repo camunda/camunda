@@ -9,7 +9,6 @@
 import {
   render,
   screen,
-  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 
@@ -31,11 +30,12 @@ import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinit
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {init} from 'modules/utils/flowNodeInstance';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
-jest.mock('modules/utils/bpmn');
+vi.mock('modules/utils/bpmn');
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 const mockProcessInstance: ProcessInstance = {
@@ -89,13 +89,13 @@ describe('FlowNodeInstanceLog', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockDeprecatedProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     processInstanceDetailsStore.init({id: '1'});
-  });
-
-  afterEach(async () => {
-    await new Promise(process.nextTick);
   });
 
   it('should render skeleton when instance tree is not loaded', async () => {
@@ -108,23 +108,22 @@ describe('FlowNodeInstanceLog', () => {
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-history-skeleton'),
+      screen.queryByTestId('instance-history-skeleton'),
     );
   });
 
   it('should render skeleton when instance diagram is not loaded', async () => {
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
     init(mockProcessInstance);
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
-    expect(
-      await screen.findByTestId('instance-history-skeleton'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-history-skeleton'),
+      screen.queryByTestId('instance-history-skeleton'),
     );
   });
 
@@ -155,15 +154,25 @@ describe('FlowNodeInstanceLog', () => {
   it('should continue polling after poll failure', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
-    jest.useFakeTimers();
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockDeprecatedProcessInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
     init(mockProcessInstance);
 
     render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
 
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-history-skeleton'),
+    );
+
     expect(await screen.findAllByTestId('INCIDENT-icon')).toHaveLength(1);
     expect(await screen.findAllByTestId('COMPLETED-icon')).toHaveLength(1);
 
-    // first poll
+    // first poll (server error)
     mockFetchProcessInstanceDeprecated().withSuccess(
       createInstance({
         id: '1',
@@ -173,10 +182,15 @@ describe('FlowNodeInstanceLog', () => {
       }),
     );
     mockFetchFlowNodeInstances().withServerError();
+    vi.runOnlyPendingTimers();
+    expect(
+      await screen.findByText(/Instance History could not be fetched/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tree', {name: /processName instance history/i}),
+    ).not.toBeInTheDocument();
 
-    jest.runOnlyPendingTimers();
-
-    // second poll
+    // second poll (success)
     mockFetchProcessInstanceDeprecated().withSuccess(
       createInstance({
         id: '1',
@@ -186,24 +200,21 @@ describe('FlowNodeInstanceLog', () => {
       }),
     );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
-
-    jest.runOnlyPendingTimers();
-
-    await waitFor(() => {
-      expect(screen.queryByTestId('INCIDENT-icon')).not.toBeInTheDocument();
-      expect(screen.getAllByTestId('COMPLETED-icon')).toHaveLength(2);
-    });
+    vi.runOnlyPendingTimers();
+    await waitForElementToBeRemoved(
+      screen.queryByText(/Instance History could not be fetched/i),
+    );
 
     expect(
-      screen.queryByText('Instance History could not be fetched'),
-    ).not.toBeInTheDocument();
+      screen.getByRole('tree', {name: /processName instance history/i}),
+    ).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render flow node instances tree', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
     );
@@ -220,7 +231,7 @@ describe('FlowNodeInstanceLog', () => {
     expect(
       await screen.findByText('Migrated 2018-12-12 00:00:00'),
     ).toBeInTheDocument();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

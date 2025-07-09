@@ -15,7 +15,7 @@ import {
   mockResponses,
   mockStatisticsV2,
 } from '../mocks/processes.mocks';
-import {open} from 'modules/mocks/diagrams';
+import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
 import {clientConfigMock} from '../mocks/clientConfig';
 
@@ -33,14 +33,14 @@ test.beforeEach(async ({context}) => {
 
 test.describe('migration view', () => {
   test(`initial migration view`, async ({page, processesPage}) => {
-    await page.addInitScript(() => {
+    await page.addInitScript(`() => {
       window.localStorage.setItem(
         'panelStates',
         JSON.stringify({
           isOperationsCollapsed: true,
         }),
       );
-    });
+    }`);
 
     await page.route(
       URL_API_PATTERN,
@@ -49,7 +49,9 @@ test.describe('migration view', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         statisticsV2: mockStatisticsV2,
-        processXml: open('LotsOfTasks.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/LotsOfTasks.bpmn',
+        ),
       }),
     );
 

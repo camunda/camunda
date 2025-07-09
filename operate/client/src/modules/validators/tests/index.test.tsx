@@ -30,19 +30,16 @@ import {
 import {mockMeta} from './mocks';
 
 describe('validators', () => {
-  let setTimeoutSpy: jest.SpyInstance;
-
   beforeEach(() => {
-    jest.useFakeTimers();
-    setTimeoutSpy = jest.spyOn(window, 'setTimeout');
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should validate ids without delay', async () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     expect(validateIdsCharacters('', {})).toBeUndefined();
 
     expect(validateIdsCharacters('2251799813685543', {})).toBeUndefined();
@@ -104,20 +101,21 @@ describe('validators', () => {
   });
 
   it('should validate ids with delay', async () => {
-    expect(
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    await expect(
       validatesIdsComplete(
         '2251799813685543 22517998136855430 225179981368554300 2251799813685543000 22517998136855430000 22517998136855430000',
         {},
       ),
     ).resolves.toBe(ERRORS.ids);
 
-    expect(validatesIdsComplete('1', {})).resolves.toBe(ERRORS.ids);
+    await expect(validatesIdsComplete('1', {})).resolves.toBe(ERRORS.ids);
 
-    expect(validatesIdsComplete('1 1 1 ', {})).resolves.toBe(ERRORS.ids);
+    await expect(validatesIdsComplete('1 1 1 ', {})).resolves.toBe(ERRORS.ids);
 
-    expect(validatesIdsComplete('1', {})).resolves.toBe(ERRORS.ids);
+    await expect(validatesIdsComplete('1', {})).resolves.toBe(ERRORS.ids);
 
-    expect(validatesIdsComplete('225179981368554', {})).resolves.toBe(
+    await expect(validatesIdsComplete('225179981368554', {})).resolves.toBe(
       ERRORS.ids,
     );
 
@@ -125,6 +123,7 @@ describe('validators', () => {
   });
 
   it('should validate parent instance id without delay', async () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     expect(validateParentInstanceIdCharacters('', {})).toBeUndefined();
 
     expect(
@@ -173,11 +172,12 @@ describe('validators', () => {
   });
 
   it('should validate parent instance id with delay', async () => {
-    expect(validateParentInstanceIdComplete('1', {})).resolves.toBe(
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    await expect(validateParentInstanceIdComplete('1', {})).resolves.toBe(
       ERRORS.parentInstanceId,
     );
 
-    expect(
+    await expect(
       validateParentInstanceIdComplete('225179981368554', {}),
     ).resolves.toBe(ERRORS.parentInstanceId);
 
@@ -185,6 +185,7 @@ describe('validators', () => {
   });
 
   it('should validate operationId without delay', () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     expect(validateOperationIdCharacters('', {})).toBeUndefined();
     expect(
       validateOperationIdCharacters('1f4d40c3-7cce-4e51-8abe-0cda8d42f04f', {}),
@@ -197,21 +198,22 @@ describe('validators', () => {
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
 
-  it('should validate operationId with delay', () => {
-    expect(
+  it('should validate operationId with delay', async () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    await expect(
       validateOperationIdComplete('1f4d40c3-7cce-4e51-', {}),
     ).resolves.toBe(ERRORS.operationId);
-    expect(
+    await expect(
       validateOperationIdComplete('0e8481e6-b652-41c9-a72a-f531c783122', {}),
     ).resolves.toBe(ERRORS.operationId);
-    expect(
+    await expect(
       validateOperationIdComplete('0e8-481e6-b652-41c9-a72a-f531c7831220', {}),
     ).resolves.toBe(ERRORS.operationId);
-    expect(validateOperationIdComplete('a', {})).resolves.toBe(
+    await expect(validateOperationIdComplete('a', {})).resolves.toBe(
       ERRORS.operationId,
     );
 
-    expect(validateOperationIdComplete('0', {})).resolves.toBe(
+    await expect(validateOperationIdComplete('0', {})).resolves.toBe(
       ERRORS.operationId,
     );
 
@@ -256,6 +258,7 @@ describe('validators', () => {
   });
 
   it('should validate variable name without delay', () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     expect(validateVariableNameComplete('', {})).toBeUndefined();
     expect(validateVariableNameComplete('test', {})).toBeUndefined();
     expect(
@@ -272,24 +275,26 @@ describe('validators', () => {
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
 
-  it('should validate variable name with delay', () => {
-    expect(
+  it('should validate variable name with delay', async () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    await expect(
       validateVariableNameComplete('', {variableValues: '"somethingValid"'}),
     ).resolves.toBe(ERRORS.variables.nameUnfilled);
-    expect(
+    await expect(
       validateVariableNameComplete('', {variableValues: '123'}),
     ).resolves.toBe(ERRORS.variables.nameUnfilled);
-    expect(
+    await expect(
       validateVariableNameComplete('', {variableValues: true}),
     ).resolves.toBe(ERRORS.variables.nameUnfilled);
-    expect(
+    await expect(
       validateVariableNameComplete('', {variableValues: 'somethingInvalid'}),
-    ).resolves.toBe('Name has to be filled and Value has to be JSON');
+    ).resolves.toBe(ERRORS.variables.nameUnfilled);
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(4);
   });
 
   it('should validate variable value without delay', () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     expect(validateVariableValuesComplete('', {})).toBeUndefined();
     expect(
       validateVariableValuesComplete('{"test":123}', {variableName: 'test'}),
@@ -309,7 +314,8 @@ describe('validators', () => {
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
 
-  it('should validate variable value with delay', () => {
+  it('should validate variable value with delay', async () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     expect(validateVariableValuesComplete('1', {})).toBeUndefined();
     expect(validateVariableValuesComplete('true', {})).toBeUndefined();
     expect(validateVariableValuesComplete('"test"', {})).toBeUndefined();
@@ -322,15 +328,15 @@ describe('validators', () => {
     ).toBeUndefined();
     expect(validateVariableValuesComplete('"one","two"', {})).toBeUndefined();
 
-    expect(
+    await expect(
       validateVariableValueValid('{"tes}', {variableName: 'test'}),
     ).resolves.toBe(ERRORS.variables.valueInvalid);
 
-    expect(
+    await expect(
       validateVariableValuesComplete('', {variableName: 'test'}),
     ).resolves.toBe(ERRORS.variables.valueUnfilled);
 
-    expect(validateVariableValueValid('a', {})).resolves.toBe(
+    await expect(validateVariableValueValid('a', {})).resolves.toBe(
       ERRORS.variables.valueInvalid,
     );
 
@@ -338,6 +344,7 @@ describe('validators', () => {
   });
 
   it('should validate multi variable values without delay', () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     expect(
       validateMultipleVariableValuesValid('', {variableName: 'test'}),
     ).toBeUndefined();
@@ -345,19 +352,20 @@ describe('validators', () => {
     expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
   });
 
-  it('should validate multi variable values with delay', () => {
-    expect(
+  it('should validate multi variable values with delay', async () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    await expect(
       validateMultipleVariableValuesValid('2, {"tes}', {variableName: 'test'}),
-    ).resolves.toBe(ERRORS.variables.valueInvalid);
+    ).resolves.toBe(ERRORS.variables.multipleValueInvalid);
 
-    expect(validateMultipleVariableValuesValid('a,a', {})).resolves.toBe(
-      ERRORS.variables.valueInvalid,
+    await expect(validateMultipleVariableValuesValid('a,a', {})).resolves.toBe(
+      ERRORS.variables.multipleValueInvalid,
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
 
-  it('should validate decision ids without delay ', () => {
+  it('should validate decision ids without delay', () => {
     [
       '2251799813685543-1',
       '2251799813685543',
@@ -393,7 +401,8 @@ describe('validators', () => {
     );
   });
 
-  it('should validate decision ids with delay ', () => {
+  it('should validate decision ids with delay - part 1', async () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
     [
       '2251799813685543-1',
       '2251799813685543-999',
@@ -404,27 +413,36 @@ describe('validators', () => {
       expect(validatesDecisionIdsComplete(decisionId, {})).toBeUndefined();
     });
 
-    [
+    for (const decisionId of [
       '123',
       '123-1',
       '225179981368554332133-999',
       '225179981368554',
       '22517998136855433213',
       '2251799813685542-1   000',
-      '2251799813685542-1 225179981368554212',
-    ].forEach((decisionId) => {
-      expect(validatesDecisionIdsComplete(decisionId, {})).resolves.toBe(
+    ]) {
+      await expect(validatesDecisionIdsComplete(decisionId, {})).resolves.toBe(
         ERRORS.decisionsIds,
       );
-    });
+    }
 
-    expect(setTimeoutSpy).toHaveBeenCalledTimes(7);
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(6);
+  });
+
+  // this test had to be split otherwise the test would timeout
+  it('should validate decision ids with delay - part 2', async () => {
+    const setTimeoutSpy = vi.spyOn(window, 'setTimeout');
+    await expect(
+      validatesDecisionIdsComplete('2251799813685542-1 225179981368554212', {}),
+    ).resolves.toBe(ERRORS.decisionsIds);
+
+    expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
   });
 
   // more fine grained tests for parseFilterTime in utils/filter/index.test.ts
   it('should validate time with delay', async () => {
     const validate = validateTimeComplete('99:99:99', {});
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await expect(validate).resolves.toBe(ERRORS.time);
   });
 

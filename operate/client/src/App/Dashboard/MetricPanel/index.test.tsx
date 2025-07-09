@@ -56,7 +56,7 @@ describe('<MetricPanel />', () => {
     );
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instances-bar-skeleton'),
+      screen.queryByTestId('instances-bar-skeleton'),
     );
     expect(
       screen.getByText('1087 Running Process Instances in total'),
@@ -86,7 +86,7 @@ describe('<MetricPanel />', () => {
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instances-bar-skeleton'),
+      screen.queryByTestId('instances-bar-skeleton'),
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
@@ -106,7 +106,7 @@ describe('<MetricPanel />', () => {
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instances-bar-skeleton'),
+      screen.queryByTestId('instances-bar-skeleton'),
     );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
@@ -151,9 +151,9 @@ describe('<MetricPanel />', () => {
   });
 
   it('should handle networks errors', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchProcessCoreStatistics().withNetworkError();
 

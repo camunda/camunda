@@ -6,14 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FieldValidator} from 'final-form';
+import type {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
 import {
   parseIds,
-  DecisionInstanceFilters,
+  type DecisionInstanceFilters,
   parseFilterTime,
 } from 'modules/utils/filter';
-import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
 import {parseDate} from '../utils/date/formatDate';
@@ -31,7 +31,8 @@ const ERRORS = {
     nameUnfilled: 'Name has to be filled',
     valueUnfilled: 'Value has to be filled',
     valueInvalid: 'Value has to be JSON',
-    mulipleValueInvalid: 'Values have to be in JSON format, separated by comma',
+    multipleValueInvalid:
+      'Values have to be in JSON format, separated by comma',
   },
 } as const;
 
@@ -244,7 +245,7 @@ const validateMultipleVariableValuesValid: FieldValidator<
     return undefined;
   }
 
-  return ERRORS.variables.mulipleValueInvalid;
+  return ERRORS.variables.multipleValueInvalid;
 }, VALIDATION_TIMEOUT);
 
 const validateOperationIdCharacters: FieldValidator<

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
+import {type BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
 import {isFlowNode} from 'modules/utils/flowNodes';
 
 function isNonSelectableFlowNode(

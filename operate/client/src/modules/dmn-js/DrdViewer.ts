@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Event} from 'dmn-js-shared/lib/base/Manager';
+import {type Event} from 'dmn-js-shared/lib/base/Manager';
 import isEqual from 'lodash/isEqual';
 import {DECISION_STATE} from 'modules/bpmn-js/badgePositions';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
@@ -14,6 +14,7 @@ import {drdDataStore} from 'modules/stores/drdData';
 import {OutlineModule} from './modules/Outline';
 import {Viewer} from './Viewer';
 import {drdRendererColors} from './styled';
+import type {DecisionInstanceEntityState} from 'modules/types/operate';
 
 type DecisionStates = {
   decisionId: string;

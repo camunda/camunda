@@ -7,14 +7,28 @@
  */
 
 import {IncidentsTable} from '.';
-import {createIncident} from 'modules/testUtils';
+import {
+  createIncident,
+  createInstance,
+  createProcessInstance,
+} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, firstIncident} from './mocks';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Selection', () => {
   it('should deselect selected incident', async () => {
+    mockFetchProcessInstance().withSuccess(createInstance());
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({
+        hasIncident: true,
+      }),
+    );
     incidentsStore.setIncidents({
       ...incidentsMock,
       incidents: [firstIncident],
@@ -36,6 +50,13 @@ describe('Selection', () => {
   });
 
   it('should select single incident when multiple incidents are selected', async () => {
+    mockFetchProcessInstance().withSuccess(createInstance());
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({
+        hasIncident: true,
+      }),
+    );
     const incidents = [
       createIncident({flowNodeId: 'myTask'}),
       createIncident({flowNodeId: 'myTask'}),

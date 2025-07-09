@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-type Props = {
-  children?: React.ReactNode;
+import fs from 'node:fs';
+
+const openFile = (fileName: string) => {
+  return fs.readFileSync(fileName).toString();
 };
 
-const Splitter: React.FC<Props> = ({children}) => {
-  return <div>{children}</div>;
-};
-
-export default Splitter;
+export {openFile};

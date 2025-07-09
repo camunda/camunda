@@ -22,23 +22,14 @@ describe('stores/authentication', () => {
   it.each([{canLogout: false}, {canLogout: true, isLoginDelegated: true}])(
     'should handle third-party authentication when client config is %s',
     async (config) => {
-      Object.defineProperty(window, 'clientConfig', {
-        ...config,
-        writable: true,
+      vi.stubGlobal('clientConfig', config);
+
+      const mockReload = vi.fn();
+
+      vi.stubGlobal('location', {
+        ...window.location,
+        reload: mockReload,
       });
-
-      const originalWindow = {...window};
-      const windowSpy = jest.spyOn(global, 'window', 'get');
-      const mockReload = jest.fn();
-
-      // @ts-expect-error
-      windowSpy.mockImplementation(() => ({
-        ...originalWindow,
-        location: {
-          ...originalWindow.location,
-          reload: mockReload,
-        },
-      }));
 
       mockMe().withSuccess(mockUserResponse);
       authenticationStore.authenticate();
@@ -72,8 +63,6 @@ describe('stores/authentication', () => {
 
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally()?.wasReloaded).toBe(false);
-
-      windowSpy.mockRestore();
     },
   );
 

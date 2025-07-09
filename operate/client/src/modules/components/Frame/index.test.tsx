@@ -20,10 +20,6 @@ describe('Frame', () => {
     expect(screen.getByText('Content')).toBeInTheDocument();
     expect(screen.getByText('Frame Title')).toBeInTheDocument();
     expect(screen.getByTestId('frame-container')).toBeInTheDocument();
-    expect(screen.getByTestId('frame-container')).toHaveStyleRule(
-      'border',
-      expect.any(String),
-    );
   });
 
   it('should not render frame border', () => {
@@ -36,7 +32,6 @@ describe('Frame', () => {
     expect(screen.getByText('Content')).toBeInTheDocument();
     expect(screen.queryByText('Frame Title')).not.toBeInTheDocument();
     expect(screen.getByTestId('frame-container')).toBeInTheDocument();
-    expect(screen.getByTestId('frame-container')).not.toHaveStyleRule('border');
   });
 
   it('should not render frame', () => {

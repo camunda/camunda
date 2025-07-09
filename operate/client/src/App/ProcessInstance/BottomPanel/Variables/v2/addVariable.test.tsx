@@ -26,12 +26,8 @@ describe('Add variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
   });
 
-  afterEach(async () => {
-    jest.clearAllMocks();
-  });
-
   it('should show/hide add variable inputs', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess(mockVariables);
@@ -57,6 +53,10 @@ describe('Add variable', () => {
         name: /value/i,
       }),
     ).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+    });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -81,13 +81,14 @@ describe('Add variable', () => {
       }),
     ).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should not allow empty value', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
+    mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchVariables().withSuccess(mockVariables);
@@ -101,6 +102,10 @@ describe('Add variable', () => {
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -128,15 +133,21 @@ describe('Add variable', () => {
 
     expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
     expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
+
+    vi.runOnlyPendingTimers();
+
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should not allow empty characters in variable name', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
+    mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
+    mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
+    mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchVariables().withSuccess(mockVariables);
@@ -151,6 +162,10 @@ describe('Add variable', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -174,6 +189,7 @@ describe('Add variable', () => {
       }),
     ).toBeDisabled();
     expect(screen.queryByText('Name has to be filled')).not.toBeInTheDocument();
+    vi.runOnlyPendingTimers();
     expect(
       await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
@@ -198,6 +214,7 @@ describe('Add variable', () => {
 
     expect(screen.getByText('Name has to be filled')).toBeInTheDocument();
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
+    vi.runOnlyPendingTimers();
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
 
     await user.type(
@@ -208,6 +225,7 @@ describe('Add variable', () => {
     );
 
     expect(screen.getByText('Value has to be JSON')).toBeInTheDocument();
+    vi.runOnlyPendingTimers();
     expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
 
     await user.type(
@@ -235,13 +253,15 @@ describe('Add variable', () => {
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
     expect(screen.getByText('Name is invalid')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should not allow to add duplicate variables', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
+    mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
+    mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess(mockVariables);
 
@@ -254,6 +274,10 @@ describe('Add variable', () => {
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -279,12 +303,11 @@ describe('Add variable', () => {
     expect(
       screen.queryByText('Value has to be filled'),
     ).not.toBeInTheDocument();
+    vi.runOnlyPendingTimers();
     expect(
       await screen.findByText('Name should be unique'),
     ).toBeInTheDocument();
-    expect(
-      await screen.findByText('Value has to be filled'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Value has to be filled')).toBeInTheDocument();
 
     await user.type(
       screen.getByRole('textbox', {
@@ -316,6 +339,8 @@ describe('Add variable', () => {
       'someOtherName',
     );
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -326,13 +351,15 @@ describe('Add variable', () => {
 
     expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should not allow to add variable with invalid name', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
+    mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
+    mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchVariables().withSuccess(mockVariables);
@@ -346,6 +373,10 @@ describe('Add variable', () => {
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -368,6 +399,8 @@ describe('Add variable', () => {
       '123',
     );
 
+    vi.runOnlyPendingTimers();
+
     expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {
@@ -387,6 +420,8 @@ describe('Add variable', () => {
       'someOtherName',
     );
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -396,8 +431,8 @@ describe('Add variable', () => {
     );
 
     expect(screen.queryByText('Name is invalid')).not.toBeInTheDocument();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('clicking edit variables while add mode is open, should not display a validation error', async () => {
@@ -406,7 +441,11 @@ describe('Add variable', () => {
 
     mockFetchVariables().withSuccess(mockVariables);
 
-    variablesStore.fetchVariables('1');
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitFor(() => {

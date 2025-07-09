@@ -7,9 +7,9 @@
  */
 
 import {fetchProcessSequenceFlows} from 'modules/api/v2/processInstances/sequenceFlows';
-import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
-import {GetProcessInstanceSequenceFlowsResponseBody} from '@vzeta/camunda-api-zod-schemas';
-import {RequestError} from 'modules/request';
+import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import type {GetProcessInstanceSequenceFlowsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import type {RequestError} from 'modules/request';
 
 const SEQUENCE_FLOWS_QUERY_KEY = 'processSequenceFlows';
 
@@ -30,7 +30,7 @@ function useProcessSequenceFlows(
 ): UseQueryResult<string[], RequestError> {
   return useQuery({
     queryKey: getQueryKey(processInstanceKey),
-    queryFn: !!processInstanceKey
+    queryFn: processInstanceKey
       ? async () => {
           const {response, error} =
             await fetchProcessSequenceFlows(processInstanceKey);

@@ -8,6 +8,7 @@
 
 import isNil from 'lodash/isNil';
 import {useProcessInstanceDeprecated} from '../processInstance/deprecated/useProcessInstanceDeprecated';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const latestMigrationDateParser = (data: ProcessInstanceEntity) => {
   const migrateOperations = data.operations

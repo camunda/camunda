@@ -21,16 +21,24 @@ import {
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
-import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
+import {
+  createInstance,
+  createProcessInstance,
+  mockCallActivityProcessXML,
+} from 'modules/testUtils';
 import {init} from 'modules/utils/flowNodeMetadata';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
-jest.mock('date-fns', () => ({
-  ...jest.requireActual('date-fns'),
-  formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
-}));
+vi.mock('date-fns', async () => {
+  const actual = await vi.importActual('date-fns');
+  return {
+    ...actual,
+    formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
+  };
+});
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
@@ -41,6 +49,7 @@ describe('MetadataPopover', () => {
   it('should render meta data for completed flow node', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -82,11 +91,12 @@ describe('MetadataPopover', () => {
   });
 
   it('should render completed decision', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     const {instanceMetadata} = calledDecisionMetadata;
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledDecisionMetadata);
+    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -123,18 +133,19 @@ describe('MetadataPopover', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useFakeTimers();
+    vi.clearAllTimers();
+    vi.useFakeTimers();
   });
 
   it('should render failed decision', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {instanceMetadata} = calledFailedDecisionMetadata;
     const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledFailedDecisionMetadata);
+    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -180,15 +191,16 @@ describe('MetadataPopover', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render unevaluated decision', async () => {
-    const {instanceMetadata} = calledUnevaluatedDecisionMetadata;
-
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledUnevaluatedDecisionMetadata);
+    mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+
+    const {instanceMetadata} = calledUnevaluatedDecisionMetadata;
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({

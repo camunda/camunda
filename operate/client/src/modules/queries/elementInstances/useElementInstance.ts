@@ -8,7 +8,7 @@
 
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {fetchElementInstance} from '../../api/v2/elementInstances/fetchElementInstance';
-import {ElementInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas';
 
 const ELEMENT_INSTANCE_QUERY_KEY = 'elementInstance';
 

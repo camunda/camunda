@@ -8,8 +8,8 @@
 
 import {mockPostRequest} from '../../mockRequest';
 import {
-  QueryElementInstancesResponseBody,
   endpoints,
+  type QueryElementInstancesResponseBody,
 } from '@vzeta/camunda-api-zod-schemas';
 
 const mockSearchElementInstances = (contextPath = '') =>

@@ -28,12 +28,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: operate/client
-      - run: yarn install --frozen-lockfile
+      - run: npm ci
         name: Install dependencies
-      - run: yarn ts-check
+      - run: npm run ts-check
         name: Type checks
       - name: Observe build status
         if: always()
@@ -60,12 +57,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: operate/client
-      - run: yarn install --frozen-lockfile
+      - run: npm ci
         name: Install dependencies
-      - run: yarn eslint
+      - run: npm run eslint
         name: ESLint
       - name: Observe build status
         if: always()
@@ -97,17 +91,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: operate/client
       - name: Install node dependencies
-        run: yarn
+        run: npm ci
       - name: Build frontend
-        run: yarn build
+        run: npm run build
       - name: Start server
-        run: yarn start:visual-regression &
+        run: npm run start:visual-regression &
       - name: Run A11y tests
-        run: yarn test:a11y
+        run: npm run test:a11y
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -142,17 +133,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: operate/client
       - name: Install node dependencies
-        run: yarn
+        run: npm ci
       - name: Build frontend
-        run: yarn build:visual-regression
+        run: npm run build:visual-regression
       - name: Start server
-        run: yarn start:visual-regression &
+        run: npm run start:visual-regression &
       - name: Run Visual regression tests
-        run: yarn test:visual
+        run: npm run test:visual
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -185,18 +173,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: operate/client
-      - run: yarn install --frozen-lockfile
+      - run: npm ci
         name: Install dependencies
       - name: Build frontend
-        run: yarn build
+        run: npm run build
       - name: Start server
-        run: yarn start:visual-regression &
+        run: npm run start:visual-regression &
       - name: Run Playwright
         working-directory: ./operate/client
-        run: yarn generate-screenshots
+        run: npm run generate-screenshots
       - uses: actions/upload-artifact@v4
         if: always()
         with:

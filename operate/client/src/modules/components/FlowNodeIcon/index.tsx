@@ -6,90 +6,90 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {getBoundaryEventType} from 'modules/bpmn-js/utils/getBoundaryEventType';
 import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
 import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 import {isInterruptingEvent} from 'modules/bpmn-js/utils/isInterruptingEvent';
-import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {type FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {SVGIcon} from './styled';
 
-import {ReactComponent as FlowNodeProcess} from 'modules/components/Icon/flow-node-process-root.svg';
+import FlowNodeProcess from 'modules/components/Icon/flow-node-process-root.svg?react';
 
 /**
  * Gateway Imports
  */
-import {ReactComponent as FlowNodeGatewayInclusive} from 'modules/components/Icon/flow-node-gateway-inclusive-or.svg';
-import {ReactComponent as FlowNodeGatewayExclusive} from 'modules/components/Icon/flow-node-gateway-exclusive.svg';
-import {ReactComponent as FlowNodeGatewayParallel} from 'modules/components/Icon/flow-node-gateway-parallel.svg';
-import {ReactComponent as FlowNodeGatewayEventBased} from 'modules/components/Icon/flow-node-gateway-event-based.svg';
+import FlowNodeGatewayInclusive from 'modules/components/Icon/flow-node-gateway-inclusive-or.svg?react';
+import FlowNodeGatewayExclusive from 'modules/components/Icon/flow-node-gateway-exclusive.svg?react';
+import FlowNodeGatewayParallel from 'modules/components/Icon/flow-node-gateway-parallel.svg?react';
+import FlowNodeGatewayEventBased from 'modules/components/Icon/flow-node-gateway-event-based.svg?react';
 
 /**
  * Task Imports
  */
 
-import {ReactComponent as FlowNodeTask} from 'modules/components/Icon/flow-node-task-undefined.svg';
-import {ReactComponent as FlowNodeTaskService} from 'modules/components/Icon/flow-node-task-service.svg';
-import {ReactComponent as FlowNodeTaskReceive} from 'modules/components/Icon/flow-node-task-receive.svg';
-import {ReactComponent as FlowNodeTaskSend} from 'modules/components/Icon/flow-node-task-send.svg';
-import {ReactComponent as FlowNodeTaskSubProcess} from 'modules/components/Icon/flow-node-subprocess-embedded.svg';
-import {ReactComponent as FlowNodeTaskSubProcessAdhoc} from 'modules/components/Icon/flow-node-subprocess-adhoc.svg';
-import {ReactComponent as FlowNodeTaskMulti} from 'modules/components/Icon/flow-node-multi-instance-parallel.svg';
-import {ReactComponent as FlowNodeTaskParallel} from 'modules/components/Icon/flow-node-multi-instance-sequential.svg';
-import {ReactComponent as FlowNodeCallActivity} from 'modules/components/Icon/flow-node-call-activity.svg';
-import {ReactComponent as FlowNodeTaskUser} from 'modules/components/Icon/flow-node-task-user.svg';
-import {ReactComponent as FlowNodeTaskBusinessRule} from 'modules/components/Icon/flow-node-task-business-rule.svg';
-import {ReactComponent as FlowNodeTaskScript} from 'modules/components/Icon/flow-node-task-script.svg';
-import {ReactComponent as FlowNodeTaskManual} from 'modules/components/Icon/flow-node-task-manual.svg';
+import FlowNodeTask from 'modules/components/Icon/flow-node-task-undefined.svg?react';
+import FlowNodeTaskService from 'modules/components/Icon/flow-node-task-service.svg?react';
+import FlowNodeTaskReceive from 'modules/components/Icon/flow-node-task-receive.svg?react';
+import FlowNodeTaskSend from 'modules/components/Icon/flow-node-task-send.svg?react';
+import FlowNodeTaskSubProcess from 'modules/components/Icon/flow-node-subprocess-embedded.svg?react';
+import FlowNodeTaskSubProcessAdhoc from 'modules/components/Icon/flow-node-subprocess-adhoc.svg?react';
+import FlowNodeTaskMulti from 'modules/components/Icon/flow-node-multi-instance-parallel.svg?react';
+import FlowNodeTaskParallel from 'modules/components/Icon/flow-node-multi-instance-sequential.svg?react';
+import FlowNodeCallActivity from 'modules/components/Icon/flow-node-call-activity.svg?react';
+import FlowNodeTaskUser from 'modules/components/Icon/flow-node-task-user.svg?react';
+import FlowNodeTaskBusinessRule from 'modules/components/Icon/flow-node-task-business-rule.svg?react';
+import FlowNodeTaskScript from 'modules/components/Icon/flow-node-task-script.svg?react';
+import FlowNodeTaskManual from 'modules/components/Icon/flow-node-task-manual.svg?react';
 
 /**
  * Event Imports
  */
 
-import {ReactComponent as FlowNodeEventStart} from 'modules/components/Icon/flow-node-event-start.svg';
-import {ReactComponent as FlowNodeEventEnd} from 'modules/components/Icon/flow-node-event-end.svg';
-import {ReactComponent as FlowNodeEventIntermediateThrow} from 'modules/components/Icon/flow-node-event-intermediate-none.svg';
+import FlowNodeEventStart from 'modules/components/Icon/flow-node-event-start.svg?react';
+import FlowNodeEventEnd from 'modules/components/Icon/flow-node-event-end.svg?react';
+import FlowNodeEventIntermediateThrow from 'modules/components/Icon/flow-node-event-intermediate-none.svg?react';
 
-import {ReactComponent as FlowNodeEventMessageStart} from 'modules/components/Icon/flow-node-event-message-start.svg';
+import FlowNodeEventMessageStart from 'modules/components/Icon/flow-node-event-message-start.svg?react';
 
-import {ReactComponent as FlowNodeEventMessageIntermediateThrow} from 'modules/components/Icon/flow-node-event-message-throw.svg';
-import {ReactComponent as FlowNodeEventMessageBoundaryNonInterrupting} from 'modules/components/Icon/flow-node-event-message-non-interrupting.svg';
-import {ReactComponent as FlowNodeEventMessageBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-message-interrupting.svg';
-import {ReactComponent as FlowNodeEventMessageEnd} from 'modules/components/Icon/flow-node-event-message-end.svg';
+import FlowNodeEventMessageIntermediateThrow from 'modules/components/Icon/flow-node-event-message-throw.svg?react';
+import FlowNodeEventMessageBoundaryNonInterrupting from 'modules/components/Icon/flow-node-event-message-non-interrupting.svg?react';
+import FlowNodeEventMessageBoundaryInterrupting from 'modules/components/Icon/flow-node-event-message-interrupting.svg?react';
+import FlowNodeEventMessageEnd from 'modules/components/Icon/flow-node-event-message-end.svg?react';
 
-import {ReactComponent as FlowNodeEventTimerStart} from 'modules/components/Icon/flow-node-event-timer-start.svg';
-import {ReactComponent as FlowNodeEventTimerBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-timer-interrupting.svg';
-import {ReactComponent as FlowNodeEventTimerBoundaryNonInerrupting} from 'modules/components/Icon/flow-node-event-timer-non-interrupting.svg';
+import FlowNodeEventTimerStart from 'modules/components/Icon/flow-node-event-timer-start.svg?react';
+import FlowNodeEventTimerBoundaryInterrupting from 'modules/components/Icon/flow-node-event-timer-interrupting.svg?react';
+import FlowNodeEventTimerBoundaryNonInerrupting from 'modules/components/Icon/flow-node-event-timer-non-interrupting.svg?react';
 
-import {ReactComponent as FlowNodeEventErrorStart} from 'modules/components/Icon/flow-node-event-error-start.svg';
-import {ReactComponent as FlowNodeEventErrorBoundary} from 'modules/components/Icon/flow-node-event-error-boundary.svg';
-import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/flow-node-event-error-end.svg';
+import FlowNodeEventErrorStart from 'modules/components/Icon/flow-node-event-error-start.svg?react';
+import FlowNodeEventErrorBoundary from 'modules/components/Icon/flow-node-event-error-boundary.svg?react';
+import FlowNodeEventErrorEnd from 'modules/components/Icon/flow-node-event-error-end.svg?react';
 
-import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flow-node-subprocess-event.svg';
+import FlowNodeEventSubprocess from 'modules/components/Icon/flow-node-subprocess-event.svg?react';
 
-import {ReactComponent as FlowNodeEventTerminateEnd} from 'modules/components/Icon/flow-node-event-terminate-end.svg';
-import {ReactComponent as FlowNodeEscalationEndEvent} from 'modules/components/Icon/flow-node-escalation-end-event.svg';
-import {ReactComponent as FlowNodeEscalationBoundaryEvent} from 'modules/components/Icon/flow-node-escalation-boundary-event.svg';
-import {ReactComponent as FlowNodeEscalationBoundaryNonInterruptingEvent} from 'modules/components/Icon/flow-node-escalation-boundary-non-interrupting-event.svg';
-import {ReactComponent as FlowNodeEscalationIntermediateThrowEvent} from 'modules/components/Icon/flow-node-escalation-intermediate-throw-event.svg';
-import {ReactComponent as FlowNodeEscalationNonInterruptingStartEvent} from 'modules/components/Icon/flow-node-escalation-non-interrupting-start-event.svg';
-import {ReactComponent as FlowNodeEscalationStartEvent} from 'modules/components/Icon/flow-node-escalation-start-event.svg';
+import FlowNodeEventTerminateEnd from 'modules/components/Icon/flow-node-event-terminate-end.svg?react';
+import FlowNodeEscalationEndEvent from 'modules/components/Icon/flow-node-escalation-end-event.svg?react';
+import FlowNodeEscalationBoundaryEvent from 'modules/components/Icon/flow-node-escalation-boundary-event.svg?react';
+import FlowNodeEscalationBoundaryNonInterruptingEvent from 'modules/components/Icon/flow-node-escalation-boundary-non-interrupting-event.svg?react';
+import FlowNodeEscalationIntermediateThrowEvent from 'modules/components/Icon/flow-node-escalation-intermediate-throw-event.svg?react';
+import FlowNodeEscalationNonInterruptingStartEvent from 'modules/components/Icon/flow-node-escalation-non-interrupting-start-event.svg?react';
+import FlowNodeEscalationStartEvent from 'modules/components/Icon/flow-node-escalation-start-event.svg?react';
 
-import {ReactComponent as FlowNodeLinkEventIntermediateCatch} from 'modules/components/Icon/flow-node-link-event-intermediate-catch.svg';
-import {ReactComponent as FlowNodeLinkEventIntermediateThrow} from 'modules/components/Icon/flow-node-link-event-intermediate-throw.svg';
-import {ReactComponent as FlowNodeEventSignalStart} from 'modules/components/Icon/flow-node-event-signal-start.svg';
-import {ReactComponent as FlowNodeEventSignalEnd} from 'modules/components/Icon/flow-node-event-signal-end.svg';
-import {ReactComponent as FlowNodeEventSignalIntermediateThrow} from 'modules/components/Icon/flow-node-event-signal-intermediate-throw.svg';
-import {ReactComponent as FlowNodeEventSignalIntermediateCatch} from 'modules/components/Icon/flow-node-event-signal-intermediate-catch.svg';
-import {ReactComponent as FlowNodeEventSignalInterruptingBoundary} from 'modules/components/Icon/flow-node-event-signal-interrupting-boundary.svg';
-import {ReactComponent as FlowNodeEventSignalNonInterruptingBoundary} from 'modules/components/Icon/flow-node-event-signal-non-interrupting-boundary.svg';
-import {ReactComponent as FlowNodeEventSignalNonInterruptingStart} from 'modules/components/Icon/flow-node-event-signal-non-interrupting-start.svg';
+import FlowNodeLinkEventIntermediateCatch from 'modules/components/Icon/flow-node-link-event-intermediate-catch.svg?react';
+import FlowNodeLinkEventIntermediateThrow from 'modules/components/Icon/flow-node-link-event-intermediate-throw.svg?react';
+import FlowNodeEventSignalStart from 'modules/components/Icon/flow-node-event-signal-start.svg?react';
+import FlowNodeEventSignalEnd from 'modules/components/Icon/flow-node-event-signal-end.svg?react';
+import FlowNodeEventSignalIntermediateThrow from 'modules/components/Icon/flow-node-event-signal-intermediate-throw.svg?react';
+import FlowNodeEventSignalIntermediateCatch from 'modules/components/Icon/flow-node-event-signal-intermediate-catch.svg?react';
+import FlowNodeEventSignalInterruptingBoundary from 'modules/components/Icon/flow-node-event-signal-interrupting-boundary.svg?react';
+import FlowNodeEventSignalNonInterruptingBoundary from 'modules/components/Icon/flow-node-event-signal-non-interrupting-boundary.svg?react';
+import FlowNodeEventSignalNonInterruptingStart from 'modules/components/Icon/flow-node-event-signal-non-interrupting-start.svg?react';
 
-import {ReactComponent as FlowNodeEventCompensationStart} from 'modules/components/Icon/flow-node-compensation-start-event.svg';
-import {ReactComponent as FlowNodeEventCompensationEnd} from 'modules/components/Icon/flow-node-compensation-end-event.svg';
-import {ReactComponent as FlowNodeEventCompensationIntermediateThrow} from 'modules/components/Icon/flow-node-compensation-intermediate-event-throw.svg';
-import {ReactComponent as FlowNodeEventCompensationBoundary} from 'modules/components/Icon/flow-node-compensation-boundary-event.svg';
+import FlowNodeEventCompensationStart from 'modules/components/Icon/flow-node-compensation-start-event.svg?react';
+import FlowNodeEventCompensationEnd from 'modules/components/Icon/flow-node-compensation-end-event.svg?react';
+import FlowNodeEventCompensationIntermediateThrow from 'modules/components/Icon/flow-node-compensation-intermediate-event-throw.svg?react';
+import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node-compensation-boundary-event.svg?react';
 
 const getSVGComponent = (
   businessObject: BusinessObject | undefined,
@@ -308,6 +308,7 @@ const FlowNodeIcon: React.FC<Props> = ({
       }
       className={className}
       $hasLeftMargin={hasLeftMargin}
+      data-testid="flow-node-icon"
     />
   );
 };

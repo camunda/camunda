@@ -9,9 +9,13 @@
 import {makeAutoObservable} from 'mobx';
 import {
   fetchProcessInstanceListeners,
-  ListenerPayload,
-  ListenersDto,
+  type ListenerPayload,
+  type ListenersDto,
 } from 'modules/api/processInstances/fetchProcessInstanceListeners';
+import type {
+  ProcessInstanceEntity,
+  ListenerEntity,
+} from 'modules/types/operate';
 
 type FetchType = 'initial' | 'prev' | 'next';
 
@@ -135,14 +139,18 @@ class ProcessInstanceListeners {
 
   getListeners = (fetchType: FetchType, listeners: ListenerEntity[]) => {
     switch (fetchType) {
-      case 'next':
-        const allListeners = [...this.state?.listeners, ...listeners];
+      case 'next': {
+        const allListeners: ListenerEntity[] = [
+          ...(this.state?.listeners ?? []),
+          ...listeners,
+        ];
 
-        return allListeners?.slice(
-          Math.max(allListeners?.length - MAX_LISTENERS_STORED, 0),
+        return allListeners.slice(
+          Math.max(allListeners.length - MAX_LISTENERS_STORED, 0),
         );
+      }
       case 'prev':
-        return [...listeners, ...this.state?.listeners].slice(
+        return [...listeners, ...(this.state?.listeners ?? [])].slice(
           0,
           MAX_LISTENERS_STORED,
         );

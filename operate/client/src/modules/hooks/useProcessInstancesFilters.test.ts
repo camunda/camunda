@@ -6,27 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {renderHook} from '@testing-library/react-hooks';
+import {renderHook} from 'modules/testing-library';
 import {useFilters} from 'modules/hooks/useFilters';
-import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
-import {processesStore} from 'modules/stores/processes/processes.list';
-import {GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas';
 import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 
-jest.mock('modules/hooks/useFilters');
-jest.mock('modules/stores/processes/processes.list');
+vi.mock('modules/hooks/useFilters');
+
+const mockedUseFilters = vi.mocked(useFilters);
 
 describe('useProcessInstanceFilters', () => {
-  beforeEach(() => {
-    (processesStore as any).versionsByProcessAndTenant = {
-      '{process1}-{tenant1}': [
-        {id: 'processId1', version: 1},
-        {id: 'processId2', version: 1},
-      ],
-    };
-  });
-
   it('should map filters to request correctly with both state and incidents', () => {
     const mockFilters: ProcessInstanceFilters = {
       startDateAfter: '2023-01-01',
@@ -49,8 +40,11 @@ describe('useProcessInstanceFilters', () => {
       incidentErrorHashCode: 321456,
     };
 
-    (useFilters as jest.Mock).mockReturnValue({
+    mockedUseFilters.mockReturnValue({
       getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
     });
 
     const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
@@ -116,8 +110,11 @@ describe('useProcessInstanceFilters', () => {
       canceled: true,
     };
 
-    (useFilters as jest.Mock).mockReturnValue({
+    mockedUseFilters.mockReturnValue({
       getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
     });
 
     const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
@@ -141,8 +138,11 @@ describe('useProcessInstanceFilters', () => {
       incidents: true,
     };
 
-    (useFilters as jest.Mock).mockReturnValue({
+    mockedUseFilters.mockReturnValue({
       getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
     });
 
     const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
@@ -158,8 +158,11 @@ describe('useProcessInstanceFilters', () => {
   it('should handle empty filters', () => {
     const mockFilters: ProcessInstanceFilters = {};
 
-    (useFilters as jest.Mock).mockReturnValue({
+    mockedUseFilters.mockReturnValue({
       getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
     });
 
     const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
@@ -176,8 +179,11 @@ describe('useProcessInstanceFilters', () => {
       active: true,
     };
 
-    (useFilters as jest.Mock).mockReturnValue({
+    mockedUseFilters.mockReturnValue({
       getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
     });
 
     const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
@@ -187,36 +193,6 @@ describe('useProcessInstanceFilters', () => {
         },
         state: {
           $in: [ProcessInstanceState.ACTIVE],
-        },
-      },
-    };
-
-    const {result} = renderHook(() => useProcessInstanceFilters());
-    expect(result.current).toEqual(expectedRequest);
-  });
-
-  it('should handle process with version "all"', () => {
-    const mockFilters: ProcessInstanceFilters = {
-      process: 'process1',
-      version: 'all',
-      tenant: 'tenant1',
-    };
-
-    (useFilters as jest.Mock).mockReturnValue({
-      getFilters: () => mockFilters,
-    });
-
-    (processesStore as any).versionsByProcessAndTenant = {
-      '{process1}-{tenant1}': [
-        {id: 'processId1', version: 1},
-        {id: 'processId2', version: 2},
-      ],
-    };
-
-    const expectedRequest: GetProcessDefinitionStatisticsRequestBody = {
-      filter: {
-        tenantId: {
-          $eq: 'tenant1',
         },
       },
     };

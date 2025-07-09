@@ -8,6 +8,10 @@
 
 import {Container, Table, Th, Td} from './styled';
 import {StateIcon} from 'modules/components/StateIcon';
+import type {
+  InstanceEntityState,
+  DecisionInstanceEntityState,
+} from 'modules/types/operate';
 
 type Column = {
   title?: string;

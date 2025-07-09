@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
+    "types": ["vitest/globals", "@testing-library/jest-dom"]
+  },
+  "include": [
+    "src/**/*",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.spec.ts",
+    "src/**/*.spec.tsx",
+    "src/setupTests.tsx",
+    "src/**/__mocks__/**/*",
+    "src/modules/mocks/**/*",
+    "src/**/mocks.ts",
+    "src/**/mocks.tsx",
+    "src/**/*.setup.ts",
+    "src/modules/testUtils.tsx",
+    "src/modules/testUtils/**/*"
+  ],
+  "exclude": [
+    "src/**/*.browser.test.ts",
+    "src/**/*.browser.test.tsx",
+    "src/**/*.browser.spec.ts",
+    "src/**/*.browser.spec.tsx",
+    "./vitest.browser.setup.ts",
+    "src/test-extend.ts"
+  ]
+}

@@ -22,7 +22,7 @@ import {
   mockResponses as mockProcessDetailResponses,
   completedOrderProcessInstance,
 } from '../mocks/processInstance';
-import {open} from 'modules/mocks/diagrams';
+import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
 
 test.beforeEach(async ({page, commonPage, context}) => {
@@ -44,7 +44,9 @@ test.describe('delete finished instances', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockFinishedOrderProcessInstances,
         statisticsV2: mockStatisticsV2,
-        processXml: open('orderProcess.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess.bpmn',
+        ),
       }),
     );
 
@@ -105,7 +107,9 @@ test.describe('delete finished instances', () => {
         batchOperations: [mockNewDeleteOperation, ...mockBatchOperations],
         processInstances: processInstancesMock,
         statisticsV2: mockStatisticsV2,
-        processXml: open('orderProcess.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess.bpmn',
+        ),
       }),
     );
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {autorun, reaction, when} from 'mobx';
 import {MAX_VARIABLES_PER_REQUEST} from 'modules/constants/variables';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -49,6 +49,7 @@ const init = (processInstance?: ProcessInstance) => {
 
         variablesStore.fetchVariables({
           fetchType: 'initial',
+          // @ts-expect-error - typing was wrong before the migration
           instanceId: processInstance?.processInstanceKey,
           payload: {
             pageSize: MAX_VARIABLES_PER_REQUEST,

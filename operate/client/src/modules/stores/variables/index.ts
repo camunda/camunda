@@ -13,7 +13,7 @@ import {
   computed,
   when,
   autorun,
-  IReactionDisposer,
+  type IReactionDisposer,
   override,
   reaction,
 } from 'mobx';
@@ -21,7 +21,7 @@ import {getOperation} from 'modules/api/getOperation';
 import {fetchVariable} from 'modules/api/fetchVariable';
 import {
   fetchVariables,
-  VariablePayload,
+  type VariablePayload,
 } from 'modules/api/processInstances/fetchVariables';
 import {applyOperation} from 'modules/api/processInstances/operations';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -34,6 +34,10 @@ import {logger} from 'modules/logger';
 import {flowNodeMetaDataStore} from '../flowNodeMetaData';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {modificationsStore} from '../modifications';
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
+} from 'modules/types/operate';
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
@@ -285,12 +289,13 @@ class Variables extends NetworkReconnectionHandler {
 
   getVariables = (fetchType: FetchType, items: VariableEntity[]) => {
     switch (fetchType) {
-      case 'next':
-        const allVariables = [...this.state.items, ...items];
+      case 'next': {
+        const allVariables: VariableEntity[] = [...this.state.items, ...items];
 
         return allVariables.slice(
           Math.max(allVariables.length - MAX_VARIABLES_STORED, 0),
         );
+      }
       case 'prev':
         return [...items, ...this.state.items].slice(0, MAX_VARIABLES_STORED);
       case 'initial':
@@ -299,7 +304,7 @@ class Variables extends NetworkReconnectionHandler {
     }
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
   };
 
@@ -307,7 +312,7 @@ class Variables extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchVariableFailure = (error?: unknown) => {
+  handleFetchVariableFailure = () => {
     this.setLoadingItemId(null);
   };
 

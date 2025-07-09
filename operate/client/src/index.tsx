@@ -20,7 +20,7 @@ import {createRoot} from 'react-dom/client';
 function enableMockingForDevEnv(): Promise<void> {
   return new Promise((resolve) => {
     if (
-      process.env.NODE_ENV === 'development' ||
+      import.meta.env.DEV ||
       window.location.host.match(/camunda\.cloud$/) !== null
     ) {
       import('modules/mock-server/browser').then(({startMocking}) => {

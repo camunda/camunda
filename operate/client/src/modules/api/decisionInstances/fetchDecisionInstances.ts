@@ -7,7 +7,8 @@
  */
 
 import {requestAndParse} from 'modules/request';
-import {DecisionRequestFilters} from 'modules/utils/filter';
+import {type DecisionRequestFilters} from 'modules/utils/filter';
+import type {DecisionInstanceEntity} from 'modules/types/operate';
 
 type DecisionInstancesQuery = {
   query: DecisionRequestFilters;

@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {ProcessInstanceEntity} from 'modules/types/operate';
+
 const instance: ProcessInstanceEntity = {
   id: '2251799813695565',
   processId: '2251799813695192',

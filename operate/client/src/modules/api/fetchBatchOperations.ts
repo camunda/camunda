@@ -7,6 +7,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {OperationEntity} from 'modules/types/operate';
 
 const fetchBatchOperations = async (
   {

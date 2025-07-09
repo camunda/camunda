@@ -6,7 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import type {VariableEntity} from 'modules/types/operate';
 
 const mockVariables: VariableEntity[] = [
   {

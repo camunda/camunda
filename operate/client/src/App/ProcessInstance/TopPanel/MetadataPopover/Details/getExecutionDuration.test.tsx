@@ -12,10 +12,13 @@ const MOCK_EXECUTION_DATE = '21 seconds';
 const MOCK_START_DATE = '2022-01-01T11:00:00.000+0000';
 const MOCK_END_DATE = '2022-01-03T11:00:00.000+0000';
 
-jest.mock('date-fns', () => ({
-  ...jest.requireActual('date-fns'),
-  formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
-}));
+vi.mock('date-fns', async () => {
+  const actual = await vi.importActual('date-fns');
+  return {
+    ...actual,
+    formatDistanceToNowStrict: () => MOCK_EXECUTION_DATE,
+  };
+});
 
 describe('getExecutionDuration', () => {
   it('should return a duration for open periods', () => {

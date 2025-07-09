@@ -39,10 +39,6 @@ describe('useSelectableFlowNodes', () => {
     );
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should fetch selectable flow nodes successfully', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [

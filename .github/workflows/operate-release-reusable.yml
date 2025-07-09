@@ -126,6 +126,7 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
+          package-manager: "npm"
 
       #########################################################################
       # Release: run Maven release

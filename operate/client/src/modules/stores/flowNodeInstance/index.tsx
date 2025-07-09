@@ -12,19 +12,20 @@ import {
   action,
   computed,
   when,
-  IReactionDisposer,
   override,
+  type IReactionDisposer,
 } from 'mobx';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {
   fetchFlowNodeInstances,
-  FlowNodeInstanceDto,
-  FlowNodeInstancesDto,
+  type FlowNodeInstanceDto,
+  type FlowNodeInstancesDto,
 } from 'modules/api/fetchFlowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import isEqual from 'lodash/isEqual';
 import {modificationsStore} from '../modifications';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const MAX_INSTANCES_STORED = 200;
 const MAX_INSTANCES_PER_REQUEST = 50;
@@ -93,6 +94,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     );
   }
 
+  // Deprecated: v1 polling
   pollInstances = async () => {
     const processInstanceId =
       processInstanceDetailsStore.state.processInstance?.id;
@@ -129,6 +131,8 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       if (this.intervalId !== null) {
         this.handlePollSuccess(response.data ?? {});
       }
+    } else {
+      flowNodeInstanceStore.handleFetchFailure();
     }
 
     this.isPollRequestRunning = false;
@@ -379,8 +383,10 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
         }
       },
     );
+    this.state.status = 'fetched';
   };
 
+  // Deprecated: v1 polling
   startPolling = (
     options: {runImmediately?: boolean} = {runImmediately: false},
   ) => {

@@ -14,8 +14,8 @@ describe('MigrationConfirmationModal', () => {
     render(
       <MigrationConfirmationModal
         open={true}
-        setOpen={jest.fn()}
-        onSubmit={jest.fn()}
+        setOpen={vi.fn()}
+        onSubmit={vi.fn()}
       />,
     );
 
@@ -25,8 +25,8 @@ describe('MigrationConfirmationModal', () => {
   });
 
   it('should call setOpen(false)', async () => {
-    const setOpenMock = jest.fn();
-    const onSubmitMock = jest.fn();
+    const setOpenMock = vi.fn();
+    const onSubmitMock = vi.fn();
 
     const {user} = render(
       <MigrationConfirmationModal
@@ -49,12 +49,12 @@ describe('MigrationConfirmationModal', () => {
   });
 
   it('should confirm button click', async () => {
-    const onSubmitMock = jest.fn();
+    const onSubmitMock = vi.fn();
 
     const {user} = render(
       <MigrationConfirmationModal
         open={true}
-        setOpen={jest.fn()}
+        setOpen={vi.fn()}
         onSubmit={onSubmitMock}
       />,
     );
@@ -64,7 +64,7 @@ describe('MigrationConfirmationModal', () => {
     await user.type(screen.getByRole('textbox'), 'MIGRATE');
 
     expect(screen.getByRole('button', {name: /confirm/i})).toBeEnabled();
-    screen.getByRole('button', {name: /confirm/i}).click();
+    await user.click(screen.getByRole('button', {name: /confirm/i}));
 
     expect(onSubmitMock).toHaveBeenCalledTimes(1);
 
@@ -72,12 +72,12 @@ describe('MigrationConfirmationModal', () => {
   });
 
   it('should submit on enter', async () => {
-    const onSubmitMock = jest.fn();
+    const onSubmitMock = vi.fn();
 
     const {user} = render(
       <MigrationConfirmationModal
         open={true}
-        setOpen={jest.fn()}
+        setOpen={vi.fn()}
         onSubmit={onSubmitMock}
       />,
     );
@@ -100,8 +100,8 @@ describe('MigrationConfirmationModal', () => {
     render(
       <MigrationConfirmationModal
         open={true}
-        setOpen={jest.fn()}
-        onSubmit={jest.fn()}
+        setOpen={vi.fn()}
+        onSubmit={vi.fn()}
       />,
     );
 
@@ -114,8 +114,8 @@ describe('MigrationConfirmationModal', () => {
     const {user} = render(
       <MigrationConfirmationModal
         open={true}
-        setOpen={jest.fn()}
-        onSubmit={jest.fn()}
+        setOpen={vi.fn()}
+        onSubmit={vi.fn()}
       />,
     );
 

@@ -7,7 +7,7 @@
  */
 
 import {mockGetRequest} from '../mockRequest';
-import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
+import type {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
 
 const mockFetchSequenceFlows = (contextPath = '') =>
   mockGetRequest<SequenceFlowsDto>(

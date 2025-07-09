@@ -7,6 +7,7 @@
  */
 
 import {mockGetRequest} from './mockRequest';
+import type {InstanceOperationEntity} from 'modules/types/operate';
 
 const mockGetOperation = () =>
   mockGetRequest<InstanceOperationEntity[]>('/api/operations');

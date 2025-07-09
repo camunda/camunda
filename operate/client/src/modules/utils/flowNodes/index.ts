@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
+import type {
   BusinessObject,
   BusinessObjects,
   SubprocessOverlay,
 } from 'bpmn-js/lib/NavigatedViewer';
-import {DiagramModel} from 'bpmn-moddle';
+import type {DiagramModel} from 'bpmn-moddle';
 import {SUBPROCESS_WITH_INCIDENTS} from 'modules/bpmn-js/badgePositions';
 
 export function isFlowNode(businessObject: BusinessObject) {

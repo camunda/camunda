@@ -19,16 +19,16 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 import {MemoryRouter} from 'react-router-dom';
 
-jest.mock('modules/hooks/useFilters');
-jest.mock('modules/hooks/useProcessInstancesFilters');
-jest.mock('modules/stores/processes/processes.migration', () => ({
+vi.mock('modules/hooks/useFilters');
+vi.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/stores/processes/processes.migration', () => ({
   processesStore: {
     getSelectedProcessDetails: () => ({
       processName: 'New demo process',
       version: '3',
       bpmnProcessId: 'demoProcess',
     }),
-    fetchProcesses: jest.fn(),
+    fetchProcesses: vi.fn(),
   },
 }));
 
@@ -75,14 +75,14 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('Source Diagram', () => {
   beforeEach(() => {
-    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
   });
 
   it('should render process name and version', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     const originalWindow = {...window};
-    const locationSpy = jest.spyOn(window, 'location', 'get');
+    const locationSpy = vi.spyOn(window, 'location', 'get');
 
     locationSpy.mockImplementation(() => ({
       ...originalWindow.location,
@@ -106,9 +106,15 @@ describe('Source Diagram', () => {
     render(<SourceDiagram />, {wrapper: Wrapper});
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /reset diagram zoom/i}));
-    expect(screen.getByRole('button', {name: /zoom in diagram/i}));
-    expect(screen.getByRole('button', {name: /zoom out diagram/i}));
+    expect(
+      screen.getByRole('button', {name: /reset diagram zoom/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /zoom in diagram/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /zoom out diagram/i}),
+    ).toBeInTheDocument();
   });
 
   it('should render statistics overlays', async () => {

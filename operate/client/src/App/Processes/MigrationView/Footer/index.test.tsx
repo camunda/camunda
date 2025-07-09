@@ -113,7 +113,7 @@ describe('Footer', () => {
   });
 
   it('should track confirm button click', async () => {
-    const trackSpy = jest.spyOn(tracking, 'track');
+    const trackSpy = vi.spyOn(tracking, 'track');
 
     const {user} = render(<Footer />, {wrapper: Wrapper});
 

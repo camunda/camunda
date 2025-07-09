@@ -6,12 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  unstable_HistoryRouter as HistoryRouter,
-  Route,
-  Routes,
-} from 'react-router-dom';
-import {createMemoryHistory} from 'history';
+import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {render, screen, within} from 'modules/testing-library';
 import {Paths} from 'modules/Routes';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
@@ -25,7 +20,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {open} from 'modules/mocks/diagrams';
 
-jest.mock('App/Processes/ListView', () => {
+vi.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
     return <>processes page</>;
   };
@@ -42,35 +37,36 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
       };
     }, []);
 
+    const router = createMemoryRouter(
+      [
+        {
+          path: Paths.processes(),
+          element: (
+            <>
+              <AppHeader />
+              {children}
+            </>
+          ),
+        },
+        {
+          path: Paths.dashboard(),
+          element: (
+            <>
+              <AppHeader />
+              dashboard page
+            </>
+          ),
+        },
+      ],
+      {
+        initialEntries: [initialPath],
+        basename: contextPath ?? '',
+      },
+    );
+
     return (
       <QueryClientProvider client={getMockQueryClient()}>
-        <HistoryRouter
-          history={createMemoryHistory({
-            initialEntries: [initialPath],
-          })}
-          basename={contextPath ?? ''}
-        >
-          <Routes>
-            <Route
-              path={Paths.processes()}
-              element={
-                <>
-                  <AppHeader />
-                  {children}
-                </>
-              }
-            />
-            <Route
-              path={Paths.dashboard()}
-              element={
-                <>
-                  <AppHeader />
-                  dashboard page
-                </>
-              }
-            />
-          </Routes>
-        </HistoryRouter>
+        <RouterProvider router={router} />
       </QueryClientProvider>
     );
   };
@@ -82,16 +78,12 @@ describe('MigrationView', () => {
     processInstanceMigrationStore.enable();
   });
 
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
-
   it.each(['/custom', ''])(
     'should block navigation to dashboard page when migration mode is enabled - context path: %p',
     async (contextPath) => {
-      window.clientConfig = {
+      vi.stubGlobal('clientConfig', {
         contextPath,
-      };
+      });
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(
         open('orderProcess.bpmn'),
       );
@@ -157,9 +149,9 @@ describe('MigrationView', () => {
     'should block navigation to processes page when migration mode is enabled - context path: %p',
 
     async (contextPath) => {
-      window.clientConfig = {
+      vi.stubGlobal('clientConfig', {
         contextPath,
-      };
+      });
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(
         open('orderProcess.bpmn'),
       );

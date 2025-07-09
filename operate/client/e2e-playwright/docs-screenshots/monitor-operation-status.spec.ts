@@ -15,7 +15,7 @@ import {
   mockMigrationOperation,
   mockOrderProcessInstancesWithFailedOperations,
 } from '../mocks/processes.mocks';
-import {open} from 'modules/mocks/diagrams';
+import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
 
 const baseDirectory =
@@ -59,7 +59,9 @@ test.describe('process instance migration', () => {
             },
           ],
         },
-        processXml: open('orderProcess_v2.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess_v2.bpmn',
+        ),
       }),
     );
 

@@ -15,7 +15,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {Decision} from '..';
 import {createWrapper} from './mocks';
 
-jest.mock('modules/feature-flags', () => ({
+vi.mock('modules/feature-flags', () => ({
   IS_DECISION_DEFINITION_DELETION_ENABLED: true,
 }));
 

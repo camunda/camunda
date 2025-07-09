@@ -43,7 +43,7 @@ describe('<Header />', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
   });
 
@@ -56,7 +56,7 @@ describe('<Header />', () => {
 
     render(<Header />, {wrapper: Wrapper});
 
-    expect(screen.getByTestId('EVALUATED-icon')).toBeInTheDocument();
+    expect(await screen.findByTestId('EVALUATED-icon')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /open decision requirements diagram/i}),
     ).toBeInTheDocument();
@@ -89,12 +89,12 @@ describe('<Header />', () => {
       }),
     ).toHaveTextContent(invoiceClassification.decisionVersion.toString());
     expect(
-      await screen.findByRole('cell', {
-        name: '2018-12-12 00:00:00',
+      screen.getByRole('cell', {
+        name: '2022-01-20 13:26:52',
       }),
     ).toBeInTheDocument();
     expect(
-      await screen.findByRole('link', {
+      screen.getByRole('link', {
         description: `View process instance ${invoiceClassification.processInstanceId}`,
       }),
     ).toBeInTheDocument();

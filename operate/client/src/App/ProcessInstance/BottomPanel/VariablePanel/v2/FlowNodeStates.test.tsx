@@ -33,17 +33,18 @@ import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init as initFlowNodeMetadata} from 'modules/utils/flowNodeMetadata';
 import {cancelAllTokens} from 'modules/utils/modifications';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {
   init as initFlowNodeSelection,
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -160,12 +161,6 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it('should display correct state for a flow node that has only one running token on it', async () => {
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -180,7 +175,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
@@ -194,6 +189,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
       selectFlowNode(
@@ -203,7 +199,6 @@ describe('VariablePanel', () => {
         },
       );
     });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     // initial state
     act(() => {
@@ -274,7 +269,7 @@ describe('VariablePanel', () => {
       instanceMetadata: {
         ...singleInstanceMetadata.instanceMetadata!,
         endDate: null,
-        startDate: '2022-09-30T15:00:31.772+0000',
+        startDate: MOCK_TIMESTAMP,
       },
     });
 
@@ -347,10 +342,11 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     modificationsStore.enableModificationMode();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -534,7 +530,7 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MeDto} from 'modules/api/v2/authentication/me';
+import type {MeDto} from 'modules/api/v2/authentication/me';
 import {mockGetRequest} from '../mockRequest';
 
 const mockMe = () => mockGetRequest<MeDto>('/v2/authentication/me');

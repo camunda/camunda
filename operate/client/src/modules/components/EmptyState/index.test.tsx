@@ -7,28 +7,31 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {ReactComponent as EmptyStateProcessIncidents} from 'modules/components/Icon/empty-state-process-incidents.svg';
+import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
 import {EmptyState} from '.';
 
 describe('EmptyState', () => {
   it('should render EmptyState with button and link', async () => {
-    const buttonSpy = jest.fn();
-    const linkSpy = jest.fn();
+    const buttonSpy = vi.fn();
+    const linkSpy = vi.fn();
 
     const {user} = render(
       <EmptyState
         heading="Nothing to see"
         description="Please move on"
-        icon={<EmptyStateProcessIncidents title="Alt Text" />}
+        icon={
+          <EmptyStateProcessIncidents
+            title="Alt Text"
+            data-testid="empty-state-icon"
+          />
+        }
         link={{href: '/link-to-home', label: 'Go Home', onClick: linkSpy}}
       />,
     );
 
     expect(screen.getByText('Nothing to see')).toBeInTheDocument();
     expect(screen.getByText('Please move on')).toBeInTheDocument();
-    expect(
-      screen.getByText('empty-state-process-incidents.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('empty-state-icon')).toBeInTheDocument();
 
     await user.click(screen.getByRole('link', {name: 'Go Home'}));
     expect(linkSpy).toHaveBeenCalledTimes(1);
@@ -42,15 +45,18 @@ describe('EmptyState', () => {
       <EmptyState
         heading="Nothing to see"
         description="Please move on"
-        icon={<EmptyStateProcessIncidents title="Alt Text" />}
+        icon={
+          <EmptyStateProcessIncidents
+            title="Alt Text"
+            data-testid="empty-state-icon"
+          />
+        }
       />,
     );
 
     expect(screen.getByText('Nothing to see')).toBeInTheDocument();
     expect(screen.getByText('Please move on')).toBeInTheDocument();
-    expect(
-      screen.getByText('empty-state-process-incidents.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('empty-state-icon')).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
   });

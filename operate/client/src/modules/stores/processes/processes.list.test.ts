@@ -18,11 +18,12 @@ describe('stores/processes/processes.list', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
@@ -53,7 +54,7 @@ describe('stores/processes/processes.list', () => {
       ).toEqual(newGroupedProcessesResponse),
     );
 
-    window.addEventListener = originalEventListener;
+    eventListeners.online();
   });
 
   it('should get process id', async () => {

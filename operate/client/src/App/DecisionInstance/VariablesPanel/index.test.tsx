@@ -65,7 +65,7 @@ describe('<VariablesPanel />', () => {
     const {user} = render(<VariablesPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton'),
+      screen.queryByTestId('inputs-skeleton'),
     );
 
     await user.click(
@@ -74,7 +74,7 @@ describe('<VariablesPanel />', () => {
       }),
     );
 
-    expect(screen.getByTestId('results-json-viewer')).toBeVisible();
+    expect(await screen.findByTestId('monaco-editor')).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('tab', {
@@ -82,7 +82,7 @@ describe('<VariablesPanel />', () => {
       }),
     );
 
-    expect(screen.getByTestId('results-json-viewer')).not.toBeVisible();
+    expect(screen.getByTestId('monaco-editor')).not.toBeVisible();
 
     expect(
       screen.getByRole('heading', {

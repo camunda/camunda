@@ -10,7 +10,7 @@ import {makeObservable, override, action, observable} from 'mobx';
 import {logger} from 'modules/logger';
 import {
   fetchDecisionInstance,
-  DecisionInstanceDto,
+  type DecisionInstanceDto,
 } from 'modules/api/decisionInstances/fetchDecisionInstance';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 

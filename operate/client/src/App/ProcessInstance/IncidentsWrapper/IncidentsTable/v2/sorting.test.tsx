@@ -7,16 +7,28 @@
  */
 
 import {IncidentsTable} from '.';
-import {createIncident, createInstance} from 'modules/testUtils';
+import {
+  createIncident,
+  createInstance,
+  createProcessInstance,
+} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, shortError} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('Sorting', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(
       createInstance({permissions: ['UPDATE_PROCESS_INSTANCE']}),
+    );
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({
+        hasIncident: true,
+      }),
     );
   });
 
@@ -30,7 +42,7 @@ describe('Sorting', () => {
     expect(screen.getByText('Job Id')).toBeEnabled();
     expect(screen.getByText('Creation Date')).toBeEnabled();
     expect(screen.getByText('Error Message')).toBeEnabled();
-    expect(await screen.findByText('Operations'));
+    expect(await screen.findByText('Operations')).toBeInTheDocument();
   });
 
   it('should disable sorting for jobId', () => {

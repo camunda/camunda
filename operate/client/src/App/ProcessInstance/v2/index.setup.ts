@@ -17,17 +17,17 @@ const createDiagramNodes = () => {
     StartEvent1234: createDiagramNode({
       $type: 'bpmn:StartEvent',
       name: 'Start the Process',
-      $instanceOf: (type: any) => type === 'bpmn:FlowNode',
+      $instanceOf: (type: string) => type === 'bpmn:FlowNode',
     }),
     Service5678: createDiagramNode({
       $type: 'bpmn:ServiceTask',
       name: 'Do something',
-      $instanceOf: (type: any) => type === 'bpmn:FlowNode',
+      $instanceOf: (type: string) => type === 'bpmn:FlowNode',
     }),
     EndEvent1234: createDiagramNode({
       $type: 'bpmn:EndEvent',
       name: 'End the Process',
-      $instanceOf: (type: any) => type === 'bpmn:FlowNode',
+      $instanceOf: (type: string) => type === 'bpmn:FlowNode',
     }),
   };
 };

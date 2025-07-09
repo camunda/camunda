@@ -15,29 +15,30 @@ import {BatchModificationSummaryModal} from './BatchModificationSummaryModal/v2'
 import {Stack} from './styled';
 import {tracking} from 'modules/tracking';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
-import {Location, Transition} from 'history';
+import {type Location} from 'react-router-dom';
 import {useState} from 'react';
 
 /**
  * This callback function is provided to useCallbackPrompt.
  *
- * It compares the current URL (location) with the URL the user wants to
- * navigate to (transition.location). If only the search parameters change
+ * It compares the current URL (currentLocation) with the URL the user wants to
+ * navigate to (nextLocation). If only the search parameters change
  * and the pathname stays the same, the function returns true and the
  * navigation is allowed without interruption.
  *
  * @returns true if navigation should be allowed, false if it should be interrupted
  */
 const onTransition = ({
-  transition,
-  location,
+  currentLocation,
+  nextLocation,
 }: {
-  transition: Transition;
-  location: Pick<Location, 'pathname' | 'search'>;
+  currentLocation: Location;
+  nextLocation: Location;
+  historyAction: string;
 }) => {
   return (
-    transition.location.pathname === location.pathname &&
-    transition.location.search !== location.search
+    nextLocation.pathname === currentLocation.pathname &&
+    nextLocation.search !== currentLocation.search
   );
 };
 

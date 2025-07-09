@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, UserEvent} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {
   applyDateRange,
   pickDateTimeRange,
@@ -14,22 +14,10 @@ import {
 import {getWrapper, MockDateRangeField} from './mocks';
 import {tracking} from 'modules/tracking';
 
-jest.unmock('modules/utils/date/formatDate');
-
 describe('Date Range - tracking', () => {
-  let trackSpy: jest.SpyInstance;
-  let user: UserEvent;
-
-  beforeEach(() => {
-    trackSpy = jest.spyOn(tracking, 'track');
-    user = render(<MockDateRangeField />, {wrapper: getWrapper()}).user;
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should track date picker, date input, time input', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
       eventName: 'date-range-popover-opened',
@@ -64,6 +52,8 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date picker', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
       eventName: 'date-range-popover-opened',
@@ -91,6 +81,8 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date input, time input', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
       eventName: 'date-range-popover-opened',
@@ -118,6 +110,8 @@ describe('Date Range - tracking', () => {
   });
 
   it('should track date picker, time input', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(trackSpy).toHaveBeenNthCalledWith(1, {
       eventName: 'date-range-popover-opened',

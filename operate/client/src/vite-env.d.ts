@@ -1,3 +1,5 @@
+/* eslint-disable license-header/header */
+
 /*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
@@ -6,7 +8,5 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import Editor, {DiffEditor, useMonaco} from '@monaco-editor/react';
-
-export default Editor;
-export {DiffEditor, useMonaco};
+/// <reference types="vite/client" />
+/// <reference types="vite-plugin-svgr/client" />

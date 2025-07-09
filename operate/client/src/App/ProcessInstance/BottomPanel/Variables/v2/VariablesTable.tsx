@@ -20,7 +20,7 @@ import {useForm, useFormState} from 'react-final-form';
 import {Operations} from '../Operations';
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {Edit} from '@carbon/react/icons';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 import {EditButtons} from '../EditButtons';
 import {ExistingVariableValue} from './ExistingVariableValue';
 import {Name} from '../NewVariableModification/v2/Name';
@@ -31,6 +31,10 @@ import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
+} from 'modules/types/operate';
 
 type Props = {
   scopeId: string | null;

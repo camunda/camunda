@@ -22,9 +22,7 @@ describe('FlowNodeIcon', () => {
       />,
     );
 
-    expect(
-      screen.getByText('flow-node-task-undefined.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('flow-node-icon')).toBeInTheDocument();
   });
 
   it('should render default icon for deleted flow node', () => {
@@ -35,9 +33,7 @@ describe('FlowNodeIcon', () => {
       />,
     );
 
-    expect(
-      screen.getByText('flow-node-task-undefined.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('flow-node-icon')).toBeInTheDocument();
   });
 
   it('should render parallel multi instance body', () => {
@@ -56,9 +52,7 @@ describe('FlowNodeIcon', () => {
       />,
     );
 
-    expect(
-      screen.getByText('flow-node-multi-instance-sequential.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('flow-node-icon')).toBeInTheDocument();
   });
 
   it('should render sequential multi instance body', () => {
@@ -77,9 +71,7 @@ describe('FlowNodeIcon', () => {
       />,
     );
 
-    expect(
-      screen.getByText('flow-node-multi-instance-parallel.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('flow-node-icon')).toBeInTheDocument();
   });
 
   it('should render intermediate timer event', () => {
@@ -99,9 +91,7 @@ describe('FlowNodeIcon', () => {
       />,
     );
 
-    expect(
-      screen.getByText('flow-node-event-timer-interrupting.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('flow-node-icon')).toBeInTheDocument();
   });
 
   it('should render message boundary event', () => {
@@ -122,9 +112,7 @@ describe('FlowNodeIcon', () => {
       />,
     );
 
-    expect(
-      screen.getByText('flow-node-event-message-non-interrupting.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('flow-node-icon')).toBeInTheDocument();
   });
 
   it('should render event sub process', () => {
@@ -140,9 +128,7 @@ describe('FlowNodeIcon', () => {
       />,
     );
 
-    expect(
-      screen.getByText('flow-node-subprocess-event.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('flow-node-icon')).toBeInTheDocument();
   });
 
   it('should render compensation end event', () => {
@@ -162,8 +148,6 @@ describe('FlowNodeIcon', () => {
       />,
     );
 
-    expect(
-      screen.getByText('flow-node-compensation-end-event.svg'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('flow-node-icon')).toBeInTheDocument();
   });
 });

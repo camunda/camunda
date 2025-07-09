@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {makeAutoObservable, autorun, IReactionDisposer, Lambda} from 'mobx';
+import {
+  makeAutoObservable,
+  autorun,
+  type IReactionDisposer,
+  type Lambda,
+} from 'mobx';
 import {processInstancesStore} from 'modules/stores/processInstances';
 
 type Mode = 'INCLUDE' | 'EXCLUDE' | 'ALL';

@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {OperationEntity} from 'modules/types/operate';
+
 const mockOperationRunning: OperationEntity = {
   id: '1234',
   type: 'RESOLVE_INCIDENT',

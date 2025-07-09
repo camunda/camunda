@@ -27,6 +27,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
   });
   afterEach(() => {
@@ -45,7 +46,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.getByText('Version Tag')).toBeInTheDocument();
@@ -72,7 +73,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByText('Version Tag')).not.toBeInTheDocument();
@@ -99,7 +100,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByText('Version Tag')).not.toBeInTheDocument();

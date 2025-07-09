@@ -48,7 +48,7 @@ describe('stores/sequenceFlows', () => {
       createInstance({id: '123', state: 'ACTIVE'}),
     );
 
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     sequenceFlowsStore.init();
 
     await waitFor(() =>
@@ -71,7 +71,7 @@ describe('stores/sequenceFlows', () => {
       {expectPolling: true},
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(sequenceFlowsStore.state.items).toEqual([
@@ -98,7 +98,7 @@ describe('stores/sequenceFlows', () => {
       {expectPolling: true},
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(sequenceFlowsStore.state.items).toEqual([
@@ -116,8 +116,8 @@ describe('stores/sequenceFlows', () => {
       createInstance({id: '123', state: 'CANCELED'}),
     );
 
-    jest.runOnlyPendingTimers();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(sequenceFlowsStore.state.items).toEqual([
@@ -130,8 +130,8 @@ describe('stores/sequenceFlows', () => {
       ]),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should reset store', async () => {
@@ -152,11 +152,12 @@ describe('stores/sequenceFlows', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -196,6 +197,6 @@ describe('stores/sequenceFlows', () => {
       ]),
     );
 
-    window.addEventListener = originalEventListener;
+    eventListeners.online();
   });
 });

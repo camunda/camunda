@@ -11,9 +11,11 @@ import {createIncident} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, shortError} from './mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Sorting', () => {
   it('should enable sorting for all', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents(incidentsMock);
     render(<IncidentsTable />, {wrapper: Wrapper});
 
@@ -27,6 +29,7 @@ describe('Sorting', () => {
   });
 
   it('should disable sorting for jobId', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     const incidents = [
       createIncident({
         errorType: {

@@ -39,10 +39,6 @@ describe('useExecutedFlowNodes', () => {
     );
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should fetch executed flow nodes successfully', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [

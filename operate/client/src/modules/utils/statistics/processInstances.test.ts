@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas';
 import {getInstancesCount} from './processInstances';
 
 describe('getInstancesCount', () => {

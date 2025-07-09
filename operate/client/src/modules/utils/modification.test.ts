@@ -10,38 +10,36 @@ import {cancelAllTokens, finishMovingToken} from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
-jest.mock('modules/stores/modifications', () => ({
+vi.mock('modules/stores/modifications', () => ({
   modificationsStore: {
     state: {
       sourceFlowNodeIdForMoveOperation: null,
       sourceFlowNodeInstanceKeyForMoveOperation: null,
       status: 'disabled',
     },
-    addCancelModification: jest.fn(),
-    addMoveModification: jest.fn(),
-    setStatus: jest.fn(),
-    setSourceFlowNodeIdForMoveOperation: jest.fn(),
-    setSourceFlowNodeInstanceKeyForMoveOperation: jest.fn(),
+    addCancelModification: vi.fn(),
+    addMoveModification: vi.fn(),
+    setStatus: vi.fn(),
+    setSourceFlowNodeIdForMoveOperation: vi.fn(),
+    setSourceFlowNodeInstanceKeyForMoveOperation: vi.fn(),
   },
 }));
 
-jest.mock('modules/bpmn-js/utils/isMultiInstance', () => ({
-  isMultiInstance: jest.fn(),
+const mockedIsMultiInstance = vi.mocked(isMultiInstance);
+
+vi.mock('modules/bpmn-js/utils/isMultiInstance', () => ({
+  isMultiInstance: vi.fn(),
 }));
 
-jest.mock('modules/tracking', () => ({
+vi.mock('modules/tracking', () => ({
   tracking: {
-    track: jest.fn(),
+    track: vi.fn(),
   },
 }));
 
 describe('cancelAllTokens', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should add a cancel modification with the correct parameters', () => {
     const flowNodeId = 'node1';
     const totalRunningInstancesForFlowNode = 10;
@@ -88,7 +86,6 @@ describe('finishMovingToken', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
     modificationsStore.state.sourceFlowNodeIdForMoveOperation = 'sourceNode';
     modificationsStore.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
   });
@@ -102,7 +99,7 @@ describe('finishMovingToken', () => {
   });
 
   it('should add a move modification when targetFlowNodeId is provided', () => {
-    (isMultiInstance as jest.Mock).mockReturnValue(false);
+    mockedIsMultiInstance.mockReturnValue(false);
 
     finishMovingToken(5, 3, businessObjects, 'some-process-id', 'targetNode');
 
@@ -119,7 +116,7 @@ describe('finishMovingToken', () => {
   });
 
   it('should set newScopeCount to 1 for multi-instance source nodes', () => {
-    (isMultiInstance as jest.Mock).mockReturnValue(true);
+    mockedIsMultiInstance.mockReturnValue(true);
 
     finishMovingToken(5, 3, businessObjects, '', 'targetNode');
 

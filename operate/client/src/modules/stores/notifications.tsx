@@ -74,7 +74,7 @@ class Notifications {
 
   #addAutoRemovalInterval = (notification: Notification) => {
     const delta = 100;
-    let intervalId: NodeJS.Timeout;
+    let intervalId: ReturnType<typeof setInterval>;
     let time = NOTIFICATION_TIMEOUT;
 
     intervalId = setInterval(function () {

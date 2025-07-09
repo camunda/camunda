@@ -21,7 +21,6 @@ import {
   Wrapper,
   mockInstanceDeprecated,
 } from './index.setup';
-import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -32,9 +31,9 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -42,11 +41,9 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchCallHierarchy().withSuccess([]);
   });
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
 
   it('should render process instance data', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
@@ -56,7 +53,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     const processDefinitionName = getProcessDefinitionName(mockInstance);
@@ -72,7 +69,7 @@ describe('InstanceHeader', () => {
         }" instances`,
       }),
     ).toHaveTextContent(mockInstance.processDefinitionVersion.toString());
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(mockInstance.endDate ?? '--')).toBeInTheDocument();
     expect(screen.getByText('--')).toBeInTheDocument();
     expect(
       screen.getByTestId(`${mockInstance.state}-icon`),
@@ -100,7 +97,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -109,7 +106,6 @@ describe('InstanceHeader', () => {
   });
 
   it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
-    jest.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
     // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
@@ -122,7 +118,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
@@ -134,9 +130,6 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should render parent Process Instance Key', async () => {
@@ -157,7 +150,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -177,7 +170,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
@@ -196,7 +189,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -223,7 +216,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -261,7 +254,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -293,7 +286,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
@@ -312,13 +305,13 @@ describe('InstanceHeader', () => {
       }),
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    await waitFor(() => {
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    });
   });
 
   it('should hide delete operation button when user has no resource based permission for delete process instance', async () => {
-    window.clientConfig = {
-      resourcePermissionsEnabled: true,
-    };
+    vi.stubGlobal('clientConfig', {resourcePermissionsEnabled: true});
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
@@ -345,7 +338,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -354,9 +347,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should hide operation buttons when user has no resource based permission for update process instance', async () => {
-    window.clientConfig = {
-      resourcePermissionsEnabled: true,
-    };
+    vi.stubGlobal('clientConfig', {resourcePermissionsEnabled: true});
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
@@ -378,7 +369,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(

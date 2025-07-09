@@ -7,8 +7,9 @@
  */
 
 import {sortOperations} from './sortOperations';
+import type {OperationEntity} from 'modules/types/operate';
 
-const MOCK_RUNNING_OPERATION = Object.freeze({
+const MOCK_RUNNING_OPERATION = {
   id: '8a2e3d79-b5ec-4cef-92cd-6ead2035b972',
   name: null,
   type: 'RESOLVE_INCIDENT',
@@ -18,8 +19,8 @@ const MOCK_RUNNING_OPERATION = Object.freeze({
   operationsTotalCount: 406,
   operationsFinishedCount: 0,
   sortValues: ['9223372036854775807', '1584973759170'],
-});
-const MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT = Object.freeze({
+} satisfies OperationEntity;
+const MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT = {
   id: '21ac5d59-cdf6-48cd-b467-00c0c8ffeeb3',
   name: null,
   type: 'RESOLVE_INCIDENT',
@@ -29,8 +30,8 @@ const MOCK_FINISHED_OPERATIONS_RESOLVE_INCIDENT = Object.freeze({
   operationsTotalCount: 406,
   operationsFinishedCount: 406,
   sortValues: ['1584960415713', '1584960397960'],
-});
-const MOCK_FINISHED_OPERATIONS_CANCEL_PROCESS_INSTANCE = Object.freeze({
+} satisfies OperationEntity;
+const MOCK_FINISHED_OPERATIONS_CANCEL_PROCESS_INSTANCE = {
   id: 'b22d5134-64de-4dbb-af9b-a211aaebed47',
   name: null,
   type: 'CANCEL_PROCESS_INSTANCE',
@@ -40,7 +41,7 @@ const MOCK_FINISHED_OPERATIONS_CANCEL_PROCESS_INSTANCE = Object.freeze({
   operationsTotalCount: 1,
   operationsFinishedCount: 1,
   sortValues: ['1584729077637', '1584729069478'],
-});
+} satisfies OperationEntity;
 
 describe('sortOperations', () => {
   it('should put running operations first', () => {

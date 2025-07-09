@@ -32,13 +32,13 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init} from 'modules/utils/flowNodeMetadata';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -122,6 +122,7 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -138,12 +139,6 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it.each([true, false])(
     'should show multiple scope placeholder when multiple nodes are selected - modification mode: %p',
     async (enableModificationMode) => {
@@ -158,7 +153,7 @@ describe('VariablePanel', () => {
         instanceMetadata: null,
       });
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 
@@ -193,7 +188,7 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 
@@ -224,15 +219,11 @@ describe('VariablePanel', () => {
   it.each([true, false])(
     'should show failed placeholder if network error occurs while fetching variables - modification mode: %p',
     async (enableModificationMode) => {
-      const consoleErrorMock = jest
-        .spyOn(global.console, 'error')
-        .mockImplementation();
-
       if (enableModificationMode) {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 
@@ -257,8 +248,6 @@ describe('VariablePanel', () => {
       expect(
         screen.queryByRole('button', {name: /add variable/i}),
       ).not.toBeInTheDocument();
-
-      consoleErrorMock.mockRestore();
     },
   );
 });

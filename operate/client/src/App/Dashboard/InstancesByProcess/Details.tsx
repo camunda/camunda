@@ -11,7 +11,7 @@ import {getAccordionItemLabel} from './utils/getAccordionItemLabel';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
+import type {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
 import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {authenticationStore} from 'modules/stores/authentication';

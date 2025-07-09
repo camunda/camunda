@@ -29,6 +29,7 @@ import {VersionTag} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
+import type {OperationEntityType} from 'modules/types/operate';
 
 const headerColumns = [
   'Process Name',

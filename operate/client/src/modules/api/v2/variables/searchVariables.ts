@@ -8,10 +8,10 @@
 
 import {
   endpoints,
-  QueryVariablesRequestBody,
-  QueryVariablesResponseBody,
+  type QueryVariablesRequestBody,
+  type QueryVariablesResponseBody,
 } from '@vzeta/camunda-api-zod-schemas';
-import {RequestResult, requestWithThrow} from 'modules/request';
+import {type RequestResult, requestWithThrow} from 'modules/request';
 
 const searchVariables = async (
   payload: QueryVariablesRequestBody,

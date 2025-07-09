@@ -11,7 +11,7 @@ import isNil from 'lodash/isNil';
 import {panelStatesStore} from 'modules/stores/panelStates';
 
 const useOperationsPanelResize = (
-  targetRef: React.RefObject<HTMLElement>,
+  targetRef: React.RefObject<HTMLElement | null>,
   onResize: (target: HTMLElement, width: number) => void,
 ) => {
   useEffect(() => {

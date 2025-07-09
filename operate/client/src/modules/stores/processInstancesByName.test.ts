@@ -70,6 +70,8 @@ describe('stores/processInstancesByName', () => {
 
   afterEach(() => {
     processInstancesByNameStore.reset();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should get process instances by name', async () => {
@@ -88,8 +90,12 @@ describe('stores/processInstancesByName', () => {
     mockFetchProcessInstancesByName().withSuccess(mockInstancesByProcess, {
       expectPolling: true,
     });
-    jest.useFakeTimers();
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstancesByNameStore.init();
+
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(processInstancesByNameStore.state.status).toBe('fetched'),
     );
@@ -100,14 +106,14 @@ describe('stores/processInstancesByName', () => {
 
     mockFetchProcessInstancesByName().withSuccess([], {expectPolling: true});
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(processInstancesByNameStore.state.processInstances).toEqual([]);
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should set failed response on error', async () => {
@@ -131,11 +137,12 @@ describe('stores/processInstancesByName', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     processInstancesByNameStore.getProcessInstancesByName();
 
@@ -165,7 +172,5 @@ describe('stores/processInstancesByName', () => {
         newMockInstancesByProcess,
       ),
     );
-
-    window.addEventListener = originalEventListener;
   });
 });

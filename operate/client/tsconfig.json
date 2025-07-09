@@ -1,23 +1,9 @@
 {
-  "compilerOptions": {
-    "target": "es2022",
-    "module": "esnext",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": false,
-    "allowSyntheticDefaultImports": true,
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "baseUrl": "src",
-    "useDefineForClassFields": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true
-  },
-  "include": ["src", "e2e-playwright"]
+  "files": [],
+  "references": [
+    {"path": "./tsconfig.app.json"},
+    {"path": "./tsconfig.node.json"},
+    {"path": "./tsconfig.vitest.json"},
+    {"path": "./tsconfig.vitest.browser.json"}
+  ]
 }

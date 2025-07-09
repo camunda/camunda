@@ -10,20 +10,19 @@ import {render, screen} from 'modules/testing-library';
 import {BatchModificationFooter} from '..';
 import {tracking} from 'modules/tracking';
 
-jest.mock('modules/hooks/useCallbackPrompt', () => {
+vi.mock('modules/hooks/useCallbackPrompt', () => {
   return {
     useCallbackPrompt: () => ({
       shouldInterrupt: false,
-      confirmNavigation: jest.fn(),
-      cancelNavigation: jest.fn(),
+      confirmNavigation: vi.fn(),
+      cancelNavigation: vi.fn(),
     }),
   };
 });
 
 describe('BatchModificationFooter - tracking', () => {
-  const trackSpy = jest.spyOn(tracking, 'track');
-
   it('should track exit click', async () => {
+    const trackSpy = vi.spyOn(tracking, 'track');
     const {user} = render(<BatchModificationFooter />);
 
     await user.click(screen.getByRole('button', {name: /exit/i}));

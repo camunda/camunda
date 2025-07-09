@@ -13,10 +13,11 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {useFilters} from 'modules/hooks/useFilters';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
-import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
-jest.mock('modules/hooks/useFilters');
-jest.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useFilters');
+
+const mockedUseFilters = vi.mocked(useFilters);
 
 describe('useProcessInstancesOverlayStatistics', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => (
@@ -30,14 +31,13 @@ describe('useProcessInstancesOverlayStatistics', () => {
   };
 
   beforeEach(() => {
-    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
-    (useFilters as jest.Mock).mockReturnValue({
+    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
+    mockedUseFilters.mockReturnValue({
       getFilters: () => mockFilters,
+      setFilters: vi.fn(),
+      areProcessInstanceStatesApplied: vi.fn(),
+      areDecisionInstanceStatesApplied: vi.fn(),
     });
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
   });
 
   it('should fetch process instances overlay statistics successfully excluding completed non-end events', async () => {
@@ -157,6 +157,10 @@ describe('useProcessInstancesOverlayStatistics', () => {
   });
 
   it('should handle loading state', async () => {
+    mockFetchProcessInstancesStatistics().withDelay({
+      items: [],
+    });
+
     const {result} = renderHook(
       () => useProcessInstancesOverlayData({}, 'process1'),
       {

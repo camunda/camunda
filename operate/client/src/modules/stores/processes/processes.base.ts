@@ -10,8 +10,8 @@ import {makeObservable, action, observable, computed, override} from 'mobx';
 
 import {
   fetchGroupedProcesses,
-  ProcessDto,
-  ProcessVersionDto,
+  type ProcessDto,
+  type ProcessVersionDto,
 } from 'modules/api/processes/fetchGroupedProcesses';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {getSearchString} from 'modules/utils/getSearchString';
@@ -19,7 +19,7 @@ import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {DEFAULT_TENANT, PERMISSIONS} from 'modules/constants';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
-import {Location} from 'react-router-dom';
+import type {Location} from 'react-router-dom';
 
 type Process = ProcessDto & {key: string};
 type State = {
@@ -35,7 +35,7 @@ const INITIAL_STATE: State = {
 class ProcessesBase extends NetworkReconnectionHandler {
   state: State = INITIAL_STATE;
   retryCount: number = 0;
-  retryProcessesFetchTimeout: NodeJS.Timeout | null = null;
+  retryProcessesFetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super();

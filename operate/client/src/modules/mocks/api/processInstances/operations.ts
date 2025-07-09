@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BatchOperationDto} from 'modules/api/sharedTypes';
+import type {BatchOperationDto} from 'modules/api/sharedTypes';
 import {mockPostRequest} from '../mockRequest';
 
 const mockApplyBatchOperation = () =>

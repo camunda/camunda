@@ -7,6 +7,7 @@
  */
 
 import {mockGetRequest} from './mockRequest';
+import type {VariableEntity} from 'modules/types/operate';
 
 const mockFetchVariable = () =>
   mockGetRequest<VariableEntity>(

@@ -25,9 +25,13 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      nestedSubProcessesInstance,
+    );
     mockFetchProcessInstanceDeprecated().withSuccess(
       nestedSubProcessesInstance,
     );
@@ -35,6 +39,10 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('NestedSubProcesses.bpmn'),
     );
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
 
     processInstanceDetailsStore.init({id: nestedSubProcessesInstance.id});
     flowNodeInstanceStore.init();
@@ -44,6 +52,14 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
+  });
+
+  afterEach(() => {
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
   });
 
   it('should add parent placeholders (ADD_TOKEN)', async () => {

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {RequestResult, requestWithThrow} from 'modules/request';
+import {type RequestResult, requestWithThrow} from 'modules/request';
 
 type DecisionDefinitionKey = string | undefined;
 type DecisionDefinitionXmlDto = string;

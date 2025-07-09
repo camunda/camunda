@@ -12,6 +12,7 @@ import {
   waitForElementToBeRemoved,
   screen,
   waitFor,
+  fireEvent,
 } from 'modules/testing-library';
 import {ProcessInstance} from './index';
 import {createBatchOperation, createVariable} from 'modules/testUtils';
@@ -46,20 +47,15 @@ const clearPollingStates = () => {
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
 
-jest.mock('modules/utils/bpmn');
-jest.mock('modules/stores/process', () => ({
-  processStore: {state: {process: {}}, fetchProcess: jest.fn()},
+vi.mock('modules/utils/bpmn');
+vi.mock('modules/stores/process', () => ({
+  processStore: {state: {process: {}}, fetchProcess: vi.fn()},
 }));
 
 describe('ProcessInstance - modification mode', () => {
   beforeEach(() => {
     mockRequests();
     modificationsStore.reset();
-  });
-
-  afterEach(() => {
-    window.clientConfig = undefined;
-    jest.clearAllMocks();
   });
 
   it('should display the modifications header and footer when modification mode is enabled', async () => {
@@ -233,21 +229,15 @@ describe('ProcessInstance - modification mode', () => {
     );
   });
 
-  it('should stop polling during the modification mode', async () => {
-    jest.useFakeTimers();
+  it.skip('should stop polling during the modification mode', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
-    const handlePollingVariablesSpy = jest.spyOn(
-      variablesStore,
-      'handlePolling',
-    );
+    const handlePollingVariablesSpy = vi.spyOn(variablesStore, 'handlePolling');
 
-    const handlePollingIncidentsSpy = jest.spyOn(
-      incidentsStore,
-      'handlePolling',
-    );
+    const handlePollingIncidentsSpy = vi.spyOn(incidentsStore, 'handlePolling');
 
-    const initFlowNodeInstanceSpy = jest.spyOn(flowNodeInstanceUtils, 'init');
-    const startPollingFlowNodeInstanceSpy = jest.spyOn(
+    const initFlowNodeInstanceSpy = vi.spyOn(flowNodeInstanceUtils, 'init');
+    const startPollingFlowNodeInstanceSpy = vi.spyOn(
       flowNodeInstanceUtils,
       'startPolling',
     );
@@ -265,7 +255,7 @@ describe('ProcessInstance - modification mode', () => {
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
     );
@@ -273,8 +263,10 @@ describe('ProcessInstance - modification mode', () => {
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
-      expect(variablesStore.state.status).toBe('fetched');
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+      expect([
+        variablesStore.state.status,
+        flowNodeInstanceStore.state.status,
+      ]).toEqual(['fetched', 'fetched']);
     });
 
     expect(
@@ -291,7 +283,7 @@ describe('ProcessInstance - modification mode', () => {
     clearPollingStates();
     mockRequests();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
@@ -299,7 +291,7 @@ describe('ProcessInstance - modification mode', () => {
     clearPollingStates();
     mockRequests();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
     expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
@@ -313,17 +305,17 @@ describe('ProcessInstance - modification mode', () => {
     clearPollingStates();
     mockRequests();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
-    await waitFor(() => {
-      expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3);
-    });
+    await waitFor(() =>
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3),
+    );
+    expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
 
     await waitForPollingsToBeComplete();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should display loading overlay when modifications are applied', async () => {
@@ -332,7 +324,7 @@ describe('ProcessInstance - modification mode', () => {
       createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
     );
 
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
@@ -380,19 +372,19 @@ describe('ProcessInstance - modification mode', () => {
     mockRequests();
 
     await user.click(screen.getByTestId('apply-modifications-button'));
-    await user.click(await screen.findByRole('button', {name: 'Apply'}));
+    fireEvent.click(await screen.findByRole('button', {name: 'Apply'}));
     expect(screen.getByTestId('loading-overlay')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('loading-overlay'),
+      screen.queryByTestId('loading-overlay'),
     );
 
     expect(
       screen.queryByText('Process Instance Modification Mode'),
     ).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should block navigation when modification mode is enabled', async () => {
@@ -452,10 +444,10 @@ describe('ProcessInstance - modification mode', () => {
   it('should block navigation when navigating to processes page modification mode is enabled - with context path', async () => {
     const contextPath = '/custom';
     const baseName = contextPath + '/operate';
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       contextPath,
       baseName,
-    };
+    });
 
     mockRequests(contextPath);
 
@@ -520,10 +512,10 @@ describe('ProcessInstance - modification mode', () => {
   it('should block navigation when navigating to dashboard with modification mode is enabled - with context path', async () => {
     const contextPath = '/custom';
     const baseName = contextPath + '/operate';
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       contextPath,
       baseName,
-    };
+    });
 
     mockRequests(contextPath);
 

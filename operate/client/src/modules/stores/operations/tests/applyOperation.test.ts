@@ -43,7 +43,7 @@ describe('Apply Operation', () => {
     await operationsStore.fetchOperations();
     expect(operationsStore.state.operations).toEqual(operations);
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
 
     await operationsStore.applyOperation({
       instanceId: '1',
@@ -55,9 +55,9 @@ describe('Apply Operation', () => {
   });
 
   it('should not prepend operations and call error callback when a network error occurred', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchBatchOperations().withSuccess(operations);
     mockApplyOperation().withNetworkError();
@@ -65,7 +65,7 @@ describe('Apply Operation', () => {
     await operationsStore.fetchOperations();
     expect(operationsStore.state.operations).toEqual(operations);
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
 
     await operationsStore.applyOperation({
       instanceId: '1',

@@ -44,15 +44,13 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init} from 'modules/utils/flowNodeMetadata';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
-const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
-
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -111,6 +109,9 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
 
     const statistics = [
       {
@@ -137,6 +138,7 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -154,15 +156,14 @@ describe('VariablePanel', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() =>
@@ -214,7 +215,7 @@ describe('VariablePanel', () => {
     );
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -256,7 +257,7 @@ describe('VariablePanel', () => {
     });
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() =>
@@ -308,7 +309,7 @@ describe('VariablePanel', () => {
     );
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -328,10 +329,11 @@ describe('VariablePanel', () => {
   });
 
   it('should display error notification if add variable operation fails', async () => {
-    jest.useFakeTimers();
+    const getOperationSpy = vi.spyOn(operationApi, 'getOperation');
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() =>
@@ -370,7 +372,7 @@ describe('VariablePanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -398,9 +400,9 @@ describe('VariablePanel', () => {
       ),
     ).toBeInTheDocument();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
-    await waitForElementToBeRemoved(screen.getByTestId('foo'));
+    await waitForElementToBeRemoved(screen.queryByTestId('foo'));
 
     expect(
       screen.getByRole('button', {
@@ -416,7 +418,7 @@ describe('VariablePanel', () => {
 
     expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

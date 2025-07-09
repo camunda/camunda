@@ -17,24 +17,49 @@ declare module 'dmn-js-shared/lib/base/Manager' {
   };
 
   export type EventCallback = (
-    eventName: String,
-    callback: (event: DiagramJSEvent) => void,
+    eventName: string,
+    callback: (event: Event) => void,
   ) => void;
-
-  type Viewer = {
-    get: (module: string) => any;
-    on: DiagramJSEventCallback;
-    off: DiagramJSEventCallback;
-  };
 
   export type View = {
     id: string;
     type: 'literalExpression' | 'decisionTable';
   };
 
-  class Manager {
+  type Viewer = {
+    get(module: 'canvas'): {
+      resized(): void;
+      zoom(
+        newScale: number | 'fit-viewport',
+        center: 'auto' | {x: number; y: number} | null,
+      ): void;
+      removeMarker(elementId: string, className: string): void;
+      addMarker(elementId: string, className: string): void;
+    };
+    get(module: 'overlays'): {
+      add(
+        elementId: string,
+        type: string,
+        overlay: {
+          html: HTMLElement;
+          position: {
+            top?: number;
+            right?: number;
+            bottom?: number;
+            left?: number;
+          };
+        },
+      ): void;
+      remove(options: {type?: string; element?: string}): void;
+    };
+    get(module: string): unknown;
+    on: EventCallback;
+    off: EventCallback;
+  };
+
+  declare class Manager {
     constructor(options: {container?: HTMLElement});
-    importXML(xml: string): Promise;
+    importXML(xml: string): Promise<unknown>;
     getActiveViewer(): Viewer | undefined;
     destroy(): void;
     getViews(): View[];

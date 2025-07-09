@@ -9,11 +9,11 @@
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {
-  FlowNodeModification,
   modificationsStore,
-} from 'modules/stores//modifications';
+  type FlowNodeModification,
+} from 'modules/stores/modifications';
 import {getVisibleChildPlaceholders} from 'modules/utils/instanceHistoryModification';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 const businessObjects: BusinessObjects = {
   startEvent_1: {

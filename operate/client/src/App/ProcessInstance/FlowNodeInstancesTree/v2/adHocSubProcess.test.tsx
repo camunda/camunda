@@ -21,13 +21,19 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 describe('FlowNodeInstancesTree - Ad Hoc Sub Process', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(adHocSubProcessesInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(adHocSubProcessesInstance);
+    mockFetchProcessInstance().withSuccess(mockAdHocSubProcessesInstance);
     mockFetchProcessInstance().withSuccess(mockAdHocSubProcessesInstance);
     mockFetchProcessDefinitionXml().withSuccess(open('AdHocProcess.bpmn'));
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
 
     processInstanceDetailsStore.init({id: adHocSubProcessesInstance.id});
     flowNodeInstanceStore.init();

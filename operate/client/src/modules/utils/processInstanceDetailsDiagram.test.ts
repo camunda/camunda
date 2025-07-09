@@ -7,7 +7,7 @@
  */
 
 import {hasMultipleScopes} from './processInstanceDetailsDiagram';
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 describe('hasMultipleScopes', () => {
   it('should return false if parentFlowNode is undefined', () => {

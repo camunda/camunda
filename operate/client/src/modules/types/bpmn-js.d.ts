@@ -7,12 +7,13 @@
  */
 
 declare module 'bpmn-js/lib/util/ModelUtil' {
+  import type {BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
   export function is(element: BpmnElement, type: string): boolean;
 }
 
 declare module 'bpmn-moddle' {
-  import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-
+  // eslint-disable-next-line no-duplicate-imports
+  import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
   export type DiagramModel = {
     elementsById: {
       [id: string]: BusinessObject;
@@ -21,10 +22,10 @@ declare module 'bpmn-moddle' {
 
   class BpmnModdle {
     constructor();
-    fromXML(xml: BpmnElement, definitions: string): Promise<DiagramModel>;
+    fromXML(xml: string, definitions: string): Promise<DiagramModel>;
   }
 
-  export = BpmnModdle;
+  export default BpmnModdle;
 }
 
 declare module 'bpmn-js/lib/NavigatedViewer' {
@@ -98,7 +99,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     id: string;
     type: ElementType;
     businessObject: BusinessObject;
-    di: {set: Function};
+    di: {set: (property: string, value: unknown) => void};
     width: number;
     height: number;
   };
@@ -129,7 +130,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     position: OverlayPosition;
   };
 
-  declare class NavigatedViewer {
+  class NavigatedViewer {
     constructor({
       container,
       bpmnRenderer,
@@ -137,7 +138,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
       additionalModules,
     }: {
       container: HTMLElement;
-      bpmnRenderer: {[moduleName]: unknown};
+      bpmnRenderer: {[moduleName: string]: unknown};
       canvas: {deferUpdate: boolean};
       additionalModules: unknown[];
     });
@@ -147,7 +148,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     get(module: 'elementRegistry'): {
       get(elementId: BpmnElement['id']): BpmnElement;
       filter(callback: (element: BpmnElement) => boolean): BpmnElement[];
-      getGraphics(element: BpmnElement): SVGGraphicsBpmnElement;
+      getGraphics(element: BpmnElement): SVGGraphicsElement;
       getGraphics(elementId: BpmnElement['id']): SVGGraphicsElement;
     };
     get(module: 'canvas'): {
@@ -186,5 +187,5 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
     off: EventCallback;
   }
 
-  export = NavigatedViewer;
+  export default NavigatedViewer;
 }

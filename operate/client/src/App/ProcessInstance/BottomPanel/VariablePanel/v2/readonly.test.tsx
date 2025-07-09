@@ -29,7 +29,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {
   type GetProcessInstanceStatisticsResponseBody,
-  ProcessInstance,
+  type ProcessInstance,
 } from '@vzeta/camunda-api-zod-schemas';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
@@ -40,10 +40,11 @@ import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {cancelAllTokens} from 'modules/utils/modifications';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -152,12 +153,6 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
@@ -195,7 +190,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
     });
     await waitFor(() => {
@@ -256,7 +251,7 @@ describe('VariablePanel', () => {
       modificationsStore.enableModificationMode();
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
@@ -345,13 +340,13 @@ describe('VariablePanel', () => {
       instanceCount: 1,
       instanceMetadata: {
         ...singleInstanceMetadata.instanceMetadata!,
-        endDate: '2022-04-10T15:01:31.794+0000',
+        endDate: MOCK_TIMESTAMP,
       },
     });
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
@@ -456,7 +451,7 @@ describe('VariablePanel', () => {
       modificationsStore.enableModificationMode();
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
@@ -521,7 +516,7 @@ describe('VariablePanel', () => {
   it('should be readonly if flow node has variables but no running instances', async () => {
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {

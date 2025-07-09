@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 
 export const buildMetadata = (
   metadata: MetaDataDto['instanceMetadata'] | null,

@@ -17,13 +17,13 @@ type PropsToOmit<C extends React.ElementType, P> = keyof (AsProp<C> & P);
 
 type PolymorphicComponentProp<
   C extends React.ElementType,
-  Props = {},
+  Props = object,
 > = React.PropsWithChildren<Props & AsProp<C>> &
   Omit<React.ComponentPropsWithoutRef<C>, PropsToOmit<C, Props>>;
 
 type PolymorphicComponentPropWithRef<
   C extends React.ElementType,
-  Props = {},
+  Props = object,
 > = PolymorphicComponentProp<C, Props> & {ref?: PolymorphicRef<C>};
 
 declare module '@carbon/react' {
@@ -87,7 +87,7 @@ declare module '@carbon/react' {
   export const ProgressBar: React.FunctionComponent<{
     className?: string;
     helperText?: string;
-    hideLabel?: bool;
+    hideLabel?: boolean;
     label: string;
     max?: number;
     size?: 'small' | 'big';
@@ -96,12 +96,12 @@ declare module '@carbon/react' {
     value?: number;
   }>;
 
-  export const useTheme: any;
+  export const useTheme: () => {theme: 'white' | 'g10' | 'g90' | 'g100'};
   export const ActionableNotification: React.FunctionComponent<{
     actionButtonLabel: string;
     ['aria-label']?: string;
     caption?: string;
-    children?: node;
+    children?: React.ReactNode;
     className?: string;
     closeOnEscape?: boolean;
     hasFocus?: boolean;
@@ -116,9 +116,9 @@ declare module '@carbon/react' {
       | 'warning-alt';
 
     lowContrast?: boolean;
-    onActionButtonClick?: func;
-    onClose?: func;
-    onCloseButtonClick?: func;
+    onActionButtonClick?: () => void;
+    onClose?: () => void;
+    onCloseButtonClick?: () => void;
     role?: string;
     statusIconDescription?: string;
     subtitle?: string;
@@ -126,7 +126,7 @@ declare module '@carbon/react' {
   }>;
 
   export const Checkbox: React.FunctionComponent<
-    Omit<ReactInputAttr, ExcludedAttributes> & {
+    Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> & {
       hideLabel?: boolean | undefined;
       id: string;
       labelText: NonNullable<React.ReactNode>;
@@ -149,13 +149,15 @@ declare module '@carbon/react' {
     }
   >;
 
-  export const OverflowMenu: ForwardRefReturn<
+  export const OverflowMenu: React.ForwardRefExoticComponent<
     HTMLButtonElement,
     React.FunctionComponent<
-      Omit<ReactInputAttr, ExcludedAttributes> & {
+      Omit<React.InputHTMLAttributes<HTMLInputElement>, 'onChange'> & {
         ariaLabel?: string | undefined;
-        direction?: VerticalDirection | undefined;
-        iconClass?: ReactAttr['className'] | undefined;
+        direction?: 'top' | 'bottom' | 'left' | 'right' | undefined;
+        iconClass?:
+          | React.HTMLAttributes<HTMLOrSVGElement>['className']
+          | undefined;
         iconDescription?: string | undefined;
         flipped?: boolean | undefined;
         focusTrap?: boolean | undefined;
@@ -163,9 +165,15 @@ declare module '@carbon/react' {
          * @deprecated The `light` prop for `OverflowMenu` is no longer needed and has been deprecated. It will be removed in the next major release. Use the Layer component instead.
          */
         light?: boolean | undefined;
-        menuOffset?: MenuOffsetValue | undefined;
-        menuOffsetFlip?: MenuOffsetValue | undefined;
-        menuOptionsClass?: ReactAttr['className'] | undefined;
+        menuOffset?:
+          | 'auto'
+          | 'auto-end'
+          | 'auto-start'
+          | 'top'
+          | 'bottom'
+          | 'left'
+          | 'right'
+          | undefined;
         onClick?(
           event:
             | React.MouseEvent<HTMLElement>
@@ -174,9 +182,9 @@ declare module '@carbon/react' {
         onClose?(): void;
         onOpen?(): void;
         open?: boolean | undefined;
-        renderIcon?: any;
+        renderIcon?: React.ReactNode;
         selectorPrimaryFocus?: string | undefined;
-        size?: MenuProps['size'];
+        size?: 'sm' | 'md' | 'lg';
       } & {
         align?:
           | 'top'
@@ -198,7 +206,7 @@ declare module '@carbon/react' {
     hideLabel?: boolean;
     label: string;
     multiselect?: boolean;
-    onSelect?: PropTypes.func;
+    onSelect?: () => void;
     selected?: string[] | number[];
     size?: 'xs' | 'sm';
   }>;

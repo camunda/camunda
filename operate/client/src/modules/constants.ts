@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {ResourceBasedPermissionDto} from 'modules/types/operate';
+
 const OPERATION_STATE = {
   SCHEDULED: 'SCHEDULED',
   LOCKED: 'LOCKED',

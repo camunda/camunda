@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {open} from 'modules/mocks/diagrams';
+import {openFile} from '@/utils/openFile';
 import {InstanceMock} from '.';
 
 const compensationProcessInstance: InstanceMock = {
@@ -187,7 +187,7 @@ const compensationProcessInstance: InstanceMock = {
       },
     ],
   },
-  xml: open('CompensationProcess.bpmn'),
+  xml: openFile('./e2e-playwright/mocks/resources/CompensationProcess.bpmn'),
   sequenceFlows: [
     {processInstanceId: '9007199254744341', activityId: 'Flow_1'},
     {processInstanceId: '9007199254744341', activityId: 'Flow_2'},

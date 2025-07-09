@@ -12,13 +12,13 @@ import {
   observable,
   action,
   autorun,
-  IReactionDisposer,
   override,
+  type IReactionDisposer,
 } from 'mobx';
 import {
   fetchProcessInstances,
   fetchProcessInstancesByIds,
-  ProcessInstancesDto,
+  type ProcessInstancesDto,
 } from 'modules/api/processInstances/fetchProcessInstances';
 import {logger} from 'modules/logger';
 import {
@@ -29,6 +29,10 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {createOperation} from 'modules/utils/instance';
 import {hasActiveOperations} from './utils/hasActiveOperations';
 import {tracking} from 'modules/tracking';
+import type {
+  ProcessInstanceEntity,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Payload = Parameters<typeof fetchProcessInstances>['0']['payload'];
 
@@ -144,8 +148,8 @@ class ProcessInstances extends NetworkReconnectionHandler {
     processInstances: ProcessInstanceEntity[],
   ) => {
     switch (fetchType) {
-      case 'next':
-        const allProcessInstances = [
+      case 'next': {
+        const allProcessInstances: ProcessInstanceEntity[] = [
           ...this.state.processInstances,
           ...processInstances,
         ];
@@ -156,6 +160,7 @@ class ProcessInstances extends NetworkReconnectionHandler {
             0,
           ),
         );
+      }
       case 'prev':
         return [...processInstances, ...this.state.processInstances].slice(
           0,

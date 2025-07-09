@@ -39,7 +39,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
@@ -49,11 +49,11 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
 
-const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
+const getOperationSpy = vi.spyOn(operationApi, 'getOperation');
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -163,14 +163,13 @@ describe('VariablePanel', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   it('should render variables', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
 
@@ -181,10 +180,10 @@ describe('VariablePanel', () => {
   });
 
   (IS_LISTENERS_TAB_V2 ? it : it.skip)('should add new variable', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() =>
@@ -271,7 +270,7 @@ describe('VariablePanel', () => {
     expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -294,14 +293,14 @@ describe('VariablePanel', () => {
 
     expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   (IS_LISTENERS_TAB_V2 ? it : it.skip)(
     'should remove pending variable if scope id changes',
     async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       mockFetchFlowNodeMetadata().withSuccess({
         ...singleInstanceMetadata,
@@ -309,7 +308,7 @@ describe('VariablePanel', () => {
       });
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() =>
@@ -388,7 +387,7 @@ describe('VariablePanel', () => {
         await screen.findByTestId('variables-spinner'),
       ).toBeInTheDocument();
       await waitForElementToBeRemoved(() =>
-        screen.getByTestId('variables-spinner'),
+        screen.queryByTestId('variables-spinner'),
       );
       expect(
         screen.queryByTestId('variable-operation-spinner'),
@@ -400,8 +399,8 @@ describe('VariablePanel', () => {
         }),
       ).toBeInTheDocument();
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
+      vi.clearAllTimers();
+      vi.useRealTimers();
     },
   );
 
@@ -411,7 +410,7 @@ describe('VariablePanel', () => {
       mockFetchVariables().withSuccess([createVariable()]);
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() =>
@@ -511,10 +510,10 @@ describe('VariablePanel', () => {
   (IS_LISTENERS_TAB_V2 ? it : it.skip)(
     'should not fail if new variable is returned from next polling before add variable operation completes',
     async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() =>
@@ -548,7 +547,7 @@ describe('VariablePanel', () => {
       mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
       mockApplyOperation().withSuccess(createBatchOperation());
 
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
       await waitFor(() =>
         expect(
           screen.getByRole('button', {
@@ -579,9 +578,9 @@ describe('VariablePanel', () => {
 
       mockGetOperation().withSuccess([createOperation()]);
 
-      jest.runOnlyPendingTimers();
+      vi.runOnlyPendingTimers();
       await waitForElementToBeRemoved(
-        screen.getByTestId('variable-operation-spinner'),
+        screen.queryByTestId('variable-operation-spinner'),
       );
       expect(
         await screen.findByRole('cell', {name: 'foo'}),
@@ -592,8 +591,8 @@ describe('VariablePanel', () => {
           name: /add variable/i,
         }),
       ).toBeInTheDocument();
-      jest.clearAllTimers();
-      jest.useRealTimers();
+      vi.clearAllTimers();
+      vi.useRealTimers();
     },
   );
 
@@ -604,7 +603,7 @@ describe('VariablePanel', () => {
       mockFetchVariables().withSuccess([createVariable()]);
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() => {

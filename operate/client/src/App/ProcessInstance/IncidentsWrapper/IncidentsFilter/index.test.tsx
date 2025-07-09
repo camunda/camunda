@@ -16,6 +16,7 @@ import {useEffect} from 'react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const {reset, fetchIncidents} = incidentsStore;
 
@@ -36,6 +37,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 describe('IncidentsFilter', () => {
   it('should render filters', async () => {
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     await fetchIncidents('1');
 
@@ -66,6 +68,7 @@ describe('IncidentsFilter', () => {
 
   it('should disable/enable clear all button depending on selected options', async () => {
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockFetchProcessDefinitionXml().withSuccess('');
 
     await fetchIncidents('1');
 

@@ -7,7 +7,7 @@
  */
 
 import {screen, waitFor, within} from '@testing-library/react';
-import {UserEvent} from 'modules/testing-library';
+import type {UserEvent} from 'modules/testing-library';
 
 const selectComboBoxOption = async ({
   user,
@@ -96,6 +96,7 @@ const clearComboBox = async ({
   user: UserEvent;
   fieldName: string;
 }) => {
+  // eslint-disable-next-line testing-library/no-node-access
   const parentElement = screen.getByLabelText(fieldName).parentElement;
 
   await waitFor(() => expect(parentElement).toBeInTheDocument());

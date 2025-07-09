@@ -7,7 +7,7 @@
  */
 
 class Viewer {
-  destroy = jest.fn();
+  destroy = vi.fn();
 }
 
 export default Viewer;

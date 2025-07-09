@@ -11,7 +11,7 @@ import {AppHeader} from '../index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {MeDto} from 'modules/api/v2/authentication/me';
+import type {MeDto} from 'modules/api/v2/authentication/me';
 import {Wrapper as BaseWrapper} from './mocks';
 import {useEffect} from 'react';
 
@@ -25,7 +25,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 describe('Info bar', () => {
   it('should render with correct links', async () => {
     const originalWindowOpen = window.open;
-    const mockOpenFn = jest.fn();
+    const mockOpenFn = vi.fn();
     window.open = mockOpenFn;
 
     const {user} = render(<AppHeader />, {
@@ -84,7 +84,7 @@ describe('Info bar', () => {
       await authenticationStore.authenticate();
 
       const originalWindowOpen = window.open;
-      const mockOpenFn = jest.fn();
+      const mockOpenFn = vi.fn();
       window.open = mockOpenFn;
 
       const {user} = render(<AppHeader />, {

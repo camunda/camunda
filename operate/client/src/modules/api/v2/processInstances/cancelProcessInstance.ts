@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints, ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {endpoints, type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {request} from 'modules/request';
 
 const cancelProcessInstance = async (

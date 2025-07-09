@@ -82,7 +82,9 @@ describe('Restricted user with resource based permissions', () => {
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-    expect(await screen.findByRole('button', {name: /edit variable/i}));
+    expect(
+      await screen.findByRole('button', {name: /edit variable/i}),
+    ).toBeInTheDocument();
   });
 
   it('should not display add/edit variable buttons when update process instance permission is not available', async () => {

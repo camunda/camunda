@@ -22,8 +22,8 @@ import {
 import {
   DataTable,
   Table,
-  DataTableHeader,
-  DataTableRow,
+  type DataTableHeader,
+  type DataTableRow,
   Loading,
   TableSelectAll,
   TableSelectRow,

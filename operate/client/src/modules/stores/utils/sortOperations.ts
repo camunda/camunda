@@ -6,7 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-function handleNewOperation(operation: any, nextOperation: any) {
+import type {OperationEntity} from 'modules/types/operate';
+
+function handleNewOperation(
+  operation: OperationEntity,
+  nextOperation: OperationEntity,
+): number {
   if (
     nextOperation.sortValues === undefined &&
     operation.sortValues === undefined
@@ -21,11 +26,13 @@ function handleNewOperation(operation: any, nextOperation: any) {
   if (operation.sortValues === undefined) {
     return -1;
   }
+
+  return 0;
 }
 
-function sortOperations(operations: any) {
+function sortOperations(operations: OperationEntity[]): OperationEntity[] {
   return operations
-    .sort((operation: any, nextOperation: any) => {
+    .sort((operation: OperationEntity, nextOperation: OperationEntity) => {
       if (
         nextOperation.sortValues === undefined ||
         operation.sortValues === undefined
@@ -33,9 +40,11 @@ function sortOperations(operations: any) {
         return handleNewOperation(operation, nextOperation);
       }
 
-      return nextOperation.sortValues[1] - operation.sortValues[1];
+      return (
+        Number(nextOperation.sortValues[1]) - Number(operation.sortValues[1])
+      );
     })
-    .sort((operation: any, nextOperation: any) => {
+    .sort((operation: OperationEntity, nextOperation: OperationEntity) => {
       if (
         nextOperation.sortValues === undefined ||
         operation.sortValues === undefined
@@ -43,7 +52,9 @@ function sortOperations(operations: any) {
         return handleNewOperation(operation, nextOperation);
       }
 
-      return nextOperation.sortValues[0] - operation.sortValues[0];
+      return (
+        Number(nextOperation.sortValues[0]) - Number(operation.sortValues[0])
+      );
     });
 }
 

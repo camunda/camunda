@@ -14,7 +14,7 @@ import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefin
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('decisionInstanceDetailsStore', () => {
-  it('should initialize and reset ', async () => {
+  it('should initialize and reset', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);

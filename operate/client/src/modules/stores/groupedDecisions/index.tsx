@@ -9,14 +9,14 @@
 import {
   action,
   computed,
-  IReactionDisposer,
   makeObservable,
   observable,
   override,
+  type IReactionDisposer,
 } from 'mobx';
 import {
   fetchGroupedDecisions,
-  DecisionDto,
+  type DecisionDto,
 } from 'modules/api/decisions/fetchGroupedDecisions';
 import {sortOptions} from 'modules/utils/sortOptions';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
@@ -43,7 +43,7 @@ class GroupedDecisions extends NetworkReconnectionHandler {
   state: State = {...DEFAULT_STATE};
   disposer: IReactionDisposer | null = null;
   retryCount: number = 0;
-  retryDecisionsFetchTimeout: NodeJS.Timeout | null = null;
+  retryDecisionsFetchTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super();

@@ -8,7 +8,10 @@
 
 const DEFAULT_STORAGE_KEY = 'sharedState';
 
-function storeStateLocally(state: any, storageKey = DEFAULT_STORAGE_KEY) {
+function storeStateLocally(
+  state: Record<string, unknown>,
+  storageKey = DEFAULT_STORAGE_KEY,
+) {
   const current = JSON.parse(localStorage.getItem(storageKey) || '{}');
 
   localStorage.setItem(storageKey, JSON.stringify({...current, ...state}));

@@ -76,10 +76,6 @@ describe('useBusinessObjects', () => {
     );
   };
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should fetch business objects successfully', async () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,

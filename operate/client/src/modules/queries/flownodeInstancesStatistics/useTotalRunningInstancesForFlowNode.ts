@@ -9,7 +9,7 @@
 import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
 import {getStatisticsByFlowNode} from 'modules/utils/statistics/flownodeInstances';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
 const totalRunningInstancesForFlowNodeParser =

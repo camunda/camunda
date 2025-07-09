@@ -9,7 +9,7 @@
 import React, {useState} from 'react';
 
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
-import {ErrorHandler, operationsStore} from 'modules/stores/operations';
+import {type ErrorHandler, operationsStore} from 'modules/stores/operations';
 import {observer} from 'mobx-react';
 
 import {hasIncident, isRunning} from 'modules/utils/instance';
@@ -26,6 +26,12 @@ import {OperationsContainer} from './styled';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {ModificationHelperModal} from './ModificationHelperModal';
+import type {
+  ProcessInstanceEntity,
+  InstanceOperationEntity,
+  ResourceBasedPermissionDto,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Props = {
   instance: ProcessInstanceEntity;

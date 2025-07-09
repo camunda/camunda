@@ -7,7 +7,11 @@
  */
 
 import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
-import {Icon, Error} from '@carbon/react/icons';
+import {type Icon, Error} from '@carbon/react/icons';
+import type {
+  InstanceEntityState,
+  DecisionInstanceEntityState,
+} from 'modules/types/operate';
 
 const stateIconsMap = {
   FAILED: WarningFilled,

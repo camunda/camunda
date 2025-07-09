@@ -12,12 +12,22 @@ import {Wrapper, mockIncidents} from '../tests/mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockProcessInstance} from 'App/ProcessInstance/v2/mocks';
-
-jest.unmock('modules/utils/date/formatDate');
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {createInstance, createProcessInstance} from 'modules/testUtils';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('Sorting', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstance().withSuccess(createInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({
+        hasIncident: true,
+      }),
+    );
 
     await incidentsStore.fetchIncidents('1');
     incidentsStore.setIncidentBarOpen(true);
@@ -27,7 +37,7 @@ describe('Sorting', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -71,7 +81,7 @@ describe('Sorting', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,
@@ -115,7 +125,7 @@ describe('Sorting', () => {
     const {user} = render(
       <IncidentsWrapper
         processInstance={mockProcessInstance}
-        setIsInTransition={jest.fn()}
+        setIsInTransition={vi.fn()}
       />,
       {
         wrapper: Wrapper,

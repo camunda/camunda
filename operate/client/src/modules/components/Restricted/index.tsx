@@ -7,6 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
+import type {ResourceBasedPermissionDto} from 'modules/types/operate';
 
 type Props = {
   children: React.ReactNode;

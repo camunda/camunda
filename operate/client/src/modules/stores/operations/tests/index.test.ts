@@ -10,6 +10,7 @@ import {operationsStore} from '../';
 import {waitFor} from 'modules/testing-library';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {operations} from 'modules/testUtils';
+import type {OperationEntity} from 'modules/types/operate';
 
 describe('stores/operations', () => {
   afterEach(() => {
@@ -88,12 +89,12 @@ describe('stores/operations', () => {
     mockFetchBatchOperations().withSuccess(operations);
 
     operationsStore.init();
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     await waitFor(() => expect(operationsStore.state.status).toBe('fetched'));
 
     // no polling occurs in the next 2 polling
-    jest.runOnlyPendingTimers();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     const runningOperation: OperationEntity = {
       id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
@@ -123,22 +124,23 @@ describe('stores/operations', () => {
       ...operations,
     ]);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(operationsStore.hasRunningOperations).toBe(false),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     mockFetchBatchOperations().withSuccess(operations);
 
@@ -157,7 +159,5 @@ describe('stores/operations', () => {
     await waitFor(() =>
       expect(operationsStore.state.status).toEqual('fetched'),
     );
-
-    window.addEventListener = originalEventListener;
   });
 });

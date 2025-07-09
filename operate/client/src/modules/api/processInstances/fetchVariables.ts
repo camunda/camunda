@@ -7,6 +7,10 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
+} from 'modules/types/operate';
 
 type VariablePayload = {
   pageSize: number;

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {CoreStatisticsDto} from 'modules/api/processInstances/fetchProcessCoreStatistics';
+import type {CoreStatisticsDto} from 'modules/api/processInstances/fetchProcessCoreStatistics';
 import {mockGetRequest} from '../mockRequest';
 
 const mockFetchProcessCoreStatistics = () =>

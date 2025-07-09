@@ -6,11 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {Restricted} from 'modules/components/Restricted';
 import {useOperations} from 'modules/queries/operations/useOperations';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 import {OperationItem} from 'modules/components/OperationItem';
+import type {
+  ResourceBasedPermissionDto,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];

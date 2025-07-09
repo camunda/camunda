@@ -111,6 +111,7 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
+          package-manager: "npm"
 
       #########################################################################
       # Build: maven artifacts and Docker images

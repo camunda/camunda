@@ -14,6 +14,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 import {processInstanceListenersStore} from './processInstanceListeners';
+import type {ListenerEntity} from 'modules/types/operate';
 
 const instance: ListenerEntity = {
   listenerType: 'EXECUTION_LISTENER',

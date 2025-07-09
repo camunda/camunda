@@ -6,25 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {when} from 'mobx';
 import {
-  FlowNodeInstance,
-  FlowNodeInstances,
   flowNodeInstanceStore,
   MAX_INSTANCES_PER_REQUEST,
   MAX_INSTANCES_STORED,
+  type FlowNodeInstance,
+  type FlowNodeInstances,
 } from 'modules/stores/flowNodeInstance';
 import {isInstanceRunning} from './instance';
 import {fetchFlowNodeInstances} from 'modules/api/fetchFlowNodeInstances';
 import {modificationsStore} from 'modules/stores/modifications';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const init = (processInstance?: ProcessInstance) => {
   flowNodeInstanceStore.instanceExecutionHistoryDisposer = when(
     () => processInstance?.processInstanceKey !== undefined,
     () => {
       const instanceId = processInstance?.processInstanceKey;
-      fetchInstanceExecutionHistory(processInstance)(instanceId);
+      fetchInstanceExecutionHistory(processInstance)(instanceId!);
       startPolling(processInstance);
     },
   );
@@ -73,6 +74,8 @@ const pollInstances = async (processInstance?: ProcessInstance) => {
     if (flowNodeInstanceStore.intervalId !== null) {
       flowNodeInstanceStore.handlePollSuccess(response.data ?? {});
     }
+  } else {
+    flowNodeInstanceStore.handleFetchFailure();
   }
 
   flowNodeInstanceStore.isPollRequestRunning = false;

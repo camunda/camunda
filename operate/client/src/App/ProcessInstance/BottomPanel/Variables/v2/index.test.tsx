@@ -93,7 +93,6 @@ describe('Variables', () => {
 
       expect(
         within(
-          // eslint-disable-next-line testing-library/prefer-presence-queries
           screen.getByTestId(`variable-${inactiveOperationVariable!.name!}`),
         ).queryByTestId('variable-operation-spinner'),
       ).not.toBeInTheDocument();

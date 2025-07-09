@@ -20,7 +20,7 @@ const mockProcessXML = open('MoveModificationProcess.bpmn');
 
 describe('<MoveAction /> - tracking', () => {
   it('should track move button click', async () => {
-    const trackSpy = jest.spyOn(tracking, 'track');
+    const trackSpy = vi.spyOn(tracking, 'track');
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
