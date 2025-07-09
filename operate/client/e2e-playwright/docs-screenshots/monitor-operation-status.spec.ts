@@ -59,7 +59,9 @@ test.describe('process instance migration', () => {
             },
           ],
         },
-        processXml: openFile('orderProcess_v2.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess_v2.bpmn',
+        ),
       }),
     );
 

@@ -55,7 +55,9 @@ test.describe('process instance migration', () => {
             },
           ],
         },
-        processXml: openFile('orderProcess_v3.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess_v3.bpmn',
+        ),
       }),
     );
 
@@ -126,7 +128,9 @@ test.describe('process instance migration', () => {
         groupedProcesses: mockGroupedProcesses.filter((process) => {
           return process.bpmnProcessId === 'orderProcess';
         }),
-        processXml: openFile('orderProcess_v2.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess_v2.bpmn',
+        ),
       }),
     );
 
@@ -227,7 +231,9 @@ test.describe('process instance migration', () => {
             },
           ],
         },
-        processXml: openFile('orderProcess_v2.bpmn'),
+        processXml: openFile(
+          './e2e-playwright/mocks/resources/orderProcess_v2.bpmn',
+        ),
       }),
     );
 
