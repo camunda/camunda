@@ -25,6 +25,7 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
+import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper.JsonMappingException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -181,7 +182,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final ElementSelector selector,
       final String variableName,
       final Class<T> jsonMappedClass,
-      final List<ThrowingConsumer<T>> requirement) {
+      final ThrowingConsumer<T> requirement) {
 
     withLocalVariableAssertion(
         processInstanceKey,
@@ -198,7 +199,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final long processInstanceKey,
       final String variableName,
       final Class<T> jsonMappedClass,
-      final List<ThrowingConsumer<T>> requirement) {
+      final ThrowingConsumer<T> requirement) {
 
     hasVariableSatisfies(
         variableName,
@@ -207,11 +208,10 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         () -> getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
-  @SuppressWarnings("unchecked")
   private <T> void hasVariableSatisfies(
       final String variableName,
       final Class<T> jsonMappedClass,
-      final List<ThrowingConsumer<T>> requirements,
+      final ThrowingConsumer<T> requirement,
       final Supplier<Map<String, String>> actualVariablesSupplier) {
 
     final AtomicReference<String> assertionError = new AtomicReference<>("");
@@ -231,9 +231,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                     AssertionJsonMapper.readJson(variables.get(variableName), jsonMappedClass);
 
                 try {
-                  final ThrowingConsumer<T>[] reqs = requirements.toArray(new ThrowingConsumer[0]);
-
-                  assertThat(actualValue).satisfies(reqs);
+                  assertThat(actualValue).satisfies(requirement);
                 } catch (final AssertionError e) {
                   assertionError.set(e.getMessage());
                   throw e;
@@ -243,16 +241,27 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
       final Map<String, String> actualVariables = reference.get();
 
-      final String failureReason =
+      final String failureMessage =
           Optional.ofNullable(actualVariables.get(variableName))
               .map(value -> assertionError.get())
+              .map(
+                  error ->
+                      String.format(
+                          "%s should have a variable '%s' but the following requirement was not satisfied: %s.",
+                          actual, variableName, error))
               .orElse(
                   String.format(
-                      "%s should have a variable '%s', but the variable doesn't exist",
+                      "%s should have a variable '%s', but the variable doesn't exist.",
                       actual, variableName));
 
+      fail(failureMessage);
+    } catch (final JsonMappingException e) {
+      final String actualVariable = reference.get().get(variableName);
       final String failureMessage =
-          String.format("%s failed to satisfy all conditions, reason: %s.", actual, failureReason);
+          String.format(
+              "%s should have a variable '%s' of type '%s', but was: '%s'",
+              actual, variableName, jsonMappedClass.getName(), actualVariable);
+
       fail(failureMessage);
     }
   }
