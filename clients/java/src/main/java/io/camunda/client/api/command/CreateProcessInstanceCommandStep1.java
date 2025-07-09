@@ -132,6 +132,17 @@ public interface CreateProcessInstanceCommandStep1
     CreateProcessInstanceCommandStep3 startBeforeElement(final String elementId);
 
     /**
+     * Adds a runtime instruction to suspend the process instance after the given element is
+     * completed or terminated.
+     *
+     * @param elementId the id of the BPMN element after which the process instance should be
+     *     suspended
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateProcessInstanceCommandStep3 suspendAfterElement(final String elementId);
+
+    /**
      * When this method is called, the response to the command will be received after the process is
      * completed. The response consists of a set of variables.
      *
