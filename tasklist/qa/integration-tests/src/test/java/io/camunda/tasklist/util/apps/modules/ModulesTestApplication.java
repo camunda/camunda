@@ -17,6 +17,7 @@ import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.unifiedconfig.UnifiedConfiguration;
+import io.camunda.unifiedconfig.beanoverrides.OperatePropertiesOverride;
 import io.camunda.unifiedconfig.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
@@ -56,8 +57,11 @@ import org.springframework.context.annotation.Profile;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({
+  // Unified config classes
   UnifiedConfiguration.class,
   TasklistPropertiesOverride.class,
+  OperatePropertiesOverride.class,
+  // ---
   WebappsModuleConfiguration.class,
   WebappSecurityModuleConfiguration.class,
   ImporterSecurityModuleConfiguration.class,

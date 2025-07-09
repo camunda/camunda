@@ -26,6 +26,7 @@ import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.unifiedconfig.UnifiedConfiguration;
+import io.camunda.unifiedconfig.beanoverrides.OperatePropertiesOverride;
 import io.camunda.unifiedconfig.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -65,8 +66,11 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   public TestCamundaApplication() {
     super(
+        // Unified Configuration classes
         UnifiedConfiguration.class,
         TasklistPropertiesOverride.class,
+        OperatePropertiesOverride.class,
+        // ---
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
         TasklistModuleConfiguration.class,

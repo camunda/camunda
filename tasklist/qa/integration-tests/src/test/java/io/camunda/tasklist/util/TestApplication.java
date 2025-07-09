@@ -13,6 +13,7 @@ import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
 import io.camunda.unifiedconfig.UnifiedConfiguration;
+import io.camunda.unifiedconfig.beanoverrides.OperatePropertiesOverride;
 import io.camunda.unifiedconfig.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
@@ -38,8 +39,11 @@ import org.springframework.context.annotation.Profile;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({
+  // Unified Configuration classes
   UnifiedConfiguration.class,
   TasklistPropertiesOverride.class,
+  OperatePropertiesOverride.class,
+  // ---
   WebappsModuleConfiguration.class,
   CommonsModuleConfiguration.class
 })
