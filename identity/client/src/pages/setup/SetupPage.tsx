@@ -73,7 +73,7 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
         onSuccess();
       } else {
         const detail = (error as ErrorResponse<"detailed">)?.detail;
-        setSubmitError(detail || "");
+        setSubmitError(detail || t("setupCreateAdminUserGenericError"));
       }
     }
   };
