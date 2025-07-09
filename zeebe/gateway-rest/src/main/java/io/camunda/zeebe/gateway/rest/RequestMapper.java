@@ -486,7 +486,7 @@ public class RequestMapper {
                 request.getPassword()));
   }
 
-  public static Either<ProblemDetail, MappingDTO> toMappingDTO(
+  public static Either<ProblemDetail, MappingDTO> toMappingRuleDTO(
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
@@ -498,7 +498,7 @@ public class RequestMapper {
                 request.getMappingRuleId()));
   }
 
-  public static Either<ProblemDetail, MappingDTO> toMappingDTO(
+  public static Either<ProblemDetail, MappingDTO> toMappingRuleDTO(
       final String mappingId, final MappingRuleUpdateRequest request) {
     return getResult(
         validateMappingRequest(request),
