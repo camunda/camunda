@@ -14,6 +14,8 @@ import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
@@ -46,6 +48,8 @@ public class StandaloneCamunda {
     final var standaloneCamundaApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
+                UnifiedConfiguration.class,
+                TasklistPropertiesOverride.class,
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
                 TasklistModuleConfiguration.class,
