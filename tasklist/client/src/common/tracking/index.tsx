@@ -43,7 +43,8 @@ type Events =
         | 'custom-filter-applied'
         | 'custom-filter-updated'
         | 'custom-filter-deleted'
-        | 'public-start-form-schema-with-file-components';
+        | 'public-start-form-schema-with-file-components'
+        | 'public-start-form-v2-api-not-supported';
     }
   | {
       eventName: 'task-opened';

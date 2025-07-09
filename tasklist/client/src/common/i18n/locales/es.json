@@ -123,6 +123,8 @@
     "startProcessFromFormInvalidFormDescription": "Algo salió mal y no se pudo mostrar el formulario. Por favor, contacte con su proveedor.",
     "startProcessFromFormWithFileComponentsHeading": "El formulario contiene componentes de archivo",
     "startProcessFromFormWithFileComponentsDescription": "Este formulario contiene componentes de archivo que no son compatibles en el formulario de inicio público. Por favor, contacte con su administrador de procesos.",
+    "startProcessFromFormV2ApiNotSupportedHeading": "Formularios públicos no soportados",
+    "startProcessFromFormV2ApiNotSupportedDescription": "Los formularios públicos no son compatibles con esta versión. Por favor, contacte a su administrador.",
     "assigneeTagUnassignedTitle": "Tarea no asignada",
     "assigneeTagUnassigned": "No asignada",
     "assigneeTagAssignedToMeAria": "Tarea asignada a mí",

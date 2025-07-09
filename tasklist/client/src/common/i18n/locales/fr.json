@@ -123,6 +123,8 @@
     "startProcessFromFormInvalidFormDescription": "Une erreur est survenue et l’affichage du formulaire a échoué. Veuillez contacter votre support.",
     "startProcessFromFormWithFileComponentsHeading": "Le formulaire contient des composants de gestion de fichiers.",
     "startProcessFromFormWithFileComponentsDescription": "Ce formulaire contient des composants de gestion de fichiers qui ne sont pas pris en charge dans les formulaires publics. Veuillez contacter votre administrateur de processus.",
+    "startProcessFromFormV2ApiNotSupportedHeading": "Formulaires publics non pris en charge",
+    "startProcessFromFormV2ApiNotSupportedDescription": "Les formulaires publics ne sont pas pris en charge pour cette version. Veuillez contacter votre administrateur.",
     "assigneeTagUnassignedTitle": "Tâche non assignée",
     "assigneeTagUnassigned": "Non assignée",
     "assigneeTagAssignedToMeAria": "Tâche assignée à moi",
