@@ -1,0 +1,32 @@
+# description: Generate comments in the PR with the flaky tests names.
+# type: CI
+# owner: @camunda/monorepo-devops-team
+name: Report Flak Tests
+description: "Finds or updates PR comment with flaky test info"
+inputs:
+  flaky_tests:
+    required: true
+    description: "List of flaky tests detected in the job run, formatted as a string."
+  job_name:
+    required: true
+    description: "Name of the job where flaky tests were detected, used for context in the comment."
+
+runs:
+  using: "composite"
+  steps:
+    - uses: peter-evans/find-comment@v3
+      id: find-comment-flaky
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        comment-author: 'github-actions[bot]'
+        body-includes: "Flaky tests"
+    - uses: peter-evans/create-or-update-comment@v4
+      with:
+        issue-number: ${{ github.event.pull_request.number }}
+        body: |
+          # 🚨 **Flaky tests detected in job: `${{ inputs.job_name }}`**:
+          ```
+          ${{ inputs.flaky_tests }}
+          ```
+        comment-id: ${{ steps.find-comment-flaky.outputs.comment-id }}
+        edit-mode: replace
