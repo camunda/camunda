@@ -148,7 +148,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerUsageMetricsAppliers(final MutableProcessingState state) {
-    register(UsageMetricIntent.EXPORTED, new UsageMetricsExportedApplier(state));
+    register(
+        UsageMetricIntent.EXPORTED, new UsageMetricsExportedApplier(state.getUsageMetricState()));
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {

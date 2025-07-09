@@ -15,15 +15,23 @@ import java.time.InstantSource;
 public class UsageMetricsCheckerScheduler implements StreamProcessorLifecycleAware {
 
   private final UsageMetricsChecker usageMetricsChecker;
+  private final boolean enableUsageMetrics;
 
   public UsageMetricsCheckerScheduler(
-      final EngineConfiguration engineConfiguration, final InstantSource clock) {
+      final EngineConfiguration engineConfiguration,
+      final InstantSource clock,
+      final boolean enableUsageMetrics) {
     final var exportInterval = engineConfiguration.getUsageMetricsExportInterval();
     usageMetricsChecker = new UsageMetricsChecker(exportInterval, clock);
+    this.enableUsageMetrics = enableUsageMetrics;
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
+    if (!enableUsageMetrics) {
+      return;
+    }
+
     usageMetricsChecker.setProcessingContext(processingContext);
     usageMetricsChecker.setShouldReschedule(true);
     usageMetricsChecker.schedule(true);
@@ -46,6 +54,10 @@ public class UsageMetricsCheckerScheduler implements StreamProcessorLifecycleAwa
 
   @Override
   public void onResumed() {
+    if (!enableUsageMetrics) {
+      return;
+    }
+
     usageMetricsChecker.setShouldReschedule(true);
     usageMetricsChecker.schedule(true);
   }

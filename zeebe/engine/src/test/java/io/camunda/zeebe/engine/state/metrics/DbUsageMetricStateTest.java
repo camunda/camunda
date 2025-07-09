@@ -34,7 +34,7 @@ public class DbUsageMetricStateTest {
   @BeforeEach
   void beforeEach() {
     mockClock = mock(InstantSource.class);
-    state = new DbUsageMetricState(zeebeDb, transactionContext, Duration.ofSeconds(1));
+    state = new DbUsageMetricState(zeebeDb, transactionContext, Duration.ofSeconds(1), true);
     state.resetActiveBucket(1L);
   }
 

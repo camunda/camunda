@@ -24,13 +24,14 @@ public class UsageMetricsProcessors {
       final InstantSource clock,
       final MutableProcessingState processingState,
       final Writers writers,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final boolean enableUsageMetrics) {
     typedRecordProcessors
         .onCommand(
             ValueType.USAGE_METRIC,
             UsageMetricIntent.EXPORT,
             new UsageMetricsExportProcessor(
                 processingState.getUsageMetricState(), writers, keyGenerator))
-        .withListener(new UsageMetricsCheckerScheduler(config, clock));
+        .withListener(new UsageMetricsCheckerScheduler(config, clock, enableUsageMetrics));
   }
 }

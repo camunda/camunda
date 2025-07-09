@@ -53,6 +53,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.stream.impl.TypedEventRegistry;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
@@ -300,7 +301,10 @@ public final class TestStreams {
             .recordProcessors(
                 List.of(
                     new Engine(
-                        wrappedFactory, new EngineConfiguration(), new SecurityConfiguration())))
+                        wrappedFactory,
+                        new EngineConfiguration(),
+                        new SecurityConfiguration(),
+                        FeatureFlags.createDefaultForTests())))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(mock(InterPartitionCommandSender.class))

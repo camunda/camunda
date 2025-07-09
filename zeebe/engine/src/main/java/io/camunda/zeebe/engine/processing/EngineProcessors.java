@@ -341,7 +341,13 @@ public final class EngineProcessors {
         batchOperationMetrics);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
-        typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
+        typedRecordProcessors,
+        config,
+        clock,
+        processingState,
+        writers,
+        keyGenerator,
+        featureFlags.enableUsageMetrics());
 
     return typedRecordProcessors;
   }

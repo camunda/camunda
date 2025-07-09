@@ -36,6 +36,7 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.FeatureFlags;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -65,14 +66,17 @@ public class Engine implements RecordProcessor {
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
   private final EngineConfiguration config;
   private final SecurityConfiguration securityConfig;
+  private final FeatureFlags featureFlags;
 
   public Engine(
       final TypedRecordProcessorFactory typedRecordProcessorFactory,
       final EngineConfiguration config,
-      final SecurityConfiguration securityConfig) {
+      final SecurityConfiguration securityConfig,
+      final FeatureFlags featureFlags) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
     this.config = config;
     this.securityConfig = securityConfig;
+    this.featureFlags = featureFlags;
   }
 
   @Override
@@ -82,7 +86,7 @@ public class Engine implements RecordProcessor {
 
     final var typedProcessorContext =
         new TypedRecordProcessorContextImpl(
-            recordProcessorContext, writers, config, securityConfig);
+            recordProcessorContext, writers, config, securityConfig, featureFlags);
     processingState = typedProcessorContext.getProcessingState();
 
     ((EventAppliers) eventApplier).registerEventAppliers(processingState);

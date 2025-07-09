@@ -87,6 +87,7 @@ import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -139,6 +140,7 @@ public class ProcessingDbState implements MutableProcessingState {
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final EngineConfiguration config,
+      final FeatureFlags featureFlags,
       final InstantSource clock) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
@@ -184,7 +186,11 @@ public class ProcessingDbState implements MutableProcessingState {
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
     usageMetricState =
-        new DbUsageMetricState(zeebeDb, transactionContext, config.getUsageMetricsExportInterval());
+        new DbUsageMetricState(
+            zeebeDb,
+            transactionContext,
+            config.getUsageMetricsExportInterval(),
+            featureFlags.enableUsageMetrics());
     asyncRequestState = new DbAsyncRequestState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
