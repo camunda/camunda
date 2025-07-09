@@ -173,6 +173,55 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldUpdateCompletedBatchItemWithoutInitialExport(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriter writer =
+        rdbmsService.createWriter(b -> b.partitionId(0).exportBatchOperationItemsOnCreation(false));
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+
+    final var items =
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
+
+    // when
+    writer
+        .getBatchOperationWriter()
+        .updateItem(
+            new BatchOperationItemDbModel(
+                batchOperation.batchOperationId(),
+                items.getFirst().itemKey(),
+                items.getFirst().processInstanceKey(),
+                BatchOperationItemState.COMPLETED,
+                NOW,
+                null));
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
+    assertThat(batchOperationEntity.endDate()).isNull();
+    assertThat(batchOperationEntity.operationsTotalCount()).isEqualTo(2);
+    assertThat(batchOperationEntity.operationsCompletedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.ACTIVE);
+
+    // and only one item exists
+    final var updatedItems =
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationId()).items();
+    assertThat(updatedItems).isNotNull();
+    assertThat(updatedItems).hasSize(1);
+    final var firstItem = updatedItems.getFirst();
+    assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(firstItem.processedDate())
+        .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(firstItem.errorMessage()).isNull();
+  }
+
+  @TestTemplate
   public void shouldUpdateFailedBatchItem(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 

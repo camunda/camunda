@@ -188,7 +188,8 @@
       <column name="CANDIDATE_GROUP" type="VARCHAR(255)"/>
     </createTable>
 
-    <createIndex tableName="${prefix}CANDIDATE_USER" indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY">
+    <createIndex tableName="${prefix}CANDIDATE_USER"
+      indexName="${prefix}IDX_CANDIDATE_USER_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
     </createIndex>
 
@@ -501,23 +502,21 @@
     <createTable tableName="${prefix}BATCH_OPERATION_ITEM">
       <column name="BATCH_OPERATION_ID" type="VARCHAR(255)">
         <constraints
+          primaryKey="true"
+          nullable="false"
           foreignKeyName="${prefix}FK_BATCH_OPERATION_ITEM_BATCH_OPERATION"
           referencedTableName="${prefix}BATCH_OPERATION"
           referencedColumnNames="BATCH_OPERATION_ID"
           deleteCascade="true"/>
-        />
       </column>
-      <column name="ITEM_KEY" type="BIGINT"/>
+      <column name="ITEM_KEY" type="BIGINT">
+        <constraints primaryKey="true" nullable="false"/>
+      </column>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESSED_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="ERROR_MESSAGE" type="VARCHAR(4000)"/>
       <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
-
-    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM"
-      indexName="${prefix}IDX_BATCH_OPERATION_ITEM_KEY">
-      <column name="BATCH_OPERATION_ID"/>
-    </createIndex>
 
     <modifySql dbms="mariadb">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->

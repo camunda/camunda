@@ -69,15 +69,84 @@
     WHERE BATCH_OPERATION_ID = #{batchOperationId}
   </update>
 
-  <update id="updateItem"
-    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto">
-    UPDATE ${prefix}BATCH_OPERATION_ITEM
-    SET STATE = #{state},
-        PROCESSED_DATE = #{processedDate},
-        ERROR_MESSAGE = #{errorMessage}
-    WHERE BATCH_OPERATION_ID = #{batchOperationId}
-      AND ITEM_KEY = #{itemKey}
-  </update>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="postgresql">
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM
+    (BATCH_OPERATION_ID, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    VALUES (#{batchOperationId},
+            #{itemKey},
+            #{processInstanceKey},
+            #{processedDate},
+            #{state})
+    ON CONFLICT (BATCH_OPERATION_ID, ITEM_KEY) DO UPDATE SET
+                                                           STATE          = #{state},
+                                                             PROCESSED_DATE = #{processedDate},
+                                                             ERROR_MESSAGE  = #{errorMessage}
+  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="mariadb">
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM
+    (BATCH_OPERATION_ID, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    VALUES (#{batchOperationId},
+            #{itemKey},
+            #{processInstanceKey},
+            #{processedDate},
+            #{state})
+    ON DUPLICATE KEY UPDATE
+      STATE = #{state}, PROCESSED_DATE = #{processedDate}, ERROR_MESSAGE = #{errorMessage}
+  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="oracle">
+    MERGE INTO ${prefix}BATCH_OPERATION_ITEM target
+    USING (SELECT #{batchOperationId}   AS BATCH_OPERATION_ID,
+                  #{itemKey}            AS ITEM_KEY,
+                  #{processInstanceKey} AS PROCESS_INSTANCE_KEY,
+                  #{processedDate}      AS PROCESSED_DATE,
+                  #{state}              AS STATE,
+                  #{errorMessage}       AS ERROR_MESSAGE
+           FROM dual) source
+    ON (target.BATCH_OPERATION_ID = source.BATCH_OPERATION_ID AND target.ITEM_KEY = source.ITEM_KEY)
+    WHEN MATCHED THEN
+      UPDATE
+      SET STATE          = source.STATE,
+          PROCESSED_DATE = source.PROCESSED_DATE,
+          ERROR_MESSAGE  = source.ERROR_MESSAGE
+    WHEN NOT MATCHED THEN
+      INSERT (BATCH_OPERATION_ID, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE,
+              ERROR_MESSAGE)
+      VALUES (source.BATCH_OPERATION_ID, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY,
+              source.PROCESSED_DATE, source.STATE, source.ERROR_MESSAGE)
+  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="h2">
+MERGE INTO ${prefix}BATCH_OPERATION_ITEM target
+USING (SELECT CAST(#{batchOperationId} AS VARCHAR)   AS BATCH_OPERATION_ID,
+              CAST(#{itemKey} AS BIGINT)            AS ITEM_KEY,
+              CAST(#{processInstanceKey} AS BIGINT) AS PROCESS_INSTANCE_KEY,
+              CAST(#{processedDate} AS TIMESTAMP)   AS PROCESSED_DATE,
+              CAST(#{state} AS VARCHAR)            AS STATE,
+              CAST(#{errorMessage} AS VARCHAR)     AS ERROR_MESSAGE) source
+ON (target.BATCH_OPERATION_ID = source.BATCH_OPERATION_ID AND target.ITEM_KEY = source.ITEM_KEY)
+WHEN MATCHED THEN
+  UPDATE
+  SET STATE          = source.STATE,
+      PROCESSED_DATE = source.PROCESSED_DATE,
+      ERROR_MESSAGE  = source.ERROR_MESSAGE
+WHEN NOT MATCHED THEN
+  INSERT (BATCH_OPERATION_ID, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE,
+          ERROR_MESSAGE)
+  VALUES (source.BATCH_OPERATION_ID, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY,
+          source.PROCESSED_DATE, source.STATE, source.ERROR_MESSAGE)
+  </insert>
+
 
   <update id="updateItemsWithState"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemStatusUpdateDto">
