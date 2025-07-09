@@ -13,6 +13,7 @@ import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePing
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
@@ -142,6 +143,7 @@ public class PingConsoleRunner implements ApplicationRunner {
             license,
             pingConfiguration.clusterId(),
             pingConfiguration.clusterName(),
+            VersionUtil.getVersion(),
             pingConfiguration.properties());
     try {
       return Either.right(objectMapper.writeValueAsString(payload));
