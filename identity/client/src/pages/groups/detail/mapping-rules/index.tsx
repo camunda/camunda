@@ -11,43 +11,44 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getMappingsByTenantId } from "src/utility/api/tenants";
+import { getMappingRulesByGroupId } from "src/utility/api/groups";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
-import DeleteModal from "src/pages/tenants/detail/mappings/DeleteModal";
-import AssignMappingsModal from "src/pages/tenants/detail/mappings/AssignMappingsModal";
+import DeleteModal from "src/pages/groups/detail/mapping-rules/DeleteModal";
+import AssignMappingRulesModal from "src/pages/groups/detail/mapping-rules/AssignMappingRulesModal.tsx";
 
-type MappingsProps = {
-  tenantId: string;
+type MappingRulesProps = {
+  groupId: string;
 };
 
-const Mappings: FC<MappingsProps> = ({ tenantId }) => {
-  const { t } = useTranslate("tenants");
+const Mappings: FC<MappingRulesProps> = ({ groupId }) => {
+  const { t } = useTranslate("groups");
 
   const {
-    data: mappings,
+    data: mappingRules,
     loading,
     success,
     reload,
-  } = useApi(getMappingsByTenantId, {
-    tenantId: tenantId,
+  } = useApi(getMappingRulesByGroupId, {
+    groupId: groupId,
   });
 
-  const isAssignedMappingsListEmpty = !mappings || mappings.items?.length === 0;
+  const isMappingRulesListEmpty =
+    !mappingRules || mappingRules.items?.length === 0;
 
-  const [assignMappings, assignMappingsModal] = useEntityModal(
-    AssignMappingsModal,
+  const [assignMappingRules, assignMappingRulesModal] = useEntityModal(
+    AssignMappingRulesModal,
     reload,
     {
-      assignedMappings: mappings?.items || [],
+      assignedMappingRules: mappingRules?.items || [],
     },
   );
-  const openAssignModal = () => assignMappings({ id: tenantId });
-  const [unassignMapping, unassignMappingModal] = useEntityModal(
+  const openAssignModal = () => assignMappingRules({ id: groupId });
+  const [unassignMappingRule, unassignMappingRuleModal] = useEntityModal(
     DeleteModal,
     reload,
     {
-      tenant: tenantId,
+      groupId,
     },
   );
 
@@ -60,51 +61,51 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
       />
     );
 
-  if (success && isAssignedMappingsListEmpty)
+  if (success && isMappingRulesListEmpty)
     return (
       <>
         <C3EmptyState
-          heading={t("assignMappingsToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
+          heading={t("assignMappingRulesToGroup")}
+          description={t("membersAccessDisclaimer")}
           button={{
-            label: t("assignMapping"),
+            label: t("assignMappingRule"),
             onClick: openAssignModal,
           }}
           link={{
-            label: t("learnMoreAboutTenants"),
+            label: t("learnMoreAboutGroups"),
             href: "https://docs.camunda.io/",
           }}
         />
-        {assignMappingsModal}
+        {assignMappingRulesModal}
       </>
     );
 
   return (
     <>
       <EntityList
-        data={mappings?.items}
+        data={mappingRules?.items}
         headers={[
-          { header: t("mappingId"), key: "mappingId" },
-          { header: t("mappingName"), key: "name" },
+          { header: t("mappingRuleId"), key: "mappingRuleId" },
+          { header: t("mappingRuleName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
-        sortProperty="mappingId"
+        sortProperty="mappingRuleId"
         loading={loading}
-        addEntityLabel={t("assignMapping")}
+        addEntityLabel={t("assignMappingRule")}
         onAddEntity={openAssignModal}
-        searchPlaceholder={t("searchByMappingId")}
+        searchPlaceholder={t("searchByMappingRuleId")}
         menuItems={[
           {
             label: t("remove"),
             icon: TrashCan,
             isDangerous: true,
-            onClick: unassignMapping,
+            onClick: unassignMappingRule,
           },
         ]}
       />
-      {assignMappingsModal}
-      {unassignMappingModal}
+      {assignMappingRulesModal}
+      {unassignMappingRuleModal}
     </>
   );
 };

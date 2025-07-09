@@ -14,39 +14,39 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Mapping } from "src/utility/api/mappings";
-import { unassignTenantMapping } from "src/utility/api/tenants";
+import { MappingRule } from "src/utility/api/mapping-rules";
+import { unassignRoleMappingRule } from "src/utility/api/roles";
 
-type RemoveTenantMappingModalProps = UseEntityModalCustomProps<
-  Mapping,
+type RemoveRoleMappingModalProps = UseEntityModalCustomProps<
+  MappingRule,
   {
-    tenant: string;
+    roleId: string;
   }
 >;
 
-const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
-  entity: mapping,
+const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
+  entity: mappingRule,
   open,
   onClose,
   onSuccess,
-  tenant,
+  roleId,
 }) => {
-  const { t, Translate } = useTranslate("tenants");
+  const { t, Translate } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMapping, { loading }] = useApiCall(unassignTenantMapping);
+  const [callUnassignMappingRule, { loading }] = useApiCall(unassignRoleMappingRule);
 
   const handleSubmit = async () => {
-    if (tenant && mapping) {
-      const { success } = await callUnassignMapping({
-        tenantId: tenant,
-        mappingId: mapping.mappingId,
+    if (roleId && mappingRule) {
+      const { success } = await callUnassignMappingRule({
+        roleId,
+        mappingRuleId: mappingRule.mappingRuleId,
       });
 
       if (success) {
         enqueueNotification({
           kind: "success",
-          title: t("tenantMappingRemoved"),
+          title: t("roleMappingRuleRemoved"),
         });
         onSuccess();
       }
@@ -56,20 +56,20 @@ const DeleteModal: FC<RemoveTenantMappingModalProps> = ({
   return (
     <Modal
       open={open}
-      headline={t("removeMapping")}
+      headline={t("removeMappingRule")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("removingMapping")}
+      loadingDescription={t("removingMappingRule")}
       onClose={onClose}
-      confirmLabel={t("removeMapping")}
+      confirmLabel={t("removeMappingRule")}
     >
       <p>
         <Translate
-          i18nKey="removeMappingFromTenant"
-          values={{ mappingId: mapping.mappingId }}
+          i18nKey="removeMappingRuleFromRole"
+          values={{ mappingRuleId: mappingRule.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingId}</strong>{" "}
-          from this tenant?
+          Are you sure you want to remove{" "}
+          <strong>{mappingRule.mappingRuleId}</strong> from this role?
         </Translate>
       </p>
     </Modal>
