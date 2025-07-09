@@ -200,7 +200,12 @@ function getWrapper(options?: {
         },
         {
           path: Paths.processes(),
-          element: <>instances page</>,
+          element: (
+            <>
+              instances page
+              <LocationLog />
+            </>
+          ),
         },
         {
           path: Paths.dashboard(),

@@ -13,6 +13,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {render, screen, waitFor} from 'modules/testing-library';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -22,10 +23,11 @@ vi.mock('modules/stores/notifications', () => ({
 
 describe('Redirect to process instances page', () => {
   it('should redirect to instances page and display notification if instance is not found (404)', async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchProcessDefinitionXml().withServerError();
     mockFetchProcessInstance().withServerError(404);
+    mockFetchCallHierarchy().withServerError(404);
 
     render(<ProcessInstance />, {
       wrapper: getWrapper({
