@@ -25,6 +25,8 @@ import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
+import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -42,6 +44,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
@@ -50,6 +53,7 @@ public final class UserTaskServices
   private final FormSearchClient formSearchClient;
   private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
   private final VariableSearchClient variableSearchClient;
+  private final ProcessCache processCache;
 
   public UserTaskServices(
       final BrokerClient brokerClient,
@@ -58,12 +62,14 @@ public final class UserTaskServices
       final FormSearchClient formSearchClient,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final VariableSearchClient variableSearchClient,
+      final ProcessCache processCache,
       final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.userTaskSearchClient = userTaskSearchClient;
     this.formSearchClient = formSearchClient;
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
     this.variableSearchClient = variableSearchClient;
+    this.processCache = processCache;
   }
 
   @Override
@@ -75,16 +81,52 @@ public final class UserTaskServices
         formSearchClient,
         flowNodeInstanceSearchClient,
         variableSearchClient,
+        processCache,
         authentication);
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
-    return userTaskSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readUserTask())))
-        .searchUserTasks(query);
+    return search(
+        query,
+        securityContextProvider.provideSecurityContext(
+            authentication, Authorization.of(a -> a.processDefinition().readUserTask())));
+  }
+
+  private SearchQueryResult<UserTaskEntity> search(
+      final UserTaskQuery query, final SecurityContext securityContext) {
+    final var result =
+        userTaskSearchClient.withSecurityContext(securityContext).searchUserTasks(query);
+
+    return toCacheEnrichedResult(result);
+  }
+
+  private SearchQueryResult<UserTaskEntity> toCacheEnrichedResult(
+      final SearchQueryResult<UserTaskEntity> result) {
+
+    final var processDefinitionKeys =
+        result.items().stream()
+            .filter(u -> !u.hasName())
+            .map(UserTaskEntity::processDefinitionKey)
+            .collect(Collectors.toSet());
+
+    if (processDefinitionKeys.isEmpty()) {
+      return result;
+    }
+
+    final var cacheResult = processCache.getCacheItems(processDefinitionKeys);
+
+    return result.withItems(
+        result.items().stream()
+            .map(
+                item ->
+                    item.hasName()
+                        ? item
+                        : item.withName(
+                            cacheResult
+                                .getProcessItem(item.processDefinitionKey())
+                                .getElementName(item.elementId())))
+            .collect(Collectors.toList()));
   }
 
   public SearchQueryResult<UserTaskEntity> search(
@@ -123,19 +165,20 @@ public final class UserTaskServices
   }
 
   public UserTaskEntity getByKey(final long userTaskKey) {
-    final var result =
-        userTaskSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchUserTasks(
-                userTaskSearchQuery(q -> q.filter(f -> f.userTaskKeys(userTaskKey)).singleResult()))
+    final var query =
+        UserTaskQuery.of(q -> q.filter(f -> f.userTaskKeys(userTaskKey)).singleResult());
+    final var userTask =
+        search(query, securityContextProvider.provideSecurityContext(authentication))
             .items()
             .getFirst();
+
     final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
     if (!securityContextProvider.isAuthorized(
-        result.processDefinitionId(), authentication, authorization)) {
+        userTask.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return result;
+
+    return userTask;
   }
 
   public Optional<FormEntity> getUserTaskForm(final long userTaskKey) {

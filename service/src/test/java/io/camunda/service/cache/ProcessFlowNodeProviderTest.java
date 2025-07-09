@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.util;
+package io.camunda.service.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,7 +20,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider.ProcessElement;
+import io.camunda.service.cache.ProcessElementProvider.ProcessElement;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -31,14 +31,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {ProcessElementProvider.class})
+@ExtendWith(MockitoExtension.class)
 class ProcessElementProviderTest {
 
   public static final String PROC_DEF_ID1 = "testProcess";
@@ -47,9 +44,15 @@ class ProcessElementProviderTest {
   public static final String PROC_DEF_ID41 = "Process_0diikxu";
   public static final String PROC_DEF_ID42 = "Process_18z2cdf";
   private static final Long PROC_DEF_KEY = 1L;
-  @Autowired ProcessElementProvider processElementProvider;
-  @MockBean ProcessDefinitionServices processDefinitionServices;
-  @Mock ProcessDefinitionEntity processDefinition;
+
+  @InjectMocks ProcessElementProvider processElementProvider;
+
+  @Mock(lenient = true)
+  ProcessDefinitionServices processDefinitionServices;
+
+  @Mock(lenient = true)
+  ProcessDefinitionEntity processDefinition;
+
   @Mock BiConsumer<Long, ProcessElement> mockConsumer;
   private String bpmn1;
   private String bpmn2;

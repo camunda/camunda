@@ -5,22 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.cache;
+package io.camunda.service.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import io.camunda.search.entities.FlowNodeInstanceEntity;
-import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -34,9 +30,6 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Use the {@link ProcessCache#getCacheItem(long)} method to load one item or the {@link
  * ProcessCache#getCacheItems(Set)} method to load multiple cache items at once.
- *
- * <p>The process cache default configuration can be changed via the {@link
- * GatewayRestConfiguration.ProcessCacheConfiguration} properties.
  */
 public class ProcessCache {
 
@@ -46,17 +39,16 @@ public class ProcessCache {
   private final ProcessElementProvider processElementProvider;
 
   public ProcessCache(
-      final GatewayRestConfiguration configuration,
-      final ProcessElementProvider processElementProvider,
+      final Configuration configuration,
+      final ProcessDefinitionServices processDefinitionServices,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
-    this.processElementProvider = processElementProvider;
+    processElementProvider = new ProcessElementProvider(processDefinitionServices);
+
     final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
     final var cacheBuilder =
-        Caffeine.newBuilder()
-            .maximumSize(configuration.getProcessCache().getMaxSize())
-            .recordStats(() -> statsCounter);
-    final var expirationIdle = configuration.getProcessCache().getExpirationIdleMillis();
+        Caffeine.newBuilder().maximumSize(configuration.maxSize()).recordStats(() -> statsCounter);
+    final var expirationIdle = configuration.expirationIdleMillis();
     if (expirationIdle != null && expirationIdle > 0) {
       cacheBuilder.expireAfterAccess(expirationIdle, TimeUnit.MILLISECONDS);
     }
@@ -69,32 +61,22 @@ public class ProcessCache {
     return cache.get(processDefinitionKey);
   }
 
-  public Map<Long, ProcessCacheItem> getCacheItems(final Set<Long> processDefinitionKeys) {
-    return cache.getAll(processDefinitionKeys);
-  }
-
-  public Map<Long, ProcessCacheItem> getUserTaskNames(final List<UserTaskEntity> items) {
-    return getCacheItems(
-        items.stream().map(UserTaskEntity::processDefinitionKey).collect(Collectors.toSet()));
-  }
-
-  public String getUserTaskName(final UserTaskEntity userTask) {
-    return getCacheItem(userTask.processDefinitionKey()).getElementName(userTask.elementId());
-  }
-
-  public Map<Long, ProcessCacheItem> getElementNames(final List<FlowNodeInstanceEntity> items) {
-    return getCacheItems(
-        items.stream()
-            .map(FlowNodeInstanceEntity::processDefinitionKey)
-            .collect(Collectors.toSet()));
-  }
-
-  public String getElementName(final FlowNodeInstanceEntity element) {
-    return getCacheItem(element.processDefinitionKey()).getElementName(element.flowNodeId());
+  public ProcessCacheResult getCacheItems(final Set<Long> processDefinitionKeys) {
+    return new ProcessCacheResult(cache.getAll(processDefinitionKeys));
   }
 
   public void invalidate() {
     cache.invalidateAll();
+  }
+
+  public LoadingCache<Long, ProcessCacheItem> getRawCache() {
+    return cache;
+  }
+
+  public record Configuration(long maxSize, Long expirationIdleMillis) {
+    static Configuration getDefault() {
+      return new Configuration(100, null);
+    }
   }
 
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {

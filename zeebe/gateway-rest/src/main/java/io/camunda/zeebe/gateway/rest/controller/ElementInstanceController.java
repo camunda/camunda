@@ -25,7 +25,6 @@ import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
-import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,15 +37,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ElementInstanceController {
 
   private final ElementInstanceServices elementInstanceServices;
-  private final ProcessCache processCache;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ElementInstanceController(
       final ElementInstanceServices elementInstanceServices,
-      final ProcessCache processCache,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.elementInstanceServices = elementInstanceServices;
-    this.processCache = processCache;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -84,8 +80,8 @@ public class ElementInstanceController {
           elementInstanceServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getByKey(elementInstanceKey);
-      final var name = processCache.getElementName(element);
-      return ResponseEntity.ok().body(SearchQueryResponseMapper.toElementInstance(element, name));
+
+      return ResponseEntity.ok().body(SearchQueryResponseMapper.toElementInstance(element));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -98,10 +94,9 @@ public class ElementInstanceController {
           elementInstanceServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
-      final var processCacheItems = processCache.getElementNames(result.items());
+
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(
-              result, processCacheItems));
+          SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
