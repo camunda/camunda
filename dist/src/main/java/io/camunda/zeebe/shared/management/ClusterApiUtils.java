@@ -30,6 +30,9 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -154,7 +157,7 @@ final class ClusterApiUtils {
     return operations.stream().map(ClusterApiUtils::mapOperation).toList();
   }
 
-  private static Operation mapOperation(final ClusterConfigurationChangeOperation operation) {
+  static Operation mapOperation(final ClusterConfigurationChangeOperation operation) {
     return switch (operation) {
       case final MemberJoinOperation join ->
           new Operation()
@@ -216,6 +219,18 @@ final class ClusterApiUtils {
               .priority(bootstrapOperation.priority());
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new Operation().operation(OperationEnum.DELETE_HISTORY);
+      case final AwaitRedistributionCompletion redistributionCompletion ->
+          new Operation()
+              .operation(OperationEnum.AWAIT_REDISTRIBUTION)
+              .brokerId(Integer.parseInt(redistributionCompletion.memberId().id()));
+      case final AwaitRelocationCompletion relocationCompletion ->
+          new Operation()
+              .operation(OperationEnum.AWAIT_RELOCATION)
+              .brokerId(Integer.parseInt(relocationCompletion.memberId().id()));
+      case final UpdateRoutingState updateRoutingState ->
+          new Operation()
+              .operation(OperationEnum.UPDATE_ROUTING_STATE)
+              .brokerId(Integer.parseInt(updateRoutingState.memberId().id()));
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
