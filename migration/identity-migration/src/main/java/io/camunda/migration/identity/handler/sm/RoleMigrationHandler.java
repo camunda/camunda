@@ -19,6 +19,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -91,7 +92,9 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
 
     final var authorizations =
         permissions.stream()
-            .map(permission -> getAuthorizationsByAudience(permission, roleId))
+            .map(
+                permission ->
+                    getAuthorizationsByAudience(permission, roleId, AuthorizationOwnerType.ROLE))
             .flatMap(List::stream)
             .toList();
 
