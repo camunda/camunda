@@ -87,12 +87,20 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     }
   }
 
+  /**
+   * Executes the next pending batch operation in the queue. If more than one batch operation is
+   * pending, the following one will be executed in the next scheduled run.
+   *
+   * @param taskResultBuilder the task result builder to append the commands to
+   * @return the task result containing the commands to be executed
+   */
   private TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     try {
-      LOG.trace("Looking for pending batch operations to execute (scheduled).");
+      LOG.trace("Looking for the next pending batch operation to execute (scheduled).");
       executing.set(true);
-      batchOperationState.foreachPendingBatchOperation(
-          bo -> executeBatchOperation(bo, taskResultBuilder));
+      batchOperationState
+          .getNextPendingBatchOperation()
+          .ifPresent(bo -> executeBatchOperation(bo, taskResultBuilder));
       return taskResultBuilder.build();
     } finally {
       executing.set(false);

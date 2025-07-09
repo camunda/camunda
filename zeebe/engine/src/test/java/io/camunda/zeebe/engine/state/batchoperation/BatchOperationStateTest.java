@@ -176,10 +176,7 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, batchRecord);
 
     // then
-    final var pendingKeys = new ArrayList<>();
-    state.foreachPendingBatchOperation(bo -> pendingKeys.add(bo.getKey()));
-
-    assertThat(pendingKeys).containsExactly(batchOperationKey);
+    assertThat(state.getNextPendingBatchOperation().get().getKey()).isEqualTo(batchOperationKey);
   }
 
   @Test
@@ -196,10 +193,7 @@ public class BatchOperationStateTest {
     state.start(batchOperationKey);
 
     // then
-    final var pendingKeys = new ArrayList<>();
-    state.foreachPendingBatchOperation(bo -> pendingKeys.add(bo.getKey()));
-
-    assertThat(pendingKeys).isEmpty();
+    assertThat(state.getNextPendingBatchOperation()).isEmpty();
 
     // and should have status STARTED
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -238,10 +232,7 @@ public class BatchOperationStateTest {
     state.fail(batchOperationKey);
 
     // then
-    final var pendingKeys = new ArrayList<>();
-    state.foreachPendingBatchOperation(bo -> pendingKeys.add(bo.getKey()));
-
-    assertThat(pendingKeys).isEmpty();
+    assertThat(state.getNextPendingBatchOperation()).isEmpty();
 
     // and should have status STARTED
     final var persistedBatchOperation = state.get(batchOperationKey).get();
