@@ -83,8 +83,8 @@ public class VariableSearchTermsQueryChunkIT extends TasklistZeebeIntegrationTes
     // Using the CamundaExporter and the shared Operate indices having the FNIs
     // present requires more time compared to the User Task created state check
     Awaitility.await()
-        .atMost(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofSeconds(2))
+        .atMost(Duration.ofMinutes(2))
+        .pollInterval(Duration.ofSeconds(5))
         .untilAsserted(
             () -> {
               // User Task in Embedded Subprocess
