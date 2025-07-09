@@ -277,7 +277,6 @@ public class ProcessDefinitionSearchMultiTenantsTest {
                 .toList());
   }
 
-
   private static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return deployResource(camundaClient, resourceName, null);
