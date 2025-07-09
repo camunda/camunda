@@ -9,13 +9,15 @@
 import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
 import { getGroupsByTenantId } from "src/utility/api/tenants";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import { TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/tenants/detail/groups/DeleteModal";
 import AssignGroupsModal from "src/pages/tenants/detail/groups/AssignGroupsModal";
+import { isInternalGroupsEnabled } from "src/configuration";
+import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
+import { GroupKeys } from "src/utility/api/groups";
 
 type GroupsProps = {
   tenantId: string;
@@ -24,22 +26,20 @@ type GroupsProps = {
 const Groups: FC<GroupsProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
 
-  const {
-    data: groups,
-    loading,
-    success,
-    reload,
-  } = useApi(getGroupsByTenantId, {
-    tenantId: tenantId,
-  });
+  const { groups, loading, success, reload } = useEnrichedGroups(
+    getGroupsByTenantId,
+    {
+      tenantId,
+    },
+  );
 
-  const isGroupsEmpty = !groups || groups.items?.length === 0;
+  const isGroupsEmpty = !groups || groups.length === 0;
 
   const [assignGroups, assignGroupsModal] = useEntityModal(
     AssignGroupsModal,
     reload,
     {
-      assignedGroups: groups?.items || [],
+      assignedGroups: groups,
     },
   );
   const openAssignModal = () => assignGroups({ id: tenantId });
@@ -79,14 +79,23 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
       </>
     );
 
+  type GroupsListHeaders = {
+    header: string;
+    key: GroupKeys;
+  }[];
+
+  const groupsListHeaders: GroupsListHeaders = isInternalGroupsEnabled
+    ? [
+        { header: t("groupId"), key: "groupId" },
+        { header: t("groupName"), key: "name" },
+      ]
+    : [{ header: t("groupId"), key: "groupId" }];
+
   return (
     <>
       <EntityList
-        data={groups?.items}
-        headers={[
-          { header: t("groupId"), key: "groupId" },
-          { header: t("groupName"), key: "name" },
-        ]}
+        data={groups}
+        headers={groupsListHeaders}
         sortProperty="groupId"
         loading={loading}
         addEntityLabel={t("assignGroup")}
