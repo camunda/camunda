@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useMutation, UseMutationOptions} from '@tanstack/react-query';
+import {useMutation, type UseMutationOptions} from '@tanstack/react-query';
 import {cancelProcessInstance} from 'modules/api/v2/processInstances/cancelProcessInstance';
 
 function useCancelProcessInstance(
