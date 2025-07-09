@@ -378,6 +378,7 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final String clusterId = "clusterId";
     final String region = "asdf-123";
+    final String domain = "dev.ultrawombat.com";
 
     try (final ZeebeClient client =
         ZeebeClient.newCloudClientBuilder()
@@ -385,6 +386,7 @@ public final class ZeebeClientTest extends ClientTest {
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .withRegion(region)
+            .withDomain(domain)
             .build()) {
       // when
       final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
@@ -392,11 +394,11 @@ public final class ZeebeClientTest extends ClientTest {
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
       assertThat(clientConfiguration.getGrpcAddress())
-          .hasHost(String.format("%s.%s.zeebe.camunda.io", clusterId, region))
+          .hasHost(String.format("%s.%s.zeebe.%s", clusterId, region, domain))
           .hasPort(443)
           .hasScheme("https");
       assertThat(clientConfiguration.getRestAddress())
-          .hasHost(String.format("%s.zeebe.camunda.io", region))
+          .hasHost(String.format("%s.zeebe.%s", region, domain))
           .hasPort(443)
           .hasPath("/" + clusterId)
           .hasScheme("https");
@@ -404,7 +406,7 @@ public final class ZeebeClientTest extends ClientTest {
   }
 
   @Test
-  public void shouldCloudBuilderBuildProperClientWithDefaultRegion() {
+  public void shouldCloudBuilderBuildProperClientWithDefaultRegionAndDomain() {
     // given
     final String clusterId = "clusterId";
     try (final ZeebeClient client =

@@ -51,7 +51,18 @@ public interface ZeebeClientCloudBuilderStep1 {
          *
          * @param region region of the Camunda Cloud cluster
          */
-        ZeebeClientCloudBuilderStep4 withRegion(String region);
+        ZeebeClientCloudBuilderStep5 withRegion(String region);
+
+        interface ZeebeClientCloudBuilderStep5 extends ZeebeClientBuilder {
+
+          /**
+           * Sets the domain of the Camunda Cloud stage. Default is 'camunda.io', the production
+           * stage.
+           *
+           * @param domain domain of the Camunda Cloud stage
+           */
+          ZeebeClientCloudBuilderStep5 withDomain(String domain);
+        }
       }
     }
   }
