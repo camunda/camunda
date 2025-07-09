@@ -71,7 +71,11 @@ class ApiCallbackTest {
 
     // then
     verifyNoInteractions(retryAction);
+<<<<<<< HEAD
     assertThat(response.isCompletedExceptionally()).isTrue();
+=======
+    assertTrue(response.isCompletedExceptionally());
+>>>>>>> 7b91bbe1 (fix: properly decrement http client retries in zeebe rest client)
   }
 
   @Test
@@ -91,7 +95,11 @@ class ApiCallbackTest {
 
     // then: no new retry, future is exceptionally completed
     verify(retryAction, times(DEFAULT_REMAINING_RETRIES)).run();
+<<<<<<< HEAD
     assertThat(response.isCompletedExceptionally()).isTrue();
+=======
+    assertTrue(response.isCompletedExceptionally());
+>>>>>>> 7b91bbe1 (fix: properly decrement http client retries in zeebe rest client)
   }
 
   @Test
@@ -113,7 +121,11 @@ class ApiCallbackTest {
     // No retries left - should NOT call retryAction again
     apiCallback.completed(apiResponse);
     verifyNoInteractions(retryAction);
+<<<<<<< HEAD
     assertThat(response.isCompletedExceptionally()).isTrue();
+=======
+    assertTrue(response.isCompletedExceptionally());
+>>>>>>> 7b91bbe1 (fix: properly decrement http client retries in zeebe rest client)
   }
 
   @Test
@@ -129,6 +141,10 @@ class ApiCallbackTest {
 
     // Final attempt - should complete exceptionally, no further retry
     apiCallback.completed(apiResponse);
+<<<<<<< HEAD
     assertThat(response.isCompletedExceptionally()).isTrue();
+=======
+    assertTrue(response.isCompletedExceptionally());
+>>>>>>> 7b91bbe1 (fix: properly decrement http client retries in zeebe rest client)
   }
 }
