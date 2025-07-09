@@ -156,7 +156,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
                   value -> {
                     final CamundaClientCredentials fetchedCredentials = fetchCredentials();
                     credentialsCache.put(clientId, fetchedCredentials).writeCache();
-                    return !fetchedCredentials.equals(value) || !value.isValid();
+                    return !fetchedCredentials.equals(value);
                   })
               .orElse(false);
     } catch (final IOException e) {
