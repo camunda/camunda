@@ -22,6 +22,7 @@ import {Message} from './Message';
 import {match, Pattern} from 'ts-pattern';
 import styles from './styles.module.scss';
 import {hasFileComponents} from './hasFileComponents';
+import {getClientConfig} from 'common/config/getClientConfig';
 
 function parseValidJSON(schema: string): null | object {
   try {
@@ -39,6 +40,7 @@ const StartProcessFromForm: React.FC = () => {
     | 'failed-submission'
     | 'invalid-form-schema'
     | 'schema-with-file-components'
+    | 'v2-api-not-supported'
   >('form');
   const {bpmnProcessId} = useStartProcessParams();
   const {data, error} = useExternalForm(bpmnProcessId);
@@ -66,6 +68,15 @@ const StartProcessFromForm: React.FC = () => {
   }, [error]);
 
   useLayoutEffect(() => {
+    const clientConfig = getClientConfig();
+    if (clientConfig.clientMode === 'v2') {
+      tracking.track({
+        eventName: 'public-start-form-v2-api-not-supported',
+      });
+      setPageView('v2-api-not-supported');
+      return;
+    }
+    
     tracking.track({
       eventName: 'public-start-form-opened',
     });
@@ -187,6 +198,16 @@ const StartProcessFromForm: React.FC = () => {
                 description={t(
                   'startProcessFromFormWithFileComponentsDescription',
                 )}
+              />
+            ))
+            .with({pageView: 'v2-api-not-supported'}, () => (
+              <Message
+                icon={{
+                  altText: t('startProcessFromFormErrorRobot'),
+                  path: ErrorRobotImage,
+                }}
+                heading={t('startProcessFromFormV2ApiNotSupportedHeading')}
+                description={t('startProcessFromFormV2ApiNotSupportedDescription')}
               />
             ))
             .exhaustive()}
