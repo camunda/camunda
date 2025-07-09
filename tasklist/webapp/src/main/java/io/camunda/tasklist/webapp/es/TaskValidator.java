@@ -65,7 +65,8 @@ public class TaskValidator {
     validateTaskIsAssigned(task);
 
     final UserDTO currentUser = getCurrentUser();
-    if (!task.getAssignee().equals(currentUser.getUserId())) {
+    if (!task.getAssignee().equals(currentUser.getUserId())
+        && !tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment()) {
       throw new InvalidRequestException(
           createErrorMessage(
               TASK_NOT_ASSIGNED_TO_CURRENT_USER,
