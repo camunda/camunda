@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
@@ -293,7 +294,7 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
-
+    final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     final URI target = buildRequestURI(path);
 
     // Create retry action to re-execute the same request
@@ -312,7 +313,7 @@ public final class HttpClient implements AutoCloseable {
               responseType,
               transformer,
               result,
-              callback);
+              apiCallback.get());
         };
 
     final SimpleRequestBuilder requestBuilder =
@@ -364,22 +365,21 @@ public final class HttpClient implements AutoCloseable {
       entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
     }
 
-    ApiCallback<HttpT, RespT> apiCallback = callback;
-    if (apiCallback == null) {
-      apiCallback =
+    if (apiCallback.get() == null) {
+      apiCallback.set(
           new ApiCallback<>(
               result,
               transformer,
               credentialsProvider::shouldRetryRequest,
               retryAction,
-              maxRetries);
+              maxRetries));
     }
 
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
-            apiCallback));
+            apiCallback.get()));
   }
 
   private URI buildRequestURI(final String path) {
