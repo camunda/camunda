@@ -394,6 +394,82 @@ describe('<FormJS />', () => {
     );
   });
 
+  it('should submit form via enter key and persist variable value', async () => {
+    nodeMockServer.use(
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (
+            hasRequestedVariables(await request.json(), REQUESTED_VARIABLES)
+          ) {
+            return HttpResponse.json(variableMocks.variables);
+          }
+
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
+            {
+              status: 404,
+            },
+          );
+        },
+        {once: true},
+      ),
+    );
+
+    const mockOnSubmit = vi.fn();
+    const {user} = render(
+      <FormJS
+        id={MOCK_FORM_ID}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
+        task={assignedTaskWithForm(MOCK_TASK_ID)}
+        user={userMocks.currentUser}
+        onSubmit={mockOnSubmit}
+        onFileUpload={() => Promise.resolve(new Map())}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
+    );
+
+    await user.clear(screen.getByLabelText(/my variable/i));
+    await user.type(screen.getByLabelText(/my variable/i), 'new value');
+    
+    // Wait a bit to ensure debounce doesn't affect the test
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    await user.keyboard('{Enter}');
+
+    // Wait for the form to submit
+    await waitFor(() => {
+      expect(screen.getByText('Completed')).toBeInTheDocument();
+    }, { timeout: 1000 });
+
+    await waitFor(() =>
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          {
+            name: 'isCool',
+            value: '"yes"',
+          },
+          {
+            name: 'myVar',
+            value: '"new value"',
+          },
+        ]),
+      ),
+    );
+  }, 10000);
+
   // TODO: #3957
   it('should render a prefilled dynamic form', async () => {
     nodeMockServer.use(

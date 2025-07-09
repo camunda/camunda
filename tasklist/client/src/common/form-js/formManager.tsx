@@ -84,6 +84,10 @@ class FormManager {
       this.#form.on('submit', this.#onSubmit);
     }
 
+    // Set up presubmit handler to flush debounced values
+    this.#form.off('presubmit', this.#presubmitHandler);
+    this.#form.on('presubmit', this.#presubmitHandler);
+
     if (
       schema !== null &&
       (this.#schema !== schema || !isEqual(this.#data, data))
@@ -101,6 +105,31 @@ class FormManager {
     return Promise.resolve();
   };
 
+  #presubmitHandler = () => {
+    // Flush debounced values by blurring the active element
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement && 
+        (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA' || activeElement.tagName === 'SELECT')) {
+      // Create a temporary element to focus on
+      const tempElement = document.createElement('div');
+      tempElement.tabIndex = -1;
+      tempElement.style.position = 'absolute';
+      tempElement.style.left = '-9999px';
+      document.body.appendChild(tempElement);
+      
+      // Focus the temp element (this will trigger blur on the active element)
+      tempElement.focus();
+      
+      // Clean up
+      document.body.removeChild(tempElement);
+      
+      // Focus back to the original element if it still exists
+      if (document.contains(activeElement)) {
+        activeElement.focus();
+      }
+    }
+  };
+
   setReadOnly = (value: boolean) => {
     this.#form.setProperty('readOnly', value);
   };
@@ -114,6 +143,7 @@ class FormManager {
   };
 
   detach = () => {
+    this.#form.off('presubmit', this.#presubmitHandler);
     this.#form.detach();
     this.#form = new Form(DEFAULT_FORM_OPTIONS);
     this.#schema = null;
