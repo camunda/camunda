@@ -761,7 +761,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":success: *Release job for ${{ inputs.releaseVersion }}* **succeeded!**\n"
+                    "text": ":success: *Release job for ${{ inputs.releaseVersion }}* **succeeded!** (excluding Maven Central publishing - this is done separately)\n"
                   }
                 }
               ]
