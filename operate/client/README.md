@@ -1,11 +1,11 @@
 # Operate Frontend
 
-> **Notice:** Make sure to have [yarn](https://yarnpkg.com/en/docs/install) installed in your machine
+> **Notice:** Make sure to have [npm](http://npmjs.com/npm) installed in your machine
 
 ## Installation
 
 ```sh
-yarn
+npm ci
 ```
 
 You may need to run this command with administrator privileges, as the [postinstall script](./scripts/wireModules.js) creates a symlinked directory.
@@ -15,13 +15,13 @@ You may need to run this command with administrator privileges, as the [postinst
 ### Start Development Server
 
 ```sh
-yarn start
+npm run start
 ```
 
 ### Run tests
 
 ```sh
-yarn test
+npm run test
 ```
 
 ### Run operate backend
@@ -289,4 +289,3 @@ We will further work on more detailed instructions and requirements, for now you
 - The Accessibility section of our [Design Review Guidelines](https://app.camunda.com/confluence/display/camBPM/Design+Review+Guidelines)
 - Our [Confluence page on Accessibility](https://app.camunda.com/confluence/display/camBPM/Accessibility)
 - [Get started using VoiceOver, the Mac built-in screen reader](https://webaim.org/articles/voiceover/)
-
