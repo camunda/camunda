@@ -41,7 +41,6 @@
     "build": "npm run ts-check && vite build && node ./renameProdIndex.js && node license-build.js",
     "test": "vitest run --project=unit",
     "test:browser": "vitest run --project=browser",
-    "test:ci": "cross-env CI=true react-scripts test --env=jsdom --resetMocks=false --ci --testTimeout 7000 --clearMocks=true",
     "ts-check": "tsc -b",
     "eslint": "eslint .",
     "lint": "npm run ts-check && npm run eslint",

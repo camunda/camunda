@@ -42,7 +42,7 @@ jobs:
           node-version: "22"
       - run: npm ci
         name: Install dependencies
-      - run: npm run test:ci
+      - run: npm run test
         name: Unit & Integration tests
       - name: Observe build status
         if: always()
