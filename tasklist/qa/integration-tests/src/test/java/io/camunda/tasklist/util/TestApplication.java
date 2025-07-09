@@ -36,7 +36,11 @@ import org.springframework.context.annotation.Profile;
           value = TasklistModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import({TasklistPropertiesOverride.class, WebappsModuleConfiguration.class, CommonsModuleConfiguration.class})
+@Import({
+  TasklistPropertiesOverride.class,
+  WebappsModuleConfiguration.class,
+  CommonsModuleConfiguration.class
+})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {
