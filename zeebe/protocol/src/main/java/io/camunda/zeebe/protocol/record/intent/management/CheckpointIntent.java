@@ -20,7 +20,9 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 public enum CheckpointIntent implements Intent {
   CREATE(0),
   CREATED(1),
-  IGNORED(2);
+  IGNORED(2),
+  CONFIRM_BACKUP(3),
+  CONFIRMED_BACKUP(4);
 
   private final short value;
 
@@ -38,6 +40,7 @@ public enum CheckpointIntent implements Intent {
     switch (this) {
       case CREATED:
       case IGNORED:
+      case CONFIRMED_BACKUP:
         return true;
       default:
         return false;
@@ -52,6 +55,10 @@ public enum CheckpointIntent implements Intent {
         return CREATED;
       case 2:
         return IGNORED;
+      case 3:
+        return CONFIRM_BACKUP;
+      case 4:
+        return CONFIRMED_BACKUP;
       default:
         return UNKNOWN;
     }
