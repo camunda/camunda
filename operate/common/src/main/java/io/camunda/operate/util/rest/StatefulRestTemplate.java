@@ -14,6 +14,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.classic.HttpClient;
@@ -30,6 +33,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RequestCallback;
@@ -45,6 +49,8 @@ import org.springframework.web.client.RestTemplate;
 public class StatefulRestTemplate extends RestTemplate {
 
   private static final String CSRF_TOKEN_HEADER_NAME = "X-CSRF-TOKEN";
+  private static final String USERNAME = "demo";
+  private static final String PASSWORD = "demo";
 
   private final String host;
   private final Integer port;
@@ -68,6 +74,11 @@ public class StatefulRestTemplate extends RestTemplate {
     statefulHttpComponentsClientHttpRequestFactory =
         new StatefulHttpComponentsClientHttpRequestFactory(httpClient, httpContext);
     super.setRequestFactory(statefulHttpComponentsClientHttpRequestFactory);
+
+    // We set the interceptors here so they capture the non overridden methods
+    final var interceptors = new ArrayList<>(super.getInterceptors());
+    interceptors.add(new BasicAuthenticationInterceptor(USERNAME, PASSWORD));
+    super.setInterceptors(interceptors);
   }
 
   public HttpClient getHttpClient() {
@@ -87,7 +98,7 @@ public class StatefulRestTemplate extends RestTemplate {
       final URI url, final Object request, final Class<T> responseType) throws RestClientException {
     final RequestEntity<Object> requestEntity =
         RequestEntity.method(HttpMethod.POST, url)
-            .headers(getCsrfHeader())
+            .headers(getHeaders())
             .contentType(MediaType.APPLICATION_JSON)
             .body(request);
     final ResponseEntity<T> tResponseEntity = exchange(requestEntity, responseType);
@@ -110,6 +121,7 @@ public class StatefulRestTemplate extends RestTemplate {
     if (requestBody != null) {
       final HttpHeaders headers = new HttpHeaders();
       headers.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
+      headers.add(HttpHeaders.AUTHORIZATION, "Basic " + getEncodedUsernameAndPassword());
       if (requestBody instanceof HttpEntity<?>) {
         httpEntity = new HttpEntity(((HttpEntity<?>) requestBody).getBody(), headers);
       } else {
@@ -157,7 +169,15 @@ public class StatefulRestTemplate extends RestTemplate {
     }
   }
 
-  public Consumer<HttpHeaders> getCsrfHeader() {
-    return (header) -> header.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
+  public Consumer<HttpHeaders> getHeaders() {
+    return (header) -> {
+      header.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
+      header.add(HttpHeaders.AUTHORIZATION, "Basic " + getEncodedUsernameAndPassword());
+    };
+  }
+
+  private String getEncodedUsernameAndPassword() {
+    return Base64.getEncoder()
+        .encodeToString(USERNAME.concat(":").concat(PASSWORD).getBytes(StandardCharsets.UTF_8));
   }
 }
