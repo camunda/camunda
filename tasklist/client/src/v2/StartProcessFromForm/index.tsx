@@ -11,8 +11,8 @@ import {Content} from '@carbon/react';
 import {useTranslation} from 'react-i18next';
 import {tracking} from 'common/tracking';
 import ErrorRobotImage from 'common/images/error-robot.svg';
-import {Message} from 'v1/StartProcessFromForm/Message';
-import styles from 'v1/StartProcessFromForm/styles.module.scss';
+import {StartProcessFromFormMessage} from 'common/components/StartProcessFromFormMessage';
+import styles from 'common/styles/startProcessFromForm.module.scss';
 
 const StartProcessFromForm: React.FC = () => {
   const {t} = useTranslation();
@@ -32,7 +32,7 @@ const StartProcessFromForm: React.FC = () => {
         tagName="main"
       >
         <div className={styles.container}>
-          <Message
+          <StartProcessFromFormMessage
             icon={{
               altText: t('startProcessFromFormErrorRobot'),
               path: ErrorRobotImage,
