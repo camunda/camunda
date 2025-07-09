@@ -32,7 +32,6 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   private final ArrayProperty<IntegerValue> relocatedPartitions =
       new ArrayProperty<>("relocatedPartitions", IntegerValue::new);
 
-  private final LongProperty bootstrappedAt = new LongProperty("bootstrappedAt", -1L);
   private final LongProperty scalingPosition = new LongProperty("scalingPosition", -1L);
 
   /**
@@ -43,12 +42,11 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
       new IntegerProperty("messageCorrelationPartitions", -1);
 
   public ScaleRecord() {
-    super(6);
+    super(5);
     declareProperty(desiredPartitionCountProp)
         .declareProperty(redistributedPartitions)
         .declareProperty(relocatedPartitions)
         .declareProperty(messageCorrelationPartitions)
-        .declareProperty(bootstrappedAt)
         .declareProperty(scalingPosition);
   }
 
@@ -88,16 +86,6 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   }
 
   @Override
-  public long getBootstrappedAt() {
-    return bootstrappedAt.getValue();
-  }
-
-  public ScaleRecord setBootstrappedAt(final long bootstrappedAt) {
-    this.bootstrappedAt.setValue(bootstrappedAt);
-    return this;
-  }
-
-  @Override
   public long getScalingPosition() {
     return scalingPosition.getValue();
   }
@@ -134,11 +122,11 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
       final int desiredPartitionCount,
       final Collection<Integer> redistributedPartitions,
       final int messageCorrelationPartitions,
-      final long bootstrappedAt) {
+      final long scalingPosition) {
     setDesiredPartitionCount(desiredPartitionCount);
     setRedistributedPartitions(redistributedPartitions);
     setMessageCorrelationPartitions(messageCorrelationPartitions);
-    setBootstrappedAt(bootstrappedAt);
+    setScalingPosition(scalingPosition);
     return this;
   }
 

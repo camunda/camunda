@@ -158,7 +158,7 @@ public class SnapshotApiRequestHandlerTest {
   @ParameterizedTest
   @ValueSource(longs = {1L, 11L, 100L})
   // last processed position in the snapshot.
-  // required position is always bootstrappedAt
+  // required position is always scalingStartedAt
   void shouldSendAllChunksCorrectly(final long position) {
     // given
     final var snapshotProcessedPosition = 11L;

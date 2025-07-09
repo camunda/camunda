@@ -25,7 +25,7 @@ public interface MutableRoutingState extends RoutingState {
    * @param partitions the set of partition IDs to be used as the desired state. The set must
    *     include current partitions and the new partitions.
    * @param key the event key associated with this scaling operation, which will be stored for
-   *     tracking the scaling history via {@link RoutingState#bootstrappedAt(int)}
+   *     tracking the scaling history via {@link RoutingState#scalingStartedAt(int)}
    */
   void setDesiredPartitions(Set<Integer> partitions, long key);
 

@@ -2935,7 +2935,6 @@ final class JsonSerializableToJsonTest {
           "redistributedPartitions": [],
           "relocatedPartitions": [],
           "messageCorrelationPartitions": -1,
-          "bootstrappedAt": -1,
           "scalingPosition": -1
         }
         """
@@ -2949,13 +2948,12 @@ final class JsonSerializableToJsonTest {
           "redistributedPartitions": [],
           "relocatedPartitions": [],
           "messageCorrelationPartitions": -1,
-          "bootstrappedAt": -1,
           "scalingPosition": -1
         }
         """
       },
       {
-        "ScaleRecord w/ redistributedPartitions & relocatedPartitions & bootstrappedAt",
+        "ScaleRecord w/ redistributedPartitions & relocatedPartitions & scalingPosition",
         (Supplier<ScaleRecord>)
             () ->
                 new ScaleRecord()
@@ -2963,7 +2961,6 @@ final class JsonSerializableToJsonTest {
                     .setRelocatedPartitions(List.of(4, 5))
                     .setRedistributedPartitions(List.of(4, 5))
                     .setMessageCorrelationPartitions(5)
-                    .setBootstrappedAt(123L)
                     .setScalingPosition(199L),
         """
         {
@@ -2971,7 +2968,6 @@ final class JsonSerializableToJsonTest {
           "redistributedPartitions": [4,5],
           "relocatedPartitions": [4,5],
           "messageCorrelationPartitions": 5,
-          "bootstrappedAt": 123,
           "scalingPosition": 199
         }
         """

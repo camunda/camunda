@@ -38,7 +38,7 @@ public record InMemoryRoutingState(
   }
 
   @Override
-  public long bootstrappedAt(final int partitionCount) {
+  public long scalingStartedAt(final int partitionCount) {
     return Optional.of(activePartitions.get(partitionCount)).orElse(-1L);
   }
 }

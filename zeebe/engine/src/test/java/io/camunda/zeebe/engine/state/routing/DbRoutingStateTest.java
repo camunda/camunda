@@ -41,11 +41,11 @@ final class DbRoutingStateTest {
     assertThat(routingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);
     assertThat(routingState.messageCorrelation())
         .isEqualTo(new RoutingState.MessageCorrelation.HashMod(3));
-    assertThat(routingState.bootstrappedAt(3)).isEqualTo(0);
+    assertThat(routingState.scalingStartedAt(3)).isEqualTo(0);
   }
 
   @Test
-  void shouldFillBootstrappedAtCorrectly() {
+  void shouldFillScalingStartedAtCorrectly() {
     // given
     final var routingState = processingState.getRoutingState();
     routingState.initializeRoutingInfo(1);
@@ -55,9 +55,9 @@ final class DbRoutingStateTest {
     routingState.setDesiredPartitions(Set.of(1, 2, 3), eventKey);
 
     // then
-    assertThat(routingState.bootstrappedAt(1)).isEqualTo(0L);
-    assertThat(routingState.bootstrappedAt(3)).isEqualTo(eventKey);
-    assertThat(routingState.bootstrappedAt(2)).isEqualTo(-1L);
+    assertThat(routingState.scalingStartedAt(1)).isEqualTo(0L);
+    assertThat(routingState.scalingStartedAt(3)).isEqualTo(eventKey);
+    assertThat(routingState.scalingStartedAt(2)).isEqualTo(-1L);
   }
 
   @Test
