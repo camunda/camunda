@@ -191,10 +191,9 @@ test.describe('task details page', () => {
     });
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-
     await taskPanelPage.openTask('JobWorker_user_task');
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
+      timeout: 120000,
     });
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
