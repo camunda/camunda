@@ -40,7 +40,9 @@ class ApiCallbackTest {
     transformer = mock(JsonResponseTransformer.class);
     retryPredicate = mock(Predicate.class);
     retryAction = mock(Runnable.class);
-    apiCallback = new ApiCallback<>(response, transformer, retryPredicate, retryAction, DEFAULT_REMAINING_RETRIES);
+    apiCallback =
+        new ApiCallback<>(
+            response, transformer, retryPredicate, retryAction, DEFAULT_REMAINING_RETRIES);
   }
 
   @Test

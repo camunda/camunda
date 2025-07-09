@@ -295,21 +295,22 @@ public final class HttpClient implements AutoCloseable {
     final URI target = buildRequestURI(path);
 
     // Create retry trigger to re-execute the same request
-    final Runnable retryTrigger = () -> {
-      if (result.isCancelled()) {
-        return;
-      }
-      sendRequest(
-          httpMethod,
-          path,
-          queryParams,
-          body,
-          requestConfig,
-          retries, // Note: retries here are tracked internally in ApiCallback now
-          responseType,
-          transformer,
-          result);
-    };
+    final Runnable retryTrigger =
+        () -> {
+          if (result.isCancelled()) {
+            return;
+          }
+          sendRequest(
+              httpMethod,
+              path,
+              queryParams,
+              body,
+              requestConfig,
+              retries, // Note: retries here are tracked internally in ApiCallback now
+              responseType,
+              transformer,
+              result);
+        };
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
@@ -362,11 +363,7 @@ public final class HttpClient implements AutoCloseable {
 
     final ApiCallback<HttpT, RespT> apiCallback =
         new ApiCallback<>(
-            result,
-            transformer,
-            credentialsProvider::shouldRetryRequest,
-            retryTrigger,
-            retries);
+            result, transformer, credentialsProvider::shouldRetryRequest, retryTrigger, retries);
 
     result.transportFuture(
         client.execute(

@@ -46,20 +46,22 @@ class ApiCallbackReuseTest {
     // Track whether a new ApiCallback is created
     callbackReference = new AtomicReference<>();
 
-    retryAction = () -> {
-      // In a real client, this would resubmit the request using the same callback.
-      // Here we simulate that by invoking the same callbackReference's completed method.
-      final ApiCallback<String, String> callback = callbackReference.get();
-      final ApiResponse<String> apiResponse = mock(ApiResponse.class);
-      when(apiResponse.getCode()).thenReturn(500);
-      callback.completed(apiResponse);
-    };
+    retryAction =
+        () -> {
+          // In a real client, this would resubmit the request using the same callback.
+          // Here we simulate that by invoking the same callbackReference's completed method.
+          final ApiCallback<String, String> callback = callbackReference.get();
+          final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+          when(apiResponse.getCode()).thenReturn(500);
+          callback.completed(apiResponse);
+        };
   }
 
   @Test
   void shouldReuseSameApiCallbackInstanceOnRetries() {
     // Given
-    final ApiCallback<String, String> apiCallback = new ApiCallback<>(response, transformer, retryPredicate, retryAction, MAX_RETRIES);
+    final ApiCallback<String, String> apiCallback =
+        new ApiCallback<>(response, transformer, retryPredicate, retryAction, MAX_RETRIES);
     callbackReference.set(apiCallback);
 
     final ApiResponse<String> firstResponse = mock(ApiResponse.class);
