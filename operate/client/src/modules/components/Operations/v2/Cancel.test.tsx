@@ -14,13 +14,11 @@ import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetc
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 import {notificationsStore} from 'modules/stores/notifications';
 
-jest.mock('modules/stores/notifications', () => {
-  return {
-    notificationsStore: {
-      displayNotification: jest.fn(),
-    },
-  };
-});
+vi.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: vi.fn(() => () => {}),
+  },
+}));
 
 describe('Cancel component', () => {
   beforeEach(() => {
