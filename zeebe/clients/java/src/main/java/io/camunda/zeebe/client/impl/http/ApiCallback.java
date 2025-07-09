@@ -34,17 +34,19 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
   private final JsonResponseTransformer<HttpT, RespT> transformer;
   private final Predicate<StatusCode> retryPredicate;
   private final Runnable retryAction;
-  private final AtomicInteger retries = new AtomicInteger(2);
+  private final AtomicInteger remainingRetries;
 
   public ApiCallback(
       final CompletableFuture<RespT> response,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final Predicate<StatusCode> retryPredicate,
-      final Runnable retryAction) {
+      final Runnable retryAction,
+      final int maxRetries) {
     this.response = response;
     this.transformer = transformer;
     this.retryPredicate = retryPredicate;
     this.retryAction = retryAction;
+    remainingRetries = new AtomicInteger(maxRetries);
   }
 
   @Override
@@ -78,7 +80,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
   private void handleErrorResponse(
       final ApiEntity<HttpT> body, final int code, final String reason) {
-    if (retries.getAndDecrement() > 0 && retryPredicate.test(new HttpStatusCode(code))) {
+    if (remainingRetries.getAndDecrement() > 0 && retryPredicate.test(new HttpStatusCode(code))) {
       retryAction.run();
       return;
     }
