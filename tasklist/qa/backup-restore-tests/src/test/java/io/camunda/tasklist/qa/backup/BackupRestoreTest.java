@@ -16,6 +16,7 @@ import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.unifiedconfig.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -49,7 +50,8 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {TestConfig.class, TasklistPropertiesOverride.class})
+@ContextConfiguration(
+    classes = {TestConfig.class, UnifiedConfiguration.class, TasklistPropertiesOverride.class})
 public class BackupRestoreTest {
 
   public static final String INDEX_PREFIX = "backup-restore-test";

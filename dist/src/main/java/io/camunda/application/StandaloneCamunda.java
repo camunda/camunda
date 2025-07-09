@@ -17,6 +17,7 @@ import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.unifiedconfig.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
@@ -47,6 +48,7 @@ public class StandaloneCamunda {
     final var standaloneCamundaApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
+                UnifiedConfiguration.class,
                 TasklistPropertiesOverride.class,
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
