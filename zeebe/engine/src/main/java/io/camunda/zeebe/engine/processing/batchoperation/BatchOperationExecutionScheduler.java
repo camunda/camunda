@@ -18,11 +18,14 @@ import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -34,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,43 +122,52 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     // First fire a start event
     appendStartedCommand(taskResultBuilder, batchOperation);
 
+    final Set<Item> keys;
     try {
-      // Then append the chunks
-      final var keys = queryAllKeys(batchOperation);
-
-      if (!keys.isEmpty()) {
-        LOG.debug(
-            "Found {} items for batch operation with key {} on partition {}.",
-            keys.size(),
-            batchOperation.getKey(),
-            partitionId);
-        for (int i = 0; i < keys.size(); i += chunkSize) {
-          final Set<Item> chunkKeys =
-              keys.stream().skip(i).limit(chunkSize).collect(Collectors.toSet());
-          appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
-          metrics.recordChunkCreated(batchOperation.getBatchOperationType());
-        }
-      } else {
-        LOG.debug(
-            "No items found for batch operation with key {} on partition {}.",
-            batchOperation.getKey(),
-            partitionId);
-      }
-
-      metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
-
-      appendExecution(batchOperation.getKey(), taskResultBuilder);
-
-      metrics.startStartExecuteLatencyMeasure(
-          batchOperation.getKey(), batchOperation.getBatchOperationType());
-      metrics.startTotalExecutionLatencyMeasure(
-          batchOperation.getKey(), batchOperation.getBatchOperationType());
+      keys = queryAllKeys(batchOperation);
     } catch (final Exception e) {
       LOG.error(
-          "Failed to append chunks for batch operation with key {}. It will be removed from queue",
+          "Failed to query keys for batch operation with key {}. It will be removed from queue",
           batchOperation.getKey(),
           e);
-      appendFailedCommand(taskResultBuilder, batchOperation);
+      appendQueryFailedCommand(taskResultBuilder, batchOperation, e);
+      return;
+    }
+
+    // Then append the chunks
+    appendChunks(batchOperation, taskResultBuilder, keys);
+
+    metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
+
+    appendExecution(batchOperation.getKey(), taskResultBuilder);
+
+    metrics.startStartExecuteLatencyMeasure(
+        batchOperation.getKey(), batchOperation.getBatchOperationType());
+    metrics.startTotalExecutionLatencyMeasure(
+        batchOperation.getKey(), batchOperation.getBatchOperationType());
+  }
+
+  private void appendChunks(
+      final PersistedBatchOperation batchOperation,
+      final TaskResultBuilder taskResultBuilder,
+      final Set<Item> keys) {
+    if (!keys.isEmpty()) {
+      LOG.debug(
+          "Found {} items for batch operation with key {} on partition {}.",
+          keys.size(),
+          batchOperation.getKey(),
+          partitionId);
+      for (int i = 0; i < keys.size(); i += chunkSize) {
+        final Set<Item> chunkKeys =
+            keys.stream().skip(i).limit(chunkSize).collect(Collectors.toSet());
+        appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
+        metrics.recordChunkCreated(batchOperation.getBatchOperationType());
+      }
+    } else {
+      LOG.debug(
+          "No items found for batch operation with key {} on partition {}.",
+          batchOperation.getKey(),
+          partitionId);
     }
   }
 
@@ -172,12 +185,20 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
-  private void appendFailedCommand(
-      final TaskResultBuilder taskResultBuilder, final PersistedBatchOperation batchOperation) {
+  private void appendQueryFailedCommand(
+      final TaskResultBuilder taskResultBuilder,
+      final PersistedBatchOperation batchOperation,
+      final Exception exception) {
     final var batchOperationKey = batchOperation.getKey();
-    final var command = new BatchOperationCreationRecord();
+    final var command = new BatchOperationPartitionLifecycleRecord();
     command.setBatchOperationKey(batchOperationKey);
-    command.setBatchOperationType(batchOperation.getBatchOperationType());
+
+    final var error = new BatchOperationError();
+    error.setType(BatchOperationErrorType.QUERY_FAILED);
+    error.setPartitionId(partitionId);
+    error.setMessage(ExceptionUtils.getStackTrace(exception));
+    command.setError(error);
+
     LOG.debug("Appending batch operation {} failed event", batchOperationKey);
     taskResultBuilder.appendCommandRecord(
         batchOperationKey,

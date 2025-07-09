@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.entities.operation;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -30,6 +31,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   private BatchOperationState state;
   private Integer operationsFailedCount = 0; // Just failed / rejected operations
   private Integer operationsCompletedCount = 0; // Just successfully completed operations
+  private List<BatchOperationErrorEntity> errors = List.of();
 
   @JsonIgnore private Object[] sortValues;
 
@@ -141,6 +143,15 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     return this;
   }
 
+  public List<BatchOperationErrorEntity> getErrors() {
+    return errors;
+  }
+
+  public BatchOperationEntity setErrors(final List<BatchOperationErrorEntity> errors) {
+    this.errors = errors;
+    return this;
+  }
+
   public BatchOperationEntity withGeneratedId() {
     setId(UUID.randomUUID().toString());
     return this;
@@ -162,6 +173,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     result =
         31 * result + (operationsCompletedCount != null ? operationsCompletedCount.hashCode() : 0);
     result = 31 * result + (operationsFailedCount != null ? operationsFailedCount.hashCode() : 0);
+    result = 31 * result + (errors != null ? errors.hashCode() : 0);
     return result;
   }
 
@@ -213,6 +225,9 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     if (!Objects.equals(operationsFailedCount, that.operationsFailedCount)) {
       return false;
     }
+    if (!Objects.equals(errors, that.errors)) {
+      return false;
+    }
 
     return operationsFinishedCount != null
         ? operationsFinishedCount.equals(that.operationsFinishedCount)
@@ -248,6 +263,8 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
         + operationsFailedCount
         + ", operationsCompletedCount="
         + operationsCompletedCount
+        + ", errors="
+        + errors
         + '}';
   }
 
@@ -256,7 +273,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
     ACTIVE,
     SUSPENDED,
     COMPLETED,
-    COMPLETED_WITH_ERRORS,
+    PARTIALLY_COMPLETED,
     CANCELED,
     INCOMPLETED
   }

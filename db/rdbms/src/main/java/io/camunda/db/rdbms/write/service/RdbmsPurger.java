@@ -39,6 +39,7 @@ public class RdbmsPurger {
           "ROLES",
           "GROUP_MEMBER",
           "GROUPS",
+          "BATCH_OPERATION_ERROR",
           "BATCH_OPERATION_ITEM",
           "BATCH_OPERATION",
           "JOB",

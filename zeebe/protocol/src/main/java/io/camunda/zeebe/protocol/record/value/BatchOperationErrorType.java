@@ -13,15 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.zeebe.protocol.record.value;
 
-public enum BatchOperationState {
-  CREATED,
-  ACTIVE,
-  SUSPENDED,
-  COMPLETED,
-  PARTIALLY_COMPLETED,
-  CANCELED,
-  INCOMPLETED,
-  UNKNOWN_ENUM_VALUE;
+public enum BatchOperationErrorType {
+  QUERY_FAILED,
+  UNKNOWN
 }

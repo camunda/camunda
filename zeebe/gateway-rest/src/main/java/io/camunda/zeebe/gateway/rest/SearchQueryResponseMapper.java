@@ -13,6 +13,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.entities.AdHocSubProcessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -45,6 +46,8 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
@@ -546,7 +549,15 @@ public final class SearchQueryResponseMapper {
         .endDate(formatDate(entity.endDate()))
         .operationsTotalCount(entity.operationsTotalCount())
         .operationsFailedCount(entity.operationsFailedCount())
-        .operationsCompletedCount(entity.operationsCompletedCount());
+        .operationsCompletedCount(entity.operationsCompletedCount())
+        .errors(
+            ofNullable(entity.errors())
+                .map(
+                    errors ->
+                        errors.stream()
+                            .map(SearchQueryResponseMapper::toBatchOperationError)
+                            .toList())
+                .orElseGet(Collections::emptyList));
   }
 
   public static BatchOperationItemSearchQueryResult toBatchOperationItemSearchQueryResult(
@@ -572,6 +583,14 @@ public final class SearchQueryResponseMapper {
         .processedDate(formatDate(entity.processedDate()))
         .errorMessage(entity.errorMessage())
         .state(BatchOperationItemResponse.StateEnum.fromValue(entity.state().name()));
+  }
+
+  private static BatchOperationError toBatchOperationError(
+      final BatchOperationErrorEntity batchOperationErrorEntity) {
+    return new BatchOperationError()
+        .partitionId(batchOperationErrorEntity.partitionId())
+        .type(TypeEnum.fromValue(batchOperationErrorEntity.type()))
+        .message(batchOperationErrorEntity.message());
   }
 
   private static List<RoleResult> toRoles(final List<RoleEntity> roles) {

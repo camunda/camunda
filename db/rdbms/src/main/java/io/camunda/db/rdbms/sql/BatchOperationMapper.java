@@ -23,6 +23,8 @@ public interface BatchOperationMapper {
 
   void insertItems(BatchOperationItemsDto items);
 
+  void insertErrors(BatchOperationErrorsDto error);
+
   void updateCompleted(BatchOperationUpdateDto dto);
 
   void updateItemsWithState(BatchOperationItemStatusUpdateDto dto);
@@ -61,4 +63,8 @@ public interface BatchOperationMapper {
       String batchOperationId,
       BatchOperationEntity.BatchOperationItemState oldState,
       BatchOperationEntity.BatchOperationItemState newState) {}
+
+  record BatchOperationErrorsDto(String batchOperationId, List<BatchOperationErrorDto> errors) {}
+
+  record BatchOperationErrorDto(Integer partitionId, String type, String message) {}
 }

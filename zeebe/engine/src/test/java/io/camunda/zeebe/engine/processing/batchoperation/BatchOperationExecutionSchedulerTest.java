@@ -26,11 +26,13 @@ import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -68,6 +70,9 @@ public class BatchOperationExecutionSchedulerTest {
   @Captor private ArgumentCaptor<Task> taskCaptor;
   @Captor private ArgumentCaptor<BatchOperationChunkRecord> chunkRecordCaptor;
 
+  @Captor
+  private ArgumentCaptor<BatchOperationPartitionLifecycleRecord> lifecycleRecordArgumentCaptor;
+
   private BatchOperationExecutionScheduler scheduler;
 
   @BeforeEach
@@ -101,7 +106,7 @@ public class BatchOperationExecutionSchedulerTest {
   public void shouldAppendFailedEvent() {
     // given
     when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
-        .thenThrow(new RuntimeException("error", new RuntimeException()));
+        .thenThrow(new RuntimeException("errors", new RuntimeException()));
 
     // when our scheduler fires
     execute();
@@ -118,7 +123,7 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(),
             eq(BatchOperationIntent.FAIL),
-            any(BatchOperationCreationRecord.class),
+            lifecycleRecordArgumentCaptor.capture(),
             any());
 
     // and should NOT append an execute command
@@ -128,6 +133,13 @@ public class BatchOperationExecutionSchedulerTest {
             eq(BatchOperationExecutionIntent.EXECUTE),
             any(UnifiedRecordValue.class),
             any());
+
+    // and should contain an errors
+    final var error = lifecycleRecordArgumentCaptor.getValue().getError();
+    assertThat(error).isNotNull();
+    assertThat(error.getPartitionId()).isEqualTo(PARTITION_ID);
+    assertThat(error.getType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
+    assertThat(error.getMessage()).contains("errors");
   }
 
   @Test

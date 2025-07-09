@@ -3422,7 +3422,8 @@ final class JsonSerializableToJsonTest {
             () -> new BatchOperationLifecycleManagementRecord().setBatchOperationKey(12345L),
         """
   {
-    "batchOperationKey": 12345
+    "batchOperationKey": 12345,
+    "errors":[]
   }
   """
       },

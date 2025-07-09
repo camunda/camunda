@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.exporter;
 
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationChunkRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCompletedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCompletedWithErrorsRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleResumeRecord;
@@ -108,6 +109,36 @@ class RdbmsExporterBatchOperationsIT {
     batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.COMPLETED);
+  }
+
+  @Test
+  public void shouldExportBatchOperationWithErrors() {
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationCompletedRecord =
+        getBatchOperationCompletedWithErrorsRecord(batchOperationKey, 3L);
+
+    // when
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+
+    // then
+    var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
+    assertThat(batchOperation).isNotNull();
+    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+
+    // and when we complete it
+    exporter.export(batchOperationCompletedRecord);
+
+    // then it should be completed
+    batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
+    assertThat(batchOperation.errors()).isNotEmpty();
   }
 
   @Test

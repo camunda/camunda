@@ -10528,7 +10528,7 @@ components:
         - ACTIVE
         - SUSPENDED
         - COMPLETED
-        - COMPLETED_WITH_ERRORS
+        - PARTIALLY_COMPLETED
         - CANCELED
         - INCOMPLETED
     BatchOperationItemSearchQuerySortRequest:
@@ -10646,7 +10646,7 @@ components:
             - ACTIVE
             - SUSPENDED
             - COMPLETED
-            - COMPLETED_WITH_ERRORS
+            - PARTIALLY_COMPLETED
             - CANCELED
             - INCOMPLETED
         batchOperationType:
@@ -10671,6 +10671,26 @@ components:
           type: integer
           description: The number of successfully completed tasks.
           format: int32
+        errors:
+          description: The errors that occurred per partition during the batch operation.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationError"
+    BatchOperationError:
+      type: object
+      properties:
+        partitionId:
+          description: The partition ID where the error occurred.
+          type: integer
+          format: int32
+        type:
+          description: The type of the error that occurred during the batch operation.
+          type: string
+          enum:
+            - QUERY_FAILED
+        message:
+          description: The error message that occurred during the batch operation.
+          type: string
     BatchOperationItemSearchQueryResult:
       type: object
       allOf:

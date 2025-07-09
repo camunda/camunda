@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -49,6 +50,10 @@ public final class BatchOperationClient {
 
   public BatchOperationLifecycleClient newLifecycle() {
     return new BatchOperationLifecycleClient(writer);
+  }
+
+  public BatchOperationPartitionLifecycleClient newPartitionLifecycle() {
+    return new BatchOperationPartitionLifecycleClient(writer);
   }
 
   public static class BatchOperationCreationClient {
@@ -163,33 +168,6 @@ public final class BatchOperationClient {
       }
 
       return resultingRecord;
-    }
-
-    public Record<BatchOperationPartitionLifecycleRecordValue> fail() {
-      return fail(
-          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
-    }
-
-    public Record<BatchOperationPartitionLifecycleRecordValue> fail(final String username) {
-      return fail(AuthorizationUtil.getAuthInfo(username));
-    }
-
-    public Record<BatchOperationPartitionLifecycleRecordValue> fail(final AuthInfo authorizations) {
-      final long position =
-          writer.writeCommandOnPartition(
-              partition,
-              r ->
-                  r.intent(BatchOperationIntent.FAIL)
-                      .event(batchOperationCreationRecord)
-                      .authorizations(authorizations)
-                      .requestId(new Random().nextLong())
-                      .requestStreamId(new Random().nextInt()));
-
-      return RecordingExporter.batchOperationPartitionLifecycleRecords()
-          .withIntent(BatchOperationIntent.PARTITION_FAILED)
-          .withSourceRecordPosition(position)
-          .withPartitionId(partition)
-          .getFirst();
     }
 
     public BatchOperationCreationClient expectRejection() {
@@ -475,6 +453,56 @@ public final class BatchOperationClient {
                   .authorizations(authorizations)
                   .requestId(new Random().nextLong())
                   .requestStreamId(new Random().nextInt()));
+    }
+  }
+
+  public static class BatchOperationPartitionLifecycleClient {
+
+    private final CommandWriter writer;
+    private final BatchOperationPartitionLifecycleRecord batchOperationPartitionLifecycleRecord;
+    private int partition = DEFAULT_PARTITION;
+
+    public BatchOperationPartitionLifecycleClient(final CommandWriter writer) {
+      this.writer = writer;
+      batchOperationPartitionLifecycleRecord = new BatchOperationPartitionLifecycleRecord();
+    }
+
+    public BatchOperationPartitionLifecycleClient withBatchOperationKey(
+        final long batchOperationKey) {
+      batchOperationPartitionLifecycleRecord.setBatchOperationKey(batchOperationKey);
+      return this;
+    }
+
+    public BatchOperationPartitionLifecycleClient onPartition(final int partition) {
+      this.partition = partition;
+      return this;
+    }
+
+    public Record<BatchOperationPartitionLifecycleRecordValue> fail() {
+      return fail(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationPartitionLifecycleRecordValue> fail(final String username) {
+      return fail(AuthorizationUtil.getAuthInfo(username));
+    }
+
+    public Record<BatchOperationPartitionLifecycleRecordValue> fail(final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationIntent.FAIL)
+                      .event(batchOperationPartitionLifecycleRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return RecordingExporter.batchOperationPartitionLifecycleRecords()
+          .withIntent(BatchOperationIntent.PARTITION_FAILED)
+          .withSourceRecordPosition(position)
+          .withPartitionId(partition)
+          .getFirst();
     }
   }
 }

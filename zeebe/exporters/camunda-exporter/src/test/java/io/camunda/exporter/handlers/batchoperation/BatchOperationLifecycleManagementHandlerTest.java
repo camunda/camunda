@@ -13,15 +13,19 @@ import static org.mockito.Mockito.*;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.DateUtil;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -161,7 +165,12 @@ class BatchOperationLifecycleManagementHandlerTest {
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            r -> r.withIntent(BatchOperationIntent.COMPLETED));
+            r ->
+                r.withIntent(BatchOperationIntent.COMPLETED)
+                    .withValue(
+                        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+                            .withErrors(List.of())
+                            .build()));
 
     final var entity = new BatchOperationEntity();
 
@@ -171,6 +180,49 @@ class BatchOperationLifecycleManagementHandlerTest {
     // then
     assertThat(entity.getState()).isEqualTo(BatchOperationState.COMPLETED);
     assertThat(entity.getEndDate()).isNull();
+  }
+
+  @Test
+  void shouldUpdateEntityForCompletedIntentWithErrors() {
+    // given
+    final var errorRecord = new BatchOperationError();
+    errorRecord.setMessage("error message");
+    errorRecord.setType(BatchOperationErrorType.QUERY_FAILED);
+    errorRecord.setPartitionId(1);
+
+    final Record<BatchOperationLifecycleManagementRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            r ->
+                r.withIntent(BatchOperationIntent.COMPLETED)
+                    .withValue(
+                        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+                            .withErrors(List.of(errorRecord))
+                            .build()));
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    handler.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getState()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
+    assertThat(entity.getEndDate()).isNull();
+    record
+        .getValue()
+        .getErrors()
+        .forEach(
+            error -> {
+              entity.getErrors().stream()
+                  .filter(e -> e.getPartitionId() == error.getPartitionId())
+                  .findFirst()
+                  .ifPresentOrElse(
+                      be -> {
+                        assertThat(be.getType()).isEqualTo(error.getType().name());
+                        assertThat(be.getMessage()).isEqualTo(error.getMessage());
+                      },
+                      () -> Assertions.fail("Error not found in entity: " + error));
+            });
   }
 
   @Test

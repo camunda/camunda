@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecord
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
@@ -29,11 +30,11 @@ import org.slf4j.LoggerFactory;
  * mark follower partitions as completed.
  */
 @ExcludeAuthorizationCheck
-public final class BatchOperationPartitionCompleteProcessor
+public final class BatchOperationLeadPartitionCompleteProcessor
     implements DistributedTypedRecordProcessor<BatchOperationPartitionLifecycleRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationPartitionCompleteProcessor.class);
+      LoggerFactory.getLogger(BatchOperationLeadPartitionCompleteProcessor.class);
 
   private final StateWriter stateWriter;
   private final BatchOperationState batchOperationState;
@@ -41,7 +42,7 @@ public final class BatchOperationPartitionCompleteProcessor
   private final BatchOperationMetrics metrics;
   private final int partitionId;
 
-  public BatchOperationPartitionCompleteProcessor(
+  public BatchOperationLeadPartitionCompleteProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
@@ -96,38 +97,56 @@ public final class BatchOperationPartitionCompleteProcessor
         command.getValue().getBatchOperationKey());
 
     final var oBatchOperation = batchOperationState.get(batchOperationKey);
-    if (oBatchOperation.isPresent()) {
-      final var bo = oBatchOperation.get();
-      if (bo.getFinishedPartitions().contains(command.getValue().getSourcePartitionId())) {
-        LOGGER.debug(
-            "Batch operation {} already contains partition {}, ignoring command",
-            batchOperationKey,
-            command.getValue().getSourcePartitionId());
-      } else {
-        stateWriter.appendFollowUpEvent(
-            batchOperationKey,
-            BatchOperationIntent.PARTITION_COMPLETED,
-            command.getValue(),
-            FollowUpEventMetadata.of(
-                b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
-
-        if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
-          LOGGER.debug(
-              "All partitions finished, appending COMPLETED event for batch operation {}",
-              batchOperationKey);
-          final var batchComplete = new BatchOperationLifecycleManagementRecord();
-          batchComplete.setBatchOperationKey(batchOperationKey);
-          stateWriter.appendFollowUpEvent(
-              batchOperationKey,
-              BatchOperationIntent.COMPLETED,
-              batchComplete,
-              FollowUpEventMetadata.of(
-                  b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
-
-          metrics.recordCompleted(oBatchOperation.get().getBatchOperationType());
-          metrics.stopTotalDurationMeasure(batchOperationKey);
-        }
-      }
+    if (oBatchOperation.isEmpty()) {
+      return;
     }
+
+    final var bo = oBatchOperation.get();
+    if (bo.getFinishedPartitions().contains(command.getValue().getSourcePartitionId())) {
+      LOGGER.debug(
+          "Batch operation {} already contains partition {}, ignoring command",
+          batchOperationKey,
+          command.getValue().getSourcePartitionId());
+      return;
+    }
+
+    stateWriter.appendFollowUpEvent(
+        batchOperationKey,
+        BatchOperationIntent.PARTITION_COMPLETED,
+        command.getValue(),
+        FollowUpEventMetadata.of(
+            b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
+
+    if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
+      handleCompleted(command, batchOperationKey, bo);
+    }
+  }
+
+  private void handleCompleted(
+      final TypedRecord<BatchOperationPartitionLifecycleRecord> command,
+      final long batchOperationKey,
+      final PersistedBatchOperation bo) {
+    final var metadata =
+        FollowUpEventMetadata.of(
+            b -> b.batchOperationReference(command.getValue().getBatchOperationKey()));
+
+    final var batchCompleted = new BatchOperationLifecycleManagementRecord();
+    batchCompleted.setBatchOperationKey(batchOperationKey);
+    if (!bo.getErrors().isEmpty()) {
+      LOGGER.debug(
+          "Some partitions ({}) finished with errors, appending them to COMPLETED event for batch operation {}",
+          bo.getErrors().size(),
+          batchOperationKey);
+      batchCompleted.setErrors(bo.getErrors());
+    }
+
+    LOGGER.debug(
+        "All partitions finished, appending COMPLETED event for batch operation {}",
+        batchOperationKey);
+    stateWriter.appendFollowUpEvent(
+        batchOperationKey, BatchOperationIntent.COMPLETED, batchCompleted, metadata);
+
+    metrics.recordCompleted(bo.getBatchOperationType());
+    metrics.stopTotalDurationMeasure(batchOperationKey);
   }
 }
