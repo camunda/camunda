@@ -168,7 +168,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
   @Override
   protected void createOperations() {
-    restTemplate.loginWhenNeeded(OPERATE_USER, OPERATE_PASSWORD);
     final int operationsCount = ThreadLocalRandom.current().nextInt(20) + 90;
     for (int i = 0; i < operationsCount; i++) {
       final int no = ThreadLocalRandom.current().nextInt(operationsCount);

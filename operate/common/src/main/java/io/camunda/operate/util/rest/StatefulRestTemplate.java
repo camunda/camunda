@@ -9,16 +9,12 @@ package io.camunda.operate.util.rest;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.util.RetryOperation;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.cookie.BasicCookieStore;
@@ -27,12 +23,10 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.elasticsearch.ElasticsearchException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
@@ -50,11 +44,7 @@ import org.springframework.web.client.RestTemplate;
 @Scope(SCOPE_PROTOTYPE)
 public class StatefulRestTemplate extends RestTemplate {
 
-  private static final String LOGIN_URL_PATTERN = "/api/login?username=%s&password=%s";
   private static final String CSRF_TOKEN_HEADER_NAME = "X-CSRF-TOKEN";
-
-  private static final String USERNAME_DEFAULT = "demo";
-  private static final String PASSWORD_DEFAULT = "demo";
 
   private final String host;
   private final Integer port;
@@ -129,48 +119,6 @@ public class StatefulRestTemplate extends RestTemplate {
       httpEntity = null;
     }
     return super.httpEntityCallback(httpEntity, responseType);
-  }
-
-  public StatefulHttpComponentsClientHttpRequestFactory getStatefulHttpClientRequestFactory() {
-    return statefulHttpComponentsClientHttpRequestFactory;
-  }
-
-  public void loginWhenNeeded() {
-    loginWhenNeeded(USERNAME_DEFAULT, PASSWORD_DEFAULT);
-  }
-
-  public void loginWhenNeeded(final String username, final String password) {
-    // log in only once
-    if (getCookieStore().getCookies().isEmpty()) {
-      final ResponseEntity<Object> response = tryLoginAs(username, password);
-      if (!response.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
-        throw new OperateRuntimeException(
-            String.format(
-                "Unable to login user %s to %s:%s. Response: %s", username, host, port, response));
-      }
-      saveCSRFTokenWhenAvailable(response);
-    }
-  }
-
-  private ResponseEntity<Object> tryLoginAs(final String username, final String password) {
-    try {
-      return RetryOperation.<ResponseEntity<Object>>newBuilder()
-          .retryConsumer(
-              () ->
-                  postForEntity(
-                      getURL(String.format(LOGIN_URL_PATTERN, username, password)),
-                      null,
-                      Object.class))
-          // retry for 5 minutes
-          .noOfRetry(50)
-          .delayInterval(6, TimeUnit.SECONDS)
-          .retryOn(IOException.class, RestClientException.class, ElasticsearchException.class)
-          .message("StatefulRestTemplate#tryLoginAs")
-          .build()
-          .retry();
-    } catch (final Exception e) {
-      throw new OperateRuntimeException("Unable to connect to Operate ", e);
-    }
   }
 
   private ResponseEntity<?> saveCSRFTokenWhenAvailable(final ResponseEntity<?> response) {

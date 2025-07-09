@@ -397,8 +397,11 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext))
-        .withEnv("SPRING_PROFILES_ACTIVE", "dev")
-        .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true");
+        .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth")
+        .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
     final Map<String, String> customEnvs = testContext.getOperateContainerEnvs();
     customEnvs.forEach(operateContainer::withEnv);
 
