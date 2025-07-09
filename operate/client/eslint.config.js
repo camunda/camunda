@@ -18,6 +18,7 @@ import prettierConfig from 'eslint-config-prettier';
 import prettierPlugin from 'eslint-plugin-prettier';
 import globals from 'globals';
 import vitestPlugin from '@vitest/eslint-plugin';
+import {defineConfig} from 'eslint/config';
 
 const files = {
   browser: ['src/**/*.{js,jsx,ts,tsx}'],
@@ -46,7 +47,7 @@ const files = {
   ],
 };
 
-export default [
+const config = defineConfig([
   js.configs.recommended,
   prettierConfig,
 
@@ -210,4 +211,6 @@ export default [
       'resources/license-header.js',
     ],
   },
-];
+]);
+
+export default config;
