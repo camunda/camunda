@@ -234,5 +234,10 @@
       <scope>compile</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>
