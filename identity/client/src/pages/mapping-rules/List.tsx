@@ -16,49 +16,56 @@ import EntityList from "src/components/entityList";
 import { documentationHref } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
-import AddModal from "src/pages/mappings/modals/AddModal";
-import { searchMapping } from "src/utility/api/mappings";
-import DeleteModal from "src/pages/mappings/modals/DeleteModal";
-import EditModal from "src/pages/mappings/modals/EditModal";
+import AddModal from "src/pages/mapping-rules/modals/AddModal";
+import { searchMappingRule } from "src/utility/api/mapping-rules";
+import DeleteModal from "src/pages/mapping-rules/modals/DeleteModal";
+import EditModal from "src/pages/mapping-rules/modals/EditModal";
 
 const List: FC = () => {
   const { t } = useTranslate("mappingRules");
   const {
-    data: mappingSearchResults,
+    data: mappingRuleSearchResults,
     loading,
     reload,
     success,
-  } = useApi(searchMapping);
+  } = useApi(searchMappingRule);
 
-  const [addMapping, addMappingModal] = useModal(AddModal, reload);
-  const [editMapping, editMappingModal] = useEntityModal(EditModal, reload);
-  const [deleteMapping, deleteMappingModal] = useEntityModal(
+  const [addMappingRule, addMappingRuleModal] = useModal(AddModal, reload);
+  const [editMappingRule, editMappingRuleModal] = useEntityModal(
+    EditModal,
+    reload,
+  );
+  const [deleteMappingRule, deleteMappingRuleModal] = useEntityModal(
     DeleteModal,
     reload,
   );
 
   const pageHeader = (
-    <PageHeader title={t("mappings")} linkText={t("mappings")} linkUrl="" />
+    <PageHeader
+      title={t("mappingRules")}
+      linkText={t("mappingRules")}
+      linkUrl=""
+    />
   );
 
-  if (success && !mappingSearchResults?.items.length) {
+  if (success && !mappingRuleSearchResults?.items.length) {
     return (
       <Page>
         {pageHeader}
         <C3EmptyState
-          heading={t("noMappings")}
-          description={t("mappingJWTToken")}
+          heading={t("noMappingRules")}
+          description={t("mappingRuleJWTToken")}
           button={{
-            label: t("createMapping"),
-            onClick: addMapping,
+            label: t("createMappingRule"),
+            onClick: addMappingRule,
             icon: Add,
           }}
           link={{
             href: documentationHref("https://docs.camunda.io/", ""),
-            label: t("learnMoreMapping"),
+            label: t("learnMoreMappingRule"),
           }}
         />
-        {addMappingModal}
+        {addMappingRuleModal}
       </Page>
     );
   }
@@ -67,40 +74,42 @@ const List: FC = () => {
     <Page>
       {pageHeader}
       <EntityList
-        data={mappingSearchResults == null ? [] : mappingSearchResults.items}
+        data={
+          mappingRuleSearchResults == null ? [] : mappingRuleSearchResults.items
+        }
         headers={[
-          { header: t("mappingId"), key: "mappingId" },
-          { header: t("mappingName"), key: "name" },
+          { header: t("mappingRuleId"), key: "mappingRuleId" },
+          { header: t("mappingRuleName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
         sortProperty="claimName"
-        addEntityLabel={t("createMapping")}
-        onAddEntity={addMapping}
+        addEntityLabel={t("createMappingRule")}
+        onAddEntity={addMappingRule}
         loading={loading}
         menuItems={[
           {
             label: t("edit"),
             icon: Edit,
-            onClick: editMapping,
+            onClick: editMappingRule,
           },
           {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
-            onClick: deleteMapping,
+            onClick: deleteMappingRule,
           },
         ]}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title={t("loadMappingsError")}
+          title={t("loadMappingRulesError")}
           actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
-      {addMappingModal}
-      {deleteMappingModal}
-      {editMappingModal}
+      {addMappingRuleModal}
+      {deleteMappingRuleModal}
+      {editMappingRuleModal}
     </Page>
   );
 };

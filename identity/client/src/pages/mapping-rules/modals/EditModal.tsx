@@ -13,27 +13,30 @@ import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import { updateMapping, Mapping } from "src/utility/api/mappings";
+import { updateMappingRule, MappingRule } from "src/utility/api/mapping-rules";
 import {
   CustomStack,
   EqualSignContainer,
   MappingRuleContainer,
 } from "./components";
 
-const EditModal: FC<UseEntityModalProps<Mapping>> = ({
+const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
   open,
   onClose,
   onSuccess,
   entity,
 }) => {
   const { t } = useTranslate("mappingRules");
-  const [callUpdateMapping, { loading, error }] = useApiCall(updateMapping, {
-    suppressErrorNotification: true,
-  });
-  const [mapping, setMapping] = useState<Mapping>(entity);
+  const [callUpdateMappingRule, { loading, error }] = useApiCall(
+    updateMappingRule,
+    {
+      suppressErrorNotification: true,
+    },
+  );
+  const [mappingRule, setMappingRule] = useState<MappingRule>(entity);
 
   const handleSubmit = async () => {
-    const { success } = await callUpdateMapping(mapping);
+    const { success } = await callUpdateMappingRule(mappingRule);
     if (success) {
       onSuccess();
     }
@@ -42,28 +45,31 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
   return (
     <FormModal
       open={open}
-      headline={t("editMapping")}
+      headline={t("editMappingRule")}
       onClose={onClose}
       onSubmit={handleSubmit}
       loading={loading}
       error={error}
-      loadingDescription={t("updatingMapping")}
-      confirmLabel={t("updateMapping")}
+      loadingDescription={t("updatingMappingRule")}
+      confirmLabel={t("updateMappingRule")}
     >
       <TextField
-        label={t("mappingId")}
-        onChange={(mappingId) =>
-          setMapping((mapping) => ({ ...mapping, mappingId }))
+        label={t("mappingRuleId")}
+        onChange={(mappingRuleId) =>
+          setMappingRule((mappingRule) => ({
+            ...mappingRule,
+            mappingRuleId: mappingRuleId,
+          }))
         }
-        value={mapping.mappingId}
+        value={mappingRule.mappingRuleId}
         readOnly
       />
       <TextField
-        label={t("mappingName")}
-        placeholder={t("enterMappingName")}
-        onChange={(name) => setMapping((mapping) => ({ ...mapping, name }))}
-        value={mapping.name}
-        helperText={t("uniqueNameForMapping")}
+        label={t("mappingRuleName")}
+        placeholder={t("enterMappingRuleName")}
+        onChange={(name) => setMappingRule((mapping) => ({ ...mapping, name }))}
+        value={mappingRule.name}
+        helperText={t("uniqueNameForMappingRule")}
         autoFocus
       />
       <MappingRuleContainer>
@@ -74,9 +80,9 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
               label={t("claimName")}
               placeholder={t("enterClaimName")}
               onChange={(claimName) =>
-                setMapping((mapping) => ({ ...mapping, claimName }))
+                setMappingRule((mapping) => ({ ...mapping, claimName }))
               }
-              value={mapping.claimName}
+              value={mappingRule.claimName}
               helperText={t("customClaimName")}
             />
             <EqualSignContainer>=</EqualSignContainer>
@@ -84,9 +90,12 @@ const EditModal: FC<UseEntityModalProps<Mapping>> = ({
               label={t("claimValue")}
               placeholder={t("enterClaimValue")}
               onChange={(claimValue) =>
-                setMapping((mapping) => ({ ...mapping, claimValue }))
+                setMappingRule((mappingRule) => ({
+                  ...mappingRule,
+                  claimValue,
+                }))
               }
-              value={mapping.claimValue}
+              value={mappingRule.claimValue}
               helperText={t("valueForClaim")}
             />
           </CustomStack>
