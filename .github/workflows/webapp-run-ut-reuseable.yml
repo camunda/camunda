@@ -3,7 +3,7 @@
 # type: CI
 # owner: @camunda/core-features
 ---
-name: Operate CI Reusable
+name: Webapp Run Unit Tests Reusable
 
 on:
   workflow_call:
@@ -16,6 +16,9 @@ on:
         description: "The suite under test. ie, DataLayer or CoreFeatures"
         required: true
         type: string
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
 
 defaults:
   run:
@@ -71,7 +74,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "${{inputs.componentName}}-unit-tests/${{inputs.componentName}}-${{inputs.suite}}"
+          job_name: "${{inputs.componentName}}-unit-tests/${{inputs.suite}}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "team: ${{inputs.suite}}"
