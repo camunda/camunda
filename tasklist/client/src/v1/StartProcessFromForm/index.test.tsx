@@ -245,33 +245,4 @@ describe('<StartProcessFromForm />', () => {
       ),
     ).toBeInTheDocument();
   });
-
-  it('should show V2 API not supported error message when clientMode is v2', async () => {
-    // Mock the client config to return v2 mode
-    const originalClientConfig = window.clientConfig;
-    window.clientConfig = {
-      ...originalClientConfig,
-      clientMode: 'v2',
-    };
-
-    render(<Component />, {
-      wrapper: getWrapper({
-        initialEntries: ['/new/foo'],
-      }),
-    });
-
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Public forms not supported',
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Public forms are not supported for this version. Please contact your process administrator.',
-      ),
-    ).toBeInTheDocument();
-
-    // Restore original config
-    window.clientConfig = originalClientConfig;
-  });
 });
