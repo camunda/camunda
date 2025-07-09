@@ -24,6 +24,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Handles the lifecycle management of batch operations by updating the {@link BatchOperationEntity}
+ * based on lifecycle events such as cancellation, suspension, resumption, and completion. This
+ * handler ensures that the state and end date of the batch operation are correctly updated in the
+ * database.
+ */
 public class BatchOperationLifecycleManagementHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationLifecycleManagementRecordValue> {
 
@@ -70,6 +76,7 @@ public class BatchOperationLifecycleManagementHandler
       final Record<BatchOperationLifecycleManagementRecordValue> record,
       final BatchOperationEntity entity) {
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
+      // set the endDate because the BatchOperationUpdateTask does not need to run here
       entity
           .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
           .setState(BatchOperationState.CANCELED);
@@ -78,6 +85,7 @@ public class BatchOperationLifecycleManagementHandler
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
       entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
+      // set the endDate to null so that the BatchOperationUpdateTask does run again
       entity.setEndDate(null).setState(BatchOperationState.COMPLETED);
     }
   }

@@ -303,6 +303,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 batchOperationCache)));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
+      // only add this handler when the items are exported on creation
       exportHandlers.add(
           new BatchOperationChunkCreatedItemHandler(
               indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));

@@ -17,7 +17,11 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
-/** This aggregates the batch operation status of process instance cancellations */
+/**
+ * This handles the batch operation item status of batch operations of type CANCEL_PROCESS_INSTANCE.
+ * It tracks the cancellation of process instances by updating the corresponding batch operation
+ * item entity.
+ */
 public class ProcessInstanceCancellationOperationHandler
     extends AbstractOperationStatusHandler<ProcessInstanceRecordValue> {
 
