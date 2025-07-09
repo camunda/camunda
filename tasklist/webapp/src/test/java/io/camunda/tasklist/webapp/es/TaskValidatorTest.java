@@ -78,6 +78,7 @@ public class TaskValidatorTest {
   @Test
   public void userCanNotPersistDraftTaskVariablesIfAssignedToAnotherPerson() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
     when(userReader.getCurrentUser()).thenReturn(user);
@@ -158,6 +159,7 @@ public class TaskValidatorTest {
   @Test
   public void userCanNotCompleteTaskIfAssignedToAnotherPerson() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
     when(userReader.getCurrentUser()).thenReturn(user);
@@ -196,8 +198,24 @@ public class TaskValidatorTest {
   @Test
   public void userCanCompleteTheirOwnTask() {
     // given
+
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
     final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanComplete(task));
+  }
+
+  @Test
+  public void userCanCompleteOtherPersonTaskIfAllowNonSelfAssignment() {
+    // given
+    when(tasklistProperties.getFeatureFlag())
+        .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(true));
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
+    final UserDTO user =
+        new UserDTO().setUserId("AnotherTestUser").setDisplayName("AnotherTestUser");
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
