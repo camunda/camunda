@@ -51,7 +51,6 @@ jobs:
       tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
-      general-backend-changes: ${{steps.filter.outputs.general-backend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
       openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
       stable-branch-changes: ${{ steps.filter.outputs.stable-branch-changes }}
@@ -220,10 +219,10 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   general-unit-tests:
-    if: needs.detect-changes.outputs.general-backend-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[UT] General Unit Tests"
     needs: [ detect-changes ]
-    timeout-minutes: 15
+    timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
@@ -270,7 +269,6 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "general-unit-tests"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -1250,10 +1248,6 @@ jobs:
       - build-operate-backend
       - build-platform-frontend
       - commitlint
-      - operate-backend-unit-tests
-      - optimize-backend-unit-tests
-      - tasklist-backend-unit-tests
-      - zeebe-unit-tests
       - detect-changes
       - docker-checks
       - elasticsearch-integration-tests
@@ -1264,14 +1258,18 @@ jobs:
       - maven-spotless-linter
       - openapi-lint
       - opensearch-integration-tests
+      - operate-backend-unit-tests
       - operate-frontend-tests
+      - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
+      - tasklist-backend-unit-tests
       - tasklist-docker-tests
       - tasklist-frontend-tests
       - zeebe-ci
+      - zeebe-unit-tests
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
