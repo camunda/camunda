@@ -22,20 +22,12 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
 
-    - name: Setup yarn
-      shell: bash
-      run: npm install -g yarn
-
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-      with:
-        directory: ${{ inputs.directory }}
-
     - name: Install node dependencies
       working-directory: ${{ inputs.directory }}
       shell: bash
-      run: yarn
+      run: npm ci
 
     - name: Build frontend
       working-directory: ${{ inputs.directory }}
       shell: bash
-      run: yarn build
+      run: npm run build

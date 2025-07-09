@@ -40,12 +40,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: operate/client
-      - run: yarn install --frozen-lockfile
+      - run: npm ci
         name: Install dependencies
-      - run: yarn test:ci
+      - run: npm run test:ci
         name: Unit & Integration tests
       - name: Observe build status
         if: always()
