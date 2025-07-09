@@ -305,25 +305,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Report Flaky Test Check Run
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
-        run: |
-          if [[ -n "$FLAKY_TESTS" ]]; then
-            gh api -X POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/${{ github.repository }}/check-runs \
-              -f name="java-unit-tests/${{ matrix.group }}" \
-              -f head_sha="${{ github.event.pull_request.head.sha }}" \
-              -f status="completed" \
-              -f conclusion="neutral" \
-              -f output[title]="Flaky Tests Detected" \
-              -f output[summary]="These tests were flaky in this job:" \
-              -f output[text]="$FLAKY_TESTS"
-          fi
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "java-unit-tests/${{ matrix.group }}"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate
@@ -395,25 +383,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Report Flaky Test Check Run
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
-        run: |
-          if [[ -n "$FLAKY_TESTS" ]]; then
-            gh api -X POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/${{ github.repository }}/check-runs \
-              -f name="consolidated-unit-tests/${{ matrix.component }}-${{matrix.suite}}" \
-              -f head_sha="${{ github.event.pull_request.head.sha }}" \
-              -f status="completed" \
-              -f conclusion="neutral" \
-              -f output[title]="Flaky Tests Detected" \
-              -f output[summary]="These tests were flaky in this job:" \
-              -f output[text]="$FLAKY_TESTS"
-          fi
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "consolidated-unit-tests/${{ matrix.component }}-${{matrix.suite}}"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -507,25 +483,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Report Flaky Test Check Run
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
-        run: |
-          if [[ -n "$FLAKY_TESTS" ]]; then
-            gh api -X POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/${{ github.repository }}/check-runs \
-              -f name="[IT] Elasticsearch" \
-              -f head_sha="${{ github.event.pull_request.head.sha }}" \
-              -f status="completed" \
-              -f conclusion="neutral" \
-              -f output[title]="Flaky Tests Detected" \
-              -f output[summary]="These tests were flaky in this job:" \
-              -f output[text]="$FLAKY_TESTS"
-          fi
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "[IT] Elasticsearch"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -626,25 +590,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID}}
-      - name: Report Flaky Test Check Run
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
-        run: |
-          if [[ -n "$FLAKY_TESTS" ]]; then
-            gh api -X POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/${{ github.repository }}/check-runs \
-              -f name="[IT] OpenSearch" \
-              -f head_sha="${{ github.event.pull_request.head.sha }}" \
-              -f status="completed" \
-              -f conclusion="neutral" \
-              -f output[title]="Flaky Tests Detected" \
-              -f output[summary]="These tests were flaky in this job:" \
-              -f output[text]="$FLAKY_TESTS"
-          fi
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "[IT] OpenSearch"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   rdbms-h2-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -712,25 +664,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Report Flaky Test Check Run
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
-        run: |
-          if [[ -n "$FLAKY_TESTS" ]]; then
-            gh api -X POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/${{ github.repository }}/check-runs \
-              -f name="[IT] RDBMS - H2" \
-              -f head_sha="${{ github.event.pull_request.head.sha }}" \
-              -f status="completed" \
-              -f conclusion="neutral" \
-              -f output[title]="Flaky Tests Detected" \
-              -f output[summary]="These tests were flaky in this job:" \
-              -f output[text]="$FLAKY_TESTS"
-          fi
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "[IT] RDBMS - H2"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -789,25 +729,13 @@ jobs:
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-    - name: Report Flaky Test Check Run
-      if: always()
-      env:
-        GH_TOKEN: ${{ github.token }}
-        FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
-      run: |
-        if [[ -n "$FLAKY_TESTS" ]]; then
-          gh api -X POST \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.repository }}/check-runs \
-            -f name="[IT] RDBMS" \
-            -f head_sha="${{ github.event.pull_request.head.sha }}" \
-            -f status="completed" \
-            -f conclusion="neutral" \
-            -f output[title]="Flaky Tests Detected" \
-            -f output[summary]="These tests were flaky in this job:" \
-            -f output[text]="$FLAKY_TESTS"
-        fi
+    - name: Report Flaky Tests
+      uses: ./.github/actions/report-flaky-tests
+      with:
+        flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+        job-name: "[IT] RDBMS"
+        sha: ${{ github.event.pull_request.head.sha }}
+        github-token: ${{ github.token }}
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -965,25 +893,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Report Flaky Test Check Run
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          FLAKY_TESTS: ${{ steps.analyze-test-run.outputs.flakyTests }}
-        run: |
-          if [[ -n "$FLAKY_TESTS" ]]; then
-            gh api -X POST \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              /repos/${{ github.repository }}/check-runs \
-              -f name="[IT] ${{ matrix.name }}"\
-              -f head_sha="${{ github.event.pull_request.head.sha }}" \
-              -f status="completed" \
-              -f conclusion="neutral" \
-              -f output[title]="Flaky Tests Detected" \
-              -f output[summary]="These tests were flaky in this job:" \
-              -f output[text]="$FLAKY_TESTS"
-          fi
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "[IT] ${{ matrix.name }}"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
