@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.springframework.boot.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.Environment;
 
 /**
  * Collects and configures the readiness group depending on which applications/profiles are
@@ -43,7 +44,7 @@ public class HealthConfigurationInitializer
     final var activeProfiles =
         Stream.of(environment.getActiveProfiles()).map(String::toLowerCase).toList();
 
-    final var healthIndicators = collectHealthIndicators(activeProfiles);
+    final var healthIndicators = collectHealthIndicators(activeProfiles, environment);
     final var enableReadinessState = shouldReadinessState(activeProfiles);
     final var enableProbes = shouldEnableProbes(activeProfiles);
 
@@ -86,10 +87,13 @@ public class HealthConfigurationInitializer
    * Returns a list of health indicators which will be member of the readiness group
    *
    * @param activeProfiles
+   * @param env
    * @return
    */
-  protected List<String> collectHealthIndicators(final List<String> activeProfiles) {
+  protected List<String> collectHealthIndicators(
+      final List<String> activeProfiles, final Environment env) {
     final var healthIndicators = new ArrayList<String>();
+    final boolean secondaryStorageEnabled = isSecondaryStorageEnabled(env);
 
     if (activeProfiles.contains(Profile.BROKER.getId())) {
       healthIndicators.add(INDICATOR_BROKER_READY);
@@ -99,19 +103,24 @@ public class HealthConfigurationInitializer
       healthIndicators.add(INDICATOR_GATEWAY_STARTED);
     }
 
-    if (activeProfiles.contains(Profile.OPERATE.getId())) {
+    if (secondaryStorageEnabled && activeProfiles.contains(Profile.OPERATE.getId())) {
       healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
     }
 
-    if (activeProfiles.contains(Profile.TASKLIST.getId())) {
+    if (secondaryStorageEnabled && activeProfiles.contains(Profile.TASKLIST.getId())) {
       healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
     }
 
-    if (activeProfiles.contains(Profile.IDENTITY.getId())) {
+    if (secondaryStorageEnabled && activeProfiles.contains(Profile.IDENTITY.getId())) {
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
     }
 
     return healthIndicators;
+  }
+
+  private static boolean isSecondaryStorageEnabled(final Environment env) {
+    final String dbType = env.getProperty("camunda.database.type");
+    return !"none".equalsIgnoreCase(dbType);
   }
 }
