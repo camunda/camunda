@@ -57,9 +57,20 @@ public class TaskValidator {
     }
 
     validateTaskIsAssigned(task);
+<<<<<<< HEAD
     if (!task.getAssignee().equals(currentUser.getUserId())
         && !tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment()) {
       throw new InvalidRequestException("Task is not assigned to " + currentUser.getUserId());
+=======
+
+    final UserDTO currentUser = getCurrentUser();
+    if (!task.getAssignee().equals(currentUser.getUserId())
+        && !tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment()) {
+      throw new InvalidRequestException(
+          createErrorMessage(
+              TASK_NOT_ASSIGNED_TO_CURRENT_USER,
+              "Task is not assigned to " + currentUser.getUserId()));
+>>>>>>> dbb92c47 (fix: a task could not be completed by another user)
     }
   }
 

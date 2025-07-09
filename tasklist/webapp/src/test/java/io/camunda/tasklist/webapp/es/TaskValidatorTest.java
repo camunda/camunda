@@ -57,8 +57,13 @@ public class TaskValidatorTest {
   public void userCanNotPersistDraftTaskVariablesIfAssignedToAnotherPerson() {
     // given
     when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
+<<<<<<< HEAD
     final UserDTO user =
         new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
+=======
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
+    final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
+>>>>>>> dbb92c47 (fix: a task could not be completed by another user)
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
@@ -127,8 +132,13 @@ public class TaskValidatorTest {
   public void userCanNotCompleteTaskIfAssignedToAnotherPerson() {
     // given
     when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
+<<<<<<< HEAD
     final UserDTO user =
         new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
+=======
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
+    final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
+>>>>>>> dbb92c47 (fix: a task could not be completed by another user)
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
@@ -156,6 +166,7 @@ public class TaskValidatorTest {
   @Test
   public void userCanCompleteTheirOwnTask() {
     // given
+<<<<<<< HEAD
     final UserDTO user =
         new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
     when(userReader.getCurrentUser()).thenReturn(user);
@@ -175,6 +186,26 @@ public class TaskValidatorTest {
             .setUserId("AnotherTestUser")
             .setDisplayName("AnotherTestUser")
             .setApiUser(false);
+=======
+
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
+    final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
+>>>>>>> dbb92c47 (fix: a task could not be completed by another user)
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanComplete(task));
+  }
+
+  @Test
+  public void userCanCompleteOtherPersonTaskIfAllowNonSelfAssignment() {
+    // given
+    when(tasklistProperties.getFeatureFlag())
+        .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(true));
+    authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
+    final UserDTO user =
+        new UserDTO().setUserId("AnotherTestUser").setDisplayName("AnotherTestUser");
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
