@@ -278,7 +278,8 @@ public final class HttpClient implements AutoCloseable {
         MAX_RETRY_ATTEMPTS,
         responseType,
         transformer,
-        result);
+        result,
+        null);
   }
 
   private <HttpT, RespT> void sendRequest(
@@ -290,7 +291,8 @@ public final class HttpClient implements AutoCloseable {
       final int retries,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
+      final HttpCamundaFuture<RespT> result,
+      final ApiCallback<HttpT, RespT> callback) {
 
     final URI target = buildRequestURI(path);
 
@@ -309,7 +311,8 @@ public final class HttpClient implements AutoCloseable {
               retries, // Note: retries here are tracked internally in ApiCallback now
               responseType,
               transformer,
-              result);
+              result,
+              callback);
         };
 
     final SimpleRequestBuilder requestBuilder =
@@ -361,9 +364,12 @@ public final class HttpClient implements AutoCloseable {
       entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
     }
 
-    final ApiCallback<HttpT, RespT> apiCallback =
-        new ApiCallback<>(
-            result, transformer, credentialsProvider::shouldRetryRequest, retryTrigger, retries);
+    ApiCallback<HttpT, RespT> apiCallback = callback;
+    if (apiCallback == null) {
+      apiCallback =
+          new ApiCallback<>(
+              result, transformer, credentialsProvider::shouldRetryRequest, retryTrigger, retries);
+    }
 
     result.transportFuture(
         client.execute(
