@@ -164,7 +164,7 @@
 
     <version.node>v24.2.0</version.node>
     <version.yarn>v1.22.22</version.yarn>
-    <version.npm>9.8.1</version.npm>
+    <version.npm>v11.4.2</version.npm>
 
     <version.aws-java-sdk>1.12.787</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.21.3</version.elasticsearch-test-container>
