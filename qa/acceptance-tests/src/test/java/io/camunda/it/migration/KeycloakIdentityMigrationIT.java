@@ -463,6 +463,120 @@ public class KeycloakIdentityMigrationIT {
                     PermissionType.READ_DECISION_DEFINITION)));
   }
 
+  @Test
+  public void canMigrateClients() throws URISyntaxException, IOException, InterruptedException {
+    // when
+    migration.start();
+
+    final var restAddress = client.getConfiguration().getRestAddress().toString();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations = searchAuthorizations(restAddress);
+              assertThat(authorizations.items())
+                  .extracting(AuthorizationResponse::ownerId)
+                  .contains("migration-app");
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var authorizations = searchAuthorizations(restAddress);
+    assertThat(authorizations.items())
+        .extracting(
+            AuthorizationResponse::ownerId,
+            AuthorizationResponse::ownerType,
+            AuthorizationResponse::resourceType,
+            AuthorizationResponse::permissionTypes)
+        .contains(
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.UPDATE, PermissionType.DELETE)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.DELETE_PROCESS_INSTANCE,
+                    PermissionType.CREATE_PROCESS_INSTANCE)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_RESOURCE,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_PROCESS)),
+            tuple(
+                "migration-app", OwnerType.CLIENT, ResourceType.USER, Set.of(PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.APPLICATION,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.AUTHORIZATION,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.GROUP,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.TENANT,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.SYSTEM,
+                Set.of(PermissionType.UPDATE, PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.ROLE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.CREATE)));
+  }
+
   // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
   private AuthorizationSearchResponse searchAuthorizations(final String restAddress)
       throws URISyntaxException, IOException, InterruptedException {
