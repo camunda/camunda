@@ -51,7 +51,18 @@ public interface CamundaClientCloudBuilderStep1 {
          *
          * @param region region of the Camunda Cloud cluster
          */
-        CamundaClientCloudBuilderStep4 withRegion(String region);
+        CamundaClientCloudBuilderStep5 withRegion(String region);
+
+        interface CamundaClientCloudBuilderStep5 extends CamundaClientBuilder {
+
+          /**
+           * Sets the domain of the Camunda Cloud stage. Default is 'camunda.io', the production
+           * stage.
+           *
+           * @param domain domain of the Camunda Cloud stage
+           */
+          CamundaClientCloudBuilderStep5 withDomain(String domain);
+        }
       }
     }
   }
