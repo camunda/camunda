@@ -12,7 +12,6 @@
   <name>Tasklist Integration Tests</name>
 
   <dependencies>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-schema</artifactId>
@@ -106,6 +105,13 @@
     </dependency>
 
     <!-- TEST -->
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>unifiedconfig</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>

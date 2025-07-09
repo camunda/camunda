@@ -12,6 +12,7 @@ import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.unifiedconfig.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +35,7 @@ public class StandaloneTasklist {
     final var standaloneTasklistApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
+                TasklistPropertiesOverride.class,
                 CommonsModuleConfiguration.class,
                 TasklistModuleConfiguration.class,
                 WebappsModuleConfiguration.class)

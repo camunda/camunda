@@ -12,6 +12,7 @@ import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
 import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
+import io.camunda.unifiedconfig.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -35,7 +36,7 @@ import org.springframework.context.annotation.Profile;
           value = TasklistModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import({WebappsModuleConfiguration.class, CommonsModuleConfiguration.class})
+@Import({TasklistPropertiesOverride.class, WebappsModuleConfiguration.class, CommonsModuleConfiguration.class})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {
