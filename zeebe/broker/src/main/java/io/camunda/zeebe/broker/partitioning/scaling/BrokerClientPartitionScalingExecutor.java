@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotBrokerRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.BrokerPartitionBootstrappedRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
@@ -94,6 +95,16 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
           }
         },
         concurrencyControl);
+  }
+
+  @Override
+  public ActorFuture<RoutingState> getRoutingState() {
+    final var result = concurrencyControl.<RoutingState>createFuture();
+    brokerClient.sendRequestWithRetry(
+        new GetScaleUpProgress(),
+        (key, record) -> result.complete(RoutingStateConverter.fromScaleRecord(record)),
+        result::completeExceptionally);
+    return result;
   }
 
   private ActorFuture<Void> awaitRedistributionProgress(

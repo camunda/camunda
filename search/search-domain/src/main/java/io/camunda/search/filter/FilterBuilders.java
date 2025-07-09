@@ -233,4 +233,14 @@ public final class FilterBuilders {
   public static JobFilter job(final Function<JobFilter.Builder, ObjectBuilder<JobFilter>> fn) {
     return fn.apply(job()).build();
   }
+
+  public static MessageSubscriptionFilter.Builder messageSubscription() {
+    return new MessageSubscriptionFilter.Builder();
+  }
+
+  public static MessageSubscriptionFilter messageSubscription(
+      final Function<MessageSubscriptionFilter.Builder, ObjectBuilder<MessageSubscriptionFilter>>
+          fn) {
+    return fn.apply(messageSubscription()).build();
+  }
 }

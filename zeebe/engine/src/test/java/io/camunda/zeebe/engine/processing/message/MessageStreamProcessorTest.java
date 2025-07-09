@@ -78,13 +78,14 @@ public final class MessageStreamProcessorTest {
     spySubscriptionCommandSender =
         spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
+    final var routingInfo = RoutingInfo.forStaticPartitions(1);
     spyCommandDistributionBehavior =
         spy(
             new CommandDistributionBehavior(
                 mockDistributionState,
                 writers,
                 1,
-                RoutingInfo.forStaticPartitions(1),
+                routingInfo,
                 mockInterpartitionCommandSender,
                 mock(DistributionMetrics.class)));
 
@@ -95,6 +96,7 @@ public final class MessageStreamProcessorTest {
           final var mockAuthCheckBehavior = mock(AuthorizationCheckBehavior.class);
           when(mockAuthCheckBehavior.isAuthorized(any())).thenReturn(Either.right(null));
           MessageEventProcessors.addMessageProcessors(
+              1,
               mock(BpmnBehaviors.class),
               typedRecordProcessors,
               processingState,
@@ -105,7 +107,8 @@ public final class MessageStreamProcessorTest {
               FeatureFlags.createDefault(),
               spyCommandDistributionBehavior,
               InstantSource.system(),
-              mockAuthCheckBehavior);
+              mockAuthCheckBehavior,
+              routingInfo);
           return typedRecordProcessors;
         });
   }

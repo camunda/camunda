@@ -64,7 +64,7 @@ public class UnassignRoleFromMappingCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("mappingId", mappingId);
     final HttpCamundaFuture<UnassignRoleFromMappingResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
-        "/roles/" + roleId + "/mappings/" + mappingId,
+        "/roles/" + roleId + "/mapping-rules/" + mappingId,
         null, // No request body needed
         httpRequestConfig.build(),
         result);

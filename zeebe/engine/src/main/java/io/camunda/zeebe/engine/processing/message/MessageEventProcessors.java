@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptio
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
@@ -34,6 +35,7 @@ import java.util.function.Supplier;
 public final class MessageEventProcessors {
 
   public static void addMessageProcessors(
+      final int partitionId,
       final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
@@ -44,7 +46,8 @@ public final class MessageEventProcessors {
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior commandDistributionBehavior,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final RoutingInfo routingInfo) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageCorrelationState messageCorrelationState =
@@ -63,6 +66,7 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,
             new MessagePublishProcessor(
+                partitionId,
                 messageState,
                 subscriptionState,
                 startEventSubscriptionState,
@@ -73,7 +77,8 @@ public final class MessageEventProcessors {
                 processState,
                 bpmnBehaviors.eventTriggerBehavior(),
                 bpmnBehaviors.stateBehavior(),
-                authCheckBehavior))
+                authCheckBehavior,
+                routingInfo))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,

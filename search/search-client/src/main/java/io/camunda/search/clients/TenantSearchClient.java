@@ -12,14 +12,11 @@ import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.SecurityContext;
-import java.util.List;
 
 public interface TenantSearchClient {
   SearchQueryResult<TenantEntity> searchTenants(TenantQuery filter);
 
   SearchQueryResult<TenantMemberEntity> searchTenantMembers(TenantQuery filter);
-
-  List<TenantEntity> findAllTenants(TenantQuery query);
 
   TenantSearchClient withSecurityContext(SecurityContext securityContext);
 }

@@ -33,7 +33,6 @@ import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
@@ -108,7 +107,6 @@ public class ElasticsearchProcessInstanceDao extends ElasticsearchDao<ProcessIns
   }
 
   @Override
-  @PreAuthorize("hasPermission('write')")
   public ChangeStatus delete(final Long key) throws APIException {
     // Check for not exists
     byKey(key);

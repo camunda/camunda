@@ -27,7 +27,6 @@ import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -142,7 +141,6 @@ public class OpensearchProcessInstanceDao
   }
 
   @Override
-  @PreAuthorize("hasPermission('write')")
   public ChangeStatus delete(final Long key) throws APIException {
     // Check for not exists
     byKey(key);

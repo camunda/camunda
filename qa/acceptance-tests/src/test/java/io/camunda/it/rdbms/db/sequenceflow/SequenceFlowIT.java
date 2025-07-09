@@ -50,8 +50,9 @@ public class SequenceFlowIT {
 
     // then
     final var items =
-        sequenceFlowReader.search(
-            SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(1L))));
+        sequenceFlowReader
+            .search(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(1L))))
+            .items();
     assertThat(items)
         .containsExactly(
             new SequenceFlowEntity.Builder()
@@ -95,8 +96,9 @@ public class SequenceFlowIT {
 
     // when
     final var actual =
-        sequenceFlowReader.search(
-            SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(22L))));
+        sequenceFlowReader
+            .search(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(22L))))
+            .items();
 
     // then
     assertThat(actual)
@@ -135,8 +137,9 @@ public class SequenceFlowIT {
 
     // then
     final var items =
-        sequenceFlowReader.search(
-            SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(3L))));
+        sequenceFlowReader
+            .search(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(3L))))
+            .items();
     assertThat(items)
         .containsExactly(
             new SequenceFlowEntity.Builder()
@@ -176,8 +179,9 @@ public class SequenceFlowIT {
 
     // then
     final var items =
-        sequenceFlowReader.search(
-            SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(4L))));
+        sequenceFlowReader
+            .search(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(4L))))
+            .items();
     assertThat(items)
         .containsExactly(
             new SequenceFlowEntity.Builder()

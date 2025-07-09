@@ -10,7 +10,6 @@ package io.camunda.exporter.handlers;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
-import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -44,7 +43,8 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleMemberEntity,
   @Override
   public List<String> generateIds(final Record<RoleRecordValue> record) {
     final RoleRecordValue value = record.getValue();
-    return List.of(RoleEntity.getChildKey(value.getRoleId(), value.getEntityId()));
+    return List.of(
+        RoleIndex.JOIN_RELATION_FACTORY.createChildId(value.getRoleId(), value.getEntityId()));
   }
 
   @Override

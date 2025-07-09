@@ -160,7 +160,7 @@ public class ProcessInstanceSearchTest {
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
     assertThat(exception.details().getStatus()).isEqualTo(404);
     assertThat(exception.details().getDetail())
-        .isEqualTo("Process instance with key 100 not found");
+        .contains("A single result was expected, but none was found matching");
   }
 
   @Test

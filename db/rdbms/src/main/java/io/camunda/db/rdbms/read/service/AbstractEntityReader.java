@@ -15,8 +15,12 @@ import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.Operator;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
@@ -76,6 +80,11 @@ abstract class AbstractEntityReader<T> {
       keySetPagination = createKeySetPagination(sort, page);
     }
 
+    if (SearchQueryResultType.UNLIMITED.equals(page.resultType())) {
+      // assuming Integer.MAX_VALUE is enough
+      return new DbQueryPage(Integer.MAX_VALUE, 0, keySetPagination);
+    }
+
     return new DbQueryPage(page.size(), page.from(), keySetPagination);
   }
 
@@ -128,11 +137,28 @@ abstract class AbstractEntityReader<T> {
     return keySetPagination;
   }
 
+  protected void ensureSingleResultIfRequired(final List<T> hits, final TypedSearchQuery query) {
+    if (!SearchQueryResultType.SINGLE_RESULT.equals(query.page().resultType())) {
+      return;
+    }
+
+    // Requires some refactoring to move this check into a single place later
+    if (hits.isEmpty()) {
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_SINGLE_RESULT_NOT_FOUND.formatted(query),
+          CamundaSearchException.Reason.NOT_FOUND);
+    } else if (hits.size() > 1) {
+      throw new CamundaSearchException(
+          ErrorMessages.ERROR_SINGLE_RESULT_NOT_UNIQUE.formatted(query),
+          CamundaSearchException.Reason.NOT_UNIQUE);
+    }
+  }
+
   protected final SearchQueryResult<T> buildSearchQueryResult(
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
     final var result = new SearchQueryResult.Builder<T>().total(totalHits).items(hits);
 
-    if (!hits.isEmpty()) {
+    if (!hits.isEmpty() && dbSort != null) {
       final var columns = dbSort.columns();
       result
           .startCursor(Cursor.encode(hits.getFirst(), columns))

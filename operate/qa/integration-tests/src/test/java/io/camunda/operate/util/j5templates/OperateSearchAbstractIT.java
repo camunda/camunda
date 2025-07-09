@@ -17,11 +17,10 @@ import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
-import io.camunda.operate.webapp.rest.dto.UserDto;
-import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
-import java.util.List;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import java.util.Collections;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,7 +56,7 @@ import org.springframework.test.web.servlet.MvcResult;
 public class OperateSearchAbstractIT {
   public static final String DEFAULT_USER = "testuser";
   // These are mocked so we can bypass authentication issues when connecting to search
-  @MockBean protected UserService userService;
+  @MockBean protected CamundaAuthenticationProvider camundaAuthenticationProvider;
   @MockBean protected TenantService tenantService;
   @Autowired protected ProcessCache processCache;
   @Autowired protected TestSearchRepository testSearchRepository;
@@ -71,9 +70,16 @@ public class OperateSearchAbstractIT {
   @BeforeAll
   public void beforeAllSetup() throws Exception {
     // Mocks the authentication for search
-    when(userService.getCurrentUser())
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
         .thenReturn(
-            new UserDto().setUserId(DEFAULT_USER).setPermissions(List.of(Permission.WRITE)));
+            new CamundaAuthentication(
+                DEFAULT_USER,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
     doReturn(TenantService.AuthenticatedTenants.allTenants())
         .when(tenantService)
         .getAuthenticatedTenants();
@@ -92,9 +98,16 @@ public class OperateSearchAbstractIT {
   public void beforeEach() throws Exception {
     // Mocks are cleared between each test, reset the authentication mocks so interactions with
     // search don't fail
-    when(userService.getCurrentUser())
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
         .thenReturn(
-            new UserDto().setUserId(DEFAULT_USER).setPermissions(List.of(Permission.WRITE)));
+            new CamundaAuthentication(
+                DEFAULT_USER,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
     doReturn(TenantService.AuthenticatedTenants.allTenants())
         .when(tenantService)
         .getAuthenticatedTenants();

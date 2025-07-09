@@ -17,14 +17,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.DependencyInjectionTestExecutionListener;
-import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
-import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,7 +67,7 @@ public abstract class OperateAbstractIT {
 
   protected OffsetDateTime testStartTime;
 
-  @MockBean protected UserService userService;
+  @MockBean protected CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   @MockBean protected TenantService tenantService;
 
@@ -75,9 +75,16 @@ public abstract class OperateAbstractIT {
   public void before() {
     testStartTime = OffsetDateTime.now();
     mockMvc = mockMvcTestRule.getMockMvc();
-    when(userService.getCurrentUser())
+    when(camundaAuthenticationProvider.getCamundaAuthentication())
         .thenReturn(
-            new UserDto().setUserId(DEFAULT_USER).setPermissions(List.of(Permission.WRITE)));
+            new CamundaAuthentication(
+                DEFAULT_USER,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyMap()));
     mockTenantResponse();
   }
 

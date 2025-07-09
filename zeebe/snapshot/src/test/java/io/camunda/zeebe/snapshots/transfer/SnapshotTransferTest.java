@@ -9,7 +9,6 @@ package io.camunda.zeebe.snapshots.transfer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -113,8 +112,7 @@ public class SnapshotTransferTest {
             snapshot -> {
               assertThat(snapshot.getId()).isEqualTo("1-1-0-0-0");
               assertThat(snapshot.getMetadata())
-                  .isEqualTo(FileBasedSnapshotMetadata.forBootstrap(1));
-              assertThat(snapshot.isBootstrap()).isTrue();
+                  .isEqualTo(FileBasedSnapshotMetadata.forBootstrap(1).notBootstrap());
               assertThat(snapshot.files()).isNotEmpty();
             });
     assertThat(snapshotMetrics.getTransferDuration(true).mean(TimeUnit.MILLISECONDS))
@@ -127,13 +125,13 @@ public class SnapshotTransferTest {
   public void shouldTakeSnapshotIfNoneIsPresent() {
     // given
     final int partitionId = 1;
-    when(takeSnapshotMock.takeSnapshot(anyInt(), anyLong(), any()))
+    when(takeSnapshotMock.takeSnapshot(anyLong()))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var persistedSnapshotFuture = snapshotTransfer.getLatestSnapshot(partitionId);
 
     // then
-    verify(takeSnapshotMock, timeout(5000)).takeSnapshot(eq(1), eq(-1L), any());
+    verify(takeSnapshotMock, timeout(5000)).takeSnapshot(eq(-1L));
   }
 }

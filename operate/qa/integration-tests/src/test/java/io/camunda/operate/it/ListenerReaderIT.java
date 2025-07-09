@@ -19,9 +19,8 @@ import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerDto;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.ListenerResponseDto;
-import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-import io.camunda.operate.webapp.security.UserService;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.listener.ListenerEventType;
@@ -32,7 +31,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -40,7 +38,7 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Autowired MockMvcManager mockMvcManager;
   @Autowired JobTemplate jobTemplate;
-  @Autowired private UserService userService;
+  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
   private String jobIndexName;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -54,8 +52,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderFlowNodeId() throws Exception {
-    Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
-
     final ListenerRequestDto request =
         new ListenerRequestDto().setPageSize(20).setFlowNodeId("test_task");
     final ListenerResponseDto response = postListenerRequest("111", request);
@@ -103,8 +99,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderFlowNodeInstanceId() throws Exception {
-    Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
-
     final ListenerRequestDto request =
         new ListenerRequestDto().setPageSize(20).setFlowNodeInstanceId(1L);
     final ListenerResponseDto response = postListenerRequest("111", request);
@@ -138,8 +132,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderPaging() throws Exception {
-    Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
-
     final ListenerRequestDto request1 =
         new ListenerRequestDto().setPageSize(3).setFlowNodeId("test_task");
     final ListenerResponseDto response1 = postListenerRequest("111", request1);
@@ -188,8 +180,6 @@ public class ListenerReaderIT extends OperateSearchAbstractIT {
 
   @Test
   public void testListenerReaderWithTypeFilters() throws Exception {
-    Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
-
     // request only Execution Listeners
     final ListenerRequestDto elRequest =
         new ListenerRequestDto()

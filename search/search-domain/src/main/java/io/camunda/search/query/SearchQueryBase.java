@@ -7,6 +7,9 @@
  */
 package io.camunda.search.query;
 
+import static io.camunda.search.page.SearchQueryPage.SearchQueryResultType.SINGLE_RESULT;
+import static io.camunda.search.page.SearchQueryPage.SearchQueryResultType.UNLIMITED;
+
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.util.ObjectBuilder;
@@ -17,7 +20,7 @@ public interface SearchQueryBase {
 
   SearchQueryPage page();
 
-  public abstract static class AbstractQueryBuilder<T extends AbstractQueryBuilder<T>> {
+  abstract class AbstractQueryBuilder<T extends AbstractQueryBuilder<T>> {
 
     private static final SearchQueryPage DEFAULT_PAGE = SearchQueryPage.of((b) -> b);
 
@@ -27,6 +30,16 @@ public interface SearchQueryBase {
 
     protected SearchQueryPage page() {
       return Objects.requireNonNullElse(page, DEFAULT_PAGE);
+    }
+
+    public T singleResult() {
+      page(new SearchQueryPage(0, 2, null, null, SINGLE_RESULT));
+      return self();
+    }
+
+    public T unlimited() {
+      page(new SearchQueryPage(0, 0, null, null, UNLIMITED));
+      return self();
     }
 
     public T page(final SearchQueryPage value) {

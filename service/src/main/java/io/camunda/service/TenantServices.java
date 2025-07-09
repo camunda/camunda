@@ -10,8 +10,6 @@ package io.camunda.service;
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authorization;
@@ -63,14 +61,6 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         .searchTenantMembers(query);
   }
 
-  public List<TenantEntity> findAll(final TenantQuery query) {
-    return tenantSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.tenant().read())))
-        .findAllTenants(query);
-  }
-
   @Override
   public TenantServices withAuthentication(final CamundaAuthentication authentication) {
     return new TenantServices(
@@ -112,8 +102,10 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public List<TenantEntity> getTenantsByMemberIds(
       final Set<String> memberIds, final EntityType memberType) {
-    return findAll(
-        TenantQuery.of(q -> q.filter(b -> b.memberIds(memberIds).childMemberType(memberType))));
+    return search(
+            TenantQuery.of(
+                q -> q.filter(b -> b.memberIds(memberIds).childMemberType(memberType)).unlimited()))
+        .items();
   }
 
   public List<TenantEntity> getTenantsByUserAndGroupsAndRoles(
@@ -140,35 +132,25 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds) {
-    return findAll(TenantQuery.of(q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds))));
+    return search(
+            TenantQuery.of(
+                q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds)).unlimited()))
+        .items();
   }
 
   public TenantEntity getById(final String tenantId) {
-    return getSingle(TenantQuery.of(q -> q.filter(f -> f.tenantId(tenantId))));
-  }
-
-  private TenantEntity getSingle(final TenantQuery query) {
     final var result =
         tenantSearchClient
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchTenants(query);
-    if (result.total() < 1) {
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_NOT_FOUND_TENANT.formatted(query),
-          CamundaSearchException.Reason.NOT_FOUND);
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          ErrorMessages.ERROR_NOT_UNIQUE_TENANT.formatted(query),
-          CamundaSearchException.Reason.NOT_UNIQUE);
-    }
+            .searchTenants(TenantQuery.of(q -> q.filter(f -> f.tenantId(tenantId)).singleResult()))
+            .items()
+            .getFirst();
 
-    final var tenantEntity = result.items().stream().findFirst().orElseThrow();
     final var authorization = Authorization.of(a -> a.tenant().read());
-    if (!securityContextProvider.isAuthorized(
-        tenantEntity.tenantId(), authentication, authorization)) {
+    if (!securityContextProvider.isAuthorized(result.tenantId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return tenantEntity;
+    return result;
   }
 
   public record TenantDTO(Long key, String tenantId, String name, String description)

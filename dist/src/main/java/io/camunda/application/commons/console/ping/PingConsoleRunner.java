@@ -15,6 +15,7 @@ import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
@@ -55,7 +56,7 @@ public class PingConsoleRunner implements ApplicationRunner {
     try {
       validateConfiguration();
       LOGGER.info(
-          "Console ping is enabled with endpoint: {}, and delay: {} " + "minutes",
+          "Console ping is enabled with endpoint: {}, and delay of {}.",
           pingConfiguration.endpoint(),
           pingConfiguration.pingPeriod());
       final var executor = createTaskExecutor();
@@ -87,6 +88,30 @@ public class PingConsoleRunner implements ApplicationRunner {
     }
     if (pingConfiguration.pingPeriod().isZero() || pingConfiguration.pingPeriod().isNegative()) {
       throw new IllegalArgumentException("Ping period must be greater than zero.");
+    }
+    if (pingConfiguration.retry() != null) {
+      if (pingConfiguration.retry().getMaxRetries() <= 0) {
+        throw new IllegalArgumentException("Number of max retries must be greater than zero.");
+      }
+      if (pingConfiguration.retry().getRetryDelayMultiplier() <= 0) {
+        throw new IllegalArgumentException("Retry delay multiplier must be greater than zero.");
+      }
+      if (pingConfiguration.retry().getMaxRetryDelay().isZero()
+          || pingConfiguration.retry().getMinRetryDelay().isNegative()) {
+        throw new IllegalArgumentException("Max retry delay must be greater than zero.");
+      }
+      if (pingConfiguration.retry().getMinRetryDelay().isZero()
+          || pingConfiguration.retry().getMinRetryDelay().isNegative()) {
+        throw new IllegalArgumentException("Min retry delay must be greater than zero.");
+      }
+      if (pingConfiguration
+              .retry()
+              .getMaxRetryDelay()
+              .compareTo(pingConfiguration.retry().getMinRetryDelay())
+          < 0) {
+        throw new IllegalArgumentException(
+            "Max retry delay must be greater than or equal to min retry delay.");
+      }
     }
     if (licensePayload.isLeft()) {
       throw new IllegalArgumentException(
@@ -138,5 +163,6 @@ public class PingConsoleRunner implements ApplicationRunner {
       String clusterId,
       String clusterName,
       Duration pingPeriod,
+      RetryConfiguration retry,
       Map<String, String> properties) {}
 }

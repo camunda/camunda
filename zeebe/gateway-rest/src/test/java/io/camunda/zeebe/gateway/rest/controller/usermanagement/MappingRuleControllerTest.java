@@ -51,7 +51,10 @@ public class MappingRuleControllerTest extends RestControllerTest {
   @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
   void createMappingShouldReturnCreated(final String id) {
     // given
-    final var dto = validCreateMappingRequest();
+    final var dto = validCreateMappingDTO();
+    final var request =
+        new MappingRuleCreateRequest(
+            dto.mappingId(), dto.claimName(), dto.claimValue(), dto.name());
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(1L)
@@ -69,7 +72,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .uri(MAPPING_RULES_PATH)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isCreated();
@@ -459,7 +462,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
     verifyNoInteractions(mappingServices);
   }
 
-  private MappingDTO validCreateMappingRequest() {
+  private MappingDTO validCreateMappingDTO() {
     return new MappingDTO("newClaimName", "newClaimValue", "mapName", "mapId");
   }
 

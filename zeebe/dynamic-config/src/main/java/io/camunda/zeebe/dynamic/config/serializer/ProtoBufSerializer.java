@@ -24,6 +24,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.api.ErrorResponse;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.protocol.Requests;
@@ -51,6 +52,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
@@ -62,7 +64,6 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -147,7 +148,7 @@ public class ProtoBufSerializer
 
     final Optional<RoutingState> routingState =
         encodedClusterTopology.hasRoutingState()
-            ? Optional.of(decodeRoutingState(encodedClusterTopology.getRoutingState()))
+            ? decodeRoutingState(encodedClusterTopology.getRoutingState())
             : Optional.empty();
 
     return new ClusterConfiguration(
@@ -447,6 +448,11 @@ public class ProtoBufSerializer
                   .setDesiredPartitionCount(msg.desiredPartitionCount())
                   .addAllPartitionsToRelocate(msg.partitionsToRelocate())
                   .build());
+      case final UpdateRoutingState msg -> {
+        final var b = Topology.UpdateRoutingState.newBuilder();
+        msg.routingState().ifPresent(s -> b.setRoutingState(encodeRoutingState(s)));
+        builder.setUpdateRoutingState(b);
+      }
     }
     return builder.build();
   }
@@ -507,11 +513,16 @@ public class ProtoBufSerializer
         pendingOperations);
   }
 
-  private RoutingState decodeRoutingState(final Topology.RoutingState routingState) {
-    return new RoutingState(
-        routingState.getVersion(),
-        decodeRequestHandling(routingState.getRequestHandling()),
-        decodeMessageCorrelation(routingState.getMessageCorrelation()));
+  private Optional<RoutingState> decodeRoutingState(final Topology.RoutingState routingState) {
+    if (routingState.equals(Topology.RoutingState.getDefaultInstance())) {
+      return Optional.empty();
+    } else {
+      return Optional.of(
+          new RoutingState(
+              routingState.getVersion(),
+              decodeRequestHandling(routingState.getRequestHandling()),
+              decodeMessageCorrelation(routingState.getMessageCorrelation())));
+    }
   }
 
   private RequestHandling decodeRequestHandling(final Topology.RequestHandling requestHandling) {
@@ -521,9 +532,9 @@ public class ProtoBufSerializer
       case ACTIVEPARTITIONS ->
           new RequestHandling.ActivePartitions(
               requestHandling.getActivePartitions().getBasePartitionCount(),
-              new HashSet<>(
+              new TreeSet<>(
                   requestHandling.getActivePartitions().getAdditionalActivePartitionsList()),
-              new HashSet<>(requestHandling.getActivePartitions().getInactivePartitionsList()));
+              new TreeSet<>(requestHandling.getActivePartitions().getInactivePartitionsList()));
       case STRATEGY_NOT_SET -> throw new IllegalArgumentException("Unknown request handling type");
     };
   }
@@ -672,6 +683,11 @@ public class ProtoBufSerializer
           memberId,
           relocation.getDesiredPartitionCount(),
           new TreeSet<>(relocation.getPartitionsToRelocateList()));
+    } else if (topologyChangeOperation.hasUpdateRoutingState()) {
+      final var protoRoutingState =
+          topologyChangeOperation.getUpdateRoutingState().getRoutingState();
+      final var routingState = decodeRoutingState(protoRoutingState);
+      return new UpdateRoutingState(memberId, routingState);
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any
@@ -820,6 +836,20 @@ public class ProtoBufSerializer
         .setDryRun(forceRemoveBrokersRequest.dryRun())
         .build()
         .toByteArray();
+  }
+
+  @Override
+  public byte[] encodeUpdateRoutingStateRequest(
+      final UpdateRoutingStateRequest updateRoutingStateRequest) {
+    final var builder =
+        Requests.UpdateRoutingStateRequest.newBuilder()
+            .setDryRun(updateRoutingStateRequest.dryRun());
+
+    updateRoutingStateRequest
+        .routingState()
+        .ifPresent(routingState -> builder.setRoutingState(encodeRoutingState(routingState)));
+
+    return builder.build().toByteArray();
   }
 
   @Override
@@ -1087,6 +1117,18 @@ public class ProtoBufSerializer
     } catch (final InvalidProtocolBufferException e) {
       throw new DecodingFailed(e);
     }
+  }
+
+  @Override
+  public UpdateRoutingStateRequest decodeUpdateRoutingStateRequest(final byte[] bytes) {
+    final Requests.UpdateRoutingStateRequest proto;
+    try {
+      proto = Requests.UpdateRoutingStateRequest.parseFrom(bytes);
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+    final var routingState = decodeRoutingState(proto.getRoutingState());
+    return new UpdateRoutingStateRequest(routingState, proto.getDryRun());
   }
 
   public Builder encodeTopologyChangeResponse(

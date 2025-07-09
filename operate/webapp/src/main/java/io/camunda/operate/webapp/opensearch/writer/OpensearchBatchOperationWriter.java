@@ -36,10 +36,10 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.PersistOperationHelper;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -97,8 +97,6 @@ public class OpensearchBatchOperationWriter
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
 
-  @Autowired private UserService userService;
-
   @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Autowired private PermissionsService permissionsService;
@@ -110,6 +108,8 @@ public class OpensearchBatchOperationWriter
   @Autowired private OpenSearchQueryHelper openSearchQueryHelper;
 
   @Autowired private PersistOperationHelper persistOperationHelper;
+
+  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of
@@ -364,7 +364,8 @@ public class OpensearchBatchOperationWriter
             .setType(operationType)
             .setState(OperationState.SCHEDULED)
             .setBatchOperationId(batchOperation.getId())
-            .setUsername(userService.getCurrentUser().getUsername());
+            .setUsername(
+                camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
 
     // Create request
     try {
@@ -405,7 +406,8 @@ public class OpensearchBatchOperationWriter
             .setType(operationType)
             .setState(OperationState.SCHEDULED)
             .setBatchOperationId(batchOperation.getId())
-            .setUsername(userService.getCurrentUser().getUsername());
+            .setUsername(
+                camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
 
     // Create request
     try {
@@ -510,7 +512,8 @@ public class OpensearchBatchOperationWriter
         .setType(operationType)
         .setName(name)
         .setStartDate(OffsetDateTime.now())
-        .setUsername(userService.getCurrentUser().getUsername());
+        .setUsername(
+            camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
   }
 
   private OperationEntity createOperationEntity(
@@ -543,7 +546,8 @@ public class OpensearchBatchOperationWriter
         .setType(operationType)
         .setState(OperationState.SCHEDULED)
         .setBatchOperationId(batchOperationId)
-        .setUsername(userService.getCurrentUser().getUsername());
+        .setUsername(
+            camundaAuthenticationProvider.getCamundaAuthentication().authenticatedUsername());
   }
 
   private Optional<ProcessInstanceForListViewEntity> tryGetProcessInstance(

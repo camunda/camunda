@@ -22,17 +22,20 @@ public interface RoutingState {
    * Retrieves the event key of the SCALING_UP event for a specific partition count.
    *
    * @param partitionCount the target number of partitions for the scaling operation
-   * @return the event key of the SCALING_UP event that scaled to the specified partition count.
-   *     Returns 0 for the initial partition count, or -1 if the system has never scaled to the
-   *     specified number of partitions
+   * @return the command position of the SCALING_UP event that scaled to the specified partition
+   *     count. Returns 0 for the initial partition count, or -1 if the system has never scaled to
+   *     the specified number of partitions
    */
   long bootstrappedAt(int partitionCount);
 
   sealed interface MessageCorrelation {
+    int partitionCount();
+
     record HashMod(int partitionCount) implements MessageCorrelation {
       public HashMod {
         if (partitionCount <= 0) {
-          throw new IllegalArgumentException("Partition count must be positive");
+          throw new IllegalArgumentException(
+              "Partition count must be positive, was " + partitionCount);
         }
       }
     }

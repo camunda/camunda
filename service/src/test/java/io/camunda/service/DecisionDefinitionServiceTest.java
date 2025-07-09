@@ -19,7 +19,6 @@ import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -100,47 +99,6 @@ public final class DecisionDefinitionServiceTest {
 
     // then
     assertThat(xml).isEqualTo("<foo>bar</foo>");
-  }
-
-  @Test
-  public void shouldThrowNotFoundExceptionOnUnmatchedDecisionKey() {
-    // given
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
-
-    // then
-    final var exception =
-        assertThrows(CamundaSearchException.class, () -> services.getDecisionDefinitionXml(1L));
-    assertThat(exception.getMessage()).isEqualTo("Decision definition with key 1 not found");
-    assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
-    verify(client).searchDecisionDefinitions(any(DecisionDefinitionQuery.class));
-    verify(decisionRequirementSearchClient, never())
-        .searchDecisionRequirements(any(DecisionRequirementsQuery.class));
-  }
-
-  @Test
-  public void shouldThrowNotFoundExceptionOnUnmatchedDecisionRequirementsKey() {
-    // given
-    final var definitionEntity = mock(DecisionDefinitionEntity.class);
-    when(definitionEntity.decisionRequirementsKey()).thenReturn(1L);
-    when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
-    final var definitionResult = mock(SearchQueryResult.class);
-    when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(definitionEntity), null, null));
-    when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
-        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(true);
-
-    // then
-    final var exception =
-        assertThrows(CamundaSearchException.class, () -> services.getDecisionDefinitionXml(1L));
-    assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
-    assertThat(exception.getMessage()).isEqualTo("Decision requirements with key 1 not found");
   }
 
   @Test

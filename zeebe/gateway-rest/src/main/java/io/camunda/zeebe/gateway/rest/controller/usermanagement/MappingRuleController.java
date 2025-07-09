@@ -88,7 +88,7 @@ public class MappingRuleController {
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRules(
+  public ResponseEntity<MappingRuleSearchQueryResult> searchMappings(
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingRuleSearchQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::searchMappingRules);

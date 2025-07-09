@@ -19,7 +19,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import io.camunda.operate.webapp.security.UserService;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.util.Arrays;
@@ -36,7 +36,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchBatchOperationReader implements BatchOperationReader {
   @Autowired private BatchOperationTemplate batchOperationTemplate;
-  @Autowired private UserService<?> userService;
+
+  @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
   @Autowired
   @Qualifier("operateObjectMapper")
@@ -94,7 +95,9 @@ public class OpensearchBatchOperationReader implements BatchOperationReader {
                 constantScore(
                     term(
                         BatchOperationTemplate.USERNAME,
-                        userService.getCurrentUser().getUsername())))
+                        camundaAuthenticationProvider
+                            .getCamundaAuthentication()
+                            .authenticatedUsername())))
             .sort(sort1, sort2)
             .size(batchOperationRequestDto.getPageSize());
 

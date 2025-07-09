@@ -51,6 +51,17 @@ public sealed interface ClusterConfigurationChangeOperation {
    */
   record DeleteHistoryOperation(MemberId memberId) implements ClusterConfigurationChangeOperation {}
 
+  /**
+   * Represents an operation to update the routing state of a member in the cluster configuration.
+   *
+   * @param memberId the identifier of the member who will update the routing state
+   * @param routingState the new routing state to be applied to the member, or {@link
+   *     Optional#empty()} if the routing state is to be fetched from the runtime state of {@link
+   *     io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION} leader
+   */
+  record UpdateRoutingState(MemberId memberId, Optional<RoutingState> routingState)
+      implements ClusterConfigurationChangeOperation {}
+
   sealed interface ScaleUpOperation extends ClusterConfigurationChangeOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.snapshots.transfer;
 
 import io.camunda.zeebe.scheduler.AsyncClosable;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
@@ -47,11 +46,9 @@ public interface SnapshotTransferService extends AsyncClosable {
      * Take a snapshot of a partition. The snapshot returned must have processed at least {@param
      * lastProcessedPosition}
      *
-     * @param partition the partition to take the snapshot for
      * @param lastProcessedPosition the minimum value for lastProcessedPosition in the snapshot
-     * @return
+     * @return a future with the persisted snapshot
      */
-    ActorFuture<PersistedSnapshot> takeSnapshot(
-        int partition, long lastProcessedPosition, ConcurrencyControl control);
+    ActorFuture<PersistedSnapshot> takeSnapshot(long lastProcessedPosition);
   }
 }

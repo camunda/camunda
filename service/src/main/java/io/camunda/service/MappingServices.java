@@ -9,8 +9,6 @@ package io.camunda.service;
 
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -24,7 +22,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -53,14 +50,6 @@ public class MappingServices
         .searchMappings(query);
   }
 
-  public List<MappingEntity> findAll(final MappingQuery query) {
-    return mappingSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.mapping().read())))
-        .findAllMappings(query);
-  }
-
   @Override
   public MappingServices withAuthentication(final CamundaAuthentication authentication) {
     return new MappingServices(
@@ -86,20 +75,13 @@ public class MappingServices
   }
 
   public MappingEntity getMapping(final String mappingId) {
-    return findMapping(mappingId)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_MAPPING_BY_ID.formatted(mappingId),
-                    CamundaSearchException.Reason.NOT_FOUND));
-  }
-
-  public Optional<MappingEntity> findMapping(final String mappingId) {
     return search(
-            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingId(mappingId)).build())
+            SearchQueryBuilders.mappingSearchQuery()
+                .filter(f -> f.mappingId(mappingId))
+                .singleResult()
+                .build())
         .items()
-        .stream()
-        .findFirst();
+        .getFirst();
   }
 
   public Optional<MappingEntity> findMapping(final MappingDTO request) {
@@ -118,7 +100,8 @@ public class MappingServices
   }
 
   public Stream<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
-    return MappingRuleMatcher.matchingRules(findAll(MappingQuery.of(q -> q)).stream(), claims);
+    return MappingRuleMatcher.matchingRules(
+        search(MappingQuery.of(q -> q.unlimited())).items().stream(), claims);
   }
 
   public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}

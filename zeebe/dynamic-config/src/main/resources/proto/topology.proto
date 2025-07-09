@@ -97,6 +97,7 @@ message TopologyChangeOperation {
     DeleteHistoryOperation deleteHistory = 13;
     AwaitRedistributionCompletion awaitRedistributionCompletion = 14;
     AwaitRelocationCompletion awaitRelocationCompletion = 15;
+    UpdateRoutingState updateRoutingState = 16;
   }
 }
 
@@ -153,6 +154,10 @@ message AwaitRedistributionCompletion {
 message AwaitRelocationCompletion {
   int32 desiredPartitionCount = 1;
   repeated int32 partitionsToRelocate = 2;
+}
+
+message UpdateRoutingState{
+  RoutingState routing_state = 1;
 }
 
 message DeleteHistoryOperation { int32 memberId = 1; }

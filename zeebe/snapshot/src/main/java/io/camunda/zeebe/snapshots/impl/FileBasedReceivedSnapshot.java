@@ -272,6 +272,10 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 snapshotId.getExportedPosition(),
                 Long.MAX_VALUE,
                 false);
+      } else {
+        // received snapshot are not considered "for bootstrap", they need to be saved in the
+        // usual snapshot directory
+        metadata = metadata.notBootstrap();
       }
       final PersistedSnapshot value =
           snapshotStore.persistNewSnapshot(directory, snapshotId, checksumCollection, metadata);

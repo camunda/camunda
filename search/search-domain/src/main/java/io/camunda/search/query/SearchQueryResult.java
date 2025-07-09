@@ -11,9 +11,15 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 public record SearchQueryResult<T>(
     long total, boolean hasMoreTotalItems, List<T> items, String startCursor, String endCursor) {
+
+  public static <T> SearchQueryResult<T> of(
+      final Function<SearchQueryResult.Builder<T>, SearchQueryResult.Builder<T>> builderFunction) {
+    return builderFunction.apply(new Builder<>()).build();
+  }
 
   public static <T> SearchQueryResult<T> empty() {
     return new SearchQueryResult<>(0, false, Collections.emptyList(), null, null);

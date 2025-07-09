@@ -108,21 +108,10 @@ public class RoleServicesTest {
     when(client.searchRoles(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findRole(entity.roleId());
+    final var searchQueryResult = services.getRole(entity.roleId());
 
     // then
-    assertThat(searchQueryResult).contains(entity);
-  }
-
-  @Test
-  public void shouldThrownExceptionIfNotFoundById() {
-    // given
-    final var roleId = "roleId";
-    when(client.searchRoles(any()))
-        .thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
-
-    // when / then
-    assertThat(services.findRole(roleId)).isEmpty();
+    assertThat(searchQueryResult).isEqualTo(entity);
   }
 
   @Test
@@ -190,14 +179,20 @@ public class RoleServicesTest {
     final var memberId = "memberId";
     final var memberType = EntityType.USER;
     final var roleEntity = mock(RoleEntity.class);
-    when(client.findAllRoles(
-            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).childMemberType(memberType)))))
-        .thenReturn(List.of(roleEntity));
+    when(client.searchRoles(
+            RoleQuery.of(
+                q -> q.filter(f -> f.memberId(memberId).childMemberType(memberType)).unlimited())))
+        .thenReturn(SearchQueryResult.of(r -> r.items(List.of(roleEntity))));
 
     // when
     final var result =
-        services.findAll(
-            RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).childMemberType(memberType))));
+        services
+            .search(
+                RoleQuery.of(
+                    q ->
+                        q.filter(f -> f.memberId(memberId).childMemberType(memberType))
+                            .unlimited()))
+            .items();
 
     // then
     assertThat(result).isEqualTo(List.of(roleEntity));

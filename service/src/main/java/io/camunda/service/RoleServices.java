@@ -10,8 +10,6 @@ package io.camunda.service;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -30,7 +28,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -79,22 +76,28 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   public List<RoleEntity> getRolesByMemberIds(
       final Set<String> memberIds, final EntityType entityType) {
-    return findAll(
-        RoleQuery.of(q -> q.filter(f -> f.memberIds(memberIds).childMemberType(entityType))));
+    return search(
+            RoleQuery.of(
+                q -> q.filter(f -> f.memberIds(memberIds).childMemberType(entityType)).unlimited()))
+        .items();
   }
 
   public List<RoleEntity> getRolesByMemberId(final String memberId, final EntityType entityType) {
-    return findAll(
-        RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).childMemberType(entityType))));
+    return search(
+            RoleQuery.of(
+                q -> q.filter(f -> f.memberId(memberId).childMemberType(entityType)).unlimited()))
+        .items();
   }
 
   public List<RoleEntity> getRolesByMemberTypeAndMemberIds(
       final Map<EntityType, Set<String>> memberTypesToMemberIds) {
-    return findAll(
-        RoleQuery.of(
-            roleQuery ->
-                roleQuery.filter(
-                    roleFilter -> roleFilter.memberIdsByType(memberTypesToMemberIds))));
+    return search(
+            RoleQuery.of(
+                roleQuery ->
+                    roleQuery
+                        .filter(roleFilter -> roleFilter.memberIdsByType(memberTypesToMemberIds))
+                        .unlimited()))
+        .items();
   }
 
   public List<RoleEntity> getRolesByUserAndGroups(
@@ -104,14 +107,6 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
     roles.addAll(groupRoles);
     return roles.stream().distinct().toList();
-  }
-
-  public List<RoleEntity> findAll(final RoleQuery query) {
-    return roleSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.role().read())))
-        .findAllRoles(query);
   }
 
   @Override
@@ -136,19 +131,13 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   public RoleEntity getRole(final String roleId) {
-    return findRole(roleId)
-        .orElseThrow(
-            () ->
-                new CamundaSearchException(
-                    ErrorMessages.ERROR_NOT_FOUND_ROLE_BY_ID.formatted(roleId),
-                    CamundaSearchException.Reason.NOT_FOUND));
-  }
-
-  public Optional<RoleEntity> findRole(final String roleId) {
-    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleId(roleId)).build())
+    return search(
+            SearchQueryBuilders.roleSearchQuery()
+                .filter(f -> f.roleId(roleId))
+                .singleResult()
+                .build())
         .items()
-        .stream()
-        .findFirst();
+        .getFirst();
   }
 
   public CompletableFuture<RoleRecord> deleteRole(final String roleId) {

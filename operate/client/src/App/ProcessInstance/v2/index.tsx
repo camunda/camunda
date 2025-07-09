@@ -149,6 +149,7 @@ const ProcessInstance: React.FC = observer(() => {
       flowNodeTimeStampStore.reset();
       flowNodeSelectionStore.reset();
       modificationsStore.reset();
+      isInitialized.current = false;
     };
   }, [processInstanceId]);
 

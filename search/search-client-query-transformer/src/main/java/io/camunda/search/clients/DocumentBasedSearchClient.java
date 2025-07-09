@@ -16,7 +16,6 @@ import io.camunda.search.clients.core.SearchQueryRequest.Builder;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.util.CloseableSilently;
-import java.util.List;
 import java.util.function.Function;
 
 public interface DocumentBasedSearchClient extends CloseableSilently {
@@ -29,7 +28,8 @@ public interface DocumentBasedSearchClient extends CloseableSilently {
     return search(searchRequest(fn), documentClass);
   }
 
-  <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass);
+  <T> SearchQueryResponse<T> scroll(
+      final SearchQueryRequest searchRequest, final Class<T> documentClass);
 
   <T> SearchGetResponse<T> get(final SearchGetRequest getRequest, final Class<T> documentClass);
 }

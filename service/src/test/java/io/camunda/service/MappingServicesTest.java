@@ -8,7 +8,6 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -17,7 +16,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -49,13 +47,16 @@ public class MappingServicesTest {
   private MappingSearchClient client;
   private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
+  private SearchQueryResult<MappingEntity> result;
 
   @BeforeEach
   public void before() {
     authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(MappingSearchClient.class);
+    result = mock(SearchQueryResult.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(client.searchMappings(any())).thenReturn(result);
     mappingDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingDeleteRequest.class);
     mappingUpdateRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingUpdateRequest.class);
     services =
@@ -114,32 +115,10 @@ public class MappingServicesTest {
     when(client.searchMappings(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.findMapping("mappingId");
+    final var searchQueryResult = services.getMapping("mappingId");
 
     // then
-    assertThat(searchQueryResult).contains(entity);
-  }
-
-  @Test
-  public void shouldReturnEmptyWhenNotFoundByFind() {
-    // given
-    when(client.searchMappings(any()))
-        .thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
-
-    // when / then
-    assertThat(services.findMapping("mappingId")).isEmpty();
-  }
-
-  @Test
-  public void shouldThrowExceptionWhenNotFoundByGet() {
-    // given
-    when(client.searchMappings(any()))
-        .thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
-
-    // when / then
-    final var exception =
-        assertThrows(CamundaSearchException.class, () -> services.getMapping("mappingId"));
-    assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
+    assertThat(searchQueryResult).isEqualTo(entity);
   }
 
   @Test
@@ -206,7 +185,7 @@ public class MappingServicesTest {
     services.getMatchingMappings(claims);
     // then
     final ArgumentCaptor<MappingQuery> queryCaptor = ArgumentCaptor.forClass(MappingQuery.class);
-    verify(client, times(1)).findAllMappings(queryCaptor.capture());
+    verify(client, times(1)).searchMappings(queryCaptor.capture());
     final MappingQuery query = queryCaptor.getValue();
     assertThat(query.filter().claimName()).isNull();
     assertThat(query.filter().claimValue()).isNull();

@@ -34,9 +34,11 @@ A historical record of discrete application events. This is typically the first 
 
 [Read more about it here.](./observability/logging.md)
 
-### Metrics
+### [Metrics](./observability/metrics.md)
 
 Metric are aggregated measurements of application performance and/or behavior. For example, how much time every database query takes on average, or the count of 401 errors for a REST API in the last 5 minutes. They can be used to monitor the health of an application and detect performance bottlenecks.
+
+[Read more about it here.](./observability/metrics.md)
 
 ### Traces
 

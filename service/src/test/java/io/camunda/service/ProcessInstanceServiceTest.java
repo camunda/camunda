@@ -22,7 +22,6 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -103,19 +102,24 @@ public final class ProcessInstanceServiceTest {
   @Test
   public void shouldReturnProcessInstanceSequenceFlows() {
     // given
-    final var result =
-        List.of(
-            new SequenceFlowEntity("pi1_sequenceFlow1", "node1", 1L, 1L, "pd1", "<default>"),
-            new SequenceFlowEntity("pi1_sequenceFlow2", "node1", 1L, 1L, "pd1", "<default>"));
-    when(sequenceFlowSearchClient.findAllSequenceFlows(any())).thenReturn(result);
+    final SearchQueryResult<SequenceFlowEntity> result =
+        SearchQueryResult.of(
+            r ->
+                r.items(
+                    List.of(
+                        new SequenceFlowEntity(
+                            "pi1_sequenceFlow1", "node1", 1L, 1L, "pd1", "<default>"),
+                        new SequenceFlowEntity(
+                            "pi1_sequenceFlow2", "node1", 1L, 1L, "pd1", "<default>"))));
+    when(sequenceFlowSearchClient.searchSequenceFlows(any())).thenReturn(result);
 
     // when
     final var actual = services.sequenceFlows(123L);
 
     // then
     verify(sequenceFlowSearchClient)
-        .findAllSequenceFlows(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(123L))));
-    assertThat(actual).isEqualTo(result);
+        .searchSequenceFlows(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(123L))));
+    assertThat(actual).isEqualTo(result.items());
   }
 
   @Test
@@ -134,36 +138,6 @@ public final class ProcessInstanceServiceTest {
 
     // then
     assertThat(searchQueryResult.processInstanceKey()).isEqualTo(key);
-  }
-
-  @Test
-  public void shouldThrownExceptionIfNotFoundByKey() {
-    // given
-    final var key = 100L;
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
-
-    // when / then
-    final var exception =
-        assertThrowsExactly(CamundaSearchException.class, () -> services.getByKey(key));
-    assertThat(exception.getMessage()).isEqualTo("Process instance with key 100 not found");
-    assertThat(exception.getReason()).isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
-  }
-
-  @Test
-  public void shouldThrownExceptionIfDuplicateFoundByKey() {
-    // given
-    final var key = 200L;
-    final var entity1 = mock(ProcessInstanceEntity.class);
-    final var entity2 = mock(ProcessInstanceEntity.class);
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(2, false, List.of(entity1, entity2), null, null));
-
-    // when / then
-    final var exception =
-        assertThrowsExactly(CamundaSearchException.class, () -> services.getByKey(key));
-    assertThat(exception.getMessage())
-        .isEqualTo("Found Process instance with key 200 more than once");
   }
 
   @Test
