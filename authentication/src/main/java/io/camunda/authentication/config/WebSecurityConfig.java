@@ -19,6 +19,8 @@ import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.handler.OidcLogoutSuccessHandler;
+import io.camunda.authentication.handler.OidcSecurityContextLogoutHandler;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -40,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -59,6 +62,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -481,7 +485,9 @@ public class WebSecurityConfig {
                       logout
                           .logoutUrl(LOGOUT_URL)
                           .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                          .invalidateHttpSession(true)
+                          .clearAuthentication(true))
               .exceptionHandling(
                   exceptionHandling ->
                       exceptionHandling
@@ -532,6 +538,23 @@ public class WebSecurityConfig {
       final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
       decoder.setJwtValidator(getTokenValidator(securityConfiguration));
       return decoder;
+    }
+
+    @Bean
+    public OidcSecurityContextLogoutHandler logoutHandler(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OAuth2AuthorizedClientService authorizedClientService,
+        final SecurityConfiguration securityConfiguration) {
+      return new OidcSecurityContextLogoutHandler(
+          clientRegistrationRepository,
+          authorizedClientService,
+          securityConfiguration,
+          new RestTemplateBuilder().build());
+    }
+
+    @Bean
+    public OidcLogoutSuccessHandler oidcLogoutSuccessHandler() {
+      return new OidcLogoutSuccessHandler();
     }
 
     private static OAuth2TokenValidator<Jwt> getTokenValidator(
@@ -610,7 +633,9 @@ public class WebSecurityConfig {
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration,
-        final CookieCsrfTokenRepository csrfTokenRepository)
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final OidcSecurityContextLogoutHandler oidcSecurityContextLogoutHandler,
+        final OidcLogoutSuccessHandler oidcLogoutSuccessHandler)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -653,8 +678,11 @@ public class WebSecurityConfig {
                   (logout) ->
                       logout
                           .logoutUrl(LOGOUT_URL)
-                          .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                          .addLogoutHandler(oidcSecurityContextLogoutHandler)
+                          .logoutSuccessHandler(oidcLogoutSuccessHandler)
+                          .invalidateHttpSession(true)
+                          .clearAuthentication(true))
               .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class);
 
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
