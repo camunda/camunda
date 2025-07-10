@@ -18,8 +18,9 @@ The redistribution phase ensures that new partitions receive all the necessary g
 ### What Gets Redistributed
 
 During redistribution, the following resources are automatically deployed to new partitions:
+
 - **Process Definitions**: All deployed BPMN processes
-- **Decision Definitions**: DMN decision tables and DRD definitions  
+- **Decision Definitions**: DMN decision tables and DRD definitions
 - **Form Definitions**: forms linked to user tasks
 - **Global Configuration**: Routing state and partition configuration
 
@@ -55,7 +56,7 @@ P-NEW ->>- P-1: Partition NEW Bootstrapped
 P-1 ->> P-1: Start distributing pending commands
 
 loop for command in enqueued_distribution_commands
-  P-1 ->> P-NEW: send command 
+  P-1 ->> P-NEW: send command
 end
 
 P-1 ->> P-2: Partition i Bootstrapped
@@ -73,7 +74,7 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
 
 1. **Command Enqueueing**: When scaling begins, deployment commands for new partitions are enqueued but not immediately sent
 2. **Bootstrap Completion Signal**: Each new partition signals completion of bootstrap to partition 1
-3. **Distributed Deployment**: When a partition is bootstrapped, partition 1 distributes queued deployment commands to the partitions (including existing ones)
+3. **Distributed Deployment**: When a partition is bootstrapped, partition 1 distributes queued deployment commands to the partitions (including deployments done while the partition was scaling)
 4. **Acknowledgment**: Receiving partitions acknowledge successful processing of deployment commands
 5. **Retry Logic**: Failed distributions are automatically retried with exponential backoff
 
@@ -89,12 +90,12 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
    'http://localhost:9600/actuator/cluster' \
    -H 'accept: application/json' \
    -H 'Content-Type: application/json' \
-   -d '{  
-   "brokers": { 
+   -d '{
+   "brokers": {
    "add": [3,4,5]
    },
    "partitions": {
-   "count": 6, 
+   "count": 6,
    "replicationFactor": 3
    }
    }' | jq
@@ -107,23 +108,26 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
    'http://localhost:9600/actuator/cluster' \
    -H 'accept: application/json' \
    -H 'Content-Type: application/json' \
-   -d '{  
-   "brokers": { 
-   "add": [3,4,5]
-   },
-   "partitions": {
-   "count": 6, 
-   "replicationFactor": 3
-   }
-   }' | 
+   -d '{
+      "partitions": {
+      "count": 6,
+      "replicationFactor": 3
+      }
+   }' |
    ```
+
+The new partitions will be distributed using `RoundRobinPartitionDistributor`, so that they are evenly spread across all brokers.
+
 2. The [ClusterChangeCoordinator](../../zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/changes/ConfigurationChangeCoordinator.java) generates the `ClusterChangeOperation` needed to reach the requested result.
    For a pure scaling operation, the generated `ClusterChangeOperation` will be:
-   - `StartPartitionScaleUp` to Partition 1
-   - `PartitionBootstrapOperation` to all new partitions
-   - `AwaitRedistributionCompletion` to the coordinator node 1
 
-   Once generated, the coordinator node will execute one operation at a time, on the correct node.
+   - `StartPartitionScaleUp` to the coordinator broker, which will send a command to partition 1
+   - `PartitionBootstrapOperation` to all new partitions
+   - `PartitionJoinOperation` to the replicas of the new partitions
+   - `AwaitRedistributionCompletion` to the coordinator broker, which queries the scaling status from partition 1
+   - `AwaitRelocationCompletion` is currently generated, but it's a noop while relocation is being implemented
+
+   Once generated, the operations will be applied sequentially by the respective brokers.
 
    **Partition ID Requirements**: New partitions must have contiguous IDs (e.g., if you currently have partitions 1-3, you can only scale to 4, 5, 6, etc.). Non-contiguous partition IDs are rejected to maintain compatibility with existing routing logic.
 
@@ -133,8 +137,8 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
    - new partitions are added to the `desiredPartitionCount` in the state
    - commands distribution will enqueue new commands for the new partitions, but it will not start distributing them yet.
 4. `PartitionBootstrapOperation` on the new partitions (one partition at a time, from the *lowest* to the *highest*):
-   - The partition is bootstrapped in the node with the flag `bootstrapFromSnapshot=true`.
-   - It will request the snapshot for bootstrap to partition 1.
+   - The partition is bootstrapped in the broker which is a primary replica with the flag `bootstrapFromSnapshot=true`.
+   - It will request a snapshot for bootstrap to partition 1 (snapshot for bootstrap contains only entities present on all partitions,  see section ([Snapshot for bootstrap](#snapshot-for-bootstrap)))
    - When the snapshot is received, it will restore the `PersistedSnapshotStore` with it, before the partition is even started (in a `PartitionStartupStep`)
    - When the bootstrap is completed, it will inform partition 1 that they are ready to start new process instances
    - Partition 1 will include the newly bootstrapped partitions to the `activePartitions` field in `RoutingInfo` in the state
@@ -144,8 +148,11 @@ The redistribution phase uses [Zeebe's command distribution](./generalized_distr
 
    **Bootstrap Validation**: Each partition validates the received snapshot before marking itself as bootstrapped. If validation fails, the operation is retried automatically.
 
-5. `AwaitRedistributionCompletion`:
-   `CoordinatorNode` will keep polling Partition 1 to know when all partitions have been bootstrapped.
+5. `PartitionJoinOperation`:
+
+   - the brokers that are assigned to the new partitions join the replication group and become replicas
+6. `AwaitRedistributionCompletion`:
+   `CoordinatorNode` will keep polling Partition 1 to know when *all* partitions have been bootstrapped.
 
    When redistribution is completed, the routing information in the dynamic config module will update, so that gateways will deploy new process instances to the newly bootstrapped partitions as well.
 
