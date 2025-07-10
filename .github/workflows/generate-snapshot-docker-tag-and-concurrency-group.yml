@@ -9,9 +9,15 @@ permissions:
 on:
   workflow_call:
     inputs:
+      job_to_run:
+        description: "Defines which job to run in the workflow. If not specified, all jobs will be run. Options: 'snapshot-tag', 'concurrency-group', or 'all'"
+        required: false
+        default: "all"
+        type: string
       base_group_name:
         description: "Base concurrency group name for the workflow"
-        required: true
+        required: false
+        default: ''
         type: string
     outputs:
       version_tag:
@@ -29,7 +35,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions: {}
-    if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: (github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))) &&
+            (inputs.job_to_run == 'all' || inputs.job_to_run == 'snapshot-tag')
     outputs:
       tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
     steps:
@@ -51,7 +58,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions: { }
-    if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
+    if: (github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))) &&
+            (inputs.job_to_run == 'all' || inputs.job_to_run == 'concurrency-group') && inputs.base_group_name != ''
     outputs:
       result: ${{ steps.split_branch.outputs.result }}
     steps:
@@ -70,4 +78,4 @@ jobs:
             echo "Unsupported branch: $BRANCH"
             exit 1
           fi
-          echo "result=$CONCURRENCY_GROUP_NAME" >> $GITHUB_OUTPUT
+          echo "result=$CONCURRENCY_GROUP_NAME" >> "$GITHUB_OUTPUT"
