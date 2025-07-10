@@ -70,27 +70,28 @@ public class StartupIT {
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
-        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl);
+        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl)
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
     testContainerUtil.startOperateContainer(operateContainer, testContext);
     LOGGER.info("************ Operate started  ************");
 
     // when
-    final ResponseEntity<String> clientConfig =
+    final ResponseEntity<String> topology =
         restTemplate.getForEntity(
             String.format(
-                "http://%s:%s/operate/client-config.js",
+                "http://%s:%s/v2/topology",
                 testContext.getExternalOperateHost(), testContext.getExternalOperatePort()),
             String.class);
 
     // then
-    assertThat(clientConfig.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(topology.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThat(
-        clientConfig
+        topology
             .getHeaders()
             .getContentType()
             .isCompatibleWith(MediaType.parseMediaType("text/javascript")));
-    assertThat(clientConfig.getBody()).isNotNull();
+    assertThat(topology.getBody()).isNotNull();
   }
 
   @After
