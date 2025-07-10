@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
+import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
@@ -2140,6 +2141,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the unassign group from tenant command
    */
   UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(String tenantId);
+
+  /**
+   * Command to assign a client to a group.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignClientToGroupCommand()
+   *  .clientId("clientId")
+   *  .groupId("groupId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign client to group command
+   */
+  AssignClientToGroupCommandStep1 newAssignClientToGroupCommand();
 
   /**
    * Command to create an authorization
