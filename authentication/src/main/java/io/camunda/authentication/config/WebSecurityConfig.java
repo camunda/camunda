@@ -212,12 +212,6 @@ public class WebSecurityConfig {
         .build();
   }
 
-  @Bean
-  public WebApplicationAuthorizationCheckFilter applicationAuthorizationFilterFilter(
-      final SecurityConfiguration securityConfiguration) {
-    return new WebApplicationAuthorizationCheckFilter(securityConfiguration);
-  }
-
   private static void noContentSuccessHandler(
       final HttpServletRequest request,
       final HttpServletResponse response,
@@ -444,7 +438,6 @@ public class WebSecurityConfig {
     public SecurityFilterChain httpBasicWebappAuthSecurityFilterChain(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final SecurityConfiguration securityConfiguration,
         final RoleServices roleServices,
         final CookieCsrfTokenRepository csrfTokenRepository)
@@ -487,7 +480,9 @@ public class WebSecurityConfig {
                       exceptionHandling
                           .authenticationEntryPoint(authFailureHandler)
                           .accessDeniedHandler(authFailureHandler))
-              .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
+              .addFilterAfter(
+                  new WebApplicationAuthorizationCheckFilter(securityConfiguration),
+                  AuthorizationFilter.class)
               .addFilterBefore(
                   new AdminUserCheckFilter(securityConfiguration, roleServices),
                   AuthorizationFilter.class);
@@ -606,7 +601,6 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration,
@@ -655,7 +649,9 @@ public class WebSecurityConfig {
                           .logoutUrl(LOGOUT_URL)
                           .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
-              .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class);
+              .addFilterAfter(
+                  new WebApplicationAuthorizationCheckFilter(securityConfiguration),
+                  AuthorizationFilter.class);
 
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
