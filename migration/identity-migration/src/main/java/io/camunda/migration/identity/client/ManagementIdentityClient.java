@@ -25,7 +25,7 @@ import org.springframework.web.client.RestTemplate;
 public class ManagementIdentityClient {
 
   private static final String URL_PARAMS = "pageSize={0}";
-  private static final String MIGRATION_TENANTS_ENDPOINT = "/api/migration/tenant?" + URL_PARAMS;
+  private static final String MIGRATION_TENANTS_ENDPOINT = "/api/tenants";
   private static final String MIGRATION_USER_TENANTS_ENDPOINT =
       "/api/migration/tenant/user?" + URL_PARAMS;
   private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
@@ -75,10 +75,10 @@ public class ManagementIdentityClient {
         .toList();
   }
 
-  public List<Tenant> fetchTenants(final int pageSize) {
+  public List<Tenant> fetchTenants() {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(MIGRATION_TENANTS_ENDPOINT, Tenant[].class, pageSize)))
+                restTemplate.getForObject(MIGRATION_TENANTS_ENDPOINT, Tenant[].class)))
         .toList();
   }
 
