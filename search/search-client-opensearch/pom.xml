@@ -13,6 +13,10 @@
   <name>Camunda Search Client - Opensearch</name>
 
   <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>

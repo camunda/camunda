@@ -7,18 +7,16 @@
  */
 package io.camunda.search.clients.aggregator;
 
-import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
 
-public record SearchTermsAggregator(
+public record SearchTopHitsAggregator<T>(
     String name,
     String field,
     Integer size,
-    Integer minDocCount,
-    List<FieldSorting> sorting,
-    List<SearchAggregator> aggregations)
+    List<SearchAggregator> aggregations,
+    Class<T> documentClass)
     implements SearchAggregator {
 
   @Override
@@ -31,33 +29,29 @@ public record SearchTermsAggregator(
     return aggregations;
   }
 
-  public static final class Builder extends SearchAggregator.AbstractBuilder<Builder>
-      implements ObjectBuilder<SearchTermsAggregator> {
-
+  public static final class Builder<T>
+      extends SearchAggregator.AbstractBuilder<SearchTopHitsAggregator.Builder<T>>
+      implements ObjectBuilder<SearchTopHitsAggregator<T>> {
     private String field;
-    private Integer size = 10; // Default to 10 buckets
-    private Integer minDocCount = 1; // Default to showing at least 1 document
-    private List<FieldSorting> sorting;
+    private Integer size = 1; // Default to 1 hits
+    private Class<T> documentClass;
 
     @Override
-    protected Builder self() {
+    protected SearchTopHitsAggregator.Builder<T> self() {
       return this;
     }
 
-    public Builder field(final String value) {
+    public SearchTopHitsAggregator.Builder<T> field(final String value) {
       field = value;
       return this;
     }
 
-    public Builder sorting(final List<FieldSorting> value) {
-      if (value == null) {
-        throw new IllegalArgumentException("Order must not be null.");
-      }
-      sorting = value;
+    public SearchTopHitsAggregator.Builder<T> documentClass(final Class<T> documentClass) {
+      this.documentClass = documentClass;
       return this;
     }
 
-    public Builder size(final Integer value) {
+    public SearchTopHitsAggregator.Builder<T> size(final Integer value) {
       // Validate size to ensure it's a positive integer
       if (value != null && value < 0) {
         throw new IllegalArgumentException("Size must be a positive integer.");
@@ -66,20 +60,14 @@ public record SearchTermsAggregator(
       return this;
     }
 
-    public Builder minDocCount(final Integer value) {
-      minDocCount = value;
-      return this;
-    }
-
     @Override
-    public SearchTermsAggregator build() {
-      return new SearchTermsAggregator(
+    public SearchTopHitsAggregator<T> build() {
+      return new SearchTopHitsAggregator<T>(
           Objects.requireNonNull(name, "Expected non-null field for name."),
           Objects.requireNonNull(field, "Expected non-null field for field."),
           size,
-          minDocCount,
-          sorting,
-          aggregations);
+          aggregations,
+          documentClass);
     }
   }
 }

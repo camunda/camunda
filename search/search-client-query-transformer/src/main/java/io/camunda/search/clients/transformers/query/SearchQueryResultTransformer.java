@@ -41,6 +41,7 @@ public final class SearchQueryResultTransformer<T, R> {
     final var size = hits.size();
     final Object[] firstSortValues;
     final Object[] lastSortValues;
+
     if (size > 0) {
       firstSortValues = hits.getFirst().sortValues();
       lastSortValues = hits.getLast().sortValues();

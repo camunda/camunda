@@ -26,14 +26,17 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.IN
 
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
+import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public class ProcessDefinitionFlowNodeStatisticsAggregationTransformer
     implements AggregationTransformer<ProcessDefinitionFlowNodeStatisticsAggregation> {
 
   @Override
-  public List<SearchAggregator> apply(final ProcessDefinitionFlowNodeStatisticsAggregation value) {
+  public List<SearchAggregator> apply(
+      final Tuple<ProcessDefinitionFlowNodeStatisticsAggregation, ServiceTransformers> value) {
 
     // aggregate parent process instances
     final var filtersAgg = parent(AGGREGATION_TO_PARENT_PI, ACTIVITIES_JOIN_RELATION);

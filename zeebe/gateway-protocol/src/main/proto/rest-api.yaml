@@ -5859,6 +5859,12 @@ components:
         name:
           description: Name of this process definition.
           type: string
+        isLatestVersion:
+          description: >
+            Whether to only return the latest version of each process definition.
+            When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`.
+            The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`.
+          type: boolean
         resourceName:
           description: Resource name of this process definition.
           type: string

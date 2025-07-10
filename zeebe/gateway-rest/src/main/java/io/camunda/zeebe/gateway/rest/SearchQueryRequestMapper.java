@@ -915,6 +915,7 @@ public final class SearchQueryRequestMapper {
     Optional.ofNullable(filter)
         .ifPresent(
             f -> {
+              Optional.ofNullable(f.getIsLatestVersion()).ifPresent(builder::isLatestVersion);
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
