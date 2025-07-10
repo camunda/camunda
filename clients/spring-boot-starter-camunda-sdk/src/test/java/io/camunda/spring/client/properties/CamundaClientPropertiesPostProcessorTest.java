@@ -1276,6 +1276,18 @@ public class CamundaClientPropertiesPostProcessorTest {
               .isEqualTo("https://api.example.com");
         }
       }
+
+      @Nested
+      @SpringBootTest(properties = "zeebe.token.resource=https://api.example.com")
+      class ZeebeTokenResource {
+        @Autowired CamundaClientProperties camundaClientProperties;
+
+        @Test
+        void shouldReadResource() {
+          assertThat(camundaClientProperties.getAuth().getResource())
+              .isEqualTo("https://api.example.com");
+        }
+      }
     }
   }
 }
