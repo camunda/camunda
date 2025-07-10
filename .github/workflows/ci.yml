@@ -1324,15 +1324,21 @@ jobs:
     uses: ./.github/workflows/snapshot-docker-version-tag.yml
     secrets: inherit
 
+  # Dynamically extract the stable version from the branch name
+  extract-stable-version:
+    needs: [ check-results ]
+    uses: ./.github/workflows/extract-stable-version.yml
+    secrets: inherit
+
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
-    needs: [ check-results, get-snapshot-docker-version-tag ]
+    needs: [ check-results, get-snapshot-docker-version-tag, extract-stable-version]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
-      group: deploy-camunda-docker-snapshot
+      group: ${{ format('deploy-camunda-docker-snapshot{0}', needs.extract-stable-version.outputs.result) }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
