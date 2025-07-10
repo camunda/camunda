@@ -1102,6 +1102,10 @@
       # are subject to change and can be dropped at any time.
       # It might be that also some of them are actually dangerous so be aware when you change one of these!
 
+      # Toggles continuous backups, a new feature that prevents log compaction until entries are backed up.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_CONTINUOUSBACKUPS
+      # continuousBackups = false
+
       # Toggles the version check restriction, used for migration. Useful for testing migration logic on
       # snapshot or alpha versions. Default: True, means it is not allowed to migrate to incompatible version
       # like: SNAPSHOT or alpha.

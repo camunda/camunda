@@ -216,4 +216,39 @@ final class ExperimentalCfgTest {
     // then
     assertThat(experimental.isVersionCheckRestrictionEnabled()).isFalse();
   }
+
+  @Test
+  void shouldHaveDefaultContinuousBackups() {
+    // given
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", environment);
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isContinuousBackups()).isFalse();
+  }
+
+  @Test
+  void shouldSetContinuousBackupsFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.continuousBackups", "true");
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", environment);
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isContinuousBackups()).isTrue();
+  }
+
+  @Test
+  void shouldSetContinuousBackupsFromConfig() {
+    // when
+    final var cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isContinuousBackups()).isTrue();
+  }
 }
