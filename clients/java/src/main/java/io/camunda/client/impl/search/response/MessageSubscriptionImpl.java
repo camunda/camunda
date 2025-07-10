@@ -44,9 +44,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     messageSubscriptionType =
-        EnumUtil.convert(
-            item.getMessageSubscriptionType(),
-            MessageSubscriptionType.class); // item.getMessageSubscriptionType().getValue();
+        EnumUtil.convert(item.getMessageSubscriptionType(), MessageSubscriptionType.class);
     lastUpdatedDate = item.getLastUpdatedDate();
     messageName = item.getMessageName();
     correlationKey = item.getCorrelationKey();

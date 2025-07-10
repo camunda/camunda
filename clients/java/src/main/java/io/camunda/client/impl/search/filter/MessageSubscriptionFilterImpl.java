@@ -55,8 +55,7 @@ public class MessageSubscriptionFilterImpl
 
   @Override
   public MessageSubscriptionFilter processDefinitionId(final String processDefinitionId) {
-
-    return this;
+    return processDefinitionId(f -> f.eq(processDefinitionId));
   }
 
   @Override

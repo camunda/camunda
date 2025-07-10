@@ -706,15 +706,15 @@ public final class TestHelper {
             });
   }
 
-  public static void waitForMessagesSubscriptions(
-      final CamundaClient camundaClient, final int expectedElementInstances) {
-    Awaitility.await("should wait until element instances are available")
+  public static void waitForMessageSubscriptions(
+      final CamundaClient camundaClient, final int expectedMessageSubscriptions) {
+    Awaitility.await("should wait until message subscriptions are available")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var result = camundaClient.newMessageSubscriptionSearchRequest().send().join();
-              assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
+              assertThat(result.page().totalItems()).isEqualTo(expectedMessageSubscriptions);
             });
   }
 

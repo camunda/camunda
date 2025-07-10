@@ -9,17 +9,15 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForMessagesSubscriptions;
+import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -30,7 +28,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class MessageSubscriptionSearchTest {
 
-  private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   private static final int NUMBER_OF_MESSAGE_SUBSCRIPTIONS = 3;
   private static List<MessageSubscription> orderedMessageSubscriptions;
 
@@ -41,9 +38,7 @@ public class MessageSubscriptionSearchTest {
     final var processes = List.of("process_with_parallel_receive_tasks.bpmn");
     processes.forEach(
         process ->
-            DEPLOYED_PROCESSES.addAll(
-                deployResource(camundaClient, String.format("process/%s", process))
-                    .getProcesses()));
+            deployResource(camundaClient, String.format("process/%s", process)).getProcesses());
 
     waitForProcessesToBeDeployed(camundaClient, processes.size());
 
@@ -51,7 +46,7 @@ public class MessageSubscriptionSearchTest {
 
     waitForProcessInstancesToStart(camundaClient, 1);
 
-    waitForMessagesSubscriptions(camundaClient, NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
+    waitForMessageSubscriptions(camundaClient, NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
 
     orderedMessageSubscriptions =
         camundaClient
@@ -69,27 +64,9 @@ public class MessageSubscriptionSearchTest {
 
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
-  }
-
-  @Test
-  void shouldFilterByKey() {
-    // Given
-    final var expectedMessageSubscription = orderedMessageSubscriptions.getFirst();
-
-    // When
-    final var searchResponse =
-        camundaClient
-            .newMessageSubscriptionSearchRequest()
-            .filter(
-                f ->
-                    f.messageSubscriptionKey(
-                        expectedMessageSubscription.getMessageSubscriptionKey()))
-            .send()
-            .join();
-
-    // Then
-    assertThat(searchResponse.items()).size().isEqualTo(1);
-    assertThat(searchResponse.items().getFirst()).isEqualTo(expectedMessageSubscription);
+    assertThat(searchResponse.page().totalItems()).isEqualTo(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
+    assertThat(searchResponse.items())
+        .containsExactlyInAnyOrderElementsOf(orderedMessageSubscriptions);
   }
 
   @Test

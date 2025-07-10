@@ -29,179 +29,181 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
   /**
    * Filter by message subscription key.
    *
-   * @param messageSubscriptionKey the message subscription key to filter by
-   * @return a new filter with the message subscription key condition
+   * @param messageSubscriptionKey key of the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter messageSubscriptionKey(Long messageSubscriptionKey);
 
   /**
-   * Filter by message subscription key using a consumer for additional properties.
+   * Filter message subscriptions by key using a {@link BasicLongProperty} consumer.
    *
-   * @param fn a consumer that accepts a BasicLongProperty to set additional properties
-   * @return a new filter with the message subscription key condition
+   * @param fn the key {@link BasicLongProperty} consumer for the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter messageSubscriptionKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by process definition ID.
    *
-   * @param processDefinitionId the process definition ID to filter by
-   * @return a new filter with the process definition ID condition
+   * @param processDefinitionId the process definition ID
+   * @return the updated filter
    */
   MessageSubscriptionFilter processDefinitionId(String processDefinitionId);
 
   /**
-   * Filter by process definition ID using a consumer for additional properties.
+   * Filter by process definition ID using a {@link StringProperty} consumer.
    *
-   * @param fn a consumer that accepts a StringProperty to set additional properties
-   * @return a new filter with the process definition ID condition
+   * @param fn the process definition ID {@link StringProperty} consumer for the message
+   *     subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter processDefinitionId(Consumer<StringProperty> fn);
 
   /**
    * Filter by process definition key.
    *
-   * @param processDefinitionKey the process definition key to filter by
-   * @return a new filter with the process definition key condition
+   * @param processDefinitionKey the key of the process definition
+   * @return the updated filter
    */
   MessageSubscriptionFilter processDefinitionKey(Long processDefinitionKey);
 
   /**
-   * Filter by process definition key using a consumer for additional properties.
+   * Filter by process definition key using a {@link BasicLongProperty} consumer.
    *
-   * @param fn a consumer that accepts a BasicLongProperty to set additional properties
-   * @return a new filter with the process definition key condition
+   * @param fn the process definition key {@link BasicLongProperty} consumer for the message
+   *     subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter processDefinitionKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by process instance key.
    *
-   * @param processInstanceKey the process instance key to filter by
-   * @return a new filter with the process instance key condition
+   * @param processInstanceKey the key of the process instance
+   * @return the updated filter
    */
   MessageSubscriptionFilter processInstanceKey(Long processInstanceKey);
 
   /**
-   * Filter by process instance key using a consumer for additional properties.
+   * Filter by process instance key using a {@link BasicLongProperty} consumer.
    *
-   * @param fn a consumer that accepts a BasicLongProperty to set additional properties
-   * @return a new filter with the process instance key condition
+   * @param fn the process instance key {@link BasicLongProperty} consumer for the message
+   *     subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter processInstanceKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by element ID.
    *
-   * @param elementId the element ID to filter by
-   * @return a new filter with the element ID condition
+   * @param elementId the ID of the element
+   * @return the updated filter
    */
   MessageSubscriptionFilter elementId(String elementId);
 
   /**
-   * Filter by element ID using a consumer for additional properties.
+   * Filter by element ID using a {@link StringProperty} consumer.
    *
-   * @param fn a consumer that accepts a StringProperty to set additional properties
-   * @return a new filter with the element ID condition
+   * @param fn the element ID {@link StringProperty} consumer for the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter elementId(Consumer<StringProperty> fn);
 
   /**
    * Filter by element instance key.
    *
-   * @param elementInstanceKey the element instance key to filter by
-   * @return a new filter with the element instance key condition
+   * @param elementInstanceKey the key of the element instance
+   * @return the updated filter
    */
   MessageSubscriptionFilter elementInstanceKey(Long elementInstanceKey);
 
   /**
-   * Filter by element instance key using a consumer for additional properties.
+   * Filter by element instance key using a {@link BasicLongProperty} consumer.
    *
-   * @param fn a consumer that accepts a BasicLongProperty to set additional properties
-   * @return a new filter with the element instance key condition
+   * @param fn the element instance key {@link BasicLongProperty} consumer for the message
+   *     subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter elementInstanceKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by message subscription type.
    *
-   * @param messageSubscriptionType the message subscription type to filter by
-   * @return a new filter with the message subscription type condition
+   * @param messageSubscriptionType the type of the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter messageSubscriptionType(
       MessageSubscriptionType messageSubscriptionType);
 
   /**
-   * Filter by message subscription type using a consumer for additional properties.
+   * Filter by message subscription type using a {@link MessageSubscriptionTypeProperty} consumer.
    *
-   * @param fn a consumer that accepts a StringProperty to set additional properties
-   * @return a new filter with the message subscription type condition
+   * @param fn the message subscription type {@link MessageSubscriptionTypeProperty} consumer
+   * @return the updated filter
    */
   MessageSubscriptionFilter messageSubscriptionType(Consumer<MessageSubscriptionTypeProperty> fn);
-
-  // TODO: SWITCH TO ENUM
 
   /**
    * Filter by last updated date.
    *
-   * @param lastUpdatedDate the last updated date to filter by
-   * @return a new filter with the last updated date condition
+   * @param lastUpdatedDate the last updated date of the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter lastUpdatedDate(OffsetDateTime lastUpdatedDate);
 
   /**
-   * Filter by last updated date using a consumer for additional properties.
+   * Filter by last updated date using a {@link DateTimeProperty} consumer.
    *
-   * @param fn a consumer that accepts a BasicStringProperty to set additional properties
-   * @return a new filter with the last updated date condition
+   * @param fn the last updated date {@link DateTimeProperty} consumer for the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter lastUpdatedDate(Consumer<DateTimeProperty> fn);
 
   /**
    * Filter by message name.
    *
-   * @param messageName the message name to filter by
-   * @return a new filter with the message name condition
+   * @param messageName the name of the message
+   * @return the updated filter
    */
   MessageSubscriptionFilter messageName(String messageName);
 
   /**
-   * Filter by message name using a consumer for additional properties.
+   * Filter by message name using a {@link StringProperty} consumer.
    *
-   * @param fn a consumer that accepts a StringProperty to set additional properties
-   * @return a new filter with the message name condition
+   * @param fn the message name {@link StringProperty} consumer for the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter messageName(Consumer<StringProperty> fn);
 
   /**
    * Filter by correlation key.
    *
-   * @param correlationKey the correlation key to filter by
-   * @return a new filter with the correlation key condition
+   * @param correlationKey the correlation key of the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter correlationKey(String correlationKey);
 
   /**
-   * Filter by correlation key using a consumer for additional properties.
+   * Filter by correlation key using a {@link StringProperty} consumer.
    *
-   * @param fn a consumer that accepts a StringProperty to set additional properties
-   * @return a new filter with the correlation key condition
+   * @param fn the correlation key {@link StringProperty} consumer for the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter correlationKey(Consumer<StringProperty> fn);
 
   /**
    * Filter by tenant ID.
    *
-   * @param tenantId the tenant ID to filter by
-   * @return a new filter with the tenant ID condition
+   * @param tenantId the tenant ID of the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter tenantId(String tenantId);
 
   /**
-   * Filter by tenant ID using a consumer for additional properties.
+   * Filter by tenant ID using a {@link StringProperty} consumer.
    *
-   * @param fn a consumer that accepts a StringProperty to set additional properties
-   * @return a new filter with the tenant ID condition
+   * @param fn the tenant ID {@link StringProperty} consumer for the message subscription
+   * @return the updated filter
    */
   MessageSubscriptionFilter tenantId(Consumer<StringProperty> fn);
 }

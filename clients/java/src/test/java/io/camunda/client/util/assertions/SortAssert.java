@@ -13,10 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.util.assertions;
 
-public enum MessageSubscriptionType {
-  CORRELATED,
-  CREATED,
-  MIGRATED,
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.client.impl.search.request.SearchRequestSort;
+import io.camunda.client.protocol.rest.SortOrderEnum;
+
+public class SortAssert {
+
+  public static void assertSort(
+      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
+    assertThat(sort.getField()).isEqualTo(name);
+    assertThat(sort.getOrder()).isEqualTo(order);
+  }
 }
