@@ -87,7 +87,6 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
@@ -166,8 +165,7 @@ public class OpenSearchClientBuilder {
 
   private static boolean useAwsCredentials(final ConfigurationService configurationService) {
     if (configurationService.getOpenSearchConfiguration().getConnection().getAwsEnabled()) {
-      final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
-      try {
+      try (final var credentialsProvider = DefaultCredentialsProvider.builder().build()) {
         credentialsProvider.resolveCredentials();
         LOG.info("AWS Credentials can be resolved. Use AWS OpenSearch");
         return true;

@@ -56,7 +56,7 @@ public final class OpensearchConnector {
     this(
         configuration,
         new JacksonConfiguration(configuration).createObjectMapper(),
-        DefaultCredentialsProvider.create(),
+        DefaultCredentialsProvider.builder().build(),
         new PluginRepository());
   }
 

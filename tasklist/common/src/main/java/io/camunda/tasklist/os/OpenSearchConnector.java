@@ -486,8 +486,7 @@ public class OpenSearchConnector {
     if (!tasklistProperties.getOpenSearch().isAwsEnabled()) {
       return false;
     }
-    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
-    try {
+    try (final var credentialsProvider = DefaultCredentialsProvider.builder().build()) {
       credentialsProvider.resolveCredentials();
       LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
       return true;
@@ -545,7 +544,7 @@ public class OpenSearchConnector {
 
   private void configureAwsSigningForApacheHttpClient(
       final org.apache.http.impl.nio.client.HttpAsyncClientBuilder builder) {
-    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.builder().build();
     credentialsProvider.resolveCredentials();
     final AwsV4HttpSigner signer = AwsV4HttpSigner.create();
     final HttpRequestInterceptor signInterceptor =
