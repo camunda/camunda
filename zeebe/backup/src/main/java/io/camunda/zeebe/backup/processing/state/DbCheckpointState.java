@@ -52,9 +52,9 @@ public final class DbCheckpointState implements CheckpointState {
   }
 
   @Override
-  public void setLatestBackupInfo(final long backupId, final long backupPosition) {
+  public void setLatestBackupInfo(final long checkpointId, final long checkpointPosition) {
     checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
-    checkpointInfo.setId(backupId).setPosition(backupPosition);
+    checkpointInfo.setId(checkpointId).setPosition(checkpointPosition);
     checkpointColumnFamily.upsert(checkpointInfoKey, checkpointInfo);
   }
 
