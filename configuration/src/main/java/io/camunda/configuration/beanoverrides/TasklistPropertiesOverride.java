@@ -19,16 +19,17 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@EnableConfigurationProperties(TasklistProperties.class)
+@EnableConfigurationProperties(LegacyTasklistProperties.class)
 @PropertySource("classpath:tasklist-version.properties")
-@Profile("tasklist | test")
+@Profile("tasklist")
 public class TasklistPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final TasklistProperties legacyTasklistProperties;
+  private final LegacyTasklistProperties legacyTasklistProperties;
 
   public TasklistPropertiesOverride(
-      UnifiedConfiguration unifiedConfiguration, TasklistProperties legacyTasklistProperties) {
+      final UnifiedConfiguration unifiedConfiguration,
+      final LegacyTasklistProperties legacyTasklistProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
     this.legacyTasklistProperties = legacyTasklistProperties;
   }
