@@ -94,6 +94,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
 
     processInstanceDetailsStore.init({id: '1'});
   });

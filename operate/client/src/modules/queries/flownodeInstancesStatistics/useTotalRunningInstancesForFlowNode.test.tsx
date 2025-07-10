@@ -17,11 +17,15 @@ import {
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
-import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {
+  createProcessInstance,
+  mockProcessWithInputOutputMappingsXML,
+} from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {Paths} from 'modules/Routes';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('useTotalRunningInstancesForFlowNode hooks', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
@@ -42,6 +46,7 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
+    mockFetchProcessInstance().withSuccess(createProcessInstance());
   });
 
   it('should fetch total running instances for a single flow node', async () => {

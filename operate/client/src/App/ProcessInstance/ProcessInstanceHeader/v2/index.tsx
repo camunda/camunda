@@ -31,6 +31,8 @@ import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOpe
 import {useQueryClient} from '@tanstack/react-query';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 import {useNavigate} from 'react-router-dom';
+import {useProcessInstanceOperations} from 'modules/hooks/useProcessInstanceOperations';
+import {ProcessInstanceOperationsContext} from './processInstanceOperationsContext';
 
 const headerColumns = [
   'Process Name',
@@ -94,6 +96,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
+  const {cancellation} = useProcessInstanceOperations(processInstance.state);
 
   if (processInstance === null || isPending) {
     return <Skeleton headerColumns={skeletonColumns} />;
@@ -264,7 +267,15 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
             permissions: permissions,
           }}
         >
-          <>
+          <ProcessInstanceOperationsContext.Provider
+            value={{
+              cancellation: {
+                isPending: cancellation.isPending,
+                onError: () => cancellation.setIsPending(false),
+                onMutate: () => cancellation.setIsPending(true),
+              },
+            }}
+          >
             <Operations
               instance={processInstance}
               onOperation={() => {
@@ -315,14 +326,16 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                 }
               }}
               forceSpinner={
-                variablesStore.hasActiveOperation || hasActiveOperation
+                variablesStore.hasActiveOperation ||
+                hasActiveOperation ||
+                cancellation.isPending
               }
               isInstanceModificationVisible={
                 !modificationsStore.isModificationModeEnabled
               }
               permissions={permissions}
             />
-          </>
+          </ProcessInstanceOperationsContext.Provider>
         </Restricted>
       }
     />

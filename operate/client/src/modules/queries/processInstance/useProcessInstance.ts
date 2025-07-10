@@ -11,6 +11,7 @@ import type {RequestError} from 'modules/request';
 import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchProcessInstance} from 'modules/api/v2/processInstances/fetchProcessInstance';
+import {isInstanceRunning} from 'modules/utils/instance';
 
 const PROCESS_INSTANCE_QUERY_KEY = 'processInstance';
 
@@ -38,6 +39,13 @@ const useProcessInstance = <T = ProcessInstance>(
         }
       : skipToken,
     select,
+
+    refetchInterval: (query) => {
+      const processInstance = query.state.data;
+      if (processInstance !== undefined && isInstanceRunning(processInstance)) {
+        return 5000;
+      }
+    },
   });
 };
 
