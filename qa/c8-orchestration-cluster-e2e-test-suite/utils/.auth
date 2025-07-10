@@ -1,1 +1,15 @@
-{}
+{
+  "cookies": [
+    {
+      "name": "route",
+      "value": "daf256af4336af97834e6a25cd423d88|9fee00a309863ac5a0515f7c284043d3",
+      "domain": "qa-ahm-hackday.ci.distro.ultrawombat.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

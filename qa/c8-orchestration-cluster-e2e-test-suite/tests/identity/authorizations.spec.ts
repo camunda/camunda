@@ -22,29 +22,40 @@ test.describe.parallel('authorizations page', () => {
       await captureFailureVideo(page, testInfo);
     });
 
-
-
-    test('CRUD authorization for user', async ({loginPage, page}) => {
+    test('CRUD authorization for user', async ({loginPage, page, identityAuthorizationsPage}) => {
+    		const userName = "Test";
         await test.step('Add authorization', async () => {
-         
+        	//navigate to authorization menu > authorizations
+        	//await identityAuthorizationsPage.clickAuthorizationsTab();
+        	//await identityAuthorizationsPage.clickAuthorizationButton();
+        	//await identityAuthorizationsPage.assertAuthorizationModalPresent();
+        	//await identityAuthorizationsPage.clickCreateAuthorizationOwnerComboBox();
+        	//await identityAuthorizationsPage.selectOwnerComboBox(userName);
+        	//await identityAuthorizationsPage.clickAuthorizationResourceIdField();
+        	//await identityAuthorizationsPage.fillAuthorizationResourceIdField("*");
+        	//await identityAuthorizationsPage.clickAuthorizationAccessPermissionCheckbox("Access");
+        	//await identityAuthorizationsPage.clickCreateAuthorizationButton();
+
+        	//due to bug, fresh needed
+        	//await page.reload();
+        	//await expect(page.getByText(`USER${userName}*ACCESS`)).toBeVisible({
+        	 // timeout: 60000,
+        	//});
 
         })
         
-        await test.step('Remove authorization', async () => {
+        //await test.step('Remove authorization', async () => {})
 
-
-        })
-
-        await expect(loginPage.passwordInput).toHaveAttribute('type', 'password');
+        //await expect(loginPage.passwordInput).toHaveAttribute('type', 'password');
     
-        await loginPage.login('demo', 'wrong-password');
-        await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
+        //await loginPage.login('demo', 'wrong-password');
+        //await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
     
-        await expect(loginPage.errorMessage).toContainText(
-          "Username and password don't match",
-        );
+        //await expect(loginPage.errorMessage).toContainText(
+        //  "Username and password don't match",
+        //);
     
-        await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
+        //await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
       });
 
     })

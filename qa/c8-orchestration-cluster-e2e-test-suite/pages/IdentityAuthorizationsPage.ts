@@ -11,6 +11,7 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 
 export class IdentityAuthorizationsPage {
   readonly page: Page;
+  readonly authorizationTab: Locator;
   readonly createAuthorizationButton: Locator;
   readonly authorizationsList: Locator;
   readonly createAuthorizationModal: Locator;
@@ -25,6 +26,8 @@ export class IdentityAuthorizationsPage {
 
   constructor(page: Page) {
     this.page = page;
+    this.authorizationTab = page.getByRole('listitem')
+      .filter({hasText: 'Authorizations'});
     this.authorizationsList = page.getByRole('table');
     this.createAuthorizationButton = page.getByRole('button', {
       name: 'Create authorization',
@@ -35,6 +38,12 @@ export class IdentityAuthorizationsPage {
     this.createAuthorizationOwnerComboBox =
       this.createAuthorizationModal.getByRole('combobox', {
         name: 'Owner',
+        exact: true,
+      });
+    // needs clarification
+		this.ownerTypeComboBox =
+      this.createAuthorizationModal.getByRole('combobox', {
+        name: 'User',
         exact: true,
       });
     this.createAuthorizationOwnerOption = (name) =>
@@ -67,4 +76,48 @@ export class IdentityAuthorizationsPage {
   async navigateToAuthorizations() {
     await this.page.goto(relativizePath(Paths.authorizations()));
   }
+
+  async clickAuthorizationsTab(): Promise<void> {
+    await expect(this.authorizationTab).toBeVisible({timeout: 60000});
+    await this.authorizationTab.click({timeout: 60000});
+  }
+
+  async clickAuthorizationButton():Promise<void> {
+    await expect(this.createAuthorizationButton).toBeVisible({timeout: 60000});
+    await this.createAuthorizationButton.click({timeout: 60000});
+  }
+
+  async assertAuthorizationModalPresent():Promise<void> {
+    await expect(this.createAuthorizationModal).toBeVisible({timeout: 60000});
+  }
+
+  async clickAuthorizationOwnerComboBox():Promise<void> {
+    await expect(this.createAuthorizationOwnerComboBox).toBeVisible({timeout: 60000});
+    await this.createAuthorizationOwnerComboBox.click({timeout: 60000});
+  }
+  
+  async selectOwnerComboBox(owner:string):Promise<void> {
+    await this.createAuthorizationOwnerComboBox.selectOption(owner, {timeout: 60000});
+  }
+
+  async clickAuthorizationResourceIdField():Promise<void> {
+    await expect(this.createAuthorizationResourceIdField).toBeVisible({timeout: 60000});
+    await this.createAuthorizationResourceIdField.click({timeout: 60000});
+  }
+
+  async fillAuthorizationResourceIdField(resourceId:string):Promise<void> {
+    await expect(this.createAuthorizationResourceIdField).toBeVisible({timeout: 60000});
+    await this.createAuthorizationResourceIdField.fill(resourceId, {timeout: 60000});
+  }
+
+  async clickAuthorizationAccessPermissionCheckbox(permission:string):Promise<void> {
+    await expect(this.createAuthorizationAccessPermission(permission)).toBeVisible({timeout: 60000});
+    await this.createAuthorizationAccessPermission(permission).click({timeout: 60000});
+  }
+
+	async clickCreateAuthorizationButton():Promise<void> {
+	    await expect(this.createAuthorizationButton).toBeVisible({timeout: 60000});
+	    await this.createAuthorizationButton.click({timeout: 60000});
+	  }
+  
 }
