@@ -17,7 +17,6 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
-import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -61,17 +60,16 @@ public class ProcessDefinitionSearchTest {
   private static CamundaClient camundaClient;
 
   @BeforeAll
-  public static void beforeAll(@Authenticated final CamundaClient adminClient)
-      throws InterruptedException {
+  public static void beforeAll() throws InterruptedException {
     final List<String> forms = List.of("form.form", "form_v2.form");
-    forms.forEach(form -> deployResource(adminClient, "form/" + form));
+    forms.forEach(form -> deployResource(camundaClient, "form/" + form));
 
     PROCESSES_IN_DEFAULT_TENANT.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(adminClient, process.resourceName()).getProcesses()));
+                deployResource(camundaClient, process.resourceName()).getProcesses()));
 
-    waitForProcessesToBeDeployed(adminClient, PROCESSES_IN_DEFAULT_TENANT.size());
+    waitForProcessesToBeDeployed(camundaClient, PROCESSES_IN_DEFAULT_TENANT.size());
   }
 
   @Test
