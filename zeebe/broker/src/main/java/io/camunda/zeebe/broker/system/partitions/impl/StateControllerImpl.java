@@ -186,11 +186,12 @@ public class StateControllerImpl implements StateController {
   private NextSnapshotId tryFindNextSnapshotId(final long lastProcessedPosition)
       throws NoEntryAtSnapshotPosition {
     final var exportedPosition = exporterPositionSupplier.applyAsLong(db);
-    if (exportedPosition == -1) {
+    final var backupPosition = backupPositionSupplier.applyAsLong(db);
+    if (exportedPosition == -1 || backupPosition == -1) {
       final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
       if (latestSnapshot.isPresent()) {
         // re-use index and term from the latest snapshot to ensure that the records from there are
-        // not compacted until they get exported.
+        // not compacted until they get exported and backed up.
         final var persistedSnapshot = latestSnapshot.get();
         return new NextSnapshotId(
             persistedSnapshot.getIndex(), persistedSnapshot.getTerm(), lastProcessedPosition, 0);
@@ -199,7 +200,8 @@ public class StateControllerImpl implements StateController {
       return new NextSnapshotId(0, 0, lastProcessedPosition, 0);
     }
 
-    final var snapshotPosition = Math.min(exportedPosition, lastProcessedPosition);
+    final var snapshotPosition =
+        Math.min(Math.min(exportedPosition, backupPosition), lastProcessedPosition);
     final var logEntry = entrySupplier.getPreviousIndexedEntry(snapshotPosition);
 
     if (logEntry.isPresent()) {

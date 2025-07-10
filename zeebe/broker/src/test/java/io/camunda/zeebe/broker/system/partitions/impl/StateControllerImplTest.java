@@ -388,6 +388,105 @@ public final class StateControllerImplTest {
     assertThat(snapshot.getExportedPosition()).isEqualTo(0);
   }
 
+  @Test
+  public void shouldUseBackupPositionWhenSmallerThanExporter() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 7L;
+    final var backupPosition = 4L;
+    this.exporterPosition.set(exporterPosition);
+    this.backupPosition.set(backupPosition);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(backupPosition);
+  }
+
+  @Test
+  public void shouldUseExporterPositionWhenSmallerThanBackup() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 7L;
+    final var backupPosition = 11L;
+    this.exporterPosition.set(exporterPosition);
+    this.backupPosition.set(backupPosition);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(exporterPosition);
+  }
+
+  @Test
+  public void shouldIgnoreBackupPositionWhenDisabled() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 5L;
+    this.exporterPosition.set(exporterPosition);
+    backupPosition.set(Long.MAX_VALUE); // simulates continuous backups disabled
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+
+    // then - should use exporter position since backup is disabled
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(exporterPosition);
+  }
+
+  @Test
+  public void shouldFallbackToZeroWhenBackupPositionIsUnknown() {
+    // given
+    final long processedPosition = 5;
+    backupPosition.set(-1L);
+    exporterPosition.set(5);
+    snapshotController.recover().join();
+
+    // when
+    final var transientSnapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join();
+
+    // then
+    final var snapshot = transientSnapshot.snapshotId();
+    assertThat(snapshot.getIndex()).isEqualTo(0);
+    assertThat(snapshot.getTerm()).isEqualTo(0);
+    assertThat(snapshot.getProcessedPosition()).isEqualTo(processedPosition);
+    assertThat(snapshot.getExportedPosition()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldUseProcessedPositionWhenSmallerThanBackupAndExporter() {
+    // given
+    final var processedPosition = 3L;
+    final var exporterPos = 10L;
+    final var backupPos = 8L;
+    exporterPosition.set(exporterPos);
+    backupPosition.set(backupPos);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(processedPosition);
+  }
+
   private File takeSnapshot(final long position) {
     final var snapshot = snapshotController.takeTransientSnapshot(position).join();
     return snapshot.persist().join().getPath().toFile();
