@@ -273,6 +273,26 @@ The batch operation module uses command distribution to synchronize important in
   append a `BatchOperationLifecycleManagementRecord` with the intent `COMPLETED` to mark
   the whole batch operation as completed, when all follower partitions have reported in.
 
+### Authorizations
+
+In order to execute a batch operation, the user must have two different sets of permissions.
+
+**Batch operation execution permissions**
+- The user must have permission to create the batch operation itself.
+- To suspend, resume or cancel a running batch operation, the user must have permission to manage these operations on the batch operation.
+
+These permissions are verified by the BatchOperationProcessors when the batch operation command is
+executed
+
+**Batch operation item permissions**
+To execute a batch operation on an item, the user must have permission to
+- Read the process instances and/or incidents from the secondary storage
+- Execute the operation on the process instances or incidents
+
+To verify these permissions, the authorization claims of the user, which has created the batch
+operation, are stored with the batch operation in the RocksDB and used to query the secondary
+database and to execute the actual operation on the process instance
+
 ## Architecture Decisions
 
 ### ADR: Query the Secondary database within the Zeebe engine
@@ -319,5 +339,72 @@ maximum record size and allows us more orchestration of the init phase of the ba
   maintained and monitored. It is a separate actor that runs decoupled from the `StreamProcessor`
   and needs to be resilient against failures.
 
-## Glossary
+### ADR: Agrgegate and synchronize COMPLETED partition results
+
+When a batch operation is executed, each partition processes its own set of itemKeys individually
+and finishes this processing at different points in time. The end user wants to know when a batch
+operation is finished completely. So we need a way to aggregate the results of all partitions and
+only then mark a batch operation as COMPLETED in the secondary database.
+
+#### Decision
+
+We have decided to synchronize the different partition statuses inside the engine.
+
+- We will introduce the concept of “leader partition”, which collects internal status events from
+  other partitions status and publishes a public status event when all partitions have reported that
+  status (e.g. a final COMPLETED)
+- Follower partitions will send inter-partition commands to the leader and now publish events on its
+  own
+- With this all exporters are kept free of this status aggregation logic
+
+##### Rationale
+
+Moving this logic into the Zeebe engine allows us to keep the exporters free of this counting logic
+and we have it at a central location.
+
+##### Consequences
+
+###### Positive
+
+- There is a clear final record for when a batch operation is completed. The exporters don't need to keep track of
+  the partition statuses and can just observe the final COMPLETED record.
+
+###### Negative
+
+- The synchronization of the partition statuses adds some complexity to the Zeebe engine and
+  requires additional inter-partition communication. Also the state management and error handling
+  inside the Zeebe engine got more complex.
+
+### ADR: Use the existing ES/OS indices for batch operations
+
+Operate already has an existing batch operation engine. This engine already stores batch operation
+relevant data in two indices (`batch-operation` and `operation`).
+
+When the new batch operation module is introduced, the question was, if we introduce a completely
+new set of indices or if we use the existing ones.
+
+#### Decision
+
+We have decided to reuse the existing indices for the new batch operation module.
+
+##### Rationale
+
+Introducing a new and separate set of indices would have required us to maintain two different sets
+of indices for the transition phase while Operate is still using the old batch operation engine. The
+integration into the Operate UI would have been more complex otherwise.
+
+##### Consequences
+
+###### Positive
+
+- The two batch operation engines can be run in parallel, which allows a smooth transition from the
+  old batch operation engine to the new one. In the same way, both the old and the new batch
+  operations can be displayed in Operate UI without much effort using the same frontend views.
+
+###### Negative
+
+- Reusing the existing indices means that we have to keep the old batch operation engine running
+  and compatible until Operate UI it is fully migrated to the new batch operation module. This
+  requires a more complex data handling in the CamundaExporter since both batch operations use
+  different properties, enums and data structures.
 
