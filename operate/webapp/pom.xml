@@ -364,6 +364,22 @@
       <artifactId>spring-test</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>mvc-auth-commons</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>javax.servlet-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>4.0.1</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -397,6 +413,8 @@
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
             <dep>com.github.spotbugs:spotbugs-annotations</dep>
+            <dep>javax.servlet:javax.servlet-api</dep>
+            <dep>com.auth0:mvc-auth-commons</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
