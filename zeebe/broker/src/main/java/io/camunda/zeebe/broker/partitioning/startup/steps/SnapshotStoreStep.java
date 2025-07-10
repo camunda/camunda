@@ -90,7 +90,10 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
               } else {
                 LOG.info(
                     "Received snapshot {} from leader, restoring from snapshot", snapshot.getId());
-                return context.snapshotStore().restore(snapshot);
+                return context
+                    .snapshotStore()
+                    .restore(snapshot)
+                    .andThen(ignore -> context.snapshotStore().deleteBootstrapSnapshots());
               }
             },
             context.concurrencyControl())
