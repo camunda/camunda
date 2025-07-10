@@ -113,7 +113,7 @@ public final class EventAppliers implements EventApplier {
 
     registerDecisionAppliers(state);
     registerDecisionRequirementsAppliers(state);
-    registerDecisionEvaluationAppliers();
+    registerDecisionEvaluationAppliers(state);
 
     registerFormAppliers(state);
 
@@ -445,8 +445,12 @@ public final class EventAppliers implements EventApplier {
         new DecisionRequirementsDeletedApplier(state.getDecisionState()));
   }
 
-  private void registerDecisionEvaluationAppliers() {
-    register(DecisionEvaluationIntent.EVALUATED, NOOP_EVENT_APPLIER);
+  private void registerDecisionEvaluationAppliers(final MutableProcessingState state) {
+    register(DecisionEvaluationIntent.EVALUATED, 1, NOOP_EVENT_APPLIER);
+    register(
+        DecisionEvaluationIntent.EVALUATED,
+        2,
+        new DecisionEvaluationV2Applier(state.getUsageMetricState()));
     register(DecisionEvaluationIntent.FAILED, NOOP_EVENT_APPLIER);
   }
 

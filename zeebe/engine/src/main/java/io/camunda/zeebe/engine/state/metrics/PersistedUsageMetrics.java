@@ -64,16 +64,17 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
   }
 
   public DirectBuffer getTenantEDIMapValue() {
-    return tenantRPIMapProp.getValue();
+    return tenantEDIMapProp.getValue();
   }
 
   public Map<String, Long> getTenantEDIMap() {
     return MsgPackConverter.convertToLongMap(tenantEDIMapProp.getValue());
   }
 
-  public void setTenantEDIMap(final Map<String, Long> tenantEDIMap) {
+  public PersistedUsageMetrics setTenantEDIMap(final Map<String, Long> tenantEDIMap) {
     tenantEDIMapProp.setValue(
         BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantEDIMap)));
+    return this;
   }
 
   public PersistedUsageMetrics recordRPI(final String tenantId) {
