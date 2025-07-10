@@ -15,6 +15,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +44,13 @@ public final class ExporterUtil {
 
   public static String toStringOrDefault(final Object object, final String defaultString) {
     return object == null ? defaultString : object.toString();
+  }
+
+  public static String[] toStringArrayOrNull(final List<String> inputList) {
+    if (inputList == null || inputList.isEmpty()) {
+      return null;
+    }
+    return inputList.toArray(new String[0]);
   }
 
   public static String trimWhitespace(final String str) {

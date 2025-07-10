@@ -12,6 +12,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.PartitionedEntity;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -372,6 +373,14 @@ public class TaskEntity
 
   public TaskEntity setChangedAttributes(final List<String> changedAttributes) {
     this.changedAttributes = changedAttributes;
+    return this;
+  }
+
+  public TaskEntity addChangedAttribute(final String changedAttribute) {
+    if (this.changedAttributes == null) {
+      this.changedAttributes = new ArrayList<>();
+    }
+    this.changedAttributes.add(changedAttribute);
     return this;
   }
 

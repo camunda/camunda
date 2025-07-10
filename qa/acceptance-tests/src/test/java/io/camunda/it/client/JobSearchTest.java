@@ -99,8 +99,7 @@ public class JobSearchTest {
 
     camundaClient.newCompleteCommand(executionEndListenerJob.getJobKey()).send().join();
 
-    waitUntilNewUserTaskHasBeenCreated();
-
+    waitForSingleUserTaskWithCreatedState();
     final var userTask =
         camundaClient
             .newUserTaskSearchRequest()
@@ -134,12 +133,11 @@ public class JobSearchTest {
         .send()
         .join();
 
+    waitForSingleUserTaskWithCreatedState();
     camundaClient
         .newUserTaskAssignCommand(userTask.getUserTaskKey())
         .assignee("testAssignee")
         .send();
-
-    waitUntilNewUserTaskHasBeenCreated();
 
     // Wait until the total number of jobs in the system reaches 5
     waitUntilNewJobHasBeenCreated(6);
@@ -159,17 +157,9 @@ public class JobSearchTest {
 
     camundaClient.newCompleteCommand(userTaskListenerAssigningJob2.getJobKey()).send().join();
 
-    final var userTaskB =
-        camundaClient
-            .newUserTaskSearchRequest()
-            .filter(f -> f.state(UserTaskState.CREATED))
-            .send()
-            .join()
-            .items()
-            .getFirst();
-
+    waitForSingleUserTaskWithCreatedState();
     camundaClient
-        .newUserTaskCompleteCommand(userTaskB.getUserTaskKey())
+        .newUserTaskCompleteCommand(userTask.getUserTaskKey())
         .variable("name", "test")
         .send();
 
@@ -1136,8 +1126,8 @@ public class JobSearchTest {
             });
   }
 
-  private static void waitUntilNewUserTaskHasBeenCreated() {
-    await("should wait until user task has been created")
+  private static void waitForSingleUserTaskWithCreatedState() {
+    await("should wait until user task with state='CREATED' found")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
