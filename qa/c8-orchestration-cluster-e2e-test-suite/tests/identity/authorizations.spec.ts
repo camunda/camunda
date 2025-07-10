@@ -45,6 +45,17 @@ test.describe.parallel('authorizations page', () => {
       );
     });
 
-    await test.step('Remove authorization', async () => {});
+    await test.step('Remove authorization', async () => {
+      // navigate to Authorization menu
+
+      // open application resource type menu
+
+      // await the user authorization for applications here
+
+      // click delet authorization
+
+      // expoect authorization to be removed
+      await identityAuthorizationsPage.clickDeleteAuthorizationButton(
+    })
   });
 });
