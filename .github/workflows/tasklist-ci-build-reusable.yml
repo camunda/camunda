@@ -52,7 +52,7 @@ jobs:
     uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
     secrets: inherit
     with:
-      base_group_name: ''
+        job_to_run: 'snapshot-tag'
 
   build:
     name: Build
