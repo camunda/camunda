@@ -10,8 +10,8 @@ package io.camunda.operate.qa.backup;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 
 import io.camunda.operate.qa.util.TestContext;
+import io.camunda.operate.testhelpers.StatefulRestTemplate;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.util.rest.StatefulRestTemplate;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;

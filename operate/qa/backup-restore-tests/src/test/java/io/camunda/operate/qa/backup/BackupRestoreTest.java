@@ -202,6 +202,7 @@ public class BackupRestoreTest {
 @ComponentScan(
     basePackages = {
       "io.camunda.operate.util.rest",
+      "io.camunda.operate.testhelpers",
       "io.camunda.operate.qa.backup",
       "io.camunda.operate.webapp.rest.dto"
     })
