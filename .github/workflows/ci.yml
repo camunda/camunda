@@ -656,6 +656,16 @@ jobs:
       job_to_run: 'concurrency-group'
       base_group_name: deploy-maven-snapshot
 
+
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
+  get-concurrency-group-for-maven-snapshot:
+    needs: [ check-results ]
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+    secrets: inherit
+    with:
+      job_to_run: 'concurrency-group'
+      base_group_name: deploy-maven-snapshot
+
   deploy-snapshots:
     name: Deploy snapshot artifacts
     needs: [ check-results, get-concurrency-group-for-maven-snapshot ]
