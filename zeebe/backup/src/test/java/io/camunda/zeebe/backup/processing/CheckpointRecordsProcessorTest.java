@@ -354,7 +354,7 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
-  void shouldRejectBackupWhenBackupIdIsOlderOrSame() {
+  void shouldRejectBackupWhenBackupIdIsOlder() {
     // given
     final var currentBackupId = 10;
     final var currentBackupPosition = 100;
