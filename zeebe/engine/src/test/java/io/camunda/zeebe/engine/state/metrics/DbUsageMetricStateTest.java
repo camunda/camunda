@@ -114,6 +114,7 @@ public class DbUsageMetricStateTest {
 
     // when
     state.recordTUMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER, "assignee1");
+    state.recordTUMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER, "assignee1");
     state.recordTUMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER, "assignee2");
     state.recordTUMetric("tenant1", "assignee1");
     state.recordTUMetric("tenant1", "assignee2");
