@@ -432,7 +432,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "zeebe-unit-tests/zeebe-${{ matrix.component }}-${{matrix.suite}}"
+          job_name: "zeebe-unit-tests/${{ matrix.component }}-${{matrix.suite}}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "team: ${{matrix.suite}}"
@@ -1268,10 +1268,10 @@ jobs:
       - detect-changes
       - docker-checks
       - elasticsearch-integration-tests
+      - general-unit-tests
       - identity-frontend-tests
       - integration-tests
       - java-checks
-      - general-unit-tests
       - maven-spotless-linter
       - openapi-lint
       - opensearch-integration-tests
