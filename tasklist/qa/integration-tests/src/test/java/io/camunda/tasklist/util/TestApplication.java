@@ -8,8 +8,6 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.TasklistModuleConfiguration;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.es.DevDataGeneratorElasticSearch;
@@ -38,10 +36,9 @@ import org.springframework.context.annotation.Profile;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({
-  UnifiedConfiguration.class,
-  TasklistPropertiesOverride.class,
   WebappsModuleConfiguration.class,
-  CommonsModuleConfiguration.class
+  CommonsModuleConfiguration.class,
+  TestTasklistPropertiesOverride.class
 })
 public class TestApplication {
 
