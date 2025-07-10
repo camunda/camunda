@@ -56,6 +56,7 @@ public class TaskValidatorTest {
   @Test
   public void userCanNotPersistDraftTaskVariablesIfAssignedToAnotherPerson() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     final UserDTO user =
         new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
     when(userReader.getCurrentUser()).thenReturn(user);
@@ -125,6 +126,7 @@ public class TaskValidatorTest {
   @Test
   public void userCanNotCompleteTaskIfAssignedToAnotherPerson() {
     // given
+    when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     final UserDTO user =
         new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
     when(userReader.getCurrentUser()).thenReturn(user);
@@ -156,6 +158,23 @@ public class TaskValidatorTest {
     // given
     final UserDTO user =
         new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER).setApiUser(false);
+    when(userReader.getCurrentUser()).thenReturn(user);
+    final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
+
+    // when - then
+    assertDoesNotThrow(() -> instance.validateCanComplete(task));
+  }
+
+  @Test
+  public void userCanCompleteOtherPersonTaskIfAllowNonSelfAssignment() {
+    // given
+    when(tasklistProperties.getFeatureFlag())
+        .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(true));
+    final UserDTO user =
+        new UserDTO()
+            .setUserId("AnotherTestUser")
+            .setDisplayName("AnotherTestUser")
+            .setApiUser(false);
     when(userReader.getCurrentUser()).thenReturn(user);
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
