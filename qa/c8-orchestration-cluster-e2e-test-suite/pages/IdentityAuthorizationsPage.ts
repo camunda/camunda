@@ -144,4 +144,11 @@ export class IdentityAuthorizationsPage {
     await expect(this.createAuthorizationButton).toBeVisible({timeout: 60000});
     await this.createAuthorizationButton.click({timeout: 60000});
   }
+
+  async clickDeleteAuthorizationButton(name: string): Promise<void> {
+    await expect(this.deleteAuthorizationButton(name)).toBeVisible({
+      timeout: 60000,
+    });
+    await this.deleteAuthorizationButton(name).click({timeout: 60000});
+  }
 }
