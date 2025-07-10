@@ -25,7 +25,7 @@ on:
         value: ${{  jobs.get-snapshot-docker-version-tag.outputs.tag }}
       concurrency_group_name:
         description: "Concurrency group name for the workflow"
-        value: ${{ jobs.get-concurrency-group-dinamically.outputs.result }}
+        value: ${{ jobs.get-concurrency-group-dynamically.outputs.result }}
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
@@ -54,7 +54,7 @@ jobs:
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-  get-concurrency-group-dinamically:
+  get-concurrency-group-dynamically:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions: { }
