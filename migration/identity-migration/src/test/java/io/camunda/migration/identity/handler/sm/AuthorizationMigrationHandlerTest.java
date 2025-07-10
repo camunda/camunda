@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -69,7 +70,7 @@ final class AuthorizationMigrationHandlerTest {
         .thenReturn(users1)
         .thenReturn(List.of());
 
-    when(managementIdentityClient.fetchUserAuthorizations(anyString()))
+    when(managementIdentityClient.fetchUserAuthorizations("user1"))
         .thenReturn(
             List.of(
                 new Authorization(
@@ -83,7 +84,8 @@ final class AuthorizationMigrationHandlerTest {
                     "USER",
                     "*",
                     "decision-definition",
-                    Set.of("DELETE_PROCESS_INSTANCE", "READ", "DELETE"))))
+                    Set.of("DELETE_PROCESS_INSTANCE", "READ", "DELETE"))));
+    when(managementIdentityClient.fetchUserAuthorizations("user2"))
         .thenReturn(
             List.of(
                 new Authorization(
@@ -106,7 +108,10 @@ final class AuthorizationMigrationHandlerTest {
     final ArgumentCaptor<CreateAuthorizationRequest> request =
         ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices, times(4)).createAuthorization(request.capture());
-    final List<CreateAuthorizationRequest> requests = request.getAllValues();
+    final var requests =
+        request.getAllValues().stream()
+            .sorted(Comparator.comparing(CreateAuthorizationRequest::ownerId))
+            .toList();
     assertThat(requests, Matchers.hasSize(4));
     assertThat(requests.getFirst().ownerId(), Matchers.is("email1"));
     assertThat(requests.getFirst().ownerType(), Matchers.is(AuthorizationOwnerType.USER));
