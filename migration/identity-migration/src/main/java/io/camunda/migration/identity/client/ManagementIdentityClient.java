@@ -16,7 +16,6 @@ import io.camunda.migration.identity.dto.Permission;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
-import io.camunda.migration.identity.dto.UserTenants;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -26,8 +25,7 @@ public class ManagementIdentityClient {
 
   private static final String URL_PARAMS = "pageSize={0}";
   private static final String MIGRATION_TENANTS_ENDPOINT = "/api/tenants";
-  private static final String MIGRATION_USER_TENANTS_ENDPOINT =
-      "/api/migration/tenant/user?" + URL_PARAMS;
+  private static final String MIGRATION_USER_TENANTS_ENDPOINT = "/api/tenant/{0}/users";
   private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
       "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
   private static final String MIGRATION_GROUPS_ENDPOINT = "/api/groups?page={0}&organizationId={1}";
@@ -67,11 +65,10 @@ public class ManagementIdentityClient {
         .toList();
   }
 
-  public List<UserTenants> fetchUserTenants(final int pageSize) {
+  public List<User> fetchTenantUsers(final String tenantId) {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(
-                    MIGRATION_USER_TENANTS_ENDPOINT, UserTenants[].class, pageSize)))
+                restTemplate.getForObject(MIGRATION_USER_TENANTS_ENDPOINT, User[].class, tenantId)))
         .toList();
   }
 

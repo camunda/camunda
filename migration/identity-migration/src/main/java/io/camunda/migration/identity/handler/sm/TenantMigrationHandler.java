@@ -7,6 +7,9 @@
  */
 package io.camunda.migration.identity.handler.sm;
 
+import static io.camunda.migration.identity.MigrationUtil.normalizeID;
+
+import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.dto.Tenant;
@@ -14,6 +17,8 @@ import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,15 +65,12 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
     tenants.forEach(
         tenant -> {
+          final var tenantId = normalizeID(tenant.tenantId());
           try {
-            tenantService
-                .createTenant(new TenantDTO(null, tenant.tenantId(), tenant.name(), null))
-                .join();
+            tenantService.createTenant(new TenantDTO(null, tenantId, tenant.name(), null)).join();
             createdTenantCount.incrementAndGet();
             logger.debug(
-                "Tenant with ID '{}' and name '{}' created successfully.",
-                tenant.tenantId(),
-                tenant.name());
+                "Tenant with ID '{}' and name '{}' created successfully.", tenantId, tenant.name());
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
@@ -77,6 +79,7 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
             logger.debug(
                 "Tenant with ID '{}' already exists, skipping creation.", tenant.tenantId());
           }
+          assignUsersToTenant(tenant.tenantId(), tenantId);
         });
   }
 
@@ -92,5 +95,48 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
         totalGroupAssignmentAttempts.get(),
         assignedClientCount.get(),
         totalClientAssignmentAttempts.get());
+  }
+
+  private void assignUsersToTenant(final String tenantId, final String normalizedTenantId) {
+    final List<User> tenantUsers;
+    try {
+      tenantUsers = managementIdentityClient.fetchTenantUsers(tenantId);
+    } catch (final Exception e) {
+      if (!isNotImplementedError(e)) {
+        throw new MigrationException("Failed to fetch users for tenant with ID: " + tenantId, e);
+      }
+      logger.warn("User tenant endpoint is not available, skipping user assignment.");
+      return;
+    }
+    totalUserAssignmentAttempts.set(tenantUsers.size());
+
+    tenantUsers.forEach(
+        user -> {
+          try {
+            tenantService
+                .addMember(
+                    new TenantMemberRequest(
+                        normalizedTenantId, user.getUsername(), EntityType.USER))
+                .join();
+            assignedUserCount.incrementAndGet();
+            logger.debug(
+                "User with username '{}' assigned to tenant '{}'.",
+                user.getUsername(),
+                normalizedTenantId);
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new MigrationException(
+                  "Failed to assign user with ID: "
+                      + user.getUsername()
+                      + " to tenant: "
+                      + tenantId,
+                  e);
+            }
+            logger.debug(
+                "User with ID '{}' already assigned to tenant '{}', skipping assignment.",
+                user.getUsername(),
+                normalizedTenantId);
+          }
+        });
   }
 }
