@@ -10,6 +10,7 @@ import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 import { Role, ROLES_ENDPOINT } from "src/utility/api/roles";
 import { MappingRule } from "src/utility/api/mapping-rules";
+import { PageSearchParams } from "../hooks/usePagination";
 
 export const GROUPS_ENDPOINT = "/groups";
 
@@ -29,12 +30,15 @@ type SearchGroupsParams = {
 
 export const searchGroups: ApiDefinition<
   SearchResponse<Group>,
-  SearchGroupsParams | undefined
-> = (filterParams) => {
-  const params = filterParams?.groupIds
-    ? { filter: { groupId: { $in: filterParams.groupIds } } }
+  Partial<SearchGroupsParams & PageSearchParams> | undefined
+> = (filterParams = {}) => {
+  const { groupIds, ...pageParams } = filterParams;
+
+  const params = groupIds
+    ? { filter: { groupId: { $in: groupIds } } }
     : undefined;
-  return apiPost(`${GROUPS_ENDPOINT}/search`, params);
+
+  return apiPost(`${GROUPS_ENDPOINT}/search`, { ...params, ...pageParams });
 };
 
 export type GetGroupParams = {

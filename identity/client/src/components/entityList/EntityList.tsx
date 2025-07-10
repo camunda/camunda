@@ -38,6 +38,7 @@ import LateLoading from "src/components/layout/LateLoading";
 import Flex from "src/components/layout/Flex";
 import useTranslate from "src/utility/localization";
 import { StyledTableContainer } from "./components";
+import { PageResult } from "src/utility/api/hooks/usePagination";
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
@@ -109,11 +110,13 @@ type EntityListProps<D extends EntityData> = {
     isSelected: (selected: D) => boolean;
   };
   maxDisplayCellLength?: number;
+  setPage?: (page: number) => void;
+  setPageSize?: (pageSize: number) => void;
+  page?: ({ page: number; pageSize: number } & Partial<PageResult>) | undefined;
 };
 
 const MAX_ICON_ACTIONS = 2;
-const PAGINATION_HIDE_LIMIT = 15;
-const PAGINATION_MAX_PAGE_SIZE = 15;
+const PAGESIZES = [1, 15, 20, 30, 40, 50];
 
 const EntityList = <D extends EntityData>({
   title,
@@ -132,11 +135,14 @@ const EntityList = <D extends EntityData>({
   batchSelection,
   searchPlaceholder,
   maxDisplayCellLength = 50,
+  setPage = () => {},
+  setPageSize = () => {},
+  page: pageData,
 }: EntityListProps<D>): ReturnType<FC> => {
   const debounce = useDebounce(300);
   const { t } = useTranslate("components");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGINATION_MAX_PAGE_SIZE);
+
+  console.log(pageData);
 
   const hasMenu = menuItems && menuItems.length > 0;
 
@@ -168,11 +174,6 @@ const EntityList = <D extends EntityData>({
 
     return [entityIndex, sortedEntityTableData];
   }, [sortProperty, data]);
-
-  const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * pageSize;
-    return tableData.slice(startIndex, startIndex + pageSize);
-  }, [page, pageSize, tableData]);
 
   const areRowsEmpty = !tableData || tableData.length === 0;
 
@@ -211,8 +212,9 @@ const EntityList = <D extends EntityData>({
         ),
       };
 
+  console.log(tableData);
   return (
-    <DataTable rows={paginatedData} headers={headers} isSortable>
+    <DataTable rows={tableData} headers={headers} isSortable>
       {({
         rows,
         getHeaderProps,
@@ -421,16 +423,16 @@ const EntityList = <D extends EntityData>({
               </Table>
             </>
           )}
-          {tableData.length > PAGINATION_HIDE_LIMIT && (
+          {pageData && pageData.totalItems > Math.min(...PAGESIZES) && (
             <Pagination
               backwardText={t("Previous page")}
               forwardText={t("Next page")}
               itemsPerPageText={t("Items per page:")}
-              page={page}
+              page={pageData.page}
               pageNumberText={t("Page Number")}
-              pageSize={pageSize}
-              pageSizes={[15, 20, 30, 40, 50]}
-              totalItems={tableData.length}
+              pageSize={pageData.pageSize}
+              pageSizes={PAGESIZES}
+              totalItems={pageData.totalItems}
               onChange={({
                 page,
                 pageSize,
