@@ -301,6 +301,39 @@ public class ProcessDefinitionSearchTest {
   }
 
   @Test
+  void shouldRetrieveSingleLatestProcessDefinitionWhenFilteredById() {
+    // given
+    final var expectedProcessDefinitionInDefaultTenant =
+        keepLatestProcessDefinitionVersions().entrySet().stream()
+            .filter(entry -> Objects.equals(entry.getKey(), "processA_ID"))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(f -> f.isLatestVersion(true).processDefinitionId("processA_ID"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getVersion()).isEqualTo(3);
+    final var results =
+        result.items().stream()
+            .map(
+                pd ->
+                    new ProcessDefinitionTestContext(
+                        pd.getProcessDefinitionId(),
+                        pd.getResourceName(),
+                        pd.getVersion(),
+                        pd.getTenantId()))
+            .toList();
+    assertThat(results)
+        .containsExactlyInAnyOrderElementsOf(expectedProcessDefinitionInDefaultTenant.values());
+  }
+
+  @Test
   void shouldRetrieveAllLatestProcessDefinitionsWhenPaginated() {
     // given
     final var expectedProcessDefinitionInDefaultTenant = keepLatestProcessDefinitionVersions();

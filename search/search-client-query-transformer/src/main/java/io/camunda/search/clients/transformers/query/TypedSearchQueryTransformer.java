@@ -107,7 +107,10 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
   private void buildPagination(
       final TypedSearchQuery<F, S> query, final SearchQueryRequest.Builder builder) {
     if (query.aggregation() instanceof AggregationPaginated) {
-      // AggregationPaginated queries handle pagination differently, as the types are different
+      // AggregationPaginated queries handle pagination differently, as the types are different,
+      // and we do not want to return the hits as they will be ignored, but rather the aggregation
+      // results.
+      builder.size(0);
       return;
     }
 
