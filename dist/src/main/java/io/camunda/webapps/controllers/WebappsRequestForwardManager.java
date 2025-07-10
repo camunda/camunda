@@ -49,7 +49,8 @@ public class WebappsRequestForwardManager {
 
   private boolean isNotLoggedIn() {
     final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    return (authentication instanceof AnonymousAuthenticationToken)
+    return authentication == null
+        || (authentication instanceof AnonymousAuthenticationToken)
         || !authentication.isAuthenticated();
   }
 }
