@@ -335,8 +335,7 @@
         <configuration>
           <usedDependencies>
             <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
-     classes on the classpath in order to resolve the AWS credentials -->
-            <dependency>com.amazonaws:aws-java-sdk-sts</dependency>
+     classes on the classpath to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
           </usedDependencies>
         </configuration>
