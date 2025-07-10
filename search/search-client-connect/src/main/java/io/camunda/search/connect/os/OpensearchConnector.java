@@ -7,7 +7,6 @@
  */
 package io.camunda.search.connect.os;
 
-import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -40,7 +39,7 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 public final class OpensearchConnector {
 
@@ -108,7 +107,7 @@ public final class OpensearchConnector {
     return new AwsSdk2Transport(
         httpClient,
         httpHost.getHostName(),
-        Region.of(region),
+        region,
         AwsSdk2TransportOptions.builder()
             .setMapper(new SearchRequestJacksonJsonpMapperWrapper(objectMapper))
             .build());

@@ -165,7 +165,6 @@
     <version.node>v24.2.0</version.node>
     <version.yarn>v1.22.22</version.yarn>
 
-    <version.aws-java-sdk>1.12.787</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.21.3</version.elasticsearch-test-container>
     <version.postgres-test-container>1.21.3</version.postgres-test-container>
     <version.elasticsearch7>7.17.29</version.elasticsearch7>
@@ -2096,16 +2095,6 @@
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
         <version>${version.nimbus-jose-jwt}</version>
-      </dependency>
-
-      <!-- Start AWS -->
-
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-bom</artifactId>
-        <version>${version.aws-java-sdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <!-- testcontainers and docker: see
