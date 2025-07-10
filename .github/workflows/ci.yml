@@ -708,6 +708,12 @@ jobs:
     with:
       base_group_name: deploy-camunda-docker-snapshot
 
+  # Dynamically extract the stable version from the branch name
+  extract-stable-version:
+    needs: [ check-results ]
+    uses: ./.github/workflows/extract-stable-version.yml
+    secrets: inherit
+
   deploy-camunda-docker-snapshot:
     name: Deploy snapshot Camunda Docker image
     needs: [ check-results, get-snapshot-docker-tag-and-concurrency-group]
