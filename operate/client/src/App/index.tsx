@@ -107,7 +107,7 @@ const routes = createRoutesFromElements(
 );
 
 const router = createBrowserRouter(routes, {
-  basename: window.clientConfig?.baseName ?? '/',
+  basename: import.meta.env.DEV ? '/' : (window.clientConfig?.baseName ?? '/'),
 });
 
 const App: React.FC = () => {
