@@ -10,7 +10,7 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import { getRolesByTenantId } from "src/utility/api/tenants";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
@@ -29,7 +29,8 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
     loading,
     success,
     reload,
-  } = useApi(getRolesByTenantId, {
+    ...paginationProps
+  } = usePaginatedApi(getRolesByTenantId, {
     tenantId: tenantId,
   });
 
@@ -84,10 +85,9 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
       <EntityList
         data={roles?.items}
         headers={[
-          { header: t("roleId"), key: "roleId" },
-          { header: t("roleName"), key: "name" },
+          { header: t("roleId"), key: "roleId", isSortable: true },
+          { header: t("roleName"), key: "name", isSortable: true },
         ]}
-        sortProperty="roleId"
         loading={loading}
         addEntityLabel={t("assignRole")}
         onAddEntity={openAssignModal}
@@ -100,6 +100,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
             onClick: unassignRole,
           },
         ]}
+        {...paginationProps}
       />
       {assignRolesModal}
       {unassignRoleModal}

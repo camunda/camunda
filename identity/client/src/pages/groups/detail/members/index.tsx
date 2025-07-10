@@ -26,7 +26,7 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
-  const { users, loading, success, reload } = useEnrichedUsers(
+  const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     searchMembersByGroup,
     {
       groupId,
@@ -78,12 +78,13 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   type MembersListHeaders = {
     header: string;
     key: UserKeys;
+    isSortable?: boolean;
   }[];
 
   const membersListHeaders: MembersListHeaders = isOIDC
-    ? [{ header: t("username"), key: "username" }]
+    ? [{ header: t("username"), key: "username", isSortable: true }]
     : [
-        { header: t("username"), key: "username" },
+        { header: t("username"), key: "username", isSortable: true },
         { header: t("name"), key: "name" },
         { header: t("email"), key: "email" },
       ];
@@ -93,7 +94,6 @@ const Members: FC<MembersProps> = ({ groupId }) => {
       <EntityList
         data={users}
         headers={membersListHeaders}
-        sortProperty="username"
         loading={loading}
         addEntityLabel={t("assignUser")}
         onAddEntity={openAssignModal}
@@ -106,6 +106,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
             onClick: unassignMember,
           },
         ]}
+        {...paginationProps}
       />
       {assignUsersModal}
       {unassignMemberModal}

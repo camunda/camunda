@@ -9,7 +9,7 @@
 import { FC } from "react";
 import { useNavigate, useParams } from "react-router";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { useApi } from "src/utility/api";
 import NotFound from "src/pages/not-found";
 import { OverflowMenu, OverflowMenuItem, Section } from "@carbon/react";
 import { StackPage } from "src/components/layout/Page";

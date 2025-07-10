@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, ReactNode, useMemo, useState } from "react";
+import { FC, ReactNode, useMemo } from "react";
 import {
   Button,
   DataTable,
@@ -25,19 +25,18 @@ import {
   TableSelectRow,
   TableToolbar,
   TableToolbarContent,
-  TableToolbarSearch,
   Pagination,
   Tooltip,
 } from "@carbon/react";
-import useDebounce from "react-debounced";
 import styled from "styled-components";
 import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
 import { Add, CarbonIconType } from "@carbon/react/icons";
 import { DocumentationLink } from "src/components/documentation";
-import LateLoading from "src/components/layout/LateLoading";
 import Flex from "src/components/layout/Flex";
 import useTranslate from "src/utility/localization";
 import { StyledTableContainer } from "./components";
+import { PageResult, SortConfig } from "src/utility/api";
+import SearchBar from "./SearchBar";
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
@@ -66,6 +65,7 @@ type HeaderData<D extends EntityData> = {
 export type DataTableHeader<D extends EntityData> = {
   header: string;
   key: Extract<keyof HeaderData<D>, string | ReactNode>;
+  isSortable?: boolean;
 };
 
 export type EntityListHeader<D extends EntityData> = DataTableHeader<D> & {
@@ -88,6 +88,7 @@ type EntityListProps<D extends EntityData> = {
   description?: ReactNode | string;
   documentationPath?: string;
   searchPlaceholder?: string;
+  searchKey?: string;
   data: D[] | null | undefined;
   headers: DataTableHeader<D>[];
   addEntityLabel?: string | null;
@@ -98,7 +99,6 @@ type EntityListProps<D extends EntityData> = {
     | [MenuItem<D>]
     | [MenuItem<D>, MenuItem<D>]
     | [TextMenuItem<D>, TextMenuItem<D>, TextMenuItem<D>];
-  sortProperty?: keyof D;
   loading?: boolean;
   isInsideModal?: boolean;
   title?: ReactNode;
@@ -109,11 +109,17 @@ type EntityListProps<D extends EntityData> = {
     isSelected: (selected: D) => boolean;
   };
   maxDisplayCellLength?: number;
+  setPageNumber?: (page: number) => void;
+  setPageSize?: (pageSize: number) => void;
+  page?:
+    | ({ pageNumber: number; pageSize: number } & Partial<PageResult>)
+    | undefined;
+  setSort?: (sort: SortConfig[] | undefined) => void;
+  setSearch?: (search: Record<string, string> | undefined) => void;
 };
 
 const MAX_ICON_ACTIONS = 2;
-const PAGINATION_HIDE_LIMIT = 15;
-const PAGINATION_MAX_PAGE_SIZE = 15;
+const PAGESIZES = [10, 20, 30, 40, 50];
 
 const EntityList = <D extends EntityData>({
   title,
@@ -127,16 +133,18 @@ const EntityList = <D extends EntityData>({
   onAddEntity,
   onEntityClick,
   menuItems,
-  sortProperty,
   loading,
   batchSelection,
   searchPlaceholder,
+  searchKey,
   maxDisplayCellLength = 50,
+  setPageNumber = () => {},
+  setPageSize = () => {},
+  page: pageData,
+  setSort = () => {},
+  setSearch = () => {},
 }: EntityListProps<D>): ReturnType<FC> => {
-  const debounce = useDebounce(300);
   const { t } = useTranslate("components");
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGINATION_MAX_PAGE_SIZE);
 
   const hasMenu = menuItems && menuItems.length > 0;
 
@@ -150,29 +158,8 @@ const EntityList = <D extends EntityData>({
       entityTableData.push({ ...dataset, id });
     });
 
-    const sortedEntityTableData =
-      entityTableData.length > 0
-        ? entityTableData.sort((a, b) => {
-            const propertyName =
-              sortProperty || Object.keys(entityTableData[0])[0];
-
-            if (a[propertyName] < b[propertyName]) {
-              return -1;
-            }
-            if (a[propertyName] > b[propertyName]) {
-              return 1;
-            }
-            return 0;
-          })
-        : entityTableData;
-
-    return [entityIndex, sortedEntityTableData];
-  }, [sortProperty, data]);
-
-  const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * pageSize;
-    return tableData.slice(startIndex, startIndex + pageSize);
-  }, [page, pageSize, tableData]);
+    return [entityIndex, entityTableData];
+  }, [data]);
 
   const areRowsEmpty = !tableData || tableData.length === 0;
 
@@ -212,58 +199,48 @@ const EntityList = <D extends EntityData>({
       };
 
   return (
-    <DataTable rows={paginatedData} headers={headers} isSortable>
-      {({
-        rows,
-        getHeaderProps,
-        getToolbarProps,
-        getTableProps,
-        onInputChange,
-      }) => (
+    <DataTable
+      rows={tableData}
+      headers={headers}
+      isSortable
+      sortRow={() => {
+        return 0;
+      }}
+    >
+      {({ rows, getHeaderProps, getToolbarProps, getTableProps }) => (
         <StyledTableContainer {...tableContainerProps}>
-          {loading && data !== null && <LateLoading />}
-          {loading && data === null ? (
-            <DataTableSkeleton
-              columnCount={headers.length}
-              headers={headers}
-              showHeader={false}
-              style={{ padding: 0 }}
-            />
-          ) : (
-            <>
-              <TableToolbar {...getToolbarProps()}>
-                <TableToolbarContent>
-                  <TableToolbarSearch
-                    placeholder={searchPlaceholder}
-                    persistent
-                    onChange={(e) => {
-                      if (e) {
-                        debounce(() => {
-                          onInputChange(e);
-                        });
-                      }
-                    }}
-                    onFocus={(event, handleExpand) => {
-                      handleExpand(event, true);
-                    }}
-                    onBlur={(event, handleExpand) => {
-                      const { value } = event.target;
-                      if (!value) {
-                        handleExpand(event, false);
-                      }
-                    }}
+          <>
+            <TableToolbar {...getToolbarProps()}>
+              <TableToolbarContent>
+                {searchKey && (
+                  <SearchBar
+                    searchKey={searchKey}
+                    searchPlaceholder={searchPlaceholder}
+                    onSearch={setSearch}
                   />
-                  {addEntityLabel && (
-                    <Button
-                      renderIcon={Add}
-                      onClick={onAddEntity}
-                      disabled={addEntityDisabled}
-                    >
-                      {addEntityLabel}
-                    </Button>
-                  )}
-                </TableToolbarContent>
-              </TableToolbar>
+                )}
+                {addEntityLabel && (
+                  <Button
+                    renderIcon={Add}
+                    onClick={onAddEntity}
+                    disabled={addEntityDisabled}
+                  >
+                    {addEntityLabel}
+                  </Button>
+                )}
+              </TableToolbarContent>
+            </TableToolbar>
+            {loading && (
+              <DataTableSkeleton
+                columnCount={headers.length}
+                headers={headers}
+                showHeader={false}
+                showToolbar={false}
+                style={{ padding: 0 }}
+              />
+            )}
+
+            {!loading && (
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
@@ -286,17 +263,44 @@ const EntityList = <D extends EntityData>({
                         }}
                       />
                     )}
-                    {headers.map((header) => (
-                      <TableHeader
-                        {...getHeaderProps({ header })}
-                        key={`applications-header-${header.header}`}
-                      >
-                        {header.header}
-                      </TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      return (
+                        <TableHeader
+                          {...getHeaderProps({
+                            header: header,
+                            isSortable: !!header.isSortable,
+                            onClick: (_, { sortHeaderKey, sortDirection }) => {
+                              if (sortDirection === "NONE") {
+                                setSort(undefined);
+                                return;
+                              }
+
+                              setSort([
+                                {
+                                  field: sortHeaderKey,
+                                  order: sortDirection,
+                                },
+                              ]);
+                            },
+                          })}
+                          key={`applications-header-${header.header}`}
+                        >
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                     {hasMenu && <TableExpandHeader />}
                   </TableRow>
                 </TableHead>
+                {areRowsEmpty && !loading && (
+                  <TableBody>
+                    <TableRow>
+                      <StyledTableCell colSpan={headers.length + 1}>
+                        {t("No results found")}
+                      </StyledTableCell>
+                    </TableRow>
+                  </TableBody>
+                )}
                 {!areRowsEmpty && (
                   <TableBody>
                     {rows.map(({ id: rowId, cells }) => (
@@ -419,30 +423,31 @@ const EntityList = <D extends EntityData>({
                   </TableBody>
                 )}
               </Table>
-            </>
-          )}
-          {tableData.length > PAGINATION_HIDE_LIMIT && (
-            <Pagination
-              backwardText={t("Previous page")}
-              forwardText={t("Next page")}
-              itemsPerPageText={t("Items per page:")}
-              page={page}
-              pageNumberText={t("Page Number")}
-              pageSize={pageSize}
-              pageSizes={[15, 20, 30, 40, 50]}
-              totalItems={tableData.length}
-              onChange={({
-                page,
-                pageSize,
-              }: {
-                page: number;
-                pageSize: number;
-              }) => {
-                setPage(page);
-                setPageSize(pageSize);
-              }}
-            />
-          )}
+            )}
+          </>
+          {!!pageData?.totalItems &&
+            pageData.totalItems > Math.min(...PAGESIZES) && (
+              <Pagination
+                backwardText={t("Previous page")}
+                forwardText={t("Next page")}
+                itemsPerPageText={t("Items per page:")}
+                page={pageData.pageNumber}
+                pageNumberText={t("Page Number")}
+                pageSize={pageData.pageSize}
+                pageSizes={PAGESIZES}
+                totalItems={pageData.totalItems}
+                onChange={({
+                  page,
+                  pageSize,
+                }: {
+                  page: number;
+                  pageSize: number;
+                }) => {
+                  setPageNumber(page);
+                  setPageSize(pageSize);
+                }}
+              />
+            )}
         </StyledTableContainer>
       )}
     </DataTable>

@@ -10,7 +10,7 @@ import { FC } from "react";
 import { Edit, TrashCan, Add } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { documentationHref } from "src/components/documentation";
@@ -28,7 +28,9 @@ const List: FC = () => {
     loading,
     reload,
     success,
-  } = useApi(searchMappingRule);
+    search,
+    ...paginationProps
+  } = usePaginatedApi(searchMappingRule);
 
   const [addMappingRule, addMappingRuleModal] = useModal(AddModal, reload);
   const [editMappingRule, editMappingRuleModal] = useEntityModal(
@@ -41,7 +43,7 @@ const List: FC = () => {
   );
 
   const shouldShowEmptyState =
-    success && !mappingRuleSearchResults?.items.length;
+    success && !search && !mappingRuleSearchResults?.items.length;
 
   const pageHeader = (
     <PageHeader
@@ -82,12 +84,15 @@ const List: FC = () => {
           mappingRuleSearchResults == null ? [] : mappingRuleSearchResults.items
         }
         headers={[
-          { header: t("mappingRuleId"), key: "mappingRuleId" },
-          { header: t("mappingRuleName"), key: "name" },
-          { header: t("claimName"), key: "claimName" },
-          { header: t("claimValue"), key: "claimValue" },
+          {
+            header: t("mappingRuleId"),
+            key: "mappingRuleId",
+            isSortable: true,
+          },
+          { header: t("mappingRuleName"), key: "name", isSortable: true },
+          { header: t("claimName"), key: "claimName", isSortable: true },
+          { header: t("claimValue"), key: "claimValue", isSortable: true },
         ]}
-        sortProperty="claimName"
         addEntityLabel={t("createMappingRule")}
         onAddEntity={addMappingRule}
         loading={loading}
@@ -104,6 +109,8 @@ const List: FC = () => {
             onClick: deleteMappingRule,
           },
         ]}
+        searchKey="mappingRuleId"
+        {...paginationProps}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification

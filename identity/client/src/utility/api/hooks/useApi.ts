@@ -20,7 +20,7 @@ export interface UseApiResult<R> {
   reset(): void;
 }
 
-type UseApiOptions = UseApiCallOptions & {
+export type UseApiOptions = UseApiCallOptions & {
   paramsValid?: boolean;
 };
 

@@ -7,30 +7,32 @@
  */
 
 import { FC } from "react";
-import { Loading } from "@carbon/react";
 import { Add, TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { Authorization, ResourceType } from "src/utility/api/authorizations";
-import { SearchResponse } from "src/utility/api";
+import { SearchResponse, usePagination } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "./modals/AddModal";
 import DeleteModal from "./modals/DeleteModal";
-import { LoadingWrapper } from "./components";
 
 type AuthorizationListProps = {
   tab: ResourceType;
   data: SearchResponse<Authorization> | null;
   loading: boolean;
   reload: () => unknown;
+  paginationProps: Omit<
+    ReturnType<typeof usePagination>,
+    "pageParams" | "resetPagination"
+  >;
 };
 
 const AuthorizationList: FC<AuthorizationListProps> = ({
   tab,
   data,
-  loading,
   reload,
+  paginationProps,
 }) => {
   const { t } = useTranslate("authorizations");
 
@@ -43,30 +45,22 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
     reload,
   );
 
-  if (loading)
-    return (
-      <LoadingWrapper>
-        <Loading withOverlay={false} />
-      </LoadingWrapper>
-    );
-
   return (
     <>
-      {data?.items?.length ? (
+      {data?.items?.length || paginationProps.search ? (
         <EntityList
           title={t(tab)}
-          data={data.items}
+          data={data?.items}
           headers={[
-            { header: t("ownerType"), key: "ownerType" },
-            { header: t("ownerId"), key: "ownerId" },
-            { header: t("resourceId"), key: "resourceId" },
+            { header: t("ownerType"), key: "ownerType", isSortable: true },
+            { header: t("ownerId"), key: "ownerId", isSortable: true },
+            { header: t("resourceId"), key: "resourceId", isSortable: true },
             { header: t("permissionTypes"), key: "permissionTypes" },
           ]}
           addEntityLabel={t("createAuthorization")}
           onAddEntity={() => {
             addAuthorization(tab);
           }}
-          loading={loading}
           menuItems={[
             {
               label: t("delete"),
@@ -76,6 +70,9 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
             },
           ]}
           maxDisplayCellLength={25}
+          searchPlaceholder={t("searchByOwnerId")}
+          searchKey="ownerId"
+          {...paginationProps}
         />
       ) : (
         <C3EmptyState
