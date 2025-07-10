@@ -122,6 +122,7 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new IntermediateThrowEventValidator());
     validators.add(new CompensationTaskValidator());
     validators.add(new CompensationEventDefinitionValidator());
+    validators.addAll(ExtensionElementDuplicationValidators.VALIDATORS);
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }
