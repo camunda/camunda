@@ -41,6 +41,7 @@ public class StateControllerImpl implements StateController {
   private final Path runtimeDirectory;
   private final ZeebeDbFactory zeebeDbFactory;
   private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
+  private final ToLongFunction<ZeebeDb> backupPositionSupplier;
   private final AtomixRecordEntrySupplier entrySupplier;
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ConcurrencyControl concurrencyControl;
@@ -54,12 +55,14 @@ public class StateControllerImpl implements StateController {
       final Path runtimeDirectory,
       final AtomixRecordEntrySupplier entrySupplier,
       final ToLongFunction<ZeebeDb> exporterPositionSupplier,
+      final ToLongFunction<ZeebeDb> backupPositionSupplier,
       final ConcurrencyControl concurrencyControl) {
     this.constructableSnapshotStore = requireNonNull(constructableSnapshotStore);
     this.runtimeDirectory = requireNonNull(runtimeDirectory);
     this.zeebeDbFactory = requireNonNull(zeebeDbFactory);
-    this.exporterPositionSupplier = requireNonNull(exporterPositionSupplier);
     this.entrySupplier = requireNonNull(entrySupplier);
+    this.exporterPositionSupplier = requireNonNull(exporterPositionSupplier);
+    this.backupPositionSupplier = backupPositionSupplier;
     this.concurrencyControl = requireNonNull(concurrencyControl);
 
     concurrencyControl.execute(this::scheduleDbMetricsExport);

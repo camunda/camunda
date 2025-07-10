@@ -235,6 +235,7 @@ public final class ZeebePartitionFactory {
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
         StatePositionSupplier::getHighestExportedPosition,
+        StatePositionSupplier::getHighestBackupPosition,
         concurrencyControl);
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.logstreams.state;
 
+import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.broker.exporter.stream.ExportersState;
 import io.camunda.zeebe.db.ZeebeDb;
 
@@ -20,5 +21,10 @@ public final class StatePositionSupplier {
     } else {
       return Long.MAX_VALUE;
     }
+  }
+
+  public static long getHighestBackupPosition(final ZeebeDb zeebeDb) {
+    final var checkpointState = new DbCheckpointState(zeebeDb, zeebeDb.createContext());
+    return checkpointState.getLatestBackupPosition();
   }
 }

@@ -46,6 +46,7 @@ public final class StateControllerImplTest {
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   private final MutableLong exporterPosition = new MutableLong(Long.MAX_VALUE);
+  private final MutableLong backupPosition = new MutableLong(Long.MAX_VALUE);
   private StateControllerImpl snapshotController;
   private FileBasedSnapshotStore store;
   private Path runtimeDirectory;
@@ -79,6 +80,7 @@ public final class StateControllerImplTest {
             runtimeDirectory,
             l -> atomixRecordEntrySupplier.get().getPreviousIndexedEntry(l),
             db -> exporterPosition.get(),
+            db -> backupPosition.get(),
             store);
 
     autoCloseableRule.manage(snapshotController);
