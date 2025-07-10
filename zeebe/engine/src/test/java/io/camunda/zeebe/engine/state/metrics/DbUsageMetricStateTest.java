@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.metrics;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -101,5 +103,36 @@ public class DbUsageMetricStateTest {
     assertThat(actual.getTenantEDIMap())
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L, "tenant1", 3L, "tenant2", 1L));
+  }
+
+  @Test
+  public void shouldRecordTUMetrics() {
+    // given
+    final var eventTime = InstantSource.system().millis();
+    when(mockClock.millis()).thenReturn(eventTime);
+    state.resetActiveBucket(1L);
+
+    // when
+    state.recordTUMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER, "assignee1");
+    state.recordTUMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER, "assignee1");
+    state.recordTUMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER, "assignee2");
+    state.recordTUMetric("tenant1", "assignee1");
+    state.recordTUMetric("tenant1", "assignee2");
+    state.recordTUMetric("tenant1", "assignee3");
+    state.recordTUMetric("tenant2", "assignee1");
+
+    // then
+    final var actual = state.getActiveBucket();
+    assertThat(actual.getFromTime()).isEqualTo(1L);
+    assertThat(actual.getToTime()).isEqualTo(1001L);
+    assertThat(actual.getTenantTUMap())
+        .containsExactlyInAnyOrderEntriesOf(
+            Map.of(
+                TenantOwned.DEFAULT_TENANT_IDENTIFIER,
+                Set.of("assignee1", "assignee2"),
+                "tenant1",
+                Set.of("assignee1", "assignee2", "assignee3"),
+                "tenant2",
+                Set.of("assignee1")));
   }
 }
