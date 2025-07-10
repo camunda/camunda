@@ -700,20 +700,22 @@ jobs:
           MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
           MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
 
-  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
-  get-snapshot-docker-version-tag:
-    uses: ./.github/workflows/snapshot-docker-version-tag.yml
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
+  get-snapshot-docker-tag-and-concurrency-group:
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
     secrets: inherit
+    with:
+      base_group_name: deploy-docker-snapshot
 
   deploy-docker-snapshot:
     name: Deploy snapshot Docker image
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
-    needs: [ test-summary, get-snapshot-docker-version-tag ]
+    needs: [ test-summary, get-snapshot-docker-tag-and-concurrency-group ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     concurrency:
-      group: deploy-docker-snapshot
+      group:  ${{ needs.get-snapshot-docker-tag-and-concurrency-group.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
@@ -729,7 +731,7 @@ jobs:
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
-          version: ${{ needs.get-snapshot-docker-version-tag.outputs.version_tag }}
+          version: ${{ needs.get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
