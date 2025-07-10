@@ -50,3 +50,10 @@ test.describe('API tests', () => {
     expect(response.status()).toBe(200);
   });
 });
+
+test.describe('Unauthorized API tests', () => {
+  test('Unauthorized user cannot access Tasklist API', async ({request}) => {
+    const response = await request.post('/v1/tasks/search');
+    expect(response.status()).toBe(401);
+  });
+});
