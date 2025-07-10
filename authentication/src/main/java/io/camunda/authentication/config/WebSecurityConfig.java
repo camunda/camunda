@@ -42,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -546,10 +545,7 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientService authorizedClientService,
         final SecurityConfiguration securityConfiguration) {
       return new OidcSecurityContextLogoutHandler(
-          clientRegistrationRepository,
-          authorizedClientService,
-          securityConfiguration,
-          new RestTemplateBuilder().build());
+          clientRegistrationRepository, authorizedClientService, securityConfiguration);
     }
 
     @Bean

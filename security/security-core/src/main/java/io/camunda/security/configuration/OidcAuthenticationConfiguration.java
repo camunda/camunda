@@ -14,8 +14,7 @@ import java.util.Set;
 
 public class OidcAuthenticationConfiguration {
   private String issuerUri;
-  private String revokeTokenUri;
-  private String sessionLogoutUrl;
+  private String issuerLogoutUrl;
   private String clientId;
   private String clientSecret;
   private String grantType = "authorization_code";
@@ -38,20 +37,12 @@ public class OidcAuthenticationConfiguration {
     this.issuerUri = issuerUri;
   }
 
-  public String getRevokeTokenUri() {
-    return revokeTokenUri;
+  public String getIssuerLogoutUrl() {
+    return issuerLogoutUrl;
   }
 
-  public void setRevokeTokenUri(final String revokeTokenUri) {
-    this.revokeTokenUri = revokeTokenUri;
-  }
-
-  public String getSessionLogoutUrl() {
-    return sessionLogoutUrl;
-  }
-
-  public void setSessionLogoutUrl(final String sessionLogoutUrl) {
-    this.sessionLogoutUrl = sessionLogoutUrl;
+  public void setIssuerLogoutUrl(final String issuerLogoutUrl) {
+    this.issuerLogoutUrl = issuerLogoutUrl;
   }
 
   public String getClientId() {
@@ -114,7 +105,7 @@ public class OidcAuthenticationConfiguration {
     return tokenUri;
   }
 
-  public void setTokenUri(String tokenUri) {
+  public void setTokenUri(final String tokenUri) {
     this.tokenUri = tokenUri;
   }
 

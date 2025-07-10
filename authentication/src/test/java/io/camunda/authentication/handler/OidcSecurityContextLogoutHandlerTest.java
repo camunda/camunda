@@ -9,11 +9,9 @@ package io.camunda.authentication.handler;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -25,7 +23,6 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,8 +43,6 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -76,10 +71,7 @@ class OidcSecurityContextLogoutHandlerTest {
   void setUp() {
     logoutHandler =
         new OidcSecurityContextLogoutHandler(
-            clientRegistrationRepository,
-            authorizedClientService,
-            securityConfiguration,
-            restTemplate);
+            clientRegistrationRepository, authorizedClientService, securityConfiguration);
 
     when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfig);
     when(authenticationConfig.getOidc()).thenReturn(oidcConfig);
@@ -96,68 +88,6 @@ class OidcSecurityContextLogoutHandlerTest {
     // Then
     verifyNoInteractions(session);
     verifyNoInteractions(authorizedClientService);
-  }
-
-  @Test
-  void shouldPerformNormalLogoutWithOAuth2Authentication() {
-    // Given
-    final String registrationId = "test-registration";
-    final String principalName = "test-user";
-    final String accessTokenValue = "access-token-123";
-    final String refreshTokenValue = "refresh-token-456";
-    final String revokeUri = "https://provider.com/revoke";
-    final String logoutUri = "https://provider.com/logout";
-    final String clientId = "test-client-id";
-    final String clientSecret = "test-client-secret";
-
-    final OAuth2User oauth2User =
-        new DefaultOAuth2User(Set.of(), java.util.Map.of("sub", principalName), "sub");
-
-    when(oauth2AuthenticationToken.getAuthorizedClientRegistrationId()).thenReturn(registrationId);
-    when(oauth2AuthenticationToken.getName()).thenReturn(principalName);
-    when(oauth2AuthenticationToken.getPrincipal()).thenReturn(oauth2User);
-
-    when(authorizedClientService.loadAuthorizedClient(registrationId, principalName))
-        .thenReturn(authorizedClient);
-
-    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
-    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
-    when(authorizedClient.getRefreshToken()).thenReturn(refreshToken);
-
-    when(clientRegistration.getClientId()).thenReturn(clientId);
-    when(clientRegistration.getClientSecret()).thenReturn(clientSecret);
-
-    when(accessToken.getTokenValue()).thenReturn(accessTokenValue);
-    when(refreshToken.getTokenValue()).thenReturn(refreshTokenValue);
-
-    when(oidcConfig.getRevokeTokenUri()).thenReturn(revokeUri);
-    when(oidcConfig.getSessionLogoutUrl()).thenReturn(logoutUri);
-
-    when(clientRegistrationRepository.findByRegistrationId(OidcClientRegistration.REGISTRATION_ID))
-        .thenReturn(clientRegistration);
-
-    when(restTemplate.postForEntity(eq(revokeUri), any(HttpEntity.class), eq(String.class)))
-        .thenReturn(new ResponseEntity<>("", HttpStatus.OK));
-
-    when(request.getSession(false)).thenReturn(session);
-
-    try (final MockedStatic<SecurityContextHolder> mockedSecurityContext =
-        mockStatic(SecurityContextHolder.class)) {
-
-      // When
-      logoutHandler.logout(request, response, oauth2AuthenticationToken);
-
-      // Then
-      verify(authorizedClientService).removeAuthorizedClient(registrationId, principalName);
-      verify(restTemplate, times(2))
-          .postForEntity(eq(revokeUri), any(HttpEntity.class), eq(String.class));
-      verify(session).invalidate();
-      mockedSecurityContext.verify(SecurityContextHolder::clearContext);
-      verify(request)
-          .setAttribute(
-              eq(OidcLogoutSuccessHandler.LOGOUT_SUCCESS_REDIRECT_URL_PROPERTY),
-              contains(logoutUri));
-    }
   }
 
   @Test
@@ -224,7 +154,6 @@ class OidcSecurityContextLogoutHandlerTest {
     when(clientRegistration.getClientSecret()).thenReturn("client-secret");
     when(accessToken.getTokenValue()).thenReturn("access-token");
     when(refreshToken.getTokenValue()).thenReturn("refresh-token");
-    when(oidcConfig.getRevokeTokenUri()).thenReturn(revokeUri);
     when(request.getSession(false)).thenReturn(session);
 
     when(restTemplate.postForEntity(eq(revokeUri), any(HttpEntity.class), eq(String.class)))
@@ -260,42 +189,6 @@ class OidcSecurityContextLogoutHandlerTest {
   }
 
   @Test
-  void shouldRevokeOnlyAccessTokenWithOnlyAccessToken() {
-    // Given
-    final String registrationId = "test-registration";
-    final String principalName = "test-user";
-    final String accessTokenValue = "access-token-123";
-    final String revokeUri = "https://provider.com/revoke";
-
-    when(oauth2AuthenticationToken.getAuthorizedClientRegistrationId()).thenReturn(registrationId);
-    when(oauth2AuthenticationToken.getName()).thenReturn(principalName);
-    when(authorizedClientService.loadAuthorizedClient(registrationId, principalName))
-        .thenReturn(authorizedClient);
-    when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
-    when(authorizedClient.getAccessToken()).thenReturn(accessToken);
-    when(authorizedClient.getRefreshToken()).thenReturn(null); // No refresh token
-    when(clientRegistration.getClientId()).thenReturn("client-id");
-    when(clientRegistration.getClientSecret()).thenReturn("client-secret");
-    when(accessToken.getTokenValue()).thenReturn(accessTokenValue);
-    when(oidcConfig.getRevokeTokenUri()).thenReturn(revokeUri);
-    when(request.getSession(false)).thenReturn(session);
-
-    when(restTemplate.postForEntity(eq(revokeUri), any(HttpEntity.class), eq(String.class)))
-        .thenReturn(new ResponseEntity<>("", HttpStatus.OK));
-
-    try (final MockedStatic<SecurityContextHolder> mockedSecurityContext =
-        mockStatic(SecurityContextHolder.class)) {
-
-      // When
-      logoutHandler.logout(request, response, oauth2AuthenticationToken);
-
-      // Then - should only revoke access token
-      verify(restTemplate, times(1))
-          .postForEntity(eq(revokeUri), any(HttpEntity.class), eq(String.class));
-    }
-  }
-
-  @Test
   void shouldSkipTokenRevocationWithNullRevokeUri() {
     // Given
     final String registrationId = "test-registration";
@@ -306,7 +199,6 @@ class OidcSecurityContextLogoutHandlerTest {
     when(authorizedClientService.loadAuthorizedClient(registrationId, principalName))
         .thenReturn(authorizedClient);
     when(authorizedClient.getClientRegistration()).thenReturn(clientRegistration);
-    when(oidcConfig.getRevokeTokenUri()).thenReturn(null); // No revoke URI configured
     when(request.getSession(false)).thenReturn(session);
 
     try (final MockedStatic<SecurityContextHolder> mockedSecurityContext =
@@ -339,7 +231,6 @@ class OidcSecurityContextLogoutHandlerTest {
     when(clientRegistration.getClientId()).thenReturn("client-id");
     when(clientRegistration.getClientSecret()).thenReturn("client-secret");
     when(accessToken.getTokenValue()).thenReturn("access-token");
-    when(oidcConfig.getRevokeTokenUri()).thenReturn(revokeUri);
     when(request.getSession(false)).thenReturn(session);
 
     when(restTemplate.postForEntity(eq(revokeUri), any(HttpEntity.class), eq(String.class)))
@@ -367,7 +258,7 @@ class OidcSecurityContextLogoutHandlerTest {
     when(clientRegistrationRepository.findByRegistrationId(OidcClientRegistration.REGISTRATION_ID))
         .thenReturn(clientRegistration);
     when(clientRegistration.getClientId()).thenReturn(clientId);
-    when(oidcConfig.getSessionLogoutUrl()).thenReturn(logoutUri);
+    when(oidcConfig.getIssuerLogoutUrl()).thenReturn(logoutUri);
     when(request.getSession(false)).thenReturn(session);
 
     try (final MockedStatic<SecurityContextHolder> mockedSecurityContext =

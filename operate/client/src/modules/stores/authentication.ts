@@ -184,9 +184,9 @@ class Authentication {
   handleLogout = async () => {
     const response = await logout();
 
-    if (!response.isSuccess) {
-      return new Error('Could not logout');
-    }
+    // if (!response.isSuccess) {
+    //   return new Error('Could not logout');
+    // }
 
     this.disableSession();
   };
