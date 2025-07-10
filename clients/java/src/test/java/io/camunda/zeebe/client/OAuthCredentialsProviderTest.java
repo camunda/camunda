@@ -17,6 +17,7 @@ package io.camunda.zeebe.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.spy;
@@ -91,6 +92,14 @@ public final class OAuthCredentialsProviderTest {
   private static final String ACCESS_TOKEN = "someToken";
   private static final String TOKEN_TYPE = "Bearer";
   private static final String CLIENT_ID = "client";
+  private static final String OAUTH_SSL_CLIENT_CERT_PASSWORD = "mstest";
+  private static final String OAUTH_SSL_CLIENT_CERT_KEY_PASSWORD = "mstest";
+  private static final String OAUTH_SSL_CLIENT_CERT_KEY_ALIAS = "testkey";
+  private static final String OAUTH_SSL_CLIENT_CERT_PATH =
+      io.camunda.client.OAuthCredentialsProviderTest.class
+          .getClassLoader()
+          .getResource("oauth/entra.jks")
+          .getPath();
 
   private final TestCredentialsApplier applier = new TestCredentialsApplier();
   private final WireMockRuntimeInfo wireMockInfo;
@@ -119,6 +128,31 @@ public final class OAuthCredentialsProviderTest {
             .credentialsCachePath(cacheFilePath.toString())
             .build();
     mockCredentials(ACCESS_TOKEN, null);
+
+    // when
+    provider.applyCredentials(applier);
+
+    // then
+    assertThat(applier.credentials)
+        .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+  }
+
+  @Test
+  void shouldRequestTokenAndAddToCallAssertion() throws IOException {
+    // given
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .clientAssertionKeystorePath(OAUTH_SSL_CLIENT_CERT_PATH)
+            .clientAssertionKeystorePassword(OAUTH_SSL_CLIENT_CERT_PASSWORD)
+            .clientAssertionKeystoreKeyPassword(OAUTH_SSL_CLIENT_CERT_KEY_PASSWORD)
+            .clientAssertionKeystoreKeyAlias(OAUTH_SSL_CLIENT_CERT_KEY_ALIAS)
+            .build();
+    mockCredentials(ACCESS_TOKEN, null, true);
 
     // when
     provider.applyCredentials(applier);
@@ -186,7 +220,7 @@ public final class OAuthCredentialsProviderTest {
             .authorizationServerUrl(tokenUrlString())
             .credentialsCachePath(cacheFilePath.toString())
             .build();
-    mockCredentialsWithResource(ACCESS_TOKEN, null, resource);
+    mockCredentialsWithResource(ACCESS_TOKEN, null, resource, false);
 
     // when
     provider.applyCredentials(applier);
@@ -386,14 +420,21 @@ public final class OAuthCredentialsProviderTest {
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
+  private void mockCredentials(
+      final String token, final String scope, final boolean withAssertion) {
+    mockCredentialsWithResource(token, scope, null, withAssertion);
+  }
+
   private void mockCredentials(final String token, final String scope) {
-    mockCredentialsWithResource(token, scope, null);
+    mockCredentialsWithResource(token, scope, null, false);
   }
 
   private void mockCredentialsWithResource(
-      final String token, final String scope, final String resource) {
+      final String token, final String scope, final String resource, final boolean withAssertion) {
+    final String assertionRegex = ".*client_assertion\\=[\\._\\-A-Za-z0-9]{400,500}.*";
+    final String assertionTypeRegex = ".*client_assertion_type.*";
+    final String clientSecret = ".*client_secret.*";
     final HashMap<String, String> map = new HashMap<>();
-    map.put("client_secret", SECRET);
     map.put("client_id", CLIENT_ID);
     map.put("audience", AUDIENCE);
     map.put("grant_type", "client_credentials");
@@ -431,7 +472,14 @@ public final class OAuthCredentialsProviderTest {
                   .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
                   .withHeader("Accept", equalTo("application/json"))
                   .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
-                  .withRequestBody(equalTo(encodedBody))
+                  .withRequestBody(
+                      withAssertion ? matching(assertionRegex) : notMatching(assertionRegex))
+                  .withRequestBody(
+                      withAssertion
+                          ? matching(assertionTypeRegex)
+                          : notMatching(assertionTypeRegex))
+                  .withRequestBody(
+                      !withAssertion ? matching(clientSecret) : notMatching(clientSecret))
                   .willReturn(
                       WireMock.aResponse().withBody(body).withFixedDelay(0).withStatus(200)));
     } catch (final JsonProcessingException e) {

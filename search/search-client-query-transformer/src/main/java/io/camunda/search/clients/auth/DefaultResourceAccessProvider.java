@@ -30,6 +30,11 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   @Override
   public <T> ResourceAccess resolveResourceAccess(
       final CamundaAuthentication authentication, final Authorization<T> requiredAuthorization) {
+    System.out.println("*** DefaultResourceAccessProvider.resolveResourceAccess()");
+    System.out.println("*** Authentication: " + authentication);
+    System.out.println("*** Authentication claims: " + authentication.claims());
+    System.out.println("*** RequiredAuthorization: " + requiredAuthorization);
+
     final var resultingAuthorization =
         new Authorization.Builder<>()
             .resourceType(requiredAuthorization.resourceType())
@@ -37,20 +42,26 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
     // fetch the authorization entities for the authenticated user
     final var securityContext = createSecurityContext(authentication, requiredAuthorization);
+    System.out.println("*** SecurityContext for AuthorizationChecker: " + securityContext);
+
     final var resourceIds = authorizationChecker.retrieveAuthorizedResourceIds(securityContext);
+    System.out.println("*** AuthorizationChecker returned resourceIds: " + resourceIds);
 
     if (resourceIds.contains(WILDCARD)) {
       // no authorization check required, user can access
       // the respective resources.
+      System.out.println("*** WILDCARD access granted");
       return ResourceAccess.wildcard(resultingAuthorization.resourceId(WILDCARD).build());
     }
 
     if (resourceIds.isEmpty()) {
+      System.out.println("*** ACCESS DENIED - no resource IDs found");
       return ResourceAccess.denied(resultingAuthorization.build());
     }
 
     final var authorizationWithResolvedResourceIds =
         resultingAuthorization.resourceIds(resourceIds).build();
+    System.out.println("*** ACCESS ALLOWED with resourceIds: " + resourceIds);
     return ResourceAccess.allowed(authorizationWithResolvedResourceIds);
   }
 

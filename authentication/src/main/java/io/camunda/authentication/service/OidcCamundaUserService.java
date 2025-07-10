@@ -25,6 +25,8 @@ import jakarta.json.Json;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +36,7 @@ import org.springframework.stereotype.Service;
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 @Profile("consolidated-auth")
 public class OidcCamundaUserService implements CamundaUserService {
+  private static final Logger LOG = LoggerFactory.getLogger(OidcCamundaUserService.class);
   private static final String SALES_PLAN_TYPE = "";
 
   // TODO: This needs to be set for SaaS purposes
@@ -53,7 +56,18 @@ public class OidcCamundaUserService implements CamundaUserService {
   }
 
   private Optional<CamundaOAuthPrincipal> getCamundaUser() {
-    return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    LOG.info("getCamundaUser() - Authentication: {}", auth);
+    if (auth != null) {
+      final Object principal = auth.getPrincipal();
+      LOG.info(
+          "getCamundaUser() - Principal type: {}",
+          principal != null ? principal.getClass().getName() : "null");
+      LOG.info(
+          "getCamundaUser() - Is CamundaOAuthPrincipal? {}",
+          principal instanceof CamundaOAuthPrincipal);
+    }
+    return Optional.ofNullable(auth)
         .map(Authentication::getPrincipal)
         .map(principal -> principal instanceof final CamundaOAuthPrincipal user ? user : null);
   }

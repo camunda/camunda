@@ -119,12 +119,32 @@ public class MappingRuleController {
 
   private ResponseEntity<MappingRuleSearchQueryResult> search(final MappingRuleQuery query) {
     try {
-      final var result =
-          mappingRuleServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
+      final var authentication = authenticationProvider.getCamundaAuthentication();
+      System.out.println("*** MappingRuleController.search() - Authentication: " + authentication);
+      System.out.println("*** Authentication class: " + authentication.getClass().getName());
+      System.out.println("*** Authentication username: " + authentication.authenticatedUsername());
+      System.out.println(
+          "*** Authentication authenticatedTenantIds: " + authentication.authenticatedTenantIds());
+      System.out.println(
+          "*** Authentication authenticatedClientId: " + authentication.authenticatedClientId());
+      System.out.println(
+          "*** Authentication authenticatedRoleIds: " + authentication.authenticatedRoleIds());
+      System.out.println(
+          "*** Authentication authenticatedMappingIds: "
+              + authentication.authenticatedMappingIds());
+      System.out.println(
+          "*** Authentication authenticatedGroupIds: " + authentication.authenticatedGroupIds());
+      System.out.println("*** Authentication claims: " + authentication.claims());
+
+      final var result = mappingRuleServices.withAuthentication(authentication).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
+      System.out.println(
+          "*** MappingRuleController.search() - Exception: "
+              + e.getClass().getName()
+              + ": "
+              + e.getMessage());
+      e.printStackTrace();
       return mapErrorToResponse(e);
     }
   }

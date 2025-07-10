@@ -412,6 +412,22 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.auth0</groupId>
+      <artifactId>mvc-auth-commons</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>javax.servlet-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>4.0.1</version>
+      <scope>compile</scope>
+    </dependency>
 
   </dependencies>
 
@@ -445,6 +461,8 @@
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
             <dep>org.springframework:spring-aspects</dep>
+            <dep>javax.servlet:javax.servlet-api</dep>
+            <dep>com.auth0:mvc-auth-commons</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies>
             <dependency>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dependency>

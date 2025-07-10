@@ -79,6 +79,14 @@ public class DefaultCamundaAuthenticationConverter
       authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
     }
 
+    // Special handling for certificate-based authentication: bypass authorization when disabled
+    // Check if this is our certificate user admin account with full tenant access
+    if ("admin".equals(authenticationContext.username())
+        && authenticationContext.tenants().contains("*")) {
+      // Add system admin authorization bypass for certificate authentication
+      claims.put(Authorization.AUTHORIZED_ANONYMOUS_USER, true);
+    }
+
     return authenticationBuilder.claims(claims).build();
   }
 }

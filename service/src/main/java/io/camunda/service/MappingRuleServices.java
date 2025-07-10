@@ -44,13 +44,17 @@ public class MappingRuleServices
 
   @Override
   public SearchQueryResult<MappingRuleEntity> search(final MappingRuleQuery query) {
+    System.out.println("*** MappingRuleServices.search() - Authentication: " + authentication);
+    System.out.println("*** MAPPING_RULE_READ_AUTHORIZATION: " + MAPPING_RULE_READ_AUTHORIZATION);
+
+    final var securityContext =
+        securityContextProvider.provideSecurityContext(
+            authentication, MAPPING_RULE_READ_AUTHORIZATION);
+    System.out.println("*** SecurityContext: " + securityContext);
+
     return executeSearchRequest(
         () ->
-            mappingRuleSearchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication, MAPPING_RULE_READ_AUTHORIZATION))
-                .searchMappingRules(query));
+            mappingRuleSearchClient.withSecurityContext(securityContext).searchMappingRules(query));
   }
 
   @Override

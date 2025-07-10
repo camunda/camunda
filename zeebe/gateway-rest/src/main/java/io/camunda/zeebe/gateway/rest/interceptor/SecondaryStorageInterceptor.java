@@ -35,16 +35,25 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
   public boolean preHandle(
       final HttpServletRequest request, final HttpServletResponse response, final Object handler) {
 
+    System.out.println(
+        "*** SecondaryStorageInterceptor.preHandle() - Request: " + request.getRequestURI());
+    System.out.println("*** Secondary storage disabled: " + secondaryStorageDisabled);
+
     if (handler instanceof final HandlerMethod handlerMethod) {
       final boolean requiresSecondaryStorage =
           handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)
               || handlerMethod.getBeanType().isAnnotationPresent(RequiresSecondaryStorage.class);
 
+      System.out.println("*** Handler: " + handlerMethod.getMethod().getName());
+      System.out.println("*** Requires secondary storage: " + requiresSecondaryStorage);
+
       if (requiresSecondaryStorage && secondaryStorageDisabled) {
+        System.out.println("*** THROWING SecondaryStorageUnavailableException!");
         throw new SecondaryStorageUnavailableException();
       }
     }
 
+    System.out.println("*** SecondaryStorageInterceptor allowing request");
     return true;
   }
 }

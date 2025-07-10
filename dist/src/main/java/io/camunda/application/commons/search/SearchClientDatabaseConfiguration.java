@@ -62,6 +62,7 @@ public class SearchClientDatabaseConfiguration {
   @ConditionalOnSecondaryStorageType(DatabaseConfig.ELASTICSEARCH)
   public ElasticsearchSearchClient elasticsearchSearchClient(
       final ConnectConfiguration configuration) {
+    System.out.println("*** CREATING ElasticsearchSearchClient - ELASTICSEARCH CONFIGURED ***");
     final var connector = new ElasticsearchConnector(configuration);
     final var elasticsearch = connector.createClient();
     return new ElasticsearchSearchClient(elasticsearch);
@@ -78,6 +79,7 @@ public class SearchClientDatabaseConfiguration {
   @Bean
   @ConditionalOnSecondaryStorageDisabled
   public NoDBSearchClientsProxy noDBSearchClientsProxy() {
+    System.out.println("*** CREATING NoDBSearchClientsProxy - SECONDARY STORAGE DISABLED ***");
     return new NoDBSearchClientsProxy();
   }
 
@@ -92,6 +94,7 @@ public class SearchClientDatabaseConfiguration {
   public CamundaSearchClients searchClients(
       final SearchClientReaders searchClientReaders,
       final List<ResourceAccessController> resourceAccessControllers) {
+    System.out.println("*** CREATING CamundaSearchClients - SECONDARY STORAGE ENABLED ***");
     return new CamundaSearchClients(
         searchClientReaders,
         new ResourceAccessDelegatingController(resourceAccessControllers),
