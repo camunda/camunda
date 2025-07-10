@@ -162,9 +162,15 @@ public class BatchOperationItemProvider {
         return Set.of();
       }
 
-      metrics.recordQueryAgainstSecondaryDatabase();
+      final ItemPage result;
+      try {
+        result = itemPageFetcher.fetchItems(filter, searchAfter, authentication);
+        metrics.recordQueryAgainstSecondaryDatabase();
+      } catch (final Exception e) {
+        metrics.recordFailedQueryAgainstSecondaryDatabase();
+        throw e;
+      }
 
-      final var result = itemPageFetcher.fetchItems(filter, searchAfter, authentication);
       items.addAll(result.items);
       searchAfter = result.searchAfter();
 
