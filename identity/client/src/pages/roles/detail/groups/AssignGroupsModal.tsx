@@ -17,6 +17,7 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignRoleGroup, Role } from "src/utility/api/roles";
+import { isInternalGroupsEnabled } from "src/configuration";
 
 const SelectedGroups = styled.div`
   margin-top: 0;
@@ -28,6 +29,7 @@ const AssignGroupsModal: FC<
   const { t, Translate } = useTranslate("roles");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
   const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
+  const [currentInputValue, setCurrentInputValue] = useState("");
 
   const {
     data: groupSearchResults,
@@ -38,15 +40,44 @@ const AssignGroupsModal: FC<
 
   const [callAssignGroup] = useApiCall(assignRoleGroup);
 
-  const unassignedGroups =
-    groupSearchResults?.items.filter(
+  const getDynamicGroup = (): Group | null => {
+    if (!isInternalGroupsEnabled || !currentInputValue.trim()) return null;
+
+    const trimmedValue = currentInputValue.trim();
+    const groupId = trimmedValue.replace(/\s+/g, "").toLowerCase();
+
+    const groupExists =
+      assignedGroups.some((group) => group.groupId === groupId) ||
+      selectedGroups.some((group) => group.groupId === groupId) ||
+      groupSearchResults?.items.some((group) => group.groupId === groupId);
+
+    if (groupExists) return null;
+
+    return {
+      groupId,
+      name: trimmedValue,
+    };
+  };
+
+  const dynamicGroup = getDynamicGroup();
+
+  const unassignedGroups = [
+    ...(dynamicGroup ? [dynamicGroup] : []),
+    ...(groupSearchResults?.items.filter(
       ({ groupId }) =>
         !assignedGroups.some((group) => group.groupId === groupId) &&
-        !selectedGroups.some((group) => group.groupId === groupId),
-    ) || [];
+        !selectedGroups.some((group) => group.groupId === groupId) &&
+        groupId.toLowerCase().includes(currentInputValue.toLowerCase()),
+    ) || []),
+  ];
+
+  const handleDropdownChange = (value: string) => {
+    setCurrentInputValue(value);
+  };
 
   const onSelectGroup = (group: Group) => {
     setSelectedGroups([...selectedGroups, group]);
+    setCurrentInputValue("");
   };
 
   const onUnselectGroup =
@@ -57,7 +88,7 @@ const AssignGroupsModal: FC<
       );
     };
 
-  const canSubmit = role && selectedGroups.length;
+  const canSubmit = role && selectedGroups.length && !loadingAssignGroup;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -80,6 +111,7 @@ const AssignGroupsModal: FC<
   useEffect(() => {
     if (open) {
       setSelectedGroups([]);
+      setCurrentInputValue("");
     }
   }, [open]);
 
@@ -122,6 +154,7 @@ const AssignGroupsModal: FC<
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByGroupId")}
         onSelect={onSelectGroup}
+        onChange={handleDropdownChange}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification
