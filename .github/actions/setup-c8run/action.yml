@@ -136,7 +136,7 @@ runs:
       if: ${{ inputs.source-build == 'true' }}
       working-directory: ./operate/client
       shell: bash
-      run: yarn
+      run: npm ci
 
     - name: Install node dependencies
       if: ${{ inputs.source-build == 'true' }}
