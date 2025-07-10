@@ -26,6 +26,7 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -46,6 +47,7 @@ import org.springframework.web.client.RestTemplate;
  */
 @Component
 @Scope(SCOPE_PROTOTYPE)
+@Profile("dev")
 public class StatefulRestTemplate extends RestTemplate {
 
   private static final String CSRF_TOKEN_HEADER_NAME = "X-CSRF-TOKEN";
