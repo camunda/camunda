@@ -106,7 +106,7 @@ public class GroupController {
   @CamundaPutMapping(
       path = "/{groupId}/clients/{clientId}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> assignApplicationToGroup(
+  public CompletableFuture<ResponseEntity<Object>> assignClientToGroup(
       @PathVariable final String groupId, @PathVariable final String clientId) {
     return RequestMapper.toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
