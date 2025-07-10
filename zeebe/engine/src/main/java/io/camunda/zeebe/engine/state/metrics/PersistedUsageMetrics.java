@@ -110,8 +110,10 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
 
   public PersistedUsageMetrics recordTU(final String tenantId, final String assignee) {
     final var tenantTUMap = getTenantTUMap();
-    tenantTUMap.computeIfAbsent(tenantId, k -> new HashSet<>()).add(assignee);
-    setTenantTUMap(tenantTUMap);
+    final boolean added = tenantTUMap.computeIfAbsent(tenantId, k -> new HashSet<>()).add(assignee);
+    if (added) {
+      setTenantTUMap(tenantTUMap);
+    }
     return this;
   }
 }
