@@ -21,11 +21,8 @@ vi.mock('modules/stores/notifications', () => ({
 }));
 
 describe('Cancel component', () => {
-  beforeEach(() => {
-    mockFetchCallHierarchy().withSuccess([]);
-  });
-
   it('should show notification on server error', async () => {
+    mockFetchCallHierarchy().withSuccess([]);
     mockCancelProcessInstance().withServerError();
 
     const {user} = render(<Cancel processInstanceKey="809213809132809" />, {
