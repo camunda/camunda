@@ -44,14 +44,14 @@ public class BatchOperationChunkExportHandler
   }
 
   private List<BatchOperationItemDbModel> mapItems(
-      final Collection<BatchOperationItemValue> items, final long batchOperationId) {
-    return items.stream().map(item -> mapItem(item, batchOperationId)).toList();
+      final Collection<BatchOperationItemValue> items, final long batchOperationKey) {
+    return items.stream().map(item -> mapItem(item, batchOperationKey)).toList();
   }
 
   private BatchOperationItemDbModel mapItem(
-      final BatchOperationItemValue value, final long batchOperationId) {
+      final BatchOperationItemValue value, final long batchOperationKey) {
     return new BatchOperationItemDbModel(
-        Long.toString(batchOperationId),
+        Long.toString(batchOperationKey),
         value.getItemKey(),
         value.getProcessInstanceKey(),
         BatchOperationItemState.ACTIVE,

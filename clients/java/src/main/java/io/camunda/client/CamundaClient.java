@@ -2286,14 +2286,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newBatchOperationGetRequest(batchOperationId)
+   *  .newBatchOperationGetRequest(batchOperationKey)
    *  .send();
    * </pre>
    *
-   * @param batchOperationId the key which identifies the corresponding batch operation
+   * @param batchOperationKey the key which identifies the corresponding batch operation
    * @return a builder for the request
    */
-  BatchOperationGetRequest newBatchOperationGetRequest(String batchOperationId);
+  BatchOperationGetRequest newBatchOperationGetRequest(String batchOperationKey);
 
   /**
    * Executes a search request to query batch operations.
@@ -2325,7 +2325,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder to configure and send the cancel batch operation command
    */
-  CancelBatchOperationStep1 newCancelBatchOperationCommand(String batchOperationId);
+  CancelBatchOperationStep1 newCancelBatchOperationCommand(String batchOperationKey);
 
   /**
    * Command to suspend a batch operation
@@ -2340,7 +2340,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder to configure and send the suspend batch operation command
    */
-  SuspendBatchOperationStep1 newSuspendBatchOperationCommand(String batchOperationId);
+  SuspendBatchOperationStep1 newSuspendBatchOperationCommand(String batchOperationKey);
 
   /**
    * Command to resume a batch operation
@@ -2355,7 +2355,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder to configure and send the resume batch operation command
    */
-  ResumeBatchOperationStep1 newResumeBatchOperationCommand(String batchOperationId);
+  ResumeBatchOperationStep1 newResumeBatchOperationCommand(String batchOperationKey);
 
   /**
    * Executes a search request to query batch operation items.

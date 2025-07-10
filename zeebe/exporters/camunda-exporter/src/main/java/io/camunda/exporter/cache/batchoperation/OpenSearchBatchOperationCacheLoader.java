@@ -33,8 +33,8 @@ public class OpenSearchBatchOperationCacheLoader
   }
 
   @Override
-  public CachedBatchOperationEntity load(final String batchOperationId) throws IOException {
-    final var idQuery = QueryBuilders.ids().values(batchOperationId).build();
+  public CachedBatchOperationEntity load(final String batchOperationKey) throws IOException {
+    final var idQuery = QueryBuilders.ids().values(batchOperationKey).build();
     final var sourceFilter =
         SourceConfigBuilders.filter()
             .includes(BatchOperationTemplate.ID, BatchOperationTemplate.TYPE)
@@ -52,7 +52,7 @@ public class OpenSearchBatchOperationCacheLoader
       final var entity = response.hits().hits().getFirst().source();
       return new CachedBatchOperationEntity(entity.getId(), entity.getType());
     } else {
-      LOG.debug("BatchOperation '{}' not found in OpenSearch", batchOperationId);
+      LOG.debug("BatchOperation '{}' not found in OpenSearch", batchOperationKey);
       return null;
     }
   }

@@ -61,7 +61,7 @@ public class BatchOperationIT {
         createAndSaveRandomBatchOperations(rdbmsService.createWriter(0), b -> b).getLast();
 
     final var searchResult =
-        rdbmsService.getBatchOperationReader().exists(batchOperation.batchOperationId());
+        rdbmsService.getBatchOperationReader().exists(batchOperation.batchOperationKey());
 
     assertThat(searchResult).isTrue();
   }
@@ -88,9 +88,9 @@ public class BatchOperationIT {
             writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null).operationsTotalCount(0));
 
     // when
-    insertBatchOperationsItems(writer, batchOperation.batchOperationId(), Set.of(nextKey()));
+    insertBatchOperationsItems(writer, batchOperation.batchOperationKey(), Set.of(nextKey()));
     insertBatchOperationsItems(
-        writer, batchOperation.batchOperationId(), Set.of(nextKey(), nextKey()));
+        writer, batchOperation.batchOperationKey(), Set.of(nextKey(), nextKey()));
 
     // then
     final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
@@ -104,7 +104,7 @@ public class BatchOperationIT {
 
     // and items are there
     final var updatedItems =
-        getBatchOperationItems(rdbmsService, batchOperation.batchOperationId());
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey());
     assertThat(updatedItems).isNotNull();
     assertThat(updatedItems.items()).hasSize(3);
     assertThat(updatedItems.items().stream().map(BatchOperationItemEntity::state))
@@ -127,14 +127,14 @@ public class BatchOperationIT {
                     .operationsCompletedCount(0));
 
     final var items =
-        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
     // when
     writer
         .getBatchOperationWriter()
         .updateItem(
             new BatchOperationItemDbModel(
-                batchOperation.batchOperationId(),
+                batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
                 BatchOperationItemState.COMPLETED,
@@ -154,7 +154,7 @@ public class BatchOperationIT {
 
     // and items have correct state
     final var updatedItems =
-        getBatchOperationItems(rdbmsService, batchOperation.batchOperationId()).items();
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey()).items();
     assertThat(updatedItems).isNotNull();
     assertThat(updatedItems).hasSize(2);
     final var firstItem =
@@ -187,14 +187,14 @@ public class BatchOperationIT {
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     final var items =
-        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
     // when
     writer
         .getBatchOperationWriter()
         .updateItem(
             new BatchOperationItemDbModel(
-                batchOperation.batchOperationId(),
+                batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
                 BatchOperationItemState.COMPLETED,
@@ -214,7 +214,7 @@ public class BatchOperationIT {
 
     // and only one item exists
     final var updatedItems =
-        getBatchOperationItems(rdbmsService, batchOperation.batchOperationId()).items();
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey()).items();
     assertThat(updatedItems).isNotNull();
     assertThat(updatedItems).hasSize(1);
     final var firstItem = updatedItems.getFirst();
@@ -240,14 +240,14 @@ public class BatchOperationIT {
                     .operationsFailedCount(0));
 
     final var items =
-        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
     // when
     writer
         .getBatchOperationWriter()
         .updateItem(
             new BatchOperationItemDbModel(
-                batchOperation.batchOperationId(),
+                batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
                 BatchOperationItemState.FAILED,
@@ -267,7 +267,7 @@ public class BatchOperationIT {
 
     // and items have correct state
     final var updatedItems =
-        getBatchOperationItems(rdbmsService, batchOperation.batchOperationId()).items();
+        getBatchOperationItems(rdbmsService, batchOperation.batchOperationKey()).items();
     assertThat(updatedItems).isNotNull();
     assertThat(updatedItems).hasSize(2);
     final var firstItem =
@@ -299,13 +299,13 @@ public class BatchOperationIT {
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     final var items =
-        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
     writer
         .getBatchOperationWriter()
         .updateItem(
             new BatchOperationItemDbModel(
-                batchOperation.batchOperationId(),
+                batchOperation.batchOperationKey(),
                 items.getFirst().itemKey(),
                 items.getFirst().processInstanceKey(),
                 BatchOperationItemState.COMPLETED,
@@ -314,7 +314,7 @@ public class BatchOperationIT {
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().cancel(batchOperation.batchOperationId(), endDate);
+    writer.getBatchOperationWriter().cancel(batchOperation.batchOperationKey(), endDate);
     writer.flush();
 
     // then
@@ -337,10 +337,10 @@ public class BatchOperationIT {
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
-    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
+    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
     // when
-    writer.getBatchOperationWriter().suspend(batchOperation.batchOperationId());
+    writer.getBatchOperationWriter().suspend(batchOperation.batchOperationKey());
     writer.flush();
 
     // then
@@ -361,13 +361,13 @@ public class BatchOperationIT {
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
-    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
+    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
-    writer.getBatchOperationWriter().suspend(batchOperation.batchOperationId());
+    writer.getBatchOperationWriter().suspend(batchOperation.batchOperationKey());
     writer.flush();
 
     // when
-    writer.getBatchOperationWriter().resume(batchOperation.batchOperationId());
+    writer.getBatchOperationWriter().resume(batchOperation.batchOperationKey());
     writer.flush();
 
     // then
@@ -388,11 +388,11 @@ public class BatchOperationIT {
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
-    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
+    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().finish(batchOperation.batchOperationId(), endDate);
+    writer.getBatchOperationWriter().finish(batchOperation.batchOperationKey(), endDate);
     writer.flush();
 
     // then
@@ -415,7 +415,7 @@ public class BatchOperationIT {
     final var batchOperation =
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
-    final String batchOperationKey = batchOperation.batchOperationId();
+    final String batchOperationKey = batchOperation.batchOperationKey();
     createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
 
     final var errors =
@@ -471,7 +471,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .batchOperationIds(batchOperation.batchOperationId())
+                        .batchOperationKeys(batchOperation.batchOperationKey())
                         .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -556,7 +556,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .batchOperationIds(batchOperation.batchOperationId())
+                        .batchOperationKeys(batchOperation.batchOperationKey())
                         .operationTypes(batchOperation.operationType())
                         .states(batchOperation.state().name())
                         .build(),
@@ -601,7 +601,7 @@ public class BatchOperationIT {
     final var batchOperation = createAndSaveBatchOperation(writer, b -> b);
 
     final var items =
-        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 10);
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 10);
 
     final var searchResult =
         rdbmsService
@@ -609,7 +609,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationItemQuery(
                     new BatchOperationItemFilter.Builder()
-                        .batchOperationIds(batchOperation.batchOperationId())
+                        .batchOperationKeys(batchOperation.batchOperationKey())
                         .build(),
                     BatchOperationItemSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -629,7 +629,7 @@ public class BatchOperationIT {
         createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
 
     final var items =
-        createSaveReturnRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 10);
+        createSaveReturnRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 10);
 
     final var itemKeys =
         items.stream().map(BatchOperationItemDbModel::itemKey).collect(Collectors.toList());
@@ -645,7 +645,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationItemQuery(
                     new BatchOperationItemFilter.Builder()
-                        .batchOperationIds(batchOperation.batchOperationId())
+                        .batchOperationKeys(batchOperation.batchOperationKey())
                         .itemKeyOperations(mapDefaultToOperation(itemKeys))
                         .processInstanceKeyOperations(mapDefaultToOperation(processInstanceKeys))
                         .states(BatchOperationState.ACTIVE.name())
@@ -663,9 +663,9 @@ public class BatchOperationIT {
     assertThat(instance).isNotNull();
     assertThat(instance)
         .usingRecursiveComparison()
-        .ignoringFields("batchOperationId", "startDate", "endDate")
+        .ignoringFields("batchOperationKey", "startDate", "endDate")
         .isEqualTo(batchOperation);
-    assertThat(instance.batchOperationId()).isEqualTo(batchOperation.batchOperationId());
+    assertThat(instance.batchOperationKey()).isEqualTo(batchOperation.batchOperationKey());
     assertThat(instance.startDate())
         .isCloseTo(batchOperation.startDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.endDate())
@@ -679,19 +679,21 @@ public class BatchOperationIT {
         .search(
             new BatchOperationQuery(
                 new BatchOperationFilter.Builder()
-                    .batchOperationIds(batchOperation.batchOperationId())
+                    .batchOperationKeys(batchOperation.batchOperationKey())
                     .build(),
                 BatchOperationSort.of(b -> b),
                 SearchQueryPage.of(b -> b)));
   }
 
   private static SearchQueryResult<BatchOperationItemEntity> getBatchOperationItems(
-      final RdbmsService rdbmsService, final String batchOperationId) {
+      final RdbmsService rdbmsService, final String batchOperationKey) {
     return rdbmsService
         .getBatchOperationItemReader()
         .search(
             new BatchOperationItemQuery(
-                new BatchOperationItemFilter.Builder().batchOperationIds(batchOperationId).build(),
+                new BatchOperationItemFilter.Builder()
+                    .batchOperationKeys(batchOperationKey)
+                    .build(),
                 BatchOperationItemSort.of(b -> b),
                 SearchQueryPage.of(b -> b)));
   }

@@ -35,11 +35,11 @@ public class BatchOperationItemSortIT {
   public static final Long PARTITION_ID = 0L;
 
   @TestTemplate
-  public void shouldSortByBatchOperationId(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByBatchOperationKey(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
-        b -> b.batchOperationId().asc(),
-        Comparator.comparing(BatchOperationItemEntity::batchOperationId));
+        b -> b.batchOperationKey().asc(),
+        Comparator.comparing(BatchOperationItemEntity::batchOperationKey));
   }
 
   @TestTemplate
@@ -76,14 +76,14 @@ public class BatchOperationItemSortIT {
 
     final var batchOperation = createAndSaveBatchOperation(rdbmsWriter, b -> b);
 
-    createAndSaveRandomBatchOperationItems(rdbmsWriter, batchOperation.batchOperationId(), 20);
+    createAndSaveRandomBatchOperationItems(rdbmsWriter, batchOperation.batchOperationKey(), 20);
 
     final var searchResult =
         reader
             .search(
                 new BatchOperationItemQuery(
                     new BatchOperationItemFilter.Builder()
-                        .batchOperationIds(batchOperation.batchOperationId())
+                        .batchOperationKeys(batchOperation.batchOperationKey())
                         .build(),
                     BatchOperationItemSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))

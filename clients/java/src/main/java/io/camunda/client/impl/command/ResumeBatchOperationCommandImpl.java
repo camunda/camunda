@@ -27,13 +27,13 @@ import org.apache.hc.client5.http.config.RequestConfig;
 /** Implementation of the command to resume a batch operation. */
 public final class ResumeBatchOperationCommandImpl implements ResumeBatchOperationStep1 {
 
-  private final String batchOperationOd;
+  private final String batchOperationKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public ResumeBatchOperationCommandImpl(
-      final HttpClient httpClient, final String batchOperationId) {
-    batchOperationOd = batchOperationId;
+      final HttpClient httpClient, final String batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
@@ -48,7 +48,7 @@ public final class ResumeBatchOperationCommandImpl implements ResumeBatchOperati
   public CamundaFuture<Void> send() {
     final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>();
     httpClient.put(
-        "/batch-operations/" + batchOperationOd + "/resumption",
+        "/batch-operations/" + batchOperationKey + "/resumption",
         null,
         httpRequestConfig.build(),
         result);

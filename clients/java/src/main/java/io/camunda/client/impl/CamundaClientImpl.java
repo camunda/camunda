@@ -1190,8 +1190,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public BatchOperationGetRequest newBatchOperationGetRequest(final String batchOperationId) {
-    return new BatchOperationGetRequestImpl(httpClient, batchOperationId);
+  public BatchOperationGetRequest newBatchOperationGetRequest(final String batchOperationKey) {
+    return new BatchOperationGetRequestImpl(httpClient, batchOperationKey);
   }
 
   @Override
@@ -1200,18 +1200,19 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CancelBatchOperationStep1 newCancelBatchOperationCommand(final String batchOperationId) {
-    return new CancelBatchOperationCommandImpl(httpClient, batchOperationId);
+  public CancelBatchOperationStep1 newCancelBatchOperationCommand(final String batchOperationKey) {
+    return new CancelBatchOperationCommandImpl(httpClient, batchOperationKey);
   }
 
   @Override
-  public SuspendBatchOperationStep1 newSuspendBatchOperationCommand(final String batchOperationId) {
-    return new SuspendBatchOperationCommandImpl(httpClient, batchOperationId);
+  public SuspendBatchOperationStep1 newSuspendBatchOperationCommand(
+      final String batchOperationKey) {
+    return new SuspendBatchOperationCommandImpl(httpClient, batchOperationKey);
   }
 
   @Override
-  public ResumeBatchOperationStep1 newResumeBatchOperationCommand(final String batchOperationId) {
-    return new ResumeBatchOperationCommandImpl(httpClient, batchOperationId);
+  public ResumeBatchOperationStep1 newResumeBatchOperationCommand(final String batchOperationKey) {
+    return new ResumeBatchOperationCommandImpl(httpClient, batchOperationKey);
   }
 
   @Override

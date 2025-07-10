@@ -88,18 +88,18 @@ public class BatchOperationCancelProcessInstanceTest {
             .filter(b -> b.variables(getScopedVariables(testScopeId)))
             .send()
             .join();
-    final var batchOperationId = result.getBatchOperationId();
+    final var batchOperationKey = result.getBatchOperationKey();
 
     // then
     assertThat(result).isNotNull();
 
     // and wait if batch has correct amount of items. (To fail fast if not)
     waitForBatchOperationWithCorrectTotalCount(
-        camundaClient, batchOperationId, activeProcessInstances.size());
+        camundaClient, batchOperationKey, activeProcessInstances.size());
 
     // and
     waitForBatchOperationCompleted(
-        camundaClient, batchOperationId, activeProcessInstances.size(), 0);
+        camundaClient, batchOperationKey, activeProcessInstances.size(), 0);
 
     // and
     final var activeKeys =
@@ -112,7 +112,7 @@ public class BatchOperationCancelProcessInstanceTest {
     final var itemsObj =
         camundaClient
             .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationId(batchOperationId))
+            .filter(f -> f.batchOperationKey(batchOperationKey))
             .send()
             .join();
     final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();
