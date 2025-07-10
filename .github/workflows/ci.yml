@@ -229,9 +229,8 @@ jobs:
       ZEEBE_EXPORTER_MODULES: "':zeebe-elasticsearch-exporter',':zeebe-opensearch-exporter',':camunda-exporter',':rdbms-exporter',':zeebe-exporter-api',':zeebe-exporter-common',':zeebe-exporter-test'"
       ZEEBE_BACKUP_MODULES: "':zeebe-backup',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3'"
       ZEEBE_DISTRIBUTED_MODULES: "':zeebe-atomix-cluster',':zeebe-atomix-utils',':zeebe-broker-client',':zeebe-cluster-config',':zeebe-journal',':zeebe-logstreams',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-transport'"
-      OPERATE_UT_MODULES: "':operate-common',':operate-importer-8_7',':operate-schema',':operate-webapp'"
-      OPTIMIZE_UT_MODULES: "':optimize-backend',':upgrade-optimize',':optimize-commons',':camunda-optimize'"
-      TASKLIST_UT_MODULES: "':tasklist-common',':tasklist-els-schema',':tasklist-importer',':tasklist-importer-common',':tasklist-webapp'"
+      GENERAL_UT_EXTRA_SKIP_MODULES: "camunda-exporter rdbms-exporter"
+      GENERAL_UT_DO_NOT_SKIP_MODULES: "zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-util operate-qa-data-generator operate-qa-it-tests operate-qa-backup-restore-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-qa-backup-restore-tests tasklist-test-coverage"
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions: { }
@@ -262,12 +261,58 @@ jobs:
       # shellcheck disabled because the list of modules needs to contain single quotes
       - name: Setup General UT Modules
         run: |
+          ### Get list of all modules in monorepo
+          # shellcheck disable=SC2016,SC2005,SC2006,SC2046
+          rawModuleList=$(echo $(./mvnw -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_GAV### ${project.artifactId}' | grep '###MODULE_GAV### ' | cut -f2 -d' '))
+
+          # Convert the module list string into an array
+          IFS=' ' read -ra items <<< "$rawModuleList"
+
+          # Initialize an empty array for filtered items
+          filtered_items=()
+
+          # Loop through each item and construct list of Operate, Optimize, Tasklist, and Zeebe modules. These modules will be removed
+          for item in "${items[@]}"; do
+            if [[ $item == *optimize* || $item == tasklist* || $item == operate* || $item == zeebe* ]]; then
+              filtered_items+=("$item")
+            fi
+          done
+
+          # these modules shouldn't be removed and need to be included for a successful run
+          doNotSkip="${{ needs.setup-unit-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}"
+
+          for i in "${!filtered_items[@]}"; do
+            word="${filtered_items[$i]}"
+            # shellcheck disable=SC1087
+            if [[ " $doNotSkip " =~ [[:space:]]$word[[:space:]] ]]; then
+              unset 'filtered_items[i]'  # Remove the module from the array
+            fi
+          done
+
+          # Join the filtered items back into a string
+          IFS=' '; modules="${filtered_items[*]}"
+
+          ### Add Extra modules to skip, these are not Zeebe/Operate/Tasklist/Optimize modules
+          modules+=" ${{ needs.setup-unit-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
+
+          ### Format with '-:<moduleName>'
+          # Initialize an empty array for formatted words
+          formatted_modules=()
+
+          # Loop through each word and format it
+          for module in $modules; do
+            formatted_modules+=("'-:$module'")
+          done
+
+          # Join the array into a comma-separated string
+          ut_modules=$(IFS=','; echo "${formatted_modules[*]}")
+
+          # Print the result
+          echo "ut_modules"
+
           # shellcheck disable=SC2086
-          CONCAT_MODULES="${{ needs.setup-unit-tests.outputs.ZEEBE_CORE_FEATURES_MODULES}},${{ needs.setup-unit-tests.outputs.ZEEBE_PROTOCOL_MODULES}},${{ needs.setup-unit-tests.outputs.ZEEBE_GATEWAY_MODULES}},${{ needs.setup-unit-tests.outputs.ZEEBE_EXPORTER_MODULES}},${{ needs.setup-unit-tests.outputs.ZEEBE_BACKUP_MODULES}},${{ needs.setup-unit-tests.outputs.ZEEBE_DISTRIBUTED_MODULES}},${{ needs.setup-unit-tests.outputs.OPERATE_UT_MODULES}},${{ needs.setup-unit-tests.outputs.OPTIMIZE_UT_MODULES}},${{ needs.setup-unit-tests.outputs.TASKLIST_UT_MODULES}}"
-          # shellcheck disable=SC2086
-          GENERAL_UT_MODULES=${CONCAT_MODULES//\':/\'-:}
-          # shellcheck disable=SC2086
-          echo GENERAL_UT_MODULES=$GENERAL_UT_MODULES >> $GITHUB_ENV
+          echo GENERAL_UT_MODULES=$ut_modules >> $GITHUB_ENV
+
       - name: Maven Test Build
         # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
         #
