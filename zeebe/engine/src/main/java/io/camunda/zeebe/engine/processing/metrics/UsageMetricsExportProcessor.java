@@ -23,7 +23,6 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -93,19 +92,19 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
             .setResetTime(record.getTimestamp());
 
     final var bucket = usageMetricState.getActiveBucket();
-    if (bucket != null) {
+    if (bucket == null) {
+      appendFollowUpEvent(eventRecord);
+      return;
+    }
+
+    final var isRPIMapEmpty = bucket.getTenantRPIMap().isEmpty();
+    final var isEDIMapEmpty = bucket.getTenantEDIMap().isEmpty();
+
+    if (!isRPIMapEmpty || !isEDIMapEmpty) {
       processMetricType(
-          bucket,
-          eventRecord,
-          EventType.RPI,
-          bucket.getTenantRPIMap(),
-          bucket.getTenantRPIMapValue());
+          bucket, eventRecord, EventType.RPI, isRPIMapEmpty, bucket.getTenantRPIMapValue());
       processMetricType(
-          bucket,
-          eventRecord,
-          EventType.EDI,
-          bucket.getTenantEDIMap(),
-          bucket.getTenantEDIMapValue());
+          bucket, eventRecord, EventType.EDI, isEDIMapEmpty, bucket.getTenantEDIMapValue());
     } else {
       appendFollowUpEvent(eventRecord);
     }
@@ -116,9 +115,9 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
       final PersistedUsageMetrics bucket,
       final UsageMetricRecord baseRecord,
       final EventType eventType,
-      final Map<?, ?> valuesMap,
+      final boolean valuesMapIsEmpty,
       final DirectBuffer valuesBuffer) {
-    if (!valuesMap.isEmpty()) {
+    if (!valuesMapIsEmpty) {
       final UsageMetricRecord clonedRecord = initializeEventRecord(baseRecord);
       enhanceEventRecord(clonedRecord, bucket, eventType, valuesBuffer);
       checkRecordLength(clonedRecord).forEach(this::appendFollowUpEvent);
@@ -135,11 +134,11 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
 
   /** Composes the event record with additional information. */
   private void enhanceEventRecord(
-      final UsageMetricRecord record,
+      final UsageMetricRecord usageMetricRecord,
       final PersistedUsageMetrics bucket,
       final EventType eventType,
       final DirectBuffer valuesBuffer) {
-    record
+    usageMetricRecord
         .setEventType(eventType)
         .setStartTime(bucket.getFromTime())
         .setEndTime(bucket.getToTime())
