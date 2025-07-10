@@ -165,12 +165,6 @@
       <artifactId>jackson-datatype-jdk8</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-core</artifactId>
-      <version>${version.aws-java-sdk}</version>
-    </dependency>
-
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>software.amazon.awssdk</groupId>

@@ -145,11 +145,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-core</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>http-client-spi</artifactId>
     </dependency>
@@ -157,11 +152,6 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>regions</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-sts</artifactId>
     </dependency>
 
     <dependency>
