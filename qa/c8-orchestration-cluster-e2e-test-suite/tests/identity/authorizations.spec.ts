@@ -48,10 +48,9 @@ test.describe.parallel('authorizations page', () => {
       ).toBeVisible({
         timeout: 60000,
       });
-    })
+    });
 
     await test.step('Remove authorization', async () => {
     })
   });
-
-})
+});
