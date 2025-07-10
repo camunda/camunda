@@ -7,11 +7,14 @@
  */
 package io.camunda.migration.identity.handler.sm;
 
+import static io.camunda.migration.identity.MigrationUtil.normalizeGroupID;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.dto.Client;
+import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -80,6 +83,8 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
                 "Tenant with ID '{}' already exists, skipping creation.", tenant.tenantId());
           }
           assignUsersToTenant(tenant.tenantId(), tenantId);
+          assignGroupsToTenant(tenant.tenantId(), tenantId);
+          assignClientsToTenant(tenant.tenantId(), tenantId);
         });
   }
 
@@ -135,6 +140,93 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
             logger.debug(
                 "User with ID '{}' already assigned to tenant '{}', skipping assignment.",
                 user.getUsername(),
+                normalizedTenantId);
+          }
+        });
+  }
+
+  private void assignGroupsToTenant(final String tenantId, final String normalizedTenantId) {
+    final List<Group> tenantGroups;
+    try {
+      tenantGroups = managementIdentityClient.fetchTenantGroups(tenantId);
+    } catch (final Exception e) {
+      if (!isNotImplementedError(e)) {
+        throw new MigrationException("Failed to fetch groups for tenant with ID: " + tenantId, e);
+      }
+      logger.warn("Group tenant endpoint is not available, skipping group assignment.");
+      return;
+    }
+    totalGroupAssignmentAttempts.set(tenantGroups.size());
+
+    tenantGroups.forEach(
+        group -> {
+          try {
+            final var normalizedGroupId = normalizeGroupID(group);
+            tenantService
+                .addMember(
+                    new TenantMemberRequest(
+                        normalizedTenantId, normalizedGroupId, EntityType.GROUP))
+                .join();
+            assignedGroupCount.incrementAndGet();
+            logger.debug(
+                "Group with name '{}' assigned to tenant '{}'.",
+                normalizedGroupId,
+                normalizedTenantId);
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new MigrationException(
+                  "Failed to assign group with name: "
+                      + group.name()
+                      + " to tenant: "
+                      + tenantId,
+                  e);
+            }
+            logger.debug(
+                "Group with name '{}' already assigned to tenant '{}', skipping assignment.",
+                group.name(),
+                normalizedTenantId);
+          }
+        });
+  }
+
+  public void assignClientsToTenant(final String tenantId, final String normalizedTenantId) {
+  final List<Client> tenantClients;
+    try {
+      tenantClients = managementIdentityClient.fetchTenantClients(tenantId);
+    } catch (final Exception e) {
+      if (!isNotImplementedError(e)) {
+        throw new MigrationException("Failed to fetch clients for tenant with ID: " + tenantId, e);
+      }
+      logger.warn("Client tenant endpoint is not available, skipping client assignment.");
+      return;
+    }
+    totalClientAssignmentAttempts.set(tenantClients.size());
+
+    tenantClients.forEach(
+        client -> {
+          try {
+            tenantService
+                .addMember(
+                    new TenantMemberRequest(
+                        normalizedTenantId, client.clientId(), EntityType.CLIENT))
+                .join();
+            assignedClientCount.incrementAndGet();
+            logger.debug(
+                "Client with ID '{}' assigned to tenant '{}'.",
+                client.clientId(),
+                normalizedTenantId);
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new MigrationException(
+                  "Failed to assign client with ID: "
+                      + client.clientId()
+                      + " to tenant: "
+                      + tenantId,
+                  e);
+            }
+            logger.debug(
+                "Client with ID '{}' already assigned to tenant '{}', skipping assignment.",
+                client.clientId(),
                 normalizedTenantId);
           }
         });

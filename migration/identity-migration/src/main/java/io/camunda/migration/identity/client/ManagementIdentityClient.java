@@ -26,8 +26,8 @@ public class ManagementIdentityClient {
   private static final String URL_PARAMS = "pageSize={0}";
   private static final String MIGRATION_TENANTS_ENDPOINT = "/api/tenants";
   private static final String MIGRATION_USER_TENANTS_ENDPOINT = "/api/tenant/{0}/users";
-  private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
-      "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
+  private static final String MIGRATION_GROUP_TENANTS_ENDPOINT = "/api/tenant/{0}/groups";
+  private static final String MIGRATION_CLIENT_TENANTS_ENDPOINT = "/api/tenant/{0}/applications";
   private static final String MIGRATION_GROUPS_ENDPOINT = "/api/groups?page={0}&organizationId={1}";
   private static final String MIGRATION_GROUPS_ROLES_ENDPOINT = "/api/groups/{0}/roles";
   private static final String MIGRATION_GROUPS_AUTHORISATIONS_ENDPOINT =
@@ -54,14 +54,10 @@ public class ManagementIdentityClient {
     this.organizationId = organizationId;
   }
 
-  public List<TenantMappingRule> fetchTenantMappingRules(final int pageSize) {
+  public List<Tenant> fetchTenants() {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(
-                    MIGRATION_MAPPING_RULE_ENDPOINT,
-                    TenantMappingRule[].class,
-                    pageSize,
-                    MappingRuleType.TENANT)))
+                restTemplate.getForObject(MIGRATION_TENANTS_ENDPOINT, Tenant[].class)))
         .toList();
   }
 
@@ -72,10 +68,19 @@ public class ManagementIdentityClient {
         .toList();
   }
 
-  public List<Tenant> fetchTenants() {
+  public List<Group> fetchTenantGroups(final String tenantId) {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(MIGRATION_TENANTS_ENDPOINT, Tenant[].class)))
+                restTemplate.getForObject(
+                    MIGRATION_GROUP_TENANTS_ENDPOINT, Group[].class, tenantId)))
+        .toList();
+  }
+
+  public List<Client> fetchTenantClients(final String tenantId) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_CLIENT_TENANTS_ENDPOINT, Client[].class, tenantId)))
         .toList();
   }
 
