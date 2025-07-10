@@ -16,13 +16,17 @@
 package io.camunda.zeebe.client.impl.oauth;
 
 import static java.lang.Math.toIntExact;
+import static java.util.UUID.randomUUID;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -33,7 +37,16 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.security.GeneralSecurityException;
+import java.security.KeyStore;
+import java.security.MessageDigest;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.util.Base64;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -50,6 +63,8 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final String HEADER_AUTH_KEY = "Authorization";
+  private static final String JWT_ASSERTION_TYPE =
+      "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
 
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -115,7 +130,13 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static String createParams(final OAuthCredentialsProviderBuilder builder) {
     final Map<String, String> payload = new HashMap<>();
     payload.put("client_id", builder.getClientId());
-    payload.put("client_secret", builder.getClientSecret());
+    if (builder.clientAssertionEnabled()) {
+      payload.put("client_assertion", getClientAssertion(builder));
+      payload.put("client_assertion_type", JWT_ASSERTION_TYPE);
+    } else {
+      payload.put("client_secret", builder.getClientSecret());
+    }
+
     payload.put("audience", builder.getAudience());
     payload.put("grant_type", "client_credentials");
     final String scope = builder.getScope();
@@ -126,6 +147,60 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     return payload.entrySet().stream()
         .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
         .collect(Collectors.joining("&"));
+  }
+
+  private static String getClientAssertion(final OAuthCredentialsProviderBuilder builder) {
+    final X509Certificate certificate;
+    final Algorithm algorithm;
+    try (final FileInputStream stream =
+        new FileInputStream(builder.getClientAssertionKeystorePath().toFile())) {
+      final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+      keyStore.load(stream, builder.getClientAssertionKeystorePassword().toCharArray());
+
+      final RSAPrivateKey privateKey =
+          (RSAPrivateKey)
+              keyStore.getKey(
+                  builder.getClientAssertionKeystoreKeyAlias(),
+                  builder.getClientAssertionKeystoreKeyPassword().toCharArray());
+      final X509Certificate keyStoreCertificate =
+          (X509Certificate) keyStore.getCertificate(builder.getClientAssertionKeystoreKeyAlias());
+      final RSAPublicKey publicKey = (RSAPublicKey) keyStoreCertificate.getPublicKey();
+
+      certificate =
+          (X509Certificate) keyStore.getCertificate(builder.getClientAssertionKeystoreKeyAlias());
+      algorithm = Algorithm.RSA256(publicKey, privateKey);
+    } catch (final IOException | GeneralSecurityException e) {
+      throw new RuntimeException("Failed to create client assertion", e);
+    }
+
+    final Date now = new Date();
+    final String x5t = generateX5tThumbprint(certificate);
+
+    final Map<String, Object> header = new HashMap<>();
+    header.put("alg", "RSA256");
+    header.put("typ", "JWT");
+    header.put("x5t", x5t);
+
+    return JWT.create()
+        .withHeader(header)
+        .withIssuer(builder.getClientId())
+        .withSubject(builder.getClientId())
+        .withAudience(builder.getAuthorizationServer().toString())
+        .withIssuedAt(now)
+        .withNotBefore(now)
+        .withExpiresAt(new Date(now.getTime() + 5 * 60 * 1000))
+        .withJWTId(randomUUID().toString())
+        .sign(algorithm);
+  }
+
+  private static String generateX5tThumbprint(final X509Certificate certificate) {
+    try {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-1");
+      final byte[] encoded = digest.digest(certificate.getEncoded());
+      return Base64.getUrlEncoder().withoutPadding().encodeToString(encoded);
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to generate x5t thumbprint", e);
+    }
   }
 
   private static String encode(final String param) {
