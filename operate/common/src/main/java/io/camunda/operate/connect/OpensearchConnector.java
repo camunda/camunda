@@ -68,7 +68,6 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.util.StringUtils;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
@@ -215,8 +214,7 @@ public class OpensearchConnector {
       LOGGER.info("AWS Credentials are disabled. Using basic auth.");
       return false;
     }
-    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
-    try {
+    try (final var credentialsProvider = DefaultCredentialsProvider.builder().build()) {
       credentialsProvider.resolveCredentials();
       LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
       return true;
