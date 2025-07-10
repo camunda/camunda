@@ -125,18 +125,13 @@ runs:
     - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
       if: ${{ inputs.source-build == 'true' }}
       with:
-        directory: ./operate/client
-
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-      if: ${{ inputs.source-build == 'true' }}
-      with:
         directory: identity/client
 
     - name: Install node dependencies
       if: ${{ inputs.source-build == 'true' }}
       working-directory: ./operate/client
       shell: bash
-      run: yarn
+      run: npm ci
 
     - name: Install node dependencies
       if: ${{ inputs.source-build == 'true' }}

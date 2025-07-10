@@ -133,6 +133,7 @@ jobs:
         id: build-operate-fe
         with:
           directory: ./operate/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         name: Build Tasklist Frontend
         id: build-tasklist-fe
