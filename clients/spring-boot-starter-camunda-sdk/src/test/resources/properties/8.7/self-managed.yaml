@@ -5,3 +5,4 @@ camunda:
       client-id: <your client id>
       client-secret: <your client secret>
       token-url: http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+      resource: https://api.example.com

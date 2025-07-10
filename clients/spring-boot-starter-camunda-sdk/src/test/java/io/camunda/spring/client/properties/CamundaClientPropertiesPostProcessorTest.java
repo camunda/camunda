@@ -1265,7 +1265,7 @@ public class CamundaClientPropertiesPostProcessorTest {
       }
 
       @SpringBootTest(
-          properties = "spring.config.location=classpath:properties/8.7/token-resource.yaml")
+          properties = "spring.config.location=classpath:properties/8.7/self-managed.yaml")
       @Nested
       class TokenResource {
         @Autowired CamundaClientProperties camundaClientProperties;
