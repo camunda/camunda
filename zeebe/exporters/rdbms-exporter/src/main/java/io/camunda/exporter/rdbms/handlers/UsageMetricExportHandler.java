@@ -53,15 +53,20 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
     final var value = record.getValue();
     final List<UsageMetricDbModel> list = new ArrayList<>();
     for (final Entry<String, Long> entry : value.getValues().entrySet()) {
-      final UsageMetricDbModel usageMetricDbModel =
-          new UsageMetricDbModel(
-              ID_PATTERN.formatted(record.getKey(), record.getPartitionId()),
-              DateUtil.toOffsetDateTime(value.getStartTime()),
-              entry.getKey(),
-              mapEventType(value.getEventType()),
-              entry.getValue(),
-              record.getPartitionId());
-      list.add(usageMetricDbModel);
+      final var eventType = mapEventType(value.getEventType());
+      if (eventType != null) {
+        final UsageMetricDbModel usageMetricDbModel =
+            new UsageMetricDbModel(
+                ID_PATTERN.formatted(record.getKey(), record.getPartitionId()),
+                DateUtil.toOffsetDateTime(value.getStartTime()),
+                entry.getKey(),
+                eventType,
+                entry.getValue(),
+                record.getPartitionId());
+        list.add(usageMetricDbModel);
+      } else {
+        LOGGER.warn("Unsupported event type: {}", value.getEventType());
+      }
     }
     return list;
   }
@@ -70,10 +75,7 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
     return switch (eventType) {
       case RPI -> RPI;
       case EDI -> EDI;
-      default -> {
-        LOGGER.warn("Unmapped event type: {}", eventType);
-        yield null;
-      }
+      default -> null;
     };
   }
 }
