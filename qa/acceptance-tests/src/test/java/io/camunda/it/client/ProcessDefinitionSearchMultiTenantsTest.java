@@ -7,12 +7,13 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.createTenant;
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.deployResourceForTenant;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.qa.util.auth.Authenticated;
@@ -20,7 +21,6 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.InitializationConfiguration;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -30,7 +30,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -49,7 +48,6 @@ public class ProcessDefinitionSearchMultiTenantsTest {
   private static final String TENANT_ID_1 = "tenant1";
   private static final String USERNAME_1 = "user1";
 
-  private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   private static final List<ProcessDefinitionTestContext> PROCESSES_IN_DEFAULT_TENANT =
       List.of(
           new ProcessDefinitionTestContext(
@@ -99,11 +97,10 @@ public class ProcessDefinitionSearchMultiTenantsTest {
     Stream.concat(PROCESSES_IN_DEFAULT_TENANT.stream(), PROCESSES_IN_TENANT_1.stream())
         .forEach(
             process ->
-                DEPLOYED_PROCESSES.addAll(
-                    deployResource(adminClient, process.resourceName(), process.tenantId())
-                        .getProcesses()));
+                deployResourceForTenant(adminClient, process.resourceName(), process.tenantId()));
 
-    waitForProcessesToBeDeployed();
+    waitForProcessesToBeDeployed(
+        adminClient, PROCESSES_IN_DEFAULT_TENANT.size() + PROCESSES_IN_TENANT_1.size());
   }
 
   @Test
@@ -275,68 +272,6 @@ public class ProcessDefinitionSearchMultiTenantsTest {
                     expectedProcessDefinitionsInTenant1.values().stream())
                 .sorted(comparator)
                 .toList());
-  }
-
-  private static DeploymentEvent deployResource(
-      final CamundaClient camundaClient, final String resourceName) {
-    return deployResource(camundaClient, resourceName, null);
-  }
-
-  private static DeploymentEvent deployResource(
-      final CamundaClient camundaClient, final String resourceName, final String tenantId) {
-    var command = camundaClient.newDeployResourceCommand().addResourceFromClasspath(resourceName);
-
-    if (tenantId != null) {
-      command = command.tenantId(tenantId);
-    }
-    return command.send().join();
-  }
-
-  private static void waitForProcessesToBeDeployed() throws InterruptedException {
-    Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofMinutes(5))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
-              assertThat(result.items().size()).isEqualTo(DEPLOYED_PROCESSES.size());
-
-              final var processDefinitionKey =
-                  camundaClient
-                      .newProcessDefinitionSearchRequest()
-                      .filter(f -> f.name("Process With Form"))
-                      .send()
-                      .join()
-                      .items()
-                      .get(0)
-                      .getProcessDefinitionKey();
-
-              final var resultForm =
-                  camundaClient
-                      .newProcessDefinitionGetFormRequest(processDefinitionKey)
-                      .send()
-                      .join();
-
-              assertThat(resultForm.getFormId().equals("test"));
-              assertEquals(2L, resultForm.getVersion());
-            });
-  }
-
-  public static void createTenant(
-      final CamundaClient client,
-      final String tenantId,
-      final String tenantName,
-      final String... usernames) {
-    client
-        .newCreateTenantCommand()
-        .tenantId(tenantId)
-        .name(tenantName)
-        .send()
-        .join()
-        .getTenantKey();
-    for (final var username : usernames) {
-      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
-    }
   }
 
   private Map<String, ProcessDefinitionTestContext> keepLatestVersionPerTenant(

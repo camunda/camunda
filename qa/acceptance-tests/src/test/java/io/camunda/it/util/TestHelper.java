@@ -142,6 +142,23 @@ public final class TestHelper {
         .join();
   }
 
+  public static void createTenant(
+      final CamundaClient client,
+      final String tenantId,
+      final String tenantName,
+      final String... usernames) {
+    client
+        .newCreateTenantCommand()
+        .tenantId(tenantId)
+        .name(tenantName)
+        .send()
+        .join()
+        .getTenantKey();
+    for (final var username : usernames) {
+      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
+    }
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId) {
     return camundaClient

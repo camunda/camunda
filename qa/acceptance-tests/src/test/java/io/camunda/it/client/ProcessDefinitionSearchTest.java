@@ -7,19 +7,18 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -29,7 +28,6 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -71,10 +69,9 @@ public class ProcessDefinitionSearchTest {
     PROCESSES_IN_DEFAULT_TENANT.forEach(
         process ->
             DEPLOYED_PROCESSES.addAll(
-                deployResource(adminClient, process.resourceName(), process.tenantId())
-                    .getProcesses()));
+                deployResource(adminClient, process.resourceName()).getProcesses()));
 
-    waitForProcessesToBeDeployed();
+    waitForProcessesToBeDeployed(adminClient, PROCESSES_IN_DEFAULT_TENANT.size());
   }
 
   @Test
@@ -279,8 +276,7 @@ public class ProcessDefinitionSearchTest {
   @Test
   void shouldRetrieveAllLatestProcessDefinitions() {
     // given
-    final var expectedProcessDefinitionInDefaultTenant =
-        keepLatestVersionPerTenant(PROCESSES_IN_DEFAULT_TENANT);
+    final var expectedProcessDefinitionInDefaultTenant = keepLatestProcessDefinitionVersions();
 
     // when
     final var result =
@@ -309,8 +305,7 @@ public class ProcessDefinitionSearchTest {
   @Test
   void shouldRetrieveAllLatestProcessDefinitionsWhenPaginated() {
     // given
-    final var expectedProcessDefinitionInDefaultTenant =
-        keepLatestVersionPerTenant(PROCESSES_IN_DEFAULT_TENANT);
+    final var expectedProcessDefinitionInDefaultTenant = keepLatestProcessDefinitionVersions();
     // when
     final var processDefinitions = new ArrayList<ProcessDefinition>();
     var endCursor = "";
@@ -373,8 +368,7 @@ public class ProcessDefinitionSearchTest {
       final Function<ProcessDefinitionSort, ProcessDefinitionSort> sort,
       final Comparator<ProcessDefinitionTestContext> comparator) {
     // given
-    final var expectedProcessDefinitionInDefaultTenant =
-        keepLatestVersionPerTenant(PROCESSES_IN_DEFAULT_TENANT);
+    final var expectedProcessDefinitionInDefaultTenant = keepLatestProcessDefinitionVersions();
 
     // when
     final var processDefinitions = new LinkedHashSet<ProcessDefinition>();
@@ -766,71 +760,8 @@ public class ProcessDefinitionSearchTest {
     assertThat(resultForm.getVersion()).isEqualTo(2L);
   }
 
-  private static DeploymentEvent deployResource(
-      final CamundaClient camundaClient, final String resourceName) {
-    return deployResource(camundaClient, resourceName, null);
-  }
-
-  private static DeploymentEvent deployResource(
-      final CamundaClient camundaClient, final String resourceName, final String tenantId) {
-    var command = camundaClient.newDeployResourceCommand().addResourceFromClasspath(resourceName);
-
-    if (tenantId != null) {
-      command = command.tenantId(tenantId);
-    }
-    return command.send().join();
-  }
-
-  private static void waitForProcessesToBeDeployed() throws InterruptedException {
-    Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofMinutes(5))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
-              assertThat(result.items().size()).isEqualTo(DEPLOYED_PROCESSES.size());
-
-              final var processDefinitionKey =
-                  camundaClient
-                      .newProcessDefinitionSearchRequest()
-                      .filter(f -> f.name("Process With Form"))
-                      .send()
-                      .join()
-                      .items()
-                      .get(0)
-                      .getProcessDefinitionKey();
-
-              final var resultForm =
-                  camundaClient
-                      .newProcessDefinitionGetFormRequest(processDefinitionKey)
-                      .send()
-                      .join();
-
-              assertThat(resultForm.getFormId().equals("test"));
-              assertEquals(2L, resultForm.getVersion());
-            });
-  }
-
-  public static void createTenant(
-      final CamundaClient client,
-      final String tenantId,
-      final String tenantName,
-      final String... usernames) {
-    client
-        .newCreateTenantCommand()
-        .tenantId(tenantId)
-        .name(tenantName)
-        .send()
-        .join()
-        .getTenantKey();
-    for (final var username : usernames) {
-      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
-    }
-  }
-
-  private Map<String, ProcessDefinitionTestContext> keepLatestVersionPerTenant(
-      final List<ProcessDefinitionTestContext> processesInDefaultTenant) {
-    return processesInDefaultTenant.stream()
+  private Map<String, ProcessDefinitionTestContext> keepLatestProcessDefinitionVersions() {
+    return PROCESSES_IN_DEFAULT_TENANT.stream()
         .collect(
             Collectors.toMap(
                 p -> p.processId, p -> p, (p1, p2) -> p1.version >= p2.version ? p1 : p2));
