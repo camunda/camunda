@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { isCamundaGroupsEnabled } from "src/configuration";
 import { SearchResponse } from "src/utility/api";
-import { useApiCall } from "src/utility/api/hooks";
+import { useApiCall, usePaginatedApiCall } from "src/utility/api/hooks";
 import { MemberGroup } from "src/utility/api/groups";
 import { ApiDefinition } from "src/utility/api/request";
 import { searchGroups, Group } from "src/utility/api/groups";
@@ -25,7 +25,8 @@ export function useEnrichedGroups<P>(
   apiDefinition: ApiDefinition<SearchResponse<MemberGroup>, P>,
   params: P,
 ): UseEnrichedGroupsResult {
-  const [callSearchMembers] = useApiCall(apiDefinition);
+  const [callSearchMembers, paginationProps] =
+    usePaginatedApiCall(apiDefinition);
   const [callSearchGroups] = useApiCall(searchGroups);
 
   const [groups, setGroups] = useState<Group[]>([]);
@@ -79,5 +80,6 @@ export function useEnrichedGroups<P>(
     loading,
     success,
     reload: fetch,
+    paginationProps,
   };
 }

@@ -26,12 +26,11 @@ type GroupsProps = {
 
 const Groups: FC<GroupsProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
-  const { groups, loading, success, reload } = useEnrichedGroups(
-    getGroupsByRoleId,
-    {
+
+  const { groups, loading, success, reload, paginationProps } =
+    useEnrichedGroups(getGroupsByRoleId, {
       roleId,
-    },
-  );
+    });
 
   const isGroupsEmpty = !groups || groups.length === 0;
   const [assignGroups, assignGroupsModal] = useEntityModal(
@@ -108,6 +107,7 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
             onClick: unassignGroup,
           },
         ]}
+        {...paginationProps}
       />
       {assignGroupsModal}
       {unassignGroupModal}

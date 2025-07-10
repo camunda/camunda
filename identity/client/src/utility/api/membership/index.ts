@@ -21,7 +21,8 @@ export type GetGroupMembersParams = {
 export const searchMembersByGroup: ApiDefinition<
   SearchResponse<MemberUser>,
   GetGroupMembersParams
-> = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/search`);
+> = ({ groupId, ...body }) =>
+  apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/search`, body);
 
 export type GetTenantMembersParams = {
   tenantId: string;
@@ -29,7 +30,8 @@ export type GetTenantMembersParams = {
 export const getMembersByTenantId: ApiDefinition<
   SearchResponse<MemberUser>,
   GetTenantMembersParams
-> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`);
+> = ({ tenantId, ...body }) =>
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`, body);
 
 export type GetRoleMembersParams = {
   roleId: string;
@@ -37,7 +39,8 @@ export type GetRoleMembersParams = {
 export const getMembersByRole: ApiDefinition<
   SearchResponse<MemberUser>,
   GetRoleMembersParams
-> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/users/search`);
+> = ({ roleId, ...body }) =>
+  apiPost(`${ROLES_ENDPOINT}/${roleId}/users/search`, body);
 
 type AssignGroupMemberParams = GetGroupMembersParams & { username: string };
 export const assignGroupMember: ApiDefinition<

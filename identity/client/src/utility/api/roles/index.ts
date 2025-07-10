@@ -16,6 +16,7 @@ import {
 import { SearchResponse } from "src/utility/api";
 import { Group } from "src/utility/api/groups";
 import { MappingRule } from "src/utility/api/mapping-rules";
+import { PageSearchParams } from "../hooks/usePagination";
 
 export const ROLES_ENDPOINT = "/roles";
 
@@ -25,8 +26,10 @@ export type Role = {
   description: string;
 };
 
-export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
-  apiPost(`${ROLES_ENDPOINT}/search`);
+export const searchRoles: ApiDefinition<
+  SearchResponse<Role>,
+  PageSearchParams
+> = (params) => apiPost(`${ROLES_ENDPOINT}/search`, params);
 
 type GetRoleParams = {
   roleId: string;
@@ -82,7 +85,8 @@ type GetRoleGroupsParams = {
 export const getGroupsByRoleId: ApiDefinition<
   SearchResponse<Group>,
   GetRoleGroupsParams
-> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/groups/search`);
+> = ({ roleId, ...body }) =>
+  apiPost(`${ROLES_ENDPOINT}/${roleId}/groups/search`, body);
 
 type AssignRoleGroupParams = GetRoleGroupsParams & Pick<Group, "groupId">;
 export const assignRoleGroup: ApiDefinition<
