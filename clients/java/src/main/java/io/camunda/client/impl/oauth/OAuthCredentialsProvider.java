@@ -295,8 +295,8 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     final String x5t = generateX5tThumbprint(certificate);
 
     final Map<String, Object> header = new HashMap<>();
-    header.put("alg", "RSA256");
-    header.put("typ", "JWT");
+    header.put("alg", ClientAssertionConstants.JWT_ALGORITHM_RS256);
+    header.put("typ", ClientAssertionConstants.JWT_TYPE);
     header.put("x5t", x5t);
 
     return JWT.create()

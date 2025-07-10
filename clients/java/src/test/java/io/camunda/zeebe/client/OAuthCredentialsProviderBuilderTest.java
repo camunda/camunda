@@ -39,8 +39,7 @@ public final class OAuthCredentialsProviderBuilderTest {
     // then
     assertThatCode(builder::build)
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageEndingWith(
-            String.format(OAuthCredentialsProviderBuilder.INVALID_ARGUMENT_MSG, "client id"));
+        .hasMessageEndingWith("Expected valid clientId but none was provided.");
   }
 
   @Test
@@ -55,7 +54,7 @@ public final class OAuthCredentialsProviderBuilderTest {
     assertThatCode(builder::build)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageEndingWith(
-            String.format(OAuthCredentialsProviderBuilder.INVALID_ARGUMENT_MSG, "client secret"));
+            "Either clientSecret or certificate-based authentication must be configured");
   }
 
   @Test

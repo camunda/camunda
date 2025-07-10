@@ -18,6 +18,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationHolder;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -34,10 +35,18 @@ public class DefaultCamundaAuthenticationProviderTest {
   @BeforeEach
   void setup() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    authenticationConverter = mock(CamundaAuthenticationConverter.class);
-    holder = mock(CamundaAuthenticationHolder.class);
+    // Use the @Mock annotated fields, don't create new instances
     authenticationProvider =
         new DefaultCamundaAuthenticationProvider(holder, authenticationConverter);
+
+    // Clear SecurityContext before each test to prevent test interference
+    SecurityContextHolder.clearContext();
+  }
+
+  @AfterEach
+  void cleanup() {
+    // Clear SecurityContext after each test to prevent test interference
+    SecurityContextHolder.clearContext();
   }
 
   @Test
@@ -66,6 +75,7 @@ public class DefaultCamundaAuthenticationProviderTest {
     final var mockAuthentication = mock(Authentication.class);
     when(mockAuthentication.getPrincipal()).thenReturn("foo");
     SecurityContextHolder.getContext().setAuthentication(mockAuthentication);
+    when(holder.get()).thenReturn(null); // No cached authentication
     when(authenticationConverter.convert(eq(mockAuthentication)))
         .thenReturn(expectedAuthentication);
 
@@ -86,6 +96,7 @@ public class DefaultCamundaAuthenticationProviderTest {
     final var mockAuthentication = mock(Authentication.class);
     when(mockAuthentication.getPrincipal()).thenReturn("foo");
     SecurityContextHolder.getContext().setAuthentication(mockAuthentication);
+    when(holder.get()).thenReturn(null); // No cached authentication
     when(authenticationConverter.convert(eq(mockAuthentication)))
         .thenReturn(expectedAuthentication);
 

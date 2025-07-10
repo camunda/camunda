@@ -32,6 +32,11 @@ public class OidcAuthenticationConfiguration {
   private String clientIdClaim;
   private String groupsClaim;
   private String organizationId;
+  // Certificate-based client authentication fields
+  private String clientAssertionKeystorePath;
+  private String clientAssertionKeystorePassword;
+  private String clientAssertionKeystoreKeyAlias;
+  private String clientAssertionKeystoreKeyPassword;
 
   public String getIssuerUri() {
     return issuerUri;
@@ -153,5 +158,45 @@ public class OidcAuthenticationConfiguration {
   public void setGroupsClaim(final String groupsClaim) {
     new OidcGroupsLoader(groupsClaim);
     this.groupsClaim = groupsClaim;
+  }
+
+  public String getClientAssertionKeystorePath() {
+    return clientAssertionKeystorePath;
+  }
+
+  public void setClientAssertionKeystorePath(final String clientAssertionKeystorePath) {
+    this.clientAssertionKeystorePath = clientAssertionKeystorePath;
+  }
+
+  public String getClientAssertionKeystorePassword() {
+    return clientAssertionKeystorePassword;
+  }
+
+  public void setClientAssertionKeystorePassword(final String clientAssertionKeystorePassword) {
+    this.clientAssertionKeystorePassword = clientAssertionKeystorePassword;
+  }
+
+  public String getClientAssertionKeystoreKeyAlias() {
+    return clientAssertionKeystoreKeyAlias;
+  }
+
+  public void setClientAssertionKeystoreKeyAlias(final String clientAssertionKeystoreKeyAlias) {
+    this.clientAssertionKeystoreKeyAlias = clientAssertionKeystoreKeyAlias;
+  }
+
+  public String getClientAssertionKeystoreKeyPassword() {
+    return clientAssertionKeystoreKeyPassword;
+  }
+
+  public void setClientAssertionKeystoreKeyPassword(
+      final String clientAssertionKeystoreKeyPassword) {
+    this.clientAssertionKeystoreKeyPassword = clientAssertionKeystoreKeyPassword;
+  }
+
+  public boolean isClientAssertionEnabled() {
+    return clientAssertionKeystorePath != null
+        && !clientAssertionKeystorePath.isEmpty()
+        && clientAssertionKeystorePassword != null
+        && !clientAssertionKeystorePassword.isEmpty();
   }
 }
