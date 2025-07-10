@@ -24,6 +24,11 @@ type AuthorizationListProps = {
   data: SearchResponse<Authorization> | null;
   loading: boolean;
   reload: () => unknown;
+  paginationProps: {
+    page?: { page: number; pageSize: number } & Partial<SearchResponse>;
+    setPage?: (page: number) => void;
+    setPageSize?: (pageSize: number) => void;
+  };
 };
 
 const AuthorizationList: FC<AuthorizationListProps> = ({
@@ -31,6 +36,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
   data,
   loading,
   reload,
+  paginationProps,
 }) => {
   const { t } = useTranslate("authorizations");
 
@@ -75,6 +81,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
               onClick: deleteAuthorization,
             },
           ]}
+          {...paginationProps}
         />
       ) : (
         <C3EmptyState

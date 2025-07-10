@@ -15,6 +15,7 @@ import {
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 import { Mapping } from "src/utility/api/mappings";
+import { PageSearchParams } from "../hooks/usePagination";
 
 export const ROLES_ENDPOINT = "/roles";
 
@@ -24,8 +25,10 @@ export type Role = {
   description: string;
 };
 
-export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
-  apiPost(`${ROLES_ENDPOINT}/search`);
+export const searchRoles: ApiDefinition<
+  SearchResponse<Role>,
+  PageSearchParams
+> = (params) => apiPost(`${ROLES_ENDPOINT}/search`, params);
 
 type GetRoleParams = {
   roleId: string;

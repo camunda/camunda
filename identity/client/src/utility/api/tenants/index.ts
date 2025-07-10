@@ -18,6 +18,7 @@ import { EntityData } from "src/components/entityList/EntityList";
 import { Group } from "src/utility/api/groups";
 import { Role } from "src/utility/api/roles";
 import { Mapping } from "src/utility/api/mappings";
+import { PageSearchParams } from "../hooks/usePagination";
 
 export const TENANTS_ENDPOINT = "/tenants";
 
@@ -28,8 +29,10 @@ export type Tenant = EntityData & {
   description: string;
 };
 
-export const searchTenant: ApiDefinition<SearchResponse<Tenant>> = () =>
-  apiPost(`${TENANTS_ENDPOINT}/search`);
+export const searchTenant: ApiDefinition<
+  SearchResponse<Tenant>,
+  PageSearchParams
+> = (params) => apiPost(`${TENANTS_ENDPOINT}/search`, params);
 
 type GetTenantParams = {
   tenantId?: string;

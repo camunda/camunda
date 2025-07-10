@@ -11,7 +11,7 @@ import { useNavigate } from "react-router";
 import { Add, Edit, TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import {
@@ -33,7 +33,8 @@ const List: FC = () => {
     loading,
     reload,
     success,
-  } = useApi(searchUser);
+    ...paginationProps
+  } = usePaginatedApi(searchUser);
   const [addUser, addUserModal] = useModal(AddModal, reload);
   const [editUser, editUserModal] = useEntityModal(EditModal, reload);
   const [deleteUser, deleteUserModal] = useEntityModal(DeleteModal, reload);
@@ -103,6 +104,7 @@ const List: FC = () => {
         onAddEntity={addUser}
         loading={loading}
         searchPlaceholder={t("searchByUsername")}
+        {...paginationProps}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification

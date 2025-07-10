@@ -9,7 +9,7 @@
 import { FC, useState } from "react";
 import { TabsVertical, Tab, TabPanels } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { useApi, usePaginatedApi } from "src/utility/api/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
 import {
   ResourceType,
@@ -27,9 +27,10 @@ import AuthorizationList from "./AuthorizationsList";
 const List: FC = () => {
   const { t } = useTranslate("authorizations");
   const [activeTab, setActiveTab] = useState<string>(ResourceType.APPLICATION);
-  const { data, loading, reload, success } = useApi(searchAuthorization, {
-    filter: { resourceType: activeTab },
-  });
+  const { data, loading, reload, success, ...paginationProps } =
+    usePaginatedApi(searchAuthorization, {
+      filter: { resourceType: activeTab },
+    });
 
   const authorizationTabs = Object.values(ResourceType);
 
@@ -56,6 +57,7 @@ const List: FC = () => {
                   data={data}
                   loading={loading}
                   reload={reload}
+                  paginationProps={paginationProps}
                 />
               </CustomTabPanel>
             ))}

@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import { PageSearchParams } from "../hooks/usePagination";
 import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 
@@ -25,12 +26,15 @@ type SearchUserParams = {
 
 export const searchUser: ApiDefinition<
   SearchResponse<User>,
-  SearchUserParams | undefined
-> = (filterParams) => {
-  const params = filterParams?.usernames
-    ? { filter: { username: { $in: filterParams.usernames } } }
+  Partial<SearchUserParams & PageSearchParams> | undefined
+> = (params) => {
+  const filters = params?.usernames
+    ? { filter: { username: { $in: params.usernames } } }
     : undefined;
-  return apiPost(`${USERS_ENDPOINT}/search`, params);
+
+  delete params?.usernames;
+
+  return apiPost(`${USERS_ENDPOINT}/search`, { ...params, ...filters });
 };
 
 type GetUserParams = {

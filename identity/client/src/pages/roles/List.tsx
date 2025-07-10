@@ -11,7 +11,7 @@ import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { useNavigate } from "react-router";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { useApi, usePaginatedApi } from "src/utility/api/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import { documentationHref } from "src/components/documentation";
@@ -24,7 +24,13 @@ import DeleteModal from "src/pages/roles/modals/DeleteModal";
 const List: FC = () => {
   const { t } = useTranslate("roles");
   const navigate = useNavigate();
-  const { data: roles, loading, reload, success } = useApi(searchRoles);
+  const {
+    data: roles,
+    loading,
+    reload,
+    success,
+    ...paginationProps
+  } = usePaginatedApi(searchRoles);
 
   const [addRole, addRoleModal] = useModal(AddModal, reload);
   const [deleteRole, deleteRoleModal] = useEntityModal(DeleteModal, reload);
@@ -78,6 +84,7 @@ const List: FC = () => {
             onClick: deleteRole,
           },
         ]}
+        {...paginationProps}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
