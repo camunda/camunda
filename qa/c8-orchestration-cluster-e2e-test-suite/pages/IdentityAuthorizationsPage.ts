@@ -55,7 +55,9 @@ export class IdentityAuthorizationsPage {
         name: 'Resource ID',
       });
     this.createAuthorizationAccessPermission = (name) =>
-      this.page.locator('label').filter({hasText: name});
+      this.createAuthorizationModal.getByRole('checkbox', {
+        name,
+      });
     this.createAuthorizationSubmitButton =
       this.createAuthorizationModal.getByRole('button', {
         name: 'Create authorization',
@@ -104,9 +106,7 @@ export class IdentityAuthorizationsPage {
   }
 
   async selectOwnerComboBox(owner: string): Promise<void> {
-    await this.createAuthorizationModal
-      .getByRole('option', {name: owner, exact: true})
-      .click();
+    await this.createAuthorizationOwnerOption(owner).click({timeout: 30000});
   }
 
   async clickAuthorizationResourceIdField(): Promise<void> {
@@ -117,9 +117,6 @@ export class IdentityAuthorizationsPage {
   }
 
   async fillAuthorizationResourceIdField(resourceId: string): Promise<void> {
-    await expect(this.createAuthorizationResourceIdField).toBeVisible({
-      timeout: 60000,
-    });
     await this.createAuthorizationResourceIdField.fill(resourceId, {
       timeout: 60000,
     });
@@ -132,12 +129,8 @@ export class IdentityAuthorizationsPage {
       this.createAuthorizationAccessPermission(permission),
     ).toBeVisible({timeout: 60000});
     await this.createAuthorizationAccessPermission(permission).click({
-      timeout: 60000,
+      force: true,
     });
-    await this.page
-      .locator('label')
-      .filter({hasText: permission})
-      .click({timeout: 60000});
   }
 
   async clickCreateAuthorizationButton(): Promise<void> {

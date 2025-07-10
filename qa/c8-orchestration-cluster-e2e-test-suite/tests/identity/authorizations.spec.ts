@@ -8,8 +8,8 @@
 
 import {test} from 'fixtures';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {waitForItemInList} from '../../utils/waitForItemInList';
 
 test.describe.parallel('authorizations page', () => {
   test.beforeEach(async ({page, loginPage}) => {
@@ -28,7 +28,6 @@ test.describe.parallel('authorizations page', () => {
   }) => {
     const userName = 'Test';
     await test.step('Add authorization', async () => {
-      //navigate to authorization menu > authorizations
       await identityAuthorizationsPage.clickAuthorizationsTab();
       await identityAuthorizationsPage.clickAuthorizationButton();
       await identityAuthorizationsPage.assertAuthorizationModalPresent();
@@ -37,20 +36,15 @@ test.describe.parallel('authorizations page', () => {
       await identityAuthorizationsPage.clickAuthorizationResourceIdField();
       await identityAuthorizationsPage.fillAuthorizationResourceIdField('*');
       await identityAuthorizationsPage.clickAuthorizationAccessPermissionCheckbox(
-        'Access',
+        'access',
       );
       await identityAuthorizationsPage.clickAuthorizationButtonInDialog();
-
-      //due to bug, fresh needed
-      await page.reload();
-      await expect(
+      await waitForItemInList(
+        page,
         page.getByText(`USER${userName}*ACCESS`).first(),
-      ).toBeVisible({
-        timeout: 60000,
-      });
+      );
     });
 
-    await test.step('Remove authorization', async () => {
-    })
+    await test.step('Remove authorization', async () => {});
   });
 });
