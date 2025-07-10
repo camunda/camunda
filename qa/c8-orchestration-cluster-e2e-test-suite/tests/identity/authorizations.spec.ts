@@ -55,7 +55,7 @@ test.describe.parallel('authorizations page', () => {
       // click delet authorization
 
       // expoect authorization to be removed
-      await identityAuthorizationsPage.clickDeleteAuthorizationButton(
-    })
+      // await identityAuthorizationsPage.clickDeleteAuthorizationButton(
+    });
   });
 });
