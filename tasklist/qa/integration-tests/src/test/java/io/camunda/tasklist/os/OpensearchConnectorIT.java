@@ -18,6 +18,7 @@ import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TestPlugin;
+import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -31,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -39,9 +39,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @SpringBootTest(
-    classes = {OpenSearchConnector.class, TasklistProperties.class, JacksonConfig.class},
+    classes = {
+      OpenSearchConnector.class,
+      TestTasklistPropertiesOverride.class,
+      JacksonConfig.class
+    },
     properties = TasklistProperties.PREFIX + ".database=opensearch")
-@EnableConfigurationProperties(TasklistProperties.class)
 public class OpensearchConnectorIT {
 
   private static final OpensearchContainer<?> OPENSEARCH_CONTAINER =

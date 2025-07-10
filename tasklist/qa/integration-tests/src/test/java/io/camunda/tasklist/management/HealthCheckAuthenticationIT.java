@@ -15,8 +15,8 @@ import static org.mockito.BDDMockito.given;
 
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.connect.ElasticsearchConnector;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.TasklistProfileServiceImpl;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
@@ -40,12 +40,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {
-      TasklistProperties.class,
       TestApplicationWithNoBeans.class,
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       TasklistProfileServiceImpl.class,
-      TasklistProperties.class,
+      TestTasklistPropertiesOverride.class,
       ElasticsearchConnector.class,
       JacksonConfig.class
     },
