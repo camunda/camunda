@@ -111,7 +111,7 @@ public class BatchOperationItemProvider {
 
   /**
    * Fetches the incident items based on the provided process instance filter for the given
-   * partitonId. This will return <b>ALL</b> incidents of the matching processInstances. The items
+   * partitionId. This will return <b>ALL</b> incidents of the matching processInstances. The items
    * are fetched sequentially in pages. Depending on the overall size of the result, this can cause
    * multiple queries to the secondary database.
    *
@@ -136,6 +136,17 @@ public class BatchOperationItemProvider {
         new ArrayList<>(processInstanceKeys), authentication, shouldAbort);
   }
 
+  /**
+   * Fetches the entity items based on the provided filter. The items are fetched sequentially in
+   * pages. Depending on the overall size of the result, this can cause multiple queries to the
+   * secondary database.
+   *
+   * @param itemPageFetcher the fetcher to use for fetching items
+   * @param filter the filter to use
+   * @param authentication the authentication to use
+   * @param shouldAbort if the process should be aborted
+   * @return a set of all found entity items
+   */
   private <F extends FilterBase> Set<Item> fetchEntityItems(
       final ItemPageFetcher<F> itemPageFetcher,
       final F filter,
@@ -168,6 +179,16 @@ public class BatchOperationItemProvider {
     return items;
   }
 
+  /**
+   * Fetches the incident items of the given process instance keys. The items are fetched in batches
+   * to avoid hitting the potential IN clause size limit of the database. Especially Oracle has a
+   * size limit of 1000 there.
+   *
+   * @param processInstanceKeys the process instance keys to fetch incidents for
+   * @param authentication the authentication to use
+   * @param shouldAbort if the process should be aborted
+   * @return a set of all found incident items
+   */
   private Set<Item> getIncidentItemsOfProcessInstanceKeys(
       final List<Long> processInstanceKeys,
       final CamundaAuthentication authentication,
@@ -192,6 +213,13 @@ public class BatchOperationItemProvider {
     return incidents;
   }
 
+  /**
+   * Internal abstraction to hold an item of a batch operation. This is used to represent an itemKey
+   * and it's related processInstanceKey.
+   *
+   * @param itemKey the key of the item
+   * @param processInstanceKey the key of the process instance this item belongs to
+   */
   public record Item(long itemKey, long processInstanceKey) {}
 
   /**

@@ -20,6 +20,13 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * A record value that represents a chunk of items for a batch operation. It contains a list of
+ * itemKeys and their related processInstanceKey.<br>
+ * <br>
+ * A Zeebe record has a limited size (default 4MB). To overcome this limitation for large batch
+ * operations, the total set of items is split into multiple chunk records.
+ */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationChunkRecordValue.Builder.class)
 public interface BatchOperationChunkRecordValue extends BatchOperationRelated, RecordValue {
