@@ -79,6 +79,72 @@ public class ClientsByGroupIntegrationTest {
         .hasMessageContaining("a group with this ID does not exist");
   }
 
+  @Test
+  void shouldUnassignClientFromGroup() {
+    // given
+    final var clientId = "clientId_toRemove";
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var groupName = UUID.randomUUID().toString();
+    final var description = UUID.randomUUID().toString();
+    createGroup(groupId, groupName, description);
+
+    camundaClient.newAssignClientToGroupCommand().clientId(clientId).groupId(groupId).send().join();
+
+    Awaitility.await("Client is assigned to the group")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final GroupClientSearchResult result =
+                  searchClientsByGroupId(
+                      camundaClient.getConfiguration().getRestAddress().toString(), groupId);
+              assertThat(result.getItems()).anyMatch(r -> clientId.equals(r.getClientId()));
+            });
+
+    // when
+    camundaClient
+        .newUnassignClientFromGroupCommand()
+        .clientId(clientId)
+        .groupId(groupId)
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Client is unassigned from the group")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final GroupClientSearchResult result =
+                  searchClientsByGroupId(
+                      camundaClient.getConfiguration().getRestAddress().toString(), groupId);
+              assertThat(result.getItems()).noneMatch(r -> clientId.equals(r.getClientId()));
+            });
+  }
+
+  @Test
+  void shouldRejectUnassigningIfClientIsNotAssignedToGroup() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var clientId = Strings.newRandomValidIdentityId();
+    camundaClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignClientFromGroupCommand()
+                    .clientId(clientId)
+                    .groupId(groupId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            "Expected to remove entity with ID '"
+                + clientId
+                + "' from group with ID '"
+                + groupId
+                + "', but the entity is not assigned to this group.");
+  }
+
   private static void createGroup(
       final String groupId, final String groupName, final String description) {
     camundaClient
