@@ -345,7 +345,7 @@ public class ZeebeClientCloudBuilderImpl
         Loggers.LOGGER.debug("Expected setting 'usePlaintext' to be 'false', but found 'true'.");
       }
       return builder
-          .audience(String.format("%s.%s.%s", clusterId, region, domain))
+          .audience(String.format("%s.%s", ZEEBE_DOMAIN_COMPONENT, domain))
           .clientId(clientId)
           .clientSecret(clientSecret)
           .authorizationServerUrl(String.format("https://login.cloud.%s/oauth/token", domain))
