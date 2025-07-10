@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
 import org.slf4j.Logger;
@@ -46,7 +47,34 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
             .schedulingService()
             .submitActor(snapshotStore, SchedulingHints.ioBound())
             .thenApply(v -> context.snapshotStore(snapshotStore), context.concurrencyControl());
+
     if (context.isInitializeFromSnapshot()) {
+      // Delete the persisted snapshot if the id is the same we "expect" when bootstrapping
+      // this may happen if the startup fails in later steps, but the snapshot was already
+      // persisted.
+      // It's not possible to persist the same snapshot twice, so we must delete it first
+      if (snapshotStore.getLatestSnapshot().isPresent()) {
+        final var latestSnapshot = snapshotStore.getLatestSnapshot().get();
+        final var isBootstrap =
+            FileBasedSnapshotId.ofFileName(latestSnapshot.getId())
+                .map(FileBasedSnapshotId::isForBootstrap)
+                .orElse(false);
+        if (isBootstrap) {
+          result =
+              result.andThen(
+                  ctx -> snapshotStore.delete().thenApply(empty -> ctx),
+                  context.concurrencyControl());
+        } else {
+          final var errorMessage =
+              "Snapshot {} is not for bootstrap, aborting bootstrap. Manual intervention is required to successfully bootstrap this partition. Verify why the snapshot is present and if it's safe to to do so please delete it."
+                  .formatted(latestSnapshot.getId());
+          result.andThen(
+              ctx ->
+                  CompletableActorFuture.completedExceptionally(
+                      new IllegalStateException(errorMessage)),
+              context.concurrencyControl());
+        }
+      }
       result =
           result
               .andThen(
