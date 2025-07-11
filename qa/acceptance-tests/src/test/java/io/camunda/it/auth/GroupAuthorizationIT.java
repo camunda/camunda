@@ -231,6 +231,67 @@ class GroupAuthorizationIT {
         .hasMessageContaining("403: 'Forbidden'");
   }
 
+  @Test
+  void unassignClientFromGroupShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignClientFromGroupCommand()
+                    .clientId("clientId")
+                    .groupId(GROUP_1.id())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void unassignClientFromGroupShouldUnassignClientIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // given
+    final String clientId = "clientId_toRemove";
+    camundaClient
+        .newAssignClientToGroupCommand()
+        .clientId(clientId)
+        .groupId(GROUP_1.id())
+        .send()
+        .join();
+
+    Awaitility.await("Client is assigned to the group")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final GroupClientSearchResult result =
+                  searchClients(
+                      camundaClient.getConfiguration().getRestAddress().toString(),
+                      ADMIN,
+                      GROUP_1.id());
+              assertThat(result.getItems()).anyMatch(r -> clientId.equals(r.getClientId()));
+            });
+
+    // when
+    camundaClient
+        .newUnassignClientFromGroupCommand()
+        .clientId(clientId)
+        .groupId(GROUP_1.id())
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Client is unassigned from the group")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final GroupClientSearchResult result =
+                  searchClients(
+                      camundaClient.getConfiguration().getRestAddress().toString(),
+                      ADMIN,
+                      GROUP_1.id());
+              assertThat(result.getItems()).noneMatch(r -> clientId.equals(r.getClientId()));
+            });
+  }
+
   // TODO once available, this test should use the client to make the request
   private static GroupClientSearchResult searchClients(
       final String restAddress, final String username, final String groupId)

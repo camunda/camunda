@@ -129,7 +129,7 @@ public class GroupController {
   }
 
   @CamundaDeleteMapping(path = "/{groupId}/clients/{clientId}")
-  public CompletableFuture<ResponseEntity<Object>> unassignApplicationFromGroup(
+  public CompletableFuture<ResponseEntity<Object>> unassignClientFromGroup(
       @PathVariable final String groupId, @PathVariable final String clientId) {
     return RequestMapper.toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);

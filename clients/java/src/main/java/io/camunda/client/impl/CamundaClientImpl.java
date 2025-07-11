@@ -77,6 +77,7 @@ import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
@@ -208,6 +209,7 @@ import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.SuspendBatchOperationCommandImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
+import io.camunda.client.impl.command.UnassignClientFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignMappingFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromClientCommandImpl;
@@ -1164,6 +1166,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AssignClientToGroupCommandStep1 newAssignClientToGroupCommand() {
     return new AssignClientToGroupCommandImpl(httpClient);
+  }
+
+  @Override
+  public UnassignClientFromGroupCommandStep1 newUnassignClientFromGroupCommand() {
+    return new UnassignClientFromGroupCommandImpl(httpClient);
   }
 
   @Override

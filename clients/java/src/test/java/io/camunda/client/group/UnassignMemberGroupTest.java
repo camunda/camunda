@@ -31,6 +31,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
   public static final String GROUP_ID = "groupId";
   public static final String USERNAME = "username";
   public static final String MAPPING_ID = "mappingId";
+  public static final String CLIENT_ID = "clientId";
 
   @Test
   void shouldUnassignUserFromGroup() {
@@ -259,5 +260,76 @@ public class UnassignMemberGroupTest extends ClientRestTest {
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be empty");
+  }
+
+  @Test
+  void shouldUnassignClientFromGroup() {
+    // when
+    client.newUnassignClientFromGroupCommand().clientId(CLIENT_ID).groupId(GROUP_ID).send().join();
+
+    // then
+    final String requestPath = RestGatewayService.getLastRequest().getUrl();
+    assertThat(requestPath)
+        .isEqualTo(REST_API_PATH + "/groups/" + GROUP_ID + "/clients/" + CLIENT_ID);
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyClientIdWhenUnassigningClientFromGroup() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignClientFromGroupCommand()
+                    .clientId("")
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("clientId must not be empty");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullClientIdWhenUnassigningClientFromGroup() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignClientFromGroupCommand()
+                    .clientId(null)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("clientId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyGroupIdWhenUnassigningClientFromGroup() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignClientFromGroupCommand()
+                    .clientId(CLIENT_ID)
+                    .groupId("")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullGroupIdWhenUnassigningClientFromGroup() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignClientFromGroupCommand()
+                    .clientId(CLIENT_ID)
+                    .groupId(null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
   }
 }
