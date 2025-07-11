@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {type V2InstanceMetadata, type V2MetaDataDto} from '../types';
+import {type V2MetaDataDto} from '../types';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {baseMetaData, TestWrapper} from './mocks';
 import {Details} from './index';

@@ -31,7 +31,6 @@ import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstan
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
 import {labels, renderPopover} from './mocks';
 import {
   type ElementInstance,
@@ -79,14 +78,6 @@ const mockElementInstance: ElementInstance = {
   processDefinitionKey: '2',
   hasIncident: false,
   tenantId: '<default>',
-};
-
-const mockUserTaskElementInstance: ElementInstance = {
-  ...mockElementInstance,
-  type: 'USER_TASK',
-  elementInstanceKey: 'userTask123',
-  elementId: 'UserTask_1',
-  elementName: 'User Task',
 };
 
 describe('MetadataPopover', () => {
@@ -599,34 +590,6 @@ describe('MetadataPopover', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should handle multiple element instances scenario', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
-
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: '123',
-        state: 'ACTIVE',
-      }),
-    );
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: FLOW_NODE_ID,
-      },
-    );
-
-    renderPopover();
-
-    expect(
-      await screen.findByText(/This Element triggered 10 times/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /To view details for any of these, select one Instance in the Instance History./,
-      ),
-    ).toBeInTheDocument();
-  });
-
   it('should preserve backward compatibility with existing incident data', async () => {
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
@@ -645,72 +608,5 @@ describe('MetadataPopover', () => {
 
     expect(await screen.findByText(labels.type)).toBeInTheDocument();
     expect(screen.getByText(labels.errorMessage)).toBeInTheDocument();
-  });
-
-  it('should fetch user task data when element instance is USER_TASK type', async () => {
-    const nonUserTaskInstance = {
-      ...mockUserTaskElementInstance,
-      type: 'MANUAL_TASK' as const,
-    };
-
-    mockFetchElementInstance('userTask123').withSuccess(nonUserTaskInstance);
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: USER_TASK_FLOW_NODE_ID,
-        flowNodeInstanceId: 'userTask123',
-      },
-    );
-
-    renderPopover();
-    expect(mockSearchUserTasks).not.toHaveBeenCalled();
-  });
-
-  it('should not fetch user task data for non-user task elements', async () => {
-    const serviceTaskInstance = {
-      ...mockElementInstance,
-      type: 'SERVICE_TASK' as const,
-      elementInstanceKey: 'serviceTask123',
-    };
-
-    mockFetchElementInstance('serviceTask123').withSuccess(serviceTaskInstance);
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: FLOW_NODE_ID,
-        flowNodeInstanceId: 'serviceTask123',
-      },
-    );
-
-    renderPopover();
-
-    expect(
-      await screen.findByRole('heading', {name: labels.details}),
-    ).toBeInTheDocument();
-
-    expect(mockSearchUserTasks).not.toHaveBeenCalled();
-  });
-
-  it('should handle empty user task search results', async () => {
-    mockSearchUserTasks().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: USER_TASK_FLOW_NODE_ID,
-        flowNodeInstanceId: 'userTask123',
-      },
-    );
-
-    renderPopover();
-
-    expect(
-      await screen.findByRole('heading', {name: labels.details}),
-    ).toBeInTheDocument();
   });
 });

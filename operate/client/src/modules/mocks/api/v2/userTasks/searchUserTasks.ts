@@ -8,7 +8,7 @@
 
 import {mockPostRequest} from '../../mockRequest';
 import {
-  QueryUserTasksResponseBody,
+  type QueryUserTasksResponseBody,
   endpoints,
 } from '@vzeta/camunda-api-zod-schemas';
 

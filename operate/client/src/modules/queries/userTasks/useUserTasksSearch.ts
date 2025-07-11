@@ -8,7 +8,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchUserTasks} from 'modules/api/v2/userTasks/searchUserTasks';
-import {QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas';
+import {type QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas';
 
 const USER_TASKS_SEARCH_QUERY_KEY = 'userTasksSearch';
 

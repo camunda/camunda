@@ -8,10 +8,10 @@
 
 import {
   endpoints,
-  QueryUserTasksResponseBody,
-  QueryUserTasksRequestBody,
+  type QueryUserTasksResponseBody,
+  type QueryUserTasksRequestBody,
 } from '@vzeta/camunda-api-zod-schemas';
-import {requestWithThrow, RequestResult} from 'modules/request';
+import {requestWithThrow, type RequestResult} from 'modules/request';
 
 const searchUserTasks = async (
   payload: QueryUserTasksRequestBody,
