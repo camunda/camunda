@@ -655,13 +655,23 @@ jobs:
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) and concurrency group based on branch name
+  utils-get-concurrency-group-for-maven-snapshot:
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      job_to_run: 'concurrency-group'
+      base_group_name: deploy-maven-snapshot
+
   deploy-snapshots:
     name: Deploy snapshot artifacts
-    needs: [ test-summary ]
+    needs: [ test-summary, utils-get-concurrency-group-for-maven-snapshot ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
-      group: deploy-maven-snapshot
+      group: ${{ needs.utils-get-concurrency-group-for-maven-snapshot.outputs.concurrency_group_name }}
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
