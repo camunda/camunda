@@ -19,7 +19,6 @@ import {mockServer} from 'modules/mock-server/node';
 import {writeToClipboard} from './writeToClipboard';
 import {http, HttpResponse} from 'msw';
 
-// Mock the writeToClipboard function
 vi.mock('./writeToClipboard', () => ({
   writeToClipboard: vi.fn(),
 }));
