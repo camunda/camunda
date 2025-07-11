@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
 import {getVariableLabel} from 'variables';
+import {Popover} from 'components';
 
 import ColumnSelection from './ColumnSelection';
 
@@ -180,7 +180,7 @@ it('should create section for count columns', () => {
     />
   );
 
-  expect(node.find('CollapsibleSection').prop('sectionKey')).toBe('counts');
+  expect(node.find(Popover.CollapsibleSection).prop('sectionKey')).toBe('counts');
   expect(node.find('ColumnSwitch').length).toBe(1);
   expect(node.find('ColumnSwitch').prop('label')).toBe('Incidents');
 });
