@@ -11,6 +11,7 @@ on:
       - main
       - stable/*
       - release-*
+      - dd-remove-dep-config
   pull_request: {}
   merge_group: {}
   workflow_dispatch: {}
