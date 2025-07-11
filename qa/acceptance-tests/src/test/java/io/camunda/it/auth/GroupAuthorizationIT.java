@@ -312,4 +312,11 @@ class GroupAuthorizationIT {
 
     return OBJECT_MAPPER.readValue(response.body(), GroupClientSearchResult.class);
   }
+
+  @Test
+  void getClientsByGroupShouldReturnNotFoundIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    final var roles = camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+    assertThat(roles.items().size()).isEqualTo(0);
+  }
 }
