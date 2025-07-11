@@ -114,7 +114,7 @@ public final class SearchQueryRequestMapper {
   private SearchQueryRequestMapper() {}
 
   public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
-      final String startTime, final String endTime) {
+      final String startTime, final String endTime, final boolean withTenants) {
     return getResult(
         validate(
             violations -> {
@@ -130,6 +130,7 @@ public final class SearchQueryRequestMapper {
                     new UsageMetricsFilter.Builder()
                         .startTime(toOffsetDateTime(startTime))
                         .endTime(toOffsetDateTime(endTime))
+                        .withTenants(withTenants)
                         .build())
                 .build());
   }
