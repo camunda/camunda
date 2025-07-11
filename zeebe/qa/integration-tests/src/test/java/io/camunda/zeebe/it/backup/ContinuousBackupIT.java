@@ -109,7 +109,7 @@ final class ContinuousBackupIT {
 
     // then - even after a new snapshot is taken, it's index is still the backup index
     partitionsActuator.takeSnapshot();
-    await("snapshot is taken but doesn't progress beyond initial position")
+    await("snapshot is taken with backup position")
         .untilAsserted(() -> assertThat(getSnapshotIndex()).isGreaterThan(0));
   }
 
