@@ -3428,7 +3428,7 @@ final class JsonSerializableToJsonTest {
   """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////////// UsageMetricRecord //////////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord rPI //////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "UsageMetricRecord",
@@ -3439,7 +3439,7 @@ final class JsonSerializableToJsonTest {
                     .setEventType(EventType.RPI)
                     .setStartTime(123L)
                     .setEndTime(124L)
-                    .setValues(USAGE_METRICS_MSGPACK),
+                    .setCounterValues(USAGE_METRICS_MSGPACK),
         """
       {
         "intervalType": "ACTIVE",
@@ -3447,7 +3447,8 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": 123,
         "endTime": 124,
-        "values": {"tenant1":5}
+        "counterValues": {"tenant1":5},
+        "setValues": {}
       }
       """
       },
@@ -3463,7 +3464,7 @@ final class JsonSerializableToJsonTest {
                     .setEventType(EventType.EDI)
                     .setStartTime(123L)
                     .setEndTime(124L)
-                    .setValues(USAGE_METRICS_MSGPACK),
+                    .setCounterValues(USAGE_METRICS_MSGPACK),
         """
       {
         "intervalType": "ACTIVE",
@@ -3471,7 +3472,8 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": 123,
         "endTime": 124,
-        "values": {"tenant1":5}
+        "counterValues": {"tenant1":5},
+        "setValues": {}
       }
       """
       },
@@ -3488,7 +3490,8 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": -1,
         "endTime": -1,
-        "values": {}
+        "counterValues": {},
+        "setValues": {}
       }
       """
       },
