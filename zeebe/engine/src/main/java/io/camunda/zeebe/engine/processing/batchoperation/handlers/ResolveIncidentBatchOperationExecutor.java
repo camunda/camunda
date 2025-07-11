@@ -32,8 +32,15 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
   }
 
   @Override
-  public void execute(final long itemKey, final PersistedBatchOperation batchOperation) {
-    final var incident = incidentState.getIncidentRecord(itemKey);
+  public void execute(final long incidentKey, final PersistedBatchOperation batchOperation) {
+    final var incident = incidentState.getIncidentRecord(incidentKey);
+    if (incident == null) {
+      // ok I admit it, this is a bit of a hack, but we need to provoke an IncidentIntent.REVOLVE
+      // rejection here, so we still append the resolve incident command
+      resolveIncident(incidentKey, batchOperation);
+      return;
+    }
+
     if (incidentState.isJobIncident(incident)) {
       LOGGER.trace("Increasing retries for job with key '{}'", incident.getJobKey());
       final var jobRecord = new JobRecord().setRetries(1);
@@ -41,10 +48,15 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
           incident.getJobKey(), JobIntent.UPDATE_RETRIES, jobRecord);
     }
 
-    LOGGER.trace("Resolving incident with key '{}'", itemKey);
+    LOGGER.trace("Resolving incident with key '{}'", incidentKey);
+    resolveIncident(incidentKey, batchOperation);
+  }
+
+  private void resolveIncident(
+      final long incidentKey, final PersistedBatchOperation batchOperation) {
     final var command = new IncidentRecord();
     commandWriter.appendFollowUpCommand(
-        itemKey,
+        incidentKey,
         IncidentIntent.RESOLVE,
         command,
         FollowUpCommandMetadata.of(
