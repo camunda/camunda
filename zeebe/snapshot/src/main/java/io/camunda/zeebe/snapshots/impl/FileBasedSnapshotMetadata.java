@@ -38,11 +38,6 @@ public record FileBasedSnapshotMetadata(
     return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, true);
   }
 
-  public FileBasedSnapshotMetadata notBootstrap() {
-    return new FileBasedSnapshotMetadata(
-        version, processedPosition, exportedPosition, lastFollowupEventPosition, false);
-  }
-
   public void encode(final OutputStream output) throws IOException {
     OBJECTMAPPER.writeValue(output, this);
   }
