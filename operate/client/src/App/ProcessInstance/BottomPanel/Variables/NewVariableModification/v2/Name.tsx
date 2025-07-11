@@ -20,6 +20,7 @@ import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
 import {useEffect, useRef} from 'react';
 import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
+import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {
   variableName: string;
@@ -33,6 +34,10 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
     useVariableFormFields(variableName);
   const selectedFlowNodeName = useSelectedFlowNodeName() || '';
   const inputRef = useRef<HTMLInputElement>(null);
+  const {data: variablesData} = useVariables();
+  const allVariables =
+    variablesData?.pages.flatMap((page) => (page.items ? page.items : [])) ??
+    [];
 
   useEffect(() => {
     inputRef?.current?.focus();
@@ -45,7 +50,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
         validate={mergeValidators(
           validateNameCharacters,
           validateModifiedNameComplete,
-          validateModifiedNameNotDuplicate,
+          validateModifiedNameNotDuplicate(allVariables),
         )}
         allowNull={false}
         parse={(value) => value}

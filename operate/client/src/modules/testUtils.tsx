@@ -13,7 +13,7 @@ import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstanc
 import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
 import type {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import type {BatchOperationDto} from './api/sharedTypes';
-import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessInstance, Variable} from '@vzeta/camunda-api-zod-schemas';
 import type {
   ProcessInstanceEntity,
   VariableEntity,
@@ -152,6 +152,20 @@ const createVariable = (
     hasActiveOperation: false,
     isFirst: false,
     sortValues: [name],
+    ...options,
+  };
+};
+
+const createVariableV2 = (options: Partial<Variable> = {}): Variable => {
+  const name = options.name ?? 'testVariableName';
+  return {
+    variableKey: `2251799813725337-${name}`,
+    name,
+    value: '1',
+    isTruncated: false,
+    tenantId: '<default>',
+    processInstanceKey: '2251799813725337',
+    scopeKey: '2251799813725337',
     ...options,
   };
 };
@@ -1211,6 +1225,7 @@ export const createEventSubProcessFlowNodeInstances = (
 
 export {
   createVariable,
+  createVariableV2,
   createBatchOperation,
   createUser,
   createProcessInstance,

@@ -32,7 +32,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('migration view', () => {
-  test(`initial migration view`, async ({page, processesPage}) => {
+  test('initial migration view', async ({page, processesPage}) => {
     await page.addInitScript(`() => {
       window.localStorage.setItem(
         'panelStates',

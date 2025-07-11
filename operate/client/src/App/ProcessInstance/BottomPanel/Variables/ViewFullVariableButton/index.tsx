@@ -13,7 +13,7 @@ import {Popup} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 
 type Props = {
-  onClick: () => Promise<string | null>;
+  onClick?: () => Promise<string | null>;
   variableName: string;
 };
 
@@ -34,7 +34,8 @@ const ViewFullVariableButton: React.FC<Props> = ({onClick, variableName}) => {
           tooltipPosition="left"
           onClick={async () => {
             setIsLoading(true);
-            setVariableValue(await onClick());
+            const result = onClick ? await onClick() : null;
+            setVariableValue(result ?? null);
             setIsLoading(false);
           }}
         />

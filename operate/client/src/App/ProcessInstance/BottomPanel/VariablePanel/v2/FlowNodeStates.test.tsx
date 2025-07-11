@@ -9,13 +9,13 @@
 import {VariablePanel} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -40,6 +40,7 @@ import {
   init as initFlowNodeSelection,
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 vi.mock('modules/stores/notifications', () => ({
@@ -56,7 +57,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -162,6 +162,18 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for a flow node that has only one running token on it', async () => {
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
       flowNodeInstanceId: '2251799813695856',
@@ -188,6 +200,18 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
@@ -342,6 +366,18 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     modificationsStore.enableModificationMode();
 
@@ -375,8 +411,8 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('The Flow Node has no Variables'),
-    ).not.toBeInTheDocument();
+      screen.getByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
 
     // one 'add token' modification is created
     act(() => {
@@ -413,6 +449,12 @@ describe('VariablePanel', () => {
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
@@ -450,6 +492,12 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     // select only one of the scopes
@@ -473,6 +521,12 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     // select new parent scope
@@ -526,6 +580,24 @@ describe('VariablePanel', () => {
       },
     });
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -545,6 +617,24 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 

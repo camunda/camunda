@@ -33,7 +33,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('processes page', () => {
-  test(`empty page`, async ({page, processesPage}) => {
+  test('empty page', async ({page, processesPage}) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'panelStates',
@@ -69,7 +69,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`error page`, async ({page, processesPage}) => {
+  test('error page', async ({page, processesPage}) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'panelStates',
@@ -103,7 +103,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`filled with data and one flow node selected`, async ({
+  test('filled with data and one flow node selected', async ({
     page,
     processesPage,
     processesPage: {filtersPanel},
@@ -135,7 +135,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`filled with data and operations panel expanded`, async ({
+  test('filled with data and operations panel expanded', async ({
     page,
     processesPage,
   }) => {
@@ -173,7 +173,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`optional filters visible (part 1)`, async ({
+  test('optional filters visible (part 1)', async ({
     page,
     processesPage,
     processesPage: {filtersPanel},
@@ -213,7 +213,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`optional filters visible (part 2)`, async ({
+  test('optional filters visible (part 2)', async ({
     page,
     processesPage,
     processesPage: {filtersPanel},
@@ -253,7 +253,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`data table toolbar visible`, async ({page, processesPage}) => {
+  test('data table toolbar visible', async ({page, processesPage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -277,7 +277,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`filled with data and active batchOperationId filter`, async ({
+  test('filled with data and active batchOperationId filter', async ({
     page,
     processesPage,
     processesPage: {filtersPanel},
@@ -311,7 +311,7 @@ test.describe('processes page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`filled with data, active batchOperationId filter and error message expanded`, async ({
+  test('filled with data, active batchOperationId filter and error message expanded', async ({
     page,
     processesPage,
     processesPage: {filtersPanel},

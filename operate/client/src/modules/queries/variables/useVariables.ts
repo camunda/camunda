@@ -6,37 +6,72 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, type UseQueryResult} from '@tanstack/react-query';
-import type {
-  QueryVariablesRequestBody,
-  QueryVariablesResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
-import type {RequestError} from 'modules/request';
+import {type QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
+import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {getScopeId} from 'modules/utils/variables';
+import {useDisplayStatus} from 'modules/hooks/variables';
 
+const MAX_VARIABLES_PER_REQUEST = 50;
 const VARIABLES_SEARCH_QUERY_KEY = 'variablesSearch';
 
-function getQueryKey(payload: QueryVariablesRequestBody) {
-  return [VARIABLES_SEARCH_QUERY_KEY, ...Object.values(payload)];
-}
-
-function useVariables<T = QueryVariablesResponseBody>(
-  payload: QueryVariablesRequestBody,
-  select?: (data: QueryVariablesResponseBody) => T,
-): UseQueryResult<T, RequestError> {
-  return useQuery({
-    queryKey: getQueryKey(payload),
-    queryFn: async () => {
-      const {response, error} = await searchVariables(payload);
+function useVariables(options?: {refetchInterval?: number | false}) {
+  const {processInstanceId = ''} = useProcessInstancePageParams();
+  const scopeId = getScopeId();
+  const {refetchInterval = false} = options ?? {};
+  const result = useInfiniteQuery({
+    queryKey: [VARIABLES_SEARCH_QUERY_KEY, processInstanceId, scopeId],
+    queryFn: async ({pageParam = 0}) => {
+      const {response, error} = await searchVariables({
+        filter: {
+          processInstanceKey: {$eq: processInstanceId},
+          scopeKey: {$eq: scopeId ?? undefined},
+        },
+        page: {
+          from: pageParam,
+          limit: MAX_VARIABLES_PER_REQUEST,
+        },
+        sort: [{field: 'name', order: 'asc'}],
+      });
 
       if (response !== null) {
-        return response;
+        return response as QueryVariablesResponseBody;
       }
 
       throw error;
     },
-    select,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      const {page} = lastPage;
+      const nextPage = lastPageParam + MAX_VARIABLES_PER_REQUEST;
+
+      if (nextPage > page.totalItems) {
+        return null;
+      }
+
+      return nextPage;
+    },
+    getPreviousPageParam: (_, __, firstPageParam) => {
+      const previousPage = firstPageParam - MAX_VARIABLES_PER_REQUEST;
+
+      if (previousPage < 0) {
+        return null;
+      }
+
+      return previousPage;
+    },
+    refetchInterval,
   });
+  const displayStatus = useDisplayStatus({
+    isLoading: result.isLoading,
+    isFetchingNextPage: result.isFetchingNextPage,
+    isFetchingPreviousPage: result.isFetchingPreviousPage,
+    isFetched: result.isFetched,
+    isError: result.isError,
+    hasItems: (result.data?.pages?.[0]?.items?.length ?? 0) > 0,
+  });
+  return Object.assign(result, {displayStatus});
 }
 
 export {VARIABLES_SEARCH_QUERY_KEY, useVariables};

@@ -12,7 +12,7 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {
   validateNameCharacters,
   validateModifiedNameComplete,
-  validateModifiedNameNotDuplicate,
+  validateModifiedNameNotDuplicateDeprecated,
 } from '../validators';
 import {TextInputField} from 'modules/components/TextInputField';
 import {useVariableFormFields} from './useVariableFormFields';
@@ -44,7 +44,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
         validate={mergeValidators(
           validateNameCharacters,
           validateModifiedNameComplete,
-          validateModifiedNameNotDuplicate,
+          validateModifiedNameNotDuplicateDeprecated,
         )}
         allowNull={false}
         parse={(value) => value}

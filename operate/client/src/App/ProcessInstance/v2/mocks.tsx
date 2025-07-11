@@ -14,6 +14,7 @@ import {testData} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createVariable,
+  createVariableV2,
 } from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {createMemoryRouter, RouterProvider} from 'react-router-dom';
@@ -47,6 +48,7 @@ import {
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 const mockProcessInstance: ProcessInstance = {
@@ -95,27 +97,23 @@ const mockSequenceFlowsV2: SequenceFlow[] = [
   },
 ];
 
-const mockRequests = (contextPath: string = '') => {
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+const mockRequests = () => {
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-  mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-  mockFetchCallHierarchy(contextPath).withSuccess([]);
-  mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
+  mockFetchProcessInstance().withSuccess(mockProcessInstance);
+  mockFetchProcessInstance().withSuccess(mockProcessInstance);
+  mockFetchCallHierarchy().withSuccess([]);
+  mockFetchProcessDefinitionXml().withSuccess('');
   mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
-  mockFetchFlowNodeInstances(contextPath).withSuccess(
-    processInstancesMock.level1,
-  );
-  mockFetchFlowNodeInstances(contextPath).withSuccess(
-    processInstancesMock.level1,
-  );
+  mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+  mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
   mockFetchFlownodeInstancesStatistics().withSuccess({
     items: [
       {
@@ -134,18 +132,24 @@ const mockRequests = (contextPath: string = '') => {
       },
     ],
   });
-  mockFetchVariables(contextPath).withSuccess([createVariable()]);
-  mockFetchVariables(contextPath).withSuccess([createVariable()]);
-  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+  mockFetchVariables().withSuccess([createVariable()]);
+  mockSearchVariables().withSuccess({
+    items: [createVariableV2()],
+    page: {
+      totalItems: 1,
+    },
+  });
+  mockFetchVariables().withSuccess([createVariable()]);
+  mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
   });
-  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+  mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
   });
-  mockFetchProcess(contextPath).withSuccess(mockProcess);
-  mockFetchProcessInstanceListeners(contextPath).withSuccess(noListeners);
+  mockFetchProcess().withSuccess(mockProcess);
+  mockFetchProcessInstanceListeners().withSuccess(noListeners);
 };
 
 type FlowNodeSelectorProps = {
