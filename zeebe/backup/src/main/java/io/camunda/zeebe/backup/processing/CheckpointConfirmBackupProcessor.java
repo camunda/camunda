@@ -23,20 +23,24 @@ public class CheckpointConfirmBackupProcessor {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointConfirmBackupProcessor.class);
   private final CheckpointState checkpointState;
+  private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
 
   public CheckpointConfirmBackupProcessor(final CheckpointState checkpointState) {
     this.checkpointState = checkpointState;
+    backupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
   }
 
   public ProcessingResult process(
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
-    final var checkpointId = record.getValue().getCheckpointId();
+    final var checkpointRecord = record.getValue();
+    final var checkpointId = checkpointRecord.getCheckpointId();
     final var latestBackupId = checkpointState.getLatestBackupId();
     if (latestBackupId < checkpointId) {
       LOG.debug("Confirming backup for checkpoint {}", checkpointId);
+      backupConfirmedApplier.apply(checkpointRecord);
       resultBuilder.appendRecord(
           record.getKey(),
-          record.getValue(),
+          checkpointRecord,
           new RecordMetadata()
               .recordType(RecordType.EVENT)
               .valueType(ValueType.CHECKPOINT)
@@ -48,7 +52,7 @@ public class CheckpointConfirmBackupProcessor {
           latestBackupId);
       resultBuilder.appendRecord(
           record.getKey(),
-          record.getValue(),
+          checkpointRecord,
           new RecordMetadata()
               .recordType(RecordType.COMMAND_REJECTION)
               .valueType(ValueType.CHECKPOINT)
