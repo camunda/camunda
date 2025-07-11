@@ -109,11 +109,11 @@ public final class BatchOperationLeadPartitionCompleteProcessor
     // after the source partition is marked as finished, we check if now all partitions are
     // finished (either completed or failed). If yes, we can append the final COMPLETED event
     if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
-      handleCompleted(command, batchOperationKey, bo);
+      completeBatchOperation(command, batchOperationKey, bo);
     }
   }
 
-  private void handleCompleted(
+  private void completeBatchOperation(
       final TypedRecord<BatchOperationPartitionLifecycleRecord> command,
       final long batchOperationKey,
       final PersistedBatchOperation bo) {

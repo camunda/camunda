@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
@@ -239,7 +238,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     LOG.debug("Appending batch operation {} chunk with {} items.", batchOperationKey, items.size());
     taskResultBuilder.appendCommandRecord(
         batchOperationKey,
-        BatchOperationChunkIntent.CREATE,
+        BatchOperationIntent.CREATE_CHUNK,
         command,
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }

@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +40,6 @@ public final class BatchOperationCreateChunkProcessor
         recordValue.getItems().size());
 
     stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationChunkIntent.CREATED, recordValue);
+        command.getKey(), BatchOperationIntent.CHUNK_CREATED, recordValue);
   }
 }

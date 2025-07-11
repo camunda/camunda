@@ -15,7 +15,7 @@ import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import java.util.List;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ public class BatchOperationChunkCreatedItemHandler extends AbstractOperationHand
 
   @Override
   public boolean handlesRecord(final Record<BatchOperationChunkRecordValue> record) {
-    return record.getIntent().equals(BatchOperationChunkIntent.CREATED);
+    return record.getIntent().equals(BatchOperationIntent.CHUNK_CREATED);
   }
 
   @Override

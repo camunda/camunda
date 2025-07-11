@@ -18,7 +18,6 @@ package io.camunda.zeebe.protocol.record;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
@@ -286,7 +285,7 @@ public final class ValueTypeMapping {
         new Mapping<>(BatchOperationCreationRecordValue.class, BatchOperationIntent.class));
     mapping.put(
         ValueType.BATCH_OPERATION_CHUNK,
-        new Mapping<>(BatchOperationChunkRecordValue.class, BatchOperationChunkIntent.class));
+        new Mapping<>(BatchOperationChunkRecordValue.class, BatchOperationIntent.class));
     mapping.put(
         ValueType.BATCH_OPERATION_EXECUTION,
         new Mapping<>(
