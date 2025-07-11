@@ -7,15 +7,17 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.exception.ServiceException.Status.NOT_FOUND;
+
 import io.camunda.search.entities.AdHocSubProcessActivityEntity;
 import io.camunda.search.entities.AdHocSubProcessActivityEntity.ActivityType;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.AdHocSubProcessActivityQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessActivityRequest;
@@ -67,10 +69,10 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
     final var processElement =
         modelInstance.getModelElementById(query.filter().adHocSubProcessId());
     if (!(processElement instanceof final AdHocSubProcess adHocSubProcess)) {
-      throw new CamundaSearchException(
+      throw new ServiceException(
           ErrorMessages.ERROR_NOT_FOUND_AD_HOC_SUB_PROCESS.formatted(
               query.filter().adHocSubProcessId()),
-          CamundaSearchException.Reason.NOT_FOUND);
+          NOT_FOUND);
     }
 
     final var activities =
