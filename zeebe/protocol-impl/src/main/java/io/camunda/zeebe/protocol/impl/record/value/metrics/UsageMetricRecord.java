@@ -31,7 +31,7 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
   private final DocumentProperty setValuesProp = new DocumentProperty("setValues");
 
   public UsageMetricRecord() {
-    super(6);
+    super(7);
     declareProperty(intervalTypeProp)
         .declareProperty(resetTimeProp)
         .declareProperty(startTimeProp)
