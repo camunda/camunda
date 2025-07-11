@@ -57,7 +57,8 @@ counter.increment(); // increments the counter by 1
 
 - If you need to observe a value change over time, use a `Counter`
 
-  > [!Note] Counters can only increment (they cannot be decremented). They reset when the application restarts, but time-derivative functions like Prometheus's rate() or increase() can accommodate this reset when used with time series data.
+  > [!Note]
+  > Counters can only increment (they cannot be decremented). They reset when the application restarts, but time-derivative functions like Prometheus's rate() or increase() can accommodate this reset when used with time series data.
 
 - If you need to observe the current value at a specific moment in time, use a `Gauge`. Gauges can go up or down and are useful for things like memory usage, thread counts, or queue sizes
 - If you need to observe the distribution of values over time (e.g., request durations), use a `Histogram`. Histograms bucket observations and allow you to calculate percentiles and frequencies over a time window using Prometheus queries (like `histogram_quantile()`)
@@ -83,13 +84,39 @@ counter.increment(); // increments the counter by 1
 
 - Make sure to document the metric, so that it is clear what it does and how it should be used for example [TopologyMetricsDoc](https://github.com/camunda/camunda/blob/55f7d512c5a1a5251b6e0e28c6a95acacf6fdeaf/zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/metrics/TopologyMetricsDoc.java)
 
+## Best Practices
+
+[//]: # (For each of the items below, provide examples)
+
+#### Maintain Backward Compatibility
+
+- **Avoid renaming or removing existing metric names or tags** unless absolutely necessary. Changes can break existing dashboards, alerts, and queries.
+- **Micrometer appends the unit to the metric name** (e.g., `duration.seconds`). If you change the unit or forget to define it explicitly, it may lead to unintentional metric name changes. Always review unit definitions when updating metrics.
+
+#### Be Careful with Tags
+
+- Tags must be **bounded and finite** to prevent high cardinality issues in Prometheus.
+  - Good: `status=success|failure`, `partition=1|2|3`
+  - Bad: `userId`, `uuid`, `timestamp`, `errorMessage`
+
+> High cardinality can lead to memory issues, slow dashboards, and instability in observability systems.
+
+#### Avoid Static Global Registries
+
+- **Do not use static global registries** (e.g., `Metrics.globalRegistry` in Micrometer) for registering metrics. Instead, prefer **dependency injection** of a `MeterRegistry` to maintain testability and modularity.
+
+> Prefer injecting `MeterRegistry` into components that need to emit metrics.
+
+#### Test Behavior, Not Implementation
+
+- When writing tests for metrics, **focus on the observable behavior** (e.g., "metric is emitted after an event") rather than internal implementation details.
+- Use tools like `SimpleMeterRegistry` or Prometheus test exporters to assert metric values in functional or integration tests.
+
 [//]: # (Link to best practices)
 [//]: # (Link to types of metrics, for gauge we should be careful with how they're instantiated)
 [//]: # (Convention)
-[//]: # (To get a meter registry setup, you)
-[//]: # (Namespacing, labelling, best practices, testing with examples, cardinality, memory usage, etc. The less tags you have the better, we should be wary about adding too many tags, make sure tags are bounded / finite)
+[//]: # (Namespacing, labelling, best practices, testing with examples, cardinality, memory usage, etc. The less tags you have the better, we should be wary about adding too many tags)
 [//]: # (then Use Zeebe metrics to show examples of one type of metric, why do we use a counter here)
-[//]: # (We avoid injecting metrics to the global static registry constant otherwise we can't test the metrics.)
 [//]: # (Dos and Donts)
 [//]: # (Limitations of micrometer, hierarchy)
 [//]: # (Tools we use maybe add custom alerting reference)
