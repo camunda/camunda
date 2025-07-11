@@ -180,7 +180,7 @@ public final class ProcessInstanceServices
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setStartInstructionsFromRecord(request.startInstructions())
-            .setRuntimeInstructions(request.runtimeInstructions());
+            .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());

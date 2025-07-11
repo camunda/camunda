@@ -26,6 +26,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationRuntimeInstruction.RuntimeInstructionType;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -311,6 +312,47 @@ public final class CreateProcessInstanceTest extends ClientTest {
     final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
     assertThat(request.getTenantId()).isEqualTo(customTenantId);
     assertThat(request.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldAddSuspendRuntimeInstruction() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .suspendAfterElement("elementId_A")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getRuntimeInstructionsList())
+        .hasSize(1)
+        .allSatisfy(
+            instruction ->
+                assertThat(instruction.getType())
+                    .isEqualTo(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE));
+  }
+
+  @Test
+  public void shouldAddMultipleSuspendRuntimeInstructions() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .suspendAfterElement("elementId_A")
+        .suspendAfterElement("elementId_B")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getRuntimeInstructionsList())
+        .hasSize(2)
+        .allSatisfy(
+            instruction ->
+                assertThat(instruction.getType())
+                    .isEqualTo(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE));
   }
 
   public static class VariableDocument {
