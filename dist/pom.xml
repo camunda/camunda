@@ -887,6 +887,7 @@
             <dep>io.camunda.migration:process-migration</dep>
             <dep>io.camunda.optimize:optimize-backend</dep>
             <dep>io.camunda.optimize:optimize-webjar</dep>
+            <dep>io.camunda.operate.webapp</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

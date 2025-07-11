@@ -7,19 +7,12 @@
  */
 package io.camunda.tasklist;
 
-import io.camunda.operate.webapp.security.UserService;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
-import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
-import io.camunda.tasklist.webapp.security.UserReader;
-import java.util.List;
-import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.Authentication;
 
 /**
  * Temporary configuration required to start Tasklist as part of C8 single application.
@@ -37,49 +30,6 @@ import org.springframework.security.core.Authentication;
 @Configuration(proxyBeanMethods = false)
 @Profile("tasklist & operate")
 public class TasklistSecurityStubsConfiguration {
-  /** UserReader that gets user details using Operate's UserService */
-  @Bean
-  public UserReader stubUserReader(final UserService userService) {
-    return new UserReader() {
-
-      @Override
-      public UserDTO getCurrentUser() {
-        final var operateUserDto = userService.getCurrentUser();
-        return new UserDTO()
-            .setUserId(operateUserDto.getUserId())
-            .setDisplayName(operateUserDto.getDisplayName())
-            .setPermissions(List.of(Permission.READ, Permission.WRITE));
-      }
-
-      @Override
-      public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
-        return Optional.empty();
-      }
-
-      @Override
-      public String getCurrentOrganizationId() {
-        return DEFAULT_ORGANIZATION;
-      }
-
-      @Override
-      public String getCurrentUserId() {
-        return getCurrentUser().getUserId();
-      }
-
-      /** used for GraphQL only */
-      @Override
-      public List<UserDTO> getUsersByUsernames(final List<String> usernames) {
-        return List.of();
-      }
-
-      /** used in SSO only */
-      @Override
-      public Optional<String> getUserToken(final Authentication authentication) {
-        return Optional.empty();
-      }
-    };
-  }
-
   @Bean
   public AssigneeMigrator stubAssigneeMigrator() {
     return new AssigneeMigratorNoImpl();
