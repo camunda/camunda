@@ -27,7 +27,7 @@ export default defineConfig(({mode}) => ({
   plugins: mode === 'sbom' ? [...plugins, sbom()] : plugins,
   server: {
     port: 3000,
-    open: true,
+    open: '/operate',
     proxy: {
       '/api': 'http://localhost:8080',
       '/v1': 'http://localhost:8080',
