@@ -190,7 +190,7 @@ public final class OAuthCredentialsProviderTest {
             .authorizationServerUrl(tokenUrlString())
             .credentialsCachePath(cacheFilePath.toString())
             .build();
-    mockCredentialsWithResource(ACCESS_TOKEN, null, resource);
+    mockCredentials(ACCESS_TOKEN, null, resource);
 
     // when
     provider.applyCredentials(applier);
@@ -427,10 +427,10 @@ public final class OAuthCredentialsProviderTest {
   }
 
   private void mockCredentials(final String token, final String scope) {
-    mockCredentialsWithResource(token, scope, null);
+    mockCredentials(token, scope, null);
   }
 
-  private void mockCredentialsWithResource(
+  private void mockCredentials(
       final String token, final String scope, final String resource) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
