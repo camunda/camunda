@@ -29,7 +29,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.cmd.IllegalTenantRequestException;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
-import io.camunda.zeebe.msgpack.MsgpackPropertyException;
+import io.camunda.zeebe.msgpack.MsgpackException;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
 import java.util.concurrent.ExecutionException;
@@ -124,7 +124,7 @@ public class ErrorMapper {
             "Expected to handle request, but request timed out between gateway and broker",
             rootError);
       }
-      case final MsgpackPropertyException ignored -> {
+      case final MsgpackException ignored -> {
         builder.status(INVALID_ARGUMENT).message(error.getMessage());
         logger.debug("Expected to handle request, but messagepack property was invalid", rootError);
       }
@@ -253,7 +253,7 @@ public class ErrorMapper {
       case NOT_FOUND -> builder.status(NOT_FOUND).build();
       case ALREADY_EXISTS -> builder.status(ALREADY_EXISTS).build();
       case INVALID_STATE -> builder.status(INVALID_STATE).build();
-      case PROCESSING_ERROR -> builder.status(INTERNAL).build();
+      case PROCESSING_ERROR, EXCEEDED_BATCH_RECORD_SIZE -> builder.status(INTERNAL).build();
       case UNAUTHORIZED -> builder.status(UNAUTHORIZED).build();
       case FORBIDDEN -> builder.status(FORBIDDEN).build();
       default -> builder.status(UNKNOWN).build();
