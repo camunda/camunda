@@ -32,6 +32,7 @@ import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
 import io.camunda.zeebe.msgpack.MsgpackException;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
@@ -63,20 +64,17 @@ public class ErrorMapper {
       case NOT_FOUND -> new ServiceException(errorMessage, NOT_FOUND);
       case NOT_UNIQUE -> new ServiceException(errorMessage, ALREADY_EXISTS);
       case CONNECTION_FAILED -> {
-        final String detail =
-            errorMessage + ". The search client could not connect to the search server.";
+        final String detail = "The search client could not connect to the search server";
         LOGGER.debug(detail, cse);
         yield new ServiceException(detail, UNAVAILABLE);
       }
       case SEARCH_SERVER_FAILED -> {
-        final String detail =
-            errorMessage + ". The search server was unable to process the request.";
+        final String detail = "The search server was unable to process the request";
         LOGGER.debug(detail, cse);
         yield new ServiceException(detail, INTERNAL);
       }
       case SEARCH_CLIENT_FAILED -> {
-        final String detail =
-            errorMessage + ". The search client was unable to process the request.";
+        final String detail = "The search client was unable to process the request";
         LOGGER.debug(detail, cse);
         yield new ServiceException(detail, INTERNAL);
       }
@@ -106,10 +104,14 @@ public class ErrorMapper {
       case final ExecutionException e -> {
         return mapErrorToServiceError(rootError, e.getCause(), logger);
       }
+      case final CompletionException e -> {
+        return mapErrorToServiceError(rootError, e.getCause(), logger);
+      }
       case final BrokerErrorException brokerError -> {
         final ServiceError serviceError =
             mapBrokerErrorToServiceError(rootError, brokerError.getError(), logger);
         builder.mergeFrom(serviceError);
+        logger.trace("Expected to handle request, but the broker rejected it", rootError);
       }
       case final BrokerRejectionException rejection -> {
         final ServiceError serviceError = mapRejectionToServiceError(rejection.getRejection());
@@ -117,20 +119,20 @@ public class ErrorMapper {
         logger.trace("Expected to handle request, but the broker rejected it", rootError);
       }
       case final TimeoutException ignored -> {
-        builder
-            .status(DEADLINE_EXCEEDED)
-            .message("Time out between gateway and broker: " + error.getMessage());
-        logger.debug(
-            "Expected to handle request, but request timed out between gateway and broker",
-            rootError);
+        final var message =
+            "Expected to handle request, but request timed out between gateway and broker";
+        builder.status(DEADLINE_EXCEEDED).message(message);
+        logger.debug(message, rootError);
       }
       case final MsgpackException ignored -> {
-        builder.status(INVALID_ARGUMENT).message(error.getMessage());
-        logger.debug("Expected to handle request, but messagepack property was invalid", rootError);
+        final var message = "Expected to handle request, but messagepack property was invalid";
+        builder.status(INVALID_ARGUMENT).message(message);
+        logger.debug(message, rootError);
       }
       case final JsonParseException ignored -> {
-        builder.status(INVALID_ARGUMENT).message(error.getMessage());
-        logger.debug("Expected to handle request, but JSON property was invalid", rootError);
+        final var message = "Expected to handle request, but JSON property was invalid";
+        builder.status(INVALID_ARGUMENT).message(message);
+        logger.debug(message, rootError);
       }
       case final InvalidTenantRequestException ignored -> {
         builder.status(INVALID_ARGUMENT).message(error.getMessage());
@@ -141,50 +143,54 @@ public class ErrorMapper {
         logger.debug(error.getMessage(), rootError);
       }
       case final IllegalArgumentException ignored -> {
-        builder.status(INVALID_ARGUMENT).message(error.getMessage());
-        logger.debug("Expected to handle request, but JSON property was invalid", rootError);
+        final var message = "Expected to handle request, but JSON property was invalid";
+        builder.status(INVALID_ARGUMENT).message(message);
+        logger.debug(message, rootError);
       }
       case final PartitionNotFoundException ignored -> {
-        builder.status(UNAVAILABLE).message(error.getMessage());
-        logger.debug("Expected to handle request, but request could not be delivered", rootError);
+        final var message = "Expected to handle request, but request could not be delivered";
+        builder.status(UNAVAILABLE).message(message);
+        logger.debug(message, rootError);
       }
       case final RequestRetriesExhaustedException ignored -> {
-        builder.status(RESOURCE_EXHAUSTED).message(error.getMessage());
+        final var message = "Expected to handle request, but all retries have been exhausted";
+        builder.status(RESOURCE_EXHAUSTED).message(message);
         // this error occurs when all partitions have exhausted for requests which have no fixed
         // partitions - it will then also occur when back pressure kicks in, leading to a large
         // burst
         // of error logs that is, in fact, expected
-        logger.trace("Expected to handle request, but all retries have been exhausted", rootError);
+        logger.trace(message, rootError);
       }
       case final PartitionInactiveException ignored -> {
-        builder.status(UNAVAILABLE).message(error.getMessage());
-        logger.trace(
-            "Expected to handle request, but the target partition is currently inactive",
-            rootError);
+        final var message =
+            "Expected to handle request, but the target partition is currently inactive";
+        builder.status(UNAVAILABLE).message(message);
+        logger.trace(message, rootError);
       }
       case final NoTopologyAvailableException ignored -> {
-        builder.status(UNAVAILABLE).message(error.getMessage());
-        logger.trace(
-            "Expected to handle request, but the gateway does not know any partitions yet",
-            rootError);
+        final var message =
+            "Expected to handle request, but the gateway does not know any partitions yet";
+        builder.status(UNAVAILABLE).message(message);
+        logger.trace(message, rootError);
       }
       case final ConnectTimeoutException ignored -> {
-        builder.status(UNAVAILABLE).message(error.getMessage());
-        logger.warn(
-            "Expected to handle request, but a connection timeout exception occurred", rootError);
+        final var message =
+            "Expected to handle request, but a connection timeout exception occurred";
+        builder.status(UNAVAILABLE).message(message);
+        logger.warn(message, rootError);
       }
       case final ConnectException ignored -> {
-        builder.status(UNAVAILABLE).message(error.getMessage());
-        logger.warn(
-            "Expected to handle request, but there was a connection error with one of the brokers",
-            rootError);
+        final var message =
+            "Expected to handle request, but there was a connection error with one of the brokers";
+        builder.status(UNAVAILABLE).message(message);
+        logger.warn(message, rootError);
       }
       case final MessagingException.ConnectionClosed ignored -> {
-        builder.status(ABORTED).message(error.getMessage());
-        logger.warn(
+        final var message =
             "Expected to handle request, but the connection was cut prematurely with the broker; "
-                + "the request may or may not have been accepted, and may not be safe to retry.",
-            rootError);
+                + "the request may or may not have been accepted, and may not be safe to retry.";
+        builder.status(ABORTED).message(message);
+        logger.warn(message, rootError);
       }
       default -> {
         builder
