@@ -129,6 +129,11 @@ public class ErrorMapper {
         builder.status(INVALID_ARGUMENT).message(message);
         logger.debug(message, rootError);
       }
+      case final io.camunda.zeebe.msgpack.spec.MsgpackException ignored -> {
+        final var message = "Expected to handle request, but messagepack property was invalid";
+        builder.status(INVALID_ARGUMENT).message(message);
+        logger.debug(message, rootError);
+      }
       case final JsonParseException ignored -> {
         final var message = "Expected to handle request, but JSON property was invalid";
         builder.status(INVALID_ARGUMENT).message(message);
