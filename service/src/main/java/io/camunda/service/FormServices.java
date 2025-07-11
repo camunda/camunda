@@ -39,9 +39,11 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
 
   @Override
   public SearchQueryResult<FormEntity> search(final FormQuery query) {
-    return formSearchClient
-        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-        .searchForms(query);
+    return executeSearchRequest(
+        () ->
+            formSearchClient
+                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .searchForms(query));
   }
 
   public FormEntity getByKey(final Long key) {

@@ -43,11 +43,13 @@ public class MappingServices
 
   @Override
   public SearchQueryResult<MappingEntity> search(final MappingQuery query) {
-    return mappingSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.mapping().read())))
-        .searchMappings(query);
+    return executeSearchRequest(
+        () ->
+            mappingSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.mapping().read())))
+                .searchMappings(query));
   }
 
   @Override

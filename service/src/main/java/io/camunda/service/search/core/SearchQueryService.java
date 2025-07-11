@@ -7,12 +7,15 @@
  */
 package io.camunda.service.search.core;
 
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ApiServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.function.Supplier;
 
 public abstract class SearchQueryService<T extends ApiServices<T>, Q extends SearchQueryBase, D>
     extends ApiServices<T> {
@@ -25,4 +28,12 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
   }
 
   public abstract SearchQueryResult<D> search(final Q query);
+
+  protected <R> R executeSearchRequest(final Supplier<R> searchRequest) {
+    try {
+      return searchRequest.get();
+    } catch (final CamundaSearchException cse) {
+      throw ErrorMapper.mapSearchError(cse);
+    }
+  }
 }
