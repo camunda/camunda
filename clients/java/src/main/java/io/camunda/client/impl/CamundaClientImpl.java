@@ -22,6 +22,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
@@ -150,6 +151,7 @@ import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisti
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
@@ -787,6 +789,13 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ElementInstanceGetRequest newElementInstanceGetRequest(final long elementInstanceKey) {
     return new ElementInstanceGetRequestImpl(httpClient, elementInstanceKey);
+  }
+
+  @Override
+  public ActivateAdHocSubProcessActivitiesCommandStep1 newActivateAdHocSubProcessActivitiesCommand(
+      final String adHocSubProcessInstanceKey) {
+    return new ActivateAdHocSubProcessActivitiesCommandImpl(
+        httpClient, jsonMapper, adHocSubProcessInstanceKey);
   }
 
   @Override

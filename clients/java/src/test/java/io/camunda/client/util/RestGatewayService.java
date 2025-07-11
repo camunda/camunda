@@ -87,6 +87,16 @@ public class RestGatewayService {
                 .willReturn(WireMock.okJson(JSON_MAPPER.toJson(response))));
   }
 
+  public void onAdHocSubProcessActivityActivation(final String adHocSubProcessInstanceKey) {
+    mockInfo
+        .getWireMock()
+        .register(
+            WireMock.post(
+                    RestGatewayPaths.getAdHocSubProcessActivitiesActivationUrl(
+                        adHocSubProcessInstanceKey))
+                .willReturn(WireMock.noContent()));
+  }
+
   /**
    * Fetch the last request that was served and convert it to the request target type.
    *

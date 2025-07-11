@@ -16,6 +16,7 @@
 package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
@@ -947,6 +948,27 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a element instance
    */
   ElementInstanceGetRequest newElementInstanceGetRequest(long elementInstanceKey);
+
+  /**
+   * Create a new command to activate activities within an ad-hoc sub-process instance.
+   *
+   * <pre>
+   * String adHocSubProcessInstanceKey = ...;
+   *
+   * camundaClient
+   *    .newActivateAdHocSubProcessActivitiesCommand(adHocSubProcessInstanceKey)
+   *    .activateElement("A")
+   *    .activateElements("B", "C")
+   *    .activateElements(Arrays.asList("D", "E"))
+   *    .send();
+   * </pre>
+   *
+   * @param adHocSubProcessInstanceKey the key which identifies the corresponding ad-hoc sub-process
+   *     instance
+   * @return a builder for the command
+   */
+  ActivateAdHocSubProcessActivitiesCommandStep1 newActivateAdHocSubProcessActivitiesCommand(
+      String adHocSubProcessInstanceKey);
 
   /**
    * Executes a search request to query user tasks.

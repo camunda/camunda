@@ -24,6 +24,7 @@ servers:
         description: The schema of the Orchestration Cluster REST API server.
 
 tags:
+  - name: Ad-hoc sub-process
   - name: Authentication
   - name: Authorization
   - name: Batch operation
@@ -4980,6 +4981,49 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
+    post:
+      tags:
+        - Ad-hoc sub-process
+      operationId: activateAdHocSubProcessActivities
+      summary: Activate activities within an ad-hoc sub-process
+      description: |
+        Activates selected activities within an ad-hoc sub-process identified by element ID.
+        The provided element IDs must exist within the ad-hoc sub-process instance identified by the
+        provided adHocSubProcessInstanceKey.
+      parameters:
+        - name: adHocSubProcessInstanceKey
+          in: path
+          required: true
+          description: The key of the ad-hoc sub-process instance that contains the activities.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdHocSubProcessActivateActivitiesInstruction"
+      responses:
+        "204":
+          description: The ad-hoc sub-process instance is modified.
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: |
+            The ad-hoc sub-process instance is not found or the provided key does not identify an
+            ad-hoc sub-process.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /signals/broadcast:
     post:
       tags:
@@ -6055,6 +6099,24 @@ components:
           items:
             type: string
             format: date-time
+    AdHocSubProcessActivateActivitiesInstruction:
+      type: object
+      properties:
+        elements:
+          description: Activities to activate.
+          type: array
+          items:
+            $ref: "#/components/schemas/AdHocSubProcessActivateActivityReference"
+      required:
+        - elements
+    AdHocSubProcessActivateActivityReference:
+      type: object
+      properties:
+        elementId:
+          description: The ID of the element that should be activated.
+          type: string
+      required:
+        - elementId
     BasicStringFilterProperty:
       description: String property with basic advanced search capabilities.
       type: object
