@@ -261,6 +261,9 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceIntent.ANCESTOR_MIGRATED,
         new ProcessInstanceAncestorMigratedApplier(elementInstanceState));
     register(
+        ProcessInstanceIntent.SEQUENCE_FLOW_DELETED,
+        new ProcessInstanceSequenceFlowDeletedApplier(elementInstanceState, processState));
+    register(
         ProcessInstanceIntent.ELEMENT_SUSPENDED,
         new ProcessInstanceElementSuspendedApplier(elementInstanceState));
   }
