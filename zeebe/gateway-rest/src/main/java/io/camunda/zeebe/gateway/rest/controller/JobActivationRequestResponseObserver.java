@@ -44,10 +44,7 @@ public class JobActivationRequestResponseObserver implements ResponseObserver<Jo
 
   @Override
   public void onError(final Throwable throwable) {
-    result.complete(
-        RestErrorMapper.mapProblemToResponse(
-            RestErrorMapper.mapErrorToProblem(
-                throwable, RestErrorMapper.DEFAULT_REJECTION_MAPPER)));
+    result.complete(RestErrorMapper.mapErrorToResponse(throwable));
   }
 
   public void setCancelationHandler(final Runnable handler) {
