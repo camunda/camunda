@@ -51,6 +51,7 @@ import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
@@ -77,6 +78,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.function.ToLongFunction;
 
 public final class ZeebePartitionFactory {
 
@@ -229,13 +231,25 @@ public final class ZeebePartitionFactory {
     } else {
       runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
     }
+
     return new StateControllerImpl(
         zeebeRocksDbFactory,
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),
         StatePositionSupplier::getHighestExportedPosition,
+        getBackupPositionSupplier(),
         concurrencyControl);
+  }
+
+  private ToLongFunction<ZeebeDb> getBackupPositionSupplier() {
+    if (brokerCfg.getExperimental().isContinuousBackups()) {
+      return StatePositionSupplier::getHighestBackupPosition;
+    } else {
+      // When continuous backups are disabled, act as if everything is backed up. Ensures
+      // that backups do not control compaction.
+      return (ignored) -> Long.MAX_VALUE;
+    }
   }
 
   private TypedRecordProcessorsFactory createFactory(

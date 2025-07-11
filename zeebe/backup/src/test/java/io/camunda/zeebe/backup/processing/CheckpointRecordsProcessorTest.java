@@ -337,10 +337,17 @@ final class CheckpointRecordsProcessorTest {
 
     final var newCheckpointId = 10;
     final var newCheckpointPosition = 100;
-    final var value = new CheckpointRecord().setCheckpointId(newCheckpointId);
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(newCheckpointId)
+            .setCheckpointPosition(newCheckpointPosition);
     final var record =
         new MockTypedCheckpointRecord(
-            newCheckpointPosition, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+            newCheckpointPosition + 10,
+            0,
+            CheckpointIntent.CONFIRM_BACKUP,
+            RecordType.COMMAND,
+            value);
 
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
@@ -351,6 +358,8 @@ final class CheckpointRecordsProcessorTest {
         .returns(CheckpointIntent.CONFIRMED_BACKUP, Event::intent)
         .returns(RecordType.EVENT, Event::type)
         .returns(value, Event::value);
+    assertThat(state.getLatestBackupId()).isEqualTo(newCheckpointId);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(newCheckpointPosition);
   }
 
   @Test

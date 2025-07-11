@@ -1,6 +1,7 @@
 zeebe:
   broker:
     experimental:
+      continuousBackups: true
       versionCheckRestrictionEnabled: false
       enablePriorityElection: true
       raft:

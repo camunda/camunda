@@ -46,6 +46,7 @@ public final class StateControllerImplTest {
   @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   private final MutableLong exporterPosition = new MutableLong(Long.MAX_VALUE);
+  private final MutableLong backupPosition = new MutableLong(Long.MAX_VALUE);
   private StateControllerImpl snapshotController;
   private FileBasedSnapshotStore store;
   private Path runtimeDirectory;
@@ -79,6 +80,7 @@ public final class StateControllerImplTest {
             runtimeDirectory,
             l -> atomixRecordEntrySupplier.get().getPreviousIndexedEntry(l),
             db -> exporterPosition.get(),
+            db -> backupPosition.get(),
             store);
 
     autoCloseableRule.manage(snapshotController);
@@ -384,6 +386,105 @@ public final class StateControllerImplTest {
     assertThat(snapshot.getTerm()).isEqualTo(latestSnapshot.getTerm());
     assertThat(snapshot.getProcessedPosition()).isEqualTo(snapshotPosition);
     assertThat(snapshot.getExportedPosition()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldUseBackupPositionWhenSmallerThanExporter() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 7L;
+    final var backupPosition = 4L;
+    this.exporterPosition.set(exporterPosition);
+    this.backupPosition.set(backupPosition);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(backupPosition);
+  }
+
+  @Test
+  public void shouldUseExporterPositionWhenSmallerThanBackup() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 7L;
+    final var backupPosition = 11L;
+    this.exporterPosition.set(exporterPosition);
+    this.backupPosition.set(backupPosition);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(exporterPosition);
+  }
+
+  @Test
+  public void shouldIgnoreBackupPositionWhenDisabled() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 5L;
+    this.exporterPosition.set(exporterPosition);
+    backupPosition.set(Long.MAX_VALUE); // simulates continuous backups disabled
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+
+    // then - should use exporter position since backup is disabled
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(exporterPosition);
+  }
+
+  @Test
+  public void shouldFallbackToZeroWhenBackupPositionIsUnknown() {
+    // given
+    final long processedPosition = 5;
+    backupPosition.set(-1L);
+    exporterPosition.set(5);
+    snapshotController.recover().join();
+
+    // when
+    final var transientSnapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join();
+
+    // then
+    final var snapshot = transientSnapshot.snapshotId();
+    assertThat(snapshot.getIndex()).isEqualTo(0);
+    assertThat(snapshot.getTerm()).isEqualTo(0);
+    assertThat(snapshot.getProcessedPosition()).isEqualTo(processedPosition);
+    assertThat(snapshot.getExportedPosition()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldUseProcessedPositionWhenSmallerThanBackupAndExporter() {
+    // given
+    final var processedPosition = 3L;
+    final var exporterPos = 10L;
+    final var backupPos = 8L;
+    exporterPosition.set(exporterPos);
+    backupPosition.set(backupPos);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(processedPosition);
   }
 
   private File takeSnapshot(final long position) {
