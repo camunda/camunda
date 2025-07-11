@@ -156,7 +156,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.Config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.Detached, "detached", false, "Starts Camunda Run as a detached process")
-	startFlagSet.IntVar(&settings.Port, "port", 8080, "Port to run Camunda on")
+	startFlagSet.IntVar(&settings.Port, "port", 8088, "Port to run Camunda on")
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
