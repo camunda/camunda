@@ -51,7 +51,6 @@ public final class ClusterConfigurationManagerService
   private static final String COORDINATOR_ID = "0";
   private final ClusterConfigurationManagerImpl clusterConfigurationManager;
   private final ClusterConfigurationGossiper clusterConfigurationGossiper;
-  private final ClusterMembershipService memberShipService;
   private final boolean isCoordinator;
   private final PersistedClusterConfiguration persistedClusterConfiguration;
   private final Path configurationFile;
@@ -72,7 +71,6 @@ public final class ClusterConfigurationManagerService
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry) {
     this.clusterChangeExecutor = clusterChangeExecutor;
-    this.memberShipService = memberShipService;
     topologyMetrics = new TopologyMetrics(meterRegistry);
     topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
     try {
@@ -118,7 +116,6 @@ public final class ClusterConfigurationManagerService
   }
 
   private ClusterConfigurationInitializer getNonCoordinatorInitializer(
-      final ClusterMembershipService membershipService,
       final StaticConfiguration staticConfiguration) {
     final var otherKnownMembers =
         staticConfiguration.clusterMembers().stream()
@@ -201,7 +198,7 @@ public final class ClusterConfigurationManagerService
     final ClusterConfigurationInitializer clusterConfigurationInitializer =
         isCoordinator
             ? getCoordinatorInitializer(staticConfiguration)
-            : getNonCoordinatorInitializer(memberShipService, staticConfiguration);
+            : getNonCoordinatorInitializer(staticConfiguration);
 
     configurationRequestServer.start();
 
