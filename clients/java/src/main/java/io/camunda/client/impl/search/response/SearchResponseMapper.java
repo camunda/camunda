@@ -194,6 +194,18 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
+  public static SearchResponse<Client> toGroupClientsResponse(
+      final GroupClientSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Client> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toGroupClientResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static Client toGroupClientResponse(final GroupClientResult response) {
+    return new ClientImpl(response.getClientId());
+  }
+
   public static Role toRoleResponse(final RoleResult response) {
     return new RoleImpl(response.getRoleId(), response.getName(), response.getDescription());
   }
