@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -44,7 +45,7 @@ public class JobActivationRequestResponseObserver implements ResponseObserver<Jo
 
   @Override
   public void onError(final Throwable throwable) {
-    result.complete(RestErrorMapper.mapErrorToResponse(throwable));
+    result.complete(RestErrorMapper.mapErrorToResponse(ErrorMapper.mapError(throwable)));
   }
 
   public void setCancelationHandler(final Runnable handler) {
