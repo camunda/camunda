@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -68,18 +68,6 @@ public class UserTaskControllerTest extends RestControllerTest {
         .flatMap(
             url ->
                 Stream.of(RejectionType.ALREADY_EXISTS).flatMap(r -> Stream.of(Pair.of(r, url))));
-  }
-
-  static Stream<Pair<RejectionType, String>> exceptionsAndUrls() {
-    return urls()
-        .flatMap(
-            url ->
-                Stream.of(
-                        RejectionType.PROCESSING_ERROR,
-                        RejectionType.EXCEEDED_BATCH_RECORD_SIZE,
-                        RejectionType.SBE_UNKNOWN,
-                        RejectionType.NULL_VAL)
-                    .flatMap(r -> Stream.of(Pair.of(r, url))));
   }
 
   static Stream<Pair<String, String>> validDateInputsAndUrls() {
@@ -802,7 +790,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, RejectionType.NOT_FOUND, "Task not found"))));
 
@@ -841,7 +829,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE,
                         1L,
@@ -884,7 +872,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
 
@@ -927,7 +915,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
 
@@ -954,49 +942,6 @@ public class UserTaskControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isEqualTo(HttpStatus.CONFLICT)
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-        .expectBody()
-        .json(expectedBody);
-
-    Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
-  }
-
-  @ParameterizedTest
-  @MethodSource("exceptionsAndUrls")
-  public void shouldYieldInternalErrorWhenRejectionInternal(
-      final Pair<RejectionType, String> parameters) {
-    // given
-    Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new CamundaBrokerException(
-                    new BrokerRejection(
-                        UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
-
-    final var expectedBody =
-        """
-            {
-              "type": "about:blank",
-              "status": 500,
-              "title": "%s",
-              "detail": "Command 'COMPLETE' rejected with code '%s': Just an error",
-              "instance": "%s"
-            }"""
-            .formatted(
-                parameters.getLeft().name(),
-                parameters.getLeft(),
-                parameters.getRight() + "/1/completion");
-
-    // when / then
-    webClient
-        .post()
-        .uri(parameters.getRight() + "/1/completion")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .is5xxServerError()
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()

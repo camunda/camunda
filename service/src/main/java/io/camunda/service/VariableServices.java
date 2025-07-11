@@ -16,7 +16,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.VariableQuery.Builder;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -45,11 +45,14 @@ public final class VariableServices
 
   @Override
   public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
-    return variableSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchVariables(query);
+    return executeSearchRequest(
+        () ->
+            variableSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                .searchVariables(query));
   }
 
   public SearchQueryResult<VariableEntity> search(
@@ -59,16 +62,20 @@ public final class VariableServices
 
   public VariableEntity getByKey(final Long key) {
     final var result =
-        variableSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchVariables(
-                variableSearchQuery(q -> q.filter(f -> f.variableKeys(key)).singleResult()))
+        executeSearchRequest(
+                () ->
+                    variableSearchClient
+                        .withSecurityContext(
+                            securityContextProvider.provideSecurityContext(authentication))
+                        .searchVariables(
+                            variableSearchQuery(
+                                q -> q.filter(f -> f.variableKeys(key)).singleResult())))
             .items()
             .getFirst();
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
         result.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
+      throw ErrorMapper.createForbiddenException(authorization);
     }
     return result;
   }

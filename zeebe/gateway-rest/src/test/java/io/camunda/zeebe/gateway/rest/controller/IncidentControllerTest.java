@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -76,7 +76,7 @@ public class IncidentControllerTest extends RestControllerTest {
     Mockito.when(incidentServices.resolveIncident(anyLong(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         IncidentIntent.RESOLVE,
                         1L,

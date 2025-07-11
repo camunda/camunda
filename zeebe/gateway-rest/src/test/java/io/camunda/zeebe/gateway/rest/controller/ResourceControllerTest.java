@@ -19,7 +19,7 @@ import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.ResourceServices.ResourceFetchRequest;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -538,7 +538,7 @@ public class ResourceControllerTest extends RestControllerTest {
     when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         ResourceIntent.FETCH, 1L, RejectionType.NOT_FOUND, "Resource not found"))));
     final var url = GET_RESOURCE_ENDPOINT.formatted(1);
@@ -572,7 +572,7 @@ public class ResourceControllerTest extends RestControllerTest {
     when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         ResourceIntent.FETCH,
                         1L,
@@ -595,7 +595,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "PROCESSING_ERROR",
+              "title": "INTERNAL",
               "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
               "instance": "%s"
             }
@@ -609,7 +609,7 @@ public class ResourceControllerTest extends RestControllerTest {
     when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.INTERNAL_ERROR, "something went wrong"))));
     final var url = GET_RESOURCE_ENDPOINT.formatted(1);
 
@@ -628,8 +628,8 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "INTERNAL_ERROR",
-              "detail": "Received an unexpected error from the broker, code: INTERNAL_ERROR, message: something went wrong",
+              "title": "INTERNAL",
+              "detail": "Unexpected error occurred between gateway and broker (code: INTERNAL_ERROR) (message: something went wrong)",
               "instance": "%s"
             }
             """
@@ -669,7 +669,7 @@ public class ResourceControllerTest extends RestControllerTest {
     when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         ResourceIntent.FETCH, 1L, RejectionType.NOT_FOUND, "Resource not found"))));
     final var url = GET_RESOURCE_CONTENT_ENDPOINT.formatted(1);
@@ -703,7 +703,7 @@ public class ResourceControllerTest extends RestControllerTest {
     when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         ResourceIntent.FETCH,
                         1L,
@@ -726,7 +726,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "PROCESSING_ERROR",
+              "title": "INTERNAL",
               "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
               "instance": "%s"
             }
@@ -740,7 +740,7 @@ public class ResourceControllerTest extends RestControllerTest {
     when(resourceServices.fetchResource(new ResourceFetchRequest(1)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.INTERNAL_ERROR, "something went wrong"))));
     final var url = GET_RESOURCE_CONTENT_ENDPOINT.formatted(1);
 
@@ -759,8 +759,8 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "INTERNAL_ERROR",
-              "detail": "Received an unexpected error from the broker, code: INTERNAL_ERROR, message: something went wrong",
+              "title": "INTERNAL",
+              "detail": "Unexpected error occurred between gateway and broker (code: INTERNAL_ERROR) (message: something went wrong)",
               "instance": "%s"
             }
             """

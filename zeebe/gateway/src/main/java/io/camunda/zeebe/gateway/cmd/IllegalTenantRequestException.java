@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.cmd;
 public class IllegalTenantRequestException extends ClientException {
 
   private static final String MESSAGE_FORMAT =
-      "Expected to handle gRPC request %s with tenant identifier '%s', but %s";
+      "Expected to handle request %s with tenant identifier '%s', but %s";
 
   private final String commandName;
   private final String tenantId;

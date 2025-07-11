@@ -9,11 +9,9 @@ package io.camunda.tasklist.webapp.util;
 
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.service.exception.CamundaBrokerException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import java.net.SocketTimeoutException;
-import java.util.concurrent.TimeoutException;
 
 public abstract class ErrorHandlingUtils {
 
@@ -27,16 +25,14 @@ public abstract class ErrorHandlingUtils {
   public static final String TIMEOUT_ERROR_MESSAGE =
       "The request timed out while processing the task.";
 
-  public static String getErrorMessageFromBrokerException(final CamundaBrokerException exception) {
-    if (exception.getCause() instanceof final BrokerRejectionException brokerRejectionException
-        && brokerRejectionException.getRejection().type().equals(RejectionType.INVALID_STATE)) {
-      return createErrorMessage(
-          brokerRejectionException.getRejection().type().name(),
-          brokerRejectionException.getRejection().reason());
-    } else if (exception.getCause() instanceof TimeoutException) {
-      return createErrorMessage(TASK_PROCESSING_TIMEOUT, TIMEOUT_ERROR_MESSAGE);
-    }
-    return exception.getMessage();
+  public static String getErrorMessageFromServiceException(final ServiceException exception) {
+    return switch (exception.getStatus()) {
+      case Status.DEADLINE_EXCEEDED ->
+          createErrorMessage(TASK_PROCESSING_TIMEOUT, TIMEOUT_ERROR_MESSAGE);
+      case Status.INVALID_STATE ->
+          createErrorMessage(Status.INVALID_STATE.name(), exception.getMessage());
+      default -> exception.getMessage();
+    };
   }
 
   public static String getErrorMessageFromClientException(final ClientException exception) {

@@ -61,11 +61,13 @@ public class AuthorizationServices
 
   @Override
   public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
-    return authorizationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.authorization().read())))
-        .searchAuthorizations(query);
+    return executeSearchRequest(
+        () ->
+            authorizationSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.authorization().read())))
+                .searchAuthorizations(query));
   }
 
   public List<String> getAuthorizedApplications(

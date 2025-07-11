@@ -17,7 +17,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -81,7 +81,7 @@ public final class ElementInstanceServices
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
         flowNodeInstance.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
+      throw ErrorMapper.createForbiddenException(authorization);
     }
     return flowNodeInstance;
   }
@@ -89,9 +89,11 @@ public final class ElementInstanceServices
   private SearchQueryResult<FlowNodeInstanceEntity> search(
       final FlowNodeInstanceQuery query, final SecurityContext securityContext) {
     final var result =
-        flowNodeInstanceSearchClient
-            .withSecurityContext(securityContext)
-            .searchFlowNodeInstances(query);
+        executeSearchRequest(
+            () ->
+                flowNodeInstanceSearchClient
+                    .withSecurityContext(securityContext)
+                    .searchFlowNodeInstances(query));
 
     return toCacheEnrichedResult(result);
   }
