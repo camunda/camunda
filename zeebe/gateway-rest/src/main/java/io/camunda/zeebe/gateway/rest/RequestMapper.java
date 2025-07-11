@@ -514,8 +514,7 @@ public class RequestMapper {
         .get()
         .handleAsync(
             (response, error) ->
-                RestErrorMapper.getResponse(error, RestErrorMapper.DEFAULT_REJECTION_MAPPER)
-                    .orElseGet(() -> result.apply(response)));
+                RestErrorMapper.getResponse(error).orElseGet(() -> result.apply(response)));
   }
 
   public static <BrokerResponseT>

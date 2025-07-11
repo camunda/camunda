@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
-import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
@@ -25,11 +24,9 @@ import jakarta.servlet.http.Part;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -136,18 +133,6 @@ public class DocumentController {
       return MediaType.parseMediaType(contentResponse.contentType());
     } catch (final InvalidMediaTypeException e) {
       return MediaType.APPLICATION_OCTET_STREAM;
-    }
-  }
-
-  @ExceptionHandler(DocumentContentFetchException.class)
-  public ResponseEntity<Object> handleDocumentContentException(
-      final DocumentContentFetchException e) {
-    if (e.getCause() instanceof final DocumentException de) {
-      return RestErrorMapper.mapDocumentHandlingExceptionToResponse(de);
-    } else {
-      return RestErrorMapper.mapProblemToResponse(
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e.getClass().getName()));
     }
   }
 
