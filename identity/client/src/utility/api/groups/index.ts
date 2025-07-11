@@ -13,14 +13,29 @@ import { Mapping } from "src/utility/api/mappings";
 
 export const GROUPS_ENDPOINT = "/groups";
 
+export type GroupKeys = "groupId" | "name" | "description";
+
 export type Group = {
   groupId: string;
   name: string;
   description?: string;
 };
 
-export const searchGroups: ApiDefinition<SearchResponse<Group>> = () =>
-  apiPost(`${GROUPS_ENDPOINT}/search`);
+export type MemberGroup = Pick<Group, "groupId">;
+
+type SearchGroupsParams = {
+  groupIds: string[];
+};
+
+export const searchGroups: ApiDefinition<
+  SearchResponse<Group>,
+  SearchGroupsParams | undefined
+> = (filterParams) => {
+  const params = filterParams?.groupIds
+    ? { filter: { groupId: { $in: filterParams.groupIds } } }
+    : undefined;
+  return apiPost(`${GROUPS_ENDPOINT}/search`, params);
+};
 
 export type GetGroupParams = {
   groupId: string;

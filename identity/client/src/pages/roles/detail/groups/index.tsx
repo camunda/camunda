@@ -9,27 +9,27 @@
 import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
-import { getGroupsByTenantId } from "src/utility/api/tenants";
+import { getGroupsByRoleId } from "src/utility/api/roles";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import { TrashCan } from "@carbon/react/icons";
-import DeleteModal from "src/pages/tenants/detail/groups/DeleteModal";
-import AssignGroupsModal from "src/pages/tenants/detail/groups/AssignGroupsModal";
+import DeleteModal from "src/pages/roles/detail/groups/DeleteModal";
+import AssignGroupsModal from "src/pages/roles/detail/groups/AssignGroupsModal";
 import { isInternalGroupsEnabled } from "src/configuration";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import { GroupKeys } from "src/utility/api/groups";
 
 type GroupsProps = {
-  tenantId: string;
+  roleId: string;
 };
 
-const Groups: FC<GroupsProps> = ({ tenantId }) => {
-  const { t } = useTranslate("tenants");
+const Groups: FC<GroupsProps> = ({ roleId }) => {
+  const { t } = useTranslate("roles");
 
   const { groups, loading, success, reload } = useEnrichedGroups(
-    getGroupsByTenantId,
+    getGroupsByRoleId,
     {
-      tenantId,
+      roleId,
     },
   );
 
@@ -42,12 +42,12 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
       assignedGroups: groups,
     },
   );
-  const openAssignModal = () => assignGroups({ id: tenantId });
+  const openAssignModal = () => assignGroups({ id: roleId });
   const [unassignGroup, unassignGroupModal] = useEntityModal(
     DeleteModal,
     reload,
     {
-      tenant: tenantId,
+      role: roleId,
     },
   );
 
@@ -64,14 +64,14 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
     return (
       <>
         <C3EmptyState
-          heading={t("assignGroupsToTenant")}
-          description={t("tenantMemberAccessDisclaimer")}
+          heading={t("assignGroupsToRole")}
+          description={t("roleMemberAccessDisclaimer")}
           button={{
             label: t("assignGroup"),
             onClick: openAssignModal,
           }}
           link={{
-            label: t("learnMoreAboutTenants"),
+            label: t("learnMoreAboutRoles"),
             href: "https://docs.camunda.io/",
           }}
         />
