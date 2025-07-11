@@ -25509,81 +25509,49 @@
         "hide": 2,
         "label": "container",
         "name": "container",
-        "query": "${VAR_CONTAINER}",
+        "query": ".*",
         "skipUrlSync": true,
         "type": "constant",
         "current": {
-          "value": "${VAR_CONTAINER}",
-          "text": "${VAR_CONTAINER}",
-          "selected": false
-        },
-        "options": [
-          {
-            "value": "${VAR_CONTAINER}",
-            "text": "${VAR_CONTAINER}",
-            "selected": false
-          }
-        ]
+          "value": ".*",
+          "text": ".*"
+        }
       },
       {
         "hide": 2,
         "label": "region",
         "name": "region",
-        "query": "${VAR_REGION}",
+        "query": ".*",
         "skipUrlSync": true,
         "type": "constant",
         "current": {
-          "value": "${VAR_REGION}",
-          "text": "${VAR_REGION}",
-          "selected": false
-        },
-        "options": [
-          {
-            "value": "${VAR_REGION}",
-            "text": "${VAR_REGION}",
-            "selected": false
-          }
-        ]
+          "value": ".*",
+          "text": ".*"
+        }
       },
       {
         "hide": 2,
         "label": "uri",
         "name": "uri",
-        "query": "${VAR_URI}",
+        "query": ".*",
         "skipUrlSync": true,
         "type": "constant",
         "current": {
-          "value": "${VAR_URI}",
-          "text": "${VAR_URI}",
-          "selected": false
-        },
-        "options": [
-          {
-            "value": "${VAR_URI}",
-            "text": "${VAR_URI}",
-            "selected": false
-          }
-        ]
+          "value": ".*",
+          "text": ".*"
+        }
       },
       {
         "hide": 2,
         "label": "grpc_method",
         "name": "grpc_method",
-        "query": "${VAR_GRPC_METHOD}",
+        "query": ".*",
         "skipUrlSync": true,
         "type": "constant",
         "current": {
-          "value": "${VAR_GRPC_METHOD}",
-          "text": "${VAR_GRPC_METHOD}",
-          "selected": false
-        },
-        "options": [
-          {
-            "value": "${VAR_GRPC_METHOD}",
-            "text": "${VAR_GRPC_METHOD}",
-            "selected": false
-          }
-        ]
+          "value": ".*",
+          "text": ".*"
+        }
       }
     ]
   },
