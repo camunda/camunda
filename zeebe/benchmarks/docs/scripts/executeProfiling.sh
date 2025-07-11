@@ -1,18 +1,24 @@
 #!/bin/bash -xeu
 # Usage:
-#   kubectl exec -it zeebe-0 bash -- < profile.sh
-#   kubectl cp zeebe-0:/tmp/profiler/flamegraph-2019-03-27_12-42-33.svg .
+#   ./executeProfiling.sh <POD-NAME>
 set -oxe pipefail
 
 node=$1
 
-kubectl cp installProfiler.sh "$node":/usr/local/zeebe/installProfiler.sh
-kubectl cp runProfiler.sh "$node":/usr/local/zeebe/runProfiler.sh
+# Download and extract latest async profiler
+curl -L https://github.com/jvm-profiling-tools/async-profiler/releases/download/v4.0/async-profiler-4.0-linux-x64.tar.gz -o profiler.tar.gz
+cat profiler.tar.gz | tar xzv 
 
-kubectl exec "$node" -- ./installProfiler.sh
+# Copy async profiler to pod
+kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":/usr/local/camunda/data/asprof
+kubectl exec "$node" -- mkdir -p /usr/local/camunda/data/lib
+kubectl cp async-profiler-4.0-linux-x64/lib/libasyncProfiler.so "$node":/usr/local/camunda/data/libasyncProfiler.so
+kubectl exec "$node" -- chmod +x /usr/local/camunda/data/asprof
 
-filename=flamegraph-$(date +%Y-%m-%d_%H-%M-%S).svg
+# Run profiling
+filename=flamegraph-$(date +%Y-%m-%d_%H-%M-%S).html
+PID=$(kubectl exec "$node" -- jps | grep Standalone | cut -d " " -f 1)
+kubectl exec "$node" -- ./data/asprof -e itimer -d 100 -t -f "/usr/local/camunda/data/$filename" --libpath /usr/local/camunda/data/libasyncProfiler.so "$PID"
 
-kubectl exec "$node" -- ./runProfiler.sh "$filename"
-
-kubectl cp "$node:/tmp/profiler/$filename" "$filename"
+# Copy result
+kubectl cp "$node:/usr/local/camunda/data/$filename" "$node-$filename"
