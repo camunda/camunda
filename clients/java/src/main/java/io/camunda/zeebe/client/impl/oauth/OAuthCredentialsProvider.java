@@ -122,6 +122,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     if (scope != null) {
       payload.put("scope", scope);
     }
+    final String resource = builder.getResource();
+    if (resource != null) {
+      payload.put("resource", resource);
+    }
 
     return payload.entrySet().stream()
         .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
