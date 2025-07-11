@@ -38,6 +38,7 @@ defaults:
 env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  SHOULD_PUSH_DOCKER_SNAPSHOT: ${{ startsWith(inputs.branch, '30477') }}
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
@@ -112,7 +113,7 @@ jobs:
       #########################################################################
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')
+        if: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/tasklist
