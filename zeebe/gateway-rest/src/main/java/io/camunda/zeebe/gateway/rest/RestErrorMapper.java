@@ -69,7 +69,8 @@ public class RestErrorMapper {
 
   public static HttpStatus mapStatus(final Status status) {
     return switch (status) {
-      case ABORTED, UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
+      case ABORTED -> HttpStatus.BAD_GATEWAY;
+      case UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
       case RESOURCE_EXHAUSTED -> HttpStatus.TOO_MANY_REQUESTS;
       case UNKNOWN, INTERNAL -> HttpStatus.INTERNAL_SERVER_ERROR;
       case FORBIDDEN -> HttpStatus.FORBIDDEN;
@@ -77,7 +78,7 @@ public class RestErrorMapper {
       case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
       case ALREADY_EXISTS, INVALID_STATE -> HttpStatus.CONFLICT;
       case INVALID_ARGUMENT -> HttpStatus.BAD_REQUEST;
-      case DEADLINE_EXCEEDED -> HttpStatus.REQUEST_TIMEOUT;
+      case DEADLINE_EXCEEDED -> HttpStatus.GATEWAY_TIMEOUT;
     };
   }
 }
