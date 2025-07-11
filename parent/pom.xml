@@ -39,7 +39,7 @@
     <version.assertj>3.27.3</version.assertj>
     <version.awaitility>4.3.0</version.awaitility>
     <version.bouncycastle>1.81</version.bouncycastle>
-    <version.camunda>7.22.0</version.camunda>
+    <version.camunda>7.23.0</version.camunda>
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
     <version.checkstyle>10.26.1</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
