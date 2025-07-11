@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
@@ -60,6 +61,8 @@ public class CommandRedistributorTest {
     routingState.initializeRoutingInfo(2);
 
     final var commandDistributionPaused = false;
+    final EngineConfiguration engineConfiguration = new EngineConfiguration();
+    // TODO - pass configuration to CommandRedistributor for testing
     commandRedistributor = getCommandRedistributor(commandDistributionPaused);
 
     recordValue =
@@ -112,7 +115,7 @@ public class CommandRedistributorTest {
         .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
   }
 
-  private CommandRedistributor getCommandRedistributor(final boolean commandDistributionPaused) {
+  private CommandRedistributor getCommandRedistributor(final EngineConfiguration config) {
     final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     final Writers writers =
         new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
@@ -129,7 +132,7 @@ public class CommandRedistributorTest {
             mockCommandSender,
             mockDistributionMetrics);
 
-    return new CommandRedistributor(behavior, routingInfo, commandDistributionPaused);
+    return new CommandRedistributor(behavior, routingInfo, config);
   }
 
   @Nested
