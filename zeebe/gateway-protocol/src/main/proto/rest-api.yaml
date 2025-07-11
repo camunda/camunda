@@ -7095,7 +7095,7 @@ components:
         messageSubscriptionKey:
           description: The message subscription key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         processDefinitionId:
           description: The process definition ID associated with this message subscription.
           allOf:
@@ -7107,7 +7107,7 @@ components:
         processInstanceKey:
           description: The process instance key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         elementId:
           description: The element ID associated with this message subscription.
           allOf:
@@ -7115,7 +7115,7 @@ components:
         elementInstanceKey:
           description: The element instance key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         messageSubscriptionType:
           description: The message subscription type.
           allOf:

@@ -15,6 +15,7 @@
  */
 package io.camunda.client.incident;
 
+import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
@@ -184,11 +185,5 @@ public class SearchIncidentTest extends ClientRestTest {
     final IncidentFilter filter = request.getFilter();
     assertThat(filter.getIncidentKey()).isEqualTo("1");
     assertThat(filter.getErrorType()).isEqualTo(ErrorTypeEnum.valueOf(errorType.name()));
-  }
-
-  private void assertSort(
-      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
-    assertThat(sort.getField()).isEqualTo(name);
-    assertThat(sort.getOrder()).isEqualTo(order);
   }
 }

@@ -706,6 +706,18 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForMessageSubscriptions(
+      final CamundaClient camundaClient, final int expectedMessageSubscriptions) {
+    Awaitility.await("should wait until message subscriptions are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newMessageSubscriptionSearchRequest().send().join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedMessageSubscriptions);
+            });
+  }
+
   public static <T, U extends Comparable<U>> void assertSorted(
       final SearchResponse<T> resultAsc,
       final SearchResponse<T> resultDesc,

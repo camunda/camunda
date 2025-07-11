@@ -135,6 +135,7 @@ import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequ
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingsByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
+import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
@@ -260,6 +261,7 @@ import io.camunda.client.impl.search.request.IncidentsByProcessInstanceSearchReq
 import io.camunda.client.impl.search.request.JobSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingsByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingsByRoleSearchRequestImpl;
+import io.camunda.client.impl.search.request.MessageSubscriptionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSequenceFlowsRequestImpl;
@@ -1281,6 +1283,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public JobSearchRequest newJobSearchRequest() {
     return new JobSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public MessageSubscriptionSearchRequest newMessageSubscriptionSearchRequest() {
+    return new MessageSubscriptionSearchRequestImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {
