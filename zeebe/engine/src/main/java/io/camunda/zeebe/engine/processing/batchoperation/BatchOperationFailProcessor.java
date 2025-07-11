@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.engine.processing.batchoperation.PartitionUtil.getLeadPartition;
+import static io.camunda.zeebe.engine.processing.batchoperation.PartitionUtil.isOnLeadPartition;
+
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -18,7 +21,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -68,7 +70,6 @@ public final class BatchOperationFailProcessor
         command.getValue().getBatchOperationKey(),
         partitionId);
 
-    final int originPartitionId = Protocol.decodePartitionId(batchOperationKey);
     final var batchInternalFail =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(batchOperationKey)
@@ -78,9 +79,9 @@ public final class BatchOperationFailProcessor
     LOGGER.debug(
         "Send internal fail command for batch operation {} to original partition {}",
         batchOperationKey,
-        originPartitionId);
+        getLeadPartition(recordValue));
 
-    if (originPartitionId == partitionId) {
+    if (isOnLeadPartition(recordValue, partitionId)) {
       commandWriter.appendFollowUpCommand(
           batchOperationKey,
           BatchOperationIntent.FAIL_PARTITION,
@@ -100,7 +101,7 @@ public final class BatchOperationFailProcessor
       commandDistributionBehavior
           .withKey(keyGenerator.nextKey())
           .inQueue(DistributionQueue.BATCH_OPERATION)
-          .forPartition(originPartitionId)
+          .forPartition(getLeadPartition(recordValue))
           .distribute(
               ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
               BatchOperationIntent.FAIL_PARTITION,

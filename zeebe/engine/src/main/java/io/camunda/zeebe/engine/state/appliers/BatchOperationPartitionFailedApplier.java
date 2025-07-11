@@ -7,9 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import static io.camunda.zeebe.engine.processing.batchoperation.PartitionUtil.isOnLeadPartition;
+
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
@@ -37,7 +38,7 @@ public class BatchOperationPartitionFailedApplier
 
   @Override
   public void applyState(final long recordKey, final BatchOperationPartitionLifecycleRecord value) {
-    if (isOnLeadPartition(value.getBatchOperationKey())) {
+    if (isOnLeadPartition(value, partitionId)) {
       // mark the source partition as failed with an error message
       batchOperationState.failPartition(
           value.getBatchOperationKey(), value.getSourcePartitionId(), value.getError());
@@ -45,15 +46,5 @@ public class BatchOperationPartitionFailedApplier
       // mark the batch operation as completed locally => delete it from rocksDb
       batchOperationState.complete(value.getBatchOperationKey());
     }
-  }
-
-  /**
-   * Check, if this applier is running on the lead partition of the batch operation.
-   *
-   * @param batchOperationKey the key of the batch operation
-   * @return true if this applier is running on the lead partition, false otherwise
-   */
-  private boolean isOnLeadPartition(final long batchOperationKey) {
-    return Protocol.decodePartitionId(batchOperationKey) == partitionId;
   }
 }

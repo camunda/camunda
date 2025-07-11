@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.engine.processing.batchoperation.PartitionUtil.getLeadPartition;
+import static io.camunda.zeebe.engine.processing.batchoperation.PartitionUtil.isOnLeadPartition;
+
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.BatchOperationExecutor;
@@ -20,13 +23,11 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
-import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -230,7 +231,7 @@ public final class BatchOperationExecuteProcessor
         executionRecord.getBatchOperationKey(),
         getLeadPartition(executionRecord));
 
-    if (isLeadPartition(executionRecord, partitionId)) {
+    if (isOnLeadPartition(executionRecord, partitionId)) {
       // If we are the lead partition, we can directly append the follow-up command
       commandWriter.appendFollowUpCommand(
           executionRecord.getBatchOperationKey(),
@@ -257,29 +258,5 @@ public final class BatchOperationExecuteProcessor
               BatchOperationIntent.COMPLETE_PARTITION,
               batchInternalComplete);
     }
-  }
-
-  /**
-   * Returns the lead partition ID for the given batch operation record value. THe lead partition is
-   * the partition the batch operation was originally created on.
-   *
-   * @param recordValue the batch operation record value
-   * @return the lead partition ID
-   */
-  private static int getLeadPartition(final BatchOperationRelated recordValue) {
-    return Protocol.decodePartitionId(recordValue.getBatchOperationKey());
-  }
-
-  /**
-   * Checks if the given partition ID is the lead partition for the given batch operation.
-   *
-   * @param recordValue the batch operation record value
-   * @param partitionId the partition ID to check
-   * @return <code>true</code> if the partition ID is the lead partition, <code>false</code>
-   *     otherwise
-   */
-  private static boolean isLeadPartition(
-      final BatchOperationRelated recordValue, final int partitionId) {
-    return getLeadPartition(recordValue) == partitionId;
   }
 }
