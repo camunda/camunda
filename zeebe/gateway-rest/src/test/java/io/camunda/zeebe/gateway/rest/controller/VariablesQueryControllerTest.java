@@ -23,6 +23,7 @@ import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.stream.Stream;
@@ -123,9 +124,10 @@ public class VariablesQueryControllerTest extends RestControllerTest {
 
     when(variableServices.getByKey(INVALID_VARIABLE_KEY))
         .thenThrow(
-            new CamundaSearchException(
-                String.format("Variable with key %d not found", INVALID_VARIABLE_KEY),
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    String.format("Variable with key %d not found", INVALID_VARIABLE_KEY),
+                    CamundaSearchException.Reason.NOT_FOUND)));
 
     when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
   }

@@ -23,6 +23,7 @@ import io.camunda.search.sort.IncidentSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -292,7 +293,9 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetIncidentByKey() {
     when(incidentServices.getByKey(any(Long.class)))
-        .thenThrow(new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND));
+        .thenThrow(
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND)));
     // when / then
     webClient
         .get()

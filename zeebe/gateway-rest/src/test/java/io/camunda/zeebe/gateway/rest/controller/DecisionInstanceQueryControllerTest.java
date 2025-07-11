@@ -298,9 +298,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     final var decisionInstanceId = "123-1";
     when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision instance with key 123-1 was not found.",
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision instance with key 123-1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
     // when
     webClient
         .get()
@@ -371,7 +372,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
                   {
                   "type": "about:blank",
-                  "title": "io.camunda.service.exception.ForbiddenException",
+                  "title": "FORBIDDEN",
                   "status": 403,
                   "detail": "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
                   "instance": "/v2/decision-instances/123-1"

@@ -236,6 +236,5 @@ public class TenantServiceTest {
             assertThrowsExactly(ServiceException.class, () -> service.getById("tenant-id"))
                 .getStatus())
         .isEqualTo(Status.FORBIDDEN);
-    ;
   }
 }
