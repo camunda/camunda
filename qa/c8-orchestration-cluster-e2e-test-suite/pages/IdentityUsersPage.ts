@@ -7,8 +7,8 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
-import {TIMEOUT} from 'dns';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {sleep} from 'utils/sleep';
 import {waitForItemInList} from 'utils/waitForItemInList';
 
 export class IdentityUsersPage {
@@ -184,19 +184,14 @@ export class IdentityUsersPage {
     });
   }
 
-  async deleteUser(name: string) {
-    await this.deleteUserButton(name).click();
+  async deleteUser(user: {username: string; email: string}) {
+    await this.deleteUserButton(user.username).click();
     await expect(this.deleteUserModal).toBeVisible();
     await this.deleteUserModalDeleteButton.click();
     await expect(this.deleteUserModal).not.toBeVisible();
 
-    //temporary workaround
-    await this.page.reload();
-    await this.page.waitForTimeout(5000);
-    await this.page.reload();
-
     const item = this.usersList.getByRole('cell', {
-      name,
+      name: user.email,
     });
 
     await waitForItemInList(this.page, item, {
