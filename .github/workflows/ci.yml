@@ -652,6 +652,8 @@ jobs:
     needs: [ check-results ]
     uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
     secrets: inherit
+    permissions:
+      contents: read
     with:
       job_to_run: 'concurrency-group'
       base_group_name: deploy-maven-snapshot
@@ -721,6 +723,8 @@ jobs:
     needs: [ check-results ]
     uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
     secrets: inherit
+    permissions:
+      contents: read
     with:
       base_group_name: deploy-camunda-docker-snapshot
 
