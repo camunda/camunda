@@ -234,8 +234,8 @@ camunda-platform:
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
-    - name: SPRING_PROFILES_ACTIVE
-      value: dev-data
+    # - name: SPRING_PROFILES_ACTIVE
+    #   value: dev-data
     resources:
       limits:
         cpu: 1
