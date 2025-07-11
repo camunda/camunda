@@ -7,6 +7,8 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.SecurityContext;
 
@@ -19,4 +21,8 @@ public interface UsageMetricsSearchClient {
   Long countProcessInstances(UsageMetricsQuery query);
 
   Long countDecisionInstances(UsageMetricsQuery query);
+
+  default UsageMetricStatisticsEntity usageMetricsStatistics(final UsageMetricsFilter filter) {
+    return null;
+  }
 }
