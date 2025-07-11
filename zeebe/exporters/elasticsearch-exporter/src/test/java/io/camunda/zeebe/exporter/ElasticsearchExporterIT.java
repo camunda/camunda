@@ -225,7 +225,7 @@ final class ElasticsearchExporterIT {
         .isPresent()
         .get()
         .extracting(ComponentTemplateWrapper::name)
-        .isEqualTo(config.index.prefix);
+        .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
   private boolean export(final Record<?> record) {

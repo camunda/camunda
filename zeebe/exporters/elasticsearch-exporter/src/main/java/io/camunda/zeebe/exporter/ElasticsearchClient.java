@@ -235,7 +235,13 @@ class ElasticsearchClient implements AutoCloseable {
 
   private boolean putComponentTemplate(final Template template) {
     try {
-      final var request = new Request("PUT", "/_component_template/" + configuration.index.prefix);
+      final var request =
+          new Request(
+              "PUT",
+              "/_component_template/"
+                  + configuration.index.prefix
+                  + "-"
+                  + VersionUtil.getVersionLowerCase());
       request.setJsonEntity(MAPPER.writeValueAsString(template));
 
       final var response = sendRequest(request, PutIndexTemplateResponse.class);

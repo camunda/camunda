@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
@@ -45,8 +46,7 @@ final class TemplateReader {
     final Template template = readTemplate(findResourceForTemplate(valueType));
 
     // update prefix in template in case it was changed in configuration
-    template.composedOf().set(0, config.index.prefix);
-
+    template.composedOf().set(0, config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
     template.patterns().set(0, searchPattern);
     template.template().aliases().clear();
     template.template().aliases().put(aliasName, Collections.emptyMap());
