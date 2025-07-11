@@ -5,20 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.util.rest;
+package io.camunda.operate.testhelpers;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.util.RetryOperation;
-import java.io.IOException;
+import io.camunda.operate.util.rest.StatefulHttpComponentsClientHttpRequestFactory;
 import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.client5.http.cookie.BasicCookieStore;
@@ -27,15 +27,14 @@ import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.http.protocol.BasicHttpContext;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.elasticsearch.ElasticsearchException;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.support.BasicAuthenticationInterceptor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RequestCallback;
@@ -50,11 +49,9 @@ import org.springframework.web.client.RestTemplate;
 @Scope(SCOPE_PROTOTYPE)
 public class StatefulRestTemplate extends RestTemplate {
 
-  private static final String LOGIN_URL_PATTERN = "/api/login?username=%s&password=%s";
   private static final String CSRF_TOKEN_HEADER_NAME = "X-CSRF-TOKEN";
-
-  private static final String USERNAME_DEFAULT = "demo";
-  private static final String PASSWORD_DEFAULT = "demo";
+  private static final String USERNAME = "demo";
+  private static final String PASSWORD = "demo";
 
   private final String host;
   private final Integer port;
@@ -78,6 +75,11 @@ public class StatefulRestTemplate extends RestTemplate {
     statefulHttpComponentsClientHttpRequestFactory =
         new StatefulHttpComponentsClientHttpRequestFactory(httpClient, httpContext);
     super.setRequestFactory(statefulHttpComponentsClientHttpRequestFactory);
+
+    // We set the interceptors here so they capture the non overridden methods
+    final var interceptors = new ArrayList<>(super.getInterceptors());
+    interceptors.add(new BasicAuthenticationInterceptor(USERNAME, PASSWORD));
+    super.setInterceptors(interceptors);
   }
 
   public HttpClient getHttpClient() {
@@ -97,7 +99,7 @@ public class StatefulRestTemplate extends RestTemplate {
       final URI url, final Object request, final Class<T> responseType) throws RestClientException {
     final RequestEntity<Object> requestEntity =
         RequestEntity.method(HttpMethod.POST, url)
-            .headers(getCsrfHeader())
+            .headers(getHeaders())
             .contentType(MediaType.APPLICATION_JSON)
             .body(request);
     final ResponseEntity<T> tResponseEntity = exchange(requestEntity, responseType);
@@ -120,6 +122,7 @@ public class StatefulRestTemplate extends RestTemplate {
     if (requestBody != null) {
       final HttpHeaders headers = new HttpHeaders();
       headers.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
+      headers.add(HttpHeaders.AUTHORIZATION, "Basic " + getEncodedUsernameAndPassword());
       if (requestBody instanceof HttpEntity<?>) {
         httpEntity = new HttpEntity(((HttpEntity<?>) requestBody).getBody(), headers);
       } else {
@@ -129,48 +132,6 @@ public class StatefulRestTemplate extends RestTemplate {
       httpEntity = null;
     }
     return super.httpEntityCallback(httpEntity, responseType);
-  }
-
-  public StatefulHttpComponentsClientHttpRequestFactory getStatefulHttpClientRequestFactory() {
-    return statefulHttpComponentsClientHttpRequestFactory;
-  }
-
-  public void loginWhenNeeded() {
-    loginWhenNeeded(USERNAME_DEFAULT, PASSWORD_DEFAULT);
-  }
-
-  public void loginWhenNeeded(final String username, final String password) {
-    // log in only once
-    if (getCookieStore().getCookies().isEmpty()) {
-      final ResponseEntity<Object> response = tryLoginAs(username, password);
-      if (!response.getStatusCode().equals(HttpStatus.NO_CONTENT)) {
-        throw new OperateRuntimeException(
-            String.format(
-                "Unable to login user %s to %s:%s. Response: %s", username, host, port, response));
-      }
-      saveCSRFTokenWhenAvailable(response);
-    }
-  }
-
-  private ResponseEntity<Object> tryLoginAs(final String username, final String password) {
-    try {
-      return RetryOperation.<ResponseEntity<Object>>newBuilder()
-          .retryConsumer(
-              () ->
-                  postForEntity(
-                      getURL(String.format(LOGIN_URL_PATTERN, username, password)),
-                      null,
-                      Object.class))
-          // retry for 5 minutes
-          .noOfRetry(50)
-          .delayInterval(6, TimeUnit.SECONDS)
-          .retryOn(IOException.class, RestClientException.class, ElasticsearchException.class)
-          .message("StatefulRestTemplate#tryLoginAs")
-          .build()
-          .retry();
-    } catch (final Exception e) {
-      throw new OperateRuntimeException("Unable to connect to Operate ", e);
-    }
   }
 
   private ResponseEntity<?> saveCSRFTokenWhenAvailable(final ResponseEntity<?> response) {
@@ -209,7 +170,15 @@ public class StatefulRestTemplate extends RestTemplate {
     }
   }
 
-  public Consumer<HttpHeaders> getCsrfHeader() {
-    return (header) -> header.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
+  public Consumer<HttpHeaders> getHeaders() {
+    return (header) -> {
+      header.add(CSRF_TOKEN_HEADER_NAME, csrfToken);
+      header.add(HttpHeaders.AUTHORIZATION, "Basic " + getEncodedUsernameAndPassword());
+    };
+  }
+
+  private String getEncodedUsernameAndPassword() {
+    return Base64.getEncoder()
+        .encodeToString(USERNAME.concat(":").concat(PASSWORD).getBytes(StandardCharsets.UTF_8));
   }
 }
