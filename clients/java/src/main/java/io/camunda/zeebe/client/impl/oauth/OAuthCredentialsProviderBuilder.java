@@ -35,6 +35,26 @@ import java.util.Objects;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
+<<<<<<< HEAD
+=======
+  public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
+  public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
+  public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
+  public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
+  public static final String OAUTH_ENV_TOKEN_RESOURCE = "ZEEBE_TOKEN_RESOURCE";
+  public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
+  public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
+  public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
+  public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PATH =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_PATH";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PASSWORD =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_PASSWORD";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD";
+>>>>>>> f5d4e621 (feat: add resource parameter to OAuth credentials provider)
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
@@ -49,6 +69,14 @@ public final class OAuthCredentialsProviderBuilder {
   private File credentialsCache;
   private Duration connectTimeout;
   private Duration readTimeout;
+<<<<<<< HEAD
+=======
+  private boolean applyEnvironmentOverrides = true;
+  private Path clientAssertionKeystorePath;
+  private String clientAssertionKeystorePassword;
+  private String clientAssertionKeystoreKeyAlias;
+  private String clientAssertionKeystoreKeyPassword;
+>>>>>>> f5d4e621 (feat: add resource parameter to OAuth credentials provider)
   private String resource;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
