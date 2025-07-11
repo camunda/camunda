@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.os;
 
-import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.search.connect.plugin.PluginRepository;
@@ -76,7 +75,7 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.signer.Aws4Signer;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 @Configuration
 @Conditional(OpenSearchCondition.class)
@@ -498,13 +497,13 @@ public class OpenSearchConnector {
   }
 
   private OpenSearchAsyncClient getAwsAsyncClient(final OpenSearchProperties osConfig) {
-    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    final var region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkHttpClient httpClient = AwsCrtHttpClient.builder().build();
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
             osConfig.getHost(),
-            Region.of(region),
+            region,
             AwsSdk2TransportOptions.builder()
                 .setMapper(new JacksonJsonpMapper(tasklistObjectMapper))
                 .build());
@@ -512,13 +511,13 @@ public class OpenSearchConnector {
   }
 
   private OpenSearchClient getAwsClient(final OpenSearchProperties osConfig) {
-    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    final var region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkHttpClient httpClient = AwsCrtHttpClient.builder().build();
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
             osConfig.getHost(),
-            Region.of(region),
+            region,
             AwsSdk2TransportOptions.builder()
                 .setMapper(new JacksonJsonpMapper(tasklistObjectMapper))
                 .build());
