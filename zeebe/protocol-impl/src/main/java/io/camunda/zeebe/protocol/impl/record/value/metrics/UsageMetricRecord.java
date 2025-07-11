@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetricRecordValue {
@@ -26,25 +27,27 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
   private final LongProperty resetTimeProp = new LongProperty("resetTime", -1);
   private final LongProperty startTimeProp = new LongProperty("startTime", -1);
   private final LongProperty endTimeProp = new LongProperty("endTime", -1);
-  private final DocumentProperty valuesProp = new DocumentProperty("values");
+  private final DocumentProperty counterValuesProp = new DocumentProperty("counterValues");
+  private final DocumentProperty setValuesProp = new DocumentProperty("setValues");
 
   public UsageMetricRecord() {
-    super(6);
+    super(7);
     declareProperty(intervalTypeProp)
         .declareProperty(resetTimeProp)
         .declareProperty(startTimeProp)
         .declareProperty(endTimeProp)
         .declareProperty(eventTypeProp)
-        .declareProperty(valuesProp);
+        .declareProperty(counterValuesProp)
+        .declareProperty(setValuesProp);
   }
 
-  public static UsageMetricRecord copyWithoutValues(final UsageMetricRecord record) {
+  public static UsageMetricRecord copyWithoutValues(final UsageMetricRecord usageMetricRecord) {
     return new UsageMetricRecord()
-        .setEventType(record.getEventType())
-        .setIntervalType(record.getIntervalType())
-        .setResetTime(record.getResetTime())
-        .setStartTime(record.getStartTime())
-        .setEndTime(record.getEndTime());
+        .setEventType(usageMetricRecord.getEventType())
+        .setIntervalType(usageMetricRecord.getIntervalType())
+        .setResetTime(usageMetricRecord.getResetTime())
+        .setStartTime(usageMetricRecord.getStartTime())
+        .setEndTime(usageMetricRecord.getEndTime());
   }
 
   @Override
@@ -88,15 +91,6 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
   }
 
   @Override
-  public Map<String, Long> getValues() {
-    return MsgPackConverter.convertToLongMap(valuesProp.getValue());
-  }
-
-  public UsageMetricRecord setValues(final DirectBuffer value) {
-    valuesProp.setValue(value);
-    return this;
-  }
-
   public long getResetTime() {
     return resetTimeProp.getValue();
   }
@@ -106,8 +100,33 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
     return this;
   }
 
+  @Override
+  public Map<String, Long> getCounterValues() {
+    return MsgPackConverter.convertToLongMap(counterValuesProp.getValue());
+  }
+
+  public UsageMetricRecord setCounterValues(final DirectBuffer value) {
+    counterValuesProp.setValue(value);
+    return this;
+  }
+
+  @Override
+  public Map<String, Set<String>> getSetValues() {
+    return MsgPackConverter.convertToSetStringMap(setValuesProp.getValue());
+  }
+
+  public UsageMetricRecord setSetValues(final DirectBuffer value) {
+    setValuesProp.setValue(value);
+    return this;
+  }
+
   @JsonIgnore
-  public DirectBuffer getValueBuffer() {
-    return valuesProp.getValue();
+  public DirectBuffer getCounterValueBuffer() {
+    return counterValuesProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getSetValueBuffer() {
+    return setValuesProp.getValue();
   }
 }
