@@ -95,7 +95,7 @@ public final class BatchOperationFailProcessor
     } else {
       stateWriter.appendFollowUpEvent(
           batchOperationKey,
-          BatchOperationIntent.PARTITION_FAILED,
+          BatchOperationIntent.FAILED,
           batchInternalFail,
           FollowUpEventMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
       commandDistributionBehavior

@@ -245,7 +245,7 @@ public final class BatchOperationExecuteProcessor
       // completed
       stateWriter.appendFollowUpEvent(
           executionRecord.getBatchOperationKey(),
-          BatchOperationIntent.PARTITION_COMPLETED,
+          BatchOperationIntent.COMPLETED,
           batchInternalComplete,
           FollowUpEventMetadata.of(
               b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
