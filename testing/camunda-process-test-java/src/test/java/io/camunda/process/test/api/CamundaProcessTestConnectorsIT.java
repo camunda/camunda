@@ -40,8 +40,7 @@ public class CamundaProcessTestConnectorsIT {
   @RegisterExtension
   private final CamundaProcessTestExtension extension =
       new CamundaProcessTestExtension()
-          .withCamundaVersion("8.7.0-SNAPSHOT")
-          .withConnectorsDockerImageVersion("8.7.0-SNAPSHOT")
+          .withConnectorsDockerImageVersion("8.7-SNAPSHOT")
           .withConnectorsEnabled(true)
           .withConnectorsSecret(
               "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness");
