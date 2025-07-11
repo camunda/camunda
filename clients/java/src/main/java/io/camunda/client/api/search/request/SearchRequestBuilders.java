@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.search.request;
 
-
 import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
 import io.camunda.client.api.search.filter.BatchOperationItemFilter;
@@ -59,7 +58,6 @@ import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
-
 import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;

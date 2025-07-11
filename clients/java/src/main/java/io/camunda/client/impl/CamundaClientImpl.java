@@ -21,7 +21,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
@@ -120,7 +119,6 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
@@ -152,7 +150,6 @@ import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisti
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
-
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
@@ -244,7 +241,6 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
-
 import io.camunda.client.impl.search.request.AuthorizationsSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationItemSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;

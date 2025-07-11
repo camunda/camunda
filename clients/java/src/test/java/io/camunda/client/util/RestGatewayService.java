@@ -20,7 +20,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.impl.CamundaObjectMapper;
-
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.client.protocol.rest.JobActivationResult;

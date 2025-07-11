@@ -16,7 +16,6 @@
 package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
-
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
@@ -109,7 +108,6 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
