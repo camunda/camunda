@@ -595,7 +595,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "PROCESSING_ERROR",
+              "title": "INTERNAL",
               "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
               "instance": "%s"
             }
@@ -628,8 +628,8 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "INTERNAL_ERROR",
-              "detail": "Received an unexpected error from the broker, code: INTERNAL_ERROR, message: something went wrong",
+              "title": "INTERNAL",
+              "detail": "Unexpected error occurred between gateway and broker (code: INTERNAL_ERROR) (message: something went wrong)",
               "instance": "%s"
             }
             """
@@ -726,7 +726,7 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "PROCESSING_ERROR",
+              "title": "INTERNAL",
               "detail": "Command 'FETCH' rejected with code 'PROCESSING_ERROR': something went wrong",
               "instance": "%s"
             }
@@ -759,8 +759,8 @@ public class ResourceControllerTest extends RestControllerTest {
             {
               "type": "about:blank",
               "status": 500,
-              "title": "INTERNAL_ERROR",
-              "detail": "Received an unexpected error from the broker, code: INTERNAL_ERROR, message: something went wrong",
+              "title": "INTERNAL",
+              "detail": "Unexpected error occurred between gateway and broker (code: INTERNAL_ERROR) (message: something went wrong)",
               "instance": "%s"
             }
             """
