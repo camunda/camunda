@@ -32,7 +32,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(MappingRuleController.class)
-public class MappingControllerTest extends RestControllerTest {
+public class MappingRuleControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
 
