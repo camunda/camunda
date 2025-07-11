@@ -21,7 +21,8 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
@@ -141,9 +142,10 @@ class DecisionInstanceServiceTest {
     final Executable executable = () -> services.getById(decisionInstanceId);
 
     // then
-    final var exception = assertThrows(ForbiddenException.class, executable);
+    final var exception = assertThrows(ServiceException.class, executable);
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");
+    assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
   }
 }

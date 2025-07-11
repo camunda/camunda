@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -22,7 +22,8 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerTenantEntityRequest;
@@ -231,6 +232,10 @@ public class TenantServiceTest {
     when(client.searchTenants(any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(tenantEntity), null, null));
 
-    assertThatCode(() -> service.getById("tenant-id")).isInstanceOf(ForbiddenException.class);
+    assertThat(
+            assertThrowsExactly(ServiceException.class, () -> service.getById("tenant-id"))
+                .getStatus())
+        .isEqualTo(Status.FORBIDDEN);
+    ;
   }
 }
