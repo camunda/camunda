@@ -13,10 +13,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.UsageMetricsSearchClient;
-import io.camunda.search.entities.UsageMetricsCount;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryBuilders;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -45,9 +44,8 @@ public final class UsageMetricsServiceTest {
   @Test
   public void shouldReturnUsageMetricsCount() {
     // given
-    when(client.countProcessInstances(any())).thenReturn(5L);
-    when(client.countDecisionInstances(any())).thenReturn(23L);
-    when(client.countAssignees(any())).thenReturn(42L);
+    when(client.usageMetricStatistics(any()))
+        .thenReturn(new UsageMetricStatisticsEntity(16, 14, 2, null));
 
     final var startTime =
         OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, OffsetDateTime.now().getOffset());
@@ -58,9 +56,10 @@ public final class UsageMetricsServiceTest {
             .build();
 
     // when
-    final SearchQueryResult<UsageMetricsCount> searchQueryResult = services.search(searchQuery);
+    final var searchQueryResult = services.search(searchQuery);
 
     // then
-    assertThat(searchQueryResult.items().getFirst()).isEqualTo(new UsageMetricsCount(42L, 5L, 23L));
+    assertThat(searchQueryResult.items().getFirst())
+        .isEqualTo(new UsageMetricStatisticsEntity(16, 14, 2, null));
   }
 }
