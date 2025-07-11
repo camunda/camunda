@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.ThrowingConsumer;
 
 /** The assertion object to verify a process instance. */
 public interface ProcessInstanceAssert {
@@ -389,6 +391,124 @@ public interface ProcessInstanceAssert {
    * @return the assertion object
    */
   ProcessInstanceAssert hasVariables(Map<String, Object> variables);
+
+  /**
+   * Verifies that the variable object satisfied the given requirements expressed as a {@link
+   * ThrowingConsumer}.
+   *
+   * <p>This is useful to perform a group of assertions on a single object, each passed assertion is
+   * evaluated and all failures are reported (to be precise each assertion can lead to one failure
+   * max).
+   *
+   * @param variableName the variable name
+   * @param jsonMappedClass the variable's deserialization target, can be a JsonNode or Map for
+   *     variables without a dedicated class
+   * @param requirement the requirement that the variable must satisfy
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName, final Class<T> jsonMappedClass, final ThrowingConsumer<T> requirement);
+
+  /**
+   * Verifies that the process instance has a variable with a value that satisfies the given
+   * requirements. The verification fails if the variable doesn't exist or the value doesn't satisfy
+   * all requirements.
+   *
+   * <p>The assertion waits until the variable exists and the value satisfies all requirements.
+   *
+   * @param variableName the variable name
+   * @param jsonMappedClass the variable's deserialization target, can be a JsonNode or Map for
+   *     variables without a dedicated class
+   * @param requirements the list of requirements that the variable must satisfy
+   * @return the assertion object
+   */
+  @SuppressWarnings("unchecked")
+  <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName, Class<T> jsonMappedClass, List<ThrowingConsumer<T>> requirements);
+
+  /**
+   * Verifies that the local variable object satisfied the given requirement expressed as a {@link
+   * ThrowingConsumer}.
+   *
+   * <p>This is useful to perform a group of assertions on a single object, each passed assertion is
+   * evaluated and all failures are reported (to be precise each assertion can lead to one failure
+   * max).
+   *
+   * @param elementId id of the element the local variable is associated with
+   * @param variableName the variable name
+   * @param jsonMappedClass the variable's deserialization target, can be a JsonNode or Map for
+   *     variables without a dedicated class
+   * @param requirement the requirement that the variable must satisfy
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      String elementId,
+      String variableName,
+      Class<T> jsonMappedClass,
+      ThrowingConsumer<T> requirement);
+
+  /**
+   * Verifies that the local variable object satisfied the given requirements expressed as a list of
+   * {@link ThrowingConsumer}s.
+   *
+   * <p>This is useful to perform a group of assertions on a single object, each passed assertion is
+   * evaluated and all failures are reported (to be precise each assertion can lead to one failure
+   * max).
+   *
+   * @param elementId id of the element the local variable is associated with
+   * @param variableName the variable name
+   * @param jsonMappedClass the variable's deserialization target, can be a JsonNode or Map for
+   *     variables without a dedicated class
+   * @param requirements the list of requirements that the variable must satisfy
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      String elementId,
+      String variableName,
+      Class<T> jsonMappedClass,
+      List<ThrowingConsumer<T>> requirements);
+
+  /**
+   * Verifies that the local variable object satisfied the given requirement expressed as a {@link
+   * ThrowingConsumer}.
+   *
+   * <p>This is useful to perform a group of assertions on a single object, each passed assertion is
+   * evaluated and all failures are reported (to be precise each assertion can lead to one failure
+   * max).
+   *
+   * @param selector the {@see ElementSelector} for the BPMN element the variable is associated with
+   * @param variableName the variable name
+   * @param jsonMappedClass the variable's deserialization target, can be a JsonNode or Map for
+   *     variables without a dedicated class
+   * @param requirement the requirement that the variable must satisfy
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      ElementSelector selector,
+      String variableName,
+      Class<T> jsonMappedClass,
+      ThrowingConsumer<T> requirement);
+
+  /**
+   * Verifies that the local variable object satisfied the given requirement expressed as a list of
+   * {@link ThrowingConsumer}s.
+   *
+   * <p>This is useful to perform a group of assertions on a single object, each passed assertion is
+   * evaluated and all failures are reported (to be precise each assertion can lead to one failure
+   * max).
+   *
+   * @param selector the {@see ElementSelector} for the BPMN element the variable is associated with
+   * @param variableName the variable name
+   * @param jsonMappedClass the variable's deserialization target, can be a JsonNode or Map for
+   *     variables without a dedicated class
+   * @param requirements the list of requirements that the variable must satisfy
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      ElementSelector selector,
+      String variableName,
+      Class<T> jsonMappedClass,
+      List<ThrowingConsumer<T>> requirements);
 
   /**
    * Verifies that the given element associated with the process instance has the given local
