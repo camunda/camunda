@@ -12,6 +12,8 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
@@ -52,6 +54,13 @@ public class SearchEngineDatabaseConfiguration {
       final SearchEngineIndexProperties searchEngineIndexProperties,
       final SearchEngineRetentionProperties searchEngineRetentionProperties,
       final SearchEngineSchemaManagerProperties searchEngineSchemaManagerProperties) {
+
+    // Override schema creation if database type is "none"
+    final DatabaseType databaseType = searchEngineConnectProperties.getTypeEnum();
+    if (DatabaseConfig.NONE.equals(databaseType.name())) {
+      searchEngineSchemaManagerProperties.setCreateSchema(false);
+    }
+
     return SearchEngineConfiguration.of(
         b ->
             b.connect(searchEngineConnectProperties)
