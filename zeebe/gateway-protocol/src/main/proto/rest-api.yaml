@@ -10677,11 +10677,11 @@ components:
           format: date-time
         operationsTotalCount:
           type: integer
-          description: The total number of items contained in this stacking process.
+          description: The total number of items contained in this batch operation.
           format: int32
         operationsFailedCount:
           type: integer
-          description: The number of items which failed during execution of the batch operation. (e.g. because they are rejected by the machine)
+          description: The number of items which failed during execution of the batch operation. (e.g. because they are rejected by the Zeebe engine).
           format: int32
         operationsCompletedCount:
           type: integer
@@ -10738,7 +10738,7 @@ components:
             - CANCELED
             - FAILED
         processedDate:
-          description: the date this item was processed. This can be either completed, canceled or failed.
+          description: the date this item was processed.
           type: string
           format: date-time
         errorMessage:
