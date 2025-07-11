@@ -51,7 +51,7 @@
     "generate-screenshots": "playwright test --project=screenshot-generator",
     "test:e2e:ci": "cross-env IS_E2E=true PORT=8080 playwright test --project=e2e",
     "coverage": "npm run test -- --coverage --changed",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.53.2 /bin/bash",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.54.0 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "cross-env VITE_VERSION=0.0.0-SNAPSHOT vite build --mode visual-regression",
     "extract-sbom": "vite build --mode sbom"
