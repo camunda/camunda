@@ -14,7 +14,6 @@ import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.search.clients.reader.UsageMetricsReader;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
-import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -30,8 +29,11 @@ public class UsageMetricsDbReader implements UsageMetricsReader {
     this.usageMetricMapper = usageMetricMapper;
   }
 
-  public UsageMetricStatisticsEntity usageMetricStatistics(final UsageMetricsFilter filter) {
-    LOG.trace("[RDBMS DB] Aggregate usage metrics statistics with {}", filter);
+  @Override
+  public UsageMetricStatisticsEntity usageMetricStatistics(
+      final UsageMetricsQuery query, final ResourceAccessChecks access) {
+    LOG.trace("[RDBMS DB] Aggregate usage metrics statistics with {}", query);
+    final var filter = query.filter();
 
     if (filter.withTenants()) {
       final var result = usageMetricMapper.usageMetricTenantsStatistics(filter);

@@ -31,6 +31,7 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -241,18 +242,9 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
-  public Long countAssignees(final UsageMetricsQuery query) {
-    return distinctCountUsageMetricsFor("task_completed_by_assignee", query);
-  }
-
-  @Override
-  public Long countProcessInstances(final UsageMetricsQuery query) {
-    return distinctCountUsageMetricsFor("EVENT_PROCESS_INSTANCE_STARTED", query);
-  }
-
-  @Override
-  public Long countDecisionInstances(final UsageMetricsQuery query) {
-    return distinctCountUsageMetricsFor("EVENT_DECISION_INSTANCE_EVALUATED", query);
+  public UsageMetricStatisticsEntity usageMetricStatistics(final UsageMetricsQuery query) {
+    return doReadWithResourceAccessController(
+        access -> readers.usageMetricsReader().usageMetricStatistics(query, access));
   }
 
   /*

@@ -32,6 +32,7 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -61,6 +62,7 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
 import java.util.List;
+import java.util.Map;
 
 public class NoopSearchClientsProxy implements SearchClientsProxy {
 
@@ -207,18 +209,8 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public Long countAssignees(final UsageMetricsQuery query) {
-    return 0L;
-  }
-
-  @Override
-  public Long countProcessInstances(final UsageMetricsQuery query) {
-    return 0L;
-  }
-
-  @Override
-  public Long countDecisionInstances(final UsageMetricsQuery query) {
-    return 0L;
+  public UsageMetricStatisticsEntity usageMetricStatistics(final UsageMetricsQuery query) {
+    return new UsageMetricStatisticsEntity(0, 0, 0, Map.of());
   }
 
   @Override
