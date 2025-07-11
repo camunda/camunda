@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.util.KeyUtil.tryParseLong;
 import static io.camunda.zeebe.gateway.rest.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessActivationRequest;
-import static io.camunda.zeebe.gateway.rest.validator.AdHocSubProcessActivityRequestValidator.validateAdHocSubProcessSearchActivitiesRequest;
+
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -41,10 +41,9 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.search.filter.AdHocSubProcessActivityFilter;
-import io.camunda.search.query.AdHocSubProcessActivityQuery;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
+
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
@@ -72,7 +71,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQuery;
+
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
@@ -866,28 +865,6 @@ public class RequestMapper {
     return getResult(
         TenantRequestValidator.validateMemberRequest(tenantId, memberId, entityType),
         () -> new TenantMemberRequest(tenantId, memberId, entityType));
-  }
-
-  public static Either<ProblemDetail, AdHocSubProcessActivityQuery> toAdHocSubProcessActivityQuery(
-      final AdHocSubProcessActivitySearchQuery request) {
-    final var filter = request.getFilter();
-    if (filter == null) {
-      return Either.left(
-          createProblemDetail(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"))).get());
-    }
-
-    final var processDefinitionKey = tryParseLong(filter.getProcessDefinitionKey()).orElse(null);
-
-    return getResult(
-        validateAdHocSubProcessSearchActivitiesRequest(filter, processDefinitionKey),
-        () ->
-            AdHocSubProcessActivityQuery.builder()
-                .filter(
-                    AdHocSubProcessActivityFilter.builder()
-                        .processDefinitionKey(processDefinitionKey)
-                        .adHocSubProcessId(filter.getAdHocSubProcessId())
-                        .build())
-                .build());
   }
 
   public static Either<ProblemDetail, AdHocSubProcessActivateActivitiesRequest>

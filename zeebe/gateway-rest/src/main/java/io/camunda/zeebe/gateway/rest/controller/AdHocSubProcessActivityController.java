@@ -7,18 +7,12 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
-
-import io.camunda.search.query.AdHocSubProcessActivityQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
-import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
@@ -40,13 +34,6 @@ public class AdHocSubProcessActivityController {
     this.authenticationProvider = authenticationProvider;
   }
 
-  @CamundaPostMapping(path = "/search")
-  public ResponseEntity<AdHocSubProcessActivitySearchQueryResult> searchAdHocSubProcessActivities(
-      @RequestBody final AdHocSubProcessActivitySearchQuery query) {
-    return RequestMapper.toAdHocSubProcessActivityQuery(query)
-        .fold(RestErrorMapper::mapProblemToResponse, this::searchAdHocSubProcessActivities);
-  }
-
   @CamundaPostMapping(path = "/{adHocSubProcessInstanceKey}/activation")
   public CompletableFuture<ResponseEntity<Object>> activateAdHocSubProcessActivities(
       @PathVariable final String adHocSubProcessInstanceKey,
@@ -54,26 +41,6 @@ public class AdHocSubProcessActivityController {
     return RequestMapper.toAdHocSubProcessActivateActivitiesRequest(
             adHocSubProcessInstanceKey, activationRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateActivities);
-  }
-
-  private ResponseEntity<AdHocSubProcessActivitySearchQueryResult> searchAdHocSubProcessActivities(
-      final AdHocSubProcessActivityQuery query) {
-    try {
-      final var activities =
-          adHocSubProcessActivityServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
-
-      final var result = new AdHocSubProcessActivitySearchQueryResult();
-      result.setItems(
-          activities.items().stream()
-              .map(SearchQueryResponseMapper::toAdHocSubProcessActivity)
-              .toList());
-
-      return ResponseEntity.ok(result);
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateActivities(

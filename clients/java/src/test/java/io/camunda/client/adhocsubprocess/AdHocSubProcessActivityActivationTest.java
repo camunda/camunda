@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -35,6 +36,11 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 public class AdHocSubProcessActivityActivationTest extends ClientRestTest {
 
   private static final String AD_HOC_SUBPROCESS_INSTANCE_KEY = "123456789";
+
+  @BeforeEach
+  void setUp() {
+    gatewayService.onAdHocSubProcessActivityActivation(AD_HOC_SUBPROCESS_INSTANCE_KEY);
+  }
 
   @ParameterizedTest
   @MethodSource("requestModifiers")

@@ -21,8 +21,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
@@ -120,7 +120,6 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
@@ -245,7 +244,6 @@ import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.http.HttpClientFactory;
-import io.camunda.client.impl.search.request.AdHocSubProcessActivitySearchRequestImpl;
 import io.camunda.client.impl.search.request.AuthorizationsSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationItemSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
@@ -793,22 +791,6 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ElementInstanceGetRequest newElementInstanceGetRequest(final long elementInstanceKey) {
     return new ElementInstanceGetRequestImpl(httpClient, elementInstanceKey);
-  }
-
-  @Override
-  public AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest() {
-    return new AdHocSubProcessActivitySearchRequestImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest(
-      final long processDefinitionKey, final String adHocSubProcessId) {
-    return newAdHocSubProcessActivitySearchRequest()
-        .filter(
-            filter ->
-                filter
-                    .processDefinitionKey(processDefinitionKey)
-                    .adHocSubProcessId(adHocSubProcessId));
   }
 
   @Override

@@ -33,6 +33,7 @@ import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
+
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.service.ClockServices;
@@ -164,10 +165,8 @@ public class CamundaServicesConfiguration {
   @Bean
   public AdHocSubProcessActivityServices adHocSubProcessActivityServices(
       final BrokerClient brokerClient,
-      final SecurityContextProvider securityContextProvider,
-      final ProcessDefinitionServices processDefinitionServices) {
-    return new AdHocSubProcessActivityServices(
-        brokerClient, securityContextProvider, processDefinitionServices, null);
+      final SecurityContextProvider securityContextProvider) {
+    return new AdHocSubProcessActivityServices(brokerClient, securityContextProvider, null);
   }
 
   @Bean

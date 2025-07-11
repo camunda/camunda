@@ -39,8 +39,8 @@ public class RestGatewayPaths {
       REST_API_PATH + "/decision-definitions/evaluation";
   private static final String URL_CREATE_PROCESS_INSTANCE = REST_API_PATH + "/process-instances";
   private static final String URL_DEPLOYMENTS_URL = REST_API_PATH + "/deployments";
-  private static final String URL_AD_HOC_SUB_PROCESS_ACTIVITIES_SEARCH =
-      REST_API_PATH + "/element-instances/ad-hoc-activities/search";
+  private static final String URL_AD_HOC_SUB_PROCESS_ACTIVITIES_ACTIVATION =
+      REST_API_PATH + "/element-instances/ad-hoc-activities/%s/activation";
 
   /**
    * @return the topology request URL
@@ -140,7 +140,8 @@ public class RestGatewayPaths {
     return URL_DEPLOYMENTS_URL;
   }
 
-  public static String getAdHocSubProcessActivitiesSearchUrl() {
-    return URL_AD_HOC_SUB_PROCESS_ACTIVITIES_SEARCH;
+  public static String getAdHocSubProcessActivitiesActivationUrl(
+      final String adHocSubProcessInstanceKey) {
+    return String.format(URL_AD_HOC_SUB_PROCESS_ACTIVITIES_ACTIVATION, adHocSubProcessInstanceKey);
   }
 }

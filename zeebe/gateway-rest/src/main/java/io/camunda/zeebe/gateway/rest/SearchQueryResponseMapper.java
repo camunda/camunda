@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.search.entities.AdHocSubProcessActivityEntity;
+
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
@@ -43,7 +43,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
+
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError;
@@ -734,19 +734,6 @@ public final class SearchQueryResponseMapper {
         .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
         .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
-  }
-
-  public static AdHocSubProcessActivityResult toAdHocSubProcessActivity(
-      final AdHocSubProcessActivityEntity entity) {
-    return new AdHocSubProcessActivityResult()
-        .processDefinitionKey(entity.processDefinitionKey().toString())
-        .processDefinitionId(entity.processDefinitionId())
-        .adHocSubProcessId(entity.adHocSubProcessId())
-        .elementId(entity.elementId())
-        .elementName(entity.elementName())
-        .type(AdHocSubProcessActivityResult.TypeEnum.fromValue(entity.type().name()))
-        .documentation(entity.documentation())
-        .tenantId(entity.tenantId());
   }
 
   public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
