@@ -35,20 +35,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class ProcessStoreIT extends OperateSearchAbstractIT {
 
+  private static final String ROOT_PROCESS_INSTANCE_ID = "PI_2251799813685252";
   @Autowired private ListViewTemplate listViewTemplate;
-
   @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
-
   @Autowired private ProcessIndex processDefinitionIndex;
-
   @Autowired private ProcessStore processStore;
-
   private ProcessEntity firstProcessDefinition;
   private ProcessEntity secondProcessDefinition;
   private ProcessEntity thirdProcessDefinition;
   private ProcessInstanceForListViewEntity firstProcessInstance;
   private ProcessInstanceForListViewEntity secondProcessInstance;
   private ProcessInstanceForListViewEntity thirdProcessInstance;
+  private ProcessInstanceForListViewEntity fourthProcessInstance;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {
@@ -124,6 +122,18 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setIncident(true)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
 
+    fourthProcessInstance =
+        new ProcessInstanceForListViewEntity()
+            .setId("2251799813685254")
+            .setKey(2251799813685254L)
+            .setProcessInstanceKey(2251799813685254L)
+            .setProcessName("Process with long tree path")
+            .setState(ProcessInstanceState.ACTIVE)
+            .setTreePath(generateLongTreePath(Short.MAX_VALUE, ROOT_PROCESS_INSTANCE_ID))
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setIncident(true)
+            .setJoinRelation(new ListViewJoinRelation("processInstance"));
+
     final var definitionEntities =
         List.of(firstProcessDefinition, secondProcessDefinition, thirdProcessDefinition);
     for (final var entity : definitionEntities) {
@@ -131,7 +141,11 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
           processDefinitionIndex.getFullQualifiedName(), entity.getId(), entity);
     }
     final var instanceEntities =
-        List.of(firstProcessInstance, secondProcessInstance, thirdProcessInstance);
+        List.of(
+            firstProcessInstance,
+            secondProcessInstance,
+            thirdProcessInstance,
+            fourthProcessInstance);
     for (final var entity : instanceEntities) {
       testSearchRepository.createOrUpdateDocumentFromObject(
           listViewTemplate.getFullQualifiedName(), entity.getId(), entity);
@@ -232,6 +246,13 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   public void testGetProcessInstanceTreePathById() {
     final String result = processStore.getProcessInstanceTreePathById(thirdProcessInstance.getId());
     assertThat(result).isEqualTo(thirdProcessInstance.getTreePath());
+  }
+
+  @Test
+  public void longTreePathGetsTruncated() {
+    final String result =
+        processStore.getProcessInstanceTreePathById(fourthProcessInstance.getId());
+    assertThat(result).isEqualTo(ROOT_PROCESS_INSTANCE_ID);
   }
 
   @Test
@@ -409,5 +430,15 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .orElse(null);
 
     return dependant.getFullQualifiedName();
+  }
+
+  // Generates a long tree path that exceeds the maximum length for a tree path.
+  private String generateLongTreePath(final short maxValue, final String parentProcessInstanceId) {
+    final StringBuilder longTreePath = new StringBuilder(maxValue);
+    longTreePath.append(parentProcessInstanceId);
+    for (int i = 0; longTreePath.length() < maxValue; i++) {
+      longTreePath.append("/FN_callActivity_").append(i).append("/FNI_").append(i);
+    }
+    return longTreePath.toString();
   }
 }
