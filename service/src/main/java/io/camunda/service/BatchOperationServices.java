@@ -53,30 +53,38 @@ public final class BatchOperationServices
 
   @Override
   public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
-    return batchOperationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
-        .searchBatchOperations(query);
+    return executeSearchRequest(
+        () ->
+            batchOperationSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.batchOperation().read())))
+                .searchBatchOperations(query));
   }
 
   public SearchQueryResult<BatchOperationItemEntity> searchItems(
       final BatchOperationItemQuery query) {
-    return batchOperationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
-        .searchBatchOperationItems(query);
+    return executeSearchRequest(
+        () ->
+            batchOperationSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.batchOperation().read())))
+                .searchBatchOperationItems(query));
   }
 
   public BatchOperationEntity getById(final String batchOperationKey) {
-    return batchOperationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
-        .searchBatchOperations(
-            batchOperationQuery(
-                q -> q.filter(f -> f.batchOperationKeys(batchOperationKey)).singleResult()))
+    return executeSearchRequest(
+            () ->
+                batchOperationSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication, Authorization.of(a -> a.batchOperation().read())))
+                    .searchBatchOperations(
+                        batchOperationQuery(
+                            q ->
+                                q.filter(f -> f.batchOperationKeys(batchOperationKey))
+                                    .singleResult())))
         .items()
         .getFirst();
   }

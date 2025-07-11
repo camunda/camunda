@@ -25,7 +25,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.service.util.TreePathParser;
@@ -93,11 +93,14 @@ public final class ProcessInstanceServices
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
-    return processInstanceSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchProcessInstances(query);
+    return executeSearchRequest(
+        () ->
+            processInstanceSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                .searchProcessInstances(query));
   }
 
   public SearchQueryResult<ProcessInstanceEntity> search(
@@ -106,11 +109,14 @@ public final class ProcessInstanceServices
   }
 
   public List<ProcessFlowNodeStatisticsEntity> elementStatistics(final long processInstanceKey) {
-    return processInstanceSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .processInstanceFlowNodeStatistics(processInstanceKey);
+    return executeSearchRequest(
+        () ->
+            processInstanceSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                .processInstanceFlowNodeStatistics(processInstanceKey));
   }
 
   public List<ProcessInstanceEntity> callHierarchy(final long processInstanceKey) {
@@ -130,10 +136,15 @@ public final class ProcessInstanceServices
     }
 
     final var resultsByKey =
-        processInstanceSearchClient
-            .searchProcessInstances(
-                processInstanceSearchQuery(
-                    q -> q.filter(f -> f.processInstanceKeyOperations(Operation.in(orderedKeys)))))
+        executeSearchRequest(
+                () ->
+                    processInstanceSearchClient.searchProcessInstances(
+                        processInstanceSearchQuery(
+                            q ->
+                                q.filter(
+                                    f ->
+                                        f.processInstanceKeyOperations(
+                                            Operation.in(orderedKeys))))))
             .items()
             .stream()
             .collect(
@@ -143,29 +154,39 @@ public final class ProcessInstanceServices
   }
 
   public List<SequenceFlowEntity> sequenceFlows(final long processInstanceKey) {
-    return sequenceFlowSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchSequenceFlows(
-            SequenceFlowQuery.of(
-                b -> b.filter(f -> f.processInstanceKey(processInstanceKey)).unlimited()))
+    return executeSearchRequest(
+            () ->
+                sequenceFlowSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication,
+                            Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                    .searchSequenceFlows(
+                        SequenceFlowQuery.of(
+                            b ->
+                                b.filter(f -> f.processInstanceKey(processInstanceKey))
+                                    .unlimited())))
         .items();
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
     final var result =
-        processInstanceSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchProcessInstances(
-                processInstanceSearchQuery(
-                    q -> q.filter(f -> f.processInstanceKeys(processInstanceKey)).singleResult()))
+        executeSearchRequest(
+                () ->
+                    processInstanceSearchClient
+                        .withSecurityContext(
+                            securityContextProvider.provideSecurityContext(authentication))
+                        .searchProcessInstances(
+                            processInstanceSearchQuery(
+                                q ->
+                                    q.filter(f -> f.processInstanceKeys(processInstanceKey))
+                                        .singleResult())))
             .items()
             .getFirst();
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
         result.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
+      throw ErrorMapper.createForbiddenException(authorization);
     }
     return result;
   }
@@ -309,16 +330,20 @@ public final class ProcessInstanceServices
     final var processInstance = getByKey(processInstanceKey);
     final var treePath = processInstance.treePath();
 
-    return incidentSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchIncidents(
-            IncidentQuery.of(
-                b ->
-                    b.filter(f -> f.treePathOperations(Operation.like("*" + treePath + "*")))
-                        .page(query.page())
-                        .sort(query.sort())));
+    return executeSearchRequest(
+        () ->
+            incidentSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                .searchIncidents(
+                    IncidentQuery.of(
+                        b ->
+                            b.filter(
+                                    f -> f.treePathOperations(Operation.like("*" + treePath + "*")))
+                                .page(query.page())
+                                .sort(query.sort()))));
   }
 
   public record ProcessInstanceCreateRequest(
