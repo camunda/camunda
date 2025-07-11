@@ -95,7 +95,9 @@ const ExistingVariableValue: React.FC<Props> = observer(
       data: variable,
       isLoading,
       error,
-    } = useVariable({isPreview, variableKey: id});
+    } = useVariable(id!, {
+      enabled: isPreview && id !== undefined,
+    });
 
     useEffect(() => {
       if (error) {

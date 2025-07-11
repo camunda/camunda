@@ -6,42 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import {useQuery} from '@tanstack/react-query';
 import type {Variable} from '@vzeta/camunda-api-zod-schemas';
-import type {RequestError} from 'modules/request';
 import {getVariable} from 'modules/api/v2/variables/getVariable';
 
-const VARIABLES_GET_QUERY_KEY = 'variablesGet';
-
-function getQueryKey(variableKey?: string) {
-  return [VARIABLES_GET_QUERY_KEY, variableKey];
-}
-
-function useVariable<T = Variable>({
-  isPreview = true,
-  variableKey,
-  select,
-}: {
-  isPreview?: boolean;
-  variableKey?: string;
-  select?: (data: Variable) => T;
-}): UseQueryResult<T, RequestError> {
+function useVariable(variableKey: string, options?: {enabled?: boolean}) {
+  const {enabled} = options ?? {};
   return useQuery({
-    queryKey: getQueryKey(variableKey),
-    queryFn:
-      !!variableKey && isPreview
-        ? async () => {
-            const {response, error} = await getVariable(variableKey);
+    queryKey: ['variable', variableKey],
+    queryFn: async () => {
+      const {response, error} = await getVariable(variableKey);
 
-            if (response !== null) {
-              return response;
-            }
+      if (response !== null) {
+        return response as Variable;
+      }
 
-            throw error;
-          }
-        : skipToken,
-    select,
+      throw error;
+    },
+    enabled,
   });
 }
 
-export {VARIABLES_GET_QUERY_KEY, useVariable};
+export {useVariable};
