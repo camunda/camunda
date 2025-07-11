@@ -223,7 +223,8 @@ jobs:
     name: "[UT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      checks: write
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -304,6 +305,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "java-unit-tests/${{ matrix.group }}"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate
@@ -313,7 +321,8 @@ jobs:
     name: "[UT] ${{ matrix.component }} - ${{matrix.suiteName}}"
     needs: [ detect-changes ]
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      checks: write
     runs-on: gcp-perf-core-8-default
     strategy:
       fail-fast: false
@@ -374,13 +383,21 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "consolidated-unit-tests/${{ matrix.component }}-${{matrix.suite}}"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] Elasticsearch"
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      checks: write
     runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -466,13 +483,21 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "[IT] Elasticsearch"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] OpenSearch"
     timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      checks: write
     runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -564,14 +589,22 @@ jobs:
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID}}
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "[IT] OpenSearch"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   rdbms-h2-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     name: "[IT] RDBMS - H2"
     timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      checks: write
     runs-on: gcp-perf-core-8-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
@@ -631,6 +664,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "[IT] RDBMS - H2"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
@@ -638,7 +678,8 @@ jobs:
     name: "[IT] RDBMS"
     timeout-minutes: 7
     runs-on: gcp-perf-core-8-default
-    permissions: {}  # no GITHUB_TOKEN is needed
+    permissions:
+      checks: write
     steps:
     - uses: actions/checkout@v4
     - uses: ./.github/actions/setup-build
@@ -688,13 +729,21 @@ jobs:
         secret_vault_address: ${{ secrets.VAULT_ADDR }}
         secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
         secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+    - name: Report Flaky Tests
+      uses: ./.github/actions/report-flaky-tests
+      with:
+        flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+        job-name: "[IT] RDBMS"
+        sha: ${{ github.event.pull_request.head.sha }}
+        github-token: ${{ github.token }}
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      checks: write
     runs-on: ${{ matrix.runs-on }}
     strategy:
       fail-fast: false
@@ -844,6 +893,13 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Report Flaky Tests
+        uses: ./.github/actions/report-flaky-tests
+        with:
+          flaky-tests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          job-name: "[IT] ${{ matrix.name }}"
+          sha: ${{ github.event.pull_request.head.sha }}
+          github-token: ${{ github.token }}
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
