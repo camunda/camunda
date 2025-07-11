@@ -119,7 +119,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -220,7 +220,7 @@
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
             "exemplar": false,
@@ -25573,6 +25573,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 36,
+  "version": 37,
   "weekStart": ""
 }
