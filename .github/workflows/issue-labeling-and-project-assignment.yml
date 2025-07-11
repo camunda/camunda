@@ -1,16 +1,32 @@
 # type: Project Management
 # owner: @camunda/monorepo-devops-team
 ---
-name: Assign new issues to the default projects
+name: Issue Labeling and Project Assignment
 
 on:
   issues:
-    types: [ reopened, transferred, labeled ]
+    types: [ opened, reopened, transferred, labeled ]
+
+permissions:
+  issues: write
+  contents: read
 
 jobs:
+  triage:
+    name: Auto-label newly opened issues
+    runs-on: ubuntu-latest
+    if: github.event.action == 'opened'
+    steps:
+    - uses: github/issue-labeler@v3.4
+      with:
+        configuration-path: .github/opened_issue_labeler.yml
+        enable-versioned-regex: 0
+
   add-to-projects:
     name: Add issue to team projects if no project assigned and by corresponding component label
     runs-on: ubuntu-latest
+    needs: [triage]
+    if: always() && !cancelled()
     steps:
       - id: get_project_count
         uses: octokit/graphql-action@v2.3.2
