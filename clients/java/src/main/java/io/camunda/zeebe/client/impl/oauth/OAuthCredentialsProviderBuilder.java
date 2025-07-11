@@ -34,11 +34,26 @@ import java.util.Objects;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
+<<<<<<< HEAD
+=======
+  public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
+  public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
+  public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
+  public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
+  public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
+  public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
+  public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
+  public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
+  public static final String OAUTH_ENV_SSL_CLIENT_CERT_PATH = "OAUTH_SSL_CLIENT_CERT_PATH";
+  public static final String OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD = "OAUTH_SSL_CLIENT_CERT_PASSWORD";
+  public static final String OAUTH_ENV_SSL_ISSUER = "OAUTH_SSL_ISSUER";
+>>>>>>> 6ba9c997 (fix: aud > iss)
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
 
   private String clientId;
+  private String issuer;
   private String clientSecret;
   private String audience;
   private String scope;
@@ -174,6 +189,15 @@ public final class OAuthCredentialsProviderBuilder {
     return new OAuthCredentialsProvider(this);
   }
 
+<<<<<<< HEAD
+=======
+  private void applySSLClientCertConfiguration() {
+    applyEnvironmentValueIfNotNull(this::sslClientCertPath, OAUTH_ENV_SSL_CLIENT_CERT_PATH);
+    applyEnvironmentValueIfNotNull(this::sslClientCertPassword, OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD);
+    applyEnvironmentValueIfNotNull(this::issuer, OAUTH_ENV_SSL_ISSUER);
+  }
+
+>>>>>>> 6ba9c997 (fix: aud > iss)
   private void checkEnvironmentOverrides() {
     final String envClientId = Environment.system().get(OAUTH_ENV_CLIENT_ID);
     final String envClientSecret = Environment.system().get(OAUTH_ENV_CLIENT_SECRET);
@@ -268,4 +292,69 @@ public final class OAuthCredentialsProviderBuilder {
               timeoutName, timeout.toMillis(), Integer.MAX_VALUE));
     }
   }
+<<<<<<< HEAD
+=======
+
+  public OAuthCredentialsProviderBuilder sslClientCertPath(final String entraCertificatePath) {
+    if (entraCertificatePath != null) {
+      this.sslClientCertPath = Paths.get(entraCertificatePath);
+    }
+    return this;
+  }
+
+  public Path getSslClientCertPath() {
+    return sslClientCertPath;
+  }
+
+  /** Issuer to be used when requesting access token from OAuth authorization server. */
+  public OAuthCredentialsProviderBuilder issuer(final String issuer) {
+    this.issuer = issuer;
+    return this;
+  }
+
+  /**
+   * @see OAuthCredentialsProviderBuilder#issuer(String)
+   */
+  public String getIssuer() {
+    return issuer;
+  }
+
+  public OAuthCredentialsProviderBuilder sslClientCertPassword(
+      final String entraCertificatePassword) {
+    this.sslClientCertPassword = entraCertificatePassword;
+    return this;
+  }
+
+  public String getSslClientCertPassword() {
+    return sslClientCertPassword;
+  }
+
+  public boolean sslClientCertConfigurationProvided() {
+    return sslClientCertPassword != null
+        && !sslClientCertPassword.isEmpty()
+        && sslClientCertPath != null
+        && sslClientCertPath.toFile().exists();
+  }
+
+  public OAuthCredentialsProviderBuilder applyEnvironmentOverrides(
+      final boolean applyEnvironmentOverrides) {
+    this.applyEnvironmentOverrides = applyEnvironmentOverrides;
+    return this;
+  }
+
+  private static Optional<String> getEnvironmentVariableValue(final String envName) {
+    return Optional.ofNullable(Environment.system().get(envName));
+  }
+
+  private static void applyEnvironmentValueIfNotNull(
+      final Consumer<String> action, final String... envNames) {
+    for (final String envName : envNames) {
+      final Optional<String> value = getEnvironmentVariableValue(envName);
+      value.ifPresent(action);
+      if (value.isPresent()) {
+        break;
+      }
+    }
+  }
+>>>>>>> 6ba9c997 (fix: aud > iss)
 }
