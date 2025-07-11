@@ -75,3 +75,9 @@ test.describe('API tests', () => {
     expect(incidentsList.status()).toBe(200);
   });
 });
+test.describe('Unauthorized API tests', () => {
+  test('Unauthorized user cannot access Operate API', async ({request}) => {
+    const response = await request.post('/v1/process-definitions/search');
+    expect(response.status()).toBe(401);
+  });
+});
