@@ -8,7 +8,10 @@
 
 import { FC } from "react";
 import { useApiCall } from "src/utility/api";
-import { deleteMapping, DeleteMappingParams } from "src/utility/api/mappings";
+import {
+  deleteMappingRule,
+  DeleteMappingRuleParams,
+} from "src/utility/api/mapping-rules";
 import useTranslate from "src/utility/localization";
 import {
   DeleteModal as Modal,
@@ -16,24 +19,21 @@ import {
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
 
-const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
-  open,
-  onClose,
-  onSuccess,
-  entity: { mappingId, name },
-}) => {
+const DeleteMappingRulesModal: FC<
+  UseEntityModalProps<DeleteMappingRuleParams>
+> = ({ open, onClose, onSuccess, entity: { mappingRuleId, name } }) => {
   const { t, Translate } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(deleteMapping);
+  const [apiCall, { loading }] = useApiCall(deleteMappingRule);
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({ mappingId });
+    const { success } = await apiCall({ mappingRuleId: mappingRuleId });
 
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("mappingDeleted"),
-        subtitle: t("deleteMappingSuccess", {
+        title: t("mappingRuleDeleted"),
+        subtitle: t("deleteMappingRuleSuccess", {
           name,
         }),
       });
@@ -44,24 +44,25 @@ const DeleteMappingsModal: FC<UseEntityModalProps<DeleteMappingParams>> = ({
   return (
     <Modal
       open={open}
-      headline={t("deleteMapping")}
+      headline={t("deleteMappingRule")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("deletingMapping")}
+      loadingDescription={t("deletingMappingRule")}
       onClose={onClose}
-      confirmLabel={t("deleteMapping")}
+      confirmLabel={t("deleteMappingRule")}
     >
       <p>
         <Translate
-          i18nKey="deleteMappingConfirmation"
-          values={{ mappingName: name || mappingId }}
+          i18nKey="deleteMappingRuleConfirmation"
+          values={{ mappingRuleName: name || mappingRuleId }}
         >
-          Are you sure you want to delete <strong>{name || mappingId}</strong>?
-          This action cannot be undone.
+          Are you sure you want to delete{" "}
+          <strong>{name || mappingRuleId}</strong>? This action cannot be
+          undone.
         </Translate>
       </p>
     </Modal>
   );
 };
 
-export default DeleteMappingsModal;
+export default DeleteMappingRulesModal;

@@ -10,8 +10,8 @@ import { FC } from "react";
 import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
 
-const Mappings: FC = () => (
+const MappingRules: FC = () => (
   <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
 );
 
-export default Mappings;
+export default MappingRules;

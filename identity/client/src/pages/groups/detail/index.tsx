@@ -25,7 +25,7 @@ import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
 import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
-import Mappings from "src/pages/groups/detail/mappings";
+import MappingRules from "src/pages/groups/detail/mapping-rules";
 import Clients from "src/pages/groups/detail/clients";
 import { isOIDC } from "src/configuration";
 
@@ -108,9 +108,9 @@ const Details: FC = () => {
                 ...(isOIDC
                   ? [
                       {
-                        key: "mappings",
-                        label: t("mappings"),
-                        content: <Mappings groupId={group.groupId} />,
+                        key: "mapping-rules",
+                        label: t("mappingRules"),
+                        content: <MappingRules groupId={group.groupId} />,
                       },
                       {
                         key: "clients",
