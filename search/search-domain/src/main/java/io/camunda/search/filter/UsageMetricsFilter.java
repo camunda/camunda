@@ -15,12 +15,14 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 public record UsageMetricsFilter(
-    List<String> events, OffsetDateTime startTime, OffsetDateTime endTime) implements FilterBase {
+    List<String> events, OffsetDateTime startTime, OffsetDateTime endTime, boolean withTenants)
+    implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<UsageMetricsFilter> {
     private List<String> events;
     private OffsetDateTime startTime;
     private OffsetDateTime endTime;
+    private boolean withTenants = false;
 
     public Builder events(final List<String> events) {
       this.events = addValuesToList(this.events, events);
@@ -42,9 +44,14 @@ public record UsageMetricsFilter(
       return this;
     }
 
+    public Builder withTenants(final boolean value) {
+      withTenants = value;
+      return this;
+    }
+
     @Override
     public UsageMetricsFilter build() {
-      return new UsageMetricsFilter(events, startTime, endTime);
+      return new UsageMetricsFilter(events, startTime, endTime, withTenants);
     }
   }
 }
