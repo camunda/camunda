@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -802,7 +802,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, RejectionType.NOT_FOUND, "Task not found"))));
 
@@ -841,7 +841,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE,
                         1L,
@@ -884,7 +884,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
 
@@ -927,7 +927,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
 
@@ -970,7 +970,7 @@ public class UserTaskControllerTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         UserTaskIntent.COMPLETE, 1L, parameters.getLeft(), "Just an error"))));
 

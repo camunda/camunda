@@ -24,7 +24,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -358,7 +358,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     final long decisionRequirementsKey = 1L;
     when(service.apply(decisionRequirementsServices, decisionRequirementsKey))
         .thenThrow(
-            new ForbiddenException(
+            ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionRequirementsDefinition().read())));
     // when / then
     webClient
