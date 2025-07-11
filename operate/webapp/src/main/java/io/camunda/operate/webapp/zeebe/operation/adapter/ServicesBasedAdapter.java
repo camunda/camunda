@@ -7,6 +7,8 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
+import static io.camunda.service.exception.ServiceException.Status.*;
+
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
@@ -25,28 +27,17 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
-import io.camunda.zeebe.broker.client.api.BrokerErrorException;
-import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
-import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
-import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
-import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
-import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
-import io.netty.channel.ConnectTimeoutException;
-import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -209,38 +200,14 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       return false;
     }
     return switch (error) {
-      case final CamundaBrokerException cse -> isBrokerExceptionRetriable(cse);
-      case final BrokerErrorException bee -> isBrokerErrorRetriable(bee.getError());
-      case final ExecutionException ee -> isExceptionRetriable(ee.getCause());
-      case final CompletionException ce -> isExceptionRetriable(ce.getCause());
-      case final TimeoutException te -> true;
-      case final RequestRetriesExhaustedException rree -> true;
-      case final ConnectTimeoutException cte -> true;
-      case final ConnectException ce -> true;
-      case final PartitionNotFoundException pnfe -> true;
-      case final PartitionInactiveException pie -> true;
-      case final NoTopologyAvailableException ntae -> true;
+      case final ServiceException cse -> isServiceExceptionRetriable(cse);
       default -> false;
     };
   }
 
-  private boolean isBrokerExceptionRetriable(final CamundaBrokerException error) {
-    if (error == null) {
-      return false;
-    }
-    final var brokerError = error.getBrokerError();
-    if (brokerError.isPresent()) {
-      return isBrokerErrorRetriable(brokerError.get());
-    }
-    return error.getCause() != null ? isExceptionRetriable(error.getCause()) : false;
-  }
-
-  private boolean isBrokerErrorRetriable(final BrokerError error) {
-    if (error == null) {
-      return false;
-    }
-    return switch (error.getCode()) {
-      case RESOURCE_EXHAUSTED, PARTITION_LEADER_MISMATCH, PARTITION_UNAVAILABLE -> true;
+  private boolean isServiceExceptionRetriable(final ServiceException error) {
+    return switch (error.getStatus()) {
+      case RESOURCE_EXHAUSTED, UNAVAILABLE, DEADLINE_EXCEEDED -> true;
       default -> false;
     };
   }
