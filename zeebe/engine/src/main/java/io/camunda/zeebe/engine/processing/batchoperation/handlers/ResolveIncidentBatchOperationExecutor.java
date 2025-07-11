@@ -37,6 +37,7 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
     if (incident == null) {
       // ok I admit it, this is a bit of a hack, but we need to provoke an IncidentIntent.REVOLVE
       // rejection here, so we still append the resolve incident command
+      LOGGER.debug("Incident with key '{}' not found, rejecting command", incidentKey);
       resolveIncident(incidentKey, batchOperation);
       return;
     }
