@@ -299,7 +299,6 @@ describe('MetadataPopover', () => {
     // expect(
     //   screen.getByText(/"calledProcessInstanceKey": "229843728748927482"/),
     // ).toBeInTheDocument();
-
     // await user.click(screen.getByRole('button', {name: /close/i}));
     // expect(
     //   screen.queryByText(
@@ -308,7 +307,7 @@ describe('MetadataPopover', () => {
     // ).not.toBeInTheDocument();
   });
 
-  it('should render metadata for multi instance flow nodes', async () => {
+  it('should render metadata for multi instance elements', async () => {
     mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
     mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
     flowNodeMetaDataStore.setMetaData(multiInstancesMetadata);
@@ -589,5 +588,25 @@ describe('MetadataPopover', () => {
     expect(
       screen.queryByRole('heading', {name: labels.details}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should preserve backward compatibility with existing incident data', async () => {
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'INCIDENT',
+      }),
+    );
+    incidentsStore.init();
+
+    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
+
+    renderPopover();
+
+    expect(await screen.findByText(labels.type)).toBeInTheDocument();
+    expect(screen.getByText(labels.errorMessage)).toBeInTheDocument();
   });
 });
