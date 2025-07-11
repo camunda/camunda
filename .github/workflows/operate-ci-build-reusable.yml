@@ -48,7 +48,7 @@ env:
 
 jobs:
   # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
-  get-snapshot-docker-tag-and-concurrency-group:
+  utils-get-snapshot-docker-tag-and-concurrency-group:
     uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
     secrets: inherit
     permissions:
@@ -60,7 +60,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [ get-snapshot-docker-tag-and-concurrency-group ]
+    needs: [ utils-get-snapshot-docker-tag-and-concurrency-group ]
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -144,7 +144,7 @@ jobs:
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/operate
-          version: ${{ needs.get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
+          version: ${{ needs.utils-get-snapshot-docker-tag-and-concurrency-group.outputs.version_tag }}
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: operate.Dockerfile
