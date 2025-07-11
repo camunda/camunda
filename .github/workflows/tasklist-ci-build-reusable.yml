@@ -51,6 +51,8 @@ jobs:
   get-snapshot-docker-tag-and-concurrency-group:
     uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
     secrets: inherit
+    permissions:
+      contents: read
     with:
         job_to_run: 'snapshot-tag'
 
