@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.exception.ServiceException.Status.NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
@@ -15,10 +16,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.AdHocSubProcessActivityEntity;
 import io.camunda.search.entities.AdHocSubProcessActivityEntity.ActivityType;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.AdHocSubProcessActivityFilter;
 import io.camunda.search.filter.AdHocSubProcessActivityFilter.Builder;
 import io.camunda.search.query.AdHocSubProcessActivityQuery;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.nio.file.Files;
@@ -112,10 +113,10 @@ class AdHocSubProcessActivityServicesTest {
               () ->
                   adHocSubProcessActivityServices.search(
                       defaultSearchQuery(filter -> filter.adHocSubProcessId("nonExistingId"))))
-          .isInstanceOf(CamundaSearchException.class)
+          .isInstanceOf(ServiceException.class)
           .hasMessage("Failed to find ad-hoc sub-process with ID 'nonExistingId'")
-          .extracting(e -> ((CamundaSearchException) e).getReason())
-          .isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
+          .extracting(e -> ((ServiceException) e).getStatus())
+          .isEqualTo(NOT_FOUND);
     }
 
     @Test
@@ -124,10 +125,10 @@ class AdHocSubProcessActivityServicesTest {
               () ->
                   adHocSubProcessActivityServices.search(
                       defaultSearchQuery(filter -> filter.adHocSubProcessId("StartEvent_1"))))
-          .isInstanceOf(CamundaSearchException.class)
+          .isInstanceOf(ServiceException.class)
           .hasMessage("Failed to find ad-hoc sub-process with ID 'StartEvent_1'")
-          .extracting(e -> ((CamundaSearchException) e).getReason())
-          .isEqualTo(CamundaSearchException.Reason.NOT_FOUND);
+          .extracting(e -> ((ServiceException) e).getStatus())
+          .isEqualTo(NOT_FOUND);
     }
 
     private AdHocSubProcessActivityQuery defaultSearchQuery() {

@@ -18,6 +18,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -101,7 +102,9 @@ public class UserControllerTest extends RestControllerTest {
     final var dto = validCreateUserRequest("foo");
 
     when(userServices.createUser(dto))
-        .thenThrow(new CamundaSearchException(RejectionType.ALREADY_EXISTS.name()));
+        .thenThrow(
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(RejectionType.ALREADY_EXISTS.name())));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
     expectedBody.setTitle("Bad Request");

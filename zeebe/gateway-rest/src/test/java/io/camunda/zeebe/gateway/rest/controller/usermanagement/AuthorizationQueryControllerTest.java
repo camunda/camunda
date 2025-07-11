@@ -22,6 +22,7 @@ import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -135,8 +136,9 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     final var path = "%s/%s".formatted("/v2/authorizations", authorizationKey);
     when(authorizationServices.getAuthorization(authorizationKey))
         .thenThrow(
-            new CamundaSearchException(
-                "authorization not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "authorization not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient

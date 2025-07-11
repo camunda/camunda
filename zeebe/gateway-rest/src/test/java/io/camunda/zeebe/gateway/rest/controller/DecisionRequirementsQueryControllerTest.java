@@ -102,11 +102,12 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
 
     when(decisionRequirementsServices.getByKey(INVALID_DECISION_REQUIREMENTS_KEY))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision requirements with key "
-                    + INVALID_DECISION_REQUIREMENTS_KEY
-                    + " not found",
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision requirements with key "
+                        + INVALID_DECISION_REQUIREMENTS_KEY
+                        + " not found",
+                    CamundaSearchException.Reason.NOT_FOUND)));
   }
 
   @Test
@@ -373,7 +374,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                     {
                       "type": "about:blank",
                       "status": 403,
-                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "title": "FORBIDDEN",
                       "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'"
                     }
                 """);
@@ -445,8 +446,10 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     final Long decisionRequirementsKey = 1L;
     when(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision with key 1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
 
     // when/then
     final var expectedResponse =
