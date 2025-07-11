@@ -437,7 +437,7 @@ public final class OAuthCredentialsProviderTest {
     map.put("client_id", CLIENT_ID);
     map.put("audience", AUDIENCE);
     map.put("grant_type", "client_credentials");
-    if (scope != null && !scope.isEmpty()) {
+    if (scope != null) {
       map.put("scope", scope);
     }
     if (resource != null) {
