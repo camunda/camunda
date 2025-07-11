@@ -69,7 +69,8 @@ public class RestErrorMapper {
 
   public static HttpStatus mapStatus(final Status status) {
     return switch (status) {
-      case ABORTED, RESOURCE_EXHAUSTED, UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
+      case ABORTED, UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
+      case RESOURCE_EXHAUSTED -> HttpStatus.TOO_MANY_REQUESTS;
       case UNKNOWN, INTERNAL -> HttpStatus.INTERNAL_SERVER_ERROR;
       case FORBIDDEN -> HttpStatus.FORBIDDEN;
       case NOT_FOUND -> HttpStatus.NOT_FOUND;
