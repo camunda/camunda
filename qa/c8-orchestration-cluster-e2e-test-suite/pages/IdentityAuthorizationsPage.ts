@@ -8,6 +8,7 @@
 
 import {Page, Locator} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {sleep} from 'utils/sleep';
 
 export class IdentityAuthorizationsPage {
   readonly page: Page;
@@ -18,14 +19,21 @@ export class IdentityAuthorizationsPage {
   readonly createAuthorizationOwnerOption: (name: string) => Locator;
   readonly createAuthorizationResourceIdField: Locator;
   readonly createAuthorizationAccessPermission: (name: string) => Locator;
+  readonly createAuthorizationOwnerTypeComboBox: Locator;
+  readonly createAuthorizationOwnerTypeOption: (name: string) => Locator;
   readonly createAuthorizationSubmitButton: Locator;
   readonly deleteAuthorizationButton: (name: string) => Locator;
   readonly deleteAuthorizationModal: Locator;
   readonly deleteAuthorizationModalDeleteButton: Locator;
+  readonly selectAuthorizationRow: (name: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.authorizationsList = page.getByRole('table');
+
+    this.selectAuthorizationRow = (name) =>
+      this.authorizationsList.getByRole('row', {name: name});
+
     this.createAuthorizationButton = page.getByRole('button', {
       name: 'Create authorization',
     });
@@ -46,7 +54,14 @@ export class IdentityAuthorizationsPage {
         name: 'Resource ID',
       });
     this.createAuthorizationAccessPermission = (name) =>
-      this.createAuthorizationModal.getByRole('checkbox', {
+      this.createAuthorizationModal.getByText(name, {
+        exact: true,
+      });
+    this.createAuthorizationOwnerTypeComboBox =
+      this.createAuthorizationModal.getByRole('combobox', {name: 'Owner type'});
+
+    this.createAuthorizationOwnerTypeOption = (name) =>
+      this.createAuthorizationModal.getByRole('option', {
         name,
       });
     this.createAuthorizationSubmitButton =
@@ -66,5 +81,49 @@ export class IdentityAuthorizationsPage {
 
   async navigateToAuthorizations() {
     await this.page.goto(relativizePath(Paths.authorizations()));
+  }
+
+  async clickResourceType(resourceType: string) {
+    await this.page.getByRole('tab', {name: resourceType}).click();
+  }
+
+  async clickCreateAuthorizationButton() {
+    await this.createAuthorizationButton.click();
+  }
+
+  async clickOwnerDropdown() {
+    await this.createAuthorizationOwnerComboBox.click();
+  }
+  async selectOwnerFromDropdown(name: string) {
+    await this.createAuthorizationOwnerOption(name).click();
+  }
+
+  async clickOwnerTypeDropdown() {
+    await this.createAuthorizationOwnerTypeComboBox.click();
+  }
+
+  async selectOwnerTypeFromDrowdown(name: string) {
+    await this.createAuthorizationOwnerTypeOption(name).click();
+  }
+
+  async fillResourceId(resourceId: string) {
+    await this.createAuthorizationResourceIdField.fill(resourceId);
+  }
+
+  async checkAccessPermissions(permission: string[] | any[]) {
+    for (let index = 0; index < permission.length; index++) {
+      await this.createAuthorizationAccessPermission(permission[index]).click();
+    }
+  }
+
+  async clickCreateAuthorizationSubmitButton() {
+    await this.createAuthorizationSubmitButton.click();
+    await sleep(8000);
+  }
+
+  async assertAuthorizationExists(values: string[] | any[]) {
+    for (let index = 0; index < values.length; index++) {
+      await this.selectAuthorizationRow(values[index]).isVisible();
+    }
   }
 }
