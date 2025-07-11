@@ -48,7 +48,7 @@ If you want to report a bug or request a new feature, feel free to open a new is
 If you report a bug, please help speed up problem diagnosis by providing as much information as possible. Ideally, that would include a small [sample project][sample] that reproduces the problem.
 
 > [!NOTE]
-> If you have a general usage question, please ask on the [forum](forum).
+> If you have a general usage question, please ask on the [forum][forum].
 
 Every issue should have a meaningful name and a description that either describes:
 - A new feature with details about the use case the feature would solve or
@@ -288,7 +288,7 @@ Before opening your first pull request, please have a look at this [guide](https
 5. When a merge is initiated, a bot will merge your branch with the latest
    `main` and run the CI on it.
    1. If everything goes well, the branch is merged and deleted and the issue and pull request are closed.
-   2. If there are CI errors, the author of the pull request has to check if they are caused by its changes and address them. If they are flaky tests, please have a look at this [guide](docs/ci.md#determine-flakiness) on how to handle them. Once the CI errors are resolved, a merge can be retried by simply enqueueing the PR again.
+   2. If there are CI errors, the author of the pull request has to check if they are caused by its changes and address them. If they are flaky tests, please have a look at this [guide](docs/zeebe/ci.md#determine-flakiness) on how to handle them. Once the CI errors are resolved, a merge can be retried by simply enqueueing the PR again.
 
 ## Updating a pull request
 
