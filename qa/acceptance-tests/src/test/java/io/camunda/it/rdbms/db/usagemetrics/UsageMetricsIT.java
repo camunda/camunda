@@ -52,7 +52,7 @@ public class UsageMetricsIT {
       final long value) {
     usageMetricWriter.create(
         new UsageMetricDbModel.Builder()
-            .id(CommonFixtures.nextStringId())
+            .key(CommonFixtures.nextKey())
             .eventTime(time)
             .tenantId(tenantId)
             .eventType(eventType)

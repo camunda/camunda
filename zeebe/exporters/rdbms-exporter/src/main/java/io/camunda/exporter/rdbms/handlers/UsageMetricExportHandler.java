@@ -57,7 +57,7 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
       if (eventType != null) {
         final UsageMetricDbModel usageMetricDbModel =
             new UsageMetricDbModel(
-                ID_PATTERN.formatted(record.getKey(), record.getPartitionId()),
+                record.getKey(),
                 DateUtil.toOffsetDateTime(value.getStartTime()),
                 entry.getKey(),
                 eventType,

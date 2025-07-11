@@ -68,13 +68,13 @@
   </sql>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.UsageMetricDbModel">
-    INSERT INTO ${prefix}USAGE_METRIC (USAGE_METRIC_ID,
+    INSERT INTO ${prefix}USAGE_METRIC (USAGE_METRIC_KEY,
                                        EVENT_TIME,
                                        TENANT_ID,
                                        EVENT_TYPE,
                                        EVENT_VALUE,
                                        PARTITION_ID)
-    VALUES (#{id},
+    VALUES (#{key},
             #{eventTime, jdbcType=TIMESTAMP},
             #{tenantId},
             #{eventType, typeHandler=io.camunda.db.rdbms.sql.typehandler.UsageMetricEventTypeTypeHandler},

@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 
 public record UsageMetricDbModel(
-    String id,
+    long key,
     OffsetDateTime eventTime,
     String tenantId,
     EventTypeDbModel eventType,
@@ -24,15 +24,15 @@ public record UsageMetricDbModel(
 
   public static class Builder implements ObjectBuilder<UsageMetricDbModel> {
 
-    private String id;
+    private long key;
     private OffsetDateTime eventTime;
     private String tenantId;
     private EventTypeDbModel eventType;
     private long value;
     private int partitionId;
 
-    public Builder id(final String id) {
-      this.id = id;
+    public Builder key(final long key) {
+      this.key = key;
       return this;
     }
 
@@ -63,7 +63,7 @@ public record UsageMetricDbModel(
 
     @Override
     public UsageMetricDbModel build() {
-      return new UsageMetricDbModel(id, eventTime, tenantId, eventType, value, partitionId);
+      return new UsageMetricDbModel(key, eventTime, tenantId, eventType, value, partitionId);
     }
   }
 

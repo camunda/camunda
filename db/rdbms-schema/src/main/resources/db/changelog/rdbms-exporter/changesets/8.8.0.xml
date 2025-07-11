@@ -607,7 +607,7 @@
 
   <changeSet id="create_usage_metric_table" author="camunda">
     <createTable tableName="${prefix}USAGE_METRIC">
-      <column name="USAGE_METRIC_ID" type="VARCHAR(255)">
+      <column name="USAGE_METRIC_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
       <column name="TENANT_ID" type="VARCHAR(255)"/>
