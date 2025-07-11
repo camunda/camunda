@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.processing.metrics;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -22,9 +24,9 @@ import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -76,11 +78,12 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getResetTime()).isEqualTo(2);
     assertThat(actual.getStartTime()).isEqualTo(-1);
     assertThat(actual.getEndTime()).isEqualTo(-1);
-    assertThat(actual.getValues()).isEmpty();
+    assertThat(actual.getCounterValues()).isEmpty();
+    assertThat(actual.getSetValues()).isEmpty();
   }
 
   @Test
-  void shouldAppendExportedEvent() {
+  void shouldAppendExportedEventRPI() {
     // given
     when(state.getActiveBucket())
         .thenReturn(
@@ -103,47 +106,8 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getResetTime()).isEqualTo(2);
     assertThat(actual.getStartTime()).isEqualTo(1);
     assertThat(actual.getEndTime()).isEqualTo(10);
-    assertThat(actual.getValues()).isEqualTo(Map.of("tenant1", 10L));
-  }
-
-  @Test
-  void shouldAppendMultipleExportedEventsWhenRecordTooLong() {
-    // given
-    when(stateWriter.canWriteEventOfLength(anyInt())).thenReturn(true);
-    doAnswer(i -> i.getArgument(0, Integer.class) <= 100)
-        .when(stateWriter)
-        .canWriteEventOfLength(anyInt());
-    final var tenantRPIMap = new HashMap<String, Long>();
-    for (int i = 0; i < 5; i++) {
-      tenantRPIMap.put("tenant" + i, (long) i);
-    }
-    when(state.getActiveBucket())
-        .thenReturn(
-            new PersistedUsageMetrics().setFromTime(1).setToTime(10).setTenantRPIMap(tenantRPIMap));
-
-    // when
-    processor.processRecord(record);
-
-    // then
-    verify(state).getActiveBucket();
-    verify(stateWriter, times(3))
-        .appendFollowUpEvent(
-            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
-    final List<UsageMetricRecord> actual = recordArgumentCaptor.getAllValues();
-    assertThat(actual).hasSize(3);
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getIntervalType)
-        .containsOnly(IntervalType.ACTIVE);
-    assertThat(actual).extracting(UsageMetricRecord::getEventType).containsOnly(EventType.RPI);
-    assertThat(actual).extracting(UsageMetricRecord::getResetTime).containsOnly(2L);
-    assertThat(actual).extracting(UsageMetricRecord::getStartTime).containsOnly(1L);
-    assertThat(actual).extracting(UsageMetricRecord::getEndTime).containsOnly(10L);
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getValues)
-        .containsOnly(
-            Map.of("tenant0", 0L, "tenant1", 1L),
-            Map.of("tenant2", 2L, "tenant3", 3L),
-            Map.of("tenant4", 4L));
+    assertThat(actual.getCounterValues()).isEqualTo(Map.of("tenant1", 10L));
+    assertThat(actual.getSetValues()).isEqualTo(Map.of());
   }
 
   @Test
@@ -169,7 +133,35 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getResetTime()).isEqualTo(2);
     assertThat(actual.getStartTime()).isEqualTo(1);
     assertThat(actual.getEndTime()).isEqualTo(10);
-    assertThat(actual.getValues()).isEqualTo(Map.of("tenant1", 10L));
+    assertThat(actual.getCounterValues()).isEqualTo(Map.of("tenant1", 10L));
+    assertThat(actual.getSetValues()).isEqualTo(Map.of());
+  }
+
+  @Test
+  void shouldAppendExportedEventTU() {
+    // given
+    when(state.getActiveBucket())
+        .thenReturn(
+            new PersistedUsageMetrics()
+                .setFromTime(1)
+                .setToTime(10)
+                .setTenantTUMap(Map.of("tenant1", Set.of("assignee1"))));
+    // when
+    processor.processRecord(record);
+
+    // then
+    verify(state).getActiveBucket();
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
+    final var actual = recordArgumentCaptor.getValue();
+    assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
+    assertThat(actual.getEventType()).isEqualTo(EventType.TU);
+    assertThat(actual.getResetTime()).isEqualTo(2);
+    assertThat(actual.getStartTime()).isEqualTo(1);
+    assertThat(actual.getEndTime()).isEqualTo(10);
+    assertThat(actual.getCounterValues()).isEqualTo(Map.of());
+    assertThat(actual.getSetValues()).isEqualTo(Map.of("tenant1", Set.of("assignee1")));
   }
 
   @Test
@@ -181,46 +173,8 @@ class UsageMetricsExportProcessorTest {
                 .setFromTime(1)
                 .setToTime(10)
                 .setTenantRPIMap(Map.of("tenant1", 10L))
-                .setTenantEDIMap(Map.of("tenant1", 10L)));
-    // when
-    processor.processRecord(record);
-
-    // then
-    verify(state).getActiveBucket();
-    verify(stateWriter, times(2))
-        .appendFollowUpEvent(
-            eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
-    final List<UsageMetricRecord> actual = recordArgumentCaptor.getAllValues();
-    assertThat(actual).hasSize(2);
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getIntervalType)
-        .containsOnly(IntervalType.ACTIVE);
-    assertThat(actual).extracting(UsageMetricRecord::getResetTime).containsOnly(2L);
-    assertThat(actual).extracting(UsageMetricRecord::getStartTime).containsOnly(1L);
-    assertThat(actual).extracting(UsageMetricRecord::getEndTime).containsOnly(10L);
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getEventType)
-        .contains(EventType.RPI, EventType.EDI);
-    assertThat(actual)
-        .extracting(UsageMetricRecord::getValues)
-        .containsOnly(Map.of("tenant1", 10L));
-  }
-
-  @Test
-  void shouldAppendMultipleExportedEventsWhenRecordTooLongEDI() {
-    // given
-    when(stateWriter.canWriteEventOfLength(anyInt())).thenReturn(true);
-    doAnswer(i -> i.getArgument(0, Integer.class) <= 100)
-        .when(stateWriter)
-        .canWriteEventOfLength(anyInt());
-    final var tenantEDIMap = new HashMap<String, Long>();
-    for (int i = 0; i < 5; i++) {
-      tenantEDIMap.put("tenant" + i, (long) i);
-    }
-    when(state.getActiveBucket())
-        .thenReturn(
-            new PersistedUsageMetrics().setFromTime(1).setToTime(10).setTenantEDIMap(tenantEDIMap));
-
+                .setTenantEDIMap(Map.of("tenant1", 10L))
+                .setTenantTUMap(Map.of("tenant1", Set.of("assignee1"))));
     // when
     processor.processRecord(record);
 
@@ -234,15 +188,17 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual)
         .extracting(UsageMetricRecord::getIntervalType)
         .containsOnly(IntervalType.ACTIVE);
-    assertThat(actual).extracting(UsageMetricRecord::getEventType).containsOnly(EventType.EDI);
     assertThat(actual).extracting(UsageMetricRecord::getResetTime).containsOnly(2L);
     assertThat(actual).extracting(UsageMetricRecord::getStartTime).containsOnly(1L);
     assertThat(actual).extracting(UsageMetricRecord::getEndTime).containsOnly(10L);
     assertThat(actual)
-        .extracting(UsageMetricRecord::getValues)
-        .containsOnly(
-            Map.of("tenant0", 0L, "tenant1", 1L),
-            Map.of("tenant2", 2L, "tenant3", 3L),
-            Map.of("tenant4", 4L));
+        .extracting(UsageMetricRecord::getEventType)
+        .contains(EventType.RPI, EventType.EDI, EventType.TU);
+    assertThat(actual)
+        .extracting(UsageMetricRecord::getCounterValues)
+        .contains(Map.of("tenant1", 10L), Map.of());
+    assertThat(actual)
+        .extracting(UsageMetricRecord::getSetValues)
+        .contains(Map.of(), Map.of("tenant1", Set.of("assignee1")));
   }
 }
