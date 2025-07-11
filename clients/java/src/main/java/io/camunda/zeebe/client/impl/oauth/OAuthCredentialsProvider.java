@@ -85,6 +85,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final String clientAssertionKeystorePassword;
   private final String clientAssertionKeystoreKeyAlias;
   private final String clientAssertionKeystoreKeyPassword;
+  private final String resource;
 
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
@@ -100,6 +101,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     clientAssertionKeystorePassword = builder.getClientAssertionKeystorePassword();
     clientAssertionKeystoreKeyAlias = builder.getClientAssertionKeystoreKeyAlias();
     clientAssertionKeystoreKeyPassword = builder.getClientAssertionKeystoreKeyPassword();
+    resource = builder.getResource();
   }
 
   public boolean isClientAssertionEnabled() {
@@ -160,6 +162,9 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     payload.put("grant_type", "client_credentials");
     if (scope != null) {
       payload.put("scope", scope);
+    }
+    if (resource != null) {
+      payload.put("resource", resource);
     }
 
     return payload.entrySet().stream()
