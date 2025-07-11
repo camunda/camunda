@@ -41,8 +41,12 @@ import org.assertj.core.api.AbstractAssert;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(VariableAssertj.class);
 
   private final CamundaDataSource dataSource;
 
@@ -59,17 +63,12 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     withLocalVariableAssertion(
         processInstanceKey,
         selector,
-        instance -> {
-          hasVariableNames(
-              () ->
-                  toMap(
-                      dataSource.findVariables(
-                          filter ->
-                              filter
-                                  .processInstanceKey(processInstanceKey)
-                                  .scopeKey(instance.getElementInstanceKey()))),
-              variableNames);
-        });
+        instance ->
+            hasVariableNames(
+                () ->
+                    getLocalProcessInstanceVariables(
+                        processInstanceKey, instance.getElementInstanceKey()),
+                variableNames));
   }
 
   public void hasVariableNames(final long processInstanceKey, final String... variableNames) {
@@ -124,7 +123,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
             hasVariable(
                 variableName,
                 variableValue,
-                () -> findLocalVariables(processInstanceKey, instance.getElementInstanceKey())));
+                () ->
+                    getLocalProcessInstanceVariables(
+                        processInstanceKey, instance.getElementInstanceKey())));
   }
 
   public void hasVariable(
@@ -186,12 +187,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
             hasVariables(
                 expectedVariables,
                 () ->
-                    toMap(
-                        dataSource.findVariables(
-                            filter ->
-                                filter
-                                    .processInstanceKey(processInstanceKey)
-                                    .scopeKey(instance.getElementInstanceKey())))));
+                    getLocalProcessInstanceVariables(
+                        processInstanceKey, instance.getElementInstanceKey())));
   }
 
   public void hasVariables(
@@ -306,16 +303,51 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     }
   }
 
-  private Map<String, String> findLocalVariables(
+  private Map<String, String> getLocalProcessInstanceVariables(
       final long processInstanceKey, final long elementInstanceKey) {
 
-    return toMap(
+    final List<Variable> variables =
         dataSource.findVariables(
-            filter -> filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey)));
+            filter -> filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey));
+
+    return toMap(ensureVariablesAreNotTruncated(variables));
   }
 
   private Map<String, String> getGlobalProcessInstanceVariables(final long processInstanceKey) {
-    return toMap(dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey));
+    final List<Variable> variables =
+        dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey);
+
+    return toMap(ensureVariablesAreNotTruncated(variables));
+  }
+
+  private List<Variable> ensureVariablesAreNotTruncated(final List<Variable> variablesToCheck) {
+    return variablesToCheck.stream()
+        .map(
+            variable -> {
+              if (variable.isTruncated()) {
+                return fetchCompleteVariableByKey(variable);
+              } else {
+                return variable;
+              }
+            })
+        .collect(Collectors.toList());
+  }
+
+  private Variable fetchCompleteVariableByKey(final Variable variable) {
+    try {
+
+      return dataSource.getVariable(variable.getVariableKey());
+    } catch (final Throwable t) {
+
+      final String expandVariableException =
+          String.format(
+              "Unable to fetch complete variable data for truncated variable [name: %s]. Will attempt to "
+                  + "complete the assertion based on the truncated value which may lead to errors.",
+              variable.getName());
+      LOG.warn(expandVariableException, t);
+
+      return variable;
+    }
   }
 
   private Map<String, String> toMap(final List<Variable> variables) {

@@ -73,6 +73,10 @@ public class CamundaDataSource {
         .items();
   }
 
+  public Variable getVariable(final long variableKey) {
+    return client.newVariableGetRequest(variableKey).send().join();
+  }
+
   public List<ProcessInstance> findProcessInstances() {
     return findProcessInstances(filter -> {});
   }
