@@ -7,7 +7,8 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessageFromBrokerException;
+import static io.camunda.service.exception.ServiceException.Status.*;
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessageFromServiceException;
 
 import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -18,7 +19,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.ConditionalOnTasklistCompatibility;
 import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
@@ -28,12 +29,8 @@ import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.tenant.TenantService;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
-import io.camunda.zeebe.broker.client.api.BrokerErrorException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
-import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -246,32 +243,17 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
   private RuntimeException handleException(final Throwable error) {
     return switch (error) {
       case final CompletionException ce -> handleException(ce.getCause());
-      case final CamundaBrokerException cbe -> mapCamundaBrokerException(cbe);
+      case final ServiceException se -> mapServiceException(se);
       default -> new RuntimeException("Failed to execute request: " + error.getMessage(), error);
     };
   }
 
-  private RuntimeException mapCamundaBrokerException(final CamundaBrokerException exception) {
-    if (exception.getCause() instanceof final BrokerRejectionException brokerRejection) {
-      final var rejection = brokerRejection.getRejection();
-      final String message =
-          String.format(
-              "Request '%s' rejected with code '%s': %s",
-              rejection.intent(), rejection.type(), rejection.reason());
-      final var type = rejection.type();
-      if (type.equals(RejectionType.NOT_FOUND)) {
-        return new NotFoundApiException(message, exception);
-      }
-      if (type.equals(RejectionType.UNAUTHORIZED) || type.equals(RejectionType.FORBIDDEN)) {
-        return new ForbiddenActionException(message, exception);
-      }
-    }
-    if (exception.getCause() instanceof final BrokerErrorException brokerError) {
-      final var errorCode = brokerError.getError().getCode();
-      if (errorCode.equals(ErrorCode.PROCESS_NOT_FOUND)) {
-        return new ForbiddenActionException("Process not found", exception);
-      }
-    }
-    return new TasklistRuntimeException(getErrorMessageFromBrokerException(exception));
+  private RuntimeException mapServiceException(final ServiceException exception) {
+    return switch (exception.getStatus()) {
+      case NOT_FOUND -> new NotFoundApiException(exception.getMessage(), exception);
+      case FORBIDDEN, UNAUTHORIZED ->
+          new ForbiddenActionException(exception.getMessage(), exception);
+      default -> new TasklistRuntimeException(getErrorMessageFromServiceException(exception));
+    };
   }
 }
