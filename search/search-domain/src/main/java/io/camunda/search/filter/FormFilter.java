@@ -21,6 +21,7 @@ public record FormFilter(List<Long> formKeys, List<String> formIds) implements F
 
     private List<Long> formKeys;
     private List<String> formIds;
+    private long processDefinitionKey;
 
     public Builder formKeys(final Long value, final Long... values) {
       return formKeys(collectValues(value, values));

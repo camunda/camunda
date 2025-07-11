@@ -11,8 +11,10 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.*;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.BatchOperationItemFilter;
 import io.camunda.search.filter.Operation;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
@@ -53,5 +55,15 @@ public final class BatchOperationItemFilterTransformer
         throw new IllegalArgumentException("Unknown batch operation item state: " + state);
       }
     };
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(BATCH_OPERATION_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return SearchQueryBuilders.matchAll();
   }
 }

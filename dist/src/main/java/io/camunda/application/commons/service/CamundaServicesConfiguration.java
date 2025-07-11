@@ -30,6 +30,7 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
@@ -121,9 +122,10 @@ public class CamundaServicesConfiguration {
   public ProcessDefinitionServices processDefinitionServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ProcessDefinitionSearchClient processDefinitionSearchClient) {
+      final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final FormServices formServices) {
     return new ProcessDefinitionServices(
-        brokerClient, securityContextProvider, processDefinitionSearchClient, null);
+        brokerClient, securityContextProvider, processDefinitionSearchClient, formServices, null);
   }
 
   @Bean
@@ -132,13 +134,13 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
-      final IncidentSearchClient incidentSearchClient) {
+      final IncidentServices incidentServices) {
     return new ProcessInstanceServices(
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
-        incidentSearchClient,
+        incidentServices,
         null);
   }
 
@@ -217,17 +219,17 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
-      final FormSearchClient formSearchClient,
-      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final VariableSearchClient variableSearchClient,
+      final FormServices formServices,
+      final ElementInstanceServices elementInstanceServices,
+      final VariableServices variableServices,
       final ProcessCache processCache) {
     return new UserTaskServices(
         brokerClient,
         securityContextProvider,
         userTaskSearchClient,
-        formSearchClient,
-        flowNodeInstanceSearchClient,
-        variableSearchClient,
+        formServices,
+        elementInstanceServices,
+        variableServices,
         processCache,
         null);
   }
@@ -330,9 +332,8 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public AuthorizationChecker authorizationChecker(
-      final AuthorizationSearchClient authorizationSearchClient) {
-    return new AuthorizationChecker(authorizationSearchClient);
+  public AuthorizationChecker authorizationChecker(final AuthorizationReader authorizationReader) {
+    return new AuthorizationChecker(authorizationReader);
   }
 
   @Bean

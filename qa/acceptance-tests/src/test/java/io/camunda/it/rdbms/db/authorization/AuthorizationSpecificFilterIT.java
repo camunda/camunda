@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.AuthorizationReader;
+import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.AuthorizationFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -41,7 +41,7 @@ public class AuthorizationSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private AuthorizationReader authorizationReader;
+  @Autowired private AuthorizationDbReader authorizationReader;
 
   private RdbmsWriter rdbmsWriter;
 

@@ -7,15 +7,15 @@
  */
 package io.camunda.search.clients.transformers.aggregation;
 
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_ACTIVE;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_CANCELED;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_COMPLETED;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_FILTER_FLOW_NODES;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FILTERS;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODES;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_INCIDENTS;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_TERMS_SIZE;
-import static io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_ACTIVE;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_CANCELED;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_COMPLETED;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_FILTER_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_GROUP_FILTERS;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODES;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_TERMS_SIZE;
+import static io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation.AGGREGATION_TO_FLOW_NODES;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.children;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filters;
@@ -25,7 +25,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ACTIVITY_TYPE;
 
-import io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation;
+import io.camunda.search.aggregation.ProcessInstanceStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
@@ -35,11 +35,11 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public class ProcessInstanceFlowNodeStatisticsAggregationTransformer
-    implements AggregationTransformer<ProcessInstanceFlowNodeStatisticsAggregation> {
+    implements AggregationTransformer<ProcessInstanceStatisticsAggregation> {
 
   @Override
   public List<SearchAggregator> apply(
-      final Tuple<ProcessInstanceFlowNodeStatisticsAggregation, ServiceTransformers> value) {
+      final Tuple<ProcessInstanceStatisticsAggregation, ServiceTransformers> value) {
 
     // aggregate filters for active, completed, canceled, incidents
     final var filtersAgg =

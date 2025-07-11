@@ -8,7 +8,9 @@
 package io.camunda.service;
 
 import static io.camunda.search.entities.BatchOperationEntity.getBatchOperationKey;
-import static io.camunda.search.query.SearchQueryBuilders.batchOperationQuery;
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.security.auth.Authorization.withResourceId;
+import static io.camunda.service.authorization.Authorizations.BATCH_OPERATION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.BatchOperationSearchClient;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -16,7 +18,6 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -56,7 +57,7 @@ public final class BatchOperationServices
     return batchOperationSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
+                authentication, with(BATCH_OPERATION_READ_AUTHORIZATION)))
         .searchBatchOperations(query);
   }
 
@@ -65,7 +66,7 @@ public final class BatchOperationServices
     return batchOperationSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
+                authentication, with(BATCH_OPERATION_READ_AUTHORIZATION)))
         .searchBatchOperationItems(query);
   }
 
@@ -73,12 +74,9 @@ public final class BatchOperationServices
     return batchOperationSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
-        .searchBatchOperations(
-            batchOperationQuery(
-                q -> q.filter(f -> f.batchOperationKeys(batchOperationKey)).singleResult()))
-        .items()
-        .getFirst();
+                authentication,
+                withResourceId(BATCH_OPERATION_READ_AUTHORIZATION, batchOperationKey)))
+        .getBatchOperationByKey(batchOperationKey);
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(

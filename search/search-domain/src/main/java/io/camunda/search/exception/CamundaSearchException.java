@@ -52,6 +52,7 @@ public class CamundaSearchException extends RuntimeException {
     CONNECTION_FAILED,
     SEARCH_CLIENT_FAILED,
     SEARCH_SERVER_FAILED,
-    UNKNOWN
+    UNKNOWN,
+    FORBIDDEN
   }
 }

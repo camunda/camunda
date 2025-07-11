@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRandomRo
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.RoleReader;
+import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -56,7 +56,7 @@ public class RoleSortIT {
       final Function<Builder, ObjectBuilder<RoleSort>> sortBuilder,
       final Comparator<RoleEntity> comparator) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final RoleReader reader = rdbmsService.getRoleReader();
+    final RoleDbReader reader = rdbmsService.getRoleReader();
 
     final var name = nextStringId();
     createAndSaveRandomRoles(rdbmsWriter, b -> b.name(name));

@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -26,7 +25,6 @@ import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.nio.charset.StandardCharsets;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -102,7 +100,7 @@ public class ProcessDefinitionController {
                   ResponseEntity.ok()
                       .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
                       .body(s))
-          .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
+          .orElseGet(() -> ResponseEntity.noContent().build());
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -112,22 +110,12 @@ public class ProcessDefinitionController {
   public ResponseEntity<FormResult> getStartProcessForm(
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
-      final ProcessDefinitionEntity processDefinition =
-          processDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getByKey(processDefinitionKey);
-
-      if (processDefinition.formId() != null) {
-        return ResponseEntity.ok()
-            .body(
-                SearchQueryResponseMapper.toFormItem(
-                    formServices
-                        .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                        .getLatestVersionByFormId(processDefinition.formId())
-                        .get()));
-      } else {
-        return ResponseEntity.noContent().build();
-      }
+      return processDefinitionServices
+          .withAuthentication(authenticationProvider.getCamundaAuthentication())
+          .getProcessDefinitionForm(processDefinitionKey)
+          .map(SearchQueryResponseMapper::toFormItem)
+          .map(s -> ResponseEntity.ok().body(s))
+          .orElseGet(() -> ResponseEntity.noContent().build());
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

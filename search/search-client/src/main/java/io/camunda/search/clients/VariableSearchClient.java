@@ -16,5 +16,7 @@ public interface VariableSearchClient {
 
   SearchQueryResult<VariableEntity> searchVariables(VariableQuery filter);
 
+  VariableEntity getVariableByKey(long variableKey);
+
   VariableSearchClient withSecurityContext(SecurityContext securityContext);
 }

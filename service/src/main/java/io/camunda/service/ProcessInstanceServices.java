@@ -8,8 +8,11 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.security.auth.Authorization.withResourceId;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.SEQUENCE_FLOW_READ_AUTHORIZATION;
 
-import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.IncidentEntity;
@@ -23,9 +26,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.service.util.TreePathParser;
@@ -65,19 +66,19 @@ public final class ProcessInstanceServices
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
-  private final IncidentSearchClient incidentSearchClient;
+  private final IncidentServices incidentServices;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
-      final IncidentSearchClient incidentSearchClient,
+      final IncidentServices incidentServices,
       final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
-    this.incidentSearchClient = incidentSearchClient;
+    this.incidentServices = incidentServices;
   }
 
   @Override
@@ -87,7 +88,7 @@ public final class ProcessInstanceServices
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
-        incidentSearchClient,
+        incidentServices,
         authentication);
   }
 
@@ -96,7 +97,7 @@ public final class ProcessInstanceServices
     return processInstanceSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                authentication, with(PROCESS_INSTANCE_READ_AUTHORIZATION)))
         .searchProcessInstances(query);
   }
 
@@ -109,7 +110,7 @@ public final class ProcessInstanceServices
     return processInstanceSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                authentication, with(PROCESS_INSTANCE_READ_AUTHORIZATION)))
         .processInstanceFlowNodeStatistics(processInstanceKey);
   }
 
@@ -131,6 +132,8 @@ public final class ProcessInstanceServices
 
     final var resultsByKey =
         processInstanceSearchClient
+            .withSecurityContext(
+                securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()))
             .searchProcessInstances(
                 processInstanceSearchQuery(
                     q -> q.filter(f -> f.processInstanceKeyOperations(Operation.in(orderedKeys)))))
@@ -146,7 +149,7 @@ public final class ProcessInstanceServices
     return sequenceFlowSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                authentication, with(SEQUENCE_FLOW_READ_AUTHORIZATION)))
         .searchSequenceFlows(
             SequenceFlowQuery.of(
                 b -> b.filter(f -> f.processInstanceKey(processInstanceKey)).unlimited()))
@@ -154,20 +157,14 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
-    final var result =
-        processInstanceSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchProcessInstances(
-                processInstanceSearchQuery(
-                    q -> q.filter(f -> f.processInstanceKeys(processInstanceKey)).singleResult()))
-            .items()
-            .getFirst();
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
-    if (!securityContextProvider.isAuthorized(
-        result.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
-    }
-    return result;
+    return processInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                withResourceId(
+                    PROCESS_INSTANCE_READ_AUTHORIZATION,
+                    ProcessInstanceEntity::processDefinitionId)))
+        .getProcessInstanceByKey(processInstanceKey);
   }
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
@@ -309,11 +306,9 @@ public final class ProcessInstanceServices
     final var processInstance = getByKey(processInstanceKey);
     final var treePath = processInstance.treePath();
 
-    return incidentSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchIncidents(
+    return incidentServices
+        .withAuthentication(authentication)
+        .search(
             IncidentQuery.of(
                 b ->
                     b.filter(f -> f.treePathOperations(Operation.like("*" + treePath + "*")))

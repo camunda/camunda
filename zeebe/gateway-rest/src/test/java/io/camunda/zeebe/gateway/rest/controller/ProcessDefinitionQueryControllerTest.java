@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -242,7 +241,9 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         Pair.of(PROCESS_DEFINITION_URL + "%d", ProcessDefinitionServices::getByKey),
         Pair.of(
             PROCESS_DEFINITION_URL + "%d/xml", ProcessDefinitionServices::getProcessDefinitionXml),
-        Pair.of(PROCESS_DEFINITION_URL + "%d/form", ProcessDefinitionServices::getByKey));
+        Pair.of(
+            PROCESS_DEFINITION_URL + "%d/form",
+            ProcessDefinitionServices::getProcessDefinitionForm));
   }
 
   @Test
@@ -388,11 +389,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturnFormItemForValidFormKey() throws Exception {
-    when(processDefinitionServices.getByKey(1L))
-        .thenReturn(
-            new ProcessDefinitionEntity(
-                1L, "name", "id", "xml", "resource", 1, "tag", "tenant", "formId"));
-    when(formServices.getLatestVersionByFormId("formId"))
+    when(processDefinitionServices.getProcessDefinitionForm(1L))
         .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1L)));
 
     webClient
@@ -404,14 +401,11 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .isOk()
         .expectBody()
         .json(FORM_ITEM_JSON);
-
-    verify(processDefinitionServices, times(1)).getByKey(1L);
-    verify(formServices, times(1)).getLatestVersionByFormId("formId");
   }
 
   @Test
   public void shouldReturn404ForFormInvaliProcessKey() throws Exception {
-    when(processDefinitionServices.getByKey(999L))
+    when(processDefinitionServices.getProcessDefinitionForm(999L))
         .thenThrow(
             new CamundaSearchException(
                 "Process definition with key 999 not found",
@@ -437,7 +431,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturn500OnUnexpectedException() throws Exception {
-    when(processDefinitionServices.getByKey(1L))
+    when(processDefinitionServices.getProcessDefinitionForm(1L))
         .thenThrow(new RuntimeException("Unexpected error"));
 
     webClient

@@ -32,9 +32,13 @@ public final class UsageMetricsServices extends ApiServices<UsageMetricsServices
       throw new IllegalArgumentException("Query must not be null");
     }
     validateStartAndEndTime(query);
-    final var assignees = usageMetricsSearchClient.countAssignees(query);
-    final var processInstances = usageMetricsSearchClient.countProcessInstances(query);
-    final var decisionInstances = usageMetricsSearchClient.countDecisionInstances(query);
+    final var securityContext = securityContextProvider.provideSecurityContext(authentication);
+    final var assignees =
+        usageMetricsSearchClient.withSecurityContext(securityContext).countAssignees(query);
+    final var processInstances =
+        usageMetricsSearchClient.withSecurityContext(securityContext).countProcessInstances(query);
+    final var decisionInstances =
+        usageMetricsSearchClient.withSecurityContext(securityContext).countDecisionInstances(query);
     return new UsageMetricsCount(assignees, processInstances, decisionInstances);
   }
 

@@ -21,7 +21,9 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.VERSION;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionDefinitionFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public final class DecisionDefinitionFilterTransformer
     extends IndexFilterTransformer<DecisionDefinitionFilter> {
@@ -40,5 +42,15 @@ public final class DecisionDefinitionFilterTransformer
         stringTerms(DECISION_REQUIREMENTS_ID, filter.decisionRequirementsIds()),
         longTerms(DECISION_REQUIREMENTS_KEY, filter.decisionRequirementsKeys()),
         stringTerms(TENANT_ID, filter.tenantIds()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(DECISION_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 }

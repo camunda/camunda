@@ -8,7 +8,6 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,15 +18,12 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 public class VariableServiceTest {
 
@@ -77,40 +73,12 @@ public class VariableServiceTest {
     final var entity = mock(VariableEntity.class);
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
-    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchVariables(any())).thenReturn(result);
-    when(securityContextProvider.isAuthorized(
-            processId,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(true);
+    when(client.getVariableByKey(any(Long.class))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getByKey(1L);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
-  }
-
-  @Test
-  public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
-    // given
-    final var entity = mock(VariableEntity.class);
-    final var processId = "processId";
-    when(entity.processDefinitionId()).thenReturn(processId);
-    when(client.searchVariables(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
-    when(securityContextProvider.isAuthorized(
-            processId,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(false);
-    // when
-    final Executable executeGetByKey = () -> services.getByKey(1L);
-    // then
-    final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
-    assertThat(exception.getMessage())
-        .isEqualTo(
-            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 }

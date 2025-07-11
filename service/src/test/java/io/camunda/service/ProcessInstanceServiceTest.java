@@ -8,14 +8,12 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.IncidentEntity;
@@ -34,7 +32,6 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
-import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -48,7 +45,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.mockito.ArgumentCaptor;
 
 public final class ProcessInstanceServiceTest {
@@ -56,7 +52,7 @@ public final class ProcessInstanceServiceTest {
   private ProcessInstanceServices services;
   private ProcessInstanceSearchClient processInstanceSearchClient;
   private SequenceFlowSearchClient sequenceFlowSearchClient;
-  private IncidentSearchClient incidentSearchClient;
+  private IncidentServices incidentServices;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
   private BrokerClient brokerClient;
@@ -66,11 +62,12 @@ public final class ProcessInstanceServiceTest {
     processInstanceSearchClient = mock(ProcessInstanceSearchClient.class);
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
     authentication = CamundaAuthentication.none();
-    incidentSearchClient = mock(IncidentSearchClient.class);
+    incidentServices = mock(IncidentServices.class);
     when(processInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(processInstanceSearchClient);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
-    when(incidentSearchClient.withSecurityContext(any())).thenReturn(incidentSearchClient);
+    when(incidentServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(incidentServices);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
     services =
@@ -79,7 +76,7 @@ public final class ProcessInstanceServiceTest {
             securityContextProvider,
             processInstanceSearchClient,
             sequenceFlowSearchClient,
-            incidentSearchClient,
+            incidentServices,
             authentication);
   }
 
@@ -129,32 +126,13 @@ public final class ProcessInstanceServiceTest {
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.processInstanceKey()).thenReturn(key);
     when(entity.processDefinitionId()).thenReturn("processId");
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult(1, false, List.of(entity), null, null));
-    authorizeProcessReadInstance(true, "processId");
+    when(processInstanceSearchClient.getProcessInstanceByKey(any(Long.class))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getByKey(key);
 
     // then
     assertThat(searchQueryResult.processInstanceKey()).isEqualTo(key);
-  }
-
-  @Test
-  public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
-    // given
-    final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.processDefinitionId()).thenReturn("processId");
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
-    authorizeProcessReadInstance(false, "processId");
-    // when
-    final Executable executeGetByKey = () -> services.getByKey(1L);
-    // then
-    final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
-    assertThat(exception.getMessage())
-        .isEqualTo(
-            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
   @Test
@@ -196,13 +174,13 @@ public final class ProcessInstanceServiceTest {
     when(childProcess.processInstanceKey()).thenReturn(789L);
     when(childProcess.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
     when(childProcess.processDefinitionId()).thenReturn("child_process_id");
-    authorizeProcessReadInstance(true, "child_process_id");
 
     final var parentProcess = mock(ProcessInstanceEntity.class);
     when(parentProcess.processInstanceKey()).thenReturn(123L);
     when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
-    authorizeProcessReadInstance(true, "parent_process_id");
 
+    when(processInstanceSearchClient.getProcessInstanceByKey(any(Long.class)))
+        .thenReturn(childProcess);
     when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(
             new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
@@ -222,11 +200,9 @@ public final class ProcessInstanceServiceTest {
     final var rootInstance = mock(ProcessInstanceEntity.class);
     when(rootInstance.processInstanceKey()).thenReturn(123L);
     when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
-    authorizeProcessReadInstance(true, "root_process_id");
     when(rootInstance.treePath()).thenReturn(null); // No treePath
 
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(rootInstance), null, null));
+    when(processInstanceSearchClient.getProcessInstanceByKey(eq(123L))).thenReturn(rootInstance);
 
     // when
     final var result = services.callHierarchy(123L);
@@ -241,11 +217,9 @@ public final class ProcessInstanceServiceTest {
     final var rootInstance = mock(ProcessInstanceEntity.class);
     when(rootInstance.processInstanceKey()).thenReturn(123L);
     when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
-    authorizeProcessReadInstance(true, "root_process_id");
     when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
 
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(rootInstance), null, null));
+    when(processInstanceSearchClient.getProcessInstanceByKey(eq(123L))).thenReturn(rootInstance);
 
     // when
     final var result = services.callHierarchy(123L);
@@ -405,53 +379,24 @@ public final class ProcessInstanceServiceTest {
     when(processInstance.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
     when(processInstance.processInstanceKey()).thenReturn(processInstanceKey);
     when(processInstance.processDefinitionId()).thenReturn("processId");
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(processInstance), null, null));
-    authorizeProcessReadInstance(true, processInstance.processDefinitionId());
+    when(processInstanceSearchClient.getProcessInstanceByKey(any(Long.class)))
+        .thenReturn(processInstance);
 
-    when(incidentSearchClient.searchIncidents(any())).thenReturn(queryResult);
+    when(incidentServices.search(any())).thenReturn(queryResult);
 
     // when
     final var result = services.searchIncidents(processInstanceKey, query);
 
     // then
     assertThat(result).isEqualTo(queryResult);
-    verify(incidentSearchClient)
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication,
-                Authorization.of(a -> a.processDefinition().readProcessInstance())));
+    verify(incidentServices).withAuthentication(any(CamundaAuthentication.class));
 
     final var incidentQueryCaptor = ArgumentCaptor.forClass(IncidentQuery.class);
-    verify(incidentSearchClient).searchIncidents(incidentQueryCaptor.capture());
+    verify(incidentServices).search(incidentQueryCaptor.capture());
     final var incidentQuery = incidentQueryCaptor.getValue();
     assertThat(incidentQuery.filter().treePathOperations())
         .containsExactly(Operation.like("*" + processInstance.treePath() + "*"));
     assertThat(incidentQuery.page()).isEqualTo(query.page());
     assertThat(incidentQuery.sort()).isEqualTo(query.sort());
-  }
-
-  @Test
-  void incidentsShouldThrowForbiddenExceptionIfNotAuthorizedToReadProcessInstance() {
-    // given
-    final var processInstanceKey = 123L;
-
-    final var processInstance = mock(ProcessInstanceEntity.class);
-    when(processInstance.processDefinitionId()).thenReturn("processId");
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(processInstance), null, null));
-    authorizeProcessReadInstance(false, processInstance.processDefinitionId());
-
-    final var query = new IncidentQuery.Builder().build();
-
-    // when
-    final Executable executeGetByKey = () -> services.searchIncidents(processInstanceKey, query);
-
-    // then
-    final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
-    assertThat(exception.getMessage())
-        .isEqualTo(
-            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
-    verifyNoInteractions(incidentSearchClient);
   }
 }

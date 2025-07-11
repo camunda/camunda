@@ -25,7 +25,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-domain</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-reader</artifactId>
     </dependency>
 
     <dependency>
@@ -51,11 +61,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-query-transformer</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client-rdbms</artifactId>
     </dependency>
 
     <dependency>

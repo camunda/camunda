@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
@@ -22,12 +23,15 @@ import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 import java.util.ArrayList;
+import java.util.List;
 
 public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> {
+
   public GroupFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
   }
@@ -88,5 +92,15 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
                             term(GroupIndex.MEMBER_TYPE, entry.getKey().name()),
                             stringTerms(GroupIndex.MEMBER_ID, entry.getValue()))))
             .toList());
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(GROUP_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return matchAll();
   }
 }

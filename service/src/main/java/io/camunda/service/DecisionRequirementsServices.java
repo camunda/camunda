@@ -8,19 +8,18 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+import static io.camunda.security.auth.Authorization.with;
+import static io.camunda.security.auth.Authorization.withResourceId;
+import static io.camunda.service.authorization.Authorizations.DECISION_REQUIREMENTS_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.function.Function;
 
 public final class DecisionRequirementsServices
     extends SearchQueryService<
@@ -50,10 +49,14 @@ public final class DecisionRequirementsServices
     return decisionRequirementSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.decisionRequirementsDefinition().read())))
+                authentication, with(DECISION_REQUIREMENTS_READ_AUTHORIZATION)))
         .searchDecisionRequirements(
             decisionRequirementsSearchQuery(
                 q -> q.filter(query.filter()).sort(query.sort()).page(query.page())));
+  }
+
+  public String getDecisionRequirementsXml(final Long decisionRequirementsKey) {
+    return getByKey(decisionRequirementsKey, true).xml();
   }
 
   public DecisionRequirementsEntity getByKey(final Long key) {
@@ -61,32 +64,13 @@ public final class DecisionRequirementsServices
   }
 
   public DecisionRequirementsEntity getByKey(final Long key, final boolean includeXml) {
-    final var result =
-        decisionRequirementSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchDecisionRequirements(
-                decisionRequirementsSearchQuery(
-                    q ->
-                        q.filter(f -> f.decisionRequirementsKeys(key))
-                            .resultConfig(r -> r.includeXml(includeXml))
-                            .singleResult()))
-            .items()
-            .getFirst();
-    final var authorization = Authorization.of(a -> a.decisionRequirementsDefinition().read());
-    if (!securityContextProvider.isAuthorized(
-        result.decisionRequirementsId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
-    }
-    return result;
-  }
-
-  public SearchQueryResult<DecisionRequirementsEntity> search(
-      final Function<DecisionRequirementsQuery.Builder, ObjectBuilder<DecisionRequirementsQuery>>
-          fn) {
-    return search(decisionRequirementsSearchQuery(fn));
-  }
-
-  public String getDecisionRequirementsXml(final Long decisionRequirementsKey) {
-    return getByKey(decisionRequirementsKey, true).xml();
+    return decisionRequirementSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                withResourceId(
+                    DECISION_REQUIREMENTS_READ_AUTHORIZATION,
+                    DecisionRequirementsEntity::decisionRequirementsId)))
+        .getDecisionRequirementsByKey(key, includeXml);
   }
 }

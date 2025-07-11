@@ -101,7 +101,7 @@ class AuthorizationSearchIT {
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     assertThatThrownBy(() -> camundaClient.newAuthorizationGetRequest(100L).send().join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("404: 'Not Found'");
+        .hasMessageContaining("Authorization with key '%s' not found".formatted(100L));
   }
 
   @Test

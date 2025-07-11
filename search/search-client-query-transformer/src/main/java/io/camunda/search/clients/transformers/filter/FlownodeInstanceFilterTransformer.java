@@ -20,6 +20,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,5 +56,15 @@ public class FlownodeInstanceFilterTransformer
 
   private SearchQuery getTypeQuery(final List<FlowNodeType> types) {
     return stringTerms(TYPE, types != null ? types.stream().map(Enum::name).toList() : null);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 }

@@ -198,7 +198,7 @@ public class InheritedBasicAuthAuthorizationIT {
                       .send()
                       .join())
           .isInstanceOf(ProblemException.class)
-          .hasMessageContaining("404: 'Not Found'");
+          .hasMessageContaining("Unauthorized to perform operation 'READ' on resource 'GROUP'");
     }
   }
 

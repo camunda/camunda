@@ -23,7 +23,8 @@ public record IncidentEntity(
     OffsetDateTime creationTime,
     IncidentState state,
     Long jobKey,
-    String tenantId) {
+    String tenantId)
+    implements TenantOwnedEntity {
 
   public enum IncidentState {
     ACTIVE,

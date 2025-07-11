@@ -168,7 +168,8 @@ public class PermissionsService {
       return ResourcesAllowed.withIds(Set.of());
     }
 
-    final Authorization authorization = new Authorization(resourceType, permissionType);
+    final Authorization authorization =
+        Authorization.of(a -> a.resourceType(resourceType).permissionType(permissionType));
     final SecurityContext securityContext = getSecurityContext(authorization);
     final List<String> ids = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
 
@@ -250,7 +251,8 @@ public class PermissionsService {
       final String resourceId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    final Authorization authorization = new Authorization(resourceType, permissionType);
+    final Authorization authorization =
+        Authorization.of(a -> a.resourceType(resourceType).permissionType(permissionType));
     final SecurityContext securityContext = getSecurityContext(authorization);
     return authorizationChecker.isAuthorized(resourceId, securityContext);
   }

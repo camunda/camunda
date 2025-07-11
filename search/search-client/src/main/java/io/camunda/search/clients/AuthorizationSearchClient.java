@@ -16,5 +16,7 @@ public interface AuthorizationSearchClient {
 
   SearchQueryResult<AuthorizationEntity> searchAuthorizations(AuthorizationQuery filter);
 
+  AuthorizationEntity getAuthorizationByKey(long key);
+
   AuthorizationSearchClient withSecurityContext(SecurityContext securityContext);
 }

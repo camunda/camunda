@@ -25,7 +25,8 @@ public record FlowNodeInstanceEntity(
     Boolean hasIncident,
     Long incidentKey,
     String processDefinitionId,
-    String tenantId) {
+    String tenantId)
+    implements TenantOwnedEntity {
 
   public FlowNodeInstanceEntity withFlowNodeName(final String name) {
     return new FlowNodeInstanceEntity(

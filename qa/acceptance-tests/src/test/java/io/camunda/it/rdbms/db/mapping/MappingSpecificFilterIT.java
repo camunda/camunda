@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.MappingReader;
+import io.camunda.db.rdbms.read.service.MappingDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
@@ -48,7 +48,7 @@ public class MappingSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private MappingReader mappingReader;
+  @Autowired private MappingDbReader mappingReader;
 
   private RdbmsWriter rdbmsWriter;
 

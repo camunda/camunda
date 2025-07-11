@@ -13,7 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures.createAnd
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
+import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
@@ -44,7 +44,8 @@ public class DecisionInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionInstanceReader decisionInstanceReader = rdbmsService.getDecisionInstanceReader();
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
 
     final var original = DecisionInstanceFixtures.createRandomized(b -> b);
     createAndSaveDecisionInstance(rdbmsWriter, original);
@@ -71,7 +72,8 @@ public class DecisionInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionInstanceReader decisionInstanceReader = rdbmsService.getDecisionInstanceReader();
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriter, b -> b);
@@ -99,7 +101,8 @@ public class DecisionInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionInstanceReader decisionInstanceReader = rdbmsService.getDecisionInstanceReader();
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriter, b -> b);
@@ -142,7 +145,8 @@ public class DecisionInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionInstanceReader decisionInstanceReader = rdbmsService.getDecisionInstanceReader();
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
 
     final var decisionDefinition =
         DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriter, b -> b);
@@ -195,7 +199,7 @@ public class DecisionInstanceIT {
   public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionInstanceReader reader = rdbmsService.getDecisionInstanceReader();
+    final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader();
 
     final var cleanupDate = NOW.minusDays(1);
 

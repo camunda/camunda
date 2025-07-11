@@ -36,7 +36,8 @@ public record JobEntity(
     Long processInstanceKey,
     String elementId,
     Long elementInstanceKey,
-    String tenantId) {
+    String tenantId)
+    implements TenantOwnedEntity {
 
   public static class Builder implements ObjectBuilder<JobEntity> {
     private Long jobKey;

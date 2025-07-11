@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createAndSa
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.BatchOperationItemReader;
+import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -72,7 +72,7 @@ public class BatchOperationItemSortIT {
           sortBuilder,
       final Comparator<BatchOperationItemEntity> comparator) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final BatchOperationItemReader reader = rdbmsService.getBatchOperationItemReader();
+    final BatchOperationItemDbReader reader = rdbmsService.getBatchOperationItemReader();
 
     final var batchOperation = createAndSaveBatchOperation(rdbmsWriter, b -> b);
 

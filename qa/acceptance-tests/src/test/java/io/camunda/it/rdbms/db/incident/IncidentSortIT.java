@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRand
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.IncidentReader;
+import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -147,7 +147,7 @@ public class IncidentSortIT {
       final Function<Builder, ObjectBuilder<IncidentSort>> sortBuilder,
       final Comparator<IncidentEntity> comparator) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentReader reader = rdbmsService.getIncidentReader();
+    final IncidentDbReader reader = rdbmsService.getIncidentReader();
 
     final var key = nextKey();
     createAndSaveRandomIncidents(rdbmsWriter, b -> b.flowNodeInstanceKey(key));

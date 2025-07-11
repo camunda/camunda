@@ -104,8 +104,8 @@ public class RoleServicesTest {
   public void shouldReturnSingleVariableForGet() {
     // given
     final var entity = mock(RoleEntity.class);
-    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchRoles(any())).thenReturn(result);
+    when(entity.roleId()).thenReturn("roleId");
+    when(client.getRoleByKey(any(String.class))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getRole(entity.roleId());

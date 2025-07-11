@@ -11,8 +11,11 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.*;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.List;
 
 public final class BatchOperationFilterTransformer
     extends IndexFilterTransformer<BatchOperationFilter> {
@@ -27,5 +30,15 @@ public final class BatchOperationFilterTransformer
         stringOperations(ID, filter.batchOperationKeyOperations()),
         stringOperations(STATE, filter.stateOperations()),
         stringOperations(TYPE, filter.operationTypeOperations()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return SearchQueryBuilders.matchAll();
   }
 }

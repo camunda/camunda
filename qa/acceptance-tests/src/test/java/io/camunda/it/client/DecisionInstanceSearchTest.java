@@ -340,7 +340,7 @@ class DecisionInstanceSearchTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .contains("A single result was expected, but none was found matching");
+        .contains("Decision Instance with key '%s' not found".formatted(decisionInstanceId));
   }
 
   private static DeploymentEvent deployResource(

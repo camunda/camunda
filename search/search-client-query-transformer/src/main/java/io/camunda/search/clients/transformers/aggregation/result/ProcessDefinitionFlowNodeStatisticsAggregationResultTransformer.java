@@ -7,12 +7,12 @@
  */
 package io.camunda.search.clients.transformers.aggregation.result;
 
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
-import static io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_ACTIVE;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_CANCELED;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_COMPLETED;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_FILTER_INCIDENTS;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_GROUP_FLOW_NODE_ID;
+import static io.camunda.search.aggregation.ProcessDefinitionStatisticsAggregation.AGGREGATION_TO_PARENT_PI;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;

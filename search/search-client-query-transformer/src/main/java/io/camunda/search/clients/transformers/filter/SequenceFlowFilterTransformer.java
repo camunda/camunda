@@ -7,12 +7,16 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.SequenceFlowFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
+import java.util.List;
 
 public final class SequenceFlowFilterTransformer
     extends IndexFilterTransformer<SequenceFlowFilter> {
@@ -24,5 +28,15 @@ public final class SequenceFlowFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final SequenceFlowFilter filter) {
     return term(SequenceFlowTemplate.PROCESS_INSTANCE_KEY, filter.processInstanceKey());
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
+    return stringTerms(SequenceFlowTemplate.BPMN_PROCESS_ID, authorization.resourceIds());
+  }
+
+  @Override
+  protected SearchQuery toTenantCheckSearchQuery(final List<String> tenantIds) {
+    return stringTerms(TENANT_ID, tenantIds);
   }
 }
