@@ -17,7 +17,7 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignRoleGroup, Role } from "src/utility/api/roles";
-import { isInternalGroupsEnabled } from "src/configuration";
+import { isCamundaGroupsEnabled } from "src/configuration";
 
 const SelectedGroups = styled.div`
   margin-top: 0;
@@ -41,7 +41,7 @@ const AssignGroupsModal: FC<
   const [callAssignGroup] = useApiCall(assignRoleGroup);
 
   const getDynamicGroup = (): Group | null => {
-    if (!isInternalGroupsEnabled || !currentInputValue.trim()) return null;
+    if (!isCamundaGroupsEnabled || !currentInputValue.trim()) return null;
 
     const trimmedValue = currentInputValue.trim();
     const groupId = trimmedValue.replace(/\s+/g, "").toLowerCase();
