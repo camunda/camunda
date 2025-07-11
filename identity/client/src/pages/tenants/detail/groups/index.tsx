@@ -15,7 +15,7 @@ import { useEntityModal } from "src/components/modal";
 import { TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/tenants/detail/groups/DeleteModal";
 import AssignGroupsModal from "src/pages/tenants/detail/groups/AssignGroupsModal";
-import { isInternalGroupsEnabled } from "src/configuration";
+import { isCamundaGroupsEnabled } from "src/configuration";
 import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import { GroupKeys } from "src/utility/api/groups";
 
@@ -84,7 +84,7 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
     key: GroupKeys;
   }[];
 
-  const groupsListHeaders: GroupsListHeaders = isInternalGroupsEnabled
+  const groupsListHeaders: GroupsListHeaders = isCamundaGroupsEnabled
     ? [
         { header: t("groupId"), key: "groupId" },
         { header: t("groupName"), key: "name" },
