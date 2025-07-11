@@ -430,8 +430,7 @@ public final class OAuthCredentialsProviderTest {
     mockCredentials(token, scope, null);
   }
 
-  private void mockCredentials(
-      final String token, final String scope, final String resource) {
+  private void mockCredentials(final String token, final String scope, final String resource) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
     map.put("client_id", CLIENT_ID);
