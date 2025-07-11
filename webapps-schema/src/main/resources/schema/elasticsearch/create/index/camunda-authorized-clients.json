@@ -1,0 +1,47 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "clientRegistrationId": {
+        "type": "keyword"
+      },
+      "principalName": {
+        "type": "keyword"
+      },
+      "accessTokenValue": {
+        "type": "text",
+        "store": true
+      },
+      "accessTokenType": {
+        "type": "keyword"
+      },
+      "accessTokenIssuedAt": {
+        "type": "date",
+        "format": "strict_date_optional_time || epoch_millis"
+      },
+      "accessTokenExpiresAt": {
+        "type": "date",
+        "format": "strict_date_optional_time || epoch_millis"
+      },
+      "accessTokenScopes": {
+        "type": "keyword"
+      },
+      "refreshTokenValue": {
+        "type": "text",
+        "store": true
+      },
+      "refreshTokenIssuedAt": {
+        "type": "date",
+        "format": "strict_date_optional_time || epoch_millis"
+      },
+      "refreshTokenExpiresAt": {
+        "type": "date",
+        "format": "strict_date_optional_time || epoch_millis"
+      }
+    }
+  }
+}
+
