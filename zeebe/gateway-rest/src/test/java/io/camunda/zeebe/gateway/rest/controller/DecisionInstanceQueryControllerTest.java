@@ -27,7 +27,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -355,7 +355,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     final var decisionInstanceId = "123-1";
     when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(
-            new ForbiddenException(
+            ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionDefinition().readDecisionInstance())));
     // when
     webClient

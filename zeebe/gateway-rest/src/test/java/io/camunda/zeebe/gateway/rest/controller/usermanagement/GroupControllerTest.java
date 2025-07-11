@@ -21,7 +21,7 @@ import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
@@ -512,7 +512,7 @@ public class GroupControllerTest {
       when(groupServices.updateGroup(groupId, groupName, description))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.UPDATE, 1L, RejectionType.NOT_FOUND, "Group not found"))));
 
@@ -616,7 +616,7 @@ public class GroupControllerTest {
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -646,7 +646,7 @@ public class GroupControllerTest {
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -696,7 +696,7 @@ public class GroupControllerTest {
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -725,7 +725,7 @@ public class GroupControllerTest {
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -836,7 +836,7 @@ public class GroupControllerTest {
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -866,7 +866,7 @@ public class GroupControllerTest {
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -916,7 +916,7 @@ public class GroupControllerTest {
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -945,7 +945,7 @@ public class GroupControllerTest {
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,

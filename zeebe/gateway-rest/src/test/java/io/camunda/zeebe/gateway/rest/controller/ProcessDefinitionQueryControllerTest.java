@@ -25,7 +25,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Optional;
@@ -213,7 +213,9 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     final var service = testParameter.getRight();
     final long processDefinitionKey = 17L;
     when(service.apply(processDefinitionServices, processDefinitionKey))
-        .thenThrow(new ForbiddenException(Authorization.of(a -> a.processDefinition().read())));
+        .thenThrow(
+            ErrorMapper.createForbiddenException(
+                Authorization.of(a -> a.processDefinition().read())));
     // when / then
     webClient
         .get()

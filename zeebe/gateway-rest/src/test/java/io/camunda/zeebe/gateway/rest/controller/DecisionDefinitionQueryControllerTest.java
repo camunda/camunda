@@ -24,7 +24,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -509,7 +509,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final var service = testParameters.getRight();
     final long decisionDefinitionKey = 1L;
     when(service.apply(decisionDefinitionServices, decisionDefinitionKey))
-        .thenThrow(new ForbiddenException(Authorization.of(a -> a.decisionDefinition().read())));
+        .thenThrow(
+            ErrorMapper.createForbiddenException(
+                Authorization.of(a -> a.decisionDefinition().read())));
     // when / then
     webClient
         .get()

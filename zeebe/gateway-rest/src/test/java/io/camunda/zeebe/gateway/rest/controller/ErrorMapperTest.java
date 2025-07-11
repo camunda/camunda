@@ -19,7 +19,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -72,7 +72,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.PROCESS_NOT_FOUND, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -101,7 +101,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -130,7 +130,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -170,7 +170,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(new BrokerError(errorCode, "Just an error"))));
+                ErrorMapper.mapBrokerError(new BrokerError(errorCode, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
@@ -536,7 +536,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.PARTITION_UNAVAILABLE, "Just an error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -565,7 +565,7 @@ public class ErrorMapperTest extends RestControllerTest {
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerError(
                     new BrokerError(ErrorCode.MALFORMED_REQUEST, "max size error"))));
 
     final var request = new UserTaskCompletionRequest();
@@ -594,7 +594,8 @@ public class ErrorMapperTest extends RestControllerTest {
     final CamundaSearchException cse = new CamundaSearchException("No reason");
 
     // when
-    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -609,7 +610,8 @@ public class ErrorMapperTest extends RestControllerTest {
         new CamundaSearchException("Item not found", CamundaSearchException.Reason.NOT_FOUND);
 
     // when
-    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
@@ -624,7 +626,8 @@ public class ErrorMapperTest extends RestControllerTest {
         new CamundaSearchException("Item not unique", CamundaSearchException.Reason.NOT_UNIQUE);
 
     // when
-    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
@@ -642,7 +645,8 @@ public class ErrorMapperTest extends RestControllerTest {
             CamundaSearchException.Reason.CONNECTION_FAILED);
 
     // when
-    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
@@ -662,7 +666,8 @@ public class ErrorMapperTest extends RestControllerTest {
             CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
 
     // when
-    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -682,7 +687,8 @@ public class ErrorMapperTest extends RestControllerTest {
             CamundaSearchException.Reason.CONNECTION_FAILED);
 
     // when
-    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
@@ -702,7 +708,8 @@ public class ErrorMapperTest extends RestControllerTest {
             CamundaSearchException.Reason.SEARCH_CLIENT_FAILED);
 
     // when
-    final ProblemDetail problemDetail = RestErrorMapper.mapCamundaSearchExceptionToProblem(cse);
+    final ProblemDetail problemDetail =
+        RestErrorMapper.mapErrorToProblem(ErrorMapper.mapSearchError(cse));
 
     // when
     assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
