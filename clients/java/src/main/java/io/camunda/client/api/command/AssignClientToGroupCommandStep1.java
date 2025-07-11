@@ -20,9 +20,9 @@ import io.camunda.client.api.response.AssignClientToGroupResponse;
 public interface AssignClientToGroupCommandStep1 {
 
   /**
-   * Sets the client ID for the assignment to a group.
+   * Sets the ID of the client to be assigned to a group.
    *
-   * @param clientId the clientId of the client
+   * @param clientId the ID of the client
    * @return the builder for this command.
    */
   AssignClientToGroupCommandStep2 clientId(String clientId);
@@ -32,7 +32,7 @@ public interface AssignClientToGroupCommandStep1 {
     /**
      * Sets the group ID.
      *
-     * @param groupId the groupId of the group
+     * @param groupId the ID of the group
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
