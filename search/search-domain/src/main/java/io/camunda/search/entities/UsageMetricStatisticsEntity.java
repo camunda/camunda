@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Map;
 
 public record UsageMetricStatisticsEntity(
-    long rpi, long edi, long at, Map<String, UsageMetricStatisticsEntityTenant> tenants) {
+    long totalRpi, long totalEdi, long at, Map<String, UsageMetricStatisticsEntityTenant> tenants) {
 
   public record UsageMetricStatisticsEntityTenant(long rpi, long edi) {
 

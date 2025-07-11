@@ -20,20 +20,20 @@ public class UsageMetricEntityMapper {
   public static UsageMetricStatisticsEntity toEntity(
       final List<UsageMetricTenantStatisticsDbModel> dbModels) {
 
-    long rpi = 0;
-    long edi = 0;
+    long totalRpi = 0;
+    long totalEdi = 0;
     final var tenants = new HashMap<String, UsageMetricStatisticsEntityTenant>(dbModels.size());
 
     for (final UsageMetricTenantStatisticsDbModel dbModel : dbModels) {
       final long tenantRpi = Optional.ofNullable(dbModel.rpi()).orElse(0L);
       final long tenantEdi = Optional.ofNullable(dbModel.edi()).orElse(0L);
 
-      rpi += tenantRpi;
-      edi += tenantEdi;
+      totalRpi += tenantRpi;
+      totalEdi += tenantEdi;
 
       tenants.put(dbModel.tenantId(), new Builder().rpi(tenantRpi).edi(tenantEdi).build());
     }
 
-    return new UsageMetricStatisticsEntity(rpi, edi, tenants.size(), tenants);
+    return new UsageMetricStatisticsEntity(totalRpi, totalEdi, tenants.size(), tenants);
   }
 }
