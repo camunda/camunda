@@ -217,10 +217,6 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
-    if (writer.getBatchSize() == 0) {
-      metrics.startFlushLatencyMeasurement();
-    }
-
     // adding record is idempotent
     writer.addRecord(record);
 
@@ -229,7 +225,6 @@ public class CamundaExporter implements Exporter {
     if (shouldFlush()) {
       try (final var ignored = metrics.measureFlushDuration()) {
         flush();
-        metrics.stopFlushLatencyMeasurement();
       } catch (final ExporterException e) {
         metrics.recordFailedFlush();
         throw e;

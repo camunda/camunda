@@ -26,7 +26,6 @@ public class CamundaExporterMetrics {
   private final MeterRegistry meterRegistry;
   private final InstantSource streamClock;
 
-  private final Timer flushLatency;
   private final Counter processInstancesArchived;
 
   /**
@@ -59,13 +58,6 @@ public class CamundaExporterMetrics {
       final MeterRegistry meterRegistry, final InstantSource streamClock) {
     this.meterRegistry = meterRegistry;
     this.streamClock = streamClock;
-
-    flushLatency =
-        Timer.builder(meterName("flush.latency"))
-            .description(
-                "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
-            .publishPercentileHistogram()
-            .register(meterRegistry);
 
     processInstancesArchived =
         Counter.builder(meterName("archiver.process.instances"))
@@ -153,16 +145,6 @@ public class CamundaExporterMetrics {
 
   public void recordFailedFlush() {
     failedFlush.increment();
-  }
-
-  public void startFlushLatencyMeasurement() {
-    flushLatencyMeasurement = Timer.start(meterRegistry);
-  }
-
-  public void stopFlushLatencyMeasurement() {
-    if (flushLatencyMeasurement != null) {
-      flushLatencyMeasurement.stop(flushLatency);
-    }
   }
 
   public void recordProcessInstancesArchived(final int count) {
