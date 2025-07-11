@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -22,13 +23,18 @@ import org.agrona.DirectBuffer;
 
 public final class VariableDocumentRecord extends UnifiedRecordValue
     implements VariableDocumentRecordValue {
-  private final LongProperty scopeKeyProperty = new LongProperty("scopeKey");
+  // Static StringValue keys for property names
+  private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
+  private static final StringValue UPDATE_SEMANTICS_KEY = new StringValue("updateSemantics");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+
+  private final LongProperty scopeKeyProperty = new LongProperty(SCOPE_KEY_KEY);
   private final EnumProperty<VariableDocumentUpdateSemantic> updateSemanticsProperty =
       new EnumProperty<>(
-          "updateSemantics",
+          UPDATE_SEMANTICS_KEY,
           VariableDocumentUpdateSemantic.class,
           VariableDocumentUpdateSemantic.PROPAGATE);
-  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
+  private final DocumentProperty variablesProperty = new DocumentProperty(VARIABLES_KEY);
 
   public VariableDocumentRecord() {
     super(3);

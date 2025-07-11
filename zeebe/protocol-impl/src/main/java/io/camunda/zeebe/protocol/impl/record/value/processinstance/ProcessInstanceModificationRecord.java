@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -22,19 +23,28 @@ import java.util.stream.Collectors;
 public final class ProcessInstanceModificationRecord extends UnifiedRecordValue
     implements ProcessInstanceModificationRecordValue {
 
-  private final LongProperty processInstanceKeyProperty = new LongProperty("processInstanceKey");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue TERMINATE_INSTRUCTIONS_KEY =
+      new StringValue("terminateInstructions");
+  private static final StringValue ACTIVATE_INSTRUCTIONS_KEY =
+      new StringValue("activateInstructions");
+  private static final StringValue ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY =
+      new StringValue("activatedElementInstanceKeys");
+
+  private final LongProperty processInstanceKeyProperty =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final ArrayProperty<ProcessInstanceModificationTerminateInstruction>
       terminateInstructionsProperty =
           new ArrayProperty<>(
-              "terminateInstructions", ProcessInstanceModificationTerminateInstruction::new);
+              TERMINATE_INSTRUCTIONS_KEY, ProcessInstanceModificationTerminateInstruction::new);
   private final ArrayProperty<ProcessInstanceModificationActivateInstruction>
       activateInstructionsProperty =
           new ArrayProperty<>(
-              "activateInstructions", ProcessInstanceModificationActivateInstruction::new);
+              ACTIVATE_INSTRUCTIONS_KEY, ProcessInstanceModificationActivateInstruction::new);
 
-  @Deprecated(since = "8.1.3")
   private final ArrayProperty<LongValue> activatedElementInstanceKeys =
-      new ArrayProperty<>("activatedElementInstanceKeys", LongValue::new);
+      new ArrayProperty<>(ACTIVATED_ELEMENT_INSTANCE_KEYS_KEY, LongValue::new);
 
   public ProcessInstanceModificationRecord() {
     super(4);

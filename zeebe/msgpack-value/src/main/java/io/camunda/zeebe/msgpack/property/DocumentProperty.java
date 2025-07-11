@@ -11,6 +11,7 @@ import static io.camunda.zeebe.msgpack.value.DocumentValue.EMPTY_DOCUMENT;
 
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import org.agrona.DirectBuffer;
 
 public final class DocumentProperty extends BaseProperty<DocumentValue> {
@@ -19,6 +20,11 @@ public final class DocumentProperty extends BaseProperty<DocumentValue> {
         keyString,
         new DocumentValue(),
         new DocumentValue(EMPTY_DOCUMENT, 0, EMPTY_DOCUMENT.capacity()));
+  }
+
+  public DocumentProperty(final StringValue key) {
+    super(
+        key, new DocumentValue(), new DocumentValue(EMPTY_DOCUMENT, 0, EMPTY_DOCUMENT.capacity()));
   }
 
   public DirectBuffer getValue() {
