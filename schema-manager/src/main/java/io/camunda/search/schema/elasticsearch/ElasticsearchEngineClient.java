@@ -292,6 +292,8 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
             .refresh(true)
             .build();
     try {
+      client.indices().refresh(r -> r.index(indexName));
+      LOG.debug("Refreshed index {}", indexName);
       final DeleteByQueryResponse response = client.deleteByQuery(deleteByQueryRequest);
       LOG.debug("Deleted {} documents from index {}", response.deleted(), indexName);
     } catch (final IOException e) {
