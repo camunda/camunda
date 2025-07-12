@@ -2912,7 +2912,7 @@ paths:
       operationId: searchUsersForRole
       summary: Search role users
       description: |
-        Search users assigned to a role.
+        Search users with assigned role.
       parameters:
         - name: roleId
           in: path
@@ -2928,7 +2928,7 @@ paths:
               $ref: "#/components/schemas/RoleUserSearchQueryRequest"
       responses:
         "200":
-          description: The users assigned to the role.
+          description: The users with the assigned role.
           content:
             application/json:
               schema:
@@ -2954,7 +2954,7 @@ paths:
       operationId: searchClientsForRole
       summary: Search role clients
       description: |
-        Search clients assigned to a role.
+        Search clients with assigned role.
       parameters:
         - name: roleId
           in: path
@@ -2970,7 +2970,7 @@ paths:
               $ref: "#/components/schemas/RoleClientSearchQueryRequest"
       responses:
         "200":
-          description: The clients assigned to the role.
+          description: The clients with the assigned role.
           content:
             application/json:
               schema:
@@ -2993,10 +2993,10 @@ paths:
     put:
       tags:
         - Role
-      operationId: addUserToRole
-      summary: Assign a user to a role
+      operationId: addRoleToUser
+      summary: Assign a role to a user
       description: |
-        Assigns a user to a role.
+        Assigns a role to a user.
       parameters:
         - name: roleId
           in: path
@@ -3012,7 +3012,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The user was assigned successfully to the role.
+          description: The role was assigned successfully to the user.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3024,7 +3024,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The user with the given ID is already assigned to the role.
+          description: The role is already assigned to the user with the given ID.
           content:
             application/problem+json:
               schema:
@@ -3070,10 +3070,10 @@ paths:
     put:
       tags:
         - Role
-      operationId: addClientToRole
-      summary: Assign a client to a role
+      operationId: addRoleToClient
+      summary: Assign a role to a client
       description: |
-        Assigns a client to a role.
+        Assigns a role to a client.
       parameters:
         - name: roleId
           in: path
@@ -3089,7 +3089,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The client was assigned successfully to the role.
+          description: The role was assigned successfully to the client.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3101,7 +3101,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The client with the given ID is already assigned to the role.
+          description: The role was already assigned to the client with the given ID.
           content:
             application/problem+json:
               schema:
@@ -3111,10 +3111,10 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeClientFromRole
-      summary: Unassign a client from a role
+      operationId: removeRoleFromClient
+      summary: Unassign a role from a client
       description: |
-        Unassigns a client from a role.
+        Unassigns a role from a client.
       parameters:
         - name: roleId
           in: path
@@ -3130,7 +3130,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The client was unassigned successfully from the role.
+          description: The role was unassigned successfully from the client.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3180,10 +3180,10 @@ paths:
     put:
       tags:
         - Role
-      operationId: addGroupToRole
-      summary: Assign a group to a role
+      operationId: addRoleToGroup
+      summary: Assign a role to a group
       description: |
-        Assigns a group to a role.
+        Assigns a role to a group.
       parameters:
         - name: roleId
           in: path
@@ -3199,7 +3199,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The group was assigned successfully to the role.
+          description: The role was assigned successfully to the group.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3211,7 +3211,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The group with the given ID is already assigned to the role.
+          description: The role is already assigned to the group with the given ID.
           content:
             application/problem+json:
               schema:
@@ -3221,10 +3221,10 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeGroupFromRole
-      summary: Unassign a group from a role
+      operationId: removeRoleFromGroup
+      summary: Unassign a role from a group
       description: |
-        Unassigns a group from a role.
+        Unassigns a role from a group.
       parameters:
         - name: roleId
           in: path
@@ -3240,7 +3240,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The group was unassigned successfully from the role.
+          description: The role was unassigned successfully from the group.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3260,7 +3260,7 @@ paths:
       operationId: searchGroupsForRole
       summary: Search role groups
       description: |
-        Search groups assigned to a role.
+        Search groups with assigned role.
       parameters:
         - name: roleId
           in: path
@@ -3276,7 +3276,7 @@ paths:
               $ref: "#/components/schemas/RoleGroupSearchQueryRequest"
       responses:
         "200":
-          description: The groups assigned to the role.
+          description: The groups with assigned role.
           content:
             application/json:
               schema:
@@ -3299,10 +3299,10 @@ paths:
     put:
       tags:
         - Role
-      operationId: addMappingRuleToRole
-      summary: Assign a mapping rule to a role
+      operationId: addRoleToMappingRule
+      summary: Assign a role to a mapping rule
       description: |
-        Assigns a mapping rule to a role.
+        Assigns a role to a mapping rule.
       parameters:
         - name: roleId
           in: path
@@ -3318,7 +3318,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The mapping rule was assigned successfully to the role.
+          description: The role was assigned successfully to the mapping rule.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3330,7 +3330,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The mapping rule with the given ID is already assigned to the role.
+          description: The role is already assigned to the mapping rule with the given ID.
           content:
             application/problem+json:
               schema:
@@ -3340,10 +3340,10 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeMappingRuleFromRole
-      summary: Unassign a mapping from a role
+      operationId: removeRoleFromMappingRule
+      summary: Unassign a role from a mapping rule
       description: |
-        Unassigns a mapping from a role.
+        Unassigns a role from a mapping rule.
       parameters:
         - name: roleId
           in: path
@@ -3359,7 +3359,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The mapping rule was unassigned successfully from the role.
+          description: The role was unassigned successfully from the mapping rule.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3379,7 +3379,7 @@ paths:
       operationId: searchMappingRulesForRole
       summary: Search role mapping rules
       description: |
-        Search mapping rules assigned to a role.
+        Search mapping rules with assigned role.
       parameters:
         - name: roleId
           in: path
@@ -3395,7 +3395,7 @@ paths:
               $ref: "#/components/schemas/MappingRuleSearchQueryRequest"
       responses:
         "200":
-          description: The mapping rules assigned to the role.
+          description: The mapping rules with assigned role.
           content:
             application/json:
               schema:
@@ -3592,7 +3592,7 @@ paths:
       operationId: searchMappingRulesForGroup
       summary: Search group mapping rules
       description: |
-        Search mapping rules to a group.
+        Search mapping rules assigned to a group.
       parameters:
         - name: groupId
           in: path
