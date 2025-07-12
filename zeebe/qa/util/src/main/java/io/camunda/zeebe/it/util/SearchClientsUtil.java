@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.util;
 import io.camunda.search.clients.DocumentBasedSearchClients;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
+import io.camunda.search.clients.auth.TenantQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -33,8 +34,9 @@ public class SearchClientsUtil {
     final var descriptors = new IndexDescriptors("", true);
     final var transformers = ServiceTransformers.newInstance(descriptors);
     return new DocumentBasedSearchClients(
-        new SearchClientBasedQueryExecutor(
-            lowLevelSearchClient, AuthorizationQueryStrategy.NONE, transformers),
+        new SearchClientBasedQueryExecutor(lowLevelSearchClient, transformers),
+        AuthorizationQueryStrategy.NONE,
+        TenantQueryStrategy.NONE,
         null);
   }
 
