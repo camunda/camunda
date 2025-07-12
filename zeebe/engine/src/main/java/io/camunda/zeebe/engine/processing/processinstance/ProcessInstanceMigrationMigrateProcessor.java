@@ -313,10 +313,13 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoConcurrentCommand(
         eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
 
-    updateElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
+    final var updatedElementInstanceRecord =
+        getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
 
     stateWriter.appendFollowUpEvent(
-        elementInstance.getKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, elementInstanceRecord);
+        elementInstance.getKey(),
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        updatedElementInstanceRecord);
 
     final Set<ExecutableSequenceFlow> sequenceFlows =
         getSequenceFlowsToMigrate(
@@ -339,7 +342,30 @@ public class ProcessInstanceMigrationMigrateProcessor
               .resetProcessDefinitionPath();
 
           stateWriter.appendFollowUpEvent(
-              keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, sequenceFlowRecord);
+              keyGenerator.nextKey(),
+              ProcessInstanceIntent.SEQUENCE_FLOW_DELETED,
+              sequenceFlowRecord);
+
+          final String newSequenceFlowId =
+              sourceElementIdToTargetElementId.get(BufferUtil.bufferAsString(sequenceFlow.getId()));
+
+          if (newSequenceFlowId != null) {
+            final var newSequenceFlowRecord = new ProcessInstanceRecord();
+            newSequenceFlowRecord.copyFrom(updatedElementInstanceRecord);
+            newSequenceFlowRecord
+                .setElementId(newSequenceFlowId)
+                .setBpmnElementType(sequenceFlow.getElementType())
+                .setBpmnEventType(sequenceFlow.getEventType())
+                .setFlowScopeKey(elementInstance.getKey())
+                .resetElementInstancePath()
+                .resetCallingElementPath()
+                .resetProcessDefinitionPath();
+
+            stateWriter.appendFollowUpEvent(
+                keyGenerator.nextKey(),
+                ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
+                newSequenceFlowRecord);
+          }
         });
 
     if (elementInstance.getJobKey() > 0) {
@@ -366,13 +392,16 @@ public class ProcessInstanceMigrationMigrateProcessor
         incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
     if (processIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
-          processIncidentKey, targetProcessDefinition, targetElementId, elementInstanceRecord);
+          processIncidentKey,
+          targetProcessDefinition,
+          targetElementId,
+          updatedElementInstanceRecord);
     }
 
     final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
     if (jobIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
-          jobIncidentKey, targetProcessDefinition, targetElementId, elementInstanceRecord);
+          jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
     }
 
     if (elementInstance.getUserTaskKey() > 0) {
@@ -422,13 +451,13 @@ public class ProcessInstanceMigrationMigrateProcessor
           targetProcessDefinition,
           sourceProcessDefinition,
           sourceElementIdToTargetElementId,
-          elementInstanceRecord,
+          updatedElementInstanceRecord,
           targetElementId,
           processInstanceKey,
           elementId);
     }
 
-    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
+    if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
       migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
     }
   }
@@ -441,13 +470,14 @@ public class ProcessInstanceMigrationMigrateProcessor
    * @param targetProcessDefinition the new process definition
    * @param targetElementId the new element id
    */
-  private void updateElementInstanceRecord(
+  private ProcessInstanceRecord getUpdatedElementInstanceRecord(
       final ElementInstance elementInstance,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId) {
-    final var elementInstanceRecord = elementInstance.getValue();
+    final var updatedElementInstanceRecord = new ProcessInstanceRecord();
+    updatedElementInstanceRecord.copyFrom(elementInstance.getValue());
 
-    elementInstanceRecord
+    updatedElementInstanceRecord
         .setProcessDefinitionKey(targetProcessDefinition.getKey())
         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
         .setVersion(targetProcessDefinition.getVersion())
@@ -460,13 +490,15 @@ public class ProcessInstanceMigrationMigrateProcessor
             .withCallActivityIndexProvider(processState::getFlowElement)
             .withElementInstanceKey(elementInstance.getKey())
             .withFlowScopeKey(elementInstance.getParentKey())
-            .withRecordValue(elementInstanceRecord)
+            .withRecordValue(updatedElementInstanceRecord)
             .build();
 
-    elementInstanceRecord
+    updatedElementInstanceRecord
         .setElementInstancePath(elementTreePath.elementInstancePath())
         .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
         .setCallingElementPath(elementTreePath.callingElementPath());
+
+    return updatedElementInstanceRecord;
   }
 
   /**
@@ -580,9 +612,9 @@ public class ProcessInstanceMigrationMigrateProcessor
                   || elementType == BpmnElementType.INCLUSIVE_GATEWAY;
             })
         .map(
-            activeSequenceFlow -> {
-              final ExecutableSequenceFlow activeFlow = activeSequenceFlow.sequenceFlow();
-              final ExecutableFlowNode sourceGateway = activeSequenceFlow.target;
+            sequenceFlowToMigrate -> {
+              final ExecutableSequenceFlow flowToMigrate = sequenceFlowToMigrate.sequenceFlow();
+              final ExecutableFlowNode sourceGateway = sequenceFlowToMigrate.target;
               requireNoConcurrentCommandForGateway(
                   elementInstanceState, sourceGateway, elementInstanceKey, processInstanceKey);
 
@@ -597,10 +629,11 @@ public class ProcessInstanceMigrationMigrateProcessor
                       .getProcess()
                       .getElementById(targetGatewayId, ExecutableFlowNode.class);
               requireValidTargetIncomingFlowCount(sourceGateway, targetGateway, processInstanceKey);
-              requireSequenceFlowExistsInTarget(
-                  activeFlow.getId(), sourceGateway, targetGateway, processInstanceKey);
+              //              requireSequenceFlowExistsInTarget(
+              //                  flowToMigrate.getId(), sourceGateway, targetGateway,
+              // processInstanceKey);
 
-              return activeFlow;
+              return flowToMigrate;
             })
         .collect(Collectors.toSet());
   }

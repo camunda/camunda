@@ -41,7 +41,7 @@ final class ProcessInstanceElementMigratedV3Applier
   @Override
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
     if (value.getBpmnElementType() == BpmnElementType.SEQUENCE_FLOW) {
-      migrateTakenSequenceFlow(value);
+      // migrateTakenSequenceFlow(value);
       return;
     }
 

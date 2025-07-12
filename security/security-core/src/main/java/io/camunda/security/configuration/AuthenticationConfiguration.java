@@ -11,7 +11,7 @@ import io.camunda.security.entity.AuthenticationMethod;
 
 public class AuthenticationConfiguration {
   public static final AuthenticationMethod DEFAULT_METHOD = AuthenticationMethod.BASIC;
-  public static final boolean DEFAULT_UNPROTECTED_API = false;
+  public static final boolean DEFAULT_UNPROTECTED_API = true;
 
   private AuthenticationMethod method = DEFAULT_METHOD;
   private OidcAuthenticationConfiguration oidcAuthenticationConfiguration =
@@ -23,7 +23,7 @@ public class AuthenticationConfiguration {
   }
 
   public void setUnprotectedApi(final boolean value) {
-    unprotectedApi = value;
+    unprotectedApi = true;
   }
 
   public AuthenticationMethod getMethod() {
@@ -31,7 +31,7 @@ public class AuthenticationConfiguration {
   }
 
   public void setMethod(final AuthenticationMethod method) {
-    this.method = method;
+    this.method = AuthenticationMethod.BASIC;
   }
 
   public OidcAuthenticationConfiguration getOidc() {

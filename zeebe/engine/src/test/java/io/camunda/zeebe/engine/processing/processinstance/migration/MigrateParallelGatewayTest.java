@@ -14,11 +14,16 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -173,10 +178,475 @@ public class MigrateParallelGatewayTest {
         .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
         .addMappingInstruction("task2", "task3")
         .addMappingInstruction("join1", "join2")
+        .addMappingInstruction("flow1", "flow1")
         .migrate();
 
     // then
     ENGINE.job().ofInstance(processInstanceKey).withType("type2").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PARALLEL_GATEWAY)
+                .withElementId("join2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expected to activate the joining parallel gateway")
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldMigrateJoiningParallelGatewayWithOneSequenceFlowTakenAndTakenFlowIdChanged() {
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
+                    .sequenceFlowId("flow1")
+                    .parallelGateway("join1")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .serviceTask("task2", b -> b.zeebeJobType("type2"))
+                    .connectTo("join1")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
+                    .sequenceFlowId("flow2") // sequence flow id changed
+                    .parallelGateway("join2")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .serviceTask("task3", b -> b.zeebeJobType("type3"))
+                    .connectTo("join2")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SERVICE_TASK)
+                .limit(2))
+        .hasSize(2);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task2", "task3")
+        .addMappingInstruction("join1", "join2")
+        .addMappingInstruction("flow1", "flow2") // sequence flow id mapped
+        .migrate();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("type2").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PARALLEL_GATEWAY)
+                .withElementId("join2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expected to activate the joining parallel gateway")
+        .isNotNull();
+  }
+
+  @Test
+  public void
+      shouldMigrateJoiningParallelGatewayWithMultipleSequenceFlowsTakenAndTakenFlowIdChanged() {
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
+                    .sequenceFlowId("flow1")
+                    .parallelGateway("join1")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .serviceTask("task2", b -> b.zeebeJobType("type2"))
+                    .sequenceFlowId("flow2")
+                    .connectTo("join1")
+                    .moveToNode("fork")
+                    .serviceTask("task3", b -> b.zeebeJobType("type3"))
+                    .connectTo("join1")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
+                    .sequenceFlowId("flow4")
+                    .parallelGateway("join2")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .serviceTask("task2", b -> b.zeebeJobType("type2"))
+                    .sequenceFlowId("flow5")
+                    .connectTo("join2")
+                    .moveToNode("fork")
+                    .serviceTask("task4", b -> b.zeebeJobType("type4"))
+                    .connectTo("join2")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SERVICE_TASK)
+                .limit(2))
+        .hasSize(2);
+
+    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("type2").complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .skipUntil(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                            && r.getValue().getElementId().equals("task1"))
+                .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SEQUENCE_FLOW)
+                .limit(2))
+        .extracting(r -> r.getValue().getElementId())
+        .describedAs("Expected to take the sequence flows to the joining gateway")
+        .contains("flow1", "flow2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task3", "task4")
+        .addMappingInstruction("join1", "join2")
+        .addMappingInstruction("flow1", "flow4") // sequence flow id mapped
+        .addMappingInstruction("flow2", "flow5") // sequence flow id mapped
+        .migrate();
+
+    // then
+    ENGINE.job().ofInstance(processInstanceKey).withType("type3").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PARALLEL_GATEWAY)
+                .withElementId("join2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expected to activate the joining parallel gateway")
+        .isNotNull();
+  }
+
+  @Test
+  public void
+      shouldMigrateJoiningParallelGatewayWithOneSequenceFlowTakenAndTakenFlowIdChangedWithUserTask() {
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .userTask("task1")
+                    .zeebeUserTask()
+                    .sequenceFlowId("flow1")
+                    .parallelGateway("join1")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .userTask("task2")
+                    .zeebeUserTask()
+                    .connectTo("join1")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .userTask("task1")
+                    .zeebeUserTask()
+                    .sequenceFlowId("flow2") // sequence flow id changed
+                    .parallelGateway("join2")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .userTask("task3")
+                    .zeebeUserTask()
+                    .connectTo("join2")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .limit(2))
+        .hasSize(2);
+
+    final Record<UserTaskRecordValue> task1 =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task1")
+            .getFirst();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withKey(task1.getKey()).complete();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task2", "task3")
+        .addMappingInstruction("join1", "join2")
+        .addMappingInstruction("flow1", "flow2") // sequence flow id mapped
+        .migrate();
+
+    // then
+    final Record<UserTaskRecordValue> task3 =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task2")
+            .getFirst();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).withKey(task3.getKey()).complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PARALLEL_GATEWAY)
+                .withElementId("join2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expected to activate the joining parallel gateway")
+        .isNotNull();
+  }
+
+  @Test
+  public void
+      shouldMigrateJoiningParallelGatewayWithOneSequenceFlowTakenAndTakenFlowIdChangedWithJobUserTask() {
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .userTask("task1")
+                    .sequenceFlowId("flow1")
+                    .parallelGateway("join1")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .userTask("task2")
+                    .connectTo("join1")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .userTask("task1")
+                    .sequenceFlowId("flow2") // sequence flow id changed
+                    .parallelGateway("join2")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .userTask("task3")
+                    .connectTo("join2")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .limit(2))
+        .hasSize(2);
+
+    final Record<JobRecordValue> job1 =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task1")
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(job1.getKey()).complete();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task2", "task3")
+        .addMappingInstruction("join1", "join2")
+        .addMappingInstruction("flow1", "flow2") // sequence flow id mapped
+        .migrate();
+
+    // then
+    final Record<JobRecordValue> job2 =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task2")
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(job2.getKey()).complete();
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.PARALLEL_GATEWAY)
+                .withElementId("join2")
+                .getFirst()
+                .getValue())
+        .describedAs("Expected to activate the joining parallel gateway")
+        .isNotNull();
+  }
+
+  @Test
+  public void
+      shouldMigrateJoiningParallelGatewayWithMultipleSequenceFlowsTakenAndTakenFlowIdChangedWithJobUserTask() {
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .userTask("task1")
+                    .sequenceFlowId("flow1")
+                    .parallelGateway("join1")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .userTask("task2")
+                    .sequenceFlowId("flow2")
+                    .connectTo("join1")
+                    .moveToNode("fork")
+                    .userTask("task3")
+                    .connectTo("join1")
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .parallelGateway("fork")
+                    .userTask("task1")
+                    .sequenceFlowId("flow4")
+                    .parallelGateway("join2")
+                    .endEvent()
+                    .moveToNode("fork")
+                    .userTask("task2")
+                    .sequenceFlowId("flow5")
+                    .connectTo("join2")
+                    .moveToNode("fork")
+                    .userTask("task4")
+                    .connectTo("join2")
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.USER_TASK)
+                .limit(2))
+        .hasSize(2);
+
+    final Record<JobRecordValue> job1 =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task1")
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(job1.getKey()).complete();
+
+    final Record<JobRecordValue> job2 =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task2")
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(job2.getKey()).complete();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .skipUntil(
+                    r ->
+                        r.getIntent() == ProcessInstanceIntent.ELEMENT_COMPLETED
+                            && r.getValue().getElementId().equals("task1"))
+                .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SEQUENCE_FLOW)
+                .limit(2))
+        .extracting(r -> r.getValue().getElementId())
+        .describedAs("Expected to take the sequence flows to the joining gateway")
+        .contains("flow1", "flow2");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("task3", "task4")
+        .addMappingInstruction("join1", "join2")
+        .addMappingInstruction("flow1", "flow4") // sequence flow id mapped
+        .addMappingInstruction("flow2", "flow5") // sequence flow id mapped
+        .migrate();
+
+    // then
+    final Record<JobRecordValue> job3 =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task3")
+            .getFirst();
+
+    ENGINE.job().ofInstance(processInstanceKey).withKey(job3.getKey()).complete();
 
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -268,6 +738,8 @@ public class MigrateParallelGatewayTest {
         .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
         .addMappingInstruction("task3", "task4")
         .addMappingInstruction("join1", "join2")
+        .addMappingInstruction("flow1", "flow1")
+        .addMappingInstruction("flow2", "flow2")
         .migrate();
 
     // then
@@ -378,6 +850,8 @@ public class MigrateParallelGatewayTest {
         .addMappingInstruction("sub1", "sub2")
         .addMappingInstruction("task3", "task4")
         .addMappingInstruction("join1", "join2")
+        .addMappingInstruction("flow1", "flow1")
+        .addMappingInstruction("flow2", "flow2")
         .migrate();
 
     // then
@@ -697,81 +1171,6 @@ public class MigrateParallelGatewayTest {
               Elements provided in mapping instructions must exist \
               in the target process definition."""
                 .formatted(processInstanceKey, nonExistingTargetGatewayId))
-        .hasKey(processInstanceKey);
-  }
-
-  @Test
-  public void
-      shouldRejectMigrationForJoiningParallelGatewayIfTakenSequenceFlowIdIsChangedInTarget() {
-    final String sourceProcessId = helper.getBpmnProcessId();
-    final String targetProcessId = helper.getBpmnProcessId() + "_v2";
-
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess(sourceProcessId)
-                    .startEvent()
-                    .parallelGateway("fork")
-                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
-                    .sequenceFlowId("flow1")
-                    .parallelGateway("join1")
-                    .endEvent()
-                    .moveToNode("fork")
-                    .serviceTask("task2", b -> b.zeebeJobType("type2"))
-                    .connectTo("join1")
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess(targetProcessId)
-                    .startEvent()
-                    .parallelGateway("fork")
-                    .serviceTask("task1", b -> b.zeebeJobType("type1"))
-                    .sequenceFlowId("flow2") // taken sequence flow id is changed
-                    .parallelGateway("join2")
-                    .endEvent()
-                    .moveToNode("fork")
-                    .serviceTask("task3", b -> b.zeebeJobType("type3"))
-                    .connectTo("join2")
-                    .done())
-            .deploy();
-    final long targetProcessDefinitionKey =
-        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
-
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
-
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementType(BpmnElementType.SERVICE_TASK)
-                .limit(2))
-        .hasSize(2);
-
-    ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
-
-    // when
-    final var rejectionRecord =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .migration()
-            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-            .addMappingInstruction("task2", "task3")
-            .addMappingInstruction("join1", "join2")
-            .expectRejection()
-            .migrate();
-
-    // then
-    Assertions.assertThat(rejectionRecord)
-        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            """
-              Expected to migrate process instance '%s' \
-              but gateway with id '%s' has a taken incoming sequence flow mismatch. \
-              Taken sequence flow with id '%s' must connect to the mapped target gateway \
-              with id '%s' in the target process definition."""
-                .formatted(processInstanceKey, "join1", "flow1", "join2"))
         .hasKey(processInstanceKey);
   }
 
