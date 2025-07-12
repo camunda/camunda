@@ -11,15 +11,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.UsageMetricsCount;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
+import io.camunda.search.entities.UsageMetricStatisticsEntity.UsageMetricStatisticsEntityTenant;
 import io.camunda.search.filter.UsageMetricsFilter;
-import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -33,12 +34,28 @@ public class UsageMetricsControllerTest extends RestControllerTest {
   static final String EXPECTED_SEARCH_RESPONSE =
       """
       {
-         "assignees": 5,
-         "processInstances": 23,
-         "decisionInstances": 17
+         "rpi": 5,
+         "edi": 23,
+         "at": 2
       }""";
 
-  static final UsageMetricsCount USAGE_METRICS_COUNT_ENTITY = new UsageMetricsCount(5L, 23L, 17L);
+  static final String EXPECTED_TENANTS_SEARCH_RESPONSE =
+      """
+      {
+         "rpi": 5,
+         "edi": 23,
+         "at": 2,
+         "tenants": {
+           "tenant1": {
+             "rpi": 1,
+             "edi": 2
+           },
+           "tenant2": {
+             "rpi": 4,
+             "edi": 21
+           }
+         }
+      }""";
 
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -54,8 +71,8 @@ public class UsageMetricsControllerTest extends RestControllerTest {
   @Test
   void shouldSearchWithStartTimeAndEndTime() {
     // given
-    when(usageMetricsServices.search(any(UsageMetricsQuery.class)))
-        .thenReturn(USAGE_METRICS_COUNT_ENTITY);
+    when(usageMetricsServices.statistics(any(UsageMetricsFilter.class)))
+        .thenReturn(new UsageMetricStatisticsEntity(5L, 23L, 2L, null));
     // when/then
     webClient
         .get()
@@ -75,10 +92,47 @@ public class UsageMetricsControllerTest extends RestControllerTest {
     final var endTime = OffsetDateTime.of(2024, 12, 31, 10, 50, 26, 0, ZoneOffset.UTC);
 
     verify(usageMetricsServices)
-        .search(
-            new UsageMetricsQuery.Builder()
-                .filter(
-                    new UsageMetricsFilter.Builder().startTime(startTime).endTime(endTime).build())
+        .statistics(new UsageMetricsFilter.Builder().startTime(startTime).endTime(endTime).build());
+  }
+
+  @Test
+  void shouldSearchWithStartTimeAndEndTimeAndTenants() {
+    // given
+    when(usageMetricsServices.statistics(any(UsageMetricsFilter.class)))
+        .thenReturn(
+            new UsageMetricStatisticsEntity(
+                5L,
+                23L,
+                2L,
+                Map.of(
+                    "tenant1",
+                    new UsageMetricStatisticsEntityTenant(1L, 2L),
+                    "tenant2",
+                    new UsageMetricStatisticsEntityTenant(4L, 21L))));
+    // when/then
+    webClient
+        .get()
+        .uri(
+            USAGE_METRICS_URL
+                + "?startTime=1970-11-14T10:50:26.000Z&endTime=2024-12-31T10:50:26.000Z&withTenants=true")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_TENANTS_SEARCH_RESPONSE);
+
+    final var startTime = OffsetDateTime.of(1970, 11, 14, 10, 50, 26, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2024, 12, 31, 10, 50, 26, 0, ZoneOffset.UTC);
+
+    verify(usageMetricsServices)
+        .statistics(
+            new UsageMetricsFilter.Builder()
+                .startTime(startTime)
+                .endTime(endTime)
+                .withTenants(true)
                 .build());
   }
 
