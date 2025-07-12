@@ -110,21 +110,24 @@ class WebSessionRepositoryTest {
             expiredLastAccessedTime.toEpochMilli(),
             expiredLastAccessedTime.toEpochMilli(),
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
-            Map.of()));
+            Map.of(),
+            ""));
     persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(
             "s2",
             expiredLastAccessedTime.toEpochMilli(),
             expiredLastAccessedTime.toEpochMilli(),
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
-            Map.of()));
+            Map.of(),
+            ""));
     persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(
             "s3",
             expiredLastAccessedTime.toEpochMilli(),
             expiredLastAccessedTime.toEpochMilli(),
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
-            Map.of()));
+            Map.of(),
+            ""));
 
     assertThat(persistentWebSessionClient.getAllPersistentWebSessions().items()).hasSize(3);
 

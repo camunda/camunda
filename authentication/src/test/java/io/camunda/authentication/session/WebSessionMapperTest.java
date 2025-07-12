@@ -111,7 +111,8 @@ public class WebSessionMapperTest {
                 "attribute1",
                 webSessionAttributeConverter.serialize("value1"),
                 "attribute2",
-                webSessionAttributeConverter.serialize(testAttribute)));
+                webSessionAttributeConverter.serialize(testAttribute)),
+            "");
 
     // when
     final var webSession = webSessionMapper.fromPersistentWebSession(persistentSession);
@@ -149,7 +150,8 @@ public class WebSessionMapperTest {
             now.toEpochMilli(),
             now.toEpochMilli(),
             maxInactiveInterval.toSeconds(),
-            Map.of("securityContext", webSessionAttributeConverter.serialize(securityContext)));
+            Map.of("securityContext", webSessionAttributeConverter.serialize(securityContext)),
+            "");
 
     // when
     final var webSession = webSessionMapper.fromPersistentWebSession(persistentSession);
