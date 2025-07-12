@@ -20,6 +20,7 @@ import static io.camunda.webapps.schema.descriptors.index.TenantIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
@@ -53,6 +54,11 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
             : hasChildQuery(
                 IdentityJoinRelationshipType.MEMBER.getType(),
                 term(TenantIndex.MEMBER_TYPE, filter.childMemberType().name())));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(TENANT_ID, authorization.resourceIds());
   }
 
   private SearchQuery createMultipleMemberTypeQueries(final TenantFilter filter) {

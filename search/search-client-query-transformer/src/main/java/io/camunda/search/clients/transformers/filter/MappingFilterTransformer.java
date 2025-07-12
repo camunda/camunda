@@ -19,6 +19,7 @@ import static io.camunda.webapps.schema.descriptors.index.MappingIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MappingFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilter> {
@@ -48,5 +49,10 @@ public class MappingFilterTransformer extends IndexFilterTransformer<MappingFilt
             : filter.mappingIds().isEmpty()
                 ? matchNone()
                 : stringTerms(MAPPING_ID, filter.mappingIds().stream().sorted().toList()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(MAPPING_ID, authorization.resourceIds());
   }
 }
