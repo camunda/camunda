@@ -29,10 +29,6 @@ on:
         description: "Publish C8Run artifact to Camunda Download Center"
         type: boolean
         default: true
-      typePrerelease:
-        description: "Mark the GitHub release as prerelease (used for alphas only)"
-        type: boolean
-        default: false
       artifactVersionSuffix:
         description: 'Add extra suffix for release artifacts like "-rc" (Note: the dash should be included)'
         type: string
@@ -207,13 +203,6 @@ jobs:
             "${{ env.C8RUN_NAME_ARTIFACT_WITH_PATCH_VERSION }}"
         env:
           GH_TOKEN: ${{ github.token }}
-
-      - name: Set GitHub release type
-        if: inputs.typePrerelease
-        env:
-          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: |
-          gh release edit "${{ inputs.camundaAppsRelease }}" --prerelease
 
       - name: Camunda Download Center - Upload artifact in own release
         if: inputs.publishToCamundaDownloadCenter
