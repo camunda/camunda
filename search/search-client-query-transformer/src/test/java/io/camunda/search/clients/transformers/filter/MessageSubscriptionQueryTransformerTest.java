@@ -9,15 +9,26 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import io.camunda.search.clients.auth.AuthorizationCheck;
+import io.camunda.search.clients.auth.ResourceAccessChecks;
+import io.camunda.search.clients.auth.TenantCheck;
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MessageSubscriptionFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -122,5 +133,175 @@ public class MessageSubscriptionQueryTransformerTest extends AbstractTransformer
                 b -> b.tenantIds("tnt1"),
             "tenantId",
             "tnt1"));
+  }
+
+  @Test
+  public void shouldApplyAuthorizationCheck() {
+    // given
+    final var authorization =
+        Authorization.of(
+            a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.messageSubscription(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            query -> {
+              assertThat(query.must().size()).isEqualTo(2);
+              assertThat(query.must().getFirst().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field()).isEqualTo("eventSourceType");
+                        assertThat(termQuery.value().stringValue())
+                            .isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+                      });
+              assertThat(query.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermsQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field()).isEqualTo(EventTemplate.BPMN_PROCESS_ID);
+                        Assertions.assertThat(termQuery.values()).hasSize(2);
+                        Assertions.assertThat(
+                                termQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder("1", "2");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
+    // given
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.messageSubscription(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    Assertions.assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckWhenDisabled() {
+    // given
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.messageSubscription(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            termQuery -> {
+              assertThat(termQuery.field()).isEqualTo("eventSourceType");
+              assertThat(termQuery.value().stringValue()).isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+            });
+  }
+
+  @Test
+  public void shouldApplyTenantCheck() {
+    // given
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.messageSubscription(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            query -> {
+              assertThat(query.must().size()).isEqualTo(2);
+              assertThat(query.must().getFirst().queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field()).isEqualTo("eventSourceType");
+                        assertThat(termQuery.value().stringValue())
+                            .isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+                      });
+              assertThat(query.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermsQuery.class,
+                      termQuery -> {
+                        assertThat(termQuery.field()).isEqualTo(EventTemplate.TENANT_ID);
+                        Assertions.assertThat(termQuery.values()).hasSize(2);
+                        Assertions.assertThat(
+                                termQuery.values().stream().map(TypedValue::stringValue).toList())
+                            .containsExactlyInAnyOrder("a", "b");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldIgnoreTenantCheckWhenDisabled() {
+    // given
+    final var tenantCheck = TenantCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.messageSubscription(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isNotNull()
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            termQuery -> {
+              assertThat(termQuery.field()).isEqualTo("eventSourceType");
+              assertThat(termQuery.value().stringValue()).isEqualTo("PROCESS_MESSAGE_SUBSCRIPTION");
+            });
+  }
+
+  @Test
+  public void shouldApplyFilterAndChecks() {
+    // given
+    final var authorization =
+        Authorization.of(
+            a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
+
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(
+            FilterBuilders.messageSubscription(b -> b.messageSubscriptionTypes("abc")),
+            resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    Assertions.assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class, t -> Assertions.assertThat(t.must()).hasSize(3));
   }
 }

@@ -24,6 +24,7 @@ import static io.camunda.webapps.schema.descriptors.template.EventTemplate.PROCE
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.MessageSubscriptionFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
@@ -51,5 +52,10 @@ public class MessageSubscriptionFilterTransformer
         stringOperations("metadata.messageName", filter.messageNameOperations()),
         stringOperations("metadata.correlationKey", filter.correlationKeyOperations()),
         stringOperations(TENANT_ID, filter.tenantIdOperations()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }

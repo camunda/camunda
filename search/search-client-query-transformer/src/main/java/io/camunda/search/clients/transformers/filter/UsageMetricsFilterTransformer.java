@@ -9,18 +9,20 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMetricsFilter> {
+public class UsageMetricsFilterTransformer extends IndexFilterTransformer<UsageMetricsFilter> {
 
   private final TasklistMetricIndex tasklistMetricIndex;
   private final MetricIndex operateMetricIndex;
@@ -28,6 +30,7 @@ public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMet
 
   public UsageMetricsFilterTransformer(
       final TasklistMetricIndex tasklistMetricIndex, final MetricIndex metricIndex) {
+    super(metricIndex);
     this.tasklistMetricIndex = tasklistMetricIndex;
     operateMetricIndex = metricIndex;
   }
@@ -42,6 +45,11 @@ public class UsageMetricsFilterTransformer implements FilterTransformer<UsageMet
             "eventTime",
             List.of(Operation.gte(filter.startTime()), Operation.lte(filter.endTime()))));
     return and(queries);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return matchAll();
   }
 
   @Override

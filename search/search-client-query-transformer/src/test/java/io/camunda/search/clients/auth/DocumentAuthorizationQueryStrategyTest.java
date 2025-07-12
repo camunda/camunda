@@ -7,33 +7,20 @@
  */
 package io.camunda.search.clients.auth;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.query.SearchQueryBuilders.authorizationSearchQuery;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.AuthorizationSearchClient;
-import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.core.SearchQueryResponse;
-import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
-import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.search.query.SearchQueryBase;
-import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.security.impl.AuthorizationChecker;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,90 +31,60 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DocumentAuthorizationQueryStrategyTest {
 
-  @Mock private AuthorizationSearchClient authorizationSearchClient;
-
+  @Mock private AuthorizationChecker authorizationChecker;
   private DocumentAuthorizationQueryStrategy queryStrategy;
 
   @BeforeEach
   void setUp() {
-    when(authorizationSearchClient.withSecurityContext(SecurityContext.withoutAuthentication()))
-        .thenReturn(authorizationSearchClient);
-    queryStrategy = new DocumentAuthorizationQueryStrategy(authorizationSearchClient);
+    queryStrategy = new DocumentAuthorizationQueryStrategy(authorizationChecker);
   }
 
   @Test
-  void shouldReturnRequestUnchangedWhenAuthorizationNotRequired() {
+  void shouldReturnDisabledAuthorizationCheckAuthorizationNotProvided() {
     // given
-    final var originalRequest = mock(SearchQueryRequest.class);
     final var securityContext = SecurityContext.of(s -> s.withAuthentication(a -> a.user("foo")));
 
     // when
-    final SearchQueryRequest result =
-        queryStrategy.applyAuthorizationToQuery(
-            originalRequest, securityContext, SearchQueryBase.class);
+    final var result = queryStrategy.resolveAuthorizationCheck(securityContext);
 
     // then
-    assertThat(result).isSameAs(originalRequest);
+    assertThat(result.enabled()).isFalse();
   }
 
   @Test
-  void shouldReturnRequestUnchangedWhenNoAuthentication() {
+  void shouldReturnDisabledAuthorizationCheckUnchangedWhenNoAuthentication() {
     // given
-    final var originalRequest = mock(SearchQueryRequest.class);
     final var securityContext =
         SecurityContext.of(
-            s ->
-                s.withAuthorization(
-                    a ->
-                        a.resourceType(PROCESS_DEFINITION)
-                            .permissionType(READ_PROCESS_DEFINITION)));
+            s -> s.withAuthorization(a -> a.processDefinition().readProcessDefinition()));
 
     // when
-    final SearchQueryRequest result =
-        queryStrategy.applyAuthorizationToQuery(
-            originalRequest, securityContext, ProcessDefinitionQuery.class);
+    final var result = queryStrategy.resolveAuthorizationCheck(securityContext);
 
     // then
-    assertThat(result).isSameAs(originalRequest);
+    assertThat(result.enabled()).isFalse();
   }
 
   @Test
-  void shouldReturnRequestUnchangedWhenAuthorizedResourceContainsWildcard() {
+  void shouldReturnDisabledAuthorizationCheckWhenAuthorizedResourceContainsWildcard() {
     // given
-    final SearchQueryRequest originalRequest = mock(SearchQueryRequest.class);
     final var securityContext =
         SecurityContext.of(
             s ->
                 s.withAuthentication(a -> a.user("foo"))
-                    .withAuthorization(
-                        a ->
-                            a.permissionType(READ_PROCESS_DEFINITION)
-                                .resourceType(PROCESS_DEFINITION)));
-    when(authorizationSearchClient.searchAuthorizations(any()))
-        .thenReturn(
-            SearchQueryResult.of(
-                b ->
-                    b.items(
-                        List.of(
-                            new AuthorizationEntity(
-                                null,
-                                null,
-                                null,
-                                null,
-                                "*",
-                                Set.of(READ_PROCESS_DEFINITION, CREATE))))));
+                    .withAuthorization(a -> a.processDefinition().readProcessDefinition()));
+    when(authorizationChecker.retrieveAuthorizedResourceKeys(any()))
+        .thenReturn(List.of(Authorization.WILDCARD));
 
     // when
-    final SearchQueryRequest result =
-        queryStrategy.applyAuthorizationToQuery(
-            originalRequest, securityContext, ProcessDefinitionQuery.class);
+    final var result = queryStrategy.resolveAuthorizationCheck(securityContext);
 
     // then
-    assertThat(result).isSameAs(originalRequest);
+    assertThat(result.enabled()).isFalse();
   }
 
   @Test
-  void shouldReturnMatchNoneQueryWhenNoAuthorizedResourcesFound() {
+  void shouldReturnEnabledAuthorizationCheckWithoutResourceIds() {
     // given
     final SearchQueryRequest originalRequest =
         new SearchQueryRequest.Builder().index("index").build();
@@ -136,23 +93,21 @@ class DocumentAuthorizationQueryStrategyTest {
             s ->
                 s.withAuthentication(a -> a.user("foo"))
                     .withAuthorization(
-                        a ->
-                            a.permissionType(READ_PROCESS_DEFINITION)
-                                .resourceType(PROCESS_DEFINITION)));
-    when(authorizationSearchClient.searchAuthorizations(any()))
-        .thenReturn(SearchQueryResult.of(b -> b.items(List.of())));
+                        Authorization.of(a -> a.processDefinition().readProcessDefinition())));
+    when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of());
 
     // when
-    final SearchQueryRequest result =
-        queryStrategy.applyAuthorizationToQuery(
-            originalRequest, securityContext, ProcessDefinitionQuery.class);
+    final var result = queryStrategy.resolveAuthorizationCheck(securityContext);
 
     // then
-    assertThat(result.query().queryOption()).isInstanceOf(SearchMatchNoneQuery.class);
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.authorization().permissionType()).isEqualTo(READ_PROCESS_DEFINITION);
+    assertThat(result.authorization().resourceType()).isEqualTo(PROCESS_DEFINITION);
+    assertThat(result.authorization().resourceIds()).isEmpty();
   }
 
   @Test
-  void shouldApplyAuthorizationFilterToQuery() {
+  void shouldReturnEnabledAuthorizationCheckWithResourceIds() {
     // given
     final SearchQueryRequest originalRequest =
         new SearchQueryRequest.Builder().index("index").query(mock(SearchQuery.class)).build();
@@ -161,49 +116,18 @@ class DocumentAuthorizationQueryStrategyTest {
             s ->
                 s.withAuthentication(a -> a.user("foo"))
                     .withAuthorization(
-                        a ->
-                            a.permissionType(READ_PROCESS_DEFINITION)
-                                .resourceType(PROCESS_DEFINITION)));
+                        Authorization.of(a -> a.processDefinition().readProcessDefinition())));
     final var authorizationQueryCaptor = ArgumentCaptor.forClass(AuthorizationQuery.class);
-    when(authorizationSearchClient.searchAuthorizations(authorizationQueryCaptor.capture()))
-        .thenReturn(
-            SearchQueryResult.of(
-                b ->
-                    b.items(
-                        List.of(
-                            new AuthorizationEntity(
-                                null, null, null, null, "foo", Set.of(READ_PROCESS_DEFINITION)),
-                            new AuthorizationEntity(
-                                null, null, null, null, "bar", Set.of(CREATE))))));
+    when(authorizationChecker.retrieveAuthorizedResourceKeys(any()))
+        .thenReturn(List.of("foo", "bar"));
 
     // when
-    final SearchQueryRequest result =
-        queryStrategy.applyAuthorizationToQuery(
-            originalRequest, securityContext, ProcessDefinitionQuery.class);
+    final var result = queryStrategy.resolveAuthorizationCheck(securityContext);
 
     // then
-    assertThat(result.query())
-        .isEqualTo(and(originalRequest.query(), stringTerms("bpmnProcessId", List.of("foo"))));
-    assertThat(authorizationQueryCaptor.getValue())
-        .isEqualTo(
-            authorizationSearchQuery(
-                q ->
-                    q.filter(
-                            f ->
-                                f.ownerTypeToOwnerIds(Map.of(EntityType.USER, Set.of("foo")))
-                                    .resourceType("PROCESS_DEFINITION")
-                                    .permissionTypes(READ_PROCESS_DEFINITION))
-                        .unlimited()));
-  }
-
-  private SearchQueryResponse<AuthorizationEntity> buildSearchQueryResponse(
-      final AuthorizationEntity authorizationEntity) {
-    return SearchQueryResponse.of(
-        r ->
-            r.hits(
-                List.of(
-                    new SearchQueryHit.Builder<AuthorizationEntity>()
-                        .source(authorizationEntity)
-                        .build())));
+    assertThat(result.enabled()).isTrue();
+    assertThat(result.authorization().permissionType()).isEqualTo(READ_PROCESS_DEFINITION);
+    assertThat(result.authorization().resourceType()).isEqualTo(PROCESS_DEFINITION);
+    assertThat(result.authorization().resourceIds()).containsExactlyInAnyOrder("foo", "bar");
   }
 }
