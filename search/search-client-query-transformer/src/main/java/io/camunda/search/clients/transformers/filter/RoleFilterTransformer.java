@@ -17,6 +17,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
@@ -61,6 +62,11 @@ public class RoleFilterTransformer extends IndexFilterTransformer<RoleFilter> {
             : filter.roleIds().isEmpty()
                 ? matchNone()
                 : stringTerms(RoleIndex.ROLE_ID, filter.roleIds()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(RoleIndex.ROLE_ID, authorization.resourceIds());
   }
 
   private SearchQuery createMultipleMemberTypeQuery(final RoleFilter filter) {
