@@ -16,4 +16,6 @@ public record PersistentWebSessionEntity(
     Long creationTime,
     Long lastAccessedTime,
     Long maxInactiveIntervalInSeconds,
-    Map<String, byte[]> attributes) {}
+    // TODO: Remove as the new field `attributesAsJson` is used instead
+    Map<String, byte[]> attributes,
+    String attributesAsJson) {}
