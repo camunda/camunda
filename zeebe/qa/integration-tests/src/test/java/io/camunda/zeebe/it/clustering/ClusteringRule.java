@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
-import io.atomix.utils.Version;
+import io.atomix.utils.Versbroion;
 import io.camunda.application.commons.actor.ActorClockConfiguration;
 import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration;

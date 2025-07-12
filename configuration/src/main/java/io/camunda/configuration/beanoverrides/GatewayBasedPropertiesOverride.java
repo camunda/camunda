@@ -32,7 +32,7 @@ public class GatewayBasedPropertiesOverride {
   @Bean
   @Primary
   public GatewayBasedProperties gatewayBasedProperties() {
-    GatewayBasedProperties override = new GatewayBasedProperties();
+    final GatewayBasedProperties override = new GatewayBasedProperties();
     BeanUtils.copyProperties(legacyGatewayBasedProperties, override);
 
     // TODO: Populate the bean using unifiedConfiguration
