@@ -15,8 +15,11 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionLatestVersionAggregationResult;
 import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
+import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
-import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.clients.auth.DocumentTenantQueryStrategy;
+import io.camunda.search.clients.auth.ResourceAccessChecks;
+import io.camunda.search.clients.auth.TenantQueryStrategy;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -93,116 +96,143 @@ import java.util.stream.Collectors;
 public class DocumentBasedSearchClients implements SearchClientsProxy, CloseableSilently {
 
   private final SearchClientBasedQueryExecutor executor;
+  private final AuthorizationQueryStrategy authorizationQueryStrategy;
+  private final TenantQueryStrategy tenantQueryStrategy;
   private final SecurityContext securityContext;
 
-  public DocumentBasedSearchClients(
-      final DocumentBasedSearchClient searchClient, final ServiceTransformers transformers) {
-    executor =
-        new SearchClientBasedQueryExecutor(
-            searchClient,
-            new DocumentAuthorizationQueryStrategy(new AuthorizationChecker(this)),
-            transformers);
+  public DocumentBasedSearchClients(final SearchClientBasedQueryExecutor executor) {
+    this.executor = executor;
+    authorizationQueryStrategy =
+        new DocumentAuthorizationQueryStrategy(new AuthorizationChecker(this));
+    tenantQueryStrategy = new DocumentTenantQueryStrategy();
     securityContext = null;
   }
 
   public DocumentBasedSearchClients(
-      final SearchClientBasedQueryExecutor executor, final SecurityContext securityContext) {
+      final SearchClientBasedQueryExecutor executor,
+      final AuthorizationQueryStrategy authorizationQueryStrategy,
+      final TenantQueryStrategy tenantQueryStrategy,
+      final SecurityContext securityContext) {
     this.executor = executor;
+    this.authorizationQueryStrategy = authorizationQueryStrategy;
+    this.tenantQueryStrategy = tenantQueryStrategy;
     this.securityContext = securityContext;
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter,
+                    io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter, io.camunda.webapps.schema.entities.SequenceFlowEntity.class, securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter, io.camunda.webapps.schema.entities.SequenceFlowEntity.class, access));
   }
 
   @Override
   public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
       final MessageSubscriptionQuery filter) {
-    return getSearchExecutor().search(filter, EventEntity.class, securityContext);
+    return executeWithResourceAccessChecks(
+        access -> getSearchExecutor().search(filter, EventEntity.class, access));
   }
 
   @Override
   public DocumentBasedSearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new DocumentBasedSearchClients(executor, securityContext);
+    return new DocumentBasedSearchClients(
+        executor, authorizationQueryStrategy, tenantQueryStrategy, securityContext);
   }
 
   @Override
   public SearchQueryResult<MappingRuleEntity> searchMappingRules(
-      final MappingRuleQuery mappingRuleQuery) {
-    final var query = applyFilters(mappingRuleQuery);
-    return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity.class,
-            securityContext);
+      final MappingRuleQuery mappingQuery) {
+    final var query = applyFilters(mappingQuery);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    query,
+                    io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter,
+                    io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity
+                        .class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter,
+                    io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter,
+                    io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity
+                        .class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter,
+                    io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
-    return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.form.FormEntity.class, securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(filter, io.camunda.webapps.schema.entities.form.FormEntity.class, access));
   }
 
   @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.incident.IncidentEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter,
+                    io.camunda.webapps.schema.entities.incident.IncidentEntity.class,
+                    access));
   }
 
   @Override
@@ -210,9 +240,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       final ProcessDefinitionQuery filter) {
     if (filter.filter().isLatestVersion()) {
       final var aggResult =
-          getSearchExecutor()
-              .aggregate(
-                  filter, ProcessDefinitionLatestVersionAggregationResult.class, securityContext);
+          executeWithResourceAccessChecks(
+              access ->
+                  getSearchExecutor()
+                      .aggregate(
+                          filter, ProcessDefinitionLatestVersionAggregationResult.class, access));
+
       return new SearchQueryResult<>(
           aggResult.items().size(),
           !aggResult.items().isEmpty(),
@@ -220,7 +253,8 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
           null,
           aggResult.endCursor());
     }
-    return getSearchExecutor().search(filter, ProcessEntity.class, securityContext);
+    return executeWithResourceAccessChecks(
+        access -> getSearchExecutor().search(filter, ProcessEntity.class, access));
   }
 
   @Override
@@ -248,11 +282,13 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   public List<ProcessFlowNodeStatisticsEntity> executeProcessDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
-    return getSearchExecutor()
-        .aggregate(
-            new ProcessDefinitionFlowNodeStatisticsQuery(filter),
-            ProcessDefinitionFlowNodeStatisticsAggregationResult.class,
-            securityContext)
+    return executeWithResourceAccessChecks(
+            access ->
+                getSearchExecutor()
+                    .aggregate(
+                        new ProcessDefinitionFlowNodeStatisticsQuery(filter),
+                        ProcessDefinitionFlowNodeStatisticsAggregationResult.class,
+                        access))
         .items();
   }
 
@@ -291,25 +327,30 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
       final long processInstanceKey) {
-    return getSearchExecutor()
-        .aggregate(
-            new ProcessInstanceFlowNodeStatisticsQuery(
-                new ProcessInstanceStatisticsFilter(processInstanceKey)),
-            ProcessInstanceFlowNodeStatisticsAggregationResult.class,
-            securityContext)
+    return executeWithResourceAccessChecks(
+            access ->
+                getSearchExecutor()
+                    .aggregate(
+                        new ProcessInstanceFlowNodeStatisticsQuery(
+                            new ProcessInstanceStatisticsFilter(processInstanceKey)),
+                        ProcessInstanceFlowNodeStatisticsAggregationResult.class,
+                        access))
         .items();
   }
 
   @Override
   public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
-    return getSearchExecutor()
-        .search(query, io.camunda.webapps.schema.entities.JobEntity.class, securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(query, io.camunda.webapps.schema.entities.JobEntity.class, access));
   }
 
   public SearchQueryResult<ProcessInstanceEntity> executeSearchProcessInstances(
       final ProcessInstanceQuery filter) {
-    return getSearchExecutor()
-        .search(filter, ProcessInstanceForListViewEntity.class, securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class, access));
   }
 
   private <R> R mapIncidentErrorHashCodesToProcessInstanceKeys(
@@ -352,38 +393,47 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     if (roleQuery.filter().tenantId() != null) {
       query = expandTenantFilter(roleQuery);
     }
-    return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class,
-            securityContext);
+    final var finalQuery = query;
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    finalQuery,
+                    io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter,
+                    io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
-    return getSearchExecutor()
-        .search(
-            filter,
-            io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    filter,
+                    io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery query) {
-    return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    query,
+                    io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class,
+                    access));
   }
 
   @Override
@@ -395,41 +445,51 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     if (groupQuery.filter().roleId() != null) {
       query = expandRoleFilter(groupQuery);
     }
-    return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class,
-            securityContext);
+    final var finalQuery = query;
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    finalQuery,
+                    io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
-    return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    query,
+                    io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
     final var query = applyFilters(userQuery);
-    return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.usermanagement.UserEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    query,
+                    io.camunda.webapps.schema.entities.usermanagement.UserEntity.class,
+                    access));
   }
 
   @Override
-  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
-    return getSearchExecutor().search(filter, TaskEntity.class, securityContext);
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
+    return executeWithResourceAccessChecks(
+        access -> getSearchExecutor().search(query, TaskEntity.class, access));
   }
 
   @Override
-  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
-    return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.VariableEntity.class, securityContext);
+  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(query, io.camunda.webapps.schema.entities.VariableEntity.class, access));
   }
 
   private SearchClientBasedQueryExecutor getSearchExecutor() {
@@ -470,11 +530,13 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                                 .events(event))
                     .unlimited());
     final SearchQueryResult<UsageMetricsEntity> result =
-        getSearchExecutor()
-            .search(
-                filter,
-                io.camunda.webapps.schema.entities.UsageMetricsEntity.class,
-                securityContext);
+        executeWithResourceAccessChecks(
+            access ->
+                getSearchExecutor()
+                    .search(
+                        filter,
+                        io.camunda.webapps.schema.entities.UsageMetricsEntity.class,
+                        access));
     return result.items().stream().map(UsageMetricsEntity::value).distinct().count();
   }
 
@@ -550,24 +612,31 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   private Set<String> getTenantMembers(final String tenantId, final EntityType entityType) {
     final SearchQueryResult<TenantMemberEntity> tenantMembers =
-        getSearchExecutor()
-            .search(
-                TenantQuery.of(
-                    b ->
-                        b.filter(f -> f.joinParentId(tenantId).memberType(entityType)).unlimited()),
-                io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class,
-                securityContext);
+        executeWithResourceAccessChecks(
+            access ->
+                getSearchExecutor()
+                    .search(
+                        TenantQuery.of(
+                            b ->
+                                b.filter(f -> f.joinParentId(tenantId).memberType(entityType))
+                                    .unlimited()),
+                        io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class,
+                        access));
     return tenantMembers.items().stream().map(TenantMemberEntity::id).collect(Collectors.toSet());
   }
 
   private Set<String> getGroupMembers(final String groupId, final EntityType entityType) {
     final SearchQueryResult<GroupMemberEntity> groupMembers =
-        getSearchExecutor()
-            .search(
-                GroupQuery.of(
-                    b -> b.filter(f -> f.joinParentId(groupId).memberType(entityType)).unlimited()),
-                io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class,
-                securityContext);
+        executeWithResourceAccessChecks(
+            access ->
+                getSearchExecutor()
+                    .search(
+                        GroupQuery.of(
+                            b ->
+                                b.filter(f -> f.joinParentId(groupId).memberType(entityType))
+                                    .unlimited()),
+                        io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class,
+                        access));
     return groupMembers.items().stream().map(GroupMemberEntity::id).collect(Collectors.toSet());
   }
 
@@ -594,32 +663,47 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   public Set<String> getRoleMemberIds(final String roleId, final EntityType memberType) {
     final SearchQueryResult<RoleMemberEntity> roleMembers =
-        getSearchExecutor()
-            .search(
-                RoleQuery.of(
-                    b -> b.filter(f -> f.joinParentId(roleId).memberType(memberType)).unlimited()),
-                io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class,
-                securityContext);
+        executeWithResourceAccessChecks(
+            access ->
+                getSearchExecutor()
+                    .search(
+                        RoleQuery.of(
+                            b ->
+                                b.filter(f -> f.joinParentId(roleId).memberType(memberType))
+                                    .unlimited()),
+                        io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class,
+                        access));
     return roleMembers.items().stream().map(RoleMemberEntity::id).collect(Collectors.toSet());
   }
 
   @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
-    return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.operation.BatchOperationEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    query,
+                    io.camunda.webapps.schema.entities.operation.BatchOperationEntity.class,
+                    access));
   }
 
   @Override
   public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final BatchOperationItemQuery query) {
-    return getSearchExecutor()
-        .search(
-            query,
-            io.camunda.webapps.schema.entities.operation.OperationEntity.class,
-            securityContext);
+    return executeWithResourceAccessChecks(
+        access ->
+            getSearchExecutor()
+                .search(
+                    query,
+                    io.camunda.webapps.schema.entities.operation.OperationEntity.class,
+                    access));
+  }
+
+  protected <T> T executeWithResourceAccessChecks(final Function<ResourceAccessChecks, T> applier) {
+    final var authorizationCheck =
+        authorizationQueryStrategy.resolveAuthorizationCheck(securityContext);
+    final var tenantCheck = tenantQueryStrategy.resolveTenantCheck(securityContext);
+    return applier.apply(ResourceAccessChecks.of(authorizationCheck, tenantCheck));
   }
 }

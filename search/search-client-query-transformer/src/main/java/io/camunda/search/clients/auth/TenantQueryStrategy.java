@@ -11,7 +11,7 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface TenantQueryStrategy {
 
-  TenantQueryStrategy NONE = (securityContext) -> null;
+  TenantQueryStrategy NONE = (securityContext) -> TenantCheck.disabled();
 
   TenantCheck resolveTenantCheck(SecurityContext securityContext);
 }
