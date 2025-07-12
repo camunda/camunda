@@ -1,0 +1,28 @@
+# Fixed service names for Zeebe Gateway and Keycloak to be used in Web Modeler
+# to easily configure the cluster endpoint (with Camunda identity-based authentication)
+---
+{{- $camundaPlatform := index .Subcharts "camunda-platform" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: zeebe
+  labels:
+    {{- include "commonLabels" $ | nindent 4 }}
+  annotations: 
+    {{- include "commonAnnotations" $ | nindent 4 }}
+spec:
+  type: ExternalName
+  externalName: {{ include "zeebe.names.gateway" $camundaPlatform }}.{{ .Release.Namespace }}.svc.cluster.local
+---
+{{- $identityKeyCloak := $camundaPlatform.Subcharts.identityKeycloak -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  labels:
+    {{- include "commonLabels" $ | nindent 4 }}
+  annotations: 
+    {{- include "commonAnnotations" $ | nindent 4 }}
+spec:
+  type: ExternalName
+  externalName: {{ template "common.names.fullname" $identityKeyCloak }}.{{ .Release.Namespace }}.svc.cluster.local
