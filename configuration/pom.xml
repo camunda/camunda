@@ -35,5 +35,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+    </dependency>
   </dependencies>
 </project>
