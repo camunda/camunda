@@ -9,6 +9,7 @@ package io.camunda.authentication.session;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
 import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
@@ -30,11 +31,13 @@ class WebSessionRepositoryTest {
   @BeforeEach
   void setUp() {
     persistentWebSessionClient = new PersistentWebSessionClientStub();
+    final ObjectMapper objectMapper = new ObjectMapper();
     webSessionRepository =
         new WebSessionRepository(
             persistentWebSessionClient,
             new WebSessionMapper(
-                new SpringBasedWebSessionAttributeConverter(new GenericConversionService())),
+                new SpringBasedWebSessionAttributeConverter(new GenericConversionService()),
+                objectMapper),
             null);
   }
 
@@ -110,21 +113,21 @@ class WebSessionRepositoryTest {
             expiredLastAccessedTime.toEpochMilli(),
             expiredLastAccessedTime.toEpochMilli(),
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
-            Map.of()));
+            ""));
     persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(
             "s2",
             expiredLastAccessedTime.toEpochMilli(),
             expiredLastAccessedTime.toEpochMilli(),
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
-            Map.of()));
+            ""));
     persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(
             "s3",
             expiredLastAccessedTime.toEpochMilli(),
             expiredLastAccessedTime.toEpochMilli(),
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
-            Map.of()));
+            null));
 
     assertThat(persistentWebSessionClient.getAllPersistentWebSessions().items()).hasSize(3);
 

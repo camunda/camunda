@@ -1,7 +1,7 @@
 {
   "aliases": {},
   "mappings": {
-    "dynamic": "true",
+    "dynamic": "strict",
     "properties": {
       "id": {
         "type": "keyword"
@@ -17,6 +17,10 @@
       },
       "attributes": {
         "type": "object"
+      },
+      "attributesAsJson": {
+        "type": "text",
+        "index": false
       }
     }
   }
