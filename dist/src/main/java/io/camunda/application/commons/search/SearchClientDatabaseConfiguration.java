@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
+import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -68,11 +69,12 @@ public class SearchClientDatabaseConfiguration {
   public DocumentBasedSearchClients documentBasedSearchClients(
       final DocumentBasedSearchClient searchClient,
       final ConnectConfiguration connectConfiguration) {
-    final IndexDescriptors indexDescriptors =
+    final var descriptors =
         new IndexDescriptors(
             connectConfiguration.getIndexPrefix(),
             connectConfiguration.getTypeEnum().isElasticSearch());
-    return new DocumentBasedSearchClients(searchClient, indexDescriptors);
+    final var transformers = ServiceTransformers.newInstance(descriptors);
+    return new DocumentBasedSearchClients(searchClient, transformers);
   }
 
   @Bean

@@ -10,19 +10,27 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.filter.Operation.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.clients.auth.AuthorizationCheck;
+import io.camunda.search.clients.auth.ResourceAccessChecks;
+import io.camunda.search.clients.auth.TenantCheck;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.clients.query.SearchHasParentQuery;
+import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.security.auth.Authorization;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -380,5 +388,196 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                         assertThat(termQuery.value().value()).isEqualTo("test");
                       });
             });
+  }
+
+  @Test
+  public void shouldApplyAuthorizationCheck() {
+    // given
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) -> {
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      query ->
+                          assertThat(query.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchTermsQuery.class,
+                                  (termsQuery) -> {
+                                    assertThat(termsQuery.field())
+                                        .isEqualTo(TaskTemplate.BPMN_PROCESS_ID);
+                                    assertThat(
+                                            termsQuery.values().stream()
+                                                .map(TypedValue::stringValue)
+                                                .toList())
+                                        .containsExactlyInAnyOrder("1", "2");
+                                  }));
+            });
+  }
+
+  @Test
+  public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
+    // given
+    final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckWhenDisabled() {
+    // given
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) -> {
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      query ->
+                          assertThat(query.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchExistsQuery.class,
+                                  (existsQuery) -> {
+                                    assertThat(existsQuery.field())
+                                        .isEqualTo("flowNodeInstanceId"); // Validate the field
+                                  }));
+            });
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertThat(t.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("implementation");
+                        assertThat(term.value().stringValue()).isEqualTo("ZEEBE_USER_TASK");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldApplyTenantCheck() {
+    // given
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) -> {
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      query ->
+                          assertThat(query.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchTermsQuery.class,
+                                  (termsQuery) -> {
+                                    assertThat(termsQuery.field())
+                                        .isEqualTo(TaskTemplate.TENANT_ID);
+                                    assertThat(
+                                            termsQuery.values().stream()
+                                                .map(TypedValue::stringValue)
+                                                .toList())
+                                        .containsExactlyInAnyOrder("a", "b");
+                                  }));
+            });
+  }
+
+  @Test
+  public void shouldIgnoreTenantCheckWhenDisabled() {
+    // given
+    final var tenantCheck = TenantCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery = transformQuery(FilterBuilders.userTask(b -> b), resourceAccessChecks);
+
+    // then
+    final SearchQueryOption queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (boolQuery) -> {
+              assertThat(boolQuery.must())
+                  .anySatisfy(
+                      query ->
+                          assertThat(query.queryOption())
+                              .isInstanceOfSatisfying(
+                                  SearchExistsQuery.class,
+                                  (existsQuery) -> {
+                                    assertThat(existsQuery.field())
+                                        .isEqualTo("flowNodeInstanceId"); // Validate the field
+                                  }));
+            });
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertThat(t.must().get(1).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("implementation");
+                        assertThat(term.value().stringValue()).isEqualTo("ZEEBE_USER_TASK");
+                      });
+            });
+  }
+
+  @Test
+  public void shouldApplyFilterAndChecks() {
+    // given
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readUserTask().resourceIds(List.of("1", "2")));
+
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.userTask(b -> b.names("abc")), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
   }
 }

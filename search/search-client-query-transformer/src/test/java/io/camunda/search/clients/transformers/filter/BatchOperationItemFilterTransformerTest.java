@@ -9,6 +9,9 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.clients.auth.AuthorizationCheck;
+import io.camunda.search.clients.auth.ResourceAccessChecks;
+import io.camunda.search.clients.auth.TenantCheck;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
@@ -16,7 +19,9 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -229,5 +234,52 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
               assertThat(t.field()).isEqualTo("processInstanceKey");
               assertThat(t.value().longValue()).isEqualTo(456L);
             });
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckEventWhenEnabled() {
+    // given
+    final var authorization =
+        Authorization.of(a -> a.batchOperation().read().resourceIds(List.of("1", "2")));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperationItem(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckWhenDisabled() {
+    // given
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperationItem(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
+  }
+
+  @Test
+  public void shouldIgnoreTenantCheck() {
+    // given
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperationItem(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
   }
 }

@@ -37,6 +37,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
@@ -116,6 +117,11 @@ public final class ProcessInstanceFilterTransformer
     }
 
     return and(queries);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 
   private static SearchQuery getFlowNodeInstanceQuery(final ProcessInstanceFilter filter) {

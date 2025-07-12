@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.EMAIL;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.KEY;
@@ -17,6 +18,7 @@ import static io.camunda.webapps.schema.descriptors.index.UserIndex.USERNAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 
@@ -36,5 +38,10 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
     queries.addAll(stringOperations(NAME, filter.nameOperations()));
     queries.addAll(stringOperations(EMAIL, filter.emailOperations()));
     return and(queries);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(USERNAME, authorization.resourceIds());
   }
 }
