@@ -38,7 +38,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord.ReconstructionProgress;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -206,7 +205,6 @@ final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
                   .setChecksum(checksum);
-              record.setReconstructionProgress(ReconstructionProgress.DECISION_REQUIREMENTS);
 
               final int key = 1234;
               final int position = 4321;
@@ -379,10 +377,7 @@ final class JsonSerializableToJsonTest {
                   .setDeploymentKey(deploymentKey)
                   .setDuplicate(true)
                   .setVersionTag(versionTag);
-              record
-                  .setTenantId("tenant-23")
-                  .setReconstructionKey(123)
-                  .setReconstructionProgress(ReconstructionProgress.FORM);
+              record.setTenantId("tenant-23").setReconstructionKey(123);
               return record;
             },
         """

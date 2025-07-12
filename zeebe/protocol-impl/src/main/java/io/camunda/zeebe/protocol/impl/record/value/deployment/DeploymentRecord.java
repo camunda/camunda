@@ -11,7 +11,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
@@ -57,12 +56,8 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
 
   private final LongProperty reconstructionKeyProp = new LongProperty("reconstructionKey", -1);
 
-  private final EnumProperty<ReconstructionProgress> reconstructionProp =
-      new EnumProperty<>(
-          "reconstructionProgress", ReconstructionProgress.class, ReconstructionProgress.PROCESS);
-
   public DeploymentRecord() {
-    super(10);
+    super(8);
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)
@@ -70,9 +65,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
         .declareProperty(formMetadataProp)
         .declareProperty(resourceMetadataProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(deploymentKeyProp)
-        .declareProperty(reconstructionProp)
-        .declareProperty(reconstructionKeyProp);
+        .declareProperty(deploymentKeyProp);
   }
 
   /**
@@ -203,18 +196,6 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   }
 
   /**
-   * @return the current ReconstructionProgress
-   */
-  @JsonIgnore
-  public ReconstructionProgress getReconstructionProgress() {
-    return reconstructionProp.getValue();
-  }
-
-  public void setReconstructionProgress(final ReconstructionProgress progress) {
-    reconstructionProp.setValue(progress);
-  }
-
-  /**
    * @return the last key whose Deployment was reconstructed
    */
   @JsonIgnore
@@ -271,12 +252,5 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
             .allMatch(DecisionRequirementsMetadataValue::isDuplicate)
         && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate)
         && resourceMetadata().stream().allMatch(ResourceMetadataValue::isDuplicate);
-  }
-
-  public enum ReconstructionProgress {
-    PROCESS,
-    FORM,
-    DECISION_REQUIREMENTS,
-    DONE;
   }
 }
