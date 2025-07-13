@@ -11,21 +11,24 @@ import io.camunda.db.rdbms.read.domain.AuthorizationDbQuery;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.columns.AuthorizationSearchColumn;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
+import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.HashSet;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntity> {
+public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEntity>
+    implements AuthorizationReader {
 
-  private static final Logger LOG = LoggerFactory.getLogger(AuthorizationReader.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AuthorizationDbReader.class);
 
   private final AuthorizationMapper authorizationMapper;
 
-  public AuthorizationReader(final AuthorizationMapper authorizationMapper) {
+  public AuthorizationDbReader(final AuthorizationMapper authorizationMapper) {
     super(AuthorizationSearchColumn.values());
     this.authorizationMapper = authorizationMapper;
   }
@@ -41,7 +44,9 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
     return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
   }
 
-  public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
+  @Override
+  public SearchQueryResult<AuthorizationEntity> search(
+      final AuthorizationQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort =
         convertSort(
             query.sort(),
@@ -57,6 +62,10 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
     final var hits = authorizationMapper.search(dbQuery).stream().map(this::map).toList();
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public SearchQueryResult<AuthorizationEntity> search(final AuthorizationQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 
   private AuthorizationEntity map(final AuthorizationDbModel model) {

@@ -5,14 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.auth;
+package io.camunda.authentication.exception;
 
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.reader.TenantCheck;
+public class CamundaAuthenticationException extends RuntimeException {
 
-public interface TenantQueryStrategy {
-
-  TenantQueryStrategy NONE = (securityContext) -> TenantCheck.disabled();
-
-  TenantCheck resolveTenantCheck(SecurityContext securityContext);
+  public CamundaAuthenticationException(final String message) {
+    super(message);
+  }
 }

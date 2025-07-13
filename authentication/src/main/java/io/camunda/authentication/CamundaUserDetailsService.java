@@ -12,6 +12,7 @@ import static io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder.aC
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
@@ -54,7 +55,11 @@ public class CamundaUserDetailsService implements UserDetailsService {
         SearchQueryBuilders.userSearchQuery(
             fn -> fn.filter(f -> f.usernames(username)).page(p -> p.size(1)));
     final var storedUser =
-        userServices.search(userQuery).items().stream()
+        userServices
+            .withAuthentication(CamundaAuthentication.anonymous())
+            .search(userQuery)
+            .items()
+            .stream()
             .filter(Objects::nonNull)
             .findFirst()
             .orElseThrow(() -> new UsernameNotFoundException(username));
@@ -62,23 +67,34 @@ public class CamundaUserDetailsService implements UserDetailsService {
     final Long userKey = storedUser.userKey();
 
     final var groups =
-        groupServices.getGroupsByMemberId(username, EntityType.USER).stream()
+        groupServices
+            .withAuthentication(CamundaAuthentication.anonymous())
+            .getGroupsByMemberId(username, EntityType.USER)
+            .stream()
             .map(GroupEntity::groupId)
             .collect(Collectors.toSet());
 
-    final var roles = roleServices.getRolesByUserAndGroups(username, groups);
+    final var roles =
+        roleServices
+            .withAuthentication(CamundaAuthentication.anonymous())
+            .getRolesByUserAndGroups(username, groups);
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
 
     final var authorizedApplications =
-        authorizationServices.getAuthorizedApplications(
-            Map.of(
-                EntityType.USER,
-                Set.of(storedUser.username()),
-                EntityType.ROLE,
-                roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet())));
+        authorizationServices
+            .withAuthentication(CamundaAuthentication.anonymous())
+            .getAuthorizedApplications(
+                Map.of(
+                    EntityType.USER,
+                    Set.of(storedUser.username()),
+                    EntityType.ROLE,
+                    roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet())));
 
     final var tenants =
-        tenantServices.getTenantsByUserAndGroupsAndRoles(username, groups, roleIds).stream()
+        tenantServices
+            .withAuthentication(CamundaAuthentication.anonymous())
+            .getTenantsByUserAndGroupsAndRoles(username, groups, roleIds)
+            .stream()
             .map(TenantDTO::fromEntity)
             .toList();
 

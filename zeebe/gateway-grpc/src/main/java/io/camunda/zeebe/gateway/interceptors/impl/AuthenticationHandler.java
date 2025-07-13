@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
@@ -176,7 +177,13 @@ public sealed interface AuthenticationHandler {
       final var userQuery =
           SearchQueryBuilders.userSearchQuery(
               fn -> fn.filter(f -> f.usernames(username)).page(p -> p.size(1)));
-      return userServices.search(userQuery).items().stream().filter(Objects::nonNull).findFirst();
+      return userServices
+          .withAuthentication(CamundaAuthentication.anonymous())
+          .search(userQuery)
+          .items()
+          .stream()
+          .filter(Objects::nonNull)
+          .findFirst();
     }
 
     private boolean isPasswordValid(final String password, final String userPassword) {
