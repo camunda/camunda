@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.it.util;
 
-import io.camunda.search.clients.DocumentBasedSearchClients;
+import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
-import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
-import io.camunda.search.clients.auth.TenantQueryStrategy;
+import io.camunda.search.clients.reader.AuthorizationDocumentReader;
+import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.UserDocumentReader;
+import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -29,15 +31,22 @@ public class SearchClientsUtil {
     return new ElasticsearchSearchClient(elasticsearchClient);
   }
 
-  public static DocumentBasedSearchClients createSearchClients(final String elasticsearchUrl) {
-    final var lowLevelSearchClient = createLowLevelSearchClient(elasticsearchUrl);
-    final var descriptors = new IndexDescriptors("", true);
-    final var transformers = ServiceTransformers.newInstance(descriptors);
-    return new DocumentBasedSearchClients(
-        new SearchClientBasedQueryExecutor(lowLevelSearchClient, transformers),
-        AuthorizationQueryStrategy.NONE,
-        TenantQueryStrategy.NONE,
+  public static UserReader createUserReader(final DocumentBasedSearchClient client) {
+    final var indexDescriptors = new IndexDescriptors("", true);
+    return new UserDocumentReader(
+        new SearchClientBasedQueryExecutor(
+            client, ServiceTransformers.newInstance(indexDescriptors)),
+        null,
+        null,
         null);
+  }
+
+  public static AuthorizationReader createAuthorizationReader(
+      final DocumentBasedSearchClient client) {
+    final var indexDescriptors = new IndexDescriptors("", true);
+    return new AuthorizationDocumentReader(
+        new SearchClientBasedQueryExecutor(
+            client, ServiceTransformers.newInstance(indexDescriptors)));
   }
 
   public static OpensearchSearchClient createLowLevelOpensearchSearchClient(

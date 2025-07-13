@@ -12,15 +12,15 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
-import io.camunda.search.clients.auth.AuthorizationCheck;
-import io.camunda.search.clients.auth.ResourceAccessChecks;
-import io.camunda.search.clients.auth.TenantCheck;
 import io.camunda.search.clients.query.SearchMatchAllQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 import java.util.Objects;

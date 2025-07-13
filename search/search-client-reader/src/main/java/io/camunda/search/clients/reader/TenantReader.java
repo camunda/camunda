@@ -5,17 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.auth;
+package io.camunda.search.clients.reader;
 
-import java.util.List;
+import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.query.TenantQuery;
 
-public record TenantCheck(boolean enabled, List<String> tenantIds) {
-
-  public static TenantCheck enabled(final List<String> tenantIds) {
-    return new TenantCheck(true, tenantIds);
-  }
-
-  public static TenantCheck disabled() {
-    return new TenantCheck(false, null);
-  }
-}
+public interface TenantReader extends SearchEntityReader<TenantEntity, TenantQuery> {}

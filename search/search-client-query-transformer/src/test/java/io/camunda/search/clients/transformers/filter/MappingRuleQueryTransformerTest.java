@@ -9,9 +9,6 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.auth.AuthorizationCheck;
-import io.camunda.search.clients.auth.ResourceAccessChecks;
-import io.camunda.search.clients.auth.TenantCheck;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
@@ -23,6 +20,9 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MappingRuleFilter.Builder;
 import io.camunda.search.filter.MappingRuleFilter.Claim;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import java.util.List;

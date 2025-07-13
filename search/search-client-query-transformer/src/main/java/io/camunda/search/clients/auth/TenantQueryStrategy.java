@@ -8,6 +8,7 @@
 package io.camunda.search.clients.auth;
 
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.reader.TenantCheck;
 
 public interface TenantQueryStrategy {
 

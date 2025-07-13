@@ -16,12 +16,13 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.search.clients.DocumentBasedSearchClients;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
@@ -34,20 +35,24 @@ public class AuthorizationsUtil implements CloseableSilently {
 
   private final TestGateway<?> gateway;
   private final CamundaClient client;
-  private final DocumentBasedSearchClients documentBasedSearchClients;
+  private final DocumentBasedSearchClient documentBasedSearchClient;
+  private final AuthorizationReader authorizationReader;
+  private final UserReader userReader;
 
   public AuthorizationsUtil(
       final TestGateway<?> gateway, final CamundaClient client, final String elasticsearchUrl) {
-    this(gateway, client, SearchClientsUtil.createSearchClients(elasticsearchUrl));
+    this(gateway, client, SearchClientsUtil.createLowLevelSearchClient(elasticsearchUrl));
   }
 
   public AuthorizationsUtil(
       final TestGateway<?> gateway,
       final CamundaClient client,
-      final DocumentBasedSearchClients documentBasedSearchClients) {
+      final DocumentBasedSearchClient documentBasedSearchClient) {
     this.gateway = gateway;
     this.client = client;
-    this.documentBasedSearchClients = documentBasedSearchClients;
+    this.documentBasedSearchClient = documentBasedSearchClient;
+    authorizationReader = SearchClientsUtil.createAuthorizationReader(documentBasedSearchClient);
+    userReader = SearchClientsUtil.createUserReader(documentBasedSearchClient);
   }
 
   public static AuthorizationsUtil create(
@@ -56,7 +61,7 @@ public class AuthorizationsUtil implements CloseableSilently {
         new AuthorizationsUtil(
             gateway,
             createClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD),
-            SearchClientsUtil.createSearchClients(elasticsearchUrl));
+            SearchClientsUtil.createLowLevelSearchClient(elasticsearchUrl));
     authorizationUtil.awaitUserExistsInElasticsearch(DEFAULT_USER_USERNAME);
     return authorizationUtil;
   }
@@ -100,21 +105,6 @@ public class AuthorizationsUtil implements CloseableSilently {
     }
   }
 
-  public void createTenant(
-      final String tenantId, final String tenantName, final String... usernames) {
-    client
-        .newCreateTenantCommand()
-        .tenantId(tenantId)
-        .name(tenantName)
-        .send()
-        .join()
-        .getTenantKey();
-    for (final var username : usernames) {
-      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
-    }
-    awaitTenantExistsInElasticsearch(tenantId);
-  }
-
   public CamundaClient createClient(final String username, final String password) {
     return createClient(gateway, username, password);
   }
@@ -151,22 +141,10 @@ public class AuthorizationsUtil implements CloseableSilently {
         .build();
   }
 
-  private void awaitTenantExistsInElasticsearch(final String tenantId) {
-    final var tenantQuery = TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId)));
-    awaitEntityExistsInElasticsearch(
-        () ->
-            documentBasedSearchClients
-                .withSecurityContext(SecurityContext.withoutAuthentication())
-                .searchTenants(tenantQuery));
-  }
-
   public void awaitUserExistsInElasticsearch(final String username) {
     final var userQuery = UserQuery.of(b -> b.filter(f -> f.usernames(username)));
     awaitEntityExistsInElasticsearch(
-        () ->
-            documentBasedSearchClients
-                .withSecurityContext(SecurityContext.withoutAuthentication())
-                .searchUsers(userQuery));
+        () -> userReader.search(userQuery, ResourceAccessChecks.disabled()));
   }
 
   private void awaitPermissionExistsInElasticsearch(
@@ -190,10 +168,7 @@ public class AuthorizationsUtil implements CloseableSilently {
                               .resourceIds(resourceId)));
 
       awaitEntityExistsInElasticsearch(
-          () ->
-              documentBasedSearchClients
-                  .withSecurityContext(SecurityContext.withoutAuthentication())
-                  .searchAuthorizations(permissionQuery));
+          () -> authorizationReader.search(permissionQuery, ResourceAccessChecks.disabled()));
     }
   }
 
@@ -212,7 +187,7 @@ public class AuthorizationsUtil implements CloseableSilently {
   @Override
   public void close() {
     client.close();
-    documentBasedSearchClients.close();
+    documentBasedSearchClient.close();
   }
 
   public record Permissions(
