@@ -76,14 +76,15 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
   private SearchQuery applyTenantChecks(final TenantCheck tenantCheck) {
     final var field = Optional.of(indexDescriptor).flatMap(IndexDescriptor::getTenantIdField);
 
-    if (field.isEmpty()) {
+    if (field.isEmpty() || !tenantCheck.enabled()) {
       return matchAll();
     }
 
     return Optional.of(tenantCheck)
         .map(TenantCheck::tenantIds)
+        .filter(t -> !t.isEmpty())
         .map(t -> stringTerms(field.get(), t))
-        .orElse(matchAll());
+        .orElse(matchNone());
   }
 
   private SearchQuery rewriteSearchQueries(final List<SearchQuery> queries) {

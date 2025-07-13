@@ -5,11 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.security.auth;
+package io.camunda.security.reader;
 
-public interface CamundaAuthenticationConverter<T> {
+import io.camunda.security.auth.CamundaAuthentication;
+import java.util.List;
 
-  boolean supports(final T authentication);
+public interface TenantAccessProvider {
 
-  CamundaAuthentication convert(final T authentication);
+  TenantAccessProvider NONE = (authentication) -> TenantAccess.allowed(List.of());
+
+  TenantAccess resolveTenantAccess(final CamundaAuthentication authentication);
 }

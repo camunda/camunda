@@ -9,7 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.AuthorizationReader;
+import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemReader;
 import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
@@ -76,8 +76,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public AuthorizationReader authorizationReader(final AuthorizationMapper authorizationMapper) {
-    return new AuthorizationReader(authorizationMapper);
+  public AuthorizationDbReader authorizationReader(final AuthorizationMapper authorizationMapper) {
+    return new AuthorizationDbReader(authorizationMapper);
   }
 
   @Bean
@@ -227,7 +227,7 @@ public class RdbmsConfiguration {
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final VariableReader variableReader,
-      final AuthorizationReader authorizationReader,
+      final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionReader decisionDefinitionReader,
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
