@@ -8,6 +8,7 @@
 package io.camunda.search.clients.auth;
 
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.reader.AuthorizationCheck;
 
 /** Strategy to apply authorization to a search query. */
 public interface AuthorizationQueryStrategy {

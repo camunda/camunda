@@ -7,10 +7,10 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import io.camunda.search.clients.auth.ResourceAccessChecks;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 
 public class AbstractTransformerTest {

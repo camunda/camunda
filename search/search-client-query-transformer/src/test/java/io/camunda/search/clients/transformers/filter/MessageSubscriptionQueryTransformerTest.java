@@ -9,9 +9,6 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import io.camunda.search.clients.auth.AuthorizationCheck;
-import io.camunda.search.clients.auth.ResourceAccessChecks;
-import io.camunda.search.clients.auth.TenantCheck;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
@@ -20,6 +17,9 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import java.time.OffsetDateTime;

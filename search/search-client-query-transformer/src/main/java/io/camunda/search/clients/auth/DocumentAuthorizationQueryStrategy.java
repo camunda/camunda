@@ -12,6 +12,7 @@ import static io.camunda.security.auth.Authorization.withResourceIds;
 
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.reader.AuthorizationCheck;
 
 /**
  * Document based datastore (ES/OS) strategy implementation of {@link AuthorizationQueryStrategy}.

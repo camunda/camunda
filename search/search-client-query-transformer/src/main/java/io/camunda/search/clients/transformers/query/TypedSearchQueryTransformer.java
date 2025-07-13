@@ -11,7 +11,6 @@ import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 
 import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.clients.aggregator.SearchAggregator;
-import io.camunda.search.clients.auth.ResourceAccessChecks;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.source.SearchSourceConfig;
@@ -28,6 +27,7 @@ import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.sort.NoSort;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
+import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
