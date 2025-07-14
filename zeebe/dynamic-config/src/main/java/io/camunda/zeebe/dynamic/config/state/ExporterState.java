@@ -22,7 +22,19 @@ import java.util.Optional;
  */
 public record ExporterState(long metadataVersion, State state, Optional<String> initializedFrom) {
   public enum State {
+    /** The records will be exported to this exporter */
     ENABLED,
-    DISABLED
+    /**
+     * The records are not exported to this exporter. But the ExporterMetadata of this exporter is
+     * persisted in the cluster. When this exporter is re-enabled, it will start exporting new
+     * records and reuse the previous metadata. Note that the records created while this exporter is
+     * disabled may not be available to export to this exporter anymore.
+     */
+    DISABLED,
+    /**
+     * The exporter is still enabled, but unable to export because it has been removed from the
+     * application properties.
+     */
+    CONFIG_NOT_FOUND,
   }
 }
