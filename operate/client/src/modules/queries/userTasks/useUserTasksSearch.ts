@@ -21,7 +21,7 @@ const useUserTasksSearch = (
   options?: {enabled?: boolean},
 ) => {
   return useQuery({
-    queryKey: [USER_TASKS_SEARCH_QUERY_KEY, {elementInstanceKey, limit}],
+    queryKey: [USER_TASKS_SEARCH_QUERY_KEY, elementInstanceKey, limit],
     queryFn: () =>
       searchUserTasks({
         filter: {elementInstanceKey},
