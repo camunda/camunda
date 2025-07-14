@@ -4781,14 +4781,21 @@ paths:
           description: The start date for usage metrics, including this date.
           schema:
             type: string
-            format: date-time
+            format: date
         - name: endTime
           in: query
           required: true
           description: The end date for usage metrics, including this date.
           schema:
             type: string
-            format: date-time
+            format: date
+        - name: withTenants
+          in: query
+          required: false
+          description: Whether to return tenant metrics in additional to the total metrics or not. Default false.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: >
@@ -7274,17 +7281,33 @@ components:
           description: The assigned key of the decision requirements graph that the decision definition is part of.
     UsageMetricsResponse:
       type: object
+      allOf:
+        - $ref: "#/components/schemas/UsageMetricsResponseItem"
       properties:
-        assignees:
-          description: The amount of unique active users.
+        at:
+          description: The amount of active tenants (AT).
           type: integer
           format: int64
-        processInstances:
-          description: The amount of created root process instances.
+        tenants:
+          description: The usage metrics by tenants. Only available if request `withTenants` query parameter was `true`.
+          type: object
+          additionalProperties:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/UsageMetricsResponseItem"
+    UsageMetricsResponseItem:
+      type: object
+      properties:
+        rpi:
+          description: The amount of created root process instances (rPI).
           type: integer
           format: int64
-        decisionInstances:
-          description: The amount of executed decision instances.
+        edi:
+          description: The amount of executed decision instances (eDI).
+          type: integer
+          format: int64
+        tu:
+          description: The amount of unique active task users (TU).
           type: integer
           format: int64
 

@@ -8,7 +8,9 @@
 package io.camunda.service;
 
 import io.camunda.search.clients.UsageMetricsSearchClient;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricsCount;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -27,6 +29,7 @@ public final class UsageMetricsServices extends ApiServices<UsageMetricsServices
     this.usageMetricsSearchClient = usageMetricsSearchClient;
   }
 
+  // TODO remove
   public UsageMetricsCount search(final UsageMetricsQuery query) {
     if (query == null) {
       throw new IllegalArgumentException("Query must not be null");
@@ -36,6 +39,10 @@ public final class UsageMetricsServices extends ApiServices<UsageMetricsServices
     final var processInstances = usageMetricsSearchClient.countProcessInstances(query);
     final var decisionInstances = usageMetricsSearchClient.countDecisionInstances(query);
     return new UsageMetricsCount(assignees, processInstances, decisionInstances);
+  }
+
+  public UsageMetricStatisticsEntity statistics(final UsageMetricsFilter filter) {
+    return usageMetricsSearchClient.usageMetricsStatistics(filter);
   }
 
   private void validateStartAndEndTime(final UsageMetricsQuery query) {

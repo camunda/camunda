@@ -38,9 +38,10 @@ public class UsageMetricsController {
   @CamundaGetMapping
   public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
       @RequestParam(required = false) final String startTime,
-      @RequestParam(required = false) final String endTime) {
+      @RequestParam(required = false) final String endTime,
+      @RequestParam(required = false) final boolean withTenants) {
 
-    return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime)
+    return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, withTenants)
         .fold(RestErrorMapper::mapProblemToResponse, this::getMetrics);
   }
 
@@ -49,8 +50,9 @@ public class UsageMetricsController {
       final var result =
           usageMetricsServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUsageMetricsResponse(result));
+              .statistics(query.filter());
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toUsageMetricsResponse(result, query.filter().withTenants()));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

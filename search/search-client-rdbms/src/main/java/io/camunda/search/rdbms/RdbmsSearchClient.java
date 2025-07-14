@@ -31,10 +31,12 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -129,6 +131,12 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   public Long countDecisionInstances(final UsageMetricsQuery query) {
     throw new UnsupportedOperationException(
         "UsageMetricsClient countDecisionInstances not implemented yet.");
+  }
+
+  @Override
+  public UsageMetricStatisticsEntity usageMetricsStatistics(final UsageMetricsFilter filter) {
+    LOG.debug("[RDBMS Search Client] Query usage metrics statistics: {}", filter);
+    return rdbmsService.getUsageMetricReader().usageMetricStatistics(filter);
   }
 
   @Override
