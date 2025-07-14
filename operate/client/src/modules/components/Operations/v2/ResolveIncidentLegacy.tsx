@@ -22,7 +22,7 @@ type Props = {
   applyOperation: (operationType: OperationEntityType) => Promise<void>;
 };
 
-const ResolveIncident: React.FC<Props> = ({
+const ResolveIncidentLegacy: React.FC<Props> = ({
   processInstanceKey,
   permissions,
   applyOperation,
@@ -57,4 +57,4 @@ const ResolveIncident: React.FC<Props> = ({
   );
 };
 
-export {ResolveIncident};
+export {ResolveIncidentLegacy};
