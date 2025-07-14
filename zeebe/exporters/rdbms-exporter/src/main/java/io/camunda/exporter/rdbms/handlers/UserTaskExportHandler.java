@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
+import java.util.EnumSet;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,13 +36,13 @@ import org.apache.commons.lang3.StringUtils;
 public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
 
   private static final Set<UserTaskIntent> EXPORTABLE_INTENTS =
-      Set.of(
+      EnumSet.of(
           UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
-          UserTaskIntent.UPDATED,
-          UserTaskIntent.CANCELED,
           UserTaskIntent.ASSIGNED,
+          UserTaskIntent.UPDATED,
           UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED);
 
   private final UserTaskWriter userTaskWriter;
