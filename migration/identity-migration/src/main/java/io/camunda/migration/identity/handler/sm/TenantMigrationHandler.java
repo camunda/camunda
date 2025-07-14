@@ -23,9 +23,12 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TenantMigrationHandler extends MigrationHandler<Tenant> {
+
+  private static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
 
   private final ManagementIdentityClient managementIdentityClient;
   private final TenantServices tenantService;
@@ -56,7 +59,10 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
   protected void process(final List<Tenant> batch) {
     final List<Tenant> tenants;
     try {
-      tenants = managementIdentityClient.fetchTenants();
+      tenants =
+          managementIdentityClient.fetchTenants().stream()
+              .filter(tenant -> !Objects.equals(tenant.tenantId(), DEFAULT_TENANT_IDENTIFIER))
+              .toList();
     } catch (final Exception e) {
       if (!isNotImplementedError(e)) {
         throw new MigrationException("Failed to fetch tenants", e);

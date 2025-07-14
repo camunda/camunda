@@ -60,7 +60,11 @@ public class TenantMigrationHandlerTest {
   public void shouldMigrateTenants() {
     // given
     when(managementIdentityClient.fetchTenants())
-        .thenReturn(List.of(new Tenant("tenant1", "Tenant 1"), new Tenant("tenant2", "Tenant 2")));
+        .thenReturn(
+            List.of(
+                new Tenant("tenant1", "Tenant 1"),
+                new Tenant("tenant2", "Tenant 2"),
+                new Tenant("<default>", "Default Tenant")));
     when(tenantServices.createTenant(any(TenantDTO.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(tenantServices.addMember(any(TenantMemberRequest.class)))
