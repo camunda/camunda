@@ -9,7 +9,9 @@ package io.camunda.exporter.rdbms.handlers;
 
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CLAIMING;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETION_DENIED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATE_DENIED;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
@@ -44,7 +46,10 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
           UserTaskIntent.COMPLETED,
           UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
-          UserTaskIntent.MIGRATED);
+          UserTaskIntent.MIGRATED,
+          UserTaskIntent.ASSIGNMENT_DENIED,
+          UserTaskIntent.UPDATE_DENIED,
+          UserTaskIntent.COMPLETION_DENIED);
 
   private final UserTaskWriter userTaskWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -112,6 +117,8 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                           .orElse(null))
                   .processDefinitionVersion(value.getProcessDefinitionVersion())
                   .build());
+      case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
+          userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CREATED);
       default -> {
         // All currently supported intents are handled explicitly above.
         // If new intent is added to EXPORTABLE_INTENTS but not handled here,

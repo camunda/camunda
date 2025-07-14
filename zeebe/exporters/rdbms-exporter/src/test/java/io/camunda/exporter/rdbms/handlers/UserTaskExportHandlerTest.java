@@ -58,7 +58,10 @@ class UserTaskExportHandlerTest {
           UserTaskIntent.COMPLETED,
           UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
-          UserTaskIntent.MIGRATED);
+          UserTaskIntent.MIGRATED,
+          UserTaskIntent.ASSIGNMENT_DENIED,
+          UserTaskIntent.UPDATE_DENIED,
+          UserTaskIntent.COMPLETION_DENIED);
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
@@ -284,6 +287,25 @@ class UserTaskExportHandlerTest {
             });
 
     // ensure no other methods are called
+    verifyNoMoreInteractions(userTaskWriter);
+  }
+
+  @ParameterizedTest(
+      name = "Should handle transition denied record with {0} intent by updating state to CREATED")
+  @EnumSource(
+      value = UserTaskIntent.class,
+      names = {"ASSIGNMENT_DENIED", "UPDATE_DENIED", "COMPLETION_DENIED"})
+  void shouldHandleUserTaskTransitionDeniedRecord(final UserTaskIntent intent) {
+    // given
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
+    final var recordValue = record.getValue();
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(userTaskWriter).updateState(eq(recordValue.getUserTaskKey()), eq(UserTaskState.CREATED));
     verifyNoMoreInteractions(userTaskWriter);
   }
 
