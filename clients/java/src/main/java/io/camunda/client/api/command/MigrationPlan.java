@@ -31,7 +31,7 @@ public interface MigrationPlan {
    *
    * @return the target process definition key
    */
-  public long getTargetProcessDefinitionKey();
+  long getTargetProcessDefinitionKey();
 
   /**
    * Get mapping instructions to the migration for describing how to map elements from the source
@@ -39,7 +39,7 @@ public interface MigrationPlan {
    *
    * @return list of mapping instructions
    */
-  public List<MappingInstruction> getMappingInstructions();
+  List<MappingInstruction> getMappingInstructions();
 
   interface MigrationPlanBuilderStep1 {
 
