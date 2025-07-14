@@ -22,11 +22,18 @@ const useUserTasksSearch = (
 ) => {
   return useQuery({
     queryKey: [USER_TASKS_SEARCH_QUERY_KEY, elementInstanceKey, limit],
-    queryFn: () =>
-      searchUserTasks({
+    queryFn: async () => {
+      const {response, error} = await searchUserTasks({
         filter: {elementInstanceKey},
         page: {limit},
-      }),
+      });
+
+      if (response !== null) {
+        return response;
+      }
+
+      throw error;
+    },
     ...options,
   });
 };
