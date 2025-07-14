@@ -11,11 +11,9 @@ import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
-import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
 import io.camunda.migration.identity.dto.Permission;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
-import io.camunda.migration.identity.dto.TenantMappingRule;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -23,11 +21,10 @@ import org.springframework.web.client.RestTemplate;
 
 public class ManagementIdentityClient {
 
-  private static final String URL_PARAMS = "pageSize={0}";
   private static final String MIGRATION_TENANTS_ENDPOINT = "/api/tenants";
-  private static final String MIGRATION_USER_TENANTS_ENDPOINT = "/api/tenant/{0}/users";
-  private static final String MIGRATION_GROUP_TENANTS_ENDPOINT = "/api/tenant/{0}/groups";
-  private static final String MIGRATION_CLIENT_TENANTS_ENDPOINT = "/api/tenant/{0}/applications";
+  private static final String MIGRATION_USER_TENANTS_ENDPOINT = "/api/tenants/{0}/users";
+  private static final String MIGRATION_GROUP_TENANTS_ENDPOINT = "/api/tenants/{0}/groups";
+  private static final String MIGRATION_CLIENT_TENANTS_ENDPOINT = "/api/tenants/{0}/applications";
   private static final String MIGRATION_GROUPS_ENDPOINT = "/api/groups?page={0}&organizationId={1}";
   private static final String MIGRATION_GROUPS_ROLES_ENDPOINT = "/api/groups/{0}/roles";
   private static final String MIGRATION_GROUPS_AUTHORISATIONS_ENDPOINT =

@@ -80,6 +80,7 @@ final class IdentityMigrationTestUtil {
         .dependsOn(postgres)
         .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
         .withEnv("RESOURCE_PERMISSIONS_ENABLED", "true")
+        .withEnv("MULTITENANCY_ENABLED", "true")
         .withEnv("KEYCLOAK_URL", "http://%s:%d".formatted(KEYCLOAK_HOST, KEYCLOAK_PORT))
         .withEnv(
             "IDENTITY_AUTH_PROVIDER_BACKEND_URL",

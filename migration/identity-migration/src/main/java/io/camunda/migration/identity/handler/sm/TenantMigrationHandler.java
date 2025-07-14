@@ -175,10 +175,7 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
-                  "Failed to assign group with name: "
-                      + group.name()
-                      + " to tenant: "
-                      + tenantId,
+                  "Failed to assign group with name: " + group.name() + " to tenant: " + tenantId,
                   e);
             }
             logger.debug(
@@ -190,7 +187,7 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
   }
 
   public void assignClientsToTenant(final String tenantId, final String normalizedTenantId) {
-  final List<Client> tenantClients;
+    final List<Client> tenantClients;
     try {
       tenantClients = managementIdentityClient.fetchTenantClients(tenantId);
     } catch (final Exception e) {
@@ -204,22 +201,23 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
     tenantClients.forEach(
         client -> {
+          final var normalizedClientId = normalizeID(client.clientId());
           try {
             tenantService
                 .addMember(
                     new TenantMemberRequest(
-                        normalizedTenantId, client.clientId(), EntityType.CLIENT))
+                        normalizedTenantId, normalizedClientId, EntityType.CLIENT))
                 .join();
             assignedClientCount.incrementAndGet();
             logger.debug(
                 "Client with ID '{}' assigned to tenant '{}'.",
-                client.clientId(),
+                normalizedClientId,
                 normalizedTenantId);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
                   "Failed to assign client with ID: "
-                      + client.clientId()
+                      + normalizedClientId
                       + " to tenant: "
                       + tenantId,
                   e);
