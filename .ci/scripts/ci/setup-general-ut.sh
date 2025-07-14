@@ -42,7 +42,7 @@ IFS=' '; modules="${filtered_items[*]}"
 ### Add Extra modules to skip, these are not Zeebe/Operate/Tasklist/Optimize modules
 modules+=" $2"
 
-### Format with '-:<moduleName>'
+### Format with '-:<moduleName>' This format is used by maven to skip modules with the -pl argument
 # Initialize an empty array for formatted words
 formatted_modules=()
 
@@ -55,7 +55,7 @@ done
 ut_modules=$(IFS=','; echo "${formatted_modules[*]}")
 
 # Print the result
-echo "ut_modules"
+echo "Modules to be skipped: $ut_modules"
 
 # shellcheck disable=SC2086
 echo GENERAL_UT_MODULES=$ut_modules >> $GITHUB_ENV
