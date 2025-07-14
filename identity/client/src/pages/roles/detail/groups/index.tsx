@@ -7,17 +7,18 @@
  */
 
 import { FC } from "react";
+import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { getGroupsByRoleId } from "src/utility/api/roles";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
-import { TrashCan } from "@carbon/react/icons";
-import DeleteModal from "src/pages/roles/detail/groups/DeleteModal";
 import AssignGroupsModal from "src/pages/roles/detail/groups/AssignGroupsModal";
+import AssignGroupModal from "src/pages/roles/detail/groups/AssignGroupModal";
+import DeleteModal from "src/pages/roles/detail/groups/DeleteModal";
 import { isCamundaGroupsEnabled } from "src/configuration";
-import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import { GroupKeys } from "src/utility/api/groups";
+import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 
 type GroupsProps = {
   roleId: string;
@@ -25,7 +26,6 @@ type GroupsProps = {
 
 const Groups: FC<GroupsProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
-
   const { groups, loading, success, reload } = useEnrichedGroups(
     getGroupsByRoleId,
     {
@@ -34,15 +34,14 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
   );
 
   const isGroupsEmpty = !groups || groups.length === 0;
-
   const [assignGroups, assignGroupsModal] = useEntityModal(
-    AssignGroupsModal,
+    isCamundaGroupsEnabled ? AssignGroupsModal : AssignGroupModal,
     reload,
     {
       assignedGroups: groups,
     },
   );
-  const openAssignModal = () => assignGroups({ id: roleId });
+  const openAssignModal = () => assignGroups({ roleId });
   const [unassignGroup, unassignGroupModal] = useEntityModal(
     DeleteModal,
     reload,

@@ -17,16 +17,18 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignRoleGroup, Role } from "src/utility/api/roles";
-import { isCamundaGroupsEnabled } from "src/configuration";
 
 const SelectedGroups = styled.div`
   margin-top: 0;
 `;
 
 const AssignGroupsModal: FC<
-  UseEntityModalCustomProps<{ id: Role["roleId"] }, { assignedGroups: Group[] }>
-> = ({ entity: role, assignedGroups, onSuccess, open, onClose }) => {
-  const { t, Translate } = useTranslate("roles");
+  UseEntityModalCustomProps<
+    { roleId: Role["roleId"] },
+    { assignedGroups: Group[] }
+  >
+> = ({ entity: { roleId }, assignedGroups, onSuccess, open, onClose }) => {
+  const { t } = useTranslate("roles");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
   const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
   const [currentInputValue, setCurrentInputValue] = useState("");
@@ -40,36 +42,13 @@ const AssignGroupsModal: FC<
 
   const [callAssignGroup] = useApiCall(assignRoleGroup);
 
-  const getDynamicGroup = (): Group | null => {
-    if (!isCamundaGroupsEnabled || !currentInputValue.trim()) return null;
-
-    const trimmedValue = currentInputValue.trim();
-    const groupId = trimmedValue.replace(/\s+/g, "").toLowerCase();
-
-    const groupExists =
-      assignedGroups.some((group) => group.groupId === groupId) ||
-      selectedGroups.some((group) => group.groupId === groupId) ||
-      groupSearchResults?.items.some((group) => group.groupId === groupId);
-
-    if (groupExists) return null;
-
-    return {
-      groupId,
-      name: trimmedValue,
-    };
-  };
-
-  const dynamicGroup = getDynamicGroup();
-
-  const unassignedGroups = [
-    ...(dynamicGroup ? [dynamicGroup] : []),
-    ...(groupSearchResults?.items.filter(
+  const unassignedGroups =
+    groupSearchResults?.items.filter(
       ({ groupId }) =>
         !assignedGroups.some((group) => group.groupId === groupId) &&
         !selectedGroups.some((group) => group.groupId === groupId) &&
         groupId.toLowerCase().includes(currentInputValue.toLowerCase()),
-    ) || []),
-  ];
+    ) || [];
 
   const handleDropdownChange = (value: string) => {
     setCurrentInputValue(value);
@@ -88,7 +67,7 @@ const AssignGroupsModal: FC<
       );
     };
 
-  const canSubmit = role && selectedGroups.length && !loadingAssignGroup;
+  const canSubmit = roleId && selectedGroups.length && !loadingAssignGroup;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -96,9 +75,7 @@ const AssignGroupsModal: FC<
     setLoadingAssignGroup(true);
 
     const results = await Promise.all(
-      selectedGroups.map(({ groupId }) =>
-        callAssignGroup({ groupId, roleId: role.id }),
-      ),
+      selectedGroups.map(({ groupId }) => callAssignGroup({ groupId, roleId })),
     );
 
     setLoadingAssignGroup(false);
@@ -127,11 +104,7 @@ const AssignGroupsModal: FC<
       onClose={onClose}
       overflowVisible
     >
-      <p>
-        <Translate i18nKey="searchAndAssignGroupToRole">
-          Search and assign group to role
-        </Translate>
-      </p>
+      <p>{t("searchAndAssignGroupToRole")}</p>
       {selectedGroups.length > 0 && (
         <SelectedGroups>
           {selectedGroups.map((group) => (
