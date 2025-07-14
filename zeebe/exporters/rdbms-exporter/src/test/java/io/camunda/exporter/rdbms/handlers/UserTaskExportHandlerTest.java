@@ -308,6 +308,9 @@ class UserTaskExportHandlerTest {
     verifyNoMoreInteractions(userTaskWriter);
   }
 
+  // Helper method to assert that the fields of a UserTaskDbModel match the values in a Record and
+  // RecordValue, except for the 'state', 'assignee', and 'completionDate' fields,
+  // which are handled separately
   private static void assertUserTaskModelFieldsEqualToRecord(
       final UserTaskDbModel model, final Record<UserTaskRecordValue> record) {
     final var recordValue = record.getValue();
@@ -330,11 +333,7 @@ class UserTaskExportHandlerTest {
     assertThat(model.customHeaders()).isEqualTo(recordValue.getCustomHeaders());
     assertThat(model.priority()).isEqualTo(recordValue.getPriority());
     assertThat(model.partitionId()).isEqualTo(record.getPartitionId());
-    // ProtocolFactory used in tests - generates random strings for due/follow-up dates,
-    // which aren't in a valid ISO-8601 format. As a result, the conversion
-    // to OffsetDateTime fails and those fields are intentionally mapped to null
-    // during model mapping.
-    assertThat(model.dueDate()).isNull();
-    assertThat(model.followUpDate()).isNull();
+    assertThat(model.dueDate()).isNotNull().isEqualTo(recordValue.getDueDate());
+    assertThat(model.followUpDate()).isNotNull().isEqualTo(recordValue.getFollowUpDate());
   }
 }
