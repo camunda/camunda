@@ -14,7 +14,7 @@ import {
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 
-export const MAPPINGS_ENDPOINT = "/mapping-rules";
+export const MAPPING_RULES_ENDPOINT = "/mapping-rules";
 
 export type MappingRule = {
   mappingRuleId: string;
@@ -25,11 +25,11 @@ export type MappingRule = {
 
 export const searchMappingRule: ApiDefinition<
   SearchResponse<MappingRule>
-> = () => apiPost(`${MAPPINGS_ENDPOINT}/search`);
+> = () => apiPost(`${MAPPING_RULES_ENDPOINT}/search`);
 
 export const createMappingRule: ApiDefinition<undefined, MappingRule> = (
   mappingRule,
-) => apiPost(MAPPINGS_ENDPOINT, mappingRule);
+) => apiPost(MAPPING_RULES_ENDPOINT, mappingRule);
 
 export type UpdateMappingRuleParams = {
   mappingRuleId: string;
@@ -42,7 +42,7 @@ export const updateMappingRule: ApiDefinition<
   undefined,
   UpdateMappingRuleParams
 > = ({ mappingRuleId, claimName, claimValue, name }) =>
-  apiPut(`${MAPPINGS_ENDPOINT}/${mappingRuleId}`, {
+  apiPut(`${MAPPING_RULES_ENDPOINT}/${mappingRuleId}`, {
     name,
     claimName,
     claimValue,
@@ -52,4 +52,5 @@ export type DeleteMappingRuleParams = UpdateMappingRuleParams;
 export const deleteMappingRule: ApiDefinition<
   undefined,
   { mappingRuleId: string }
-> = ({ mappingRuleId }) => apiDelete(`${MAPPINGS_ENDPOINT}/${mappingRuleId}`);
+> = ({ mappingRuleId }) =>
+  apiDelete(`${MAPPING_RULES_ENDPOINT}/${mappingRuleId}`);

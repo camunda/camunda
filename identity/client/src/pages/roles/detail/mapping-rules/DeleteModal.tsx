@@ -17,14 +17,14 @@ import { useNotifications } from "src/components/notifications";
 import { MappingRule } from "src/utility/api/mapping-rules";
 import { unassignRoleMappingRule } from "src/utility/api/roles";
 
-type RemoveRoleMappingModalProps = UseEntityModalCustomProps<
+type RemoveRoleMappingRuleModalProps = UseEntityModalCustomProps<
   MappingRule,
   {
     roleId: string;
   }
 >;
 
-const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
+const DeleteModal: FC<RemoveRoleMappingRuleModalProps> = ({
   entity: mappingRule,
   open,
   onClose,

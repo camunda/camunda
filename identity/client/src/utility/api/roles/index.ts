@@ -48,15 +48,15 @@ export const deleteRole: ApiDefinition<undefined, { roleId: string }> = ({
 
 // ----------------- Mappings within a Role -----------------
 
-export type GetRoleMappingsParams = {
+export type GetRoleMappingRulesParams = {
   roleId: string;
 };
 export const getMappingRulesByRoleId: ApiDefinition<
   SearchResponse<MappingRule>,
-  GetRoleMappingsParams
+  GetRoleMappingRulesParams
 > = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`);
 
-type AssignRoleMappingParams = GetRoleMappingsParams & {
+type AssignRoleMappingParams = GetRoleMappingRulesParams & {
   mappingRuleId: string;
 };
 export const assignRoleMappingRule: ApiDefinition<

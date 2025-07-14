@@ -21,7 +21,7 @@ type MappingRulesProps = {
   groupId: string;
 };
 
-const Mappings: FC<MappingRulesProps> = ({ groupId }) => {
+const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
 
   const {
@@ -56,7 +56,7 @@ const Mappings: FC<MappingRulesProps> = ({ groupId }) => {
     return (
       <C3EmptyState
         heading={t("somethingsWrong")}
-        description={t("unableToLoadMappings")}
+        description={t("unableToLoadMappingRules")}
         button={{ label: t("retry"), onClick: reload }}
       />
     );
@@ -110,4 +110,4 @@ const Mappings: FC<MappingRulesProps> = ({ groupId }) => {
   );
 };
 
-export default Mappings;
+export default MappingRules;

@@ -18,7 +18,7 @@ import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignRoleMappingRule, Role } from "src/utility/api/roles";
 
-const SelectedMappings = styled.div`
+const SelectedMappingRules = styled.div`
   margin-top: 0;
 `;
 
@@ -116,7 +116,7 @@ const AssignMappingRulesModal: FC<
         </Translate>
       </p>
       {selectedMappingRules.length > 0 && (
-        <SelectedMappings>
+        <SelectedMappingRules>
           {selectedMappingRules.map((mappingRule) => (
             <Tag
               key={mappingRule.mappingRuleId}
@@ -128,7 +128,7 @@ const AssignMappingRulesModal: FC<
               {mappingRule.mappingRuleId}
             </Tag>
           ))}
-        </SelectedMappings>
+        </SelectedMappingRules>
       )}
       <DropdownSearch
         autoFocus

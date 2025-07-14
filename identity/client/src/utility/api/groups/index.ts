@@ -89,29 +89,29 @@ export const unassignGroupRole: ApiDefinition<
 
 // ----------------- Mappings within a Group -----------------
 
-export type GetGroupMappingsParams = {
+export type GetGroupMappingRulesParams = {
   groupId: string;
 };
 export const getMappingRulesByGroupId: ApiDefinition<
   SearchResponse<MappingRule>,
-  GetGroupMappingsParams
+  GetGroupMappingRulesParams
 > = ({ groupId }) =>
   apiPost(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/search`);
 
-type AssignGroupMappingParams = GetGroupMappingsParams & {
+type AssignGroupMappingRuleParams = GetGroupMappingRulesParams & {
   mappingRuleId: string;
 };
 export const assignGroupMappingRule: ApiDefinition<
   undefined,
-  AssignGroupMappingParams
+  AssignGroupMappingRuleParams
 > = ({ groupId, mappingRuleId }) => {
   return apiPut(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingRuleId}`);
 };
 
-type UnassignGroupMappingParams = AssignGroupMappingParams;
+type UnassignGroupMappingRuleParams = AssignGroupMappingRuleParams;
 export const unassignGroupMappingRule: ApiDefinition<
   undefined,
-  UnassignGroupMappingParams
+  UnassignGroupMappingRuleParams
 > = ({ groupId, mappingRuleId }) =>
   apiDelete(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingRuleId}`);
 

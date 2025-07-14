@@ -17,11 +17,11 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/mapping-rules/DeleteModal";
 import AssignMappingRulesModal from "src/pages/tenants/detail/mapping-rules/AssignMappingRulesModal.tsx";
 
-type MappingsProps = {
+type MappingRulesProps = {
   tenantId: string;
 };
 
-const MappingRules: FC<MappingsProps> = ({ tenantId }) => {
+const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
   const { t } = useTranslate("tenants");
 
   const {
