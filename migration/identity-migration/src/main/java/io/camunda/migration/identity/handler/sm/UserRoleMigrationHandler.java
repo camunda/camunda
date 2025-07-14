@@ -54,7 +54,9 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
                 try {
                   final var roleId = normalizeID(role.name());
                   logger.debug("Assigning role '{}' to user '{}'", roleId, userId);
-                  roleServices.addMember(new RoleMemberRequest(roleId, userId, EntityType.USER));
+                  roleServices
+                      .addMember(new RoleMemberRequest(roleId, userId, EntityType.USER))
+                      .join();
                   assignedUserCount.incrementAndGet();
                 } catch (final Exception e) {
                   if (!isConflictError(e)) {
