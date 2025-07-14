@@ -8,21 +8,26 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchUserTasks} from 'modules/api/v2/userTasks/searchUserTasks';
-import {type QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas';
 
 const USER_TASKS_SEARCH_QUERY_KEY = 'userTasksSearch';
 
-const useUserTasksSearch = (params: QueryUserTasksRequestBody) => {
+type UseUserTasksSearchParams = {
+  elementInstanceKey?: string;
+  limit?: number;
+};
+
+const useUserTasksSearch = (
+  {elementInstanceKey, limit = 1}: UseUserTasksSearchParams,
+  options?: {enabled?: boolean},
+) => {
   return useQuery({
-    queryKey: [USER_TASKS_SEARCH_QUERY_KEY, params],
+    queryKey: [USER_TASKS_SEARCH_QUERY_KEY, {elementInstanceKey, limit}],
     queryFn: () =>
-      searchUserTasks(params).then(({response, error}) => {
-        if (response !== null) {
-          return response;
-        }
-        throw error;
+      searchUserTasks({
+        filter: {elementInstanceKey},
+        page: {limit},
       }),
-    enabled: !!params,
+    enabled: options?.enabled ?? !!elementInstanceKey,
   });
 };
 
