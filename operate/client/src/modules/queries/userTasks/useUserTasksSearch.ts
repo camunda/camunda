@@ -12,7 +12,7 @@ import {searchUserTasks} from 'modules/api/v2/userTasks/searchUserTasks';
 const USER_TASKS_SEARCH_QUERY_KEY = 'userTasksSearch';
 
 type UseUserTasksSearchParams = {
-  elementInstanceKey?: string;
+  elementInstanceKey: string;
   limit?: number;
 };
 
@@ -27,7 +27,7 @@ const useUserTasksSearch = (
         filter: {elementInstanceKey},
         page: {limit},
       }),
-    enabled: options?.enabled ?? !!elementInstanceKey,
+    ...options,
   });
 };
 
