@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -221,7 +222,7 @@ public final class BatchOperationExecuteProcessor
   private void appendBatchOperationExecutionCompletedEvent(
       final BatchOperationExecutionRecord executionRecord) {
 
-    final var batchInternalComplete =
+    final var completePartitionCommand =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(executionRecord.getBatchOperationKey())
             .setSourcePartitionId(partitionId);
@@ -236,7 +237,7 @@ public final class BatchOperationExecuteProcessor
       commandWriter.appendFollowUpCommand(
           executionRecord.getBatchOperationKey(),
           BatchOperationIntent.COMPLETE_PARTITION,
-          batchInternalComplete,
+          completePartitionCommand,
           FollowUpCommandMetadata.of(
               b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
     } else {
@@ -246,7 +247,8 @@ public final class BatchOperationExecuteProcessor
       stateWriter.appendFollowUpEvent(
           executionRecord.getBatchOperationKey(),
           BatchOperationIntent.COMPLETED,
-          batchInternalComplete,
+          new BatchOperationLifecycleManagementRecord()
+              .setBatchOperationKey(executionRecord.getBatchOperationKey()),
           FollowUpEventMetadata.of(
               b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
       commandDistributionBehavior
@@ -256,7 +258,7 @@ public final class BatchOperationExecuteProcessor
           .distribute(
               ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
               BatchOperationIntent.COMPLETE_PARTITION,
-              batchInternalComplete);
+              completePartitionCommand);
     }
   }
 }
