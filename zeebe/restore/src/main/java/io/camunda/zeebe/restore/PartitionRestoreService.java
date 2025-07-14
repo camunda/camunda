@@ -72,8 +72,26 @@ public class PartitionRestoreService {
    */
   public CompletableFuture<BackupDescriptor> restore(
       final long backupId, final BackupValidator validator) {
-    return getTargetDirectory(backupId)
-        .thenCompose(targetDirectory -> download(backupId, targetDirectory, validator))
+    try {
+      if (!FileUtil.isEmpty(rootDirectory)) {
+        LOG.error(
+            "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
+            rootDirectory);
+        return CompletableFuture.failedFuture(
+            new DirectoryNotEmptyException(rootDirectory.toString()));
+      }
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+
+    final var tempTargetDirectory = rootDirectory.resolve("restoring-" + backupId);
+    try {
+      FileUtil.ensureDirectoryExists(tempTargetDirectory);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+
+    return download(backupId, tempTargetDirectory, validator)
         .thenApply(this::moveFilesToDataDirectory)
         .thenApply(
             backup -> {
@@ -85,26 +103,6 @@ public class PartitionRestoreService {
     // TODO: As an additional consistency check:
     // - Validate journal.firstIndex <= snapshotIndex + 1
     // - Verify journal.lastEntry.asqn == checkpointPosition
-  }
-
-  private CompletionStage<Path> getTargetDirectory(final long backupId) {
-    try {
-      if (!FileUtil.isEmpty(rootDirectory)) {
-        LOG.error(
-            "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
-            rootDirectory);
-        return CompletableFuture.failedFuture(
-            new DirectoryNotEmptyException(rootDirectory.toString()));
-      }
-
-      // First download the contents to a temporary directory and then move it to the correct
-      // locations.
-      final var tempTargetDirectory = rootDirectory.resolve("restoring-" + backupId);
-      FileUtil.ensureDirectoryExists(tempTargetDirectory);
-      return CompletableFuture.completedFuture(tempTargetDirectory);
-    } catch (final Exception e) {
-      return CompletableFuture.failedFuture(e);
-    }
   }
 
   // While taking the backup, we add all log segments. But the backup must only have entries upto
