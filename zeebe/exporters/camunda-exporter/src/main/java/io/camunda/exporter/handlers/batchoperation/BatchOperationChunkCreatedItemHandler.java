@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +33,12 @@ public class BatchOperationChunkCreatedItemHandler extends AbstractOperationHand
   private static final Logger LOG =
       LoggerFactory.getLogger(BatchOperationChunkCreatedItemHandler.class);
 
-  public BatchOperationChunkCreatedItemHandler(final String indexName) {
+  private final String listViewIndexName;
+
+  public BatchOperationChunkCreatedItemHandler(
+      final String indexName, final String listViewIndexName) {
     super(indexName);
+    this.listViewIndexName = listViewIndexName;
   }
 
   @Override
@@ -81,6 +86,18 @@ public class BatchOperationChunkCreatedItemHandler extends AbstractOperationHand
   public void flush(final OperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.add(indexName, entity);
+
+    final String script =
+        "if (ctx._source.batchOperationIds == null){"
+            + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
+            + "} else {"
+            + "ctx._source.batchOperationIds.add(params.batchOperationId);"
+            + "}";
+    batchRequest.updateWithScript(
+        listViewIndexName,
+        Long.toString(entity.getProcessInstanceKey()),
+        script,
+        Map.of("batchOperationId", entity.getBatchOperationId()));
   }
 
   private Long extractItemKey(final String id) {

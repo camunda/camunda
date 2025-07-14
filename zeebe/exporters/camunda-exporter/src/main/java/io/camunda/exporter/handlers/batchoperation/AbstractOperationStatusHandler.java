@@ -43,16 +43,20 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
   public static final String ERROR_MSG = "%s: %s";
   private static final Logger LOGGER =
       LoggerFactory.getLogger(AbstractOperationStatusHandler.class);
+
+  protected final String listViewIndexName;
   protected final ValueType handledValueType;
   protected final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
   @VisibleForTesting final OperationType relevantOperationType;
 
   public AbstractOperationStatusHandler(
       final String indexName,
+      final String listViewIndexName,
       final ValueType handledValueType,
       final OperationType relevantOperationType,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
     super(indexName);
+    this.listViewIndexName = listViewIndexName;
     this.handledValueType = handledValueType;
     this.relevantOperationType = relevantOperationType;
 
@@ -106,6 +110,18 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
 
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
     LOGGER.trace("Updated operation {} with fields {}", entity.getId(), updateFields);
+
+    final String script =
+        "if (ctx._source.batchOperationIds == null){"
+            + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
+            + "} else if (!ctx._source.batchOperationIds.contains(params.batchOperationId)) {"
+            + "ctx._source.batchOperationIds.add(params.batchOperationId);"
+            + "}";
+    batchRequest.updateWithScript(
+        listViewIndexName,
+        Long.toString(entity.getProcessInstanceKey()),
+        script,
+        Map.of("batchOperationId", entity.getBatchOperationId()));
   }
 
   @Override

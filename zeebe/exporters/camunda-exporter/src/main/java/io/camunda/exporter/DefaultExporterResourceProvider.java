@@ -291,22 +291,27 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new ProcessInstanceCancellationOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new ProcessInstanceMigrationOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new ProcessInstanceModificationOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new ResolveIncidentOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache)));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
       exportHandlers.add(
           new BatchOperationChunkCreatedItemHandler(
-              indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
+              indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+              indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()));
     }
 
     indicesWithCustomErrorHandlers =

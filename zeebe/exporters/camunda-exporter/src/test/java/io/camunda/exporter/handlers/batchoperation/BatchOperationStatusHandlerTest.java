@@ -46,6 +46,7 @@ class BatchOperationStatusHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-index";
+  private final String listViewIndexName = "test-list-view-index";
   private final long batchOperationKey = 42L;
 
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache =
@@ -209,6 +210,12 @@ class BatchOperationStatusHandlerTest {
                   OperationTemplate.PROCESS_INSTANCE_KEY, entity.getProcessInstanceKey(),
                   OperationTemplate.COMPLETED_DATE, entity.getCompletedDate(),
                   OperationTemplate.ERROR_MSG, entity.getErrorMessage()));
+      verify(mockRequest)
+          .updateWithScript(
+              eq(listViewIndexName),
+              eq(Long.toString(entity.getProcessInstanceKey())),
+              anyString(),
+              eq(Map.of("batchOperationId", entity.getBatchOperationId())));
     }
 
     @Test
@@ -236,7 +243,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceModificationRecordValue> {
 
     ProcessInstanceModificationOperationHandlerTest() {
-      super(new ProcessInstanceModificationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceModificationOperationHandler(
+              indexName, listViewIndexName, batchOperationCache));
     }
 
     @Override
@@ -280,7 +289,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceMigrationRecordValue> {
 
     ProcessInstanceMigrationOperationHandlerTest() {
-      super(new ProcessInstanceMigrationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceMigrationOperationHandler(
+              indexName, listViewIndexName, batchOperationCache));
     }
 
     @Override
@@ -324,7 +335,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceRecordValue> {
 
     ProcessInstanceCancellationOperationHandlerTest() {
-      super(new ProcessInstanceCancellationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceCancellationOperationHandler(
+              indexName, listViewIndexName, batchOperationCache));
     }
 
     @Test
@@ -397,7 +410,7 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<IncidentRecordValue> {
 
     ResolveIncidentOperationHandlerTest() {
-      super(new ResolveIncidentOperationHandler(indexName, batchOperationCache));
+      super(new ResolveIncidentOperationHandler(indexName, listViewIndexName, batchOperationCache));
     }
 
     @Override

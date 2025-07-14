@@ -26,9 +26,11 @@ public class ProcessInstanceMigrationOperationHandler
 
   public ProcessInstanceMigrationOperationHandler(
       final String indexName,
+      final String listViewIndexName,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
     super(
         indexName,
+        listViewIndexName,
         ValueType.PROCESS_INSTANCE_MIGRATION,
         OperationType.MIGRATE_PROCESS_INSTANCE,
         batchOperationCache);
