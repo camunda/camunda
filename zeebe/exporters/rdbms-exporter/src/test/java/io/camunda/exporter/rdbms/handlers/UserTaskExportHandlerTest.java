@@ -24,13 +24,18 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.DateUtil;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -38,6 +43,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class UserTaskExportHandlerTest {
+
+  private static final Set<UserTaskIntent> TEST_EXPORTABLE_INTENTS =
+      EnumSet.of(
+          UserTaskIntent.CREATING,
+          UserTaskIntent.CREATED,
+          UserTaskIntent.ASSIGNED,
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELED,
+          UserTaskIntent.MIGRATED);
 
   private final ProtocolFactory factory = new ProtocolFactory();
 
@@ -53,10 +68,12 @@ class UserTaskExportHandlerTest {
     handler = new UserTaskExportHandler(userTaskWriter, processCache);
   }
 
+  private static Stream<UserTaskIntent> exportableIntents() {
+    return TEST_EXPORTABLE_INTENTS.stream();
+  }
+
   @ParameterizedTest(name = "Should be able to export record with intent: {0}")
-  @EnumSource(
-      value = UserTaskIntent.class,
-      names = {"CREATING", "CREATED", "ASSIGNED", "UPDATED", "COMPLETED", "CANCELED", "MIGRATED"})
+  @MethodSource("exportableIntents")
   void shouldExportRecord(final UserTaskIntent intent) {
     // given
     final Record<UserTaskRecordValue> record =
@@ -68,12 +85,13 @@ class UserTaskExportHandlerTest {
         .isTrue();
   }
 
+  private static Stream<UserTaskIntent> nonExportableIntents() {
+    return Stream.of(UserTaskIntent.values())
+        .filter(Predicate.not(TEST_EXPORTABLE_INTENTS::contains));
+  }
+
   @ParameterizedTest(name = "Should not export record with unsupported intent: {0}")
-  @EnumSource(
-      value = UserTaskIntent.class,
-      // Exclude the intents that are supported by the handler
-      mode = EnumSource.Mode.EXCLUDE,
-      names = {"CREATING", "CREATED", "ASSIGNED", "UPDATED", "COMPLETED", "CANCELED", "MIGRATED"})
+  @MethodSource("nonExportableIntents")
   void shouldNotExportRecord(final UserTaskIntent intent) {
     // given
     final Record<UserTaskRecordValue> record =
@@ -85,7 +103,7 @@ class UserTaskExportHandlerTest {
         // If this assertion fails, it means that the given intent was recently added to
         // `UserTaskExportHandler#EXPORTABLE_INTENTS`.
         // In that case:
-        // - Add it to the supported intents list in both this test and the one above
+        // - Add it to `UserTaskExportHandlerTest#TEST_EXPORTABLE_INTENTS` set
         // - Review whether it needs custom handling in `UserTaskExportHandler#export`:
         //   - If so, add a dedicated handling in `UserTaskExportHandler#export`
         //   - Add a dedicated test for the new intent in this class
