@@ -21,7 +21,9 @@ import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
-import io.camunda.client.protocol.rest.JobCompletionRequestResult;
+import io.camunda.client.protocol.rest.JobResult;
+import io.camunda.client.protocol.rest.JobResult.TypeEnum;
+import io.camunda.client.protocol.rest.JobResultUserTask;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
@@ -38,6 +40,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 class CompleteJobRestTest extends ClientRestTest {
+
+  public static final JobResult.TypeEnum USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK;
 
   @Test
   void shouldCompleteJobByKey() {
@@ -174,8 +178,10 @@ class CompleteJobRestTest extends ClientRestTest {
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
-    assertThat(request.getResult().getDenied()).isEqualTo(denied);
-    assertThat(request.getResult().getDeniedReason()).isEqualTo(deniedReason);
+    assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
+    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    assertThat(result.getDenied()).isEqualTo(denied);
+    assertThat(result.getDeniedReason()).isEqualTo(deniedReason);
   }
 
   @ParameterizedTest
@@ -190,8 +196,10 @@ class CompleteJobRestTest extends ClientRestTest {
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
-    assertThat(request.getResult().getDenied()).isEqualTo(denied);
-    assertThat(request.getResult().getDeniedReason()).isEqualTo(deniedReason);
+    assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
+    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    assertThat(result.getDenied()).isEqualTo(denied);
+    assertThat(result.getDeniedReason()).isEqualTo(deniedReason);
   }
 
   @ParameterizedTest
@@ -210,8 +218,10 @@ class CompleteJobRestTest extends ClientRestTest {
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
-    assertThat(request.getResult().getDenied()).isEqualTo(denied);
-    assertThat(request.getResult().getDeniedReason()).isEqualTo(deniedReason);
+    assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
+    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    assertThat(result.getDenied()).isEqualTo(denied);
+    assertThat(result.getDeniedReason()).isEqualTo(deniedReason);
   }
 
   @Test
@@ -232,7 +242,9 @@ class CompleteJobRestTest extends ClientRestTest {
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
-    assertThat(request.getResult().getDenied()).isEqualTo(false);
+    assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
+    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    assertThat(result.getDenied()).isEqualTo(false);
 
     final Map<String, String> expectedVariables = new HashMap<>();
     expectedVariables.put("we_can", "still_set_vars");
@@ -250,8 +262,10 @@ class CompleteJobRestTest extends ClientRestTest {
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
-    assertThat(request.getResult().getDenied()).isNull();
-    assertThat(request.getResult().getDeniedReason()).isNull();
+    assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
+    final JobResultUserTask result = (JobResultUserTask) request.getResult();
+    assertThat(result.getDenied()).isNull();
+    assertThat(result.getDeniedReason()).isNull();
   }
 
   @Test
@@ -278,7 +292,8 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobCompletionRequestResult()
+                new JobResultUserTask()
+                    .type(USER_TASK_DISCRIMINATOR)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
@@ -314,7 +329,8 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobCompletionRequestResult()
+                new JobResultUserTask()
+                    .type(USER_TASK_DISCRIMINATOR)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
@@ -351,7 +367,8 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobCompletionRequestResult()
+                new JobResultUserTask()
+                    .type(USER_TASK_DISCRIMINATOR)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee(null)
@@ -389,7 +406,8 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobCompletionRequestResult()
+                new JobResultUserTask()
+                    .type(USER_TASK_DISCRIMINATOR)
                     .denied(false)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
@@ -429,7 +447,8 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobCompletionRequestResult()
+                new JobResultUserTask()
+                    .type(USER_TASK_DISCRIMINATOR)
                     .denied(false)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
@@ -457,7 +476,8 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobCompletionRequestResult()
+                new JobResultUserTask()
+                    .type(USER_TASK_DISCRIMINATOR)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee(null)
