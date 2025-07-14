@@ -76,8 +76,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
       final ThrowingCallable requestCallable, final String name) {
     assertThatThrownBy(requestCallable)
         .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining(
-            "Expected to handle gRPC request " + name + " with tenant identifier ''")
+        .hasMessageContaining("Expected to handle request " + name + " with tenant identifier ''")
         .hasMessageContaining("but no tenant identifier was provided");
   }
 
@@ -221,8 +220,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
     // when/then
     assertThatThrownBy(() -> response.next())
         .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining(
-            "Expected to handle gRPC request ActivateJobs with tenant identifiers")
+        .hasMessageContaining("Expected to handle request ActivateJobs with tenant identifiers")
         .hasMessageContaining("but no tenant identifiers were provided");
   }
 
@@ -273,7 +271,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
         .until(() -> !streamObserver.getErrors().isEmpty());
     assertThat(streamObserver.getErrors().get(0))
         .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining("Expected to handle gRPC request StreamActivatedJobs")
+        .hasMessageContaining("Expected to handle request StreamActivatedJobs")
         .hasMessageContaining("but no tenant identifiers were provided");
   }
 
@@ -299,7 +297,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
         .until(() -> !streamObserver.getErrors().isEmpty());
     assertThat(streamObserver.getErrors().get(0))
         .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining("Expected to handle gRPC request StreamActivatedJobs")
+        .hasMessageContaining("Expected to handle request StreamActivatedJobs")
         .hasMessageContaining("but tenant identifier contains illegal characters");
   }
 
