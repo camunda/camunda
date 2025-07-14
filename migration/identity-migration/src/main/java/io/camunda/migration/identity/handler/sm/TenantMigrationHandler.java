@@ -23,7 +23,6 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TenantMigrationHandler extends MigrationHandler<Tenant> {
@@ -59,10 +58,7 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
   protected void process(final List<Tenant> batch) {
     final List<Tenant> tenants;
     try {
-      tenants =
-          managementIdentityClient.fetchTenants().stream()
-              .filter(tenant -> !Objects.equals(tenant.tenantId(), DEFAULT_TENANT_IDENTIFIER))
-              .toList();
+      tenants = managementIdentityClient.fetchTenants();
     } catch (final Exception e) {
       if (!isNotImplementedError(e)) {
         throw new MigrationException("Failed to fetch tenants", e);
@@ -74,19 +70,24 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
     tenants.forEach(
         tenant -> {
-          final var tenantId = normalizeID(tenant.tenantId());
-          try {
-            tenantService.createTenant(new TenantDTO(null, tenantId, tenant.name(), null)).join();
-            createdTenantCount.incrementAndGet();
-            logger.debug(
-                "Tenant with ID '{}' and name '{}' created successfully.", tenantId, tenant.name());
-          } catch (final Exception e) {
-            if (!isConflictError(e)) {
-              throw new MigrationException(
-                  "Failed to migrate tenant with ID: " + tenant.tenantId(), e);
+          var tenantId = tenant.tenantId();
+          if (!tenant.tenantId().equals(DEFAULT_TENANT_IDENTIFIER)) {
+            tenantId = normalizeID(tenant.tenantId());
+            try {
+              tenantService.createTenant(new TenantDTO(null, tenantId, tenant.name(), null)).join();
+              createdTenantCount.incrementAndGet();
+              logger.debug(
+                  "Tenant with ID '{}' and name '{}' created successfully.",
+                  tenantId,
+                  tenant.name());
+            } catch (final Exception e) {
+              if (!isConflictError(e)) {
+                throw new MigrationException(
+                    "Failed to migrate tenant with ID: " + tenant.tenantId(), e);
+              }
+              logger.debug(
+                  "Tenant with ID '{}' already exists, skipping creation.", tenant.tenantId());
             }
-            logger.debug(
-                "Tenant with ID '{}' already exists, skipping creation.", tenant.tenantId());
           }
           assignUsersToTenant(tenant.tenantId(), tenantId);
           assignGroupsToTenant(tenant.tenantId(), tenantId);

@@ -69,22 +69,31 @@ public class TenantMigrationHandlerTest {
         .thenReturn(CompletableFuture.completedFuture(null));
     when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
-    when(managementIdentityClient.fetchTenantUsers(anyString()))
+    when(managementIdentityClient.fetchTenantUsers("tenant1"))
         .thenReturn(
             List.of(
                 new User("id", "username1", "name", "email"),
-                new User("id2", "username2", "name2", "email2")))
+                new User("id2", "username2", "name2", "email2")));
+    when(managementIdentityClient.fetchTenantUsers("tenant2"))
         .thenReturn(
             List.of(
                 new User("id3", "username3", "name3", "email3"),
                 new User("id4", "username4", "name4", "email4")));
+    when(managementIdentityClient.fetchTenantUsers("<default>"))
+        .thenReturn(List.of(new User("id4", "username4", "name4", "email4")));
 
-    when(managementIdentityClient.fetchTenantGroups(anyString()))
-        .thenReturn(List.of(new Group("group1", "Group 1")))
+    when(managementIdentityClient.fetchTenantGroups("tenant1"))
+        .thenReturn(List.of(new Group("group1", "Group 1")));
+    when(managementIdentityClient.fetchTenantGroups("tenant2"))
         .thenReturn(List.of(new Group("group2", "Group 2")));
-    when(managementIdentityClient.fetchTenantClients(anyString()))
-        .thenReturn(List.of(new Client("client1", "Client 1"), new Client("client2", "Client 2")))
+    when(managementIdentityClient.fetchTenantGroups("<default>"))
+        .thenReturn(List.of(new Group("group3", "Group 3")));
+    when(managementIdentityClient.fetchTenantClients("tenant1"))
+        .thenReturn(List.of(new Client("client1", "Client 1"), new Client("client2", "Client 2")));
+    when(managementIdentityClient.fetchTenantClients("tenant2"))
         .thenReturn(List.of(new Client("client3", "Client 3")));
+    when(managementIdentityClient.fetchTenantClients("<default>"))
+        .thenReturn(List.of(new Client("client4", "Client 4")));
 
     // when
     migrationHandler.migrate();
@@ -100,7 +109,7 @@ public class TenantMigrationHandlerTest {
     assertThat(capturedTenants.getLast().name()).isEqualTo("Tenant 2");
 
     final var memberCapture = ArgumentCaptor.forClass(TenantMemberRequest.class);
-    verify(tenantServices, times(9)).addMember(memberCapture.capture());
+    verify(tenantServices, times(12)).addMember(memberCapture.capture());
     assertThat(memberCapture.getAllValues())
         .extracting(
             TenantMemberRequest::tenantId,
@@ -121,7 +130,13 @@ public class TenantMigrationHandlerTest {
             // Groups for tenant2
             tuple("tenant2", "group_2", EntityType.GROUP),
             // Clients for tenant2
-            tuple("tenant2", "client_3", EntityType.CLIENT));
+            tuple("tenant2", "client_3", EntityType.CLIENT),
+            // Users for default tenant
+            tuple("<default>", "username4", EntityType.USER),
+            // Groups for default tenant
+            tuple("<default>", "group_3", EntityType.GROUP),
+            // Clients for default tenant
+            tuple("<default>", "client_4", EntityType.CLIENT));
   }
 
   @Test
