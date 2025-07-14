@@ -1934,10 +1934,10 @@
     loupe "^3.1.4"
     tinyrainbow "^2.0.0"
 
-"@vzeta/camunda-api-zod-schemas@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@vzeta/camunda-api-zod-schemas/-/camunda-api-zod-schemas-1.1.0.tgz#9bfb059098c3b48ddb0ccc4db357f07448a1b6d7"
-  integrity sha512-O4hv4YxcROvMuvG6pGl38q/v0bvd47mTKPG9QXQP8mnAkByzLKe8iAsPOv3u28SlxT7kncUkNmX45FeOtVsuPA==
+"@vzeta/camunda-api-zod-schemas@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@vzeta/camunda-api-zod-schemas/-/camunda-api-zod-schemas-2.0.0.tgz#d88fb80d198fde9f0930c4f66f79bbffe072cfb7"
+  integrity sha512-h2r7w2BRKVv4DwGw8cDlHshAZL2usykskw3xMYT/zJRn4fh8bU8VzzVwqEQgBUeO8I/HBzHZjsCXk30bAhcjRg==
 
 "@vzeta/rollup-plugin-sbom@2.0.0":
   version "2.0.0"
@@ -6691,7 +6691,7 @@ yoctocolors-cjs@^2.1.2:
   resolved "https://registry.yarnpkg.com/yoctocolors-cjs/-/yoctocolors-cjs-2.1.2.tgz#f4b905a840a37506813a7acaa28febe97767a242"
   integrity sha512-cYVsTjKl8b+FrnidjibDWskAv7UKOfcwaVZdp/it9n1s9fU3IkgDbhdIRKCW4JDsAlECJY0ytoVPT3sK6kideA==
 
-zod@3.25.67:
-  version "3.25.67"
-  resolved "https://registry.yarnpkg.com/zod/-/zod-3.25.67.tgz#62987e4078e2ab0f63b491ef0c4f33df24236da8"
-  integrity sha512-idA2YXwpCdqUSKRCACDE6ItZD9TZzy3OZMtpfLoh6oPR47lipysRrJfjzMqFxQ3uJuUPyUeWe1r9vLH33xO/Qw==
+zod@4.0.5:
+  version "4.0.5"
+  resolved "https://registry.yarnpkg.com/zod/-/zod-4.0.5.tgz#b47825f318e7884d94bcd6f5385a1de805ccfb1c"
+  integrity sha512-/5UuuRPStvHXu7RS+gmvRf4NXrNxpSllGwDnCBcJZtQsKrviYXm54yDGV2KYNLT5kq0lHGcl7lqWJLgSaG+tgA==

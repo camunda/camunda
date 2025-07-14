@@ -50,8 +50,17 @@ function hasRequestedVariables(
   req: QueryVariablesByUserTaskRequestBody,
   expectedVariableNames: string[],
 ) {
-  const requestedVariables = req.filter?.name?.$in ?? [];
-  const names = requestedVariables.map((variable) => variable);
+  const nameFilter = req.filter?.name;
+
+  if (nameFilter === undefined) {
+    return false;
+  }
+
+  if (typeof nameFilter === 'string') {
+    return arraysContainSameValues(expectedVariableNames, [nameFilter]);
+  }
+
+  const names = nameFilter.$in?.map((variable) => variable) ?? [];
   return arraysContainSameValues(expectedVariableNames, names);
 }
 

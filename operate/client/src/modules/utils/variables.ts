@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {applyOperation} from 'modules/api/processInstances/operations';
 import type {InfiniteData} from '@tanstack/react-query';
-import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
 
 const getScopeId = () => {
   const {selection} = flowNodeSelectionStore.state;
