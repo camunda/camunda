@@ -31,4 +31,13 @@ public enum JobResultType {
   JobResultType(final String type) {
     this.type = type;
   }
+
+  public static JobResultType from(final String resultType) {
+    for (final JobResultType type : values()) {
+      if (type.type.equals(resultType)) {
+        return type;
+      }
+    }
+    throw new IllegalArgumentException("Unknown job result type: " + resultType);
+  }
 }
