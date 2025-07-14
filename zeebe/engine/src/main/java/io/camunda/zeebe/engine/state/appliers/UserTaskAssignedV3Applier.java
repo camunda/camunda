@@ -52,6 +52,6 @@ public final class UserTaskAssignedV3Applier
       }
     }
 
-    usageMetricState.getActiveBucket().recordTU(value.getTenantId(), value.getAssignee());
+    usageMetricState.recordTUMetric(value.getTenantId(), value.getAssignee());
   }
 }
