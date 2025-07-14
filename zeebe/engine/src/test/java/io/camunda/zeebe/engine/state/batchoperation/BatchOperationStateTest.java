@@ -221,7 +221,7 @@ public class BatchOperationStateTest {
   }
 
   @Test
-  void failedBatchShouldNotBePending() {
+  void failedBatchShouldBeRemoved() {
     // given
     final var batchOperationKey = 1L;
     final var roleRecord =
@@ -234,11 +234,7 @@ public class BatchOperationStateTest {
     state.fail(batchOperationKey);
 
     // then
-    assertThat(state.getNextPendingBatchOperation()).isEmpty();
-
-    // and should have status STARTED
-    final var persistedBatchOperation = state.get(batchOperationKey).get();
-    assertThat(persistedBatchOperation.getStatus()).isEqualTo(BatchOperationStatus.FAILED);
+    assertThat(state.get(batchOperationKey)).isEmpty();
   }
 
   @Test
@@ -486,11 +482,13 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, batchRecord);
 
     // when
-    state.fail(batchOperationKey);
+    // mark the batch as suspended
+    state.suspend(batchOperationKey);
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey);
     assertThat(persistedBatchOperation).isNotEmpty();
+    // should not be able to suspend again
     assertThat(persistedBatchOperation.get().canSuspend()).isFalse();
   }
 
@@ -584,7 +582,6 @@ public class BatchOperationStateTest {
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, batchRecord);
-    state.fail(batchOperationKey);
 
     // when
     final var persistedBatchOperation = state.get(batchOperationKey).get();
