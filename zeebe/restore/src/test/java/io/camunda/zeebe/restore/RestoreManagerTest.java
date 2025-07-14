@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.restore;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -34,11 +33,8 @@ final class RestoreManagerTest {
     Files.createDirectory(dir.resolve("other-data"));
 
     // then
-    assertThat(restoreManager.restore(1L, false))
-        .failsWithin(Duration.ofSeconds(5))
-        .withThrowableThat()
-        .withRootCauseInstanceOf(DirectoryNotEmptyException.class)
-        .isNotNull();
+    assertThatThrownBy(() -> restoreManager.restore(1L, false))
+        .isInstanceOf(DirectoryNotEmptyException.class);
   }
 
   @Test
@@ -54,10 +50,7 @@ final class RestoreManagerTest {
     Files.createDirectory(dir.resolve("lost+found"));
 
     // then
-    assertThat(restoreManager.restore(1L, false))
-        .failsWithin(Duration.ofSeconds(5))
-        .withThrowableThat()
-        .withRootCauseInstanceOf(BackupNotFoundException.class)
-        .isNotNull();
+    assertThatThrownBy(() -> restoreManager.restore(1L, false))
+        .hasRootCauseInstanceOf(BackupNotFoundException.class);
   }
 }
