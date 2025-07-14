@@ -9,6 +9,7 @@ package io.camunda.application.commons.console.ping;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.Profile;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
 import io.camunda.service.ManagementServices;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -123,6 +125,18 @@ public class PingConsoleRunner implements ApplicationRunner {
     }
   }
 
+  private List<String> getActiveProfiles() {
+    return Arrays.stream(applicationContext.getEnvironment().getActiveProfiles())
+        .filter(
+            profile ->
+                profile.equals(Profile.BROKER.getId())
+                    || profile.equals(Profile.GATEWAY.getId())
+                    || profile.equals(Profile.OPERATE.getId())
+                    || profile.equals(Profile.TASKLIST.getId())
+                    || profile.equals(Profile.STANDALONE.getId()))
+        .toList();
+  }
+
   public ScheduledThreadPoolExecutor createTaskExecutor() {
     final var threadFactory =
         Thread.ofPlatform()
@@ -149,7 +163,7 @@ public class PingConsoleRunner implements ApplicationRunner {
             pingConfiguration.clusterId(),
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
-            Arrays.stream(applicationContext.getEnvironment().getActiveProfiles()).toList(),
+            getActiveProfiles(),
             pingConfiguration.properties());
     try {
       return Either.right(objectMapper.writeValueAsString(payload));

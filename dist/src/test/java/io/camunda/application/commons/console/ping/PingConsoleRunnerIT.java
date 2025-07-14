@@ -82,7 +82,8 @@ public class PingConsoleRunnerIT {
     when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
     when(applicationContext.getEnvironment()).thenReturn(environment);
-    when(environment.getActiveProfiles()).thenReturn(new String[] {"gateway", "broker"});
+    when(environment.getActiveProfiles())
+        .thenReturn(new String[] {"gateway", "broker", "identity"});
 
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
