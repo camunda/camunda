@@ -130,14 +130,13 @@ public final class BatchOperationMultiPartitionTest {
 
     for (int i = 2; i <= PARTITION_COUNT; i++) {
       assertThat(
-              RecordingExporter.batchOperationPartitionLifecycleRecords()
+              RecordingExporter.batchOperationLifecycleRecords()
                   .withBatchOperationKey(batchOperationKey)
                   .withPartitionId(i)
-                  .limit(
-                      record -> record.getIntent().equals(BatchOperationIntent.PARTITION_COMPLETED))
+                  .limit(record -> record.getIntent().equals(BatchOperationIntent.COMPLETED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .contains(BatchOperationIntent.PARTITION_COMPLETED);
+          .contains(BatchOperationIntent.COMPLETED);
       assertThat(engine.getProcessingState(i).getBatchOperationState().get(batchOperationKey))
           .isEmpty();
     }
@@ -197,14 +196,13 @@ public final class BatchOperationMultiPartitionTest {
     // partitions 1 and 2 are completed
     for (int i = 1; i < PARTITION_COUNT; i++) {
       assertThat(
-              RecordingExporter.batchOperationPartitionLifecycleRecords()
+              RecordingExporter.batchOperationLifecycleRecords()
                   .withBatchOperationKey(batchOperationKey)
                   .withPartitionId(i)
-                  .limit(
-                      record -> record.getIntent().equals(BatchOperationIntent.PARTITION_COMPLETED))
+                  .limit(record -> record.getIntent().equals(BatchOperationIntent.COMPLETED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .contains(BatchOperationIntent.PARTITION_COMPLETED);
+          .contains(BatchOperationIntent.COMPLETED);
       assertThat(engine.getProcessingState(i).getBatchOperationState().get(batchOperationKey))
           .isEmpty();
     }
@@ -214,10 +212,10 @@ public final class BatchOperationMultiPartitionTest {
             RecordingExporter.batchOperationPartitionLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .withPartitionId(3)
-                .limit(record -> record.getIntent().equals(BatchOperationIntent.PARTITION_FAILED))
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.FAILED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .contains(BatchOperationIntent.PARTITION_FAILED);
+        .contains(BatchOperationIntent.FAILED);
     assertThat(engine.getProcessingState(3).getBatchOperationState().get(batchOperationKey))
         .isEmpty();
   }

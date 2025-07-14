@@ -499,7 +499,7 @@ public final class BatchOperationClient {
                       .requestStreamId(new Random().nextInt()));
 
       return RecordingExporter.batchOperationPartitionLifecycleRecords()
-          .withIntent(BatchOperationIntent.PARTITION_FAILED)
+          .withIntent(BatchOperationIntent.FAILED)
           .withSourceRecordPosition(position)
           .withPartitionId(partition)
           .getFirst();
