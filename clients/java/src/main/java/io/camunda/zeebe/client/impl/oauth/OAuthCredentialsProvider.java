@@ -45,8 +45,9 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Base64;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -173,7 +174,6 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       throw new RuntimeException("Failed to create client assertion", e);
     }
 
-    final Date now = new Date();
     final String x5t = generateX5tThumbprint(certificate);
 
     final Map<String, Object> header = new HashMap<>();
@@ -181,14 +181,15 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     header.put("typ", "JWT");
     header.put("x5t", x5t);
 
+    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
     return JWT.create()
         .withHeader(header)
         .withIssuer(builder.getClientId())
         .withSubject(builder.getClientId())
         .withAudience(builder.getAuthorizationServer().toString())
-        .withIssuedAt(now)
-        .withNotBefore(now)
-        .withExpiresAt(new Date(now.getTime() + 5 * 60 * 1000))
+        .withIssuedAt(now.toInstant())
+        .withNotBefore(now.toInstant())
+        .withExpiresAt(now.plusMinutes(5L).toInstant())
         .withJWTId(randomUUID().toString())
         .sign(algorithm);
   }
