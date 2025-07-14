@@ -128,7 +128,7 @@ public class CompactRecordLogger {
           entry("EVENT", "EVNT"),
           entry("DECISION_REQUIREMENTS", "DRG"),
           entry("EVALUATION", "EVAL"),
-          entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
+          entry("SIGNAL_SUBSCRIPTION", "SIG_SUB"),
           entry("SIGNAL", "SIG"),
           entry("COMMAND_DISTRIBUTION", "DSTR"),
           entry("USER_TASK", "UT"),
