@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,7 +31,8 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private static final StringValue AUTHORIZATION_KEY_KEY = new StringValue("authorizationKey");
   private static final StringValue OWNER_ID_KEY = new StringValue("ownerId");
   private static final StringValue OWNER_TYPE_KEY = new StringValue("ownerType");
-  private static final StringValue RESOURCE_ID_KEY = new StringValue("resourceId");
+  private static final StringValue RESOURCE_ID_FORMAT_KEY = new StringValue("resourceIdFormat");
+  private static final StringValue RESOURCE_ID_VALUE_KEY = new StringValue("resourceId");
   private static final StringValue RESOURCE_TYPE_KEY = new StringValue("resourceType");
   private static final StringValue PERMISSION_TYPES_KEY = new StringValue("permissionTypes");
 
@@ -39,7 +41,10 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>(
           OWNER_TYPE_KEY, AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
-  private final StringProperty resourceIdProp = new StringProperty(RESOURCE_ID_KEY, "");
+  private final EnumProperty<ResourceIdFormat> resourceIdFormatProp =
+      new EnumProperty<>(
+          RESOURCE_ID_FORMAT_KEY, ResourceIdFormat.class, ResourceIdFormat.UNSPECIFIED);
+  private final StringProperty resourceIdValueProp = new StringProperty(RESOURCE_ID_VALUE_KEY, "");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>(
           RESOURCE_TYPE_KEY,
@@ -49,11 +54,12 @@ public final class AuthorizationRecord extends UnifiedRecordValue
       new ArrayProperty<>(PERMISSION_TYPES_KEY, StringValue::new);
 
   public AuthorizationRecord() {
-    super(6);
+    super(7);
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
-        .declareProperty(resourceIdProp)
+        .declareProperty(resourceIdFormatProp)
+        .declareProperty(resourceIdValueProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionTypesProp);
   }
@@ -84,12 +90,22 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   }
 
   @Override
+  public ResourceIdFormat getResourceIdFormat() {
+    return resourceIdFormatProp.getValue();
+  }
+
+  public AuthorizationRecord setResourceIdFormat(final ResourceIdFormat resourceIdFormat) {
+    resourceIdFormatProp.setValue(resourceIdFormat);
+    return this;
+  }
+
+  @Override
   public String getResourceId() {
-    return bufferAsString(resourceIdProp.getValue());
+    return bufferAsString(resourceIdValueProp.getValue());
   }
 
   public AuthorizationRecord setResourceId(final String resourceId) {
-    resourceIdProp.setValue(resourceId);
+    resourceIdValueProp.setValue(resourceId);
     return this;
   }
 
