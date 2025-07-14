@@ -246,6 +246,17 @@
         AND i.ERROR_MESSAGE_HASH IN <foreach collection="filter.incidentErrorHashCodes" item="value" open="(" separator=", " close=")">#{value}</foreach>
       )
     </if>
+      <if test="filter.batchOperationIdOperations != null and !filter.batchOperationIdOperations.isEmpty()">
+        AND EXISTS (
+        SELECT 1
+        FROM ${prefix}BATCH_OPERATION_ITEM boi
+        WHERE boi.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
+        <foreach collection="filter.batchOperationIdOperations" item="operation">
+          AND boi.BATCH_OPERATION_KEY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+        )
+      </if>
     </trim>
   </sql>
 
