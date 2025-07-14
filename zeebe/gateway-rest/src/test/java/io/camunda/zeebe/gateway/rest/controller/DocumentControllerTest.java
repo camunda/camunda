@@ -326,7 +326,8 @@ public class DocumentControllerTest extends RestControllerTest {
 
     when(documentServices.getDocumentContent("documentId", null, null))
         .thenReturn(
-            new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf"));
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), "application/pdf")));
 
     // when/then
     webClient
@@ -361,7 +362,9 @@ public class DocumentControllerTest extends RestControllerTest {
     final var content = new byte[] {1, 2, 3};
 
     when(documentServices.getDocumentContent("documentId", null, null))
-        .thenReturn(new DocumentContentResponse(new ByteArrayInputStream(content), null));
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new DocumentContentResponse(new ByteArrayInputStream(content), null)));
 
     // when/then
     webClient

@@ -107,7 +107,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         .thenApply((ignoredRes) -> results);
   }
 
-  public DocumentContentResponse getDocumentContent(
+  public CompletableFuture<DocumentContentResponse> getDocumentContent(
       final String documentId, final String storeId, final String contentHash) {
 
     return getDocumentStore(storeId)
@@ -130,8 +130,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         .thenApply(
             documentContent ->
                 new DocumentContentResponse(
-                    documentContent.inputStream(), documentContent.contentType()))
-        .join();
+                    documentContent.inputStream(), documentContent.contentType()));
   }
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
