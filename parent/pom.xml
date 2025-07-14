@@ -192,7 +192,7 @@
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>3.0.5</version.mybatis-spring>
     <version.mybatis>3.5.19</version.mybatis>
-    <version.mybatis-spring-boot-starter>3.0.4</version.mybatis-spring-boot-starter>
+    <version.mybatis-spring-boot-starter>3.0.5</version.mybatis-spring-boot-starter>
     <version.javassist>3.30.2-GA</version.javassist>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
