@@ -55,7 +55,7 @@
     "event-source-polyfill": "1.0.31",
     "license-checker": "25.0.1",
     "prettier": "3.6.2",
-    "rollup": "4.44.1",
+    "rollup": "4.45.0",
     "rollup-plugin-license": "^3.5.3",
     "sass": "1.89.2",
     "typescript": "5.8.2",
