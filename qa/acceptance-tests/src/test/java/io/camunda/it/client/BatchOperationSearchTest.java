@@ -24,6 +24,7 @@ import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -306,6 +307,23 @@ public class BatchOperationSearchTest {
     // then
     assertThat(page).isNotNull();
     assertItems(page, ACTIVE_PROCESS_INSTANCES_2);
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByBatchOperationKey() {
+    // when
+    final var page =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.batchOperationId(batchOperationKey1))
+            .send()
+            .join();
+
+    // then
+    assertThat(page).isNotNull();
+    assertThat(page.items()).hasSize(ACTIVE_PROCESS_INSTANCES_1.size());
+    assertThat(page.items().stream().map(ProcessInstance::getProcessInstanceKey))
+        .containsExactlyInAnyOrderElementsOf(ACTIVE_PROCESS_INSTANCES_1);
   }
 
   private static void assertCancelBatchOperation(final BatchOperation batch) {
