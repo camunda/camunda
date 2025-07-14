@@ -30,8 +30,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,36 +68,22 @@ public class PartitionRestoreService {
    * @param backupId id of the backup to restore from
    * @return the descriptor of the backup it restored
    */
-  public CompletableFuture<BackupDescriptor> restore(
-      final long backupId, final BackupValidator validator) {
-    try {
-      if (!FileUtil.isEmpty(rootDirectory)) {
-        LOG.error(
-            "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
-            rootDirectory);
-        return CompletableFuture.failedFuture(
-            new DirectoryNotEmptyException(rootDirectory.toString()));
-      }
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(e);
+  public BackupDescriptor restore(final long backupId, final BackupValidator validator)
+      throws IOException {
+    if (!FileUtil.isEmpty(rootDirectory)) {
+      LOG.error(
+          "Partition's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
+          rootDirectory);
+      throw new DirectoryNotEmptyException(rootDirectory.toString());
     }
 
     final var tempTargetDirectory = rootDirectory.resolve("restoring-" + partitionId);
-    try {
-      FileUtil.ensureDirectoryExists(tempTargetDirectory);
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(e);
-    }
+    FileUtil.ensureDirectoryExists(tempTargetDirectory);
 
-    return download(backupId, tempTargetDirectory, validator)
-        .thenApply(this::moveFilesToDataDirectory)
-        .thenApply(
-            backup -> {
-              resetLogToCheckpointPosition(backup.descriptor().checkpointPosition(), rootDirectory);
-              return backup.descriptor();
-            })
-        .toCompletableFuture();
-
+    final var backup = download(backupId, tempTargetDirectory, validator);
+    moveFilesToDataDirectory(backup);
+    resetLogToCheckpointPosition(backup.descriptor().checkpointPosition(), rootDirectory);
+    return backup.descriptor();
     // TODO: As an additional consistency check:
     // - Validate journal.firstIndex <= snapshotIndex + 1
     // - Verify journal.lastEntry.asqn == checkpointPosition
@@ -213,31 +197,28 @@ public class PartitionRestoreService {
     }
   }
 
-  private CompletionStage<Backup> download(
+  private Backup download(
       final long checkpointId, final Path tempRestoringDirectory, final BackupValidator validator) {
-    return findValidBackup(checkpointId, validator)
-        .thenCompose(
-            backup -> {
-              LOG.info("Downloading backup {} to {}", backup, tempRestoringDirectory);
-              return backupStore.restore(backup, tempRestoringDirectory);
-            });
+    final var validBackup = findValidBackup(checkpointId, validator);
+    return backupStore.restore(validBackup, tempRestoringDirectory).join();
   }
 
-  private CompletionStage<BackupIdentifier> findValidBackup(
+  private BackupIdentifier findValidBackup(
       final long checkpointId, final BackupValidator validator) {
     LOG.info("Searching for a completed backup with id {}", checkpointId);
-    return backupStore
-        .list(
-            new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
-        .thenApply(
-            statuses ->
-                statuses.stream()
-                    .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
-                    .findAny()
-                    .orElseThrow(() -> new BackupNotFoundException(checkpointId)))
-        .thenApply(validator::validateStatus)
-        .thenApply(BackupStatus::id);
+    final var statuses =
+        backupStore
+            .list(
+                new BackupIdentifierWildcardImpl(
+                    Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId)))
+            .join();
+    final var validStatus =
+        statuses.stream()
+            .filter(status -> status.statusCode() == BackupStatusCode.COMPLETED)
+            .findAny()
+            .orElseThrow(() -> new BackupNotFoundException(checkpointId));
+    validator.validateStatus(validStatus);
+    return validStatus.id();
   }
 
   @FunctionalInterface

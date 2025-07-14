@@ -124,9 +124,8 @@ public class RestoreManager {
   }
 
   private void restorePartition(
-      final InstrumentedRaftPartition partition,
-      final long backupId,
-      final boolean validateConfig) {
+      final InstrumentedRaftPartition partition, final long backupId, final boolean validateConfig)
+      throws IOException {
     final BackupValidator validator;
     final RaftPartition raftPartition = partition.partition();
 
@@ -146,7 +145,7 @@ public class RestoreManager {
             new ChecksumProviderRocksDBImpl(),
             partition.registry());
     try {
-      final var backup = restoreService.restore(backupId, validator).join();
+      final var backup = restoreService.restore(backupId, validator);
       LOG.info(
           "Successfully restored partition {} from backup {}. Backup description: {}",
           raftPartition.id().id(),
