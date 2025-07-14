@@ -32,8 +32,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 @Profile({
   "!"
-      + OperateProfileService.SSO_AUTH_PROFILE
-      + " & !"
       + OperateProfileService.IDENTITY_AUTH_PROFILE
       + " & !"
       + OperateProfileService.CONSOLIDATED_AUTH

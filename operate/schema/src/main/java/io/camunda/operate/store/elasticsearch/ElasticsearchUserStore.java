@@ -38,8 +38,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile(
     "!"
-        + OperateProfileService.SSO_AUTH_PROFILE
-        + " & !"
         + OperateProfileService.IDENTITY_AUTH_PROFILE)
 public class ElasticsearchUserStore implements UserStore {
 

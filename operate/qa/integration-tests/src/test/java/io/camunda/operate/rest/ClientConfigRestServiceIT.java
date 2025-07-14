@@ -59,7 +59,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
   public void testGetClientConfig() throws Exception {
     // given
     operateProperties.setTasklistUrl("https://tasklist.camunda.io/tl");
-    given(operateProfileService.currentProfileCanLogout()).willReturn(true);
     // when
     final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
@@ -92,7 +91,6 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
   public void testGetClientConfigForCantLogout() throws Exception {
     // given
     operateProperties.setTasklistUrl(null);
-    given(operateProfileService.currentProfileCanLogout()).willReturn(false);
     // when
     final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =

@@ -44,7 +44,6 @@ public class ClientConfig {
     mixpanelToken = operateProperties.getCloud().getMixpanelToken();
     contextPath = context.getContextPath();
     baseName = context.getContextPath() + "/operate";
-    canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
     tasklistUrl = operateProperties.getTasklistUrl();
     resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();
