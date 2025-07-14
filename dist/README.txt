@@ -28,6 +28,13 @@ zeebe:
 Local Development only
 ==========
 
+# How to disable security checks
+
+By default, authentication and authorizations are enabled in the Camunda distribution.
+To disable these security checks for local development, you can use the `insecure` profile.
+
+So e.g. `rdbmsH2,insecure`
+
 # With Elasticsearch (Camunda Exporter)
 
 ## Prerequisites:
@@ -107,4 +114,5 @@ docker-compose up -d oracle
 ## Start Camunda:
 
 Run camunda with `rdbmsOracle` profile
+
 
