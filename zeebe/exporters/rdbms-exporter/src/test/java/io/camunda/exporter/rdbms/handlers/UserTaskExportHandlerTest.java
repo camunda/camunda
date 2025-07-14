@@ -53,7 +53,7 @@ class UserTaskExportHandlerTest {
     handler = new UserTaskExportHandler(userTaskWriter, processCache);
   }
 
-  @ParameterizedTest(name = "should be able to export record with intent: {0}")
+  @ParameterizedTest(name = "Should be able to export record with intent: {0}")
   @EnumSource(
       value = UserTaskIntent.class,
       names = {"CREATING", "CREATED", "ASSIGNED", "UPDATED", "COMPLETED", "CANCELED", "MIGRATED"})
@@ -68,7 +68,7 @@ class UserTaskExportHandlerTest {
         .isTrue();
   }
 
-  @ParameterizedTest(name = "should not export record with unsupported intent: {0}")
+  @ParameterizedTest(name = "Should not export record with unsupported intent: {0}")
   @EnumSource(
       value = UserTaskIntent.class,
       // Exclude the intents that are supported by the handler
@@ -127,12 +127,15 @@ class UserTaskExportHandlerTest {
     verifyNoMoreInteractions(userTaskWriter);
   }
 
-  @Test
-  @DisplayName("Should handle user task record with CREATED intent")
-  void shouldHandleCreatedUserTaskRecord() {
+  @ParameterizedTest(
+      name = "Should handle user task record with {0} intent that maps to CREATED model state")
+  @EnumSource(
+      value = UserTaskIntent.class,
+      names = {"CREATED", "ASSIGNED", "UPDATED"})
+  void shouldHandleRecordMappedToCreatedState(final UserTaskIntent intent) {
     // given
     final Record<UserTaskRecordValue> record =
-        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.CREATED));
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
     final var recordValue = record.getValue();
     when(processCache.get(recordValue.getProcessDefinitionKey())).thenReturn(Optional.empty());
 
@@ -145,29 +148,31 @@ class UserTaskExportHandlerTest {
         .satisfies(
             model -> {
               assertThat(model.state())
-                  .as("State should be CREATED for record with CREATED intent")
+                  .as("State should be CREATED for record with %s intent", intent)
                   .isEqualTo(UserTaskState.CREATED);
               assertThat(model.assignee())
                   .as("Assignee should be same as in the record")
                   .isNotNull()
                   .isEqualTo(recordValue.getAssignee());
               assertThat(model.completionDate())
-                  .as("Completion date should be null for CREATED intent")
+                  .as("Completion date should be null for %s intent", intent)
                   .isNull();
-
               assertUserTaskModelFieldsEqualToRecord(model, record);
             });
 
-    // ensure no other methods are called
     verifyNoMoreInteractions(userTaskWriter);
   }
 
-  @Test
-  @DisplayName("Should handle user task record with ASSIGNED intent")
-  void shouldHandleAssignedUserTaskRecord() {
+  @ParameterizedTest(
+      name = "Should handle user task record with {0} intent that maps to {0} model state")
+  @EnumSource(
+      value = UserTaskIntent.class,
+      names = {"COMPLETED", "CANCELED"})
+  void shouldHandleFinalizedUserTaskRecord(final UserTaskIntent intent) {
     // given
+    final UserTaskState expectedModelState = UserTaskState.valueOf(intent.name());
     final Record<UserTaskRecordValue> record =
-        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.ASSIGNED));
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
     final var recordValue = record.getValue();
     when(processCache.get(recordValue.getProcessDefinitionKey())).thenReturn(Optional.empty());
 
@@ -180,126 +185,19 @@ class UserTaskExportHandlerTest {
         .satisfies(
             model -> {
               assertThat(model.state())
-                  .as("State should be CREATED for record with ASSIGNED intent")
-                  .isEqualTo(UserTaskState.CREATED);
+                  .as("State should be %s for record with %s intent", expectedModelState, intent)
+                  .isEqualTo(expectedModelState);
               assertThat(model.assignee())
                   .as("Assignee should be same as in the record")
-                  .isNotNull()
                   .isEqualTo(recordValue.getAssignee());
               assertThat(model.completionDate())
-                  .as("Completion date should be null for ASSIGNED intent")
-                  .isNull();
-              assertUserTaskModelFieldsEqualToRecord(model, record);
-            });
-
-    // ensure no other methods are called
-    verifyNoMoreInteractions(userTaskWriter);
-  }
-
-  @Test
-  @DisplayName("Should handle user task record with UPDATED intent")
-  void shouldHandleUpdatedUserTaskRecord() {
-    // given
-    final Record<UserTaskRecordValue> record =
-        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.UPDATED));
-    final var recordValue = record.getValue();
-    when(processCache.get(recordValue.getProcessDefinitionKey())).thenReturn(Optional.empty());
-
-    // when
-    handler.export(record);
-
-    // then
-    verify(userTaskWriter).update(taskDbModelCaptor.capture());
-    assertThat(taskDbModelCaptor.getValue())
-        .satisfies(
-            model -> {
-              assertThat(model.state())
-                  .as("State should be CREATED for record with UPDATED intent")
-                  .isEqualTo(UserTaskState.CREATED);
-              assertThat(model.assignee())
-                  .as("Assignee should be same as in the record")
-                  .isNotNull()
-                  .isEqualTo(recordValue.getAssignee());
-              assertThat(model.completionDate())
-                  .as("Completion date should be null for UPDATED intent")
-                  .isNull();
-
-              assertUserTaskModelFieldsEqualToRecord(model, record);
-            });
-
-    // ensure no other methods are called
-    verifyNoMoreInteractions(userTaskWriter);
-  }
-
-  @Test
-  @DisplayName("Should handle user task record with COMPLETED intent")
-  void shouldHandleCompletedUserTaskRecord() {
-    // given
-    final Record<UserTaskRecordValue> record =
-        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.COMPLETED));
-    final var recordValue = record.getValue();
-    when(processCache.get(recordValue.getProcessDefinitionKey())).thenReturn(Optional.empty());
-
-    // when
-    handler.export(record);
-
-    // then
-    verify(userTaskWriter).update(taskDbModelCaptor.capture());
-    assertThat(taskDbModelCaptor.getValue())
-        .satisfies(
-            model -> {
-              assertThat(model.state())
-                  .as("State should be COMPLETED for record with COMPLETED intent")
-                  .isEqualTo(UserTaskState.COMPLETED);
-              assertThat(model.assignee())
-                  .as("Assignee should be same as in the record")
-                  .isNotNull()
-                  .isEqualTo(recordValue.getAssignee());
-              assertThat(model.completionDate())
-                  .as("Completion date should be not null for COMPLETED intent")
+                  .as("Completion date should be set for %s intent", intent)
                   .isNotNull()
                   .isEqualTo(DateUtil.toOffsetDateTime(record.getTimestamp()));
 
               assertUserTaskModelFieldsEqualToRecord(model, record);
             });
 
-    // ensure no other methods are called
-    verifyNoMoreInteractions(userTaskWriter);
-  }
-
-  @Test
-  @DisplayName("Should handle user task record with CANCELED intent")
-  void shouldHandleCanceledUserTaskRecord() {
-    // given
-    final Record<UserTaskRecordValue> record =
-        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.CANCELED));
-    final var recordValue = record.getValue();
-    when(processCache.get(recordValue.getProcessDefinitionKey())).thenReturn(Optional.empty());
-
-    // when
-    handler.export(record);
-
-    // then
-    verify(userTaskWriter).update(taskDbModelCaptor.capture());
-    assertThat(taskDbModelCaptor.getValue())
-        .satisfies(
-            model -> {
-              assertThat(model.state())
-                  .as("State should be CANCELED for record with CANCELED intent")
-                  .isEqualTo(UserTaskState.CANCELED);
-              assertThat(model.assignee())
-                  .as("Assignee should be same as in the record")
-                  .isNotNull()
-                  .isEqualTo(recordValue.getAssignee());
-              assertThat(model.completionDate())
-                  .as("Completion date should be not null for CANCELED intent")
-                  .isNotNull()
-                  .isEqualTo(DateUtil.toOffsetDateTime(record.getTimestamp()));
-
-              assertUserTaskModelFieldsEqualToRecord(model, record);
-            });
-
-    // ensure no other methods are called
     verifyNoMoreInteractions(userTaskWriter);
   }
 
