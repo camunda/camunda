@@ -218,6 +218,7 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>org.springframework:spring-webmvc</dep>
+            <dep>org.eclipse.parsson:parsson</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
