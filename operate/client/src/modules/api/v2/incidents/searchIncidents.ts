@@ -10,7 +10,7 @@ import {
   endpoints,
   type QueryIncidentsRequestBody,
   type QueryIncidentsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {requestWithThrow, type RequestResult} from 'modules/request';
 
 const searchIncidents = async (
