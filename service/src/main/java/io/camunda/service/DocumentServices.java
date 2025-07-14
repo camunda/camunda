@@ -208,7 +208,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   private <T> T requireRightOrThrow(
       final Either<DocumentError, T> response, final Throwable error) {
-    if (error == null) {
+    if (error != null) {
       throw ErrorMapper.mapError(error);
     }
     if (response.isLeft()) {
