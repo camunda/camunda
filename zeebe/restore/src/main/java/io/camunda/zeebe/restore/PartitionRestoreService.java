@@ -84,7 +84,7 @@ public class PartitionRestoreService {
       return CompletableFuture.failedFuture(e);
     }
 
-    final var tempTargetDirectory = rootDirectory.resolve("restoring-" + backupId);
+    final var tempTargetDirectory = rootDirectory.resolve("restoring-" + partitionId);
     try {
       FileUtil.ensureDirectoryExists(tempTargetDirectory);
     } catch (final IOException e) {
