@@ -138,7 +138,10 @@ public class CompactRecordLogger {
           entry("ASYNC_REQUEST", "ASYNC"),
           entry("MULTI_INSTANCE", "MI"),
           entry("INPUT_COLLECTION_EVALUATED", "IN_COL_EVAL"),
-          entry("BATCH_OPERATION", "BO"));
+          entry("BATCH_OPERATION", "BO"),
+          entry("AUTHORIZATION", "AUTH"),
+          entry("ASYNC_REQUEST", "ASYNC"),
+          entry("COMPENSATION_SUB", "COMP_SUB"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
