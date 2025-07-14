@@ -9,6 +9,7 @@ package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.*;
 
+import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -88,6 +89,11 @@ public record ProcessDefinitionStatisticsFilter(
 
     public Builder replaceProcessInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = operations;
+      return this;
+    }
+
+    public Builder replaceErrorMessageOperations(final List<Operation<String>> operations) {
+      errorMessageOperations = new ArrayList<>(operations);
       return this;
     }
 
@@ -276,6 +282,11 @@ public record ProcessDefinitionStatisticsFilter(
         orFilters = new ArrayList<>();
       }
       orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<ProcessDefinitionStatisticsFilter> orFilters) {
+      this.orFilters = orFilters;
       return this;
     }
 
