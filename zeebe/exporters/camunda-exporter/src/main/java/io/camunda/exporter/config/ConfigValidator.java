@@ -116,6 +116,14 @@ public final class ConfigValidator {
               + processCacheMaxCacheSize);
     }
 
+    final int batchOperationCacheMaxCacheSize =
+        configuration.getBatchOperationCache().getMaxCacheSize();
+    if (batchOperationCacheMaxCacheSize < 1) {
+      throw new ExporterException(
+          "CamundaExporter batchOperationCache.maxCacheSize must be >= 1. Current value: "
+              + batchOperationCacheMaxCacheSize);
+    }
+
     final int formCacheMaxCacheSize = configuration.getFormCache().getMaxCacheSize();
     if (formCacheMaxCacheSize < 1) {
       throw new ExporterException(
