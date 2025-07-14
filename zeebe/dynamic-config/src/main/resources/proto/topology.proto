@@ -55,7 +55,7 @@ message ExportersConfig{
 }
 
 message ExporterState {
-  EnabledDisabledState state = 1;
+  ExporterStateEnum state = 1;
   int64 metadataVersion = 2;
   optional string initializedFrom = 3;
 }
@@ -157,10 +157,11 @@ enum ChangeStatus {
   CANCELLED = 4;
 }
 
-enum EnabledDisabledState {
+enum ExporterStateEnum {
   ENABLED_DISBALED_UNKNOWN = 0;
   ENABLED = 1;
   DISABLED = 2;
+  CONFIG_NOT_FOUND = 3;
 }
 
 
