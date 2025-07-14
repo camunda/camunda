@@ -5,39 +5,40 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.operate.property.OperateProperties;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@EnableConfigurationProperties(TasklistProperties.class)
-@PropertySource("classpath:tasklist-version.properties")
-@Profile("tasklist | test")
-public class TasklistPropertiesOverride {
+@EnableConfigurationProperties(OperateProperties.class)
+@PropertySource("classpath:operate-version.properties")
+@DependsOn("databaseInfo")
+@Profile("operate | test")
+public class OperatePropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final TasklistProperties legacyTasklistProperties;
+  private final OperateProperties legacyOperateProperties;
 
-  public TasklistPropertiesOverride(
-      UnifiedConfiguration unifiedConfiguration, TasklistProperties legacyTasklistProperties) {
+  public OperatePropertiesOverride(
+      UnifiedConfiguration unifiedConfiguration, OperateProperties legacyOperateProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
-    this.legacyTasklistProperties = legacyTasklistProperties;
+    this.legacyOperateProperties = legacyOperateProperties;
   }
 
   @Bean
   @Primary
-  public TasklistProperties tasklistProperties() {
-    final TasklistProperties override = new TasklistProperties();
-    BeanUtils.copyProperties(legacyTasklistProperties, override);
+  public OperateProperties operateProperties() {
+    final OperateProperties override = new OperateProperties();
+    BeanUtils.copyProperties(legacyOperateProperties, override);
 
     // TODO: Populate the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());

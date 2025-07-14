@@ -11,6 +11,8 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
@@ -39,6 +41,10 @@ public class StandaloneOperate {
     final var standaloneOperateApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
+                // Unified Configuration classes
+                UnifiedConfiguration.class,
+                OperatePropertiesOverride.class,
+                // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
                 WebappsModuleConfiguration.class)
