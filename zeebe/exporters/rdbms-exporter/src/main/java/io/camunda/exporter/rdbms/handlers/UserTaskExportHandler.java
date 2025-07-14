@@ -7,10 +7,12 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.MIGRATED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATED;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
@@ -64,6 +66,7 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
     final UserTaskRecordValue value = record.getValue();
     switch (record.getIntent()) {
       case CREATED -> userTaskWriter.create(map(record, UserTaskState.CREATED, null));
+      case ASSIGNED, UPDATED -> userTaskWriter.update(map(record, UserTaskState.CREATED, null));
       case CANCELED ->
           userTaskWriter.update(
               map(
@@ -89,7 +92,11 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                           .orElse(null))
                   .processDefinitionVersion(value.getProcessDefinitionVersion())
                   .build());
-      default -> userTaskWriter.update(map(record, null, null));
+      default -> {
+        // All currently supported intents are handled explicitly above.
+        // If new intent is added to EXPORTABLE_INTENTS but not handled here,
+        // this default case ensures it is ignored until explicitly supported.
+      }
     }
   }
 

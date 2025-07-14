@@ -145,8 +145,8 @@ class UserTaskExportHandlerTest {
         .satisfies(
             model -> {
               assertThat(model.state())
-                  .as("State should be null for record with ASSIGNED intent")
-                  .isNull();
+                  .as("State should be CREATED for record with ASSIGNED intent")
+                  .isEqualTo(UserTaskState.CREATED);
               assertThat(model.assignee())
                   .as("Assignee should be same as in the record")
                   .isNotNull()
@@ -179,8 +179,8 @@ class UserTaskExportHandlerTest {
         .satisfies(
             model -> {
               assertThat(model.state())
-                  .as("State should be null for record with UPDATED intent")
-                  .isNull();
+                  .as("State should be CREATED for record with UPDATED intent")
+                  .isEqualTo(UserTaskState.CREATED);
               assertThat(model.assignee())
                   .as("Assignee should be same as in the record")
                   .isNotNull()
