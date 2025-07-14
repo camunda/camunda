@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -200,6 +201,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.AUTHORIZATION, this::summarizeAuthorization);
     valueLoggers.put(ValueType.RESOURCE, this::summarizeResource);
     valueLoggers.put(ValueType.RESOURCE_DELETION, this::summarizeResourceDeletion);
+    valueLoggers.put(ValueType.COMPENSATION_SUBSCRIPTION, this::summarizeCompensationSubscription);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1195,6 +1197,57 @@ public class CompactRecordLogger {
   private String summarizeResourceDeletion(final Record<?> record) {
     final var value = (ResourceDeletionRecordValue) record.getValue();
     return "res:%s%s".formatted(shortenKey(value.getResourceKey()), formatTenant(value));
+  }
+
+  private String summarizeCompensationSubscription(final Record<?> record) {
+    final var result = new StringBuilder();
+    final var value = (CompensationSubscriptionRecordValue) record.getValue();
+    if (value.getThrowEventInstanceKey() < 0) {
+      // compensation subscription has not been triggered yet, for example:
+      // E COMP_SUB CREATED #28->#22 K11 "CompHandler" → "TaskToCompensate"[K08] in <process
+      // K03[K04]>
+      // explains that the compensation handler is registered for the compensable activity
+      result
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensationHandlerId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensationHandlerInstanceKey()))
+          .append("]")
+          .append(" → ")
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensableActivityId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensableActivityInstanceKey()))
+          .append("]")
+          .append(
+              summarizeProcessInformation(
+                  value.getProcessDefinitionKey(), value.getProcessInstanceKey()));
+    } else {
+      // an event was thrown triggering the compensation, for example:
+      // E COMP_SUB TRIGGERED #39->#22 K11 "CompThrowEvent"[K13] → "CompensationHandler"[K15] (no
+      // vars)
+      // explains that the throw event has triggered the compensation handler without vars
+      result
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getThrowEventId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getThrowEventInstanceKey()))
+          .append("]")
+          .append(" → ")
+          .append("\"")
+          .append(StringUtils.abbreviateMiddle(value.getCompensationHandlerId(), "..", 20))
+          .append("\"")
+          .append("[")
+          .append(shortenKey(value.getCompensationHandlerInstanceKey()))
+          .append("]")
+          .append(formatVariables(value));
+    }
+
+    result.append(formatTenant(value));
+    return result.toString();
   }
 
   private String formatPinnedTime(final long time) {
