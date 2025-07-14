@@ -32,6 +32,8 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.engine.BatchOperationCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -46,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -210,6 +213,11 @@ public final class SystemContext {
     if (partitioningConfig.getScheme() == Scheme.FIXED) {
       validateFixedPartitioningScheme(cluster, experimental);
     }
+
+    Optional.of(experimental)
+        .map(ExperimentalCfg::getEngine)
+        .map(EngineCfg::getBatchOperations)
+        .ifPresent(c -> validateBatchOperationsConfig(c));
   }
 
   private void validateDataConfig(final DataCfg dataCfg) {
@@ -234,6 +242,59 @@ public final class SystemContext {
     }
 
     validateBackupCfg(dataCfg.getBackup());
+  }
+
+  private void validateBatchOperationsConfig(final BatchOperationCfg config) {
+    final var errors = new ArrayList<String>(0);
+    final var warnings = new ArrayList<String>(0);
+
+    if (config.getSchedulerInterval().isNegative()) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.schedulerInterval must be positive, but was %s",
+              config.getSchedulerInterval()));
+    }
+
+    if (config.getChunkSize() <= 0) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.chunkSize must be greater than 0, but was %s",
+              config.getChunkSize()));
+    }
+
+    // this is due to the hard-coded max record size of 4MB in the engine. For larger values
+    if (config.getChunkSize() > 240000) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.chunkSize must be lower than 240000, but was %s",
+              config.getChunkSize()));
+    }
+
+    if (config.getDbChunkSize() <= 0) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.dbChunkSize must be greater than 0, but was %s",
+              config.getChunkSize()));
+    }
+
+    if (config.getQueryPageSize() <= 0) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryPageSize must be greater than 0, but was %s",
+              config.getChunkSize()));
+    }
+
+    if (config.getQueryInClauseSize() <= 0) {
+      errors.add(
+          String.format(
+              "experimental.engine.batchOperation.queryInClauseSize must be greater than 0, but was %s",
+              config.getChunkSize()));
+    }
+
+    if (!errors.isEmpty()) {
+      throw new InvalidConfigurationException(
+          "Invalid BatchOperations configuration: " + String.join(", ", errors), null);
+    }
   }
 
   private void validateBackupCfg(final BackupStoreCfg backup) {
