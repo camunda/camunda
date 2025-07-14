@@ -297,9 +297,7 @@
     SET
     COMPLETION_DATE = #{completionDate},
     DUE_DATE = #{dueDate},
-    <if test="state != null">
-      STATE = #{state},
-    </if>
+    STATE = #{state},
     FOLLOW_UP_DATE = #{followUpDate},
     CUSTOM_HEADERS = #{serializedCustomHeaders},
     PRIORITY = #{priority},
