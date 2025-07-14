@@ -8,7 +8,7 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
-import type {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas';
+import type {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const ELEMENT_INSTANCES_SEARCH_QUERY_KEY = 'elementInstancesSearch';
 

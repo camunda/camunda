@@ -15,7 +15,7 @@
     "@tanstack/eslint-plugin-query": "5.81.2",
     "@tanstack/react-query": "5.82.0",
     "@tanstack/react-query-devtools": "5.82.0",
-    "@vzeta/camunda-api-zod-schemas": "1.1.0",
+    "@vzeta/camunda-api-zod-schemas": "2.0.0",
     "bpmn-js": "18.6.2",
     "bpmn-moddle": "9.0.2",
     "date-fns": "4.1.0",
@@ -107,7 +107,7 @@
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "3.2.4",
     "vitest-browser-react": "1.0.0",
-    "zod": "3.25.57"
+    "zod": "4.0.5"
   },
   "browserslist": [
     ">0.2%",

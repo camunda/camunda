@@ -13,7 +13,10 @@ import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstanc
 import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
 import type {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import type {BatchOperationDto} from './api/sharedTypes';
-import type {ProcessInstance, Variable} from '@vzeta/camunda-api-zod-schemas';
+import type {
+  ProcessInstance,
+  Variable,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
   VariableEntity,
