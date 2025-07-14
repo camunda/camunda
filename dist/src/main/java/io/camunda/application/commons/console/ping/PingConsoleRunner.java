@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.error.FatalErrorHandler;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,6 +31,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -40,13 +42,16 @@ public class PingConsoleRunner implements ApplicationRunner {
   private final ConsolePingConfiguration pingConfiguration;
   private final ManagementServices managementServices;
   private final Either<Exception, String> licensePayload;
+  private final ApplicationContext applicationContext;
 
   @Autowired
   public PingConsoleRunner(
       final ConsolePingConfiguration pingConfigurationProperties,
-      final ManagementServices managementServices) {
+      final ManagementServices managementServices,
+      final ApplicationContext applicationContext) {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
+    this.applicationContext = applicationContext;
     licensePayload = getLicensePayload();
   }
 
@@ -144,6 +149,7 @@ public class PingConsoleRunner implements ApplicationRunner {
             pingConfiguration.clusterId(),
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
+            Arrays.stream(applicationContext.getEnvironment().getActiveProfiles()).toList(),
             pingConfiguration.properties());
     try {
       return Either.right(objectMapper.writeValueAsString(payload));
