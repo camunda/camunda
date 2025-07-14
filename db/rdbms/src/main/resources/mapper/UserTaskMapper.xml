@@ -306,6 +306,12 @@
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
+  <update id="updateState" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
+    UPDATE ${prefix}USER_TASK
+    SET STATE = #{state}
+    WHERE USER_TASK_KEY = #{userTaskKey}
+  </update>
+
   <delete id="deleteCandidateUsers" parameterType="java.lang.Long">
     DELETE
     FROM ${prefix}CANDIDATE_USER

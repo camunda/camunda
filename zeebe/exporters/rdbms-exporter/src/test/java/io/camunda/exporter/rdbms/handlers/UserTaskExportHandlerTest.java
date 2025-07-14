@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -48,9 +49,14 @@ class UserTaskExportHandlerTest {
       EnumSet.of(
           UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
+          UserTaskIntent.ASSIGNING,
+          UserTaskIntent.CLAIMING,
           UserTaskIntent.ASSIGNED,
+          UserTaskIntent.UPDATING,
           UserTaskIntent.UPDATED,
+          UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED);
 
@@ -145,12 +151,35 @@ class UserTaskExportHandlerTest {
     verifyNoMoreInteractions(userTaskWriter);
   }
 
+  @ParameterizedTest(name = "Should handle user task transition started record with {0} intent")
+  @EnumSource(
+      value = UserTaskIntent.class,
+      names = {"ASSIGNING", "CLAIMING", "UPDATING", "COMPLETING", "CANCELING"})
+  void shouldHandleUserTaskTransitionStartedRecord(final UserTaskIntent intent) {
+    // given
+    final UserTaskState expectedModelState =
+        intent == UserTaskIntent.CLAIMING
+            ? UserTaskState.ASSIGNING
+            // other intents map to their respective model states directly
+            : UserTaskState.valueOf(intent.name());
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
+    final var recordValue = record.getValue();
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(userTaskWriter).updateState(eq(recordValue.getUserTaskKey()), eq(expectedModelState));
+    verifyNoMoreInteractions(userTaskWriter);
+  }
+
   @ParameterizedTest(
-      name = "Should handle user task record with {0} intent that maps to CREATED model state")
+      name = "Should handle task transition ended record with {0} intent mapped to CREATED state")
   @EnumSource(
       value = UserTaskIntent.class,
       names = {"CREATED", "ASSIGNED", "UPDATED"})
-  void shouldHandleRecordMappedToCreatedState(final UserTaskIntent intent) {
+  void shouldHandleUserTaskTransitionEndedRecordMappedToCreatedState(final UserTaskIntent intent) {
     // given
     final Record<UserTaskRecordValue> record =
         factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
@@ -181,12 +210,11 @@ class UserTaskExportHandlerTest {
     verifyNoMoreInteractions(userTaskWriter);
   }
 
-  @ParameterizedTest(
-      name = "Should handle user task record with {0} intent that maps to {0} model state")
+  @ParameterizedTest(name = "Should handle user task finalized record with {0} intent")
   @EnumSource(
       value = UserTaskIntent.class,
       names = {"COMPLETED", "CANCELED"})
-  void shouldHandleFinalizedUserTaskRecord(final UserTaskIntent intent) {
+  void shouldHandleUserTaskFinalizedRecord(final UserTaskIntent intent) {
     // given
     final UserTaskState expectedModelState = UserTaskState.valueOf(intent.name());
     final Record<UserTaskRecordValue> record =

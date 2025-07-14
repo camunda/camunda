@@ -8,12 +8,17 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNING;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELING;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CLAIMING;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETING;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATING;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATING;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
@@ -39,9 +44,14 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
       EnumSet.of(
           UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
+          UserTaskIntent.ASSIGNING,
+          UserTaskIntent.CLAIMING,
           UserTaskIntent.ASSIGNED,
+          UserTaskIntent.UPDATING,
           UserTaskIntent.UPDATED,
+          UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED);
 
@@ -76,6 +86,12 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                   // which case the final value will be reflected in the subsequent CREATED event.
                   .assignee(null)
                   .build());
+      case ASSIGNING, CLAIMING ->
+          userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.ASSIGNING);
+      case UPDATING -> userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.UPDATING);
+      case COMPLETING ->
+          userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.COMPLETING);
+      case CANCELING -> userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CANCELING);
       case CREATED, ASSIGNED, UPDATED ->
           userTaskWriter.update(map(record, UserTaskState.CREATED, null));
       case CANCELED ->
