@@ -57,7 +57,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private final long jobKey;
   private final JsonMapper jsonMapper;
   private JobResult.Builder resultGrpc;
-  private io.camunda.client.protocol.rest.JobResult resultRest;
+  private io.camunda.client.protocol.rest.JobCompletionRequestResult resultRest;
   private io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections.Builder
       correctionsGrpc;
   private io.camunda.client.protocol.rest.JobResultCorrections correctionsRest;
@@ -128,7 +128,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private void initJobResult() {
-    resultRest = new io.camunda.client.protocol.rest.JobResult();
+    resultRest = new io.camunda.client.protocol.rest.JobCompletionRequestResult();
     correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
     resultRest.setCorrections(correctionsRest);
     httpRequestObject.setResult(resultRest);

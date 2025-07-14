@@ -21,7 +21,7 @@ import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
-import io.camunda.client.protocol.rest.JobResult;
+import io.camunda.client.protocol.rest.JobCompletionRequestResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
@@ -278,7 +278,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResult()
+                new JobCompletionRequestResult()
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
@@ -314,7 +314,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResult()
+                new JobCompletionRequestResult()
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
@@ -351,7 +351,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResult()
+                new JobCompletionRequestResult()
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee(null)
@@ -389,7 +389,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResult()
+                new JobCompletionRequestResult()
                     .denied(false)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
@@ -429,7 +429,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResult()
+                new JobCompletionRequestResult()
                     .denied(false)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
@@ -457,7 +457,7 @@ class CompleteJobRestTest extends ClientRestTest {
     final JobCompletionRequest expectedRequest =
         new JobCompletionRequest()
             .result(
-                new JobResult()
+                new JobCompletionRequestResult()
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee(null)
