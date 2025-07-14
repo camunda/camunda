@@ -10,6 +10,7 @@ package io.camunda.migration.identity.handler;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,8 +20,10 @@ public abstract class MigrationHandler<T> {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   protected boolean isConflictError(final Throwable e) {
-    return e instanceof final ServiceException serviceException
-        && serviceException.getStatus() == Status.ALREADY_EXISTS;
+    return (e instanceof final CompletionException completionException
+            && isConflictError(completionException.getCause()))
+        || (e instanceof final ServiceException serviceException
+            && serviceException.getStatus() == Status.ALREADY_EXISTS);
   }
 
   protected boolean isNotImplementedError(final Throwable e) {

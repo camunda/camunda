@@ -38,6 +38,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -200,6 +202,8 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       return false;
     }
     return switch (error) {
+      case final CompletionException ce -> isExceptionRetriable(ce.getCause());
+      case final ExecutionException ee -> isExceptionRetriable(ee.getCause());
       case final ServiceException cse -> isServiceExceptionRetriable(cse);
       default -> false;
     };

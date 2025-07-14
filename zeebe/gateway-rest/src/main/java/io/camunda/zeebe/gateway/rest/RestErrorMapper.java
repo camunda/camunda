@@ -12,6 +12,8 @@ import io.camunda.service.exception.ServiceException.Status;
 import jakarta.validation.constraints.NotNull;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -33,6 +35,10 @@ public class RestErrorMapper {
   public static ProblemDetail mapErrorToProblem(final Throwable error) {
     if (error == null) {
       return null;
+    }
+    // SeviceExceptions can be wrapped in Java exceptions because they are handled in Java futures
+    if (error instanceof CompletionException || error instanceof ExecutionException) {
+      return mapErrorToProblem(error.getCause());
     }
     if (error instanceof final ServiceException se) {
       return createProblemDetail(mapStatus(se.getStatus()), se.getMessage(), se.getStatus().name());
