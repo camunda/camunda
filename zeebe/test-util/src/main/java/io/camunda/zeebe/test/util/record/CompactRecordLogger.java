@@ -131,7 +131,8 @@ public class CompactRecordLogger {
           entry("GROUP", "GR"),
           entry("MAPPING", "MAP"),
           entry("AUTHORIZATION", "AUTH"),
-          entry("ASYNC_REQUEST", "ASYNC"));
+          entry("ASYNC_REQUEST", "ASYNC"),
+          entry("COMPENSATION_SUB", "COMP_SUB"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
