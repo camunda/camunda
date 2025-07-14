@@ -49,6 +49,8 @@ public class ProcessInstanceSearchTest {
 
   public static final String INCIDENT_ERROR_MESSAGE_V1 =
       "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
+  public static final String INCIDENT_ERROR_MESSAGE_V2 =
+      "Expected result of the expression 'retriesB' to be 'NUMBER', but was 'STRING'.";
   public static final int INCIDENT_ERROR_HASH_CODE_V2 = 17551445;
   static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   static final List<ProcessInstanceEvent> PROCESS_INSTANCES = new ArrayList<>();
@@ -1249,5 +1251,180 @@ public class ProcessInstanceSearchTest {
 
     // then
     assertThat(result).isNotNull().isEmpty();
+  }
+
+  @Test
+  void shouldReturnResultWhenErrorMessageMatchesResolvedIncidentErrorHashCode() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(INCIDENT_ERROR_MESSAGE_V2))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).isNotEmpty();
+  }
+
+  @Test
+  void shouldReturnNoResultWhenErrorMessageConflictsWithResolvedIncidentErrorHashCode() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(INCIDENT_ERROR_MESSAGE_V1))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldIncludeResolvedIncidentErrorHashCodeIfErrorMessageLikePatternMatches() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(f2 -> f2.like("Expected*")))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).isNotEmpty();
+  }
+
+  @Test
+  void shouldIgnoreResolvedIncidentErrorHashCodeIfErrorMessageLikeDoesNotMatch() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(f2 -> f2.like("Failed*")))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnResultWhenEitherErrorMessageOrResolvedIncidentErrorHashCodeMatch() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> f1.errorMessage(INCIDENT_ERROR_MESSAGE_V1),
+                            f2 -> f2.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).isNotEmpty();
+  }
+
+  @Test
+  void shouldCombineResolvedAndProvidedErrorMessagesInInOperator() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .errorMessage(
+                            f2 -> f2.in(List.of("Other message", INCIDENT_ERROR_MESSAGE_V2))))
+            .send()
+            .join();
+
+    assertThat(result.items()).isNotEmpty();
+  }
+
+  @Test
+  void shouldReturnWhenTopLevelHashAndOrClauseHasMatchingErrorMessage() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .orFilters(List.of(f1 -> f1.errorMessage(INCIDENT_ERROR_MESSAGE_V2))))
+            .send()
+            .join();
+
+    assertThat(result.items()).isNotEmpty();
+    assertThat(result.items())
+        .allSatisfy(
+            instance ->
+                assertThat(instance.getProcessDefinitionId()).isEqualTo("incident_process_v2"));
+  }
+
+  @Test
+  void shouldReturnWhenTopLevelErrorMessageAndOrClauseHasMatchingHashCode() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.errorMessage(INCIDENT_ERROR_MESSAGE_V2)
+                        .orFilters(
+                            List.of(f1 -> f1.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))))
+            .send()
+            .join();
+
+    assertThat(result.items()).isNotEmpty();
+    assertThat(result.items())
+        .allSatisfy(
+            instance ->
+                assertThat(instance.getProcessDefinitionId()).isEqualTo("incident_process_v2"));
+  }
+
+  @Test
+  void shouldReturnOnlyMatchingTopLevelWhenOrClauseHashConflicts() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.errorMessage(INCIDENT_ERROR_MESSAGE_V1)
+                        .orFilters(
+                            List.of(f1 -> f1.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))))
+            .send()
+            .join();
+
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnOnlyMatchingTopLevelWhenOrClauseErrorMessageConflicts() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(
+                f ->
+                    f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
+                        .orFilters(List.of(f1 -> f1.errorMessage(INCIDENT_ERROR_MESSAGE_V1))))
+            .send()
+            .join();
+
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyResultForIncorrectIncidentErrorHashCode() {
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.incidentErrorHashCode(123456))
+            .send()
+            .join();
+
+    assertThat(result.items()).isEmpty();
   }
 }

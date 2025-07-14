@@ -186,6 +186,19 @@ public final class SearchQueryBuilders {
     return new SearchMatchNoneQuery.Builder().build().toSearchQuery();
   }
 
+  public static SearchMatchPhraseQuery.Builder matchPhrase() {
+    return new SearchMatchPhraseQuery.Builder();
+  }
+
+  public static SearchMatchPhraseQuery matchPhrase(
+      final Function<SearchMatchPhraseQuery.Builder, ObjectBuilder<SearchMatchPhraseQuery>> fn) {
+    return fn.apply(matchPhrase()).build();
+  }
+
+  public static <A> SearchQuery matchPhrase(final String field, final String value) {
+    return matchPhrase((q) -> q.field(field).query(value)).toSearchQuery();
+  }
+
   public static SearchPrefixQuery.Builder prefix() {
     return new SearchPrefixQuery.Builder();
   }
@@ -437,12 +450,8 @@ public final class SearchQueryBuilders {
     }
   }
 
-  public static <C extends List<Operation<String>>>
-      List<SearchQuery> stringMatchWithHasChildOperations(
-          final String field,
-          final C operations,
-          final String childType,
-          final SearchMatchQueryOperator matchQueryOperator) {
+  public static <C extends List<Operation<String>>> List<SearchQuery> stringMatchPhraseOperations(
+      final String field, final C operations) {
 
     if (operations == null || operations.isEmpty()) {
       return List.of();
@@ -452,16 +461,39 @@ public final class SearchQueryBuilders {
         .map(
             op ->
                 switch (op.operator()) {
-                  case EQUALS ->
-                      hasChildQuery(childType, match(field, op.value(), matchQueryOperator));
+                  case EQUALS -> matchPhrase(field, op.value());
+                  case NOT_EQUALS -> mustNot(matchPhrase(field, op.value()));
+                  case EXISTS -> exists(field);
+                  case NOT_EXISTS -> mustNot(exists(field));
+                  case IN ->
+                      or(op.values().stream().map(value -> matchPhrase(field, value)).toList());
+                  case LIKE ->
+                      wildcardQuery(field, Objects.requireNonNull(op.value()).toLowerCase());
+                  default -> throw unexpectedOperation("String", op.operator());
+                })
+        .toList();
+  }
+
+  public static <C extends List<Operation<String>>>
+      List<SearchQuery> stringMatchPhraseWithHasChildOperations(
+          final String field, final C operations, final String childType) {
+
+    if (operations == null || operations.isEmpty()) {
+      return List.of();
+    }
+
+    return operations.stream()
+        .map(
+            op ->
+                switch (op.operator()) {
+                  case EQUALS -> hasChildQuery(childType, matchPhrase(field, op.value()));
 
                   case NOT_EQUALS ->
                       hasChildQuery(
                           childType,
                           bool(b ->
                                   b.must(List.of(exists(field)))
-                                      .mustNot(
-                                          List.of(match(field, op.value(), matchQueryOperator))))
+                                      .mustNot(List.of(matchPhrase(field, op.value()))))
                               .toSearchQuery());
 
                   case EXISTS ->
@@ -479,7 +511,7 @@ public final class SearchQueryBuilders {
                           childType,
                           or(
                               op.values().stream()
-                                  .map(value -> match(field, value, matchQueryOperator))
+                                  .map(value -> matchPhrase(field, value))
                                   .toList()));
 
                   case LIKE ->

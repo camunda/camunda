@@ -242,7 +242,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getElementInstanceState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeInstanceStateOperations);
-      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
+      ofNullable(filter.getIncidentErrorHashCode())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::incidentErrorHashCodeOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFilters(filter.getVariables());
@@ -1017,7 +1019,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getElementInstanceState())
           .map(mapToOperations(String.class))
           .ifPresent(builder::flowNodeInstanceStateOperations);
-      ofNullable(filter.getIncidentErrorHashCode()).ifPresent(builder::incidentErrorHashCodes);
+      ofNullable(filter.getIncidentErrorHashCode())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::incidentErrorHashCodeOperations);
       if (!CollectionUtils.isEmpty(filter.getVariables())) {
         final Either<List<String>, List<VariableValueFilter>> either =
             toVariableValueFilters(filter.getVariables());

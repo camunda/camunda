@@ -13,7 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchWithHasChildOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringMatchPhraseWithHasChildOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -40,7 +40,6 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VA
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.VAR_VALUE;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -96,8 +95,10 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    queries.addAll((stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations())));
-    queries.addAll(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()));
+    Optional.of(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
+        .ifPresent(queries::addAll);
+    Optional.of(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
+        .ifPresent(queries::addAll);
     ofNullable(filter.hasFlowNodeInstanceIncident())
         .ifPresent(value -> queries.add(term(INCIDENT, value)));
 
@@ -108,24 +109,29 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    queries.addAll(longOperations(KEY, filter.processInstanceKeyOperations()));
-    queries.addAll(
-        longOperations(PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()));
-    queries.addAll(
-        longOperations(
-            PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()));
-    queries.addAll(dateTimeOperations(START_DATE, filter.startDateOperations()));
-    queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
-    queries.addAll(stringOperations(STATE, filter.stateOperations()));
+    Optional.of(longOperations(KEY, filter.processInstanceKeyOperations()))
+        .ifPresent(queries::addAll);
+    Optional.of(
+            longOperations(
+                PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()))
+        .ifPresent(queries::addAll);
+    Optional.of(
+            longOperations(
+                PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()))
+        .ifPresent(queries::addAll);
+    Optional.of(dateTimeOperations(START_DATE, filter.startDateOperations()))
+        .ifPresent(queries::addAll);
+    Optional.of(dateTimeOperations(END_DATE, filter.endDateOperations()))
+        .ifPresent(queries::addAll);
+    Optional.of(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
     ofNullable(filter.hasIncident()).ifPresent(value -> queries.add(term(INCIDENT, value)));
-    queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
+    Optional.of(stringOperations(TENANT_ID, filter.tenantIdOperations()))
+        .ifPresent(queries::addAll);
+    Optional.of(
+            stringMatchPhraseWithHasChildOperations(
+                ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION))
+        .ifPresent(queries::addAll);
     ofNullable(getProcessVariablesQuery(filter.variableFilters())).ifPresent(queries::add);
-    queries.addAll(
-        stringMatchWithHasChildOperations(
-            ERROR_MSG,
-            filter.errorMessageOperations(),
-            ACTIVITIES_JOIN_RELATION,
-            SearchMatchQueryOperator.AND));
     queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
     ofNullable(filter.hasRetriesLeft()).ifPresent(value -> queries.add(hasRetriesLeftQuery(value)));
 
