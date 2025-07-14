@@ -164,14 +164,6 @@
       <artifactId>spring-security-oauth2-jose</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-ldap</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.ldap</groupId>
-      <artifactId>spring-ldap-core</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator</artifactId>
     </dependency>
