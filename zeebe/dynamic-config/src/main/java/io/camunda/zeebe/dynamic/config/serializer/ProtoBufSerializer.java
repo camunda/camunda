@@ -226,6 +226,9 @@ public class ProtoBufSerializer
       case DISABLED ->
           new ExporterState(
               value.getMetadataVersion(), ExporterState.State.DISABLED, initializeFrom);
+      case CONFIG_NOT_FOUND ->
+          new ExporterState(
+              value.getMetadataVersion(), ExporterState.State.CONFIG_NOT_FOUND, initializeFrom);
       case UNRECOGNIZED, ENABLED_DISBALED_UNKNOWN ->
           throw new IllegalStateException("Unknown exporter state " + value.getState());
     };
@@ -281,8 +284,9 @@ public class ProtoBufSerializer
   private Topology.ExporterState encodeExporterState(final ExporterState value) {
     final var state =
         switch (value.state()) {
-          case ENABLED -> Topology.EnabledDisabledState.ENABLED;
-          case DISABLED -> Topology.EnabledDisabledState.DISABLED;
+          case ENABLED -> Topology.ExporterStateEnum.ENABLED;
+          case DISABLED -> Topology.ExporterStateEnum.DISABLED;
+          case CONFIG_NOT_FOUND -> Topology.ExporterStateEnum.CONFIG_NOT_FOUND;
         };
     final var builder =
         Topology.ExporterState.newBuilder()
