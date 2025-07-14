@@ -967,6 +967,7 @@ public class RequestMapper {
 
     final JobResult jobResult = new JobResult();
     final var jobResultUserTask = (JobResultUserTask) request.getResult();
+    jobResult.setType(JobResultType.from(jobResultUserTask.getType().getValue()));
     jobResult.setDenied(
         getBooleanOrDefault(request, r -> ((JobResultUserTask) r.getResult()).getDenied(), false));
     jobResult.setDeniedReason(
