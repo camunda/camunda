@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -86,7 +85,6 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       @NonNull final HttpHeaders headers,
       @NonNull final HttpStatusCode statusCode,
       @NonNull final WebRequest request) {
-    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
     return super.handleExceptionInternal(ex, body, headers, statusCode, request);
   }
 
@@ -116,10 +114,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleAllExceptions(
       final Exception ex, final HttpServletRequest request) {
-    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
-    final ProblemDetail problemDetail =
-        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    final var problemDetail = RestErrorMapper.mapErrorToProblem(ex);
     problemDetail.setInstance(URI.create(request.getRequestURI()));
-    return ResponseEntity.of(problemDetail).build();
+    return RestErrorMapper.mapProblemToResponse(problemDetail);
   }
 }
