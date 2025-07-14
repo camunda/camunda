@@ -500,6 +500,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
   }
 
   public enum UserTaskState {
+    CREATING,
     CREATED,
     COMPLETED,
     CANCELED,

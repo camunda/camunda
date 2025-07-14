@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATING;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATED;
 
@@ -35,6 +36,7 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
 
   private static final Set<UserTaskIntent> EXPORTABLE_INTENTS =
       Set.of(
+          UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
           UserTaskIntent.UPDATED,
           UserTaskIntent.CANCELED,
@@ -65,8 +67,16 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
   public void export(final Record<UserTaskRecordValue> record) {
     final UserTaskRecordValue value = record.getValue();
     switch (record.getIntent()) {
-      case CREATED -> userTaskWriter.create(map(record, UserTaskState.CREATED, null));
-      case ASSIGNED, UPDATED -> userTaskWriter.update(map(record, UserTaskState.CREATED, null));
+      case CREATING ->
+          userTaskWriter.create(
+              map(record, UserTaskState.CREATING, null).toBuilder()
+                  // Clear assignee as it may be initialized later during the assignment transition
+                  // (if defined via the BPMN model) or modified by 'creating' task listeners, in
+                  // which case the final value will be reflected in the subsequent CREATED event.
+                  .assignee(null)
+                  .build());
+      case CREATED, ASSIGNED, UPDATED ->
+          userTaskWriter.update(map(record, UserTaskState.CREATED, null));
       case CANCELED ->
           userTaskWriter.update(
               map(

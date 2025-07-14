@@ -56,7 +56,7 @@ class UserTaskExportHandlerTest {
   @ParameterizedTest(name = "should be able to export record with intent: {0}")
   @EnumSource(
       value = UserTaskIntent.class,
-      names = {"CREATED", "ASSIGNED", "UPDATED", "COMPLETED", "CANCELED", "MIGRATED"})
+      names = {"CREATING", "CREATED", "ASSIGNED", "UPDATED", "COMPLETED", "CANCELED", "MIGRATED"})
   void shouldExportRecord(final UserTaskIntent intent) {
     // given
     final Record<UserTaskRecordValue> record =
@@ -73,7 +73,7 @@ class UserTaskExportHandlerTest {
       value = UserTaskIntent.class,
       // Exclude the intents that are supported by the handler
       mode = EnumSource.Mode.EXCLUDE,
-      names = {"CREATED", "ASSIGNED", "UPDATED", "COMPLETED", "CANCELED", "MIGRATED"})
+      names = {"CREATING", "CREATED", "ASSIGNED", "UPDATED", "COMPLETED", "CANCELED", "MIGRATED"})
   void shouldNotExportRecord(final UserTaskIntent intent) {
     // given
     final Record<UserTaskRecordValue> record =
@@ -93,6 +93,41 @@ class UserTaskExportHandlerTest {
   }
 
   @Test
+  @DisplayName("Should handle user task record with CREATING intent")
+  void shouldHandleCreatingUserTaskRecord() {
+    // given
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.CREATING));
+    final var recordValue = record.getValue();
+    when(processCache.get(recordValue.getProcessDefinitionKey())).thenReturn(Optional.empty());
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(userTaskWriter).create(taskDbModelCaptor.capture());
+    assertThat(taskDbModelCaptor.getValue())
+        .satisfies(
+            model -> {
+              assertThat(model.state())
+                  .as("State should be CREATING for record with CREATING intent")
+                  .isEqualTo(UserTaskState.CREATING);
+              assertThat(model.assignee())
+                  .as(
+                      "Assignee should be null for CREATING intent, event if it is set in the record")
+                  .isNull();
+              assertThat(model.completionDate())
+                  .as("Completion date should be null for CREATING intent")
+                  .isNull();
+
+              assertUserTaskModelFieldsEqualToRecord(model, record);
+            });
+
+    // ensure no other methods are called
+    verifyNoMoreInteractions(userTaskWriter);
+  }
+
+  @Test
   @DisplayName("Should handle user task record with CREATED intent")
   void shouldHandleCreatedUserTaskRecord() {
     // given
@@ -105,7 +140,7 @@ class UserTaskExportHandlerTest {
     handler.export(record);
 
     // then
-    verify(userTaskWriter).create(taskDbModelCaptor.capture());
+    verify(userTaskWriter).update(taskDbModelCaptor.capture());
     assertThat(taskDbModelCaptor.getValue())
         .satisfies(
             model -> {
