@@ -30,6 +30,7 @@ import io.camunda.it.util.HttpRequestBodyTestUtility;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.security.entity.AuthenticationMethod;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -49,7 +50,9 @@ public class IncidentNotifierIT {
 
   @MultiDbTestApplication(managedLifecycle = false)
   private static final TestCamundaApplication STANDALONE_CAMUNDA =
-      new TestCamundaApplication().withUnauthenticatedAccess();
+      new TestCamundaApplication()
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withUnauthenticatedAccess();
 
   private static final String JWT_TOKEN = JWT.create().sign(Algorithm.HMAC256("secretkey"));
   private static final String WEBHOOK_PATH = "/webhook";
