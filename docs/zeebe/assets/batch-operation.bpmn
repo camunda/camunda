@@ -2,7 +2,7 @@
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1u1z69z" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.23.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0">
   <bpmn:collaboration id="Collaboration_0e1sv2r">
     <bpmn:participant id="Participant_04pg4w2" name="Leader partition" processRef="Process_1peroif" />
-    <bpmn:participant id="Participant_02r29ku" name="Follower partition" processRef="Process_1l8me0u" />
+    <bpmn:participant id="Participant_02r29ku" name="All partitions (leader and follower)" processRef="Process_1l8me0u" />
     <bpmn:messageFlow id="Flow_1l33cmb" sourceRef="Activity_051xi88" targetRef="Event_1h2vadp" />
     <bpmn:messageFlow id="Flow_1oqmqry" sourceRef="Activity_15l5qpc" targetRef="Event_0jo02cb" />
     <bpmn:messageFlow id="Flow_0jpkkzb" sourceRef="Activity_1a0dv0v" targetRef="Event_1aapqor" />
@@ -20,6 +20,10 @@
       <bpmn:text>Send command to leader partition</bpmn:text>
     </bpmn:textAnnotation>
     <bpmn:association id="Association_1181rqh" associationDirection="None" sourceRef="TextAnnotation_0jnaxpg" targetRef="Activity_1a0dv0v" />
+    <bpmn:textAnnotation id="TextAnnotation_008ye4q">
+      <bpmn:text>Use a BatchOperationExecutor to append the actual command like ProcessInstanceIntent.CANCEL</bpmn:text>
+    </bpmn:textAnnotation>
+    <bpmn:association id="Association_0nnspgd" associationDirection="None" sourceRef="Activity_057b7pu" targetRef="TextAnnotation_008ye4q" />
   </bpmn:collaboration>
   <bpmn:process id="Process_1peroif" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="broker request to CREATE a batch operation">
@@ -161,6 +165,12 @@
       <bpmn:sendTask id="Activity_0ctre6v" name="CREATE_&#10;CHUNK">
         <bpmn:incoming>Flow_03p7yxz</bpmn:incoming>
         <bpmn:outgoing>Flow_1uwvkst</bpmn:outgoing>
+        <bpmn:property id="Property_1a1pzgu" name="__targetRef_placeholder" />
+        <bpmn:dataInputAssociation id="DataInputAssociation_1dgrhfm">
+          <bpmn:sourceRef>DataStoreReference_0gqdgql</bpmn:sourceRef>
+          <bpmn:targetRef>Property_1a1pzgu</bpmn:targetRef>
+        </bpmn:dataInputAssociation>
+        <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
       </bpmn:sendTask>
       <bpmn:serviceTask id="Activity_1ad3fz3" name="Load itemKeys">
         <bpmn:incoming>Flow_1m4bpa2</bpmn:incoming>
@@ -204,6 +214,11 @@
       <bpmn:serviceTask id="Activity_16y04j1" name="Fetch keys">
         <bpmn:incoming>Flow_0a117gg</bpmn:incoming>
         <bpmn:outgoing>Flow_01kubfk</bpmn:outgoing>
+        <bpmn:property id="Property_1p8hd7v" name="__targetRef_placeholder" />
+        <bpmn:dataInputAssociation id="DataInputAssociation_1ena494">
+          <bpmn:sourceRef>DataStoreReference_0gqdgql</bpmn:sourceRef>
+          <bpmn:targetRef>Property_1p8hd7v</bpmn:targetRef>
+        </bpmn:dataInputAssociation>
       </bpmn:serviceTask>
       <bpmn:sendTask id="Activity_15lgg3a" name="EXECUTE">
         <bpmn:incoming>Flow_0fpkl3p</bpmn:incoming>
@@ -289,6 +304,7 @@
     <bpmn:endEvent id="Event_0zgvcxz">
       <bpmn:incoming>Flow_0a6sjf4</bpmn:incoming>
     </bpmn:endEvent>
+    <bpmn:dataStoreReference id="DataStoreReference_0gqdgql" name="RocksDb item key store" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0e1sv2r">
@@ -499,8 +515,11 @@
         <dc:Bounds x="470" y="910" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0zgvcxz_di" bpmnElement="Event_0zgvcxz">
-        <dc:Bounds x="2772" y="932" width="36" height="36" />
+      <bpmndi:BPMNShape id="DataStoreReference_0gqdgql_di" bpmnElement="DataStoreReference_0gqdgql">
+        <dc:Bounds x="1205" y="1105" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1186" y="1162" width="89" height="27" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1l13mhw_di" bpmnElement="Activity_18uzqul" isExpanded="true">
         <dc:Bounds x="720" y="850" width="620" height="200" />
@@ -538,7 +557,7 @@
         <di:waypoint x="1262" y="950" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Activity_1cg66k7_di" bpmnElement="Activity_04e22wd" isExpanded="true">
-        <dc:Bounds x="1460" y="850" width="1030" height="500" />
+        <dc:Bounds x="1460" y="850" width="855" height="500" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0rv5emo_di" bpmnElement="Event_0rv5emo">
@@ -709,6 +728,9 @@
         <di:waypoint x="2175" y="755" />
         <di:waypoint x="2262" y="755" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_0zgvcxz_di" bpmnElement="Event_0zgvcxz">
+        <dc:Bounds x="2772" y="932" width="36" height="36" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0xjh9fz_di" bpmnElement="Event_146j1de">
         <dc:Bounds x="812" y="832" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -722,7 +744,7 @@
         <di:waypoint x="900" y="770" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0wfq2es_di" bpmnElement="Flow_0wfq2es">
-        <di:waypoint x="2490" y="950" />
+        <di:waypoint x="2315" y="950" />
         <di:waypoint x="2570" y="950" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1bgmhwh_di" bpmnElement="Flow_1bgmhwh">
@@ -736,6 +758,10 @@
       <bpmndi:BPMNEdge id="Flow_0a6sjf4_di" bpmnElement="Flow_0a6sjf4">
         <di:waypoint x="2670" y="950" />
         <di:waypoint x="2772" y="950" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0nnspgd_di" bpmnElement="Association_0nnspgd">
+        <di:waypoint x="2109" y="1200" />
+        <di:waypoint x="2116" y="1230" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="TextAnnotation_03or23b_di" bpmnElement="TextAnnotation_03or23b">
         <dc:Bounds x="1560" y="880" width="279" height="50" />
@@ -780,6 +806,18 @@
       <bpmndi:BPMNEdge id="Flow_0xpcvhi_di" bpmnElement="Flow_0xpcvhi">
         <di:waypoint x="1855" y="490" />
         <di:waypoint x="1855" y="737" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_008ye4q_di" bpmnElement="TextAnnotation_008ye4q">
+        <dc:Bounds x="2070" y="1230" width="205" height="60" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="DataInputAssociation_1dgrhfm_di" bpmnElement="DataInputAssociation_1dgrhfm">
+        <di:waypoint x="1205" y="1106" />
+        <di:waypoint x="1082" y="990" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="DataInputAssociation_1ena494_di" bpmnElement="DataInputAssociation_1ena494">
+        <di:waypoint x="1255" y="1130" />
+        <di:waypoint x="1810" y="1130" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

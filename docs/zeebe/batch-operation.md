@@ -18,10 +18,10 @@ within the Operate webapp.
 
 ### Quality Goals
 
-* running batch operations should never impact the overall performance of the Zeebe core engine and
-  the latency and throughput of live running process instances
-  * even when the whole system is at high load, the backpressure rate should be as low as possible
-* the batch operations module should be able to handle large volumes of data efficiently. The number
+* Running batch operations should never impact the overall performance of the Zeebe core engine and
+  the latency and throughput of live running process instances.
+  * Even when the whole system is at high load, the backpressure rate should be as low as possible.
+* The batch operations module should be able to handle large volumes of data efficiently. The number
   of processed batch operation items should not be limited by internal technical constraints.
 
 ## Business documentation
@@ -29,14 +29,14 @@ within the Operate webapp.
 ### Requirements
 
 * The batch operation should be able to be started, managed and observed by both the camunda-client
-  and the V2 REST API
+  and the Cluster Orchestration API
 * The following batch operation types are supported:
   * `CANCEL_PROCESS_INSTANCE`: Cancel a number of process instances
   * `MODIFY_PROCESS_INSTANCE`: Modify the active elements of a number of process instances
   * `MIGRATE_PROCESS_INSTANCE`: Migrate process instances to a new version of the process definition
   * `RESOLVE_INCIDENT`: Resolve incidents of a number of process instances
 * The end user can define the relevant process instances by providing a query, usually a
-  ProcessInstanceQuery
+  ProcessInstanceFilter
 * The user can suspend, resume and cancel a running batch operation
 * When a batch operation starts, the number and amount of process instances to be processed
   is known and can be observed by the user
@@ -57,62 +57,66 @@ flowchart LR
   Camunda_client["Camunda-Client"]
   Operate["Operate UI"]
   subgraph CAMUNDA ["Camunda"]
-    V2_REST_API["V2 REST API"]
+    REST_API["Cluster Orchestration API"]
     Zeebe["Zeebe Engine"]
   end
-  USER --> Camunda_client --> V2_REST_API
-  USER --> Operate --> V2_REST_API
-  V2_REST_API --> Zeebe
+  USER --> Camunda_client --> REST_API
+  USER --> Operate --> REST_API
+  USER --> REST_API
+  REST_API --> Zeebe
 ```
 
-|     Entity     |                                           Description                                            |
-|----------------|--------------------------------------------------------------------------------------------------|
-| User           | The user which uses Camunda.                                                                     |
-| Camunda        | The whole camunda platform, including broker, webapps, ...                                       |
-| Camunda Client | The Java Camunda client API.                                                                     |
-| Operate UI     | The  Operate UI as general administration UI, the end user usually starts batch operations from. |
-| V2 REST API    | Entry Point to the Camunda platform.                                                             |
-| Zeebe Engine   | The actual Camunda Zeebe engine execution the batch operation.                                   |
+|          Entity           |                                           Description                                            |
+|---------------------------|--------------------------------------------------------------------------------------------------|
+| User                      | The user which uses Camunda.                                                                     |
+| Camunda                   | The whole camunda platform, including broker, webapps, ...                                       |
+| Camunda Client            | The Java Camunda client API.                                                                     |
+| Operate UI                | The  Operate UI as general administration UI, the end user usually starts batch operations from. |
+| Cluster Orchestration API | REST Entry Point to the Camunda platform.                                                        |
+| Zeebe Engine              | The Camunda Zeebe engine which executes the batch operation.                                     |
 
 ### Sequence flow of a batch operation
 
 ![Batch operation sequence flow](assets/batch-operation.png)
 
-A batch operation is always started by the V2 REST API and the underlying broker gateway. The
+A batch operation is always started by the Cluster Orchestration API and the underlying broker gateway. The
 initial command to start a batch operation is routed to a single partition by the broker but then
 also forwarded to all other partitions.
 
-Each batch operation has a **leader partition** and a number of **follower partitions**. Aside from
-executing the batch operation items, the leader partitions is responsible for coordinating the batch
-operation (suspend, resume, cancel) and observing the overall progress, collect errors and append
-the final COMPLETED record. The follower partitions are responsible for executing the batch
-operation items.
+Each batch operation has a **leader partition** and a number of **follower partitions**. In contrast
+to process deployments (where it is always partition 1), this leader partition is not fixed but
+simply the partition, the `CreateBatchOperationCommand` was first processed. The partitions that
+command is distributed to, are considered follower partitions. Aside from executing the batch
+operation items, the leader partitions is responsible for coordinating the batch operation (suspend,
+resume, cancel) and observing the overall progress, collect errors and append the final COMPLETED
+record. The follower partitions are responsible for executing the batch operation items.
 
 Each batch operation is divided into two steps:
 
 #### Step 1: Initialization
 
 When a batch operation is requested by the end user with `BatchOperationIntent.CREATE`, the request
-is sent to only one partition (now called the **leader partition**) and contains only a filter
-object and a description of what operation to execute on the filtered items. First, this command
-record is distributed to all other partitions, so that each partition of the cluster will become
-part of the batch operation. On each partition the batch operation will now be stored in the local
-rocksDb.
+is sent by the gateway to only one random partition (now called the **leader partition**) and
+contains only a filter object and a description of what operation to execute on the filtered items.
+First, this command record is distributed to all other partitions, so that each partition of the
+cluster will become part of the batch operation. On each partition the batch operation, including
+the serialized filter object, will now be stored in the local rocksDb.
 
 ![Batch operation scheduler](assets/batch-operation-scheduler.png)
 
-The next step now is an asynchronous step. To not block the `StreamProcessor`, a new component picks
-up the new batch operation: The `BatchOperationExecutionScheduler`. This component is an *Actor*
-running decoupled from the `StreamProcessors` Actor and now tries to initialize the batch operation:
+The next step is an asynchronous step. To not block the `StreamProcessor`,
+the `BatchOperationExecutionScheduler` component is an own _Actor_ and is running decoupled from
+the `StreamProcessors`. It is responsible for initialing the batch operation:
 
 1. Deserialize the filter object. This filter object depends on the selected batch operation type.
 2. Enhance the filter object with the local `partitionId`. Each partition should only process its
    own items. Therefore the local filter needs to be enhanced with the
    `partitionId` of the partition.
-3. Query the secondary database with the created filter.
-   * The secondary database is queried in pages. So each response may only contain a subset of the
-     result. Therefore, the scheduler will
-     query the secondary database multiple times until all items are fetched.
+3. Query the secondary database with the enhanced filter.
+   * Because ElasticSearch always limits a search result to 10000 items, the secondary database is
+     queried in pages. So each response may only contain a subset of the
+     result. Therefore, the scheduler will query the secondary database multiple times until all
+     items are fetched.
    * Between the queries, the scheduler always checks again if the batch operation is still active.
      If it was suspended or cancelled, the scheduler will stop the INIT process. In case the batch
      operation es resumed later, the INIT process will restart again.
@@ -129,13 +133,18 @@ running decoupled from the `StreamProcessors` Actor and now tries to initialize 
 6. Finally, the scheduler will append a `BatchOperationExecutionIntent.EXECUTE` record to start the
    actual execution of the batch operation.
 
+** TODO document `PARTITION_FAILED` and retry behaviour once it's all merged.
+
 #### Step 2: Execution
 
 After the INIT phase, the batch operation is now ready to be executed. The execution is initialized
 with a `BatchOperationExecutionIntent.EXECUTE` record. The `BatchOperationExecutionProcessor` picks
 up the record and reads the next of itemKey from the local rocksDb storage. Depending on the type of
 the batch operation, now a special `BatchOperationExecutor` is called and the operation is executed
-on the itemKey. The executed itemKeys are appended in a `BatchOperationExecutionIntent.EXECUTED`
+on the itemKey. The actual execution happens by appending an already existing, regular Zeebe command
+(like `ProcessInstanceIntent.CANCEL`).
+
+The executed itemKeys are appended in a `BatchOperationExecutionIntent.EXECUTED`
 event record, which (when applied) will delete the itemKey from the local rocksDb storage.
 After this, a next `BatchOperationExecutionIntent.EXECUTE` is appended to create a
 follow-up loop of executions until all items have been processed.
