@@ -29,7 +29,7 @@ import java.lang.annotation.Target;
  *    @RegisterExtension
  *    static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
  *
- *    @MappingDefinition
+ *    @MappingRuleDefinition
  *    private static final TestMapping MAPPING =
  *      new TestMapping("mappingRuleId",
  *                   "claimName",

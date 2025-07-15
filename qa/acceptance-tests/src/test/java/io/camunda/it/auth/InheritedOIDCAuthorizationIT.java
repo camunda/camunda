@@ -16,7 +16,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.GroupDefinition;
-import io.camunda.qa.util.auth.MappingDefinition;
+import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.RoleDefinition;
@@ -55,23 +55,23 @@ public class InheritedOIDCAuthorizationIT {
   // Injected by the MultiDbTest extension
   private static KeycloakContainer keycloak;
 
-  @MappingDefinition
+  @MappingRuleDefinition
   private static final TestMapping MAPPING_THROUGH_AUTHORIZED_GROUP = createTestMapping();
 
-  @MappingDefinition
+  @MappingRuleDefinition
   private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_GROUP = createTestMapping();
 
-  @MappingDefinition
+  @MappingRuleDefinition
   private static final TestMapping MAPPING_THROUGH_AUTHORIZED_ROLE = createTestMapping();
 
-  @MappingDefinition
+  @MappingRuleDefinition
   private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_ROLE = createTestMapping();
 
-  @MappingDefinition
+  @MappingRuleDefinition
   private static final TestMapping MAPPING_THROUGH_GROUP_THROUGH_AUTHORIZED_ROLE =
       createTestMapping();
 
-  @MappingDefinition
+  @MappingRuleDefinition
   private static final TestMapping MAPPING_THROUGH_GROUP_THROUGH_UNAUTHORIZED_ROLE =
       createTestMapping();
 
