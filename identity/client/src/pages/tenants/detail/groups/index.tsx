@@ -7,17 +7,18 @@
  */
 
 import { FC } from "react";
+import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { getGroupsByTenantId } from "src/utility/api/tenants";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
-import { TrashCan } from "@carbon/react/icons";
-import DeleteModal from "src/pages/tenants/detail/groups/DeleteModal";
 import AssignGroupsModal from "src/pages/tenants/detail/groups/AssignGroupsModal";
+import AssignGroupModal from "src/pages/tenants/detail/groups/AssignGroupModal";
+import DeleteModal from "src/pages/tenants/detail/groups/DeleteModal";
 import { isCamundaGroupsEnabled } from "src/configuration";
-import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 import { GroupKeys } from "src/utility/api/groups";
+import { useEnrichedGroups } from "src/components/global/useEnrichGroups";
 
 type GroupsProps = {
   tenantId: string;
@@ -34,15 +35,14 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
   );
 
   const isGroupsEmpty = !groups || groups.length === 0;
-
   const [assignGroups, assignGroupsModal] = useEntityModal(
-    AssignGroupsModal,
+    isCamundaGroupsEnabled ? AssignGroupsModal : AssignGroupModal,
     reload,
     {
       assignedGroups: groups,
     },
   );
-  const openAssignModal = () => assignGroups({ id: tenantId });
+  const openAssignModal = () => assignGroups({ tenantId });
   const [unassignGroup, unassignGroupModal] = useEntityModal(
     DeleteModal,
     reload,
