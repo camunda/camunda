@@ -103,6 +103,9 @@
                 },
                 "result": {
                   "properties": {
+                    "type": {
+                      "type": "text"
+                    },
                     "denied": {
                       "type": "boolean"
                     },
@@ -131,6 +134,16 @@
                         },
                         "priority": {
                           "type": "integer"
+                        }
+                      }
+                    },
+                    "activateElements": {
+                      "properties": {
+                        "elementId": {
+                          "type": "text"
+                        },
+                        "variables": {
+                          "enabled": false
                         }
                       }
                     }
