@@ -16,15 +16,11 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.document.api.DocumentError;
-import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
-import io.camunda.document.api.DocumentError.DocumentNotFound;
-import io.camunda.document.api.DocumentError.InvalidInput;
-import io.camunda.document.api.DocumentError.OperationNotSupported;
-import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
@@ -107,10 +103,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 public final class ResponseMapper {
 
@@ -265,6 +263,31 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
+  public static ResponseEntity<StreamingResponseBody> toDocumentContentResponse(
+      final DocumentContentResponse response) {
+    final MediaType mediaType = resolveMediaType(response);
+    return ResponseEntity.ok()
+        .contentType(mediaType)
+        .body(
+            bodyStream -> {
+              try (final var contentInputStream = response.content()) {
+                contentInputStream.transferTo(bodyStream);
+              }
+            });
+  }
+
+  private static MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
+    try {
+      final var contentType = contentResponse.contentType();
+      if (contentType == null) {
+        return MediaType.APPLICATION_OCTET_STREAM;
+      }
+      return MediaType.parseMediaType(contentResponse.contentType());
+    } catch (final InvalidMediaTypeException e) {
+      return MediaType.APPLICATION_OCTET_STREAM;
+    }
+  }
+
   public static ResponseEntity<Object> toDocumentReference(
       final DocumentReferenceResponse response) {
     final var reference = transformDocumentReferenceResponse(response);
@@ -305,40 +328,10 @@ public final class ResponseMapper {
         .body(response);
   }
 
-  public static ProblemDetail mapDocumentErrorToProblem(final DocumentError e) {
-    final String detail;
-    final HttpStatusCode status;
-    switch (e) {
-      case final DocumentNotFound notFound -> {
-        detail = String.format("Document with id '%s' not found", notFound.documentId());
-        status = HttpStatus.NOT_FOUND;
-      }
-      case final InvalidInput invalidInput -> {
-        detail = invalidInput.message();
-        status = HttpStatus.BAD_REQUEST;
-      }
-      case final DocumentAlreadyExists documentAlreadyExists -> {
-        detail =
-            String.format(
-                "Document with id '%s' already exists", documentAlreadyExists.documentId());
-        status = HttpStatus.CONFLICT;
-      }
-      case final StoreDoesNotExist storeDoesNotExist -> {
-        detail =
-            String.format(
-                "Document store with id '%s' does not exist", storeDoesNotExist.storeId());
-        status = HttpStatus.BAD_REQUEST;
-      }
-      case final OperationNotSupported operationNotSupported -> {
-        detail = operationNotSupported.message();
-        status = HttpStatus.METHOD_NOT_ALLOWED;
-      }
-      default -> {
-        detail = "An error occurred: " + e.getClass().getName();
-        status = HttpStatus.INTERNAL_SERVER_ERROR;
-      }
-    }
-    return RestErrorMapper.createProblemDetail(status, detail, e.getClass().getSimpleName());
+  public static ProblemDetail mapDocumentErrorToProblem(final ServiceException e) {
+    final String detail = e.getMessage();
+    final HttpStatusCode status = RestErrorMapper.mapStatus(e.getStatus());
+    return RestErrorMapper.createProblemDetail(status, detail, e.getStatus().name());
   }
 
   private static DocumentReference transformDocumentReferenceResponse(

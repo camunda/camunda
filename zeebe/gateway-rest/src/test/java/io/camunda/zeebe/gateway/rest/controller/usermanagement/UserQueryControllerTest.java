@@ -23,6 +23,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -113,7 +114,9 @@ public class UserQueryControllerTest extends RestControllerTest {
     final var path = "%s/%s".formatted("/v2/users", username);
     when(userServices.getUser(username))
         .thenThrow(
-            new CamundaSearchException("user not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "user not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient

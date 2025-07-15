@@ -21,6 +21,7 @@ import io.camunda.search.sort.MappingSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MappingServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,8 +79,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
     final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingId);
     when(mappingServices.getMapping(mappingId))
         .thenThrow(
-            new CamundaSearchException(
-                "mapping not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "mapping not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient

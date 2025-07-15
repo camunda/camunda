@@ -20,6 +20,7 @@ import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -161,12 +162,13 @@ final class AuthorizationMigrationHandlerTest {
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.CREATE,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "authorization already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.CREATE,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "authorization already exists")))));
     final var users1 = List.of(new User("user1", "username1", "name1", "email1"));
     when(managementIdentityClient.fetchUsers(any(Integer.class)))
         .thenReturn(users1)

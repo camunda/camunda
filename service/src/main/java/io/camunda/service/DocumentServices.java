@@ -18,6 +18,8 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.Either;
@@ -63,14 +65,15 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                 storeRecord
                     .instance()
                     .createDocument(storeRequest)
-                    .thenApply(this::requireRightOrThrow)
-                    .thenApply(
-                        result ->
-                            new DocumentReferenceResponse(
-                                result.documentId(),
-                                storeRecord.storeId(),
-                                result.contentHash(),
-                                result.metadata())));
+                    .handleAsync(
+                        (response, error) -> {
+                          final var result = requireRightOrThrow(response, error);
+                          return new DocumentReferenceResponse(
+                              result.documentId(),
+                              storeRecord.storeId(),
+                              result.contentHash(),
+                              result.metadata());
+                        }));
   }
 
   /** Will never return a failed future; an Either type is returned instead */
@@ -105,7 +108,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         .thenApply((ignoredRes) -> results);
   }
 
-  public DocumentContentResponse getDocumentContent(
+  public CompletableFuture<DocumentContentResponse> getDocumentContent(
       final String documentId, final String storeId, final String contentHash) {
 
     return getDocumentStore(storeId)
@@ -124,12 +127,12 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                         return storeRecordInstance.getDocument(documentId);
                       });
             })
-        .thenApply(this::requireRightOrThrow)
-        .thenApply(
-            documentContent ->
-                new DocumentContentResponse(
-                    documentContent.inputStream(), documentContent.contentType()))
-        .join();
+        .handleAsync(
+            (response, error) -> {
+              final var documentContent = requireRightOrThrow(response, error);
+              return new DocumentContentResponse(
+                  documentContent.inputStream(), documentContent.contentType());
+            });
   }
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
@@ -140,7 +143,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                 storeRecord
                     .instance()
                     .deleteDocument(documentId)
-                    .thenAccept(this::requireRightOrThrow));
+                    .handleAsync(this::requireRightOrThrow));
   }
 
   public CompletableFuture<DocumentLink> createLink(
@@ -164,7 +167,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
                               ? CompletableFuture.completedFuture(
                                   Either.left(verification.getLeft()))
                               : storeRecordInstance.createLink(documentId, ttl))
-                  .thenApply(this::requireRightOrThrow);
+                  .handleAsync(this::requireRightOrThrow);
             });
   }
 
@@ -178,7 +181,8 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       }
       return CompletableFuture.completedStage(storeRecord).toCompletableFuture();
     } catch (final IllegalArgumentException e) {
-      return CompletableFuture.failedFuture(new DocumentException(new StoreDoesNotExist(id)));
+      return CompletableFuture.failedFuture(
+          ErrorMapper.mapDocumentError(new StoreDoesNotExist(id)));
     }
   }
 
@@ -187,7 +191,8 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final Either<DocumentError, DocumentReference> rawResult,
       final String storeId) {
     if (rawResult.isLeft()) {
-      return Either.left(new DocumentErrorResponse(request, rawResult.getLeft()));
+      return Either.left(
+          new DocumentErrorResponse(request, ErrorMapper.mapDocumentError(rawResult.getLeft())));
     }
     final var reference = rawResult.get();
     return Either.right(
@@ -201,10 +206,14 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     }
   }
 
-  private <T> T requireRightOrThrow(final Either<DocumentError, T> response) {
+  private <T> T requireRightOrThrow(
+      final Either<DocumentError, T> response, final Throwable error) {
+    if (error != null) {
+      throw ErrorMapper.mapError(error);
+    }
     if (response.isLeft()) {
       logIfUnknownError(response.getLeft());
-      throw new DocumentException(response.getLeft());
+      throw ErrorMapper.mapDocumentError(response.getLeft());
     } else {
       return response.get();
     }
@@ -223,18 +232,5 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   public record DocumentLinkParams(Duration timeToLive) {}
 
-  public static class DocumentException extends RuntimeException {
-
-    private final DocumentError documentError;
-
-    public DocumentException(final DocumentError error) {
-      documentError = error;
-    }
-
-    public DocumentError getDocumentError() {
-      return documentError;
-    }
-  }
-
-  public record DocumentErrorResponse(DocumentCreateRequest request, DocumentError error) {}
+  public record DocumentErrorResponse(DocumentCreateRequest request, ServiceException error) {}
 }

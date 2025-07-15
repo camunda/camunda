@@ -25,6 +25,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQueryResult;
@@ -190,9 +191,10 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
     void shouldMapServiceExceptionToErrorResponse() {
       when(adHocSubProcessActivityServices.search(any()))
           .thenThrow(
-              new CamundaSearchException(
-                  "Failed to find ad-hoc sub-process with ID 'TestAdHocSubProcess'",
-                  CamundaSearchException.Reason.NOT_FOUND));
+              ErrorMapper.mapSearchError(
+                  new CamundaSearchException(
+                      "Failed to find ad-hoc sub-process with ID 'TestAdHocSubProcess'",
+                      CamundaSearchException.Reason.NOT_FOUND)));
 
       webClient
           .post()

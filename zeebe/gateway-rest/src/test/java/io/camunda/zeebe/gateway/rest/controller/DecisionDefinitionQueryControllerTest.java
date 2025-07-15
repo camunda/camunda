@@ -24,7 +24,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -324,8 +324,10 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final Long decisionDefinitionKey = 1L;
     when(decisionDefinitionServices.getDecisionDefinitionXml(decisionDefinitionKey))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision with key 1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
 
     // when/then
     final var expectedResponse =
@@ -446,8 +448,10 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final Long decisionDefinitionKey = 1L;
     when(decisionDefinitionServices.getByKey(decisionDefinitionKey))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision with key 1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
 
     // when/then
     final var expectedResponse =
@@ -509,7 +513,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final var service = testParameters.getRight();
     final long decisionDefinitionKey = 1L;
     when(service.apply(decisionDefinitionServices, decisionDefinitionKey))
-        .thenThrow(new ForbiddenException(Authorization.of(a -> a.decisionDefinition().read())));
+        .thenThrow(
+            ErrorMapper.createForbiddenException(
+                Authorization.of(a -> a.decisionDefinition().read())));
     // when / then
     webClient
         .get()
@@ -523,7 +529,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                     {
                       "type": "about:blank",
                       "status": 403,
-                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "title": "FORBIDDEN",
                       "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'"
                     }
                 """);

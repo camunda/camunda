@@ -150,7 +150,7 @@ public final class SetVariablesTest {
     // then
     if (useRest) {
       final String expectedMessage =
-          "Expected to handle REST API request, but request could not be delivered";
+          "Expected to handle request, but request could not be delivered";
       assertThatThrownBy(command::join).hasMessageContaining(expectedMessage);
     } else {
       final String expectedMessage =

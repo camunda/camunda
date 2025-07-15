@@ -137,7 +137,8 @@ public final class SearchQueryResponseMapper {
   private SearchQueryResponseMapper() {}
 
   public static UsageMetricsResponse toUsageMetricsResponse(
-      final UsageMetricsCount usageMetricsCount) {
+      final SearchQueryResult<UsageMetricsCount> usageMetricsCountResult) {
+    final UsageMetricsCount usageMetricsCount = usageMetricsCountResult.items().getFirst();
     return new UsageMetricsResponse()
         .assignees(usageMetricsCount.assignees())
         .processInstances(usageMetricsCount.processInstances())

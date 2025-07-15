@@ -44,11 +44,13 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
 
   @Override
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
-    return userSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.user().read())))
-        .searchUsers(query);
+    return executeSearchRequest(
+        () ->
+            userSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.user().read())))
+                .searchUsers(query));
   }
 
   @Override

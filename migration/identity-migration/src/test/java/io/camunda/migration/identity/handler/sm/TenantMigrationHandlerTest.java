@@ -24,6 +24,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -162,21 +163,23 @@ public class TenantMigrationHandlerTest {
     when(tenantServices.createTenant(any(TenantDTO.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.CREATE,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "tenant already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.CREATE,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "tenant already exists")))));
     when(tenantServices.addMember(any(TenantMemberRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.ADD_ENTITY,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "member already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.ADD_ENTITY,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "member already exists")))));
     when(managementIdentityClient.fetchTenantUsers(anyString()))
         .thenReturn(
             List.of(

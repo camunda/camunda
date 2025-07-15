@@ -54,11 +54,13 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
 
   @Override
   public SearchQueryResult<GroupEntity> search(final GroupQuery query) {
-    return groupSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.group().read())))
-        .searchGroups(query);
+    return executeSearchRequest(
+        () ->
+            groupSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.group().read())))
+                .searchGroups(query));
   }
 
   @Override
@@ -127,11 +129,13 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public SearchQueryResult<GroupMemberEntity> searchMembers(final GroupQuery query) {
-    return groupSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.group().read())))
-        .searchGroupMembers(query);
+    return executeSearchRequest(
+        () ->
+            groupSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.group().read())))
+                .searchGroupMembers(query));
   }
 
   public record GroupDTO(String groupId, String name, String description) {}

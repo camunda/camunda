@@ -34,11 +34,14 @@ public class MessageSubscriptionServices
 
   @Override
   public SearchQueryResult<MessageSubscriptionEntity> search(final MessageSubscriptionQuery query) {
-    return searchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchMessageSubscriptions(query);
+    return executeSearchRequest(
+        () ->
+            searchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                .searchMessageSubscriptions(query));
   }
 
   @Override

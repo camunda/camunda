@@ -30,6 +30,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
@@ -277,7 +278,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
     final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
     when(groupServices.getGroup(groupId))
         .thenThrow(
-            new CamundaSearchException("group not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "group not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient

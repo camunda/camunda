@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -38,7 +39,8 @@ public class UsageMetricsControllerTest extends RestControllerTest {
          "decisionInstances": 17
       }""";
 
-  static final UsageMetricsCount USAGE_METRICS_COUNT_ENTITY = new UsageMetricsCount(5L, 23L, 17L);
+  static final SearchQueryResult<UsageMetricsCount> USAGE_METRICS_COUNT_ENTITY =
+      SearchQueryResult.of(new UsageMetricsCount(5L, 23L, 17L));
 
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
