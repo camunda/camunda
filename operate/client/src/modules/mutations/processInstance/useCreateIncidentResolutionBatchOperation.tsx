@@ -13,16 +13,16 @@ import {
 } from '@tanstack/react-query';
 import {
   type CreateIncidentResolutionBatchOperationResponseBody,
-  type QueryBatchOperationItemsRequestBody,
+  type QueryBatchOperationsRequestBody,
 } from '@vzeta/camunda-api-zod-schemas';
-import {queryBatchOperationItems} from 'modules/api/v2/batchOperations/queryBatchOperationItems';
+import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOperations';
 import {createIncidentResolutionBatchOperation} from 'modules/api/v2/processInstances/createIncidentResolutionBatchOperation';
 
 const getMutationKey = (processInstanceKey: string) => {
   return ['batchOperations', processInstanceKey, {type: 'incidentResolution'}];
 };
 
-function getQueryKey(payload: QueryBatchOperationItemsRequestBody) {
+function getQueryKey(payload: QueryBatchOperationsRequestBody) {
   return ['queryBatchOperationItems', ...Object.values(payload)];
 }
 
@@ -44,13 +44,13 @@ const useCreateIncidentResolutionBatchOperation = (
         throw new Error(error.response?.statusText);
       }
 
-      const payload = {filter: {batchOperationId: response.batchOperationId}};
+      const payload = {filter: {batchOperationKey: response.batchOperationKey}};
       const OPERATION_PENDING = 'Batch operation is still pending';
 
       await queryClient.fetchQuery({
         queryKey: getQueryKey(payload),
         queryFn: async () => {
-          const {response, error} = await queryBatchOperationItems(payload);
+          const {response, error} = await queryBatchOperations(payload);
           if (error) {
             throw new Error(error.response?.statusText);
           }

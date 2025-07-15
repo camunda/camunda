@@ -12,7 +12,7 @@ import {getWrapper} from './mocks';
 import {notificationsStore} from 'modules/stores/notifications';
 import {ResolveIncident} from './ResolveIncident';
 import {mockCreateIncidentResolutionBatchOperation} from 'modules/mocks/api/v2/processInstances/createIncidentResolutionBatchOperation';
-import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
+import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -23,7 +23,7 @@ vi.mock('modules/stores/notifications', () => ({
 describe('Resolve Incident component', () => {
   it('should resolve incident on click', async () => {
     mockCreateIncidentResolutionBatchOperation().withSuccess({});
-    mockQueryBatchOperationItems().withSuccess({
+    mockQueryBatchOperations().withSuccess({
       items: [],
       page: {totalItems: 0},
     });
@@ -46,7 +46,7 @@ describe('Resolve Incident component', () => {
     );
 
     // Expect button to be disabled when operation is pending
-    mockQueryBatchOperationItems().withSuccess({
+    mockQueryBatchOperations().withSuccess({
       items: [{state: 'ACTIVE'}],
       page: {totalItems: 1},
     });
@@ -58,7 +58,7 @@ describe('Resolve Incident component', () => {
     );
 
     // Expect button to be enabled when operation was successful
-    mockQueryBatchOperationItems().withSuccess({
+    mockQueryBatchOperations().withSuccess({
       items: [{state: 'COMPLETED'}],
       page: {totalItems: 1},
     });
