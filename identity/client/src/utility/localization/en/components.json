@@ -51,6 +51,8 @@
   "searchByClientId": "Search by client ID",
   "typeUsername": "Type a username",
   "typeGroup": "Type a group",
+  "groupId": "Group ID",
+  "enterGroupId": "Enter your Group ID",
   "setupCreateAdminUser": "Create admin user",
   "setupUsernameLabel": "Username *",
   "setupUsernamePlaceholder": "Enter username",
