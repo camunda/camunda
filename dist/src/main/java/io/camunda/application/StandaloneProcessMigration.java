@@ -8,15 +8,20 @@
 package io.camunda.application;
 
 import io.camunda.application.commons.migration.AsyncMigrationsRunner;
+import io.camunda.application.commons.migration.AsyncMigrationsRunner.MigrationFinishedEvent;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.ConfigurableApplicationContext;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 @EnableAutoConfiguration
-public class StandaloneProcessMigration {
+public class StandaloneProcessMigration implements ApplicationListener<MigrationFinishedEvent> {
+
+  private static ConfigurableApplicationContext applicationContext;
 
   public static void main(final String[] args) {
     MainSupport.putSystemPropertyIfAbsent(
@@ -39,7 +44,14 @@ public class StandaloneProcessMigration {
             .addCommandLineProperties(true)
             .build(args);
 
-    final var context = application.run(args);
-    SpringApplication.exit(context, () -> 0);
+    applicationContext = application.run(args);
+  }
+
+  @Override
+  public void onApplicationEvent(final MigrationFinishedEvent event) throws RuntimeException {
+    final int exitCode =
+        SpringApplication.exit(
+            applicationContext, () -> event.getMigrationsException() == null ? 0 : 1);
+    System.exit(exitCode);
   }
 }
