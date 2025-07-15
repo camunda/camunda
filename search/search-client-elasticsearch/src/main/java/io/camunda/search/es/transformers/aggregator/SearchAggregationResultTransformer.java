@@ -29,6 +29,7 @@ import io.camunda.search.clients.transformers.query.Cursor;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.search.SearchQueryHitTransformer;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -98,7 +99,7 @@ public class SearchAggregationResultTransformer<T>
 
   private <B extends MultiBucketBase> AggregationResult transformMultiBucketAggregate(
       final MultiBucketAggregateBase<B> aggregate) {
-    final var map = new HashMap<String, AggregationResult>();
+    final var map = new LinkedHashMap<String, AggregationResult>();
     final var buckets = aggregate.buckets();
     final var searchAfter = extractSearchAfter(aggregate);
     if (buckets.isKeyed()) {
