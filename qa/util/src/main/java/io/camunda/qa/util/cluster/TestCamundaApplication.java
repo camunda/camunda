@@ -14,13 +14,13 @@ import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPP
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.security.configuration.ConfiguredMapping;
