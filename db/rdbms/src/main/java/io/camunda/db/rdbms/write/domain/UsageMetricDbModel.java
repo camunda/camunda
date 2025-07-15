@@ -18,6 +18,10 @@ public record UsageMetricDbModel(
     long value,
     int partitionId) {
 
+  public String getId() {
+    return key + "_" + tenantId;
+  }
+
   public record UsageMetricStatisticsDbModel(Long rpi, Long edi, Long at) {}
 
   public record UsageMetricTenantStatisticsDbModel(String tenantId, Long rpi, Long edi) {}
