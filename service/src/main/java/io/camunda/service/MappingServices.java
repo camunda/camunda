@@ -7,9 +7,9 @@
  */
 package io.camunda.service;
 
-import io.camunda.search.clients.MappingSearchClient;
-import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.clients.MappingRuleSearchClient;
+import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
@@ -28,28 +28,28 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 public class MappingServices
-    extends SearchQueryService<MappingServices, MappingQuery, MappingEntity> {
+    extends SearchQueryService<MappingServices, MappingRuleQuery, MappingRuleEntity> {
 
-  private final MappingSearchClient mappingSearchClient;
+  private final MappingRuleSearchClient mappingSearchClient;
 
   public MappingServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final MappingSearchClient mappingSearchClient,
+      final MappingRuleSearchClient mappingSearchClient,
       final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.mappingSearchClient = mappingSearchClient;
   }
 
   @Override
-  public SearchQueryResult<MappingEntity> search(final MappingQuery query) {
+  public SearchQueryResult<MappingRuleEntity> search(final MappingRuleQuery query) {
     return executeSearchRequest(
         () ->
             mappingSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, Authorization.of(a -> a.mapping().read())))
-                .searchMappings(query));
+                .searchMappingRules(query));
   }
 
   @Override
@@ -76,17 +76,17 @@ public class MappingServices
             .setMappingId(request.mappingId()));
   }
 
-  public MappingEntity getMapping(final String mappingId) {
+  public MappingRuleEntity getMapping(final String mappingId) {
     return search(
             SearchQueryBuilders.mappingSearchQuery()
-                .filter(f -> f.mappingId(mappingId))
+                .filter(f -> f.mappingRuleId(mappingId))
                 .singleResult()
                 .build())
         .items()
         .getFirst();
   }
 
-  public Optional<MappingEntity> findMapping(final MappingDTO request) {
+  public Optional<MappingRuleEntity> findMapping(final MappingDTO request) {
     return search(
             SearchQueryBuilders.mappingSearchQuery()
                 .filter(f -> f.claimName(request.claimName()).claimValue(request.claimValue()))
@@ -101,9 +101,9 @@ public class MappingServices
     return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingId(mappingId));
   }
 
-  public Stream<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
+  public Stream<MappingRuleEntity> getMatchingMappings(final Map<String, Object> claims) {
     return MappingRuleMatcher.matchingRules(
-        search(MappingQuery.of(q -> q.unlimited())).items().stream(), claims);
+        search(MappingRuleQuery.of(q -> q.unlimited())).items().stream(), claims);
   }
 
   public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}
