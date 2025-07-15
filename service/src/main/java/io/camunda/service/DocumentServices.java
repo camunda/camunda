@@ -59,21 +59,19 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         new DocumentCreationRequest(
             request.documentId, request.contentInputStream, request.metadata);
 
-    return getDocumentStore(request.storeId)
-        .thenCompose(
-            storeRecord ->
-                storeRecord
-                    .instance()
-                    .createDocument(storeRequest)
-                    .handleAsync(
-                        (response, error) -> {
-                          final var result = requireRightOrThrow(response, error);
-                          return new DocumentReferenceResponse(
-                              result.documentId(),
-                              storeRecord.storeId(),
-                              result.contentHash(),
-                              result.metadata());
-                        }));
+    final DocumentStoreRecord documentStore = getDocumentStore(request.storeId);
+    return documentStore
+        .instance()
+        .createDocument(storeRequest)
+        .handleAsync(
+            (response, error) -> {
+              final var right = requireRightOrThrow(response, error);
+              return new DocumentReferenceResponse(
+                  right.documentId(),
+                  documentStore.storeId(),
+                  right.contentHash(),
+                  right.metadata());
+            });
   }
 
   /** Will never return a failed future; an Either type is returned instead */
@@ -83,49 +81,47 @@ public class DocumentServices extends ApiServices<DocumentServices> {
     final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> results =
         new ArrayList<>();
 
-    final List<CompletableFuture<Void>> futures =
+    final List<CompletableFuture<Boolean>> futures =
         requests.stream()
             .map(
                 request -> {
                   final var storeRequest =
                       new DocumentCreationRequest(
                           request.documentId, request.contentInputStream, request.metadata);
-                  return getDocumentStore(request.storeId)
-                      .thenCompose(
-                          storeRecord ->
-                              storeRecord
-                                  .instance()
-                                  .createDocument(storeRequest)
-                                  .thenApply(
-                                      result ->
-                                          transformResponse(
-                                              request, result, storeRecord.storeId())))
-                      .thenAccept(results::add);
+                  final DocumentStoreRecord documentStore = getDocumentStore(request.storeId);
+                  return documentStore
+                      .instance()
+                      .createDocument(storeRequest)
+                      .handleAsync(
+                          (response, error) ->
+                              results.add(
+                                  transformResponse(
+                                      request, response, error, documentStore.storeId())));
                 })
             .toList();
 
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-        .thenApply((ignoredRes) -> results);
+        .handleAsync(
+            (ignoredRes, error) -> {
+              if (error != null) {
+                throw ErrorMapper.mapError(error);
+              }
+              return results;
+            });
   }
 
   public CompletableFuture<DocumentContentResponse> getDocumentContent(
       final String documentId, final String storeId, final String contentHash) {
 
-    return getDocumentStore(storeId)
+    final DocumentStore documentStore = getDocumentStore(storeId).instance();
+    return documentStore
+        .verifyContentHash(documentId, contentHash)
         .thenCompose(
-            storeRecord -> {
-              final DocumentStore storeRecordInstance = storeRecord.instance();
-
-              return storeRecordInstance
-                  .verifyContentHash(documentId, contentHash)
-                  .thenCompose(
-                      verification -> {
-                        if (verification.isLeft()) {
-                          return CompletableFuture.completedFuture(
-                              Either.left(verification.getLeft()));
-                        }
-                        return storeRecordInstance.getDocument(documentId);
-                      });
+            verification -> {
+              if (verification.isLeft()) {
+                return CompletableFuture.completedFuture(Either.left(verification.getLeft()));
+              }
+              return documentStore.getDocument(documentId);
             })
         .handleAsync(
             (response, error) -> {
@@ -137,13 +133,11 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
 
-    return getDocumentStore(storeId)
-        .thenCompose(
-            storeRecord ->
-                storeRecord
-                    .instance()
-                    .deleteDocument(documentId)
-                    .handleAsync(this::requireRightOrThrow));
+    final DocumentStoreRecord documentStore = getDocumentStore(storeId);
+    return documentStore
+        .instance()
+        .deleteDocument(documentId)
+        .handleAsync(this::requireRightOrThrow);
   }
 
   public CompletableFuture<DocumentLink> createLink(
@@ -154,42 +148,39 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
     final long ttl = params.timeToLive().toMillis();
 
-    return getDocumentStore(storeId)
+    final DocumentStore documentStore = getDocumentStore(storeId).instance();
+    return documentStore
+        .verifyContentHash(documentId, contentHash)
         .thenCompose(
-            storeRecord -> {
-              final DocumentStore storeRecordInstance = storeRecord.instance();
-
-              return storeRecordInstance
-                  .verifyContentHash(documentId, contentHash)
-                  .thenCompose(
-                      verification ->
-                          verification.isLeft()
-                              ? CompletableFuture.completedFuture(
-                                  Either.left(verification.getLeft()))
-                              : storeRecordInstance.createLink(documentId, ttl))
-                  .handleAsync(this::requireRightOrThrow);
-            });
+            verification ->
+                verification.isLeft()
+                    ? CompletableFuture.completedFuture(Either.left(verification.getLeft()))
+                    : documentStore.createLink(documentId, ttl))
+        .handleAsync(this::requireRightOrThrow);
   }
 
-  private CompletableFuture<DocumentStoreRecord> getDocumentStore(final String id) {
-    final DocumentStoreRecord storeRecord;
+  private DocumentStoreRecord getDocumentStore(final String id) {
     try {
       if (id == null) {
-        storeRecord = registry.getDefaultDocumentStore();
+        return registry.getDefaultDocumentStore();
       } else {
-        storeRecord = registry.getDocumentStore(id);
+        return registry.getDocumentStore(id);
       }
-      return CompletableFuture.completedStage(storeRecord).toCompletableFuture();
     } catch (final IllegalArgumentException e) {
-      return CompletableFuture.failedFuture(
-          ErrorMapper.mapDocumentError(new StoreDoesNotExist(id)));
+      throw ErrorMapper.mapDocumentError(new StoreDoesNotExist(id));
+    } catch (final Exception e) {
+      throw ErrorMapper.mapError(e);
     }
   }
 
   private Either<DocumentErrorResponse, DocumentReferenceResponse> transformResponse(
       final DocumentCreateRequest request,
       final Either<DocumentError, DocumentReference> rawResult,
+      final Throwable error,
       final String storeId) {
+    if (error != null) {
+      return Either.left(new DocumentErrorResponse(request, ErrorMapper.mapError(error)));
+    }
     if (rawResult.isLeft()) {
       return Either.left(
           new DocumentErrorResponse(request, ErrorMapper.mapDocumentError(rawResult.getLeft())));
