@@ -872,7 +872,7 @@ public class SchemaManagerIT {
         .containsExactlyInAnyOrder(
             newPrefix + "-camunda-authorization-8.8.0_",
             newPrefix + "-camunda-group-8.8.0_",
-            newPrefix + "-camunda-mapping-8.8.0_",
+            newPrefix + "-camunda-mapping-rule-8.8.0_",
             newPrefix + "-camunda-role-8.8.0_",
             newPrefix + "-camunda-tenant-8.8.0_",
             newPrefix + "-camunda-user-8.8.0_",
