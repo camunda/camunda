@@ -13,10 +13,11 @@ import { useApiCall } from "src/utility/api/hooks";
 import TextField from "src/components/form/TextField";
 import { createRole } from "src/utility/api/roles";
 import { isValidRoleId } from "src/pages/roles/modals/isValidRoleId";
+import { useNotifications } from "src/components/notifications";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("roles");
-
+  const { enqueueNotification } = useNotifications();
   const [callAddRole, { loading, error }] = useApiCall(createRole, {
     suppressErrorNotification: true,
   });
@@ -26,6 +27,8 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [description, setDescription] = useState("");
   const [isRoleIdValid, setIsRoleIdValid] = useState(true);
 
+  const isSubmitDisabled = loading || !roleName || !roleId || !isRoleIdValid;
+
   const handleSubmit = async () => {
     const { success } = await callAddRole({
       name: roleName,
@@ -34,37 +37,44 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     });
 
     if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("roleCreated"),
+        subtitle: t("createRoleSuccess", {
+          roleName,
+        }),
+      });
       onSuccess();
     }
   };
 
-  const validateRoleId = (id: string) => {
-    setIsRoleIdValid(isValidRoleId(id));
+  const validateRoleId = () => {
+    setIsRoleIdValid(isValidRoleId(roleId));
   };
 
   return (
     <FormModal
       open={open}
       headline={t("createRole")}
-      onClose={onClose}
-      onSubmit={handleSubmit}
       loading={loading}
       error={error}
       loadingDescription={t("creatingRole")}
       confirmLabel={t("createRole")}
-      submitDisabled={!roleName || !roleId || !isRoleIdValid}
+      submitDisabled={isSubmitDisabled}
+      onClose={onClose}
+      onSubmit={handleSubmit}
     >
       <TextField
         label={t("roleId")}
         value={roleId}
         placeholder={t("roleIdPlaceholder")}
-        onChange={(value) => {
-          validateRoleId(value);
-          setRoleId(value);
-        }}
         errors={!isRoleIdValid ? [t("pleaseEnterValidRoleId")] : []}
         helperText={t("roleIdHelperText")}
         autoFocus
+        onChange={(value) => {
+          setRoleId(value);
+        }}
+        onBlur={validateRoleId}
       />
       <TextField
         label={t("roleName")}
@@ -76,9 +86,9 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         label={t("description")}
         value={description || ""}
         placeholder={t("roleDescriptionPlaceholder")}
-        onChange={setDescription}
         cols={2}
         enableCounter
+        onChange={setDescription}
       />
     </FormModal>
   );

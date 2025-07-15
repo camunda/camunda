@@ -15,15 +15,15 @@ import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
-import { ErrorResponse } from "src/utility/api/request";
-import { isValidTenantId } from "./isValidTenantId";
+import { isValidTenantId } from "src/pages/tenants/modals/isValidTenantId";
 
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("tenants");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(createTenant, {
+  const [callAddTenant, { loading, error }] = useApiCall(createTenant, {
     suppressErrorNotification: true,
   });
+
   const [name, setName] = useState("");
   const [tenantId, setTenantId] = useState("");
   const [description, setDescription] = useState("");
@@ -36,7 +36,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   };
 
   const handleSubmit = async () => {
-    const { success, error } = await apiCall({
+    const { success } = await callAddTenant({
       name,
       tenantId,
       description,
@@ -51,53 +51,47 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         }),
       });
       onSuccess();
-    } else {
-      const detail = (error as ErrorResponse<"detailed">)?.detail;
-
-      enqueueNotification({
-        kind: "error",
-        title: t("failedToCreateTenant"),
-        subtitle: detail,
-      });
     }
   };
 
   return (
     <FormModal
-      headline={t("createNewTenant")}
       open={open}
-      onClose={onClose}
+      headline={t("createNewTenant")}
       loading={loading}
-      submitDisabled={isSubmitDisabled}
+      error={error}
+      loadingDescription={t("creatingTenant")}
       confirmLabel={t("createTenant")}
+      submitDisabled={isSubmitDisabled}
+      onClose={onClose}
       onSubmit={handleSubmit}
     >
       <Stack orientation="vertical" gap={spacing06}>
         <TextField
           label={t("tenantId")}
           placeholder={t("tenantIdPlaceholder")}
-          onChange={(value) => {
-            setTenantId(value);
-          }}
-          onBlur={validateTenantId}
           value={tenantId}
           errors={!isTenantIdValid ? [t("pleaseEnterValidTenantId")] : []}
           helperText={t("tenantIdHelperText")}
           autoFocus
+          onChange={(value) => {
+            setTenantId(value);
+          }}
+          onBlur={validateTenantId}
         />
         <TextField
           label={t("tenantName")}
           placeholder={t("tenantNamePlaceholder")}
-          onChange={setName}
           value={name}
+          onChange={setName}
         />
         <TextField
           label={t("description")}
           value={description}
           placeholder={t("tenantDescriptionPlaceholder")}
-          onChange={setDescription}
           cols={2}
           enableCounter
+          onChange={setDescription}
         />
       </Stack>
     </FormModal>
