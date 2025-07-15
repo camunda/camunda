@@ -24,8 +24,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -38,16 +38,16 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   private static final Logger LOG = LoggerFactory.getLogger(OAuth2RefreshTokenFilter.class);
 
   private final Duration clockSkew = Duration.ofSeconds(60L);
-  private final OAuth2AuthorizedClientService authorizedClientService;
+  private final OAuth2AuthorizedClientRepository authorizedClientRepository;
   private final OAuth2AuthorizedClientManager authorizedClientManager;
   private final LogoutHandler logoutHandler;
   private final Supplier<SecurityContext> securityContextSupplier;
 
   public OAuth2RefreshTokenFilter(
-      final OAuth2AuthorizedClientService authorizedClientService,
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final OAuth2AuthorizedClientManager authorizedClientManager) {
     this(
-        authorizedClientService,
+        authorizedClientRepository,
         authorizedClientManager,
         new CookieClearingLogoutHandler(WebSecurityConfig.SESSION_COOKIE),
         SecurityContextHolder::getContext);
@@ -55,11 +55,11 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
 
   // This constructor is for testing
   public OAuth2RefreshTokenFilter(
-      final OAuth2AuthorizedClientService authorizedClientService,
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final OAuth2AuthorizedClientManager authorizedClientManager,
       final LogoutHandler logoutHandler,
       final Supplier<SecurityContext> securityContextSupplier) {
-    this.authorizedClientService = authorizedClientService;
+    this.authorizedClientRepository = authorizedClientRepository;
     this.authorizedClientManager = authorizedClientManager;
     this.logoutHandler = logoutHandler;
     this.securityContextSupplier = securityContextSupplier;
@@ -145,8 +145,7 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   protected OAuth2AuthorizedClient getAuthorizedClient(
       final OAuth2AuthenticationToken authenticationToken, final HttpServletRequest request) {
     final var clientRegistrationId = authenticationToken.getAuthorizedClientRegistrationId();
-    return authorizedClientService.loadAuthorizedClient(
-        clientRegistrationId, authenticationToken.getName());
+    return authorizedClientRepository.loadAuthorizedClient(clientRegistrationId, authenticationToken, request);
   }
 
   protected boolean hasTokenExpired(final OAuth2AuthorizedClient authorizedClient) {

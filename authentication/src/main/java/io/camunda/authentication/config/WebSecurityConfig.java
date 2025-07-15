@@ -9,33 +9,6 @@ package io.camunda.authentication.config;
 
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
-
-import io.camunda.authentication.CamundaJwtAuthenticationConverter;
-import io.camunda.authentication.CamundaUserDetailsService;
-import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.authentication.ConditionalOnProtectedApi;
-import io.camunda.authentication.ConditionalOnUnprotectedApi;
-import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
-import io.camunda.authentication.filters.AdminUserCheckFilter;
-import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
-import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
-import io.camunda.authentication.handler.AuthFailureHandler;
-import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
-import io.camunda.authentication.session.ConditionalOnPersistentWebSessionEnabled;
-import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.configuration.headers.HeaderConfiguration;
-import io.camunda.security.configuration.headers.values.FrameOptionMode;
-import io.camunda.security.entity.AuthenticationMethod;
-import io.camunda.service.AuthorizationServices;
-import io.camunda.service.GroupServices;
-import io.camunda.service.RoleServices;
-import io.camunda.service.TenantServices;
-import io.camunda.service.UserServices;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Set;
@@ -69,6 +42,8 @@ import org.springframework.security.oauth2.client.oidc.authentication.OidcIdToke
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -85,6 +60,32 @@ import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHe
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.web.filter.OncePerRequestFilter;
+import io.camunda.authentication.CamundaJwtAuthenticationConverter;
+import io.camunda.authentication.CamundaUserDetailsService;
+import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.authentication.ConditionalOnProtectedApi;
+import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
+import io.camunda.authentication.filters.AdminUserCheckFilter;
+import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
+import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
+import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
+import io.camunda.authentication.session.ConditionalOnPersistentWebSessionEnabled;
+import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.headers.HeaderConfiguration;
+import io.camunda.security.configuration.headers.values.FrameOptionMode;
+import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.service.AuthorizationServices;
+import io.camunda.service.GroupServices;
+import io.camunda.service.RoleServices;
+import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -560,11 +561,8 @@ public class WebSecurityConfig {
 
     @Bean
     @ConditionalOnPersistentWebSessionEnabled
-    public OAuth2AuthorizedClientService oAuth2AuthorizedClientRepository(
-        final ClientRegistrationRepository clientRegistrationRepository,
-        final PersistentOAuth2AuthorizedClientsClient authorizedClientsClient) {
-      return new PersistedOAuth2AuthorizedClientService(
-          authorizedClientsClient, clientRegistrationRepository);
+    public OAuth2AuthorizedClientRepository oAuth2AuthorizedClientRepository() {
+      return new HttpSessionOAuth2AuthorizedClientRepository();
     }
 
     @Bean
@@ -629,7 +627,7 @@ public class WebSecurityConfig {
         final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
-        final OAuth2AuthorizedClientService authorizedClientService,
+        final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager)
         throws Exception {
       final var filterChainBuilder =
@@ -664,7 +662,7 @@ public class WebSecurityConfig {
                   oauthLoginConfigurer -> {
                     oauthLoginConfigurer
                         .clientRegistrationRepository(clientRegistrationRepository)
-                        .authorizedClientService(authorizedClientService)
+                        .authorizedClientRepository(authorizedClientRepository)
                         .redirectionEndpoint(
                             redirectionEndpointConfig ->
                                 redirectionEndpointConfig.baseUri("/sso-callback"));
@@ -678,7 +676,7 @@ public class WebSecurityConfig {
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
               .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class);
 
-      applyOauth2RefreshTokenFilter(httpSecurity, authorizedClientService, authorizedClientManager);
+      applyOauth2RefreshTokenFilter(httpSecurity, authorizedClientRepository, authorizedClientManager);
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
@@ -691,11 +689,11 @@ public class WebSecurityConfig {
     // org.springframework.security.config.annotation.web.builders.FilterOrderRegistration
     private void applyOauth2RefreshTokenFilter(
         final HttpSecurity httpSecurity,
-        final OAuth2AuthorizedClientService authorizedClientService,
+        final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager) {
-      if (authorizedClientService != null && authorizedClientManager != null) {
+      if (authorizedClientRepository != null && authorizedClientManager != null) {
         httpSecurity.addFilterAfter(
-            new OAuth2RefreshTokenFilter(authorizedClientService, authorizedClientManager),
+            new OAuth2RefreshTokenFilter(authorizedClientRepository, authorizedClientManager),
             AuthorizationFilter.class);
       } else {
         LOG.warn(
