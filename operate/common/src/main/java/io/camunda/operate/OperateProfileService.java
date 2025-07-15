@@ -23,7 +23,6 @@ public class OperateProfileService {
   public static final String IDENTITY_AUTH_PROFILE = "identity-auth";
   public static final String AUTH_PROFILE = "auth";
   public static final String CONSOLIDATED_AUTH = "consolidated-auth";
-  public static final String LDAP_AUTH_PROFILE = "ldap-auth";
 
   private static final Set<String> CANT_LOGOUT_AUTH_PROFILES = Set.of(SSO_AUTH_PROFILE);
 
