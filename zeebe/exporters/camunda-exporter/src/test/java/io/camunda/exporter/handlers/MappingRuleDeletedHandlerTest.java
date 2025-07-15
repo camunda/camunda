@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
+import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
@@ -22,10 +22,10 @@ import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 
-public class MappingDeletedHandlerTest {
+public class MappingRuleDeletedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-mapping";
-  private final MappingDeletedHandler underTest = new MappingDeletedHandler(indexName);
+  private final MappingRuleDeletedHandler underTest = new MappingRuleDeletedHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -34,7 +34,7 @@ public class MappingDeletedHandlerTest {
 
   @Test
   void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(MappingEntity.class);
+    assertThat(underTest.getEntityType()).isEqualTo(MappingRuleEntity.class);
   }
 
   @Test
@@ -73,7 +73,7 @@ public class MappingDeletedHandlerTest {
   @Test
   void shouldDeleteEntityOnFlush() throws PersistenceException {
     // given
-    final MappingEntity inputEntity = new MappingEntity().setId("111");
+    final MappingRuleEntity inputEntity = new MappingRuleEntity().setId("111");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

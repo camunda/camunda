@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
@@ -210,9 +210,9 @@ public class RoleController {
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInRole(
-      final String roleId, final MappingQuery mappingQuery) {
+      final String roleId, final MappingRuleQuery mappingRuleQuery) {
     try {
-      final var composedMappingQuery = buildMappingQuery(roleId, mappingQuery);
+      final var composedMappingQuery = buildMappingQuery(roleId, mappingRuleQuery);
       final var result =
           mappingServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -223,9 +223,9 @@ public class RoleController {
     }
   }
 
-  private MappingQuery buildMappingQuery(final String roleId, final MappingQuery mappingQuery) {
-    return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().roleId(roleId).build())
+  private MappingRuleQuery buildMappingQuery(final String roleId, final MappingRuleQuery mappingRuleQuery) {
+    return mappingRuleQuery.toBuilder()
+        .filter(mappingRuleQuery.filter().toBuilder().roleId(roleId).build())
         .build();
   }
 

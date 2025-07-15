@@ -8,27 +8,27 @@
 package io.camunda.it.rdbms.db.mapping;
 
 import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveGroup;
-import static io.camunda.it.rdbms.db.fixtures.MappingFixtures.*;
-import static io.camunda.it.rdbms.db.fixtures.MappingFixtures.createAndSaveMapping;
+import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.*;
+import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveMapping;
 import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.MappingReader;
+import io.camunda.db.rdbms.read.service.MappingRuleReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
-import io.camunda.it.rdbms.db.fixtures.MappingFixtures;
+import io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures;
 import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
-import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.filter.MappingFilter;
+import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.query.MappingQuery;
-import io.camunda.search.sort.MappingSort;
+import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.sort.MappingRuleSort;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -44,11 +44,11 @@ import org.springframework.test.context.TestPropertySource;
 @ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
 @AutoConfigurationPackage
 @TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
-public class MappingSpecificFilterIT {
+public class MappingRuleSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private MappingReader mappingReader;
+  @Autowired private MappingRuleReader mappingRuleReader;
 
   private RdbmsWriter rdbmsWriter;
 
@@ -60,27 +60,27 @@ public class MappingSpecificFilterIT {
   @Test
   public void shouldFilterMappingsForGroup() {
     // Create and save a mapping
-    final var mapping1 = MappingFixtures.createRandomized();
-    final var mapping2 = MappingFixtures.createRandomized();
-    final var mapping3 = MappingFixtures.createRandomized();
-    createAndSaveMapping(rdbmsWriter, mapping1);
-    createAndSaveMapping(rdbmsWriter, mapping2);
-    createAndSaveMapping(rdbmsWriter, mapping3);
+    final var mappingRule1 = MappingRuleFixtures.createRandomized();
+    final var mappingRule2 = MappingRuleFixtures.createRandomized();
+    final var mappingRule3 = MappingRuleFixtures.createRandomized();
+    createAndSaveMapping(rdbmsWriter, mappingRule1);
+    createAndSaveMapping(rdbmsWriter, mappingRule2);
+    createAndSaveMapping(rdbmsWriter, mappingRule3);
 
     final var group = GroupFixtures.createRandomized(b -> b);
     final var anotherGroup = GroupFixtures.createRandomized(b -> b);
     createAndSaveGroup(rdbmsWriter, group);
     createAndSaveGroup(rdbmsWriter, anotherGroup);
 
-    assignMappingToGroup(group.groupId(), mapping1.mappingId());
-    assignMappingToGroup(group.groupId(), mapping2.mappingId());
-    assignMappingToGroup(anotherGroup.groupId(), mapping3.mappingId());
+    assignMappingToGroup(group.groupId(), mappingRule1.mappingRuleId());
+    assignMappingToGroup(group.groupId(), mappingRule2.mappingRuleId());
+    assignMappingToGroup(anotherGroup.groupId(), mappingRule3.mappingRuleId());
 
     final var mappings =
-        mappingReader.search(
-            new MappingQuery(
-                new MappingFilter.Builder().groupId(group.groupId()).build(),
-                MappingSort.of(b -> b),
+        mappingRuleReader.search(
+            new MappingRuleQuery(
+                new MappingRuleFilter.Builder().groupId(group.groupId()).build(),
+                MappingRuleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(mappings.total()).isEqualTo(2);
@@ -93,30 +93,31 @@ public class MappingSpecificFilterIT {
     createAndSaveRole(rdbmsWriter, role);
     createAndSaveRole(rdbmsWriter, anotherRole);
 
-    final var mappingId1 = nextStringId();
-    final var mappingId2 = nextStringId();
-    final var mappingId3 = nextStringId();
-    Arrays.asList(mappingId1, mappingId2, mappingId3)
+    final var mappingRuleId1 = nextStringId();
+    final var mappingRuleId2 = nextStringId();
+    final var mappingRuleId3 = nextStringId();
+    Arrays.asList(mappingRuleId1, mappingRuleId2, mappingRuleId3)
         .forEach(
             mappingId ->
-                createAndSaveMapping(rdbmsWriter, createRandomized(m -> m.mappingId(mappingId))));
+                createAndSaveMapping(
+                    rdbmsWriter, createRandomized(m -> m.mappingRuleId(mappingId))));
 
-    addMappingToRole(role.roleId(), mappingId1);
-    addMappingToRole(anotherRole.roleId(), mappingId2);
-    addMappingToRole(anotherRole.roleId(), mappingId3);
+    addMappingToRole(role.roleId(), mappingRuleId1);
+    addMappingToRole(anotherRole.roleId(), mappingRuleId2);
+    addMappingToRole(anotherRole.roleId(), mappingRuleId3);
 
     final var mappings =
-        mappingReader.search(
-            new MappingQuery(
-                new MappingFilter.Builder().roleId(role.roleId()).build(),
-                MappingSort.of(b -> b),
+        mappingRuleReader.search(
+            new MappingRuleQuery(
+                new MappingRuleFilter.Builder().roleId(role.roleId()).build(),
+                MappingRuleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(mappings.total()).isEqualTo(1);
     assertThat(mappings.items())
         .hasSize(1)
-        .extracting(MappingEntity::mappingId)
-        .containsOnly(mappingId1);
+        .extracting(MappingRuleEntity::mappingRuleId)
+        .containsOnly(mappingRuleId1);
   }
 
   private void assignMappingToGroup(final String groupId, final String mappingId) {

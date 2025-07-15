@@ -40,8 +40,8 @@ import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
-import io.camunda.exporter.handlers.MappingCreatedUpdatedHandler;
-import io.camunda.exporter.handlers.MappingDeletedHandler;
+import io.camunda.exporter.handlers.MappingRuleCreatedUpdatedHandler;
+import io.camunda.exporter.handlers.MappingRuleDeletedHandler;
 import io.camunda.exporter.handlers.MetricFromDecisionEvaluationHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.MigratedVariableHandler;
@@ -90,7 +90,7 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
-import io.camunda.webapps.schema.descriptors.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
@@ -275,10 +275,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromIncidentHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
-            new MappingCreatedUpdatedHandler(
-                indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
-            new MappingDeletedHandler(
-                indexDescriptors.get(MappingIndex.class).getFullQualifiedName()),
+            new MappingRuleCreatedUpdatedHandler(
+                indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
+            new MappingRuleDeletedHandler(
+                indexDescriptors.get(MappingRuleIndex.class).getFullQualifiedName()),
             new MetricFromDecisionEvaluationHandler(
                 indexDescriptors.get(MetricIndex.class).getFullQualifiedName()),
             new JobHandler(indexDescriptors.get(JobTemplate.class).getFullQualifiedName()),

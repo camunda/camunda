@@ -32,7 +32,7 @@ import io.camunda.db.rdbms.write.service.GroupWriter;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.JobWriter;
-import io.camunda.db.rdbms.write.service.MappingWriter;
+import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
@@ -64,7 +64,7 @@ public class RdbmsWriter {
   private final UserWriter userWriter;
   private final UserTaskWriter userTaskWriter;
   private final FormWriter formWriter;
-  private final MappingWriter mappingWriter;
+  private final MappingRuleWriter mappingRuleWriter;
   private final BatchOperationWriter batchOperationWriter;
   private final JobWriter jobWriter;
   private final SequenceFlowWriter sequenceFlowWriter;
@@ -107,7 +107,7 @@ public class RdbmsWriter {
     userWriter = new UserWriter(executionQueue);
     userTaskWriter = new UserTaskWriter(executionQueue, userTaskMapper);
     formWriter = new FormWriter(executionQueue);
-    mappingWriter = new MappingWriter(executionQueue);
+    mappingRuleWriter = new MappingRuleWriter(executionQueue);
     batchOperationWriter = new BatchOperationWriter(batchOperationReader, executionQueue, config);
     jobWriter = new JobWriter(executionQueue, jobMapper);
     sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
@@ -187,8 +187,8 @@ public class RdbmsWriter {
     return formWriter;
   }
 
-  public MappingWriter getMappingWriter() {
-    return mappingWriter;
+  public MappingRuleWriter getMappingRuleWriter() {
+    return mappingRuleWriter;
   }
 
   public BatchOperationWriter getBatchOperationWriter() {

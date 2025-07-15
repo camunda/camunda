@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
  *
  *    @MappingDefinition
  *    private static final TestMapping MAPPING =
- *      new TestMapping("mappingId",
+ *      new TestMapping("mappingRuleId",
  *                   "claimName",
  *                   "claimValue",
  *                   List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
@@ -45,4 +45,4 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface MappingDefinition {}
+public @interface MappingRuleDefinition {}

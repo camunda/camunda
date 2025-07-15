@@ -83,8 +83,8 @@ public final class FilterBuilders {
     return new UserFilter.Builder();
   }
 
-  public static MappingFilter.Builder mapping() {
-    return new MappingFilter.Builder();
+  public static MappingRuleFilter.Builder mapping() {
+    return new MappingRuleFilter.Builder();
   }
 
   public static RoleFilter.Builder role() {
@@ -139,9 +139,9 @@ public final class FilterBuilders {
     return fn.apply(new UserFilter.Builder()).build();
   }
 
-  public static MappingFilter mapping(
-      final Function<MappingFilter.Builder, ObjectBuilder<MappingFilter>> fn) {
-    return fn.apply(new MappingFilter.Builder()).build();
+  public static MappingRuleFilter mapping(
+      final Function<MappingRuleFilter.Builder, ObjectBuilder<MappingRuleFilter>> fn) {
+    return fn.apply(new MappingRuleFilter.Builder()).build();
   }
 
   public static RoleFilter role(final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {

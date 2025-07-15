@@ -516,7 +516,7 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = "mappingId!";
+    final var mappingId = "mappingRuleId!";
     final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
 
     // when
@@ -535,7 +535,7 @@ public class RoleControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "status": 400,
                 "title": "INVALID_ARGUMENT",
-                "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
                 .formatted(IdentifierPatterns.ID_PATTERN, path));

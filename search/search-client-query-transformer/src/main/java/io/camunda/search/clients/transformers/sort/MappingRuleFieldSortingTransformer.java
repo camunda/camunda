@@ -7,19 +7,19 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_NAME;
-import static io.camunda.webapps.schema.descriptors.index.MappingIndex.CLAIM_VALUE;
-import static io.camunda.webapps.schema.descriptors.index.MappingIndex.MAPPING_ID;
-import static io.camunda.webapps.schema.descriptors.index.MappingIndex.MAPPING_KEY;
-import static io.camunda.webapps.schema.descriptors.index.MappingIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.MappingRuleIndex.CLAIM_NAME;
+import static io.camunda.webapps.schema.descriptors.index.MappingRuleIndex.CLAIM_VALUE;
+import static io.camunda.webapps.schema.descriptors.index.MappingRuleIndex.MAPPING_RULE_ID;
+import static io.camunda.webapps.schema.descriptors.index.MappingRuleIndex.MAPPING_RULE_KEY;
+import static io.camunda.webapps.schema.descriptors.index.MappingRuleIndex.NAME;
 
-public class MappingFieldSortingTransformer implements FieldSortingTransformer {
+public class MappingRuleFieldSortingTransformer implements FieldSortingTransformer {
 
   @Override
   public String apply(final String domainField) {
     return switch (domainField) {
-      case "mappingKey" -> MAPPING_KEY;
-      case "mappingId" -> MAPPING_ID;
+      case "mappingRuleKey" -> MAPPING_RULE_KEY;
+      case "mappingRuleId" -> MAPPING_RULE_ID;
       case "claimName" -> CLAIM_NAME;
       case "claimValue" -> CLAIM_VALUE;
       case "name" -> NAME;

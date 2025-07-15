@@ -15,7 +15,7 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
@@ -105,7 +105,7 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
 
     final var mappings = mappingServices.getMatchingMappings(claims);
     final Set<String> mappingIds =
-        mappings.map(MappingEntity::mappingId).collect(Collectors.toSet());
+        mappings.map(MappingRuleEntity::mappingRuleId).collect(Collectors.toSet());
     if (mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     } else {

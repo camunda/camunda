@@ -16,12 +16,12 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.GroupSort;
@@ -191,11 +191,11 @@ public class GroupQueryControllerTest extends RestControllerTest {
           GROUP_CLIENT_ENTITIES.get(1).id(),
           GROUP_CLIENT_ENTITIES.get(2).id());
 
-  private static final List<MappingEntity> MAPPNING_ENTITIES =
+  private static final List<MappingRuleEntity> MAPPNING_ENTITIES =
       List.of(
-          new MappingEntity(
+          new MappingRuleEntity(
               Strings.newRandomValidIdentityId(), 1L, "claimName1", "claimValue1", "name"),
-          new MappingEntity(
+          new MappingRuleEntity(
               Strings.newRandomValidIdentityId(), 2L, "claimName2", "claimValue2", "name"));
 
   private static final String MAPPING_RESPONSE =
@@ -226,7 +226,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
 
   private static final String EXPECTED_MAPPING_RESPONSE =
       MAPPING_RESPONSE.formatted(
-          MAPPNING_ENTITIES.get(0).mappingId(), MAPPNING_ENTITIES.get(1).mappingId());
+          MAPPNING_ENTITIES.get(0).mappingRuleId(), MAPPNING_ENTITIES.get(1).mappingRuleId());
 
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private MappingServices mappingServices;
@@ -605,9 +605,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupMappingsWithSorting() {
     // given
-    when(mappingServices.search(any(MappingQuery.class)))
+    when(mappingServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<MappingEntity>()
+            new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPNING_ENTITIES.size())
                 .items(MAPPNING_ENTITIES)
                 .startCursor("f")
@@ -638,9 +638,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupMappingsWithEmptyQuery() {
     // given
-    when(mappingServices.search(any(MappingQuery.class)))
+    when(mappingServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<MappingEntity>()
+            new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPNING_ENTITIES.size())
                 .items(MAPPNING_ENTITIES)
                 .startCursor("f")

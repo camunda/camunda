@@ -9,14 +9,13 @@ package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 
-import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Set;
 
-public record MappingFilter(
-    String mappingId,
-    Long mappingKey,
+public record MappingRuleFilter(
+    String mappingRuleId,
+    Long mappingRuleKey,
     String claimName,
     List<String> claimNames,
     String claimValue,
@@ -28,10 +27,10 @@ public record MappingFilter(
     String roleId)
     implements FilterBase {
 
-  public MappingFilter.Builder toBuilder() {
+  public MappingRuleFilter.Builder toBuilder() {
     return new Builder()
-        .mappingId(mappingId)
-        .mappingKey(mappingKey)
+        .mappingRuleId(mappingRuleId)
+        .mappingRuleKey(mappingRuleKey)
         .claimName(claimName)
         .claimNames(claimNames)
         .claimValue(claimValue)
@@ -43,10 +42,10 @@ public record MappingFilter(
         .roleId(roleId);
   }
 
-  public static final class Builder implements ObjectBuilder<MappingFilter> {
-    private String mappingId;
-    private Set<String> mappingIds;
-    private Long mappingKey;
+  public static final class Builder implements ObjectBuilder<MappingRuleFilter> {
+    private String mappingRuleId;
+    private Set<String> mappingRuleIds;
+    private Long mappingRuleKey;
     private String claimName;
     private List<String> claimNames;
     private String claimValue;
@@ -56,13 +55,13 @@ public record MappingFilter(
     private String groupId;
     private String roleId;
 
-    public Builder mappingId(final String value) {
-      mappingId = value;
+    public Builder mappingRuleId(final String value) {
+      mappingRuleId = value;
       return this;
     }
 
-    public Builder mappingKey(final Long value) {
-      mappingKey = value;
+    public Builder mappingRuleKey(final Long value) {
+      mappingRuleKey = value;
       return this;
     }
 
@@ -97,7 +96,7 @@ public record MappingFilter(
     }
 
     public Builder mappingIds(final Set<String> mappingIds) {
-      this.mappingIds = mappingIds;
+      mappingRuleIds = mappingIds;
       return this;
     }
 
@@ -112,17 +111,17 @@ public record MappingFilter(
     }
 
     @Override
-    public MappingFilter build() {
-      return new MappingFilter(
-          mappingId,
-          mappingKey,
+    public MappingRuleFilter build() {
+      return new MappingRuleFilter(
+          mappingRuleId,
+          mappingRuleKey,
           claimName,
           claimNames,
           claimValue,
           name,
           claims,
           tenantId,
-          mappingIds,
+          mappingRuleIds,
           groupId,
           roleId);
     }

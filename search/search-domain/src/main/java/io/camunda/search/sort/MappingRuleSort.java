@@ -11,22 +11,22 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record MappingSort(List<FieldSorting> orderings) implements SortOption {
+public record MappingRuleSort(List<FieldSorting> orderings) implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
     return orderings;
   }
 
-  public static MappingSort of(final Function<Builder, ObjectBuilder<MappingSort>> fn) {
+  public static MappingRuleSort of(final Function<Builder, ObjectBuilder<MappingRuleSort>> fn) {
     return SortOptionBuilders.mapping(fn);
   }
 
   public static final class Builder extends AbstractBuilder<Builder>
-      implements ObjectBuilder<MappingSort> {
+      implements ObjectBuilder<MappingRuleSort> {
 
-    public Builder mappingKey() {
-      currentOrdering = new FieldSorting("mappingKey", null);
+    public Builder mappingRuleKey() {
+      currentOrdering = new FieldSorting("mappingRuleKey", null);
       return this;
     }
 
@@ -45,8 +45,8 @@ public record MappingSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder mappingId() {
-      currentOrdering = new FieldSorting("mappingId", null);
+    public Builder mappingRuleId() {
+      currentOrdering = new FieldSorting("mappingRuleId", null);
       return this;
     }
 
@@ -66,8 +66,8 @@ public record MappingSort(List<FieldSorting> orderings) implements SortOption {
     }
 
     @Override
-    public MappingSort build() {
-      return new MappingSort(orderings);
+    public MappingRuleSort build() {
+      return new MappingRuleSort(orderings);
     }
   }
 }

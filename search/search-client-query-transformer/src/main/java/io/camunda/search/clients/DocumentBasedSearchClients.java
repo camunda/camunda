@@ -30,7 +30,7 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.JobEntity;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -60,7 +60,7 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
@@ -140,12 +140,13 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery mappingQuery) {
-    final var query = applyFilters(mappingQuery);
+  public SearchQueryResult<MappingRuleEntity> searchMappingRules(
+      final MappingRuleQuery mappingRuleQuery) {
+    final var query = applyFilters(mappingRuleQuery);
     return getSearchExecutor()
         .search(
             query,
-            io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class,
+            io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity.class,
             securityContext);
   }
 
@@ -477,30 +478,30 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     return result.items().stream().map(UsageMetricsEntity::value).distinct().count();
   }
 
-  private MappingQuery applyFilters(final MappingQuery mappingQuery) {
-    if (mappingQuery.filter().tenantId() != null) {
-      return expandTenantFilter(mappingQuery);
+  private MappingRuleQuery applyFilters(final MappingRuleQuery mappingRuleQuery) {
+    if (mappingRuleQuery.filter().tenantId() != null) {
+      return expandTenantFilter(mappingRuleQuery);
     }
-    if (mappingQuery.filter().groupId() != null) {
-      return expandGroupFilter(mappingQuery);
+    if (mappingRuleQuery.filter().groupId() != null) {
+      return expandGroupFilter(mappingRuleQuery);
     }
-    if (mappingQuery.filter().roleId() != null) {
-      return expandRoleFilter(mappingQuery);
+    if (mappingRuleQuery.filter().roleId() != null) {
+      return expandRoleFilter(mappingRuleQuery);
     }
-    return mappingQuery;
+    return mappingRuleQuery;
   }
 
-  private MappingQuery expandGroupFilter(final MappingQuery mappingQuery) {
-    final var mappingIds = getGroupMembers(mappingQuery.filter().groupId(), MAPPING);
-    return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+  private MappingRuleQuery expandGroupFilter(final MappingRuleQuery mappingRuleQuery) {
+    final var mappingIds = getGroupMembers(mappingRuleQuery.filter().groupId(), MAPPING);
+    return mappingRuleQuery.toBuilder()
+        .filter(mappingRuleQuery.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
   }
 
-  private MappingQuery expandTenantFilter(final MappingQuery mappingQuery) {
-    final var mappingIds = getTenantMembers(mappingQuery.filter().tenantId(), MAPPING);
-    return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+  private MappingRuleQuery expandTenantFilter(final MappingRuleQuery mappingRuleQuery) {
+    final var mappingIds = getTenantMembers(mappingRuleQuery.filter().tenantId(), MAPPING);
+    return mappingRuleQuery.toBuilder()
+        .filter(mappingRuleQuery.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
   }
 
@@ -577,10 +578,10 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
         .build();
   }
 
-  private MappingQuery expandRoleFilter(final MappingQuery mappingQuery) {
-    final var mappingIds = getRoleMemberIds(mappingQuery.filter().roleId(), MAPPING);
-    return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+  private MappingRuleQuery expandRoleFilter(final MappingRuleQuery mappingRuleQuery) {
+    final var mappingIds = getRoleMemberIds(mappingRuleQuery.filter().roleId(), MAPPING);
+    return mappingRuleQuery.toBuilder()
+        .filter(mappingRuleQuery.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
   }
 

@@ -23,7 +23,7 @@ public enum ContextType {
   USER(false),
   USER_TASK(true),
   FORM(false),
-  MAPPING(false),
+  MAPPING_RULE(false),
   BATCH_OPERATION(false),
   JOB(false),
   SEQUENCE_FLOW(false),

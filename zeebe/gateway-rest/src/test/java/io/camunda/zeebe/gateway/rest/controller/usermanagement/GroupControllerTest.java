@@ -753,7 +753,7 @@ public class GroupControllerTest {
     void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToGroup() {
       // given
       final String groupId = Strings.newRandomValidIdentityId();
-      final String mappingId = "mappingId!";
+      final String mappingId = "mappingRuleId!";
       final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
 
       // when
@@ -772,7 +772,7 @@ public class GroupControllerTest {
                 "type": "about:blank",
                 "status": 400,
                 "title": "INVALID_ARGUMENT",
-                "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
                   .formatted(IdentifierPatterns.ID_PATTERN, path));
@@ -973,7 +973,7 @@ public class GroupControllerTest {
     void shouldReturnErrorForProvidingInvalidMappingIdWhenRemovingFromGroup() {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
-      final var mappingId = "mappingId!";
+      final var mappingId = "mappingRuleId!";
       final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
 
       // when
@@ -991,7 +991,7 @@ public class GroupControllerTest {
                   "type": "about:blank",
                   "status": 400,
                   "title": "INVALID_ARGUMENT",
-                  "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                  "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
                   .formatted(IdentifierPatterns.ID_PATTERN, path));

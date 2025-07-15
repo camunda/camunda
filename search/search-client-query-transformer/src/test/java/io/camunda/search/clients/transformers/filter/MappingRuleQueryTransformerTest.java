@@ -19,12 +19,11 @@ import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.MappingFilter;
-import io.camunda.search.filter.MappingFilter.Builder;
-import io.camunda.search.filter.MappingFilter.Claim;
-import io.camunda.security.auth.Authorization;
+import io.camunda.search.filter.MappingRuleFilter;
+import io.camunda.search.filter.MappingRuleFilter.Builder;
+import io.camunda.search.filter.MappingRuleFilter.Claim;
 import io.camunda.util.ObjectBuilder;
-import io.camunda.webapps.schema.descriptors.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -34,12 +33,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class MappingQueryTransformerTest extends AbstractTransformerTest {
+public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
 
   @ParameterizedTest
   @MethodSource("queryFilterParameters")
   public void shouldQueryByField(
-      final Function<Builder, ObjectBuilder<MappingFilter>> fn, final SearchQuery expected) {
+      final Function<Builder, ObjectBuilder<MappingRuleFilter>> fn, final SearchQuery expected) {
     // given
     final var filter = FilterBuilders.mapping(fn);
     // when
@@ -51,41 +50,41 @@ public class MappingQueryTransformerTest extends AbstractTransformerTest {
   public static Stream<Arguments> queryFilterParameters() {
     return Stream.of(
         Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingFilter>>)
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>)
                 f -> f.claimNames(List.of("foo", "bar")),
             SearchQuery.of(
                 q -> q.terms(t -> t.field("claimName").stringTerms(List.of("foo", "bar"))))),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.claimName("barfoo"),
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.claimName("barfoo"),
             SearchQuery.of(q -> q.term(t -> t.field("claimName").value("barfoo")))),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.claimValue("foobar"),
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.claimValue("foobar"),
             SearchQuery.of(q -> q.term(t -> t.field("claimValue").value("foobar")))),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingFilter>>) f -> f.name("foobar"),
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>) f -> f.name("foobar"),
             SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingFilter>>)
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>)
                 f -> f.mappingIds(Set.of("id1", "id2")),
             SearchQuery.of(
                 q ->
                     q.terms(
                         t ->
-                            t.field("mappingId")
+                            t.field("mappingRuleId")
                                 .stringTerms(Set.of("id1", "id2").stream().sorted().toList())))),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<MappingFilter>>)
+            (Function<Builder, ObjectBuilder<MappingRuleFilter>>)
                 f -> f.claims(List.of(new Claim("c1", "v1"), new Claim("c2", "v2"))),
             SearchQueryBuilders.or(
                 List.of(
                     SearchQueryBuilders.and(
                         List.of(
-                            SearchQueryBuilders.term(MappingIndex.CLAIM_NAME, "c1"),
-                            SearchQueryBuilders.term(MappingIndex.CLAIM_VALUE, "v1"))),
+                            SearchQueryBuilders.term(MappingRuleIndex.CLAIM_NAME, "c1"),
+                            SearchQueryBuilders.term(MappingRuleIndex.CLAIM_VALUE, "v1"))),
                     SearchQueryBuilders.and(
                         List.of(
-                            SearchQueryBuilders.term(MappingIndex.CLAIM_NAME, "c2"),
-                            SearchQueryBuilders.term(MappingIndex.CLAIM_VALUE, "v2")))))));
+                            SearchQueryBuilders.term(MappingRuleIndex.CLAIM_NAME, "c2"),
+                            SearchQueryBuilders.term(MappingRuleIndex.CLAIM_VALUE, "v2")))))));
   }
 
   @Test

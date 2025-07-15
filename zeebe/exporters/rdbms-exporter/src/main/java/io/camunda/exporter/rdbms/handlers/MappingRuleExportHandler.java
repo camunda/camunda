@@ -7,9 +7,9 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
-import io.camunda.db.rdbms.write.domain.MappingDbModel;
-import io.camunda.db.rdbms.write.domain.MappingDbModel.MappingDbModelBuilder;
-import io.camunda.db.rdbms.write.service.MappingWriter;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingDbModelBuilder;
+import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -17,15 +17,15 @@ import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import java.util.Set;
 
-public class MappingExportHandler implements RdbmsExportHandler<MappingRecordValue> {
+public class MappingRuleExportHandler implements RdbmsExportHandler<MappingRecordValue> {
 
   private static final Set<Intent> MAPPING_INTENT =
       Set.of(MappingIntent.CREATED, MappingIntent.DELETED);
 
-  private final MappingWriter mappingWriter;
+  private final MappingRuleWriter mappingRuleWriter;
 
-  public MappingExportHandler(final MappingWriter mappingWriter) {
-    this.mappingWriter = mappingWriter;
+  public MappingRuleExportHandler(final MappingRuleWriter mappingRuleWriter) {
+    this.mappingRuleWriter = mappingRuleWriter;
   }
 
   @Override
@@ -36,17 +36,17 @@ public class MappingExportHandler implements RdbmsExportHandler<MappingRecordVal
   @Override
   public void export(final Record<MappingRecordValue> record) {
     if (record.getIntent().equals(MappingIntent.CREATED)) {
-      mappingWriter.create(map(record));
+      mappingRuleWriter.create(map(record));
     } else if (record.getIntent().equals(MappingIntent.DELETED)) {
-      mappingWriter.delete(record.getValue().getMappingId());
+      mappingRuleWriter.delete(record.getValue().getMappingId());
     }
   }
 
-  private MappingDbModel map(final Record<MappingRecordValue> record) {
+  private MappingRuleDbModel map(final Record<MappingRecordValue> record) {
     final var value = record.getValue();
     return new MappingDbModelBuilder()
-        .mappingId(value.getMappingId())
-        .mappingKey(value.getMappingKey())
+        .mappingRuleId(value.getMappingId())
+        .mappingRuleKey(value.getMappingKey())
         .claimName(value.getClaimName())
         .claimValue(value.getClaimValue())
         .name(value.getName())

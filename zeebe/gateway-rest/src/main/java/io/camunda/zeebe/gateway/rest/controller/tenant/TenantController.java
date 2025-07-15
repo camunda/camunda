@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
@@ -324,9 +324,9 @@ public class TenantController {
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInTenant(
-      final String tenantId, final MappingQuery mappingQuery) {
+      final String tenantId, final MappingRuleQuery mappingRuleQuery) {
     try {
-      final var composedMappingQuery = buildMappingQuery(tenantId, mappingQuery);
+      final var composedMappingQuery = buildMappingQuery(tenantId, mappingRuleQuery);
       final var result =
           mappingServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -386,9 +386,9 @@ public class TenantController {
         .build();
   }
 
-  private MappingQuery buildMappingQuery(final String tenantId, final MappingQuery mappingQuery) {
-    return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().tenantId(tenantId).build())
+  private MappingRuleQuery buildMappingQuery(final String tenantId, final MappingRuleQuery mappingRuleQuery) {
+    return mappingRuleQuery.toBuilder()
+        .filter(mappingRuleQuery.filter().toBuilder().tenantId(tenantId).build())
         .build();
   }
 
