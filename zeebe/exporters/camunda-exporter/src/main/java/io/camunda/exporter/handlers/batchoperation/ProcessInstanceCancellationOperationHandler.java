@@ -27,11 +27,9 @@ public class ProcessInstanceCancellationOperationHandler
 
   public ProcessInstanceCancellationOperationHandler(
       final String indexName,
-      final String listViewIndexName,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
     super(
         indexName,
-        listViewIndexName,
         ValueType.PROCESS_INSTANCE,
         OperationType.CANCEL_PROCESS_INSTANCE,
         batchOperationCache);

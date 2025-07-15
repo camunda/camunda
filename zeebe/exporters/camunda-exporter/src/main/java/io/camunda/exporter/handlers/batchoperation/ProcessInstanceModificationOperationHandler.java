@@ -26,11 +26,9 @@ public class ProcessInstanceModificationOperationHandler
 
   public ProcessInstanceModificationOperationHandler(
       final String indexName,
-      final String listViewIndexName,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
     super(
         indexName,
-        listViewIndexName,
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         OperationType.MODIFY_PROCESS_INSTANCE,
         batchOperationCache);

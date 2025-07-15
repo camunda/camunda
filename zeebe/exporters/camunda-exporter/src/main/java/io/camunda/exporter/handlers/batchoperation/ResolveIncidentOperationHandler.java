@@ -25,14 +25,8 @@ public class ResolveIncidentOperationHandler
 
   public ResolveIncidentOperationHandler(
       final String indexName,
-      final String listViewIndexName,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
-    super(
-        indexName,
-        listViewIndexName,
-        ValueType.INCIDENT,
-        OperationType.RESOLVE_INCIDENT,
-        batchOperationCache);
+    super(indexName, ValueType.INCIDENT, OperationType.RESOLVE_INCIDENT, batchOperationCache);
   }
 
   @Override
