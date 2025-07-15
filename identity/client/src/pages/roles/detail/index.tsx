@@ -23,8 +23,8 @@ import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
 import Members from "src/pages/roles/detail/members";
-import Mappings from "src/pages/roles/detail/mappings";
 import Groups from "src/pages/roles/detail/groups";
+import MappingRules from "src/pages/roles/detail/mapping-rules";
 import Clients from "src/pages/roles/detail/clients";
 import { isOIDC } from "src/configuration";
 
@@ -99,9 +99,9 @@ const Details: FC = () => {
                 ...(isOIDC
                   ? [
                       {
-                        key: "mappings",
-                        label: t("mappings"),
-                        content: <Mappings roleId={role.roleId} />,
+                        key: "mapping-rules",
+                        label: t("mapping-rules"),
+                        content: <MappingRules roleId={role.roleId} />,
                       },
                       {
                         key: "clients",

@@ -14,18 +14,18 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Mapping } from "src/utility/api/mappings";
-import { unassignGroupMapping } from "src/utility/api/groups";
+import { MappingRule } from "src/utility/api/mapping-rules";
+import { unassignGroupMappingRule } from "src/utility/api/groups";
 
-type RemoveGroupMappingModalProps = UseEntityModalCustomProps<
-  Mapping,
+type RemoveGroupMappingRuleModalProps = UseEntityModalCustomProps<
+  MappingRule,
   {
     groupId: string;
   }
 >;
 
-const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
-  entity: mapping,
+const DeleteModal: FC<RemoveGroupMappingRuleModalProps> = ({
+  entity: mappingRule,
   open,
   onClose,
   onSuccess,
@@ -34,19 +34,21 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMapping, { loading }] = useApiCall(unassignGroupMapping);
+  const [callUnassignMappingRule, { loading }] = useApiCall(
+    unassignGroupMappingRule,
+  );
 
   const handleSubmit = async () => {
-    if (groupId && mapping) {
-      const { success } = await callUnassignMapping({
+    if (groupId && mappingRule) {
+      const { success } = await callUnassignMappingRule({
         groupId,
-        mappingId: mapping.mappingId,
+        mappingRuleId: mappingRule.mappingRuleId,
       });
 
       if (success) {
         enqueueNotification({
           kind: "success",
-          title: t("groupMappingRemoved"),
+          title: t("groupMappingRuleRemoved"),
         });
         onSuccess();
       }
@@ -56,20 +58,20 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
   return (
     <Modal
       open={open}
-      headline={t("removeMapping")}
+      headline={t("removeMappingRule")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("removingMapping")}
+      loadingDescription={t("removingMappingRule")}
       onClose={onClose}
-      confirmLabel={t("removeMapping")}
+      confirmLabel={t("removeMappingRule")}
     >
       <p>
         <Translate
-          i18nKey="removeMappingConfirmation"
-          values={{ mappingId: mapping.mappingId }}
+          i18nKey="removeMappingRuleConfirmation"
+          values={{ mappingRuleId: mappingRule.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingId}</strong>{" "}
-          from this group?
+          Are you sure you want to remove{" "}
+          <strong>{mappingRule.mappingRuleId}</strong> from this group?
         </Translate>
       </p>
     </Modal>
