@@ -8,6 +8,7 @@
 package io.camunda.application.initializers;
 
 import io.camunda.application.Profile;
+import io.camunda.application.commons.utils.DatabaseTypeUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -83,17 +84,11 @@ public class HealthConfigurationInitializer
                 ::contains);
   }
 
-  /**
-   * Returns a list of health indicators which will be member of the readiness group
-   *
-   * @param activeProfiles
-   * @param env
-   * @return
-   */
+  /** Returns a list of health indicators which will be member of the readiness group */
   protected List<String> collectHealthIndicators(
       final List<String> activeProfiles, final Environment env) {
     final var healthIndicators = new ArrayList<String>();
-    final boolean secondaryStorageEnabled = isSecondaryStorageEnabled(env);
+    final boolean secondaryStorageEnabled = DatabaseTypeUtils.isSecondaryStorageEnabled(env);
 
     if (activeProfiles.contains(Profile.BROKER.getId())) {
       healthIndicators.add(INDICATOR_BROKER_READY);
@@ -117,10 +112,5 @@ public class HealthConfigurationInitializer
     }
 
     return healthIndicators;
-  }
-
-  private static boolean isSecondaryStorageEnabled(final Environment env) {
-    final String dbType = env.getProperty("camunda.database.type");
-    return !"none".equalsIgnoreCase(dbType);
   }
 }

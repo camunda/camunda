@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.backup;
 
+import io.camunda.application.commons.utils.DatabaseTypeUtils;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -31,8 +32,8 @@ public @interface ConditionalOnBackupWebappsEnabled {
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final Environment env = context.getEnvironment();
       final String backupEnabled = env.getProperty(BACKUP_WEBAPPS_ENABLED);
-      final String dbType = env.getProperty("camunda.database.type");
-      return "true".equalsIgnoreCase(backupEnabled) && !"none".equalsIgnoreCase(dbType);
+      return "true".equalsIgnoreCase(backupEnabled)
+          && DatabaseTypeUtils.isSecondaryStorageEnabled(env);
     }
   }
 }

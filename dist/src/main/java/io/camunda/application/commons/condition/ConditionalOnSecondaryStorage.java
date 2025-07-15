@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.condition;
 
+import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -33,7 +35,7 @@ public @interface ConditionalOnSecondaryStorage {
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final Environment env = context.getEnvironment();
-      final String dbType = env.getProperty("camunda.database.type");
+      final String dbType = env.getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
       if ("none".equalsIgnoreCase(dbType)) {
         LOG.warn(
             "Secondary storage is disabled (camunda.database.type=none). Some features such as webapps will not start unless a secondary storage is configured. See camunda.database.type config.");

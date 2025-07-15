@@ -7,6 +7,7 @@
  */
 package io.camunda.it.nodb;
 
+import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -31,7 +32,7 @@ public class NoSecondaryStorageTest {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          .withProperty("camunda.database.type", "none")
+          .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
           .withProperty("spring.profiles.active", "broker");
 
   @AutoClose private CamundaClient camundaClient;
