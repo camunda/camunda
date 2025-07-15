@@ -7,10 +7,9 @@
  */
 package io.camunda.operate.util.apps.modules;
 
-import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.operate.util.TestApplication;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -44,9 +43,7 @@ import org.springframework.context.annotation.Import;
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({
   WebappsModuleConfiguration.class,
-  // Unified Configuration classes
-  UnifiedConfiguration.class,
-  OperatePropertiesOverride.class
+  TestOperatePropertiesOverride.class,
 })
 public class ModulesTestApplication {
 
