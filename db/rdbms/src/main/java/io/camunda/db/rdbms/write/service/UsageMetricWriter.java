@@ -33,7 +33,7 @@ public class UsageMetricWriter {
         new QueueItem(
             ContextType.USAGE_METRIC,
             WriteStatementType.INSERT,
-            dbModel.key(),
+            dbModel.getId(),
             "io.camunda.db.rdbms.sql.UsageMetricMapper.insert",
             dbModel));
   }
