@@ -183,7 +183,7 @@ class BackupPrioritiesTest {
             "tasklist-user-1.4.0_",
             "camunda-authorization-8.8.0_",
             "camunda-group-8.8.0_",
-            "camunda-mapping-8.8.0_",
+            "camunda-mapping-rule-8.8.0_",
             "camunda-web-session-8.8.0_",
             "camunda-role-8.8.0_",
             "camunda-tenant-8.8.0_",
