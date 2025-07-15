@@ -70,17 +70,6 @@ public class DbMigratorImpl implements DbMigrator {
   private final boolean versionCheckRestrictionEnabled;
 
   public DbMigratorImpl(
-      final ClusterContext clusterContext,
-      final MutableProcessingState processingState,
-      final String currentVersion) {
-    this(
-        true,
-        new MigrationTaskContextImpl(clusterContext, processingState),
-        MIGRATION_TASKS,
-        currentVersion);
-  }
-
-  public DbMigratorImpl(
       final boolean versionCheckRestrictionEnabled,
       final ClusterContext clusterContext,
       final MutableProcessingState processingState,
