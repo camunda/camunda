@@ -15,87 +15,101 @@
  */
 package io.camunda;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.UserTaskSelectors.byElementId;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.api.CamundaSpringProcessTest;
+import io.camunda.services.ArchiveService;
+import io.camunda.services.WiredLegacyException;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import io.camunda.client.CamundaClient;
-import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.api.CamundaSpringProcessTest;
-import io.camunda.services.ArchiveService;
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 
 @SpringBootTest(
     properties = {
       "camunda.client.worker.defaults.enabled=false", // disable job workers
-      "camunda.client.worker.override.archive-invoice.enabled=true" // use this worker to test the scope with the glue code
+      "camunda.client.worker.override.archive-invoice.enabled=true", // use this worker to test the
+      // scope with the glue code#
+      "io.camunda.process.test.connectors-enabled=true",
+      "io.camunda.process.test.connectors-secrets.INVOICE_REJECTION_URL=http://localhost:8089"
     })
+@AutoConfigureWireMock(port = 8089)
 @CamundaSpringProcessTest
 public class InvoiceApprovalTest {
 
-  @Autowired
-  private CamundaClient client;
+  @Autowired private CamundaClient client;
 
-  @Autowired
-  private CamundaProcessTestContext processTestContext;
-  
-  @Autowired
-  private ObjectMapper objectMapper;
+  @Autowired private CamundaProcessTestContext processTestContext;
 
-  @MockBean
-  private ArchiveService archiveService;
+  @Autowired private ObjectMapper objectMapper;
+
+  @MockBean private ArchiveService archiveService;
+
+  private final String invoiceJson =
+      """
+      {
+        "id": "INV-1001",
+        "amount": 12000,
+        "currency": "EUR",
+        "supplier": {
+          "id": "0815",
+          "name": "Acme GmbH"
+        },
+        "contactEmail": "accounting@acme.com"
+      }""";
 
   @Test
-  void happyPath() throws JsonMappingException, JsonProcessingException {
-    final String invoiceJson = """
-        {
-          "id": "INV-1001",
-          "amount": 12000,
-          "currency": "EUR",
-          "supplier": {
-            "id": "0815",
-            "name": "Acme GmbH"
-          },
-          "contactEmail": "accounting@acme.com"
-        }""";
-
+  public void happyPath() throws Exception {
     final HashMap<String, Object> variables = new HashMap<String, Object>();
     variables.put("approver", "Zee");
     variables.put("invoice", objectMapper.readTree(invoiceJson));
 
     // This is NOT working:
     //////////////////////////
-    // Let's define a mock in case there is no service interface in between - this is close to what you do with Connectors
+    // Let's define a mock in case there is no service interface in between - this is close to what
+    // you do with Connectors
     final AtomicBoolean addInvoiceJobWorkerCalled = new AtomicBoolean(false);
-    processTestContext.mockJobWorker("add-invoice-to-accounting").withHandler((jobClient, job) -> {
-      addInvoiceJobWorkerCalled.set(true);
-      // check input mapping
-      assertEquals("INV-1001", job.getVariablesAsMap().get("invoiceId"));
-      assertEquals(invoiceJson, job.getVariablesAsMap().get("invoice"));
-      jobClient.newCompleteCommand(job)
-        //.variables(null) //  We could now also simulate setting some response values
-        .send().join();
-    });
+    processTestContext
+        .mockJobWorker("add-invoice-to-accounting")
+        .withHandler(
+            (jobClient, job) -> {
+              addInvoiceJobWorkerCalled.set(true);
+              // check input mapping
+              assertEquals("INV-1001", job.getVariablesAsMap().get("invoiceId"));
+              assertEquals(invoiceJson, job.getVariablesAsMap().get("invoice"));
+              jobClient
+                  .newCompleteCommand(job)
+                  // .variables(null) //  We could now also simulate setting some response values
+                  .send()
+                  .join();
+            });
 
     // This is working:
     //////////////////////////
     processTestContext.mockJobWorker("add-invoice-to-accounting").thenComplete();
-
 
     // and now kick of the process instance
     final var processInstance =
@@ -107,15 +121,13 @@ public class InvoiceApprovalTest {
             .send()
             .join();
 
+    // assert the User Task and simulate a human decision
     assertThat(processInstance).hasActiveElements("UserTask_ApproveInvoice");
-    assertThat(byElementId("UserTask_ApproveInvoice"))
-      .isCreated()
-      .hasAssignee("Zee");
-
+    assertThat(byElementId("UserTask_ApproveInvoice")).isCreated().hasAssignee("Zee");
     processTestContext.completeUserTask(
-        byElementId("UserTask_ApproveInvoice"),
-        Map.of("approved", true));
+        byElementId("UserTask_ApproveInvoice"), Map.of("approved", true));
 
+    // This should make the process instance execute till the end
     assertThat(processInstance)
         .hasCompletedElementsInOrder(
             byId("StartEvent_InvoiceReceived"),
@@ -125,7 +137,131 @@ public class InvoiceApprovalTest {
             byId("EndEvent_InvoiceApproved"))
         .isCompleted();
 
+    // verify that side effects have happened
     Mockito.verify(archiveService).archiveInvoice("INV-1001", objectMapper.readTree(invoiceJson));
     assertTrue("add-invoice-to-accounting job worker was called", addInvoiceJobWorkerCalled.get());
+  }
+
+  @Test
+  public void testRejectionPath() throws Exception {
+    final HashMap<String, Object> variables = new HashMap<String, Object>();
+    variables.put("approver", "Zee");
+    variables.put("invoice", objectMapper.readTree(invoiceJson));
+
+    // Create a stub for the HTTP endpoint that is invoked by the Connector
+    stubFor(
+        post(urlEqualTo("/reject"))
+            .willReturn(aResponse().withStatus(200))); // this could also send a response
+
+    // Kick of the process instance
+    final var processInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("Process_InvoiceApproval")
+            .latestVersion()
+            .variables(variables)
+            .send()
+            .join();
+
+    // assert the User Task and simulate a human decision
+    assertThat(byElementId("UserTask_ApproveInvoice")).isCreated().hasAssignee("Zee");
+    processTestContext.completeUserTask(
+        byElementId("UserTask_ApproveInvoice"),
+        Map.of( //
+            "approved",
+            false, //
+            "rejectionReason",
+            "it is a test case :-)"));
+
+    // This should make the process instance execute till the end
+    assertThat(processInstance)
+        .hasCompletedElementsInOrder(
+            byId("StartEvent_InvoiceReceived"),
+            byId("UserTask_ApproveInvoice"),
+            byId("Gateway_Approved"),
+            byId("ServiceTask_SendRejection"),
+            byId("EndEvent_InvoiceRejected"))
+        .isCompleted();
+
+    // Assert that the HTTP endpoint was actually invoked with the right parameters
+    verify(
+        postRequestedFor(urlEqualTo("/reject"))
+            .withRequestBody(
+                equalToJson(
+                    """
+          {
+            "invoiceId": "INV-1001",
+            "rejectionReason": "it is a test case :-)"
+          }
+        """)));
+  }
+
+  @Test
+  public void testApprovalTimeout() throws Exception {
+    final HashMap<String, Object> variables = new HashMap<String, Object>();
+    variables.put("approver", "Zee");
+    variables.put("invoice", objectMapper.readTree(invoiceJson));
+
+    processTestContext.mockJobWorker("add-invoice-to-accounting").thenComplete();
+
+    final var processInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("Process_InvoiceApproval")
+            .latestVersion()
+            .variables(variables)
+            .send()
+            .join();
+
+    // assert the User Task and simulate the timeout
+    assertThat(processInstance).hasActiveElements("UserTask_ApproveInvoice");
+    processTestContext.increaseTime(Duration.ofDays(5));
+
+    // This should make the process instance auto approve and run till the end
+    assertThat(processInstance)
+        .isCompleted()
+        .hasCompletedElementsInOrder(
+            byId("StartEvent_InvoiceReceived"),
+            byId("ServiceTask_ArchiveInvoice"),
+            byId("ServiceTask_AddInvoiceAccounting"),
+            byId("EndEvent_InvoiceApproved"))
+        .hasTerminatedElements(byId("UserTask_ApproveInvoice"));
+  }
+
+  @Test
+  public void testArchiveSystemError() throws Exception {
+    final HashMap<String, Object> variables = new HashMap<String, Object>();
+    variables.put("approver", "Zee");
+    variables.put("invoice", objectMapper.readTree(invoiceJson));
+
+    doThrow(new WiredLegacyException()).when(archiveService).archiveInvoice(anyString(), any());
+
+    processTestContext.mockJobWorker("add-invoice-to-accounting").thenComplete();
+    // .thenThrowBpmnError("LEGACY_ERROR_ARCHIVE");
+
+    final var processInstance =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("Process_InvoiceApproval")
+            .latestVersion()
+            .variables(variables)
+            .send()
+            .join();
+
+    assertThat(byElementId("UserTask_ManuallyArchiveInvoice"))
+        .isCreated()
+        .hasCandidateGroup(
+            "active-team"); // probably not worth to test as it limits flexibility in model changes
+    processTestContext.completeUserTask(byElementId("UserTask_ManuallyArchiveInvoice"));
+
+    assertThat(processInstance)
+        .hasCompletedElementsInOrder(
+            byId("StartEvent_InvoiceReceived"),
+            byId("UserTask_ApproveInvoice"),
+            byId("ServiceTask_ArchiveInvoice"),
+            byId("UserTask_ManuallyArchiveInvoice"),
+            byId("ServiceTask_AddInvoiceAccounting"),
+            byId("EndEvent_InvoiceApproved"))
+        .isCompleted();
   }
 }
