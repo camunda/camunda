@@ -7,7 +7,7 @@
  */
 
 import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const selectableFlowNodesParser = (
   response: GetProcessInstanceStatisticsResponseBody,

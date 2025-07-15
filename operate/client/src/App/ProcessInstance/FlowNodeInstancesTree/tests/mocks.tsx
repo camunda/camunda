@@ -7,8 +7,8 @@
  */
 
 import {
-  FlowNodeInstance,
-  FlowNodeInstances,
+  type FlowNodeInstance,
+  type FlowNodeInstances,
   flowNodeInstanceStore,
 } from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
@@ -24,6 +24,7 @@ import {TreeView} from '@carbon/react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const multiInstanceProcessInstance: ProcessInstanceEntity = Object.freeze(
   createInstance({

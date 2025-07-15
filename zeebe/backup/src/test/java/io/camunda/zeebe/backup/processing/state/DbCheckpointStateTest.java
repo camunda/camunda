@@ -51,30 +51,107 @@ final class DbCheckpointStateTest {
     // given
 
     // when-then
-    assertThat(state.getCheckpointId()).isEqualTo(NO_CHECKPOINT);
-    assertThat(state.getCheckpointPosition()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(NO_CHECKPOINT);
   }
 
   @Test
-  void shouldSetAndGetCheckpointIdAndPosition() {
+  void shouldSetAndGetLatestCheckpointIdAndPosition() {
     // when
-    state.setCheckpointInfo(5L, 10L);
+    state.setLatestCheckpointInfo(5L, 10L);
 
     // then
-    assertThat(state.getCheckpointId()).isEqualTo(5L);
-    assertThat(state.getCheckpointPosition()).isEqualTo(10L);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(5L);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(10L);
   }
 
   @Test
   void shouldOverwriteCheckpointIdAndPosition() {
     // given
-    state.setCheckpointInfo(5L, 10L);
+    state.setLatestCheckpointInfo(5L, 10L);
 
     // when
-    state.setCheckpointInfo(15L, 20L);
+    state.setLatestCheckpointInfo(15L, 20L);
 
     // then
-    assertThat(state.getCheckpointId()).isEqualTo(15L);
-    assertThat(state.getCheckpointPosition()).isEqualTo(20L);
+    assertThat(state.getLatestCheckpointId()).isEqualTo(15L);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(20L);
+  }
+
+  @Test
+  void shouldReturnInitialValuesWhenNoBackup() {
+    // given
+
+    // then
+    assertThat(state.getLatestBackupId()).isEqualTo(NO_CHECKPOINT);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(NO_CHECKPOINT);
+  }
+
+  @Test
+  void shouldSetAndGetLatestBackupIdAndPosition() {
+    // when
+    state.setLatestBackupInfo(7L, 14L);
+
+    // then
+    assertThat(state.getLatestBackupId()).isEqualTo(7L);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(14L);
+  }
+
+  @Test
+  void shouldOverwriteBackupIdAndPosition() {
+    // given
+    state.setLatestBackupInfo(7L, 14L);
+
+    // when
+    state.setLatestBackupInfo(21L, 28L);
+
+    // then
+    assertThat(state.getLatestBackupId()).isEqualTo(21L);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(28L);
+  }
+
+  @Test
+  void shouldStoreCheckpointAndBackupInfoIndependently() {
+    // when
+    state.setLatestCheckpointInfo(5L, 10L);
+    state.setLatestBackupInfo(7L, 14L);
+
+    // then
+    assertThat(state.getLatestCheckpointId()).isEqualTo(5L);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(10L);
+    assertThat(state.getLatestBackupId()).isEqualTo(7L);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(14L);
+  }
+
+  @Test
+  void shouldUpdateCheckpointInfoWithoutAffectingBackupInfo() {
+    // given
+    state.setLatestCheckpointInfo(5L, 10L);
+    state.setLatestBackupInfo(7L, 14L);
+
+    // when
+    state.setLatestCheckpointInfo(15L, 20L);
+
+    // then
+    assertThat(state.getLatestCheckpointId()).isEqualTo(15L);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(20L);
+    assertThat(state.getLatestBackupId()).isEqualTo(7L);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(14L);
+  }
+
+  @Test
+  void shouldUpdateBackupInfoWithoutAffectingCheckpointInfo() {
+    // given
+    state.setLatestCheckpointInfo(5L, 10L);
+    state.setLatestBackupInfo(7L, 14L);
+
+    // when
+    state.setLatestBackupInfo(21L, 28L);
+
+    // then
+    assertThat(state.getLatestCheckpointId()).isEqualTo(5L);
+    assertThat(state.getLatestCheckpointPosition()).isEqualTo(10L);
+    assertThat(state.getLatestBackupId()).isEqualTo(21L);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(28L);
   }
 }

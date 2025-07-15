@@ -6,13 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
-import {RequestError} from 'modules/request';
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import type {RequestError} from 'modules/request';
+import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {fetchFlownodeInstancesStatistics} from 'modules/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {isEmpty} from 'lodash';
+import isEmpty from 'lodash/isEmpty';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
+import {useIsProcessInstanceRunning} from '../processInstance/useIsProcessInstanceRunning';
 
 const FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY = 'flownodeInstancesStatistics';
 
@@ -28,6 +29,7 @@ const useFlownodeInstancesStatistics = <
 ): UseQueryResult<T, RequestError> => {
   const {processInstanceId} = useProcessInstancePageParams();
   const {data: businessObjects} = useBusinessObjects();
+  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
 
   return useQuery({
     queryKey: getQueryKey(processInstanceId),
@@ -45,6 +47,11 @@ const useFlownodeInstancesStatistics = <
           }
         : skipToken,
     select,
+    refetchInterval: () => {
+      if (isProcessInstanceRunning) {
+        return 5000;
+      }
+    },
   });
 };
 

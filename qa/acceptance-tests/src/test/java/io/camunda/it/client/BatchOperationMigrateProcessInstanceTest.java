@@ -95,11 +95,11 @@ public class BatchOperationMigrateProcessInstanceTest {
 
     // then wait if batch has correct amount of items. (To fail fast if not)
     waitForBatchOperationWithCorrectTotalCount(
-        client, batchCreated.getBatchOperationId(), processInstances.size());
+        client, batchCreated.getBatchOperationKey(), processInstances.size());
 
     // and wait for the batch operation to complete
     waitForBatchOperationCompleted(
-        client, batchCreated.getBatchOperationId(), processInstances.size(), 0);
+        client, batchCreated.getBatchOperationKey(), processInstances.size(), 0);
 
     Awaitility.await("should update batch operation items")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -110,7 +110,7 @@ public class BatchOperationMigrateProcessInstanceTest {
               final var batchItems =
                   client
                       .newBatchOperationItemsSearchRequest()
-                      .filter(f -> f.batchOperationId(batchCreated.getBatchOperationId()))
+                      .filter(f -> f.batchOperationKey(batchCreated.getBatchOperationKey()))
                       .send()
                       .join()
                       .items();
@@ -201,7 +201,7 @@ public class BatchOperationMigrateProcessInstanceTest {
                 .build());
 
     // and wait for the batch operation to complete
-    waitForBatchOperationCompleted(client, batchCreated.getBatchOperationId(), 5, 5);
+    waitForBatchOperationCompleted(client, batchCreated.getBatchOperationKey(), 5, 5);
   }
 
   public CreateBatchOperationResponse batchMigrateProcessInstance(

@@ -24,11 +24,6 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 
-function reset() {
-  jest.clearAllTimers();
-  jest.useRealTimers();
-}
-
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
@@ -80,15 +75,18 @@ describe('<Filters />', () => {
     await authenticationStore.authenticate();
 
     await groupedDecisionsStore.fetchDecisions();
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
-  afterEach(reset);
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
 
   it('should write filters to url', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     const MOCK_VALUES = {
       name: 'invoice-assign-approver',
@@ -145,14 +143,12 @@ describe('<Filters />', () => {
         ),
       ).toEqual(MOCK_VALUES),
     );
-
-    window.clientConfig = undefined;
   });
 
   it('initialise filter values from url', () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     render(<Filters />, {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
@@ -166,8 +162,6 @@ describe('<Filters />', () => {
     expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
       'Tenant A',
     );
-
-    window.clientConfig = undefined;
   });
 
   it('should hide multi tenancy filter if its not enabled in client config', async () => {
@@ -199,14 +193,12 @@ describe('<Filters />', () => {
       expect(groupedDecisionsStore.state.status).toBe('fetched'),
     );
     expect(screen.getByLabelText('Name')).toBeDisabled();
-
-    window.clientConfig = undefined;
   });
 
   it('should clear decision name and version field when tenant filter is changed', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
@@ -249,7 +241,5 @@ describe('<Filters />', () => {
     expect(
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent(/select a decision version/i);
-
-    window.clientConfig = undefined;
   });
 });

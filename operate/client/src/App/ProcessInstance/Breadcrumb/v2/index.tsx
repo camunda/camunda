@@ -12,7 +12,10 @@ import {Link} from 'modules/components/Link';
 import {OverflowMenu, OverflowMenuItem, BreadcrumbItem} from '@carbon/react';
 import {useNavigate} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {CallHierarchy, ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {
+  type CallHierarchy,
+  type ProcessInstance,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 type Props = {
   callHierarchy: CallHierarchy[];

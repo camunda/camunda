@@ -38,7 +38,7 @@ public class RolesSearchTest {
   }
 
   @Test
-  void searchShouldReturnRoleFilteredByRoleId() {
+  void searchShouldReturnRoleFilteredByRoleName() {
     final var roleSearchResponse =
         camundaClient.newRolesSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
 
@@ -49,7 +49,7 @@ public class RolesSearchTest {
   }
 
   @Test
-  void searchShouldReturnRolesFilteredByName() {
+  void searchShouldReturnRolesFilteredById() {
     final var roleSearchResponse =
         camundaClient.newRolesSearchRequest().filter(fn -> fn.roleId(ROLE_ID_1)).send().join();
 

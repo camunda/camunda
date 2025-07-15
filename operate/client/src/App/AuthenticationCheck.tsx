@@ -11,10 +11,10 @@ import {Navigate, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 import {authenticationStore} from 'modules/stores/authentication';
 
-interface Props {
+type Props = {
   redirectPath: string;
   children: React.ReactNode;
-}
+};
 
 const AuthenticationCheck: React.FC<Props> = observer(
   ({redirectPath, children}) => {

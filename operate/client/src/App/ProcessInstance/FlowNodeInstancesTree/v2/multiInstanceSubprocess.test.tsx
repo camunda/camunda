@@ -24,14 +24,29 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
+  });
+
+  afterEach(() => {
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
+    processInstanceDetailsStore.reset();
+    flowNodeInstanceStore.reset();
   });
 
   it('should load the instance history', async () => {
@@ -141,7 +156,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should poll for instances on root level', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
@@ -166,6 +181,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     const withinMultiInstanceFlowNode = within(
       screen.getByTestId(
         `tree-node-${
+          // eslint-disable-next-line testing-library/no-node-access
           flowNodeInstances.level1Poll[processInstanceId]!.children[1]!.id
         }`,
       ),
@@ -184,7 +200,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     );
     mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1Poll);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(
       await withinMultiInstanceFlowNode.findByTestId('COMPLETED-icon'),
@@ -193,7 +209,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       withinMultiInstanceFlowNode.queryByTestId('INCIDENT-icon'),
     ).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

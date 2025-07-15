@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.job;
 
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_BPMN_PROCESS_ID;
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_INSTANCE_KEY;
+import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.BPMN_PROCESS_ID_KEY;
+import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROCESS_INSTANCE_KEY_KEY;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -47,42 +47,72 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final String VARIABLES = "variables";
   private static final String ERROR_MESSAGE = "errorMessage";
 
-  private final StringProperty typeProp = new StringProperty(TYPE, EMPTY_STRING);
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue TYPE_KEY = new StringValue(TYPE);
+  private static final StringValue WORKER_KEY = new StringValue("worker");
+  private static final StringValue DEADLINE_KEY = new StringValue("deadline");
+  private static final StringValue TIMEOUT_KEY = new StringValue(TIMEOUT);
+  private static final StringValue RETRIES_KEY = new StringValue(RETRIES);
+  private static final StringValue RETRY_BACKOFF_KEY = new StringValue("retryBackoff");
+  private static final StringValue RECURRING_TIME_KEY = new StringValue("recurringTime");
+  private static final StringValue CUSTOM_HEADERS_KEY = new StringValue(CUSTOM_HEADERS);
+  private static final StringValue VARIABLES_KEY = new StringValue(VARIABLES);
+  private static final StringValue ERROR_MESSAGE_KEY = new StringValue(ERROR_MESSAGE);
+  private static final StringValue ERROR_CODE_KEY = new StringValue("errorCode");
+  private static final StringValue PROCESS_DEFINITION_VERSION_KEY =
+      new StringValue("processDefinitionVersion");
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+  private static final StringValue JOB_KIND_KEY = new StringValue("jobKind");
+  private static final StringValue JOB_LISTENER_EVENT_TYPE_KEY =
+      new StringValue("jobListenerEventType");
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue CHANGED_ATTRIBUTES_KEY = new StringValue("changedAttributes");
+  private static final StringValue RESULT_KEY = new StringValue("result");
 
-  private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
-  private final LongProperty deadlineProp = new LongProperty("deadline", -1);
-  private final LongProperty timeoutProp = new LongProperty(TIMEOUT, -1);
-  private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
-  private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", 0);
-  private final LongProperty recurringTimeProp = new LongProperty("recurringTime", -1);
+  private final StringProperty typeProp = new StringProperty(TYPE_KEY, EMPTY_STRING);
 
-  private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
-  private final DocumentProperty variableProp = new DocumentProperty(VARIABLES);
+  private final StringProperty workerProp = new StringProperty(WORKER_KEY, EMPTY_STRING);
+  private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
+  private final LongProperty timeoutProp = new LongProperty(TIMEOUT_KEY, -1);
+  private final IntegerProperty retriesProp = new IntegerProperty(RETRIES_KEY, -1);
+  private final LongProperty retryBackoffProp = new LongProperty(RETRY_BACKOFF_KEY, 0);
+  private final LongProperty recurringTimeProp = new LongProperty(RECURRING_TIME_KEY, -1);
 
-  private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE, EMPTY_STRING);
-  private final StringProperty errorCodeProp = new StringProperty("errorCode", EMPTY_STRING);
+  private final PackedProperty customHeadersProp =
+      new PackedProperty(CUSTOM_HEADERS_KEY, NO_HEADERS);
+  private final DocumentProperty variableProp = new DocumentProperty(VARIABLES_KEY);
+
+  private final StringProperty errorMessageProp =
+      new StringProperty(ERROR_MESSAGE_KEY, EMPTY_STRING);
+  private final StringProperty errorCodeProp = new StringProperty(ERROR_CODE_KEY, EMPTY_STRING);
 
   private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROP_PROCESS_INSTANCE_KEY, -1L);
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final StringProperty bpmnProcessIdProp =
-      new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, EMPTY_STRING);
+      new StringProperty(BPMN_PROCESS_ID_KEY, EMPTY_STRING);
   private final IntegerProperty processDefinitionVersionProp =
-      new IntegerProperty("processDefinitionVersion", -1);
+      new IntegerProperty(PROCESS_DEFINITION_VERSION_KEY, -1);
   private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
   private final EnumProperty<JobKind> jobKindProp =
-      new EnumProperty<>("jobKind", JobKind.class, JobKind.BPMN_ELEMENT);
+      new EnumProperty<>(JOB_KIND_KEY, JobKind.class, JobKind.BPMN_ELEMENT);
   private final EnumProperty<JobListenerEventType> jobListenerEventTypeProp =
       new EnumProperty<>(
-          "jobListenerEventType", JobListenerEventType.class, JobListenerEventType.UNSPECIFIED);
-  private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
+          JOB_LISTENER_EVENT_TYPE_KEY,
+          JobListenerEventType.class,
+          JobListenerEventType.UNSPECIFIED);
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, EMPTY_STRING);
+  private final LongProperty elementInstanceKeyProp =
+      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final ArrayProperty<StringValue> changedAttributesProp =
-      new ArrayProperty<>("changedAttributes", StringValue::new);
+      new ArrayProperty<>(CHANGED_ATTRIBUTES_KEY, StringValue::new);
   private final ObjectProperty<JobResult> resultProp =
-      new ObjectProperty<>("result", new JobResult());
+      new ObjectProperty<>(RESULT_KEY, new JobResult());
 
   public JobRecord() {
     super(22);

@@ -8,15 +8,14 @@
 
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
-import {
+import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
   ProcessDefinitionStatistic,
-} from '@vzeta/camunda-api-zod-schemas';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isProcessOrSubProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
-
 type FlowNodeState =
   | 'active'
   | 'incidents'

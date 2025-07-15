@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {setupWorker} from 'msw';
+import {setupWorker} from 'msw/browser';
 import {handlers} from './handlers';
 
 function startMocking() {

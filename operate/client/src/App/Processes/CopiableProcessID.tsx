@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
+import {type ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
 import {CopiableContent} from 'modules/components/PanelHeader/CopiableContent';
 
 type Props = {

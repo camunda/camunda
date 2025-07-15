@@ -23,6 +23,7 @@ export class ProcessInstance {
   readonly newVariableNameField: Locator;
   readonly newVariableValueField: Locator;
   readonly editVariableValueField: Locator;
+  readonly variablesTableSpinner: Locator;
   readonly variableSpinner: Locator;
   readonly operationSpinner: Locator;
   readonly executionCountToggleOn: Locator;
@@ -49,6 +50,7 @@ export class ProcessInstance {
     this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
     this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
     this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
+    this.variablesTableSpinner = page.getByTestId('variables-spinner');
     this.variableSpinner = page.getByTestId('variable-operation-spinner');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggleOn = this.instanceHistory.getByLabel(

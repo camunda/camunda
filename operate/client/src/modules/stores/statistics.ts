@@ -10,12 +10,12 @@ import {
   makeObservable,
   observable,
   action,
-  IReactionDisposer,
   override,
+  type IReactionDisposer,
 } from 'mobx';
 import {
   fetchProcessCoreStatistics,
-  CoreStatisticsDto,
+  type CoreStatisticsDto,
 } from 'modules/api/processInstances/fetchProcessCoreStatistics';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';

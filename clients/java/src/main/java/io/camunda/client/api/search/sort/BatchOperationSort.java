@@ -19,7 +19,7 @@ import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSo
 
 public interface BatchOperationSort extends SearchRequestSort<BatchOperationSort> {
 
-  BatchOperationSort batchOperationId();
+  BatchOperationSort batchOperationKey();
 
   BatchOperationSort state();
 

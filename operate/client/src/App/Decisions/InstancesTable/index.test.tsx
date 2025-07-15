@@ -63,7 +63,9 @@ describe('<InstancesTable />', () => {
 
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
   });
 
   it('should render error message', async () => {
@@ -71,7 +73,9 @@ describe('<InstancesTable />', () => {
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByText('Data could not be fetched')).toBeInTheDocument();
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
@@ -85,7 +89,9 @@ describe('<InstancesTable />', () => {
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(
       screen.getByText('There are no Instances matching this filter set'),
@@ -109,7 +115,9 @@ describe('<InstancesTable />', () => {
       wrapper: createWrapper(`${Paths.decisions()}?evaluated=true&failed=true`),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(
       screen.getByText('There are no Instances matching this filter set'),
@@ -129,7 +137,9 @@ describe('<InstancesTable />', () => {
     render(<InstancesTable />, {wrapper: createWrapper()});
 
     expect(screen.queryByText(/results found/)).not.toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(
       screen.getByRole('columnheader', {
@@ -190,7 +200,7 @@ describe('<InstancesTable />', () => {
   });
 
   it('should navigate to decision instance page', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
@@ -198,7 +208,9 @@ describe('<InstancesTable />', () => {
       wrapper: createWrapper(Paths.decisions()),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
 
@@ -214,12 +226,12 @@ describe('<InstancesTable />', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should navigate to process instance page', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchDecisionInstances().withSuccess({
       totalCount: 1,
@@ -241,7 +253,9 @@ describe('<InstancesTable />', () => {
       wrapper: createWrapper(Paths.decisions()),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
 
@@ -257,8 +271,8 @@ describe('<InstancesTable />', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should display loading skeleton when sorting is applied', async () => {
@@ -266,7 +280,9 @@ describe('<InstancesTable />', () => {
 
     const {user} = render(<InstancesTable />, {wrapper: createWrapper()});
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.queryByTestId('data-table-loader')).not.toBeInTheDocument();
 
@@ -276,7 +292,7 @@ describe('<InstancesTable />', () => {
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
+    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
   });
 
   it('should refetch data when navigated from header', async () => {
@@ -291,7 +307,9 @@ describe('<InstancesTable />', () => {
       {wrapper: createWrapper()},
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     mockFetchDecisionInstances().withDelay(mockDecisionInstances);
 
@@ -315,9 +333,14 @@ describe('<InstancesTable />', () => {
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {
-      window.clientConfig = {
+      mockFetchDecisionInstances().withSuccess({
+        totalCount: 0,
+        decisionInstances: [],
+      });
+
+      vi.stubGlobal('clientConfig', {
         multiTenancyEnabled: true,
-      };
+      });
 
       render(<InstancesTable />, {
         wrapper: createWrapper(
@@ -330,15 +353,18 @@ describe('<InstancesTable />', () => {
       expect(
         screen.getByRole('columnheader', {name: 'Tenant'}),
       ).toBeInTheDocument();
-
-      window.clientConfig = undefined;
     },
   );
 
   it('should hide tenant column when multi tenancy is enabled and tenant filter is a specific tenant', async () => {
-    window.clientConfig = {
+    mockFetchDecisionInstances().withSuccess({
+      totalCount: 0,
+      decisionInstances: [],
+    });
+
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     render(<InstancesTable />, {
       wrapper: createWrapper(
@@ -349,11 +375,14 @@ describe('<InstancesTable />', () => {
     expect(
       screen.queryByRole('columnheader', {name: 'Tenant'}),
     ).not.toBeInTheDocument();
-
-    window.clientConfig = undefined;
   });
 
   it('should hide tenant column when multi tenancy is disabled', async () => {
+    mockFetchDecisionInstances().withSuccess({
+      totalCount: 0,
+      decisionInstances: [],
+    });
+
     render(<InstancesTable />, {
       wrapper: createWrapper(
         `${Paths.decisions()}?${new URLSearchParams({tenant: 'all'})}`,

@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
-import {RequestError} from 'modules/request';
-import {GetProcessInstanceCallHierarchyResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import {type RequestError} from 'modules/request';
+import {type GetProcessInstanceCallHierarchyResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchCallHierarchy} from 'modules/api/v2/processInstances/fetchCallHierarchy';
 
@@ -26,7 +26,7 @@ const useCallHierarchy = <T = GetProcessInstanceCallHierarchyResponseBody>(
 
   return useQuery({
     queryKey: getQueryKey(processInstanceId),
-    queryFn: !!processInstanceId
+    queryFn: processInstanceId
       ? async () => {
           const {response, error} = await fetchCallHierarchy(processInstanceId);
 

@@ -14,7 +14,7 @@ import {Restricted} from 'modules/components/Restricted';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {isWithinMultiInstance} from 'modules/bpmn-js/utils/isWithinMultiInstance';
 import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/utils/isAttachedToAnEventBasedGateway';

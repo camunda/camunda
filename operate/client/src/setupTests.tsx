@@ -6,27 +6,81 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import 'jest-styled-components';
 import '@testing-library/jest-dom';
 import {mockServer} from 'modules/mock-server/node';
 import {configure} from 'modules/testing-library';
-import React from 'react';
-import MockSplitter from 'modules/mocks/Splitter';
+import MockDmnJsSharedManager from '__mocks__/dmn-js-shared/lib/base/Manager';
+import MockDmnJsSharedDiUtil from '__mocks__/dmn-js-shared/lib/util/DiUtil';
+import MockDmnJsSharedModelUtil from '__mocks__/dmn-js-shared/lib/util/ModelUtil';
+import MockDmnJsDecisionTableViewer from '__mocks__/dmn-js-decision-table/lib/Viewer';
+import MockDmnJsDrdNavigatedViewer from '__mocks__/dmn-js-drd/lib/NavigatedViewer';
+import MockDmnJsLiteralExpressionViewer from '__mocks__/dmn-js-literal-expression/lib/Viewer';
+import MockSplitter, {SplitDirection} from './__mocks__/@devbookhq/splitter';
+import MockBpmnJsNavigatedViewer from '__mocks__/bpmn-js/lib/NavigatedViewer';
+import MockBpmnJs from '__mocks__/bpmn-js';
+import MockBpmnIoElementTemplateIconRenderer from '__mocks__/@bpmn-io/element-template-icon-renderer';
+import MockReactMarkdown from '__mocks__/react-markdown';
+import ResizeObserverPolyfill from 'resize-observer-polyfill';
 
-global.ResizeObserver = require('resize-observer-polyfill');
+vi.mock('dmn-js-shared/lib/base/Manager', () => ({
+  default: MockDmnJsSharedManager,
+}));
+vi.mock('dmn-js-shared/lib/util/DiUtil', () => ({
+  default: MockDmnJsSharedDiUtil,
+}));
+vi.mock('dmn-js-shared/lib/util/ModelUtil', () => ({
+  default: MockDmnJsSharedModelUtil,
+}));
+vi.mock('dmn-js-decision-table/lib/Viewer', () => ({
+  default: MockDmnJsDecisionTableViewer,
+}));
+vi.mock('dmn-js-drd/lib/NavigatedViewer', () => ({
+  default: MockDmnJsDrdNavigatedViewer,
+}));
+vi.mock('dmn-js-literal-expression/lib/Viewer', () => ({
+  default: MockDmnJsLiteralExpressionViewer,
+}));
 
-jest.mock('@devbookhq/splitter', () => {
+vi.mock('modules/components/JSONEditor', () => {
   return {
-    __esModule: true,
-    ...jest.requireActual('@devbookhq/splitter'),
-    default: MockSplitter,
+    useMonaco: () => {},
+    JSONEditor: ({
+      value,
+      onChange,
+    }: {
+      value: string;
+      onChange?: (value: string) => void;
+    }) => (
+      <textarea
+        data-testid="monaco-editor"
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
+    ),
   };
 });
-jest.mock('modules/utils/date/formatDate');
 
-jest.mock('modules/components/MonacoEditor');
+vi.mock('modules/components/DiffEditor', () => {
+  return {
+    useMonaco: () => {},
+    DiffEditor: () => <textarea data-testid="monaco-diff-editor" />,
+  };
+});
 
-jest.mock('modules/components/InfiniteScroller', () => {
+vi.mock('modules/loadMonaco', () => ({
+  loadMonaco: () => {},
+}));
+
+vi.mock('@devbookhq/splitter', async () => {
+  const actual = await vi.importActual('@devbookhq/splitter');
+  return {
+    ...actual,
+    default: MockSplitter,
+    SplitDirection: SplitDirection,
+  };
+});
+
+vi.mock('modules/components/InfiniteScroller', () => {
   const InfiniteScroller: React.FC<{children?: React.ReactNode}> = ({
     children,
   }) => {
@@ -35,40 +89,35 @@ jest.mock('modules/components/InfiniteScroller', () => {
   return {InfiniteScroller};
 });
 
-jest.mock('modules/stores/licenseTag', () => ({
+vi.mock('modules/stores/licenseTag', () => ({
   licenseTagStore: {
-    fetchLicense: jest.fn(),
+    fetchLicense: vi.fn(),
     state: {isTagVisible: false},
   },
 }));
 
-jest.mock('bpmn-js/lib/features/outline', () => {
-  return () => {};
-});
+vi.mock('bpmn-js/lib/features/outline', () => ({default: () => {}}));
 
-global.beforeEach(() => {
-  localStorage.clear();
-
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    value: jest.fn().mockImplementation(() => ({
-      matches: false,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-    })),
-  });
-});
-
-jest.mock('@floating-ui/react-dom', () => {
-  const originalModule = jest.requireActual('@floating-ui/react-dom');
+vi.mock('@floating-ui/react-dom', async () => {
+  const originalModule = await vi.importActual('@floating-ui/react-dom');
 
   return {
     ...originalModule,
     hide: () => {},
   };
 });
+
+vi.mock('bpmn-js/lib/NavigatedViewer', () => ({
+  default: MockBpmnJsNavigatedViewer,
+}));
+
+vi.mock('bpmn-js', () => MockBpmnJs);
+
+vi.mock('@bpmn-io/element-template-icon-renderer', () => ({
+  default: MockBpmnIoElementTemplateIconRenderer,
+}));
+
+vi.mock('react-markdown', () => ({default: MockReactMarkdown}));
 
 const localStorageMock = (function () {
   let store: {[key: string]: string} = {};
@@ -82,24 +131,37 @@ const localStorageMock = (function () {
     clear() {
       store = {};
     },
-    removeItem: jest.fn(),
+    removeItem: vi.fn(),
   };
 })();
 
-Object.defineProperty(window, 'localStorage', {value: localStorageMock});
-
-window.MutationObserver = MutationObserver;
-
-beforeAll(() => mockServer.listen());
+beforeAll(() =>
+  mockServer.listen({
+    onUnhandledRequest: 'error',
+  }),
+);
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());
-beforeEach(() => {
-  Object.defineProperty(window, 'clientConfig', {
-    value: {
-      canLogout: true,
-    },
-    writable: true,
+beforeEach(async () => {
+  vi.stubEnv('TZ', 'UTC');
+  vi.stubGlobal('ResizeObserver', ResizeObserverPolyfill);
+  vi.stubGlobal('localStorage', localStorageMock);
+  vi.stubGlobal('MutationObserver', MutationObserver);
+  vi.stubGlobal('clientConfig', {
+    canLogout: true,
   });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation(() => ({
+      matches: false,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    })),
+  );
+
+  localStorage.clear();
 });
 
 configure({

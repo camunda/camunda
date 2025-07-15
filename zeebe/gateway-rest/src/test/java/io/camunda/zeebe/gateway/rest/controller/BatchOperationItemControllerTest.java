@@ -66,10 +66,10 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                 .build());
     basicStringOperationTestCases(
         streamBuilder,
-        "batchOperationId",
+        "batchOperationKey",
         ops ->
             new io.camunda.search.filter.BatchOperationItemFilter.Builder()
-                .batchOperationIdOperations(ops)
+                .batchOperationKeyOperations(ops)
                 .build());
     customOperationTestCases(
         streamBuilder,
@@ -123,7 +123,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                     "items":
                     [
                         {
-                            "batchOperationId":"1",
+                            "batchOperationKey":"1",
                             "itemKey":"11",
                             "processInstanceKey":"12",
                             "state":"FAILED",
@@ -139,9 +139,9 @@ class BatchOperationItemControllerTest extends RestControllerTest {
   }
 
   private static BatchOperationItemEntity getBatchOperationItemEntity(
-      final String batchOperationId) {
+      final String batchOperationKey) {
     return new BatchOperationEntity.BatchOperationItemEntity(
-        batchOperationId,
+        batchOperationKey,
         11L,
         12L,
         BatchOperationItemState.FAILED,

@@ -44,7 +44,7 @@ describe('CopyVariableButton', () => {
   });
 
   it('should copy variables to clipboard', async () => {
-    const writeTextSpy = jest.spyOn(navigator.clipboard, 'writeText');
+    const writeTextSpy = vi.spyOn(navigator.clipboard, 'writeText');
 
     variablesStore.setItems([
       createVariable({
@@ -63,8 +63,16 @@ describe('CopyVariableButton', () => {
 
     const {user} = render(<CopyVariablesButton />);
 
-    expect(screen.getByRole('button')).toBeEnabled();
-    await user.click(screen.getByRole('button'));
+    expect(
+      screen.getByRole('button', {
+        name: /^copy variables$/i,
+      }),
+    ).toBeEnabled();
+    await user.click(
+      screen.getByRole('button', {
+        name: /^copy variables$/i,
+      }),
+    );
 
     expect(writeTextSpy).toHaveBeenCalledWith(
       '{"jsonVariable":{"a":123,"b":[1,2,3],"c":"text"},"numberVariable":666,"stringVariable":"text"}',

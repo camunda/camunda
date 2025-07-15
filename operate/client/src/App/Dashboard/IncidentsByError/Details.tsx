@@ -12,7 +12,7 @@ import {truncateErrorMessage} from './utils/truncateErrorMessage';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {ProcessDto} from 'modules/api/incidents/fetchIncidentsByError';
+import type {ProcessDto} from 'modules/api/incidents/fetchIncidentsByError';
 import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {authenticationStore} from 'modules/stores/authentication';

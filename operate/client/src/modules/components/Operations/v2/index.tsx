@@ -8,7 +8,7 @@
 
 import React, {useState} from 'react';
 
-import {ErrorHandler, operationsStore} from 'modules/stores/operations';
+import {type ErrorHandler, operationsStore} from 'modules/stores/operations';
 import {observer} from 'mobx-react';
 
 import {OperationItems} from 'modules/components/OperationItems';
@@ -20,10 +20,15 @@ import {OperationsContainer} from '../styled';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {ModificationHelperModal} from '../ModificationHelperModal';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {Cancel} from './Cancel';
 import {Delete} from './Delete';
 import {ResolveIncident} from './ResolveIncident';
+import type {
+  InstanceOperationEntity,
+  ResourceBasedPermissionDto,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Props = {
   instance: ProcessInstance;

@@ -35,9 +35,44 @@ public record UserTaskEntity(
     Integer processDefinitionVersion,
     Map<String, String> customHeaders,
     Integer priority) {
+
+  public UserTaskEntity withName(final String newName) {
+    return new UserTaskEntity(
+        userTaskKey,
+        elementId,
+        newName,
+        processDefinitionId,
+        creationDate,
+        completionDate,
+        assignee,
+        state,
+        formKey,
+        processDefinitionKey,
+        processInstanceKey,
+        elementInstanceKey,
+        tenantId,
+        dueDate,
+        followUpDate,
+        candidateGroups,
+        candidateUsers,
+        externalFormReference,
+        processDefinitionVersion,
+        customHeaders,
+        priority);
+  }
+
+  public boolean hasName() {
+    return name != null && !name.isBlank();
+  }
+
   public enum UserTaskState {
+    CREATING,
     CREATED,
+    ASSIGNING,
+    UPDATING,
+    COMPLETING,
     COMPLETED,
+    CANCELING,
     CANCELED,
     FAILED
   }

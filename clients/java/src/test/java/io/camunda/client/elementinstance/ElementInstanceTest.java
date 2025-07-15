@@ -15,6 +15,7 @@
  */
 package io.camunda.client.elementinstance;
 
+import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
@@ -349,11 +350,5 @@ public class ElementInstanceTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/element-instances/" + elementInstanceKey);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
-  }
-
-  private void assertSort(
-      final SearchRequestSort sort, final String field, final SortOrderEnum order) {
-    assertThat(sort.getField()).isEqualTo(field);
-    assertThat(sort.getOrder()).isEqualTo(order);
   }
 }

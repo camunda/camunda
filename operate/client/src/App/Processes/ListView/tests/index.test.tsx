@@ -28,7 +28,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
-import {useEffect} from 'react';
+import {act, useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -36,11 +36,9 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.mock('modules/utils/bpmn');
-const handleRefetchSpy = jest.spyOn(processesStore, 'handleRefetch');
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -142,7 +140,9 @@ describe('Instances', () => {
       wrapper: getWrapper(`${Paths.processes()}?active=true&incidents=true`),
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     const withinRow = within(
       screen.getByRole('row', {
@@ -161,7 +161,7 @@ describe('Instances', () => {
 
     mockFetchProcessInstances().withDelay(mockProcessInstances);
     await user.click(screen.getByText(/go to active/i));
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
+    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
 
     expect(
       withinRow.getByRole('checkbox', {name: /select row/i}),
@@ -198,7 +198,7 @@ describe('Instances', () => {
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
     expect(screen.getByTestId('data-table-loader')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-loader'));
+    await waitForElementToBeRemoved(screen.queryByTestId('data-table-loader'));
 
     expect(
       withinRow.getByRole('checkbox', {name: /select row/i}),
@@ -216,7 +216,9 @@ describe('Instances', () => {
       },
     );
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     await waitFor(() =>
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument(),
@@ -247,19 +249,16 @@ describe('Instances', () => {
   });
 
   it('should poll 3 times for grouped processes and redirect to initial processes page if process does not exist', async () => {
-    jest.useFakeTimers();
+    const handleRefetchSpy = vi.spyOn(processesStore, 'handleRefetch');
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const queryString =
       '?active=true&incidents=true&process=non-existing-process&version=all';
 
-    const originalWindow = {...window};
-
-    const locationSpy = jest.spyOn(window, 'location', 'get');
-
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -271,18 +270,21 @@ describe('Instances', () => {
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    await waitFor(() => expect(processesStore.state.status).toBe('fetching'));
-    expect(handleRefetchSpy).toHaveBeenCalledTimes(1);
+    vi.runOnlyPendingTimers();
+
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    jest.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -295,15 +297,19 @@ describe('Instances', () => {
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(processesStore.processes.length).toBe(5);
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes/);
+    });
+
+    await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
         '?active=true&incidents=true',
-      );
-    });
+      ),
+    );
+
+    expect(processesStore.processes.length).toBe(5);
 
     expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
       isDismissable: true,
@@ -311,10 +317,8 @@ describe('Instances', () => {
       title: 'Process could not be found',
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
-
-    locationSpy.mockRestore();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should hide Operation State column when Operation Id filter is not set', async () => {
@@ -329,34 +333,29 @@ describe('Instances', () => {
 
   it('should show Operation State column when Operation Id filter is set', async () => {
     const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
-    const originalWindow = {...window};
-    const locationSpy = jest.spyOn(window, 'location', 'get');
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByText('Operation State')).toBeInTheDocument();
-
-    locationSpy.mockRestore();
   });
 
   it('should show correct error message when error row is expanded', async () => {
     const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
-    const originalWindow = {...window};
-    const locationSpy = jest.spyOn(window, 'location', 'get');
-
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     const {user} = render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
@@ -364,7 +363,9 @@ describe('Instances', () => {
 
     mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
 
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     expect(screen.getByText('0000000000000002')).toBeInTheDocument();
     expect(
@@ -383,26 +384,23 @@ describe('Instances', () => {
     await user.click(expandButton);
 
     expect(screen.getByText('Batch Operation Error Message')).toBeVisible();
-
-    locationSpy.mockRestore();
   });
 
   it('should display correct operation from process instance with multiple operations', async () => {
     const queryString = '?operationId=f4be6304-a0e0-4976-b81b-7a07fb4e96e5';
-    const originalWindow = {...window};
-    const locationSpy = jest.spyOn(window, 'location', 'get');
-
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     render(<ListView />, {
       wrapper: getWrapper(`${Paths.processes()}${queryString}`),
     });
 
     mockFetchProcessInstances().withSuccess(mockProcessInstancesWithOperation);
-    await waitForElementToBeRemoved(screen.getByTestId('data-table-skeleton'));
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('data-table-skeleton'),
+    );
 
     const withinRow = within(
       screen.getByRole('row', {
@@ -412,7 +410,5 @@ describe('Instances', () => {
 
     expect(withinRow.getByText('FAILED')).toBeInTheDocument();
     expect(withinRow.queryByText('COMPLETED')).not.toBeInTheDocument();
-
-    locationSpy.mockRestore();
   });
 });

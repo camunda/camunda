@@ -74,13 +74,9 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
-      - name: Add Yarn binaries to Path
-        working-directory: ./operate/client
-        run: |
-          yarn bin >> "$GITHUB_PATH"
-          yarn global bin >> "$GITHUB_PATH"
+          package-manager: "npm"
       - name: Install Playwright
-        run: yarn exec playwright install -- --with-deps chromium
+        run: npx playwright install -- --with-deps chromium
         working-directory: ./operate/client
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -124,7 +120,7 @@ jobs:
           CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
       - name: Run tests
         working-directory: ./operate/client
-        run: yarn run test:e2e:ci
+        run: npm run test:e2e:ci
         env:
           ZEEBE_GATEWAY_ADDRESS: localhost:26500
           ZEEBE_REST_GATEWAY_ADDRESS: http://localhost:8080

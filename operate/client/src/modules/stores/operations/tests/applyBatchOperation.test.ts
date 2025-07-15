@@ -25,7 +25,7 @@ describe('Apply Batch Operation', () => {
     await operationsStore.fetchOperations();
     expect(operationsStore.state.operations).toEqual(operations);
 
-    const mockOnSuccess = jest.fn();
+    const mockOnSuccess = vi.fn();
     await operationsStore.applyBatchOperation({
       operationType: 'CANCEL_PROCESS_INSTANCE',
       query: {ids: [], excludeIds: []},
@@ -46,12 +46,12 @@ describe('Apply Batch Operation', () => {
     await operationsStore.fetchOperations();
     expect(operationsStore.state.operations).toEqual(operations);
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
 
     await operationsStore.applyBatchOperation({
       operationType: 'CANCEL_PROCESS_INSTANCE',
       query: {ids: [], excludeIds: []},
-      onSuccess: jest.fn(),
+      onSuccess: vi.fn(),
       onError: mockOnError,
     });
 
@@ -60,9 +60,9 @@ describe('Apply Batch Operation', () => {
   });
 
   it('should not prepend operations and call error callback when a network error occurred', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchBatchOperations().withSuccess(operations);
     mockApplyBatchOperation().withNetworkError();
@@ -70,12 +70,12 @@ describe('Apply Batch Operation', () => {
     await operationsStore.fetchOperations();
     expect(operationsStore.state.operations).toEqual(operations);
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
 
     await operationsStore.applyBatchOperation({
       operationType: 'CANCEL_PROCESS_INSTANCE',
       query: {ids: [], excludeIds: []},
-      onSuccess: jest.fn(),
+      onSuccess: vi.fn(),
       onError: mockOnError,
     });
 

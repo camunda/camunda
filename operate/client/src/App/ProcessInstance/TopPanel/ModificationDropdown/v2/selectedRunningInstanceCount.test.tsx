@@ -14,7 +14,7 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const mockProcessInstance: ProcessInstance = {
   processInstanceKey: 'instance_id',
@@ -30,6 +30,35 @@ const mockProcessInstance: ProcessInstance = {
 
 describe('selectedRunningInstanceCount', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class ResizeObserver {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+
+        constructor(callback: ResizeObserverCallback) {
+          setTimeout(() => {
+            try {
+              callback([], this);
+            } catch {
+              // Ignore errors in mock
+            }
+          }, 0);
+        }
+      },
+    );
+    vi.stubGlobal(
+      'SVGElement',
+      class MockSVGElement extends Element {
+        getBBox = vi.fn(() => ({
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+        }));
+      },
+    );
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -89,11 +118,8 @@ describe('selectedRunningInstanceCount', () => {
     );
   });
 
-  afterEach(async () => {
-    await new Promise(process.nextTick);
-  });
-
   it('should not render when there are no running instances selected', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     modificationsStore.enableModificationMode();
 
     renderPopover();

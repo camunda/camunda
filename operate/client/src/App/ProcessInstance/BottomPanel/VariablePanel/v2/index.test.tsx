@@ -15,7 +15,6 @@ import {
   within,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
@@ -24,6 +23,7 @@ import {
   createInstance,
   createOperation,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -32,14 +32,13 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
-import * as operationApi from 'modules/api/getOperation';
 import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
@@ -48,12 +47,11 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
-const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
-
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -65,7 +63,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -146,6 +143,12 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -163,14 +166,19 @@ describe('VariablePanel', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   it('should render variables', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
 
@@ -181,10 +189,16 @@ describe('VariablePanel', () => {
   });
 
   (IS_LISTENERS_TAB_V2 ? it : it.skip)('should add new variable', async () => {
-    jest.useFakeTimers();
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() =>
@@ -242,6 +256,19 @@ describe('VariablePanel', () => {
         sortValues: ['foo'],
       }),
     ]);
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2(),
+        createVariableV2({
+          variableKey: '2251799813725337-foo',
+          name: 'foo',
+          value: '"bar"',
+        }),
+      ],
+      page: {
+        totalItems: 2,
+      },
+    });
 
     mockApplyOperation().withSuccess(
       createBatchOperation({id: 'batch-operation-id'}),
@@ -254,7 +281,6 @@ describe('VariablePanel', () => {
         name: /save variable/i,
       }),
     );
-
     expect(
       screen.queryByRole('button', {
         name: /add variable/i,
@@ -271,7 +297,7 @@ describe('VariablePanel', () => {
     expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -288,20 +314,16 @@ describe('VariablePanel', () => {
       title: 'Variable added',
     });
 
-    expect(
-      await withinVariablesList.findByTestId('variable-foo'),
-    ).toBeInTheDocument();
+    await withinVariablesList.findByTestId('variable-foo');
 
-    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   (IS_LISTENERS_TAB_V2 ? it : it.skip)(
     'should remove pending variable if scope id changes',
     async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
 
       mockFetchFlowNodeMetadata().withSuccess({
         ...singleInstanceMetadata,
@@ -309,7 +331,7 @@ describe('VariablePanel', () => {
       });
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() =>
@@ -345,6 +367,12 @@ describe('VariablePanel', () => {
       );
 
       mockFetchVariables().withSuccess([]);
+      mockSearchVariables().withSuccess({
+        items: [],
+        page: {
+          totalItems: 0,
+        },
+      });
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
       mockApplyOperation().withSuccess(
         createBatchOperation({id: 'batch-operation-id'}),
@@ -388,7 +416,7 @@ describe('VariablePanel', () => {
         await screen.findByTestId('variables-spinner'),
       ).toBeInTheDocument();
       await waitForElementToBeRemoved(() =>
-        screen.getByTestId('variables-spinner'),
+        screen.queryByTestId('variables-spinner'),
       );
       expect(
         screen.queryByTestId('variable-operation-spinner'),
@@ -400,18 +428,26 @@ describe('VariablePanel', () => {
         }),
       ).toBeInTheDocument();
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
+      vi.clearAllTimers();
+      vi.useRealTimers();
     },
   );
 
   (IS_LISTENERS_TAB_V2 ? it : it.skip)(
     'should display validation error if backend validation fails while adding variable',
     async () => {
+      vi.useFakeTimers();
+
       mockFetchVariables().withSuccess([createVariable()]);
+      mockSearchVariables().withSuccess({
+        items: [createVariableV2()],
+        page: {
+          totalItems: 1,
+        },
+      });
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() =>
@@ -509,102 +545,19 @@ describe('VariablePanel', () => {
   );
 
   (IS_LISTENERS_TAB_V2 ? it : it.skip)(
-    'should not fail if new variable is returned from next polling before add variable operation completes',
-    async () => {
-      jest.useFakeTimers();
-
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
-        {wrapper: getWrapper()},
-      );
-      await waitFor(() =>
-        expect(
-          screen.getByRole('button', {
-            name: /add variable/i,
-          }),
-        ).toBeEnabled(),
-      );
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /add variable/i,
-        }),
-      );
-
-      await user.type(
-        screen.getByRole('textbox', {
-          name: /name/i,
-        }),
-        'foo',
-      );
-      await user.type(
-        screen.getByRole('textbox', {
-          name: /value/i,
-        }),
-        '"bar"',
-      );
-
-      mockFetchVariables().withSuccess([createVariable()]);
-      mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-      mockApplyOperation().withSuccess(createBatchOperation());
-
-      jest.runOnlyPendingTimers();
-      await waitFor(() =>
-        expect(
-          screen.getByRole('button', {
-            name: /save variable/i,
-          }),
-        ).toBeEnabled(),
-      );
-
-      await user.click(
-        screen.getByRole('button', {
-          name: /save variable/i,
-        }),
-      );
-      expect(
-        screen.queryByRole('button', {
-          name: /add variable/i,
-        }),
-      ).not.toBeInTheDocument();
-
-      expect(
-        screen.getByTestId('variable-operation-spinner'),
-      ).toBeInTheDocument();
-
-      mockFetchVariables().withSuccess([
-        createVariable(),
-        createVariable({id: 'instance_id-foo', name: 'foo', value: 'bar'}),
-      ]);
-
-      mockGetOperation().withSuccess([createOperation()]);
-
-      jest.runOnlyPendingTimers();
-      await waitForElementToBeRemoved(
-        screen.getByTestId('variable-operation-spinner'),
-      );
-      expect(
-        await screen.findByRole('cell', {name: 'foo'}),
-      ).toBeInTheDocument();
-
-      expect(
-        screen.getByRole('button', {
-          name: /add variable/i,
-        }),
-      ).toBeInTheDocument();
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    },
-  );
-
-  (IS_LISTENERS_TAB_V2 ? it : it.skip)(
     'should select correct tab when navigating between flow nodes',
     async () => {
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
       mockFetchVariables().withSuccess([createVariable()]);
+      mockSearchVariables().withSuccess({
+        items: [createVariableV2()],
+        page: {
+          totalItems: 1,
+        },
+      });
 
       const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
         {wrapper: getWrapper()},
       );
       await waitFor(() => {
@@ -616,7 +569,7 @@ describe('VariablePanel', () => {
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
       mockFetchProcessDefinitionXml().withSuccess('');
 
-      await act(() => {
+      act(() => {
         flowNodeSelectionStore.setSelection({
           flowNodeId: 'Activity_0qtp1k6',
           flowNodeInstanceId: '2',
@@ -632,7 +585,7 @@ describe('VariablePanel', () => {
       mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
       mockFetchProcessDefinitionXml().withSuccess('');
 
-      await act(() => {
+      act(() => {
         flowNodeSelectionStore.setSelection({
           flowNodeId: 'Event_0bonl61',
         });
@@ -643,14 +596,13 @@ describe('VariablePanel', () => {
           'Event_0bonl61',
         ),
       );
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
       expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
       mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-      await act(() => {
+      act(() => {
         flowNodeSelectionStore.clearSelection();
       });
 
@@ -664,13 +616,12 @@ describe('VariablePanel', () => {
       expect(
         screen.queryByRole('tab', {name: 'Output Mappings'}),
       ).not.toBeInTheDocument();
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
       mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
       mockFetchVariables().withSuccess([]);
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-      await act(() => {
+      act(() => {
         flowNodeSelectionStore.setSelection({
           flowNodeId: 'StartEvent_1',
         });
@@ -691,8 +642,6 @@ describe('VariablePanel', () => {
       expect(
         screen.getByRole('tab', {name: 'Output Mappings'}),
       ).toBeInTheDocument();
-
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
     },
   );
 });

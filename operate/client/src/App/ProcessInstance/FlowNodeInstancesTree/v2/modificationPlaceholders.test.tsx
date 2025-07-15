@@ -35,14 +35,21 @@ import {
   generateParentScopeIds,
 } from 'modules/utils/modifications';
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [],
+    });
   });
 
   it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
@@ -61,8 +68,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     flowNodeInstanceStore.init();
 
     await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-      expect(processInstanceDetailsStore.state.status).toBe('fetched');
+      expect([
+        flowNodeInstanceStore.state.status,
+        processInstanceDetailsStore.state.status,
+      ]).toEqual(['fetched', 'fetched']);
     });
 
     const {user} = render(
@@ -309,13 +318,13 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove one cancel modification flow nodes', async () => {
-    processInstanceDetailsStore.init({id: processInstanceId});
-    flowNodeInstanceStore.init();
-
     mockFetchProcessInstanceDeprecated().withSuccess(
       multiInstanceProcessInstance,
     );
     mockFetchFlowNodeInstances().withSuccess(multipleFlowNodeInstances);
+
+    processInstanceDetailsStore.init({id: processInstanceId});
+    flowNodeInstanceStore.init();
 
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
@@ -378,8 +387,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     flowNodeInstanceStore.init();
 
     await waitFor(() => {
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
-      expect(processInstanceDetailsStore.state.status).toBe('fetched');
+      expect([
+        flowNodeInstanceStore.state.status,
+        processInstanceDetailsStore.state.status,
+      ]).toEqual(['fetched', 'fetched']);
     });
 
     const {user} = render(

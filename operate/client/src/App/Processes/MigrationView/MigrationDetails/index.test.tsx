@@ -37,14 +37,10 @@ describe('MigrationDetails', () => {
     const queryString =
       '?active=true&incidents=true&process=demoProcess&version=3';
 
-    const originalWindow = {...window};
-
-    const locationSpy = jest.spyOn(window, 'location', 'get');
-
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     processInstanceMigrationStore.setSelectedInstancesCount(7);
     processInstanceMigrationStore.setCurrentStep('summary');
@@ -76,7 +72,5 @@ describe('MigrationDetails', () => {
     expect(
       screen.getByText(/Big variable process - version 1/i),
     ).toBeInTheDocument();
-
-    locationSpy.mockClear();
   });
 });

@@ -45,7 +45,7 @@ describe('Retry Item', () => {
 
   it('should execute callback function', async () => {
     const BUTTON_TITLE = 'Retry Instance 1';
-    const MOCK_ON_CLICK = jest.fn();
+    const MOCK_ON_CLICK = vi.fn();
     const {user} = render(
       <OperationItems>
         <OperationItem

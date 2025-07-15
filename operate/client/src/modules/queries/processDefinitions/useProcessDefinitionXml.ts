@@ -8,13 +8,13 @@
 
 import {
   fetchProcessDefinitionXml,
-  ProcessDefinitionKey,
+  type ProcessDefinitionKey,
 } from 'modules/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
-import {DiagramModel} from 'bpmn-moddle';
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import type {DiagramModel} from 'bpmn-moddle';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 const PROCESS_DEFINITION_XML_QUERY_KEY = 'processDefinitionXml';
 
@@ -23,10 +23,6 @@ type ParsedXmlData = {
   diagramModel: DiagramModel;
   selectableFlowNodes: BusinessObject[];
 };
-
-function getQueryKey(processDefinitionKey?: ProcessDefinitionKey) {
-  return [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey];
-}
 
 async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
   const diagramModel = await parseDiagramXML(data);
@@ -44,10 +40,8 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
   select?: (data: ParsedXmlData) => T;
   enabled?: boolean;
 }) {
-  const queryKey = getQueryKey(processDefinitionKey);
-
-  return useQuery<ParsedXmlData, Error, T>({
-    queryKey,
+  return useQuery({
+    queryKey: [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey],
     queryFn:
       enabled && !!processDefinitionKey
         ? async () => {

@@ -13,19 +13,21 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {render, screen, waitFor} from 'modules/testing-library';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
 describe('Redirect to process instances page', () => {
   it('should redirect to instances page and display notification if instance is not found (404)', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchProcessDefinitionXml().withServerError();
     mockFetchProcessInstance().withServerError(404);
+    mockFetchCallHierarchy().withServerError(404);
 
     render(<ProcessInstance />, {
       wrapper: getWrapper({
@@ -35,14 +37,17 @@ describe('Redirect to process instances page', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-      expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?active=true&incidents=true$/,
-      );
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        kind: 'error',
-        title: 'Instance 123 could not be found',
-        isDismissable: true,
-      });
     });
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?active=true&incidents=true$/,
+    );
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Instance 123 could not be found',
+      isDismissable: true,
+    });
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

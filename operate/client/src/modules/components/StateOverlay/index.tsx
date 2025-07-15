@@ -17,6 +17,10 @@ import {
 } from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme} from 'modules/stores/currentTheme';
+import type {
+  FlowNodeState,
+  DecisionInstanceEntityState,
+} from 'modules/types/operate';
 
 type Props = {
   state: (FlowNodeState | 'completedEndEvents') | DecisionInstanceEntityState;

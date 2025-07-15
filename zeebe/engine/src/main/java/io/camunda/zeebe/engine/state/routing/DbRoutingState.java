@@ -27,7 +27,7 @@ public final class DbRoutingState implements MutableRoutingState {
   private static final String DESIRED_KEY = "DESIRED";
 
   private final ColumnFamily<DbString, PersistedRoutingInfo> columnFamily;
-  private final ColumnFamily<DbInt, DbLong> bootstrappedAtColumnFamily;
+  private final ColumnFamily<DbInt, DbLong> scalingStartedAtColumnFamily;
   private final DbString key = new DbString();
   private final DbInt partitionIdKey = new DbInt();
   private final DbLong dbLong = new DbLong();
@@ -39,9 +39,9 @@ public final class DbRoutingState implements MutableRoutingState {
     columnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ROUTING, transactionContext, key, new PersistedRoutingInfo());
-    bootstrappedAtColumnFamily =
+    scalingStartedAtColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.BOOTSTRAPPED_AT, transactionContext, partitionIdKey, new DbLong());
+            ZbColumnFamilies.SCALING_STARTED_AT, transactionContext, partitionIdKey, new DbLong());
   }
 
   @Override
@@ -77,9 +77,9 @@ public final class DbRoutingState implements MutableRoutingState {
   }
 
   @Override
-  public long bootstrappedAt(final int partitionCount) {
+  public long scalingStartedAt(final int partitionCount) {
     partitionIdKey.wrapInt(partitionCount);
-    final var value = bootstrappedAtColumnFamily.get(partitionIdKey);
+    final var value = scalingStartedAtColumnFamily.get(partitionIdKey);
     if (value == null) {
       return -1L;
     }
@@ -110,7 +110,7 @@ public final class DbRoutingState implements MutableRoutingState {
 
     key.wrapString(DESIRED_KEY);
     columnFamily.upsert(key, desiredRoutingInfo);
-    setBootstrappedAt(partitions.size(), position);
+    setScalingStartedAt(partitions.size(), position);
   }
 
   @Override
@@ -138,12 +138,12 @@ public final class DbRoutingState implements MutableRoutingState {
     columnFamily.upsert(key, current);
   }
 
-  private void setBootstrappedAt(final int partitionCount, final long position) {
+  private void setScalingStartedAt(final int partitionCount, final long position) {
     partitionIdKey.wrapInt(partitionCount);
     dbLong.wrapLong(position);
-    if (bootstrappedAtColumnFamily.get(partitionIdKey) == null) {
+    if (scalingStartedAtColumnFamily.get(partitionIdKey) == null) {
       // do not override if it's already set
-      bootstrappedAtColumnFamily.insert(partitionIdKey, dbLong);
+      scalingStartedAtColumnFamily.insert(partitionIdKey, dbLong);
     }
   }
 }

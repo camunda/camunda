@@ -12,7 +12,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {getStatisticsByFlowNode} from './flownodeInstances';
 import {modificationsStore} from 'modules/stores/modifications';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
@@ -60,10 +60,6 @@ describe('getStatisticsByFlowNode', () => {
       </ProcessDefinitionKeyContext.Provider>
     );
   };
-
-  beforeEach(async () => {
-    jest.clearAllMocks();
-  });
 
   it('should return statistics for valid flow nodes', () => {
     const data = [

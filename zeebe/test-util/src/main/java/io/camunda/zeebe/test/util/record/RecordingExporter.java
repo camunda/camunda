@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -88,6 +89,7 @@ import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
@@ -239,6 +241,14 @@ public final class RecordingExporter implements Exporter {
 
   public static DeploymentRecordStream deploymentRecords(final DeploymentIntent intent) {
     return deploymentRecords().withIntent(intent);
+  }
+
+  public static UsageMetricsStream usageMetricsRecords() {
+    return new UsageMetricsStream(records(ValueType.USAGE_METRIC, UsageMetricRecordValue.class));
+  }
+
+  public static UsageMetricsStream usageMetricsRecords(final UsageMetricIntent intent) {
+    return usageMetricsRecords().withIntent(intent);
   }
 
   public static CommandDistributionRecordStream commandDistributionRecords() {

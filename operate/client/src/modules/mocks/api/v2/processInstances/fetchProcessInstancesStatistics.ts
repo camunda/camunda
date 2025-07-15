@@ -7,7 +7,7 @@
  */
 
 import {mockPostRequest} from '../../mockRequest';
-import {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import type {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const mockFetchProcessInstancesStatistics = (contextPath = '') =>
   mockPostRequest<GetProcessDefinitionStatisticsResponseBody>(

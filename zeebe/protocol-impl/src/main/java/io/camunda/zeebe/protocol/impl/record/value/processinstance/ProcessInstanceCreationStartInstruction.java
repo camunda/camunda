@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
@@ -23,7 +24,10 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceCreationStartInstruction extends ObjectValue
     implements ProcessInstanceCreationStartInstructionValue {
 
-  private final StringProperty elementIdProp = new StringProperty("elementId");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY);
 
   public ProcessInstanceCreationStartInstruction() {
     super(1);

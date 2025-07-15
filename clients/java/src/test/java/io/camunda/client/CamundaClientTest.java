@@ -434,6 +434,7 @@ public final class CamundaClientTest {
     // given
     final String clusterId = "clusterId";
     final String region = "asdf-123";
+    final String domain = "dev.ultrawombat.com";
 
     try (final CamundaClient client =
         CamundaClient.newCloudClientBuilder()
@@ -441,6 +442,7 @@ public final class CamundaClientTest {
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .withRegion(region)
+            .withDomain(domain)
             .build()) {
       // when
       final CamundaClientConfiguration clientConfiguration = client.getConfiguration();
@@ -448,14 +450,19 @@ public final class CamundaClientTest {
       assertThat(clientConfiguration.getCredentialsProvider())
           .isInstanceOf(OAuthCredentialsProvider.class);
       assertThat(clientConfiguration.getGrpcAddress())
-          .hasHost(String.format("%s.%s.zeebe.camunda.io", clusterId, region))
+          .hasHost(String.format("%s.%s.zeebe.%s", clusterId, region, domain))
           .hasPort(443)
+          .hasScheme("https");
+      assertThat(clientConfiguration.getRestAddress())
+          .hasHost(String.format("%s.zeebe.%s", region, domain))
+          .hasPort(443)
+          .hasPath("/" + clusterId)
           .hasScheme("https");
     }
   }
 
   @Test
-  public void shouldCloudBuilderBuildProperClientWithDefaultRegion() {
+  public void shouldCloudBuilderBuildProperClientWithDefaultRegionAndDomain() {
     // given
     final String clusterId = "clusterId";
     try (final CamundaClient client =
@@ -473,6 +480,11 @@ public final class CamundaClientTest {
           .hasHost(String.format("%s.bru-2.zeebe.camunda.io", clusterId))
           .hasPort(443)
           .hasScheme("https");
+      assertThat(clientConfiguration.getRestAddress())
+          .hasHost("bru-2.zeebe.camunda.io")
+          .hasPort(443)
+          .hasPath("/" + clusterId)
+          .hasScheme("https");
     }
   }
 
@@ -480,6 +492,7 @@ public final class CamundaClientTest {
   public void shouldOverrideCloudProperties() {
     // given
     final String gatewayAddress = "localhost:10000";
+    final URI restAddress = URI.create("https://localhost:10001");
     final NoopCredentialsProvider credentialsProvider = new NoopCredentialsProvider();
     try (final CamundaClient client =
         CamundaClient.newCloudClientBuilder()
@@ -487,10 +500,12 @@ public final class CamundaClientTest {
             .withClientId("clientId")
             .withClientSecret("clientSecret")
             .gatewayAddress(gatewayAddress)
+            .restAddress(restAddress)
             .credentialsProvider(credentialsProvider)
             .build()) {
       final CamundaClientConfiguration configuration = client.getConfiguration();
       assertThat(configuration.getGatewayAddress()).isEqualTo(gatewayAddress);
+      assertThat(configuration.getRestAddress()).isEqualTo(restAddress);
       assertThat(configuration.getCredentialsProvider()).isEqualTo(credentialsProvider);
     }
   }
@@ -519,6 +534,11 @@ public final class CamundaClientTest {
           .hasHost(String.format("clusterId.%s.zeebe.camunda.io", region))
           .hasPort(443)
           .hasScheme("https");
+      assertThat(clientConfiguration.getRestAddress())
+          .hasHost(String.format("%s.zeebe.camunda.io", region))
+          .hasPort(443)
+          .hasPath("/clusterId")
+          .hasScheme("https");
     }
   }
 
@@ -540,6 +560,11 @@ public final class CamundaClientTest {
       assertThat(clientConfiguration.getGrpcAddress())
           .hasHost(String.format("clusterId.%s.zeebe.camunda.io", defaultRegion))
           .hasPort(443)
+          .hasScheme("https");
+      assertThat(clientConfiguration.getRestAddress())
+          .hasHost(String.format("%s.zeebe.camunda.io", defaultRegion))
+          .hasPort(443)
+          .hasPath("/clusterId")
           .hasScheme("https");
     }
   }

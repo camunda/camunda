@@ -8,9 +8,9 @@
 
 import {mockPostRequest} from '../../mockRequest';
 import {
-  QueryDecisionInstancesResponseBody,
   endpoints,
-} from '@vzeta/camunda-api-zod-schemas';
+  type QueryDecisionInstancesResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const mockSearchDecisionInstances = (contextPath = '') =>
   mockPostRequest<QueryDecisionInstancesResponseBody>(

@@ -7,6 +7,7 @@
  */
 
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
+import type {InstanceOperationEntity} from 'modules/types/operate';
 
 const hasActiveOperations = (operations: InstanceOperationEntity[]) => {
   return operations.some((operation) =>

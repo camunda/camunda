@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {autorun} from 'mobx';
-import {Incident, incidentsStore} from 'modules/stores/incidents';
+import {incidentsStore, type Incident} from 'modules/stores/incidents';
 import {isInstanceRunning} from './instance';
 
 const init = (processInstance?: ProcessInstance) => {

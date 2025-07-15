@@ -9,13 +9,13 @@
 import {
   endpoints,
   type QueryJobsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
-import {RequestHandler, rest} from 'msw';
+import {RequestHandler, http, HttpResponse} from 'msw';
 
-const mockListenerEndpoint = rest.post(
+const mockListenerEndpoint = http.post(
   endpoints.queryJobs.getUrl(),
-  async (_, res, ctx) => {
+  async () => {
     const mockResponse: QueryJobsResponseBody = {
       items: [
         {
@@ -48,7 +48,7 @@ const mockListenerEndpoint = rest.post(
       },
     };
 
-    return res(ctx.json(mockResponse));
+    return HttpResponse.json(mockResponse);
   },
 );
 

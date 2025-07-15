@@ -33,6 +33,7 @@ import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
@@ -41,6 +42,7 @@ import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
+import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
@@ -150,7 +152,7 @@ public final class SearchResponseMapper {
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
         pageResponse.getTotalItems(),
-        Boolean.TRUE.equals(pageResponse.getHasMoreTotalItems()),
+        pageResponse.getHasMoreTotalItems(),
         pageResponse.getStartCursor(),
         pageResponse.getEndCursor());
   }
@@ -201,6 +203,17 @@ public final class SearchResponseMapper {
     final List<Role> instances =
         toSearchResponseInstances(response.getItems(), SearchResponseMapper::toRoleResponse);
     return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<Tenant> toTenantsResponse(final TenantSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Tenant> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toTenantResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static Tenant toTenantResponse(final TenantResult response) {
+    return new TenantImpl(response.getTenantId(), response.getName(), response.getDescription());
   }
 
   public static SearchResponse<RoleUser> toRoleUsersResponse(final RoleUserSearchResult response) {
@@ -339,6 +352,14 @@ public final class SearchResponseMapper {
   public static SearchResponse<Job> toJobSearchResponse(final JobSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Job> instances = toSearchResponseInstances(response.getItems(), JobImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<MessageSubscription> toMessageSubscriptionSearchResponse(
+      final MessageSubscriptionSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<MessageSubscription> instances =
+        toSearchResponseInstances(response.getItems(), MessageSubscriptionImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 }

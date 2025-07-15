@@ -7,6 +7,10 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {
+  ProcessInstanceEntity,
+  OperationEntity,
+} from 'modules/types/operate';
 
 type FlowNodeVariables = {
   [flowNodeId: string]: Array<{[variableName: string]: string}>;

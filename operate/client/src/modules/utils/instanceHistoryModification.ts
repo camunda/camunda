@@ -6,16 +6,20 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {
+  BusinessObject,
+  BusinessObjects,
+} from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import type {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {
   instanceHistoryModificationStore,
-  ModificationPlaceholder,
+  type ModificationPlaceholder,
 } from 'modules/stores/instanceHistoryModification';
+
 import {
-  FlowNodeModification,
   modificationsStore,
+  type FlowNodeModification,
 } from 'modules/stores/modifications';
 
 const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {

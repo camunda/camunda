@@ -7,6 +7,7 @@
  */
 
 import {mockGetRequest} from '../mockRequest';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const mockFetchProcessInstance = (contextPath = '') =>
   mockGetRequest<ProcessInstanceEntity>(

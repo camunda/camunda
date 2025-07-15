@@ -9,13 +9,13 @@
 import {VariablePanel} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -33,17 +33,19 @@ import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init as initFlowNodeMetadata} from 'modules/utils/flowNodeMetadata';
 import {cancelAllTokens} from 'modules/utils/modifications';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {
   init as initFlowNodeSelection,
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -55,7 +57,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -160,13 +161,19 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it('should display correct state for a flow node that has only one running token on it', async () => {
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
       flowNodeInstanceId: '2251799813695856',
@@ -180,7 +187,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
@@ -193,7 +200,20 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([]);
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
       selectFlowNode(
@@ -203,7 +223,6 @@ describe('VariablePanel', () => {
         },
       );
     });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     // initial state
     act(() => {
@@ -274,7 +293,7 @@ describe('VariablePanel', () => {
       instanceMetadata: {
         ...singleInstanceMetadata.instanceMetadata!,
         endDate: null,
-        startDate: '2022-09-30T15:00:31.772+0000',
+        startDate: MOCK_TIMESTAMP,
       },
     });
 
@@ -347,10 +366,23 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     modificationsStore.enableModificationMode();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -379,8 +411,8 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('The Flow Node has no Variables'),
-    ).not.toBeInTheDocument();
+      screen.getByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
 
     // one 'add token' modification is created
     act(() => {
@@ -417,6 +449,12 @@ describe('VariablePanel', () => {
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
@@ -454,6 +492,12 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     // select only one of the scopes
@@ -477,6 +521,12 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     // select new parent scope
@@ -530,11 +580,29 @@ describe('VariablePanel', () => {
       },
     });
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -549,6 +617,24 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 

@@ -6,22 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
-import {MeDto} from './api/v2/authentication/me';
-import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
-import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
-import {ProcessDto} from './api/processes/fetchGroupedProcesses';
-import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
-import {BatchOperationDto} from './api/sharedTypes';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
-
-/**
- * @returns a jest mock function that resolves with given value
- * @param {*} value to resolve with
- */
-export const mockResolvedAsyncFn = (value: any) => {
-  return jest.fn(() => Promise.resolve(value));
-};
+import type {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
+import type {MeDto} from './api/v2/authentication/me';
+import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
+import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
+import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
+import type {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
+import type {BatchOperationDto} from './api/sharedTypes';
+import type {
+  ProcessInstance,
+  Variable,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
+  OperationEntity,
+  InstanceOperationEntity,
+} from 'modules/types/operate';
 
 const createRandomId = function* createRandomId(type: string) {
   let idx = 0;
@@ -154,6 +155,20 @@ const createVariable = (
     hasActiveOperation: false,
     isFirst: false,
     sortValues: [name],
+    ...options,
+  };
+};
+
+const createVariableV2 = (options: Partial<Variable> = {}): Variable => {
+  const name = options.name ?? 'testVariableName';
+  return {
+    variableKey: `2251799813725337-${name}`,
+    name,
+    value: '1',
+    isTruncated: false,
+    tenantId: '<default>',
+    processInstanceKey: '2251799813725337',
+    scopeKey: '2251799813725337',
     ...options,
   };
 };
@@ -356,12 +371,10 @@ export const createDiagramNode = (options = {}) => {
     name: 'Start Event',
     $type: 'bpmn:StartEvent',
 
-    $instanceOf: (type: any) => type === 'bpmn:StartEvent',
+    $instanceOf: (type: string) => type === 'bpmn:StartEvent',
     ...options,
   };
 };
-
-export const diObject = {set: jest.fn()};
 
 export const createSequenceFlows = () => {
   return [
@@ -1215,6 +1228,7 @@ export const createEventSubProcessFlowNodeInstances = (
 
 export {
   createVariable,
+  createVariableV2,
   createBatchOperation,
   createUser,
   createProcessInstance,

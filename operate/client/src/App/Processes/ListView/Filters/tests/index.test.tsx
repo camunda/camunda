@@ -21,9 +21,6 @@ import {
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-jest.setTimeout(10000);
-jest.unmock('modules/utils/date/formatDate');
-
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(
@@ -31,12 +28,12 @@ describe('Filters', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     processesStore.fetchProcesses();
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should load the process and version fields', async () => {
@@ -248,6 +245,8 @@ describe('Filters', () => {
     await user.click(screen.getByRole('checkbox', {name: 'Completed'}));
     await user.click(screen.getByRole('checkbox', {name: 'Canceled'}));
 
+    vi.runOnlyPendingTimers();
+
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -361,7 +360,7 @@ describe('Filters', () => {
   });
 
   it('should enable the reset button', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper('/?active=true&incidents=true'),

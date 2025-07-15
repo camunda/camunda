@@ -8,7 +8,7 @@
 
 import {processInstanceMigrationMappingStore} from './processInstanceMigrationMapping';
 
-jest.mock('modules/stores/processes/processes.migration', () => ({
+vi.mock('modules/stores/processes/processes.migration', () => ({
   processesStore: {
     migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
     getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),

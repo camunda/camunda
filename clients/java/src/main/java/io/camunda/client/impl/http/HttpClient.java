@@ -25,6 +25,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.hc.client5.http.async.methods.SimpleHttpRequest;
 import org.apache.hc.client5.http.async.methods.SimpleRequestBuilder;
 import org.apache.hc.client5.http.async.methods.SimpleRequestProducer;
@@ -48,6 +49,8 @@ import org.slf4j.LoggerFactory;
  */
 public final class HttpClient implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpClient.class);
+
+  private static final int MAX_RETRY_ATTEMPTS = 2;
 
   private final CloseableHttpAsyncClient client;
   private final ObjectMapper jsonMapper;
@@ -267,9 +270,34 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result) {
+    sendRequest(
+        httpMethod,
+        path,
+        queryParams,
+        body,
+        requestConfig,
+        MAX_RETRY_ATTEMPTS,
+        responseType,
+        transformer,
+        result,
+        null);
+  }
 
+  private <HttpT, RespT> void sendRequest(
+      final Method httpMethod,
+      final String path,
+      final Map<String, String> queryParams,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
+      final RequestConfig requestConfig,
+      final int maxRetries,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final HttpCamundaFuture<RespT> result,
+      final ApiCallback<HttpT, RespT> callback) {
+    final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     final URI target = buildRequestURI(path);
 
+    // Create retry action to re-execute the same request
     final Runnable retryAction =
         () -> {
           if (result.isCancelled()) {
@@ -281,9 +309,11 @@ public final class HttpClient implements AutoCloseable {
               queryParams,
               body,
               requestConfig,
+              maxRetries,
               responseType,
               transformer,
-              result);
+              result,
+              apiCallback.get());
         };
 
     final SimpleRequestBuilder requestBuilder =
@@ -335,12 +365,21 @@ public final class HttpClient implements AutoCloseable {
       entityConsumer = new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
     }
 
+    if (apiCallback.get() == null) {
+      apiCallback.set(
+          new ApiCallback<>(
+              result,
+              transformer,
+              credentialsProvider::shouldRetryRequest,
+              retryAction,
+              maxRetries));
+    }
+
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
-            new ApiCallback<>(
-                result, transformer, credentialsProvider::shouldRetryRequest, retryAction)));
+            apiCallback.get()));
   }
 
   private URI buildRequestURI(final String path) {

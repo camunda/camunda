@@ -25,7 +25,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "mappingId": "mapping3",
+  "mappingRuleId": "mapping3",
   "claimName": "test11",
   "claimValue": "7657916d-baf8-4032-b70d-156f338a0f18",
   "name": "mapping3"
@@ -45,7 +45,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "mappingId": "mapping3",
+  "mappingRuleId": "mapping3",
   "claimName": "test11",
   "claimValue": "7657916d-baf8-4032-b70d-156f338a0f18",
   "name": "mapping3"
@@ -54,7 +54,7 @@ Accept: application/json
 > {%
   client.test("Mapping rule creation should be successful", function () {
     client.assert(response.status === 201, "Response status is not 201");
-    client.global.set("MAPPING_ID", response.body.mappingId);
+    client.global.set("MAPPING_ID", response.body.mappingRuleId);
   });
 %}
 
@@ -80,7 +80,7 @@ Accept: application/json
 
 ### Assign Mapping Rule to Tenant
 # @name assign-mapping-rule
-PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/{{MAPPING_ID}}
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_ID}}
 Authorization: Bearer {{TOKEN}}
 Accept: application/json
 
@@ -96,14 +96,14 @@ Accept: application/json
   import {wait} from "js/wait";
   wait(3);
 %}
-POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/search
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/search
 Authorization: Bearer {{TOKEN}}
 Content-Type: application/json
 Accept: application/json
 
 {
   "filter": {
-    "mappingId": "{{MAPPING_ID}}"
+    "mappingRuleId": "{{MAPPING_ID}}"
   }
 }
 
@@ -111,13 +111,13 @@ Accept: application/json
   client.test("Mapping rule search should be successful", function () {
     let expectedMappingId = client.global.get("MAPPING_ID");
     client.assert(response.status === 200, "Response status is not 200");
-    client.assert(response.body.items[0].mappingId === expectedMappingId, "Mapping rule was not found");
+    client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping rule was not found");
   });
 %}
 
 ### Remove Mapping Rule from Tenant
 # @name remove-mapping-rule
-DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mappings/{{MAPPING_ID}}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_ID}}
 Authorization: Bearer {{TOKEN}}
 Accept: application/json
 
@@ -171,7 +171,7 @@ Accept: application/json
 
 {
   "filter": {
-    "mappingId": "{{MAPPING_ID}}"
+    "mappingRuleId": "{{MAPPING_ID}}"
   }
 }
 
@@ -179,7 +179,7 @@ Accept: application/json
   client.test("Mapping search should be successful", function () {
     let expectedMappingId = client.global.get("MAPPING_ID");
     client.assert(response.status === 200, "Response status is not 200");
-    client.assert(response.body.items[0].mappingId === expectedMappingId, "Mapping was not found");
+    client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping was not found");
   });
 %}
 
@@ -216,7 +216,7 @@ Accept: application/json
 
 ### Assign Mapping Rule to Role
 # @name assign-mapping-rule-to-role
-PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mappings/{{MAPPING_ID}}
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mapping-rules/{{MAPPING_ID}}
 Authorization: Bearer {{TOKEN}}
 Accept: application/json
 
@@ -239,7 +239,7 @@ Accept: application/json
 
 {
   "filter": {
-    "mappingId": "{{MAPPING_ID}}"
+    "mappingRuleId": "{{MAPPING_ID}}"
   }
 }
 
@@ -247,7 +247,7 @@ Accept: application/json
   client.test("Mapping rule search should be successful", function () {
     let expectedMappingId = client.global.get("MAPPING_ID");
     client.assert(response.status === 200, "Response status is not 200");
-    client.assert(response.body.items[0].mappingId === expectedMappingId, "Mapping rule was not found");
+    client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping rule was not found");
   });
 %}
 
@@ -257,7 +257,7 @@ Accept: application/json
   import {wait} from "js/wait";
   wait(3);
 %}
-DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mappings/{{MAPPING_ID}}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mapping-rules/{{MAPPING_ID}}
 Authorization: Bearer {{TOKEN}}
 Accept: application/json
 
@@ -307,7 +307,7 @@ Accept: application/json
 
   client.test("Mapping rule retrieval should be successful", function () {
     client.assert(response.status === 200, "Response status is not 200");
-    client.assert(response.body.mappingId === expectedMappingId, "mappingId was not found.");
+    client.assert(response.body.mappingRuleId === expectedMappingId, "mappingId was not found.");
   });
 %}
 
@@ -324,7 +324,7 @@ Accept: application/json
 
 {
   "filter": {
-    "mappingId": "{{MAPPING_ID}}"
+    "mappingRuleId": "{{MAPPING_ID}}"
   }
 }
 
@@ -333,7 +333,7 @@ Accept: application/json
 
   client.test("Mapping rule search should be successful", function () {
     client.assert(response.status === 200, "Response status is not 200");
-    client.assert(response.body.items[0].mappingId === expectedMappingId, "Mapping was not found");
+    client.assert(response.body.items[0].mappingRuleId === expectedMappingId, "Mapping was not found");
   });
 %}
 

@@ -11,7 +11,6 @@ import static io.camunda.optimize.rest.constants.RestConstants.HTTPS_PREFIX;
 import static io.camunda.optimize.rest.constants.RestConstants.HTTP_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
-import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -87,11 +86,10 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 public class OpenSearchClientBuilder {
 
@@ -125,12 +123,12 @@ public class OpenSearchClientBuilder {
   }
 
   private static OpenSearchTransport getAwsTransport(final ConfigurationService osConfig) {
-    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    final var region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkAsyncHttpClient httpClient = NettyNioAsyncHttpClient.builder().build();
     return new AwsSdk2Transport(
         httpClient,
         osConfig.getOpenSearchConfiguration().getFirstConnectionNode().getHost(),
-        Region.of(region),
+        region,
         AwsSdk2TransportOptions.builder()
             .setMapper(new JacksonJsonpMapper(ObjectMapperFactory.OPTIMIZE_MAPPER))
             .build());
@@ -166,8 +164,7 @@ public class OpenSearchClientBuilder {
 
   private static boolean useAwsCredentials(final ConfigurationService configurationService) {
     if (configurationService.getOpenSearchConfiguration().getConnection().getAwsEnabled()) {
-      final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
-      try {
+      try (final var credentialsProvider = DefaultCredentialsProvider.builder().build()) {
         credentialsProvider.resolveCredentials();
         LOG.info("AWS Credentials can be resolved. Use AWS OpenSearch");
         return true;

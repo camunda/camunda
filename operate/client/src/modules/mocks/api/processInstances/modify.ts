@@ -7,6 +7,7 @@
  */
 
 import {mockPostRequest} from '../mockRequest';
+import type {OperationEntity} from 'modules/types/operate';
 
 const mockModify = (contextPath = '') =>
   mockPostRequest<OperationEntity>(

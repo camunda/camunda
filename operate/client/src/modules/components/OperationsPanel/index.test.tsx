@@ -17,7 +17,7 @@ import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 import {MemoryRouter} from 'react-router-dom';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
-jest.mock('modules/utils/localStorage', () => ({
+vi.mock('modules/utils/localStorage', () => ({
   getStateLocally: () => ({
     isFiltersCollapsed: false,
     isOperationsCollapsed: false,
@@ -45,7 +45,7 @@ describe('OperationsPanel', () => {
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('skeleton'));
   });
 
   it('should render operation entries', async () => {
@@ -56,7 +56,7 @@ describe('OperationsPanel', () => {
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 
-    await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
+    await waitForElementToBeRemoved(screen.queryByTestId('skeleton'));
 
     const [firstOperation, secondOperation] =
       screen.getAllByTestId('operations-entry');
@@ -85,9 +85,9 @@ describe('OperationsPanel', () => {
   });
 
   it('should show an error message', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchBatchOperations().withServerError();
     const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});

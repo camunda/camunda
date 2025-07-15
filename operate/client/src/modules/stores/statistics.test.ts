@@ -16,7 +16,7 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
 
 const mockInstance = createInstance({id: '2251799813685625'});
@@ -33,6 +33,8 @@ describe('stores/statistics', () => {
     processInstanceDetailsStore.reset();
     statisticsStore.reset();
     processInstancesStore.reset();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should reset state', async () => {
@@ -87,9 +89,11 @@ describe('stores/statistics', () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics, {
       expectPolling: true,
     });
-    jest.useFakeTimers();
+
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
     statisticsStore.init();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
     expect(statisticsStore.state.running).toBe(1087);
@@ -104,21 +108,21 @@ describe('stores/statistics', () => {
       },
       {expectPolling: true},
     );
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1088));
     expect(statisticsStore.state.active).toBe(211);
     expect(statisticsStore.state.withIncidents).toBe(878);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should fetch statistics depending on completed operations', async () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics, {
       expectPolling: true,
     });
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
@@ -136,7 +140,7 @@ describe('stores/statistics', () => {
 
     statisticsStore.init();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() => expect(statisticsStore.state.status).toBe('fetched'));
 
     expect(statisticsStore.state.running).toBe(1087);
@@ -150,47 +154,75 @@ describe('stores/statistics', () => {
       expect(processInstancesStore.state.status).toBe('fetched'),
     );
 
-    // mock for next poll
-
     mockServer.use(
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
+      http.post(
+        '/api/process-instances',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
             processInstances: [{...mockInstance}],
             totalCount: 1,
-          }),
-        );
-      }),
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
+          });
+        },
+        {once: true},
+      ),
+      http.post(
+        '/api/process-instances',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
             processInstances: [{...mockInstance}],
             totalCount: 2,
-          }),
-        );
-      }),
-      rest.get('/api/process-instances/core-statistics', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
+          });
+        },
+        {once: true},
+      ),
+      http.post(
+        '/api/process-instances',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
+            processInstances: [{...mockInstance}],
+            totalCount: 2,
+          });
+        },
+        {once: true},
+      ),
+      http.get(
+        '/api/process-instances/core-statistics',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
             ...statistics,
-          }),
-        );
-      }),
-      rest.get('/api/process-instances/core-statistics', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
+          });
+        },
+        {once: true},
+      ),
+      http.get(
+        '/api/process-instances/core-statistics',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
             ...statistics,
             running: 1088,
-          }),
-        );
-      }),
+          });
+        },
+        {once: true},
+      ),
+      http.get(
+        '/api/process-instances/core-statistics',
+        ({request}) => {
+          checkPollingHeader({req: request, expectPolling: true});
+          return HttpResponse.json({
+            ...statistics,
+            running: 1088,
+          });
+        },
+        {once: true},
+      ),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1088));
     await waitFor(() =>
@@ -199,16 +231,17 @@ describe('stores/statistics', () => {
     expect(statisticsStore.state.active).toBe(210);
     expect(statisticsStore.state.withIncidents).toBe(877);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     statisticsStore.fetchStatistics();
 
@@ -222,7 +255,5 @@ describe('stores/statistics', () => {
     eventListeners.online();
 
     await waitFor(() => expect(statisticsStore.state.running).toBe(1000));
-
-    window.addEventListener = originalEventListener;
   });
 });

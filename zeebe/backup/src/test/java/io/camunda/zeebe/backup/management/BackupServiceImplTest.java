@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.management;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -26,9 +27,17 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -49,12 +58,14 @@ class BackupServiceImplTest {
 
   @Mock BackupStatus notExistingBackupStatus;
 
+  @Mock LogStreamWriter logStreamWriter;
+
   private BackupServiceImpl backupService;
   private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl();
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(backupStore);
+    backupService = new BackupServiceImpl(backupStore, logStreamWriter);
 
     lenient()
         .when(notExistingBackupStatus.statusCode())
@@ -68,6 +79,10 @@ class BackupServiceImplTest {
                 new BackupIdentifierWildcardImpl(
                     Optional.empty(), Optional.of(2), Optional.of(3L))))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
+
+    lenient()
+        .when(logStreamWriter.tryWrite(any(), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(-1L));
   }
 
   @Test
@@ -406,6 +421,68 @@ class BackupServiceImplTest {
 
     // then
     assertThat(backups).containsExactlyInAnyOrder(backup1, backup2);
+  }
+
+  @Test
+  void confirmsSuccessfulBackup() {
+    // given
+    final var inProgressBackup = new ControllableInProgressBackup();
+    mockSaveBackup();
+
+    // when
+    backupService.takeBackup(inProgressBackup, concurrencyControl).join();
+
+    // then
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.CONFIRM_BACKUP);
+                  assertThat(entry.recordValue())
+                      .isInstanceOfSatisfying(
+                          CheckpointRecord.class,
+                          checkpointRecord -> {
+                            assertThat(checkpointRecord.getCheckpointId())
+                                .isEqualTo(inProgressBackup.checkpointId());
+                            assertThat(checkpointRecord.getCheckpointPosition())
+                                .isEqualTo(inProgressBackup.checkpointPosition());
+                          });
+                }));
+  }
+
+  @Test
+  void doesNotConfirmUnsuccessfulBackup() {
+    // given
+    final var inProgressBackup = new ControllableInProgressBackup();
+    when(backupStore.save(any()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
+
+    // when
+    final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
+
+    // then
+    assertThat(result).failsWithin(Duration.ofMillis(100));
+
+    verify(logStreamWriter, never()).tryWrite(any(), any(LogAppendEntry.class));
+  }
+
+  @Test
+  void backupConfirmationWriteErrorIsIgnored() {
+    // given
+    when(logStreamWriter.tryWrite(any(), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+    mockSaveBackup();
+
+    // when
+    final var result =
+        backupService.takeBackup(new ControllableInProgressBackup(), concurrencyControl);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofMillis(100));
+    verify(logStreamWriter).tryWrite(any(), any(LogAppendEntry.class));
   }
 
   private ActorFuture<Void> failedFuture() {

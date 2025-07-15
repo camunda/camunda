@@ -8,11 +8,11 @@
 
 import {useState} from 'react';
 import {observer} from 'mobx-react';
-import {Job} from '@vzeta/camunda-api-zod-schemas';
-import {UseInfiniteQueryResult} from '@tanstack/react-query';
+import type {Job} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {UseInfiniteQueryResult} from '@tanstack/react-query';
 import {Layer} from '@carbon/react';
 
-import {RequestError} from 'modules/request';
+import type {RequestError} from 'modules/request';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
@@ -28,11 +28,11 @@ import {
   Stack,
 } from './styled';
 
-enum FilterLabelMapping {
-  'All listeners' = 'ALL_LISTENERS',
-  'Execution listeners' = 'EXECUTION_LISTENER',
-  'User task listeners' = 'TASK_LISTENER',
-}
+const FilterLabelMapping = {
+  'All listeners': 'ALL_LISTENERS',
+  'Execution listeners': 'EXECUTION_LISTENER',
+  'User task listeners': 'TASK_LISTENER',
+} as const;
 
 type FilterLabelMappingType = typeof FilterLabelMapping;
 type FilterLabelMappingKeys = keyof FilterLabelMappingType;
@@ -45,7 +45,7 @@ type UseJobsResult = UseInfiniteQueryResult<Job[], RequestError>;
 type Props = {
   jobs: Job[] | undefined;
   setListenerTypeFilter: React.Dispatch<
-    React.SetStateAction<ListenerEntity['listenerType'] | undefined>
+    React.SetStateAction<'EXECUTION_LISTENER' | 'TASK_LISTENER' | undefined>
   >;
   fetchNextPage: UseJobsResult['fetchNextPage'];
   fetchPreviousPage: UseJobsResult['fetchPreviousPage'];
@@ -96,7 +96,11 @@ const Listeners: React.FC<Props> = observer(
                 setSelectedOption(selectedItem);
 
                 if (FilterLabelMapping[selectedItem] !== 'ALL_LISTENERS') {
-                  setListenerTypeFilter(FilterLabelMapping[selectedItem]);
+                  setListenerTypeFilter(
+                    FilterLabelMapping[selectedItem] as
+                      | 'EXECUTION_LISTENER'
+                      | 'TASK_LISTENER',
+                  );
                 } else {
                   setListenerTypeFilter(undefined);
                 }

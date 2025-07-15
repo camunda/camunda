@@ -7,6 +7,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {ResourceBasedPermissionDto} from 'modules/types/operate';
 
 type ProcessVersionDto = {
   bpmnProcessId: string;

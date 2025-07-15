@@ -39,7 +39,7 @@ const MultipleValuesModal: React.FC<Props> = ({
     setError(
       validateMultipleVariableValues(value)
         ? undefined
-        : ERRORS.variables.mulipleValueInvalid,
+        : ERRORS.variables.multipleValueInvalid,
     );
   };
 

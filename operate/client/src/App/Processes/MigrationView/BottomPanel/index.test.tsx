@@ -7,7 +7,7 @@
  */
 
 import {
-  MatcherFunction,
+  type MatcherFunction,
   render,
   screen,
   waitFor,
@@ -20,13 +20,15 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 
 const TARGET_PROCESS_DEFINITION_KEY = '2';
 
-jest.mock('modules/stores/processes/processes.migration', () => ({
-  processesStore: {
-    migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
-    getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
-    selectedTargetProcessId: TARGET_PROCESS_DEFINITION_KEY,
-  },
-}));
+vi.mock('modules/stores/processes/processes.migration', () => {
+  return {
+    processesStore: {
+      migrationState: {selectedTargetProcess: {bpmnProcessId: 'orderProcess'}},
+      getSelectedProcessDetails: () => ({bpmnProcessId: 'orderProcess'}),
+      selectedTargetProcessId: '2',
+    },
+  };
+});
 
 const {
   requestForPayment,
@@ -502,75 +504,75 @@ describe('MigrationView/BottomPanel', () => {
       name: new RegExp(`target flow node for ${requestForPayment.name}`, 'i'),
     });
 
-    const rowCheckPayment = screen
-      .getByText(getMatcherFunction(checkPayment.name))
-      .closest('tr');
-    const rowShippingSubProcess = screen
-      .getByText(getMatcherFunction(shippingSubProcess.name))
-      .closest('tr');
-    const rowShipArticles = screen
-      .getByText(getMatcherFunction(shipArticles.name))
-      .closest('tr');
-    const rowRequestForPayment = screen
-      .getByText(getMatcherFunction(requestForPayment.name))
-      .closest('tr');
-    const rowMessageInterrupting = screen
-      .getByText(getMatcherFunction(MessageInterrupting.name))
-      .closest('tr');
-    const rowTimerInterrupting = screen
-      .getByText(getMatcherFunction(TimerInterrupting.name))
-      .closest('tr');
-    const rowMessageNonInterrupting = screen
-      .getByText(getMatcherFunction(MessageNonInterrupting.name))
-      .closest('tr');
-    const rowTimerNonInterrupting = screen
-      .getByText(getMatcherFunction(TimerNonInterrupting.name))
-      .closest('tr');
-    const rowTaskY = screen
-      .getByText(getMatcherFunction(TaskY.name))
-      .closest('tr');
-    const rowMessageEventSubProcess = screen
-      .getByText(getMatcherFunction(MessageEventSubProcess.name))
-      .closest('tr');
-    const rowTimerEventSubProcess = screen
-      .getByText(getMatcherFunction(TimerEventSubProcess.name))
-      .closest('tr');
-    const rowTimerStartEvent = screen
-      .getByText(getMatcherFunction(TimerStartEvent.name))
-      .closest('tr');
-    const rowTaskX = screen
-      .getByText(getMatcherFunction(TaskX.name))
-      .closest('tr');
-    const rowMessageReceiveTask = screen
-      .getByText(getMatcherFunction(MessageReceiveTask.name))
-      .closest('tr');
-    const rowBusinessRuleTask = screen
-      .getByText(getMatcherFunction(BusinessRuleTask.name))
-      .closest('tr');
-    const rowScriptTask = screen
-      .getByText(getMatcherFunction(ScriptTask.name))
-      .closest('tr');
-    const rowSendTask = screen
-      .getByText(getMatcherFunction(SendTask.name))
-      .closest('tr');
-    const rowSignalIntermediateCatch = screen
-      .getByText(getMatcherFunction(SignalIntermediateCatch.name))
-      .closest('tr');
-    const rowSignalBoundaryEvent = screen
-      .getByText(getMatcherFunction(SignalBoundaryEvent.name))
-      .closest('tr');
-    const rowSignalEventSubProcess = screen
-      .getByText(getMatcherFunction(SignalEventSubProcess.name))
-      .closest('tr');
-    const rowSignalStartEvent = screen
-      .getByText(getMatcherFunction(SignalStartEvent.name))
-      .closest('tr');
-    const rowErrorEventSubProcess = screen
-      .getByText(getMatcherFunction(ErrorEventSubProcess.name))
-      .closest('tr');
-    const rowErrorStartEvent = screen
-      .getByText(getMatcherFunction(ErrorEventSubProcess.name))
-      .closest('tr');
+    const rowCheckPayment = screen.getByRole('row', {
+      name: new RegExp(`${checkPayment.name} target flow node`, 'i'),
+    });
+    const rowShippingSubProcess = screen.getByRole('row', {
+      name: new RegExp(`${shippingSubProcess.name} not mapped`, 'i'),
+    });
+    const rowShipArticles = screen.getByRole('row', {
+      name: new RegExp(`${shipArticles.name} target flow node`, 'i'),
+    });
+    const rowRequestForPayment = screen.getByRole('row', {
+      name: new RegExp(`${requestForPayment.name} not mapped`, 'i'),
+    });
+    const rowMessageInterrupting = screen.getByRole('row', {
+      name: new RegExp(`${MessageInterrupting.name} target flow node`, 'i'),
+    });
+    const rowTimerInterrupting = screen.getByRole('row', {
+      name: new RegExp(`${TimerInterrupting.name} not mapped`, 'i'),
+    });
+    const rowMessageNonInterrupting = screen.getByRole('row', {
+      name: new RegExp(`${MessageNonInterrupting.name} not mapped`, 'i'),
+    });
+    const rowTimerNonInterrupting = screen.getByRole('row', {
+      name: new RegExp(`${TimerNonInterrupting.name} target flow node`, 'i'),
+    });
+    const rowTaskY = screen.getByRole('row', {
+      name: new RegExp(`${TaskY.name} not mapped`, 'i'),
+    });
+    const rowMessageEventSubProcess = screen.getByRole('row', {
+      name: new RegExp(`${MessageEventSubProcess.name} target flow node`, 'i'),
+    });
+    const rowTimerEventSubProcess = screen.getByRole('row', {
+      name: new RegExp(`${TimerEventSubProcess.name} target flow node`, 'i'),
+    });
+    const rowTimerStartEvent = screen.getByRole('row', {
+      name: new RegExp(`${TimerStartEvent.name} target flow node`, 'i'),
+    });
+    const rowTaskX = screen.getByRole('row', {
+      name: new RegExp(`${TaskX.name} target flow node`, 'i'),
+    });
+    const rowMessageReceiveTask = screen.getByRole('row', {
+      name: new RegExp(`${MessageReceiveTask.name} target flow node`, 'i'),
+    });
+    const rowBusinessRuleTask = screen.getByRole('row', {
+      name: new RegExp(`${BusinessRuleTask.name} target flow node`, 'i'),
+    });
+    const rowScriptTask = screen.getByRole('row', {
+      name: new RegExp(`${ScriptTask.name} target flow node`, 'i'),
+    });
+    const rowSendTask = screen.getByRole('row', {
+      name: new RegExp(`${SendTask.name} target flow node`, 'i'),
+    });
+    const rowSignalIntermediateCatch = screen.getByRole('row', {
+      name: new RegExp(`${SignalIntermediateCatch.name} target flow node`, 'i'),
+    });
+    const rowSignalBoundaryEvent = screen.getByRole('row', {
+      name: new RegExp(`${SignalBoundaryEvent.name} target flow node`, 'i'),
+    });
+    const rowSignalEventSubProcess = screen.getByRole('row', {
+      name: new RegExp(`${SignalEventSubProcess.name} target flow node`, 'i'),
+    });
+    const rowSignalStartEvent = screen.getByRole('row', {
+      name: new RegExp(`${SignalStartEvent.name} target flow node`, 'i'),
+    });
+    const rowErrorEventSubProcess = screen.getByRole('row', {
+      name: new RegExp(`${ErrorEventSubProcess.name} target flow node`, 'i'),
+    });
+    const rowErrorStartEvent = screen.getByRole('row', {
+      name: new RegExp(`${ErrorStartEvent.name} target flow node`, 'i'),
+    });
 
     await waitFor(() => {
       expect(comboboxRequestForPayment).toBeEnabled();
@@ -634,18 +636,18 @@ describe('MigrationView/BottomPanel', () => {
 
     // expect to have "not mapped" tag (not auto-mapped)
     expect(
-      within(rowRequestForPayment!).getByText(/not mapped/i),
+      within(rowRequestForPayment).getByText(/not mapped/i),
     ).toBeInTheDocument();
     expect(
-      within(rowMessageNonInterrupting!).getByText(/not mapped/i),
+      within(rowMessageNonInterrupting).getByText(/not mapped/i),
     ).toBeInTheDocument();
     expect(
-      within(rowTimerInterrupting!).getByText(/not mapped/i),
+      within(rowTimerInterrupting).getByText(/not mapped/i),
     ).toBeInTheDocument();
     expect(
-      within(rowShippingSubProcess!).getByText(/not mapped/i),
+      within(rowShippingSubProcess).getByText(/not mapped/i),
     ).toBeInTheDocument();
-    expect(within(rowTaskY!).getByText(/not mapped/i)).toBeInTheDocument();
+    expect(within(rowTaskY).getByText(/not mapped/i)).toBeInTheDocument();
 
     // expect tag not to be visible after selecting a target flow node
     await user.selectOptions(comboboxRequestForPayment, checkPayment.name);
@@ -658,7 +660,7 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       within(rowRequestForPayment!).getByText(/not mapped/i),
     ).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('should hide mapped flow nodes', async () => {
     mockFetchProcessDefinitionXml({

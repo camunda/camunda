@@ -12,10 +12,10 @@ import {
   getInstancesCount,
   getProcessInstanceKey,
 } from 'modules/utils/statistics/processInstances';
-import {
+import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 function instancesCountParser(
   flowNodeId?: string,

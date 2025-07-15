@@ -6,7 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import type {VariableEntity} from 'modules/types/operate';
 
 const mockVariables: VariableEntity[] = [
   {
@@ -38,6 +40,41 @@ const mockVariables: VariableEntity[] = [
   },
 ];
 
+const mockVariablesV2: QueryVariablesResponseBody = {
+  items: [
+    {
+      value: '"CNT-1211132-0223222"',
+      isTruncated: false,
+      name: 'clientNo',
+      tenantId: '<default>',
+      variableKey: '2251799813686037-clientNo',
+      scopeKey: '2251799813696123',
+      processInstanceKey: '2251799813696123',
+    },
+    {
+      value: '124.26',
+      isTruncated: false,
+      name: 'mwst',
+      tenantId: '<default>',
+      variableKey: '2251799813686037-mwst',
+      scopeKey: '2251799813696123',
+      processInstanceKey: '2251799813696123',
+    },
+    {
+      value: '1',
+      isTruncated: false,
+      name: 'active-operation-variable',
+      tenantId: '<default>',
+      variableKey: '2251799813686037-mwst',
+      scopeKey: '2251799813696123',
+      processInstanceKey: '2251799813696123',
+    },
+  ],
+  page: {
+    totalItems: 3,
+  },
+};
+
 const mockMetaData: MetaDataDto = {
   flowNodeId: null,
   flowNodeInstanceId: '123',
@@ -48,4 +85,4 @@ const mockMetaData: MetaDataDto = {
   incidentCount: 0,
 };
 
-export {mockVariables, mockMetaData};
+export {mockVariables, mockVariablesV2, mockMetaData};

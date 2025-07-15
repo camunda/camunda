@@ -33,14 +33,14 @@ public final class BatchOperationFixtures {
     final var key = CommonFixtures.nextStringKey();
     final var builder =
         new Builder()
-            .batchOperationId(key)
+            .batchOperationKey(key)
             .state(randomEnum(BatchOperationState.class))
             .operationType("some-operation" + RANDOM.nextInt(1000))
             .startDate(OffsetDateTime.now())
             .endDate(OffsetDateTime.now().plusSeconds(1))
-            .operationsTotalCount(RANDOM.nextInt(1000))
-            .operationsFailedCount(RANDOM.nextInt(1000))
-            .operationsCompletedCount(RANDOM.nextInt(1000));
+            .operationsTotalCount(0)
+            .operationsFailedCount(0)
+            .operationsCompletedCount(0);
     return builderFunction.apply(builder).build();
   }
 

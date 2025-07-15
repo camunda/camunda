@@ -9,8 +9,6 @@
 import {validateTimeRange} from '../index';
 import {mockMeta} from './mocks';
 
-jest.unmock('modules/utils/date/formatDate');
-
 const TIME_RANGE_ERROR = '"From time" is after "To time"';
 
 const FROM_TIME_META = {
@@ -24,12 +22,11 @@ const TO_TIME_META = {
 
 describe('should validate time range', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('with one of the date/time fields undefined', () => {
@@ -79,8 +76,8 @@ describe('should validate time range', () => {
     ).toBe(undefined);
   });
 
-  it('with same day and invalid time range', () => {
-    expect(
+  it('with same day and invalid time range', async () => {
+    await expect(
       validateTimeRange(
         '12:12:12',
         {
@@ -93,7 +90,7 @@ describe('should validate time range', () => {
       ),
     ).resolves.toBe(TIME_RANGE_ERROR);
 
-    expect(
+    await expect(
       validateTimeRange(
         '11:11:11',
         {

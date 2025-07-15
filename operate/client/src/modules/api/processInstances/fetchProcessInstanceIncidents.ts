@@ -7,6 +7,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 type FlowNodeDto = {
   id: string;

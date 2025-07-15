@@ -6,10 +6,54 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {openFile} from '@/utils/openFile';
 import {Route} from '@playwright/test';
-import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
-import {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
-import {open} from './resources';
+
+interface DecisionInstanceEntity {
+  id: string;
+  decisionName: string;
+  decisionVersion: number;
+  tenantId: string;
+  evaluationDate: string;
+  processInstanceId: string | null;
+  state: DecisionInstanceEntityState;
+  sortValues: [string, string];
+}
+type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
+type DecisionInstanceDto = {
+  id: string;
+  state: DecisionInstanceEntityState;
+  decisionType: 'DECISION_TABLE' | 'LITERAL_EXPRESSION';
+  decisionDefinitionId: string;
+  decisionId: string;
+  decisionName: string;
+  decisionVersion: number;
+  tenantId: string;
+  evaluationDate: string;
+  errorMessage: string | null;
+  processInstanceId: string | null;
+  result: string | null;
+  evaluatedInputs: Array<{
+    id: string;
+    name: string;
+    value: string | null;
+  }>;
+  evaluatedOutputs: Array<{
+    id: string;
+    ruleIndex: number;
+    ruleId: string;
+    name: string;
+    value: string | null;
+  }>;
+};
+type DrdDataDto = {
+  [decisionId: string]: [
+    {
+      decisionInstanceId: DecisionInstanceEntity['id'];
+      state: DecisionInstanceEntityState;
+    },
+  ];
+};
 
 const mockEvaluatedDecisionInstance: DecisionInstanceDto = {
   id: '2251799813830820-1',
@@ -68,7 +112,9 @@ const mockEvaluatedDrdData: DrdDataDto = {
   ],
 };
 
-const mockEvaluatedXml = open('invoiceClassificationEvaluated.dmn');
+const mockEvaluatedXml = openFile(
+  './e2e-playwright/mocks/resources/invoiceClassificationEvaluated.dmn',
+);
 
 const mockEvaluatedDecisionInstanceWithoutPanels: DecisionInstanceDto = {
   id: '2251799813830820-2',
@@ -108,8 +154,8 @@ const mockEvaluatedDrdDataWithoutPanels: DrdDataDto = {
   ],
 };
 
-const mockEvaluatedXmlWithoutPanels = open(
-  'invoiceClassificationEvaluatedWithoutPanels.dmn',
+const mockEvaluatedXmlWithoutPanels = openFile(
+  './e2e-playwright/mocks/resources/invoiceClassificationEvaluatedWithoutPanels.dmn',
 );
 
 const mockFailedDecisionInstance: DecisionInstanceDto = {
@@ -139,8 +185,12 @@ const mockFailedDrdData: DrdDataDto = {
   ],
 };
 
-const mockFailedXml = open('invoiceClassificationFailed.dmn');
-const mockEvaluatedLargeXml = open('invoiceClassificationEvaluatedLarge.dmn');
+const mockFailedXml = openFile(
+  './e2e-playwright/mocks/resources/invoiceClassificationFailed.dmn',
+);
+const mockEvaluatedLargeXml = openFile(
+  './e2e-playwright/mocks/resources/invoiceClassificationEvaluatedLarge.dmn',
+);
 
 function mockResponses({
   decisionInstanceDetail,

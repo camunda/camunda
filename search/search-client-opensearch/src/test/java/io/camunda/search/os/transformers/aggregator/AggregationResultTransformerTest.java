@@ -40,7 +40,7 @@ public class AggregationResultTransformerTest {
   }
   """;
   private final SearchAggregationResultTransformer transformer =
-      new SearchAggregationResultTransformer();
+      new SearchAggregationResultTransformer(null, null);
 
   private static Stream<Arguments> provideAggregations() {
     return Stream.of(

@@ -13,17 +13,25 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
+import io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Handles the lifecycle management of batch operations by updating the {@link BatchOperationEntity}
+ * based on lifecycle events such as cancellation, suspension, resumption, and completion. This
+ * handler ensures that the state and end date of the batch operation are correctly updated in the
+ * database.
+ */
 public class BatchOperationLifecycleManagementHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationLifecycleManagementRecordValue> {
 
@@ -70,6 +78,7 @@ public class BatchOperationLifecycleManagementHandler
       final Record<BatchOperationLifecycleManagementRecordValue> record,
       final BatchOperationEntity entity) {
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
+      // set the endDate because the BatchOperationUpdateTask does not need to run here
       entity
           .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
           .setState(BatchOperationState.CANCELED);
@@ -78,7 +87,15 @@ public class BatchOperationLifecycleManagementHandler
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
       entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
-      entity.setEndDate(null).setState(BatchOperationState.COMPLETED);
+      final var value = record.getValue();
+      // set the endDate to null so that the BatchOperationUpdateTask does run again
+      entity.setEndDate(null);
+      if (value.getErrors().isEmpty()) {
+        entity.setState(BatchOperationState.COMPLETED);
+      } else {
+        entity.setErrors(mapErrors(value.getErrors()));
+        entity.setState(BatchOperationState.PARTIALLY_COMPLETED);
+      }
     }
   }
 
@@ -88,11 +105,25 @@ public class BatchOperationLifecycleManagementHandler
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BatchOperationTemplate.STATE, entity.getState());
     updateFields.put(BatchOperationTemplate.END_DATE, entity.getEndDate());
+    if (entity.getErrors() != null && !entity.getErrors().isEmpty()) {
+      updateFields.put(BatchOperationTemplate.ERRORS, entity.getErrors());
+    }
     batchRequest.update(indexName, entity.getId(), updateFields);
   }
 
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private List<BatchOperationErrorEntity> mapErrors(final List<BatchOperationErrorValue> errors) {
+    return errors.stream()
+        .map(
+            e ->
+                new BatchOperationErrorEntity()
+                    .setPartitionId(e.getPartitionId())
+                    .setType(e.getType().name())
+                    .setMessage(e.getMessage()))
+        .toList();
   }
 }

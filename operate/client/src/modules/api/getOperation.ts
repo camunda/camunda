@@ -7,6 +7,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {InstanceOperationEntity} from 'modules/types/operate';
 
 const getOperation = async (
   batchOperationId: string,

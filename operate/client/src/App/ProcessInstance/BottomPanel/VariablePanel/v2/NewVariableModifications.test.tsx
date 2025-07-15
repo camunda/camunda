@@ -7,14 +7,17 @@
  */
 
 import {VariablePanel} from './index';
-import {render, screen, UserEvent, waitFor} from 'modules/testing-library';
+import {render, screen, type UserEvent, waitFor} from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {createInstance, createVariable} from 'modules/testUtils';
+import {
+  createInstance,
+  createVariable,
+  createVariableV2,
+} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
@@ -27,47 +30,42 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
-const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
-  const [nameField] = screen.getAllByTestId('new-variable-name');
-
-  await user.click(nameField!);
-  await user.type(nameField!, value);
-  await user.tab();
-};
-
-const editValueFromTextfieldAndBlur = async (
+const editLastNewVariableName = async (
   user: UserEvent,
   value: string,
+  index: number = 0,
 ) => {
-  const [valueField] = screen.getAllByTestId('new-variable-value');
+  const nameField = screen.getAllByTestId('new-variable-name').at(-1);
 
-  await user.click(valueField!);
-  await user.type(valueField!, value);
+  if (!nameField) {
+    throw new Error(`No name field found at index ${index}`);
+  }
+
+  await user.click(nameField);
+  await user.type(nameField, value);
   await user.tab();
 };
 
-const editValueFromJSONEditor = async (user: UserEvent, value: string) => {
-  const [jsonEditor] = screen.getAllByRole('button', {
-    name: /open json editor modal/i,
-  });
-  await user.click(jsonEditor!);
-  await user.click(await screen.findByTestId('monaco-editor'));
-  await user.type(screen.getByTestId('monaco-editor'), value);
-  await user.click(screen.getByRole('button', {name: /apply/i}));
-};
+const editLastNewVariableValue = async (
+  user: UserEvent,
+  value: string,
+  index: number = 0,
+) => {
+  const valueField = screen.getAllByTestId('new-variable-value').at(-1);
 
-const editValue = async (type: string, user: UserEvent, value: string) => {
-  if (type === 'textfield') {
-    return editValueFromTextfieldAndBlur(user, value);
+  if (!valueField) {
+    throw new Error(`No value field found at index ${index}`);
   }
-  if (type === 'jsoneditor') {
-    return editValueFromJSONEditor(user, value);
-  }
+
+  await user.click(valueField);
+  await user.type(valueField, value);
+  await user.tab();
 };
 
 const getWrapper = (
@@ -78,7 +76,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -134,6 +131,12 @@ describe('New Variable Modifications', () => {
       items: statisticsData,
     });
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -147,11 +150,51 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if fields are empty', async () => {
-    jest.useFakeTimers();
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+    });
+
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    vi.runOnlyPendingTimers();
+    expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
+    await user.click(screen.getByTestId('new-variable-name'));
+    await user.tab();
+    await user.click(screen.getByTestId('new-variable-value'));
+    await user.tab();
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
+    expect(modificationsStore.state.modifications.length).toBe(0);
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should not create add variable modification if name field is empty', async () => {
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchVariables().withSuccess([createVariable()]);
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
+    modificationsStore.enableModificationMode();
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -162,159 +205,112 @@ describe('New Variable Modifications', () => {
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
     await user.click(screen.getByTestId('new-variable-name'));
     await user.tab();
-    await user.click(screen.getByTestId('new-variable-value'));
-    await user.tab();
+    await editLastNewVariableValue(user, '123');
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
+    expect(
+      await screen.findByText(/Name has to be filled/i),
+    ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
-  it.each(['textfield', 'jsoneditor'])(
-    'should not create add variable modification if name field is empty - %p',
-    async (type) => {
-      jest.useFakeTimers();
+  it('should not create add variable modification if name field is duplicate', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    modificationsStore.enableModificationMode();
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
-      modificationsStore.enableModificationMode();
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+    });
 
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
-        {wrapper: getWrapper()},
-      );
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', {name: /add variable/i}),
-        ).toBeEnabled();
-      });
-
-      await user.click(screen.getByRole('button', {name: /add variable/i}));
-      expect(
-        await screen.findByTestId('new-variable-name'),
-      ).toBeInTheDocument();
-      await user.click(screen.getByTestId('new-variable-name'));
-      await user.tab();
-      await editValue(type, user, '123');
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
+    await editLastNewVariableName(user, 'testVariableName');
+    await editLastNewVariableValue(user, '123');
+    await waitFor(() =>
       expect(
         screen.getByRole('button', {name: /add variable/i}),
-      ).toBeDisabled();
-      expect(
-        await screen.findByText(/Name has to be filled/i),
-      ).toBeInTheDocument();
-      expect(modificationsStore.state.modifications.length).toBe(0);
+      ).toBeDisabled(),
+    );
+    expect(
+      await screen.findByText(/Name should be unique/i),
+    ).toBeInTheDocument();
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    },
-  );
+    await user.clear(screen.getByTestId('new-variable-name'));
+    await editLastNewVariableName(user, 'test2');
 
-  it.each(['textfield', 'jsoneditor'])(
-    'should not create add variable modification if name field is duplicate - %p',
-    async (type) => {
-      jest.useFakeTimers();
-      modificationsStore.enableModificationMode();
-      mockFetchProcessInstanceDeprecated().withSuccess(
-        mockProcessInstanceDeprecated,
-      );
-      mockFetchProcessInstanceListeners().withSuccess(noListeners);
-      mockFetchVariables().withSuccess([createVariable()]);
-      mockFetchVariables().withSuccess([createVariable()]);
-
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
-        {wrapper: getWrapper()},
-      );
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', {name: /add variable/i}),
-        ).toBeEnabled();
-      });
-
-      await user.click(screen.getByRole('button', {name: /add variable/i}));
-      expect(
-        await screen.findByTestId('new-variable-name'),
-      ).toBeInTheDocument();
-      await editNameFromTextfieldAndBlur(user, 'testVariableName');
-      await editValue(type, user, '123');
-      await waitFor(() =>
-        expect(
-          screen.getByRole('button', {name: /add variable/i}),
-        ).toBeDisabled(),
-      );
-      expect(
-        await screen.findByText(/Name should be unique/i),
-      ).toBeInTheDocument();
-
-      await user.clear(screen.getByTestId('new-variable-name'));
-      await editNameFromTextfieldAndBlur(user, 'test2');
-
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'testVariableName',
-            newValue: '123',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2',
+          newValue: '123',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
         },
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '123',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
+        type: 'variable',
+      },
+    ]);
 
-      await user.click(screen.getByRole('button', {name: /add variable/i}));
-      await editNameFromTextfieldAndBlur(user, 'test2');
-      await editValue(type, user, '1234');
-      expect(
-        await screen.findByText(/Name should be unique/i),
-      ).toBeInTheDocument();
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'testVariableName',
-            newValue: '123',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    await editLastNewVariableName(user, 'test2');
+    await editLastNewVariableValue(user, '1234');
+    expect(
+      await screen.findByText(/Name should be unique/i),
+    ).toBeInTheDocument();
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2',
+          newValue: '123',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
         },
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '123',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
+        type: 'variable',
+      },
+    ]);
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    },
-  );
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
 
   it('should not create add variable modification if value field is empty or invalid', async () => {
-    jest.useFakeTimers();
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -324,7 +320,7 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
 
-    await editNameFromTextfieldAndBlur(user, 'test2');
+    await editLastNewVariableName(user, 'test2');
     await user.click(screen.getByTestId('new-variable-value'));
     await user.tab();
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
@@ -332,268 +328,264 @@ describe('New Variable Modifications', () => {
       await screen.findByText(/Value has to be filled/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
-    await editValueFromTextfieldAndBlur(user, 'invalid value');
+    await editLastNewVariableValue(user, 'invalid value');
     expect(
       await screen.findByText(/Value has to be JSON/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
-  it.each(['textfield', 'jsoneditor'])(
-    'should create add variable modification on blur and update same modification if name or value is changed - %p',
-    async (type) => {
-      jest.useFakeTimers();
+  it('should create add variable modification on blur and update same modification if name or value is changed', async () => {
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
-      modificationsStore.enableModificationMode();
+    modificationsStore.enableModificationMode();
 
-      const {user} = render(
-        <>
-          <VariablePanel setListenerTabVisibility={jest.fn()} />
-          <LastModification />
-        </>,
-        {wrapper: getWrapper()},
-      );
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', {name: /add variable/i}),
-        ).toBeEnabled();
-      });
-
-      await user.click(screen.getByRole('button', {name: /add variable/i}));
-      expect(
-        await screen.findByTestId('new-variable-name'),
-      ).toBeInTheDocument();
-
-      await editNameFromTextfieldAndBlur(user, 'test2');
-      await editValue(type, user, '12345');
-
+    const {user} = render(
+      <>
+        <VariablePanel setListenerTabVisibility={vi.fn()} />
+        <LastModification />
+      </>,
+      {wrapper: getWrapper()},
+    );
+    await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
+    });
 
-      await user.click(screen.getByTestId('new-variable-name'));
-      await user.tab();
-      await user.click(screen.getByTestId('new-variable-value'));
-      await user.tab();
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
 
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
+    await editLastNewVariableName(user, 'test2');
+    await editLastNewVariableValue(user, '12345');
 
-      await editNameFromTextfieldAndBlur(user, '-updated');
-
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2-updated',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
-
-      expect(
-        modificationsStore.getAddVariableModifications('instance_id'),
-      ).toEqual([
-        {
-          id: expect.any(String),
-          name: 'test2-updated',
-          value: '12345',
-        },
-      ]);
-
-      await editValue(type, user, '678');
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2-updated',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2-updated',
-            newValue: '12345678',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
-
-      expect(
-        modificationsStore.getAddVariableModifications('instance_id'),
-      ).toEqual([
-        {
-          id: expect.any(String),
-          name: 'test2-updated',
-          value: '12345678',
-        },
-      ]);
-
-      await user.click(screen.getByRole('button', {name: 'Undo'}));
-
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2-updated',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
-
-      expect(
-        modificationsStore.getAddVariableModifications('instance_id'),
-      ).toEqual([
-        {
-          id: expect.any(String),
-          name: 'test2-updated',
-          value: '12345',
-        },
-      ]);
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    },
-  );
-
-  it.each(['textfield', 'jsoneditor'])(
-    'should not apply modification if value is the same as the last modification - %p',
-    async (type) => {
-      jest.useFakeTimers();
-      modificationsStore.enableModificationMode();
-
-      const {user} = render(
-        <VariablePanel setListenerTabVisibility={jest.fn()} />,
-        {wrapper: getWrapper()},
-      );
-
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', {name: /add variable/i}),
-        ).toBeEnabled();
-      });
-
-      await user.click(screen.getByRole('button', {name: /add variable/i}));
-      expect(
-        await screen.findByTestId('new-variable-name'),
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('new-variable-name'));
-      await user.tab();
-
-      await user.click(screen.getByTestId('new-variable-value'));
-      await user.tab();
-
-      await user.clear(screen.getByTestId('new-variable-name'));
-      await editNameFromTextfieldAndBlur(user, 'test2');
-      await user.clear(screen.getByTestId('new-variable-value'));
-      await editValue(type, user, '12345');
-
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '12345',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
-
-      expect(
-        modificationsStore.getAddVariableModifications('instance_id'),
-      ).toEqual([
-        {
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
-          value: '12345',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
         },
-      ]);
+        type: 'variable',
+      },
+    ]);
 
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    },
-  );
+    await user.click(screen.getByTestId('new-variable-name'));
+    await user.tab();
+    await user.click(screen.getByTestId('new-variable-value'));
+    await user.tab();
+
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+    ]);
+
+    await editLastNewVariableName(user, '-updated');
+
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2-updated',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+    ]);
+
+    expect(
+      modificationsStore.getAddVariableModifications('instance_id'),
+    ).toEqual([
+      {
+        id: expect.any(String),
+        name: 'test2-updated',
+        value: '12345',
+      },
+    ]);
+
+    await editLastNewVariableValue(user, '678');
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2-updated',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2-updated',
+          newValue: '12345678',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+    ]);
+
+    expect(
+      modificationsStore.getAddVariableModifications('instance_id'),
+    ).toEqual([
+      {
+        id: expect.any(String),
+        name: 'test2-updated',
+        value: '12345678',
+      },
+    ]);
+
+    await user.click(screen.getByRole('button', {name: 'Undo'}));
+
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2-updated',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+    ]);
+
+    expect(
+      modificationsStore.getAddVariableModifications('instance_id'),
+    ).toEqual([
+      {
+        id: expect.any(String),
+        name: 'test2-updated',
+        value: '12345',
+      },
+    ]);
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should not apply modification if value is the same as the last modification', async () => {
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    modificationsStore.enableModificationMode();
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+    });
+
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('new-variable-name'));
+    await user.tab();
+
+    await user.click(screen.getByTestId('new-variable-value'));
+    await user.tab();
+
+    await user.clear(screen.getByTestId('new-variable-name'));
+    await editLastNewVariableName(user, 'test2');
+    await user.clear(screen.getByTestId('new-variable-value'));
+    await editLastNewVariableValue(user, '12345');
+
+    expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'test2',
+          newValue: '12345',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+    ]);
+
+    expect(
+      modificationsStore.getAddVariableModifications('instance_id'),
+    ).toEqual([
+      {
+        id: expect.any(String),
+        name: 'test2',
+        value: '12345',
+      },
+    ]);
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
 
   it('should be able to remove the first added variable modification after switching between flow node instances', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
     mockFetchProcessInstanceDeprecated().withSuccess(
@@ -604,10 +596,17 @@ describe('New Variable Modifications', () => {
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() => {
@@ -618,8 +617,8 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
 
-    await editNameFromTextfieldAndBlur(user, 'test1');
-    await editValueFromTextfieldAndBlur(user, '123');
+    await editLastNewVariableName(user, 'test1');
+    await editLastNewVariableValue(user, '123');
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
@@ -627,26 +626,8 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findAllByTestId('new-variable-name')).toHaveLength(2);
 
-    await editNameFromTextfieldAndBlur(user, 'test2');
-    await editValueFromTextfieldAndBlur(user, '456');
-
-    expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
-
-    mockFetchVariables().withSuccess([]);
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'someProcessName',
-          flowNodeInstanceId: 'test',
-        },
-      );
-    });
-
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+    await editLastNewVariableName(user, 'test2', 1);
+    await editLastNewVariableValue(user, '456', 1);
 
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
@@ -661,9 +642,7 @@ describe('New Variable Modifications', () => {
       );
     });
 
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
-    const [, deleteFirstAddedVariable] = screen.getAllByRole('button', {
+    const [deleteFirstAddedVariable] = screen.getAllByRole('button', {
       name: /delete variable/i,
     });
     await user.click(deleteFirstAddedVariable!);
@@ -674,12 +653,18 @@ describe('New Variable Modifications', () => {
     expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
     expect(screen.getByDisplayValue('456')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
-    jest.useFakeTimers();
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
     modificationsStore.addModification({
@@ -706,7 +691,7 @@ describe('New Variable Modifications', () => {
     );
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     expect(
@@ -720,27 +705,18 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
 
-    await editNameFromTextfieldAndBlur(user, 'test1');
-    await editValueFromTextfieldAndBlur(user, '123');
+    await editLastNewVariableName(user, 'test1');
+    await editLastNewVariableValue(user, '123');
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
     mockFetchVariables().withSuccess([]);
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'someProcessName',
-          flowNodeInstanceId: 'test',
-        },
-      );
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
     });
-
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
-    mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
@@ -752,12 +728,10 @@ describe('New Variable Modifications', () => {
       );
     });
 
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
     expect(await screen.findByDisplayValue('test1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('123')).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

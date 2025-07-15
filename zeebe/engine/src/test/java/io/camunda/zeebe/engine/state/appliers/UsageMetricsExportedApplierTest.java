@@ -68,4 +68,23 @@ class UsageMetricsExportedApplierTest {
     // then
     verify(mockUsageMetricsState, never()).resetActiveBucket(1L);
   }
+
+  @Test
+  void shouldResetActiveBucketEDI() {
+    // given
+    usageMetricState.resetActiveBucket(1L);
+    usageMetricState.recordEDIMetric("tenant1");
+    usageMetricState.recordEDIMetric("tenant1");
+    final var bucket = usageMetricState.getActiveBucket();
+    assertThat(bucket).isNotNull();
+    assertThat(bucket.getTenantEDIMap()).containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", 2L));
+
+    // when
+    usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
+
+    // then
+    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
+    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
+    assertThat(usageMetricState.getActiveBucket().getTenantRPIMap()).isEmpty();
+  }
 }

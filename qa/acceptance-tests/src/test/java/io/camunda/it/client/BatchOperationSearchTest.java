@@ -47,8 +47,8 @@ public class BatchOperationSearchTest {
 
   private static String testScopeId;
 
-  private static String batchOperationId1;
-  private static String batchOperationId2;
+  private static String batchOperationKey1;
+  private static String batchOperationKey2;
 
   private static final List<Long> ACTIVE_PROCESS_INSTANCES_1 = new ArrayList<>();
   private static final List<Long> ACTIVE_PROCESS_INSTANCES_2 = new ArrayList<>();
@@ -80,13 +80,13 @@ public class BatchOperationSearchTest {
     waitForScopedActiveProcessInstances(
         camundaClient, testScopeId, ACTIVE_PROCESS_INSTANCES_1.size());
 
-    batchOperationId1 = startBatchOperationCancelProcesses(testScopeId);
+    batchOperationKey1 = startBatchOperationCancelProcesses(testScopeId);
 
     waitForBatchOperationWithCorrectTotalCount(
-        camundaClient, batchOperationId1, ACTIVE_PROCESS_INSTANCES_1.size());
+        camundaClient, batchOperationKey1, ACTIVE_PROCESS_INSTANCES_1.size());
 
     waitForBatchOperationCompleted(
-        camundaClient, batchOperationId1, ACTIVE_PROCESS_INSTANCES_1.size(), 0);
+        camundaClient, batchOperationKey1, ACTIVE_PROCESS_INSTANCES_1.size(), 0);
 
     for (final Long key : ACTIVE_PROCESS_INSTANCES_1) {
       waitForProcessInstanceToBeTerminated(camundaClient, key);
@@ -107,22 +107,22 @@ public class BatchOperationSearchTest {
     waitForScopedActiveProcessInstances(
         camundaClient, testScopeId, ACTIVE_PROCESS_INSTANCES_2.size());
 
-    batchOperationId2 =
+    batchOperationKey2 =
         startBatchOperationMigrateProcesses(
             testScopeId, sourceProcessDefinitionKey, targetProcessDefinitionKey);
 
     waitForBatchOperationWithCorrectTotalCount(
-        camundaClient, batchOperationId2, ACTIVE_PROCESS_INSTANCES_2.size());
+        camundaClient, batchOperationKey2, ACTIVE_PROCESS_INSTANCES_2.size());
 
     waitForBatchOperationCompleted(
-        camundaClient, batchOperationId2, ACTIVE_PROCESS_INSTANCES_2.size(), 0);
+        camundaClient, batchOperationKey2, ACTIVE_PROCESS_INSTANCES_2.size(), 0);
   }
 
   @Test
   void shouldGetBatchOperation() {
     // when
-    final var batch = camundaClient.newBatchOperationGetRequest(batchOperationId1).send().join();
-    final var batch2 = camundaClient.newBatchOperationGetRequest(batchOperationId2).send().join();
+    final var batch = camundaClient.newBatchOperationGetRequest(batchOperationKey1).send().join();
+    final var batch2 = camundaClient.newBatchOperationGetRequest(batchOperationKey2).send().join();
 
     // then
     assertCancelBatchOperation(batch);
@@ -132,13 +132,13 @@ public class BatchOperationSearchTest {
     final var items1 =
         camundaClient
             .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationId(batchOperationId1))
+            .filter(f -> f.batchOperationKey(batchOperationKey1))
             .send()
             .join();
     final var items2 =
         camundaClient
             .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationId(batchOperationId2))
+            .filter(f -> f.batchOperationKey(batchOperationKey2))
             .send()
             .join();
 
@@ -155,7 +155,7 @@ public class BatchOperationSearchTest {
             .newBatchOperationSearchRequest()
             .filter(
                 f ->
-                    f.batchOperationId(batchOperationId2)
+                    f.batchOperationKey(batchOperationKey2)
                         .operationType(
                             p ->
                                 p.in(
@@ -181,7 +181,7 @@ public class BatchOperationSearchTest {
             .newBatchOperationItemsSearchRequest()
             .filter(
                 f ->
-                    f.batchOperationId(p -> p.in(batchOperationId1))
+                    f.batchOperationKey(p -> p.in(batchOperationKey1))
                         .processInstanceKey(p -> p.in(ACTIVE_PROCESS_INSTANCES_1))
                         .itemKey(p -> p.in(ACTIVE_PROCESS_INSTANCES_1))
                         .state(p -> p.in(BatchOperationItemState.COMPLETED)))
@@ -209,11 +209,11 @@ public class BatchOperationSearchTest {
     final var items = page.items();
     assertThat(items.size()).isEqualTo(2);
     final var batch1 =
-        items.stream().filter(b -> b.getBatchOperationId().equals(batchOperationId1)).findFirst();
+        items.stream().filter(b -> b.getBatchOperationKey().equals(batchOperationKey1)).findFirst();
     assertThat(batch1).isPresent();
     assertCancelBatchOperation(batch1.get());
     final var batch2 =
-        items.stream().filter(b -> b.getBatchOperationId().equals(batchOperationId2)).findFirst();
+        items.stream().filter(b -> b.getBatchOperationKey().equals(batchOperationKey2)).findFirst();
     assertThat(batch2).isPresent();
     assertMigrateBatchOperation(batch2.get());
   }
@@ -279,7 +279,7 @@ public class BatchOperationSearchTest {
             .newBatchOperationItemsSearchRequest()
             .filter(
                 f ->
-                    f.batchOperationId(p -> p.neq(batchOperationId1))
+                    f.batchOperationKey(p -> p.neq(batchOperationKey1))
                         .state(p -> p.neq(BatchOperationItemState.ACTIVE)))
             .send()
             .join();
@@ -297,7 +297,7 @@ public class BatchOperationSearchTest {
             .newBatchOperationItemsSearchRequest()
             .filter(
                 f ->
-                    f.batchOperationId(p -> p.notIn(batchOperationId1))
+                    f.batchOperationKey(p -> p.notIn(batchOperationKey1))
                         .processInstanceKey(p -> p.notIn(ACTIVE_PROCESS_INSTANCES_1))
                         .itemKey(p -> p.notIn(ACTIVE_PROCESS_INSTANCES_1)))
             .send()
@@ -310,7 +310,7 @@ public class BatchOperationSearchTest {
 
   private static void assertCancelBatchOperation(final BatchOperation batch) {
     assertThat(batch).isNotNull();
-    assertThat(batch.getBatchOperationId()).isEqualTo(batchOperationId1);
+    assertThat(batch.getBatchOperationKey()).isEqualTo(batchOperationKey1);
     assertThat(batch.getType()).isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
     assertThat(batch.getOperationsTotalCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_1.size());
@@ -320,7 +320,7 @@ public class BatchOperationSearchTest {
 
   private static void assertMigrateBatchOperation(final BatchOperation batch) {
     assertThat(batch).isNotNull();
-    assertThat(batch.getBatchOperationId()).isEqualTo(batchOperationId2);
+    assertThat(batch.getBatchOperationKey()).isEqualTo(batchOperationKey2);
     assertThat(batch.getType()).isEqualTo(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
     assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
     assertThat(batch.getOperationsTotalCount()).isEqualTo(ACTIVE_PROCESS_INSTANCES_2.size());
@@ -355,7 +355,7 @@ public class BatchOperationSearchTest {
 
     assertThat(result).isNotNull();
 
-    return result.getBatchOperationId();
+    return result.getBatchOperationKey();
   }
 
   private static String startBatchOperationMigrateProcesses(
@@ -382,6 +382,6 @@ public class BatchOperationSearchTest {
 
     assertThat(result).isNotNull();
 
-    return result.getBatchOperationId();
+    return result.getBatchOperationKey();
   }
 }

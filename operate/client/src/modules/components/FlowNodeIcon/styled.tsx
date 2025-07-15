@@ -16,8 +16,8 @@ type Props = {
   $hasLeftMargin?: boolean;
 };
 
-const BaseSVGIcon: React.FC<Props> = ({SVGComponent, className}) => {
-  return <SVGComponent className={className} />;
+const BaseSVGIcon: React.FC<Props> = ({SVGComponent, className, ...rest}) => {
+  return <SVGComponent className={className} {...rest} />;
 };
 
 const SVGIcon = styled(BaseSVGIcon)`

@@ -16,6 +16,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
+/**
+ * This handles the batch operation status item of batch operations of type RESOLVE_INCIDENT. It
+ * tracks the resolution of incidents by updating the corresponding batch operation item entity.
+ */
 public class ResolveIncidentOperationHandler
     extends AbstractOperationStatusHandler<IncidentRecordValue> {
 

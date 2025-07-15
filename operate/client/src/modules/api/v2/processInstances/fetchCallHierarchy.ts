@@ -8,9 +8,9 @@
 
 import {
   endpoints,
-  GetProcessInstanceCallHierarchyResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
-import {RequestResult, requestWithThrow} from 'modules/request';
+  type GetProcessInstanceCallHierarchyResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type RequestResult, requestWithThrow} from 'modules/request';
 
 const fetchCallHierarchy = async (
   processInstanceKey: string,

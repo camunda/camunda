@@ -9,7 +9,7 @@
 import {makeAutoObservable} from 'mobx';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
-type OperationsPanelRef = React.RefObject<HTMLElement> | null;
+type OperationsPanelRef = React.RefObject<HTMLElement | null> | null;
 
 type State = {
   isFiltersCollapsed: boolean;

@@ -85,6 +85,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final String clientSecret;
   private final String audience;
   private final String scope;
+  private final String resource;
   private final Path keystorePath;
   private final String keystorePassword;
   private final String keystoreKeyPassword;
@@ -111,6 +112,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     clientSecret = builder.getClientSecret();
     audience = builder.getAudience();
     scope = builder.getScope();
+    resource = builder.getResource();
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
     connectionTimeout = builder.getConnectTimeout();
     readTimeout = builder.getReadTimeout();
@@ -156,7 +158,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
                   value -> {
                     final CamundaClientCredentials fetchedCredentials = fetchCredentials();
                     credentialsCache.put(clientId, fetchedCredentials).writeCache();
-                    return !fetchedCredentials.equals(value) || !value.isValid();
+                    return !fetchedCredentials.equals(value);
                   })
               .orElse(false);
     } catch (final IOException e) {
@@ -179,6 +181,9 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     payload.put("grant_type", "client_credentials");
     if (scope != null) {
       payload.put("scope", scope);
+    }
+    if (resource != null) {
+      payload.put("resource", resource);
     }
 
     return payload.entrySet().stream()

@@ -16,7 +16,7 @@ import {
   useNewScopeIdForFlowNode,
 } from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
@@ -24,41 +24,32 @@ import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
-describe('modifications hooks', () => {
-  const getWrapper = (
-    initialEntries: React.ComponentProps<
-      typeof MemoryRouter
-    >['initialEntries'] = [Paths.processInstance('processId')],
-  ) => {
-    const Wrapper = ({children}: {children: React.ReactNode}) => {
-      useEffect(() => {
-        return () => {
-          modificationsStore.reset();
-        };
-      }, []);
+const getWrapper = () => {
+  const Wrapper: React.FC<{children: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        modificationsStore.reset();
+      };
+    }, []);
 
-      return (
-        <ProcessDefinitionKeyContext.Provider value="123">
-          <QueryClientProvider client={getMockQueryClient()}>
-            <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-              <Routes>
-                <Route path={Paths.processInstance()} element={children} />
-              </Routes>
-            </MemoryRouter>
-          </QueryClientProvider>
-        </ProcessDefinitionKeyContext.Provider>
-      );
-    };
-    return Wrapper;
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
   };
+  return Wrapper;
+};
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
+describe('modifications hooks', () => {
   describe('useWillAllFlowNodesBeCanceled', () => {
     beforeEach(() => {
-      jest.clearAllMocks();
       modificationsStore.reset();
     });
 
@@ -109,6 +100,10 @@ describe('modifications hooks', () => {
         },
       });
 
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
+
       const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
         wrapper: getWrapper(),
       });
@@ -137,6 +132,9 @@ describe('modifications hooks', () => {
       };
 
       mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
         wrapper: getWrapper(),
@@ -166,6 +164,9 @@ describe('modifications hooks', () => {
       };
 
       mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
         wrapper: getWrapper(),
@@ -176,6 +177,9 @@ describe('modifications hooks', () => {
 
     it('should return false if there are no statistics', async () => {
       mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
         wrapper: getWrapper(),
@@ -198,6 +202,10 @@ describe('modifications hooks', () => {
           parentScopeIds: {},
         },
       });
+
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       const {result} = renderHook(() => useModificationsByFlowNode(), {
         wrapper: getWrapper(),
@@ -225,13 +233,13 @@ describe('modifications hooks', () => {
         },
       });
 
-      const {result} = renderHook(() => useModificationsByFlowNode(), {
-        wrapper: getWrapper(),
-      });
-
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
       );
+
+      const {result} = renderHook(() => useModificationsByFlowNode(), {
+        wrapper: getWrapper(),
+      });
 
       expect(result.current).toEqual({
         node1: {
@@ -258,12 +266,13 @@ describe('modifications hooks', () => {
         },
       });
 
-      const {result} = renderHook(() => useModificationsByFlowNode(), {
-        wrapper: getWrapper(),
-      });
       mockFetchProcessDefinitionXml().withSuccess(
         mockProcessWithInputOutputMappingsXML,
       );
+
+      const {result} = renderHook(() => useModificationsByFlowNode(), {
+        wrapper: getWrapper(),
+      });
 
       expect(result.current).toEqual({
         node1: {
@@ -286,6 +295,10 @@ describe('modifications hooks', () => {
 
   describe('useNewScopeIdForFlowNode', () => {
     it('should return null if elementId is undefined', () => {
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
+
       const {result} = renderHook(() => useNewScopeIdForFlowNode(), {
         wrapper: getWrapper(),
       });
@@ -303,6 +316,10 @@ describe('modifications hooks', () => {
           visibleAffectedTokenCount: 3,
         },
       });
+
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       const {result} = renderHook(() => useNewScopeIdForFlowNode('node1'), {
         wrapper: getWrapper(),
@@ -323,6 +340,10 @@ describe('modifications hooks', () => {
           parentScopeIds: {},
         },
       });
+
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       const {result} = renderHook(() => useNewScopeIdForFlowNode('node1'), {
         wrapper: getWrapper(),
@@ -345,6 +366,10 @@ describe('modifications hooks', () => {
         },
       });
 
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
+
       const {result} = renderHook(() => useNewScopeIdForFlowNode('node2'), {
         wrapper: getWrapper(),
       });
@@ -365,6 +390,10 @@ describe('modifications hooks', () => {
           parentScopeIds: {},
         },
       });
+
+      mockFetchProcessDefinitionXml().withSuccess(
+        mockProcessWithInputOutputMappingsXML,
+      );
 
       const {result} = renderHook(() => useNewScopeIdForFlowNode('node2'), {
         wrapper: getWrapper(),

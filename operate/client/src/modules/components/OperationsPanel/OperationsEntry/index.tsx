@@ -22,6 +22,7 @@ import {
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
+import type {OperationEntity, OperationEntityType} from 'modules/types/operate';
 
 type OperationLabelType =
   | 'Edit'

@@ -10,12 +10,14 @@ package io.camunda.application.commons.console.ping;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +38,11 @@ public class PingConsoleTask implements Runnable {
       final String licensePayload) {
     this.pingConfiguration = pingConfiguration;
     this.client = client;
-    retryDecorator = new RetryDecorator(pingConfiguration.retry());
+    retryDecorator =
+        new RetryDecorator(
+            pingConfiguration.retry() != null
+                ? pingConfiguration.retry()
+                : new RetryConfiguration());
     this.licensePayload = licensePayload;
   }
 
@@ -88,7 +94,12 @@ public class PingConsoleTask implements Runnable {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   public record LicensePayload(
-      License license, String clusterId, String clusterName, Map<String, String> properties) {
+      License license,
+      String clusterId,
+      String clusterName,
+      String version,
+      List<String> profiles,
+      Map<String, String> properties) {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record License(
         boolean validLicense, String licenseType, boolean isCommercial, String expiresAt) {}

@@ -41,7 +41,7 @@ describe('Operations - Cancel Operation', () => {
   });
 
   it('should show modal when trying to cancel called instance', async () => {
-    const onOperationMock = jest.fn();
+    const onOperationMock = vi.fn();
 
     const modalText =
       /To cancel this instance, the root instance.*needs to be canceled. When the root instance is canceled all the called instances will be canceled automatically/;

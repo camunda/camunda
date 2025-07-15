@@ -9,15 +9,15 @@
 import React, {useEffect} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
-import {variablesStore} from 'modules/stores/variables';
 import {useForm, useFormState} from 'react-final-form';
 import {createVariableFieldName} from './createVariableFieldName';
 import {reaction} from 'mobx';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 import {useFieldArray} from 'react-final-form-arrays';
+import {getScopeId} from 'modules/utils/variables';
 
 const OnLastVariableModificationRemoved: React.FC = observer(() => {
-  const {scopeId} = variablesStore;
+  const scopeId = getScopeId();
   const form = useForm();
   const formState = useFormState<VariableFormValues>();
   const fieldArray = useFieldArray('newVariables');

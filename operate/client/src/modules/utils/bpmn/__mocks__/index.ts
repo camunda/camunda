@@ -8,6 +8,6 @@
 
 import {createDiagramNodes} from './bpmn.setup';
 
-export const parseDiagramXML = jest.fn(async (xml) => {
+export const parseDiagramXML = vi.fn(async () => {
   return {elementsById: createDiagramNodes()};
 });

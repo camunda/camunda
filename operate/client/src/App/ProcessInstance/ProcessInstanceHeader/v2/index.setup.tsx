@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+/* eslint-disable react-refresh/only-export-components */
+
 import {authenticationStore} from 'modules/stores/authentication';
 import {operationsStore} from 'modules/stores/operations';
 import {

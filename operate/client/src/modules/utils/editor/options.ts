@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import Editor from 'modules/components/MonacoEditor';
+import Editor from '@monaco-editor/react';
 
 const options: React.ComponentProps<typeof Editor>['options'] = {
   minimap: {

@@ -84,9 +84,9 @@ describe('InstancesByProcess', () => {
   });
 
   it('should handle network errors', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchProcessInstancesByName().withNetworkError();
     processInstancesByNameStore.getProcessInstancesByName();
@@ -120,7 +120,7 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should render items with more than one processes versions', async () => {
+  it('should render items with more than one processes versions', async () => {
     mockFetchProcessInstancesByName().withSuccess(mockWithMultipleVersions);
     processInstancesByNameStore.getProcessInstancesByName();
 
@@ -204,7 +204,7 @@ describe('InstancesByProcess', () => {
       wrapper: createWrapper(),
     });
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('data-table-skeleton'),
+      screen.queryByTestId('data-table-skeleton'),
     );
 
     const withinIncident = within(
@@ -237,7 +237,6 @@ describe('InstancesByProcess', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    jest.useFakeTimers();
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
     processInstancesByNameStore.getProcessInstancesByName();
 
@@ -248,7 +247,7 @@ describe('InstancesByProcess', () => {
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('data-table-skeleton'),
+      screen.queryByTestId('data-table-skeleton'),
     );
 
     const processLink = screen.getByRole('link', {
@@ -263,13 +262,10 @@ describe('InstancesByProcess', () => {
       ),
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should update after next poll', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
     processInstancesByNameStore.init();
@@ -291,7 +287,7 @@ describe('InstancesByProcess', () => {
       {...mockWithSingleVersion[0]!, activeInstancesCount: 142},
     ]);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(
       await withinIncident.findByText(
@@ -299,8 +295,8 @@ describe('InstancesByProcess', () => {
       ),
     ).toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render modeler button', async () => {
@@ -324,6 +320,7 @@ describe('InstancesByProcess', () => {
     ).toBeInTheDocument();
 
     expect(
+      // eslint-disable-next-line testing-library/no-node-access
       screen.getByRole('button', {name: 'Go to Modeler'}).closest('a'),
     ).toHaveAttribute('href', 'https://link-to-modeler');
   });

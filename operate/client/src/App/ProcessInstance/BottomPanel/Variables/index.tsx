@@ -18,13 +18,14 @@ import {useForm, useFormState} from 'react-final-form';
 import {Restricted} from 'modules/components/Restricted';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useFieldArray} from 'react-final-form-arrays';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
-import {useDisplayStatus} from 'modules/hooks/variables';
+import {useDisplayStatusFromVariablesStore} from 'modules/hooks/variables';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
+import {getScopeId} from 'modules/utils/variables';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -32,7 +33,7 @@ type Props = {
 
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
-    const displayStatus = useDisplayStatus();
+    const displayStatus = useDisplayStatusFromVariablesStore();
     const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );
@@ -40,7 +41,7 @@ const Variables: React.FC<Props> = observer(
       state: {pendingItem, loadingItemId, status},
     } = variablesStore;
 
-    const scopeId = variablesStore.scopeId ?? newScopeIdForFlowNode;
+    const scopeId = getScopeId() ?? newScopeIdForFlowNode;
 
     const {isModificationModeEnabled} = modificationsStore;
 

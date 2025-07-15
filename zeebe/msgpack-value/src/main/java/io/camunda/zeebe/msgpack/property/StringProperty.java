@@ -22,6 +22,14 @@ public final class StringProperty extends BaseProperty<StringValue> {
     super(key, new StringValue(), new StringValue(defaultValue));
   }
 
+  public StringProperty(final StringValue key) {
+    super(key, new StringValue());
+  }
+
+  public StringProperty(final StringValue key, final String defaultValue) {
+    super(key, new StringValue(), new StringValue(defaultValue));
+  }
+
   public DirectBuffer getValue() {
     return resolveValue().getValue();
   }

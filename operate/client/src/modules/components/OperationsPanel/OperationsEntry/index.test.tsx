@@ -16,7 +16,6 @@ import {
 } from 'modules/testing-library';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
-import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Filters} from 'App/Processes/ListView/Filters';
@@ -54,6 +53,8 @@ const FinishingOperationsEntry: React.FC = () => {
   );
 };
 
+const OPERATIONS_TIMESTAMP = '2023-11-22 08:03:29';
+
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
     render(<OperationsEntry {...mockProps} operation={OPERATIONS.RETRY} />, {
@@ -74,7 +75,7 @@ describe('OperationsEntry', () => {
     });
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     expect(
       screen.getByText('393ad666-d7f0-45c9-a679-ffa0ef82f88a'),
     ).toBeInTheDocument();
@@ -88,7 +89,7 @@ describe('OperationsEntry', () => {
     });
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     expect(
       screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052'),
     ).toBeInTheDocument();
@@ -108,7 +109,7 @@ describe('OperationsEntry', () => {
     );
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     expect(
       screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052'),
     ).toBeInTheDocument();
@@ -122,7 +123,7 @@ describe('OperationsEntry', () => {
     });
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     expect(
       screen.getByText('df325d44-6a4c-4428-b017-24f923f1d052'),
     ).toBeInTheDocument();
@@ -136,7 +137,7 @@ describe('OperationsEntry', () => {
     });
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     expect(
       screen.getByText('8ba1a9a7-8537-4af3-97dc-f7249743b20b'),
     ).toBeInTheDocument();
@@ -150,7 +151,7 @@ describe('OperationsEntry', () => {
     });
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     expect(
       screen.getByText('8ba1a9a7-8537-4af3-97dc-f7249743b20b'),
     ).toBeInTheDocument();
@@ -172,7 +173,7 @@ describe('OperationsEntry', () => {
     const {name, id} = OPERATIONS.DELETE_PROCESS_DEFINITION;
 
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText(id)).toBeInTheDocument();
     expect(screen.getByText(`Delete ${name}`)).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
@@ -192,7 +193,7 @@ describe('OperationsEntry', () => {
     const {name, id} = OPERATIONS.DELETE_DECISION_DEFINITION;
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
+    expect(screen.queryByText(OPERATIONS_TIMESTAMP)).not.toBeInTheDocument();
     expect(screen.getByText(id)).toBeInTheDocument();
     expect(screen.getByText(`Delete ${name}`)).toBeInTheDocument();
     expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
@@ -355,7 +356,7 @@ describe('OperationsEntry', () => {
   });
 
   it('should render 50% progress and fake progress', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     render(
       <OperationsEntry
         operation={{
@@ -380,12 +381,12 @@ describe('OperationsEntry', () => {
         '55',
       ),
     );
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render 100% progress and hide progress bar', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     render(<FinishingOperationsEntry />, {wrapper: createWrapper()});
 
     await waitFor(() =>
@@ -394,10 +395,10 @@ describe('OperationsEntry', () => {
         '100',
       ),
     );
-    expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByRole('progressbar'));
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    expect(screen.queryByText(OPERATIONS_TIMESTAMP)).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.queryByRole('progressbar'));
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

@@ -42,7 +42,7 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
 
   public static class BatchOperationItemImpl implements BatchOperationItem {
 
-    private final String batchOperationId;
+    private final String batchOperationKey;
     private final Long itemKey;
     private final Long processInstanceKey;
     private final BatchOperationItemState status;
@@ -50,7 +50,7 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
     private final String errorMessage;
 
     public BatchOperationItemImpl(final BatchOperationItemResponse item) {
-      batchOperationId = item.getBatchOperationId();
+      batchOperationKey = item.getBatchOperationKey();
       itemKey = ParseUtil.parseLongOrNull(item.getItemKey());
       processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
       status = EnumUtil.convert(item.getState(), BatchOperationItemState.class);
@@ -59,8 +59,8 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
     }
 
     @Override
-    public String getBatchOperationId() {
-      return batchOperationId;
+    public String getBatchOperationKey() {
+      return batchOperationKey;
     }
 
     @Override

@@ -16,7 +16,7 @@ describe('<JSONEditorModal />', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('should render modal', () => {
+  it('should render modal', async () => {
     const mockValue = '"fooo"';
     const mockTitle = 'i am a title';
 
@@ -30,7 +30,7 @@ describe('<JSONEditorModal />', () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
-    expect(screen.getByDisplayValue(mockValue)).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(mockValue)).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /apply/i})).toBeInTheDocument();
 
     rerender(
@@ -55,7 +55,7 @@ describe('<JSONEditorModal />', () => {
   });
 
   it('should handle modal close', async () => {
-    const mockOnClose = jest.fn();
+    const mockOnClose = vi.fn();
 
     const {user, rerender} = render(
       <JSONEditorModal isVisible value="" onClose={mockOnClose} />,
@@ -75,7 +75,7 @@ describe('<JSONEditorModal />', () => {
   });
 
   it('should handle modal apply', async () => {
-    const mockOnApply = jest.fn();
+    const mockOnApply = vi.fn();
     const mockValue = '"i am a value"';
 
     const {user} = render(
@@ -88,7 +88,7 @@ describe('<JSONEditorModal />', () => {
   });
 
   it('should handle value edit', async () => {
-    const mockOnApply = jest.fn();
+    const mockOnApply = vi.fn();
     const mockInitialValue = '"i am a value"';
     const mockUpdatedValue = '"i am an updated value"';
 

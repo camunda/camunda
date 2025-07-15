@@ -31,7 +31,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('decisions page', () => {
-  test(`empty page`, async ({page, decisionsPage}) => {
+  test('empty page', async ({page, decisionsPage}) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'panelStates',
@@ -64,7 +64,7 @@ test.describe('decisions page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`error page`, async ({page, decisionsPage}) => {
+  test('error page', async ({page, decisionsPage}) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'panelStates',
@@ -97,7 +97,7 @@ test.describe('decisions page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`filled with data`, async ({page, decisionsPage}) => {
+  test('filled with data', async ({page, decisionsPage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -120,7 +120,7 @@ test.describe('decisions page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`filled with data and operations panel expanded`, async ({
+  test('filled with data and operations panel expanded', async ({
     page,
     decisionsPage,
   }) => {
@@ -155,7 +155,7 @@ test.describe('decisions page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`optional filters visible`, async ({page, decisionsPage}) => {
+  test('optional filters visible', async ({page, decisionsPage}) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         'panelStates',

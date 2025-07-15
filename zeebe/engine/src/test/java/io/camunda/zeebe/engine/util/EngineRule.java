@@ -45,6 +45,7 @@ import io.camunda.zeebe.engine.util.client.RoleClient;
 import io.camunda.zeebe.engine.util.client.ScaleClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.engine.util.client.TenantClient;
+import io.camunda.zeebe.engine.util.client.UsageMetricClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
@@ -471,6 +472,10 @@ public final class EngineRule extends ExternalResource {
 
   public BatchOperationClient batchOperation() {
     return new BatchOperationClient(environmentRule);
+  }
+
+  public UsageMetricClient usageMetrics() {
+    return new UsageMetricClient(environmentRule);
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {

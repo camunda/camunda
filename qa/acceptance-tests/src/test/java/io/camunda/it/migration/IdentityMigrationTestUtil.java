@@ -80,6 +80,7 @@ final class IdentityMigrationTestUtil {
         .dependsOn(postgres)
         .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
         .withEnv("RESOURCE_PERMISSIONS_ENABLED", "true")
+        .withEnv("MULTITENANCY_ENABLED", "true")
         .withEnv("KEYCLOAK_URL", "http://%s:%d".formatted(KEYCLOAK_HOST, KEYCLOAK_PORT))
         .withEnv(
             "IDENTITY_AUTH_PROVIDER_BACKEND_URL",
@@ -90,11 +91,11 @@ final class IdentityMigrationTestUtil {
         .withEnv("KEYCLOAK_CLIENTS_0_ID", IDENTITY_CLIENT)
         .withEnv("KEYCLOAK_CLIENTS_0_SECRET", IDENTITY_CLIENT_SECRET)
         .withEnv("KEYCLOAK_CLIENTS_0_TYPE", "m2m")
-        .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID", ZEEBE_CLIENT_AUDIENCE)
-        .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION", "write:*")
         .withEnv(
             "KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID", CAMUNDA_IDENTITY_RESOURCE_SERVER)
         .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION", "write")
+        .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_1_RESOURCE_SERVER_ID", ZEEBE_CLIENT_AUDIENCE)
+        .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_1_DEFINITION", "write:*")
         .withEnv("IDENTITY_RETRY_ATTEMPTS", "90")
         .withEnv("IDENTITY_RETRY_DELAY_SECONDS", "1")
         // this will enable readiness checks by spring to await ApplicationRunner completion

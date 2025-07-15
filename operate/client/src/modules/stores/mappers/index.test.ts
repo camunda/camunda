@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
 import {getProcessedSequenceFlows} from './index';
 
 describe('getProcessedSequenceFlows', () => {
@@ -54,7 +55,7 @@ describe('getProcessedSequenceFlows', () => {
 
   it('should return empty array id processed sequence flows is an empty array', () => {
     // given
-    const processedSequenceFlows: any = [];
+    const processedSequenceFlows: SequenceFlowsDto = [];
 
     // when
     const activityIds = getProcessedSequenceFlows(processedSequenceFlows);

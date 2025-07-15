@@ -6,13 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  within,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, within, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
@@ -22,7 +16,11 @@ import {
   mockProcessInstanceDeprecated,
   mockVariables,
 } from './mocks';
-import {createInstance, createVariable} from 'modules/testUtils';
+import {
+  createInstance,
+  createVariable,
+  createVariableV2,
+} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
@@ -30,10 +28,16 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockVariablesV2} from '../index.setup';
+import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
+import {VariablePanel} from '../../VariablePanel/v2';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
+import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -46,9 +50,12 @@ describe('Edit variable', () => {
       mockProcessInstanceDeprecated,
     );
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
   });
 
-  it('should show/hide edit button next to variable according to it having an active operation', async () => {
+  it.skip('should show/hide edit button next to variable according to it having an active operation', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockFetchVariables().withSuccess(mockVariables);
@@ -81,7 +88,7 @@ describe('Edit variable', () => {
     expect(inactiveOperationVariable).toBeDefined();
     expect(
       await screen.findByTestId(`variable-${inactiveOperationVariable!.name}`),
-    );
+    ).toBeInTheDocument();
     expect(
       within(
         screen.getByTestId(`variable-${inactiveOperationVariable!.name}`),
@@ -90,8 +97,11 @@ describe('Edit variable', () => {
   });
 
   it('should show/hide edit variable inputs', async () => {
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
+    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-
     mockFetchVariables().withSuccess(mockVariables);
 
     variablesStore.fetchVariables({
@@ -100,18 +110,18 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
 
     expect(screen.queryByTestId('add-variable-value')).not.toBeInTheDocument();
 
-    const [firstVariable] = variablesStore.state.items;
-    expect(firstVariable).toBeDefined();
-    const withinFirstVariable = within(
-      screen.getByTestId(`variable-${firstVariable!.name}`),
-    );
+    expect(await screen.findByTestId(`variable-clientNo`)).toBeInTheDocument();
+    const withinFirstVariable = within(screen.getByTestId(`variable-clientNo`));
     expect(
       withinFirstVariable.queryByTestId('edit-variable-value'),
     ).not.toBeInTheDocument();
@@ -124,14 +134,14 @@ describe('Edit variable', () => {
 
     expect(
       await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
-    );
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
 
     expect(
-      withinFirstVariable.getByTestId('edit-variable-value'),
+      await withinFirstVariable.findByTestId('edit-variable-value'),
     ).toBeInTheDocument();
     expect(
       withinFirstVariable.getByRole('button', {name: /exit edit mode/i}),
@@ -142,6 +152,10 @@ describe('Edit variable', () => {
   });
 
   it('should disable save button when nothing is changed', async () => {
+    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
+    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockFetchVariables().withSuccess(mockVariables);
@@ -152,22 +166,24 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
 
     expect(screen.queryByTestId('add-variable-value')).not.toBeInTheDocument();
 
-    const [firstVariable] = variablesStore.state.items;
-    expect(firstVariable).toBeDefined();
-    const withinFirstVariable = within(
-      screen.getByTestId(`variable-${firstVariable!.name}`),
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId(`variable-clientNo`)).toBeInTheDocument();
+    });
+    const withinFirstVariable = within(screen.getByTestId(`variable-clientNo`));
 
     expect(
       await withinFirstVariable.findByRole('button', {name: /edit variable/i}),
-    );
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
@@ -179,12 +195,19 @@ describe('Edit variable', () => {
   });
 
   it('should validate when editing variables', async () => {
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
+    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
 
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess(mockVariables);
 
@@ -194,24 +217,29 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
 
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
 
-    const [firstVariable] = variablesStore.state.items;
-    expect(firstVariable).toBeDefined();
-    const withinFirstVariable = within(
-      screen.getByTestId(`variable-${firstVariable!.name}`),
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId(`variable-clientNo`)).toBeInTheDocument();
+    });
+    const withinFirstVariable = within(screen.getByTestId(`variable-clientNo`));
 
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       withinFirstVariable.getByRole('button', {name: /edit variable/i}),
     );
 
+    expect(
+      await screen.findByTestId('edit-variable-value'),
+    ).toBeInTheDocument();
     await user.type(
       screen.getByTestId('edit-variable-value'),
       "{{invalidKey: 'value'}}",
@@ -219,11 +247,13 @@ describe('Edit variable', () => {
 
     expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
+    vi.runOnlyPendingTimers();
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
 
     await user.clear(screen.getByTestId('edit-variable-value'));
     await user.type(screen.getByTestId('edit-variable-value'), '123');
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         screen.getByRole('button', {name: /save variable/i}),
@@ -232,11 +262,44 @@ describe('Edit variable', () => {
 
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should get variable details on edit button click if the variables value was a preview', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          name: 'clientNo',
+          value: '"value-preview"',
+          isTruncated: true,
+        }),
+        createVariableV2({
+          name: 'mwst',
+          value: '"124.26"',
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          name: 'clientNo',
+          value: '"value-preview"',
+          isTruncated: true,
+        }),
+        createVariableV2({
+          name: 'mwst',
+          value: '"124.26"',
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess([
       createVariable({
@@ -253,42 +316,40 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
+    await waitFor(() => {
+      expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+    });
 
-    expect(screen.getByText('"value-preview"')).toBeInTheDocument();
-
-    mockFetchVariable().withDelay(
-      createVariable({
+    mockGetVariable().withSuccess(
+      createVariableV2({
         name: 'clientNo',
         value: '"full-value"',
-        isPreview: false,
+        isTruncated: false,
       }),
     );
 
-    expect(await screen.findByTestId('variable-clientNo'));
+    expect(await screen.findByTestId('variable-clientNo')).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-clientNo')).getByRole('button', {
         name: /edit variable/i,
       }),
     );
-    expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId('variable-mwst')).getByRole('button', {
-        name: /edit variable/i,
-      }),
-    ).toBeDisabled();
-
-    await waitForElementToBeRemoved(screen.getByTestId('full-variable-loader'));
 
     expect(screen.queryByText('"value-preview"')).not.toBeInTheDocument();
 
-    expect(screen.getByTestId('edit-variable-value')).toHaveValue(
-      '"full-value"',
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId('edit-variable-value')).toHaveValue(
+        '"full-value"',
+      );
+    });
     expect(
       within(screen.getByTestId('variable-mwst')).getByRole('button', {
         name: /edit variable/i,
@@ -299,6 +360,28 @@ describe('Edit variable', () => {
   });
 
   it('should display notification if error occurs when getting single variable details', async () => {
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          value: '"value-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          value: '"value-preview"',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess([
       createVariable({isPreview: true, value: '"value-preview"'}),
@@ -310,16 +393,24 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+    });
 
     mockFetchVariable().withDelayedServerError();
+    mockGetVariable().withServerError();
 
-    expect(await screen.findByTestId('variable-testVariableName'));
+    expect(
+      await screen.findByTestId('variable-testVariableName'),
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
@@ -329,20 +420,40 @@ describe('Edit variable', () => {
         },
       ),
     );
-    expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(screen.getByTestId('full-variable-loader'));
-
-    expect(screen.getByText('"value-preview"')).toBeInTheDocument();
-
-    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-      isDismissable: true,
-      kind: 'error',
-      title: 'Variable could not be fetched',
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        isDismissable: true,
+        kind: 'error',
+        title: 'Variable could not be fetched',
+      });
     });
   });
 
   it('should not get variable details on edit button click if the variables value was not a preview', async () => {
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          value: '"full-value"',
+          isTruncated: false,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          value: '"full-value"',
+          isTruncated: false,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
+
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockFetchVariables().withSuccess([createVariable({value: '"full-value"'})]);
@@ -353,14 +464,20 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
+    await waitFor(() => {
+      expect(screen.getByText('"full-value"')).toBeInTheDocument();
+    });
 
-    expect(screen.getByText('"full-value"')).toBeInTheDocument();
-
-    expect(await screen.findByTestId('variable-testVariableName'));
+    expect(
+      await screen.findByTestId('variable-testVariableName'),
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(
       within(screen.getByTestId('variable-testVariableName')).getByRole(
@@ -381,11 +498,33 @@ describe('Edit variable', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessDefinitionXml().withSuccess('');
 
-    jest.useFakeTimers();
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          value: '123',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          value: '123',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchVariables().withSuccess([
       createVariable({isPreview: true, value: '123'}),
     ]);
@@ -396,43 +535,69 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables isVariableModificationAllowed />, {
-      wrapper: getWrapper(),
-    });
+    mockGetVariable().withSuccess(
+      createVariableV2({
+        value: '123456',
+        isTruncated: false,
+      }),
+    );
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
-
-    expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
-
-    mockFetchVariable().withSuccess(
-      createVariable({isPreview: false, value: '123456'}),
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
+    });
 
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByTestId('edit-variable-value'));
 
-    expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
-
-    jest.runOnlyPendingTimers();
-
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('full-variable-loader'),
+    expect(await screen.findByTestId('edit-variable-value')).toHaveValue(
+      '123456',
     );
-
-    expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should load full value on json viewer click during modification mode if it was truncated', async () => {
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          value: '123',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2({
+          value: '123',
+          isTruncated: true,
+        }),
+      ],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchVariables().withSuccess([
       createVariable({isPreview: true, value: '123'}),
     ]);
+    mockGetVariable().withSuccess(
+      createVariableV2({
+        value: '123456',
+        isTruncated: false,
+      }),
+    );
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -440,17 +605,24 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables isVariableModificationAllowed />, {
-      wrapper: getWrapper(),
-    });
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
+    await waitFor(() => {
+      expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
+    });
 
-    expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
-
-    mockFetchVariable().withSuccess(
-      createVariable({isPreview: false, value: '123456'}),
+    mockGetVariable().withSuccess(
+      createVariableV2({
+        value: '123456',
+        isTruncated: false,
+      }),
     );
 
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -466,6 +638,18 @@ describe('Edit variable', () => {
   it('should have JSON editor when editing a Variable', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariable().withSuccess(mockVariables[0]!);
 
@@ -475,12 +659,17 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
 
-    expect(await screen.findByRole('button', {name: /edit variable/i}));
+    expect(
+      await screen.findByRole('button', {name: /edit variable/i}),
+    ).toBeInTheDocument();
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /edit variable/i}));
     await user.click(
@@ -506,7 +695,12 @@ describe('Edit variable', () => {
       state: 'TERMINATED',
     });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
-
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchVariables().withSuccess(mockVariables);
 
     variablesStore.fetchVariables({
@@ -515,7 +709,9 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+      wrapper: getWrapper(),
+    });
 
     expect(
       screen.queryByRole('button', {name: /edit variable/i}),

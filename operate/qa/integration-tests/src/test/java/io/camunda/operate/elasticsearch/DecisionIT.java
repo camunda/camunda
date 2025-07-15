@@ -37,7 +37,9 @@ import org.springframework.test.web.servlet.MvcResult;
 
 /** Tests Elasticsearch queries for decision. */
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {
+      TestApplication.class,
+    },
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",

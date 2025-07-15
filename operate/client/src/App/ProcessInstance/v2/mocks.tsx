@@ -10,22 +10,18 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockIncidents} from 'modules/mocks/incidents';
-import {testData} from '../index.setup';
+import {testData} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
   createVariable,
+  createVariableV2,
 } from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {
-  Route,
-  unstable_HistoryRouter as HistoryRouter,
-  Routes,
-} from 'react-router-dom';
+import {createMemoryRouter, RouterProvider} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {createMemoryHistory} from 'history';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {
-  Selection,
+  type Selection,
   flowNodeSelectionStore,
 } from 'modules/stores/flowNodeSelection';
 import {useEffect} from 'react';
@@ -36,7 +32,7 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
-import {mockProcess} from '../ProcessInstanceHeader/index.setup';
+import {mockProcess} from '../ProcessInstanceHeader/v2/index.setup';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -45,10 +41,14 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {ProcessInstance, SequenceFlow} from '@vzeta/camunda-api-zod-schemas';
+import {
+  type ProcessInstance,
+  type SequenceFlow,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 const mockProcessInstance: ProcessInstance = {
@@ -97,27 +97,23 @@ const mockSequenceFlowsV2: SequenceFlow[] = [
   },
 ];
 
-const mockRequests = (contextPath: string = '') => {
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+const mockRequests = () => {
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstanceDeprecated(contextPath).withSuccess(
+  mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );
-  mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-  mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-  mockFetchCallHierarchy(contextPath).withSuccess([]);
-  mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
+  mockFetchProcessInstance().withSuccess(mockProcessInstance);
+  mockFetchProcessInstance().withSuccess(mockProcessInstance);
+  mockFetchCallHierarchy().withSuccess([]);
+  mockFetchProcessDefinitionXml().withSuccess('');
   mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
-  mockFetchFlowNodeInstances(contextPath).withSuccess(
-    processInstancesMock.level1,
-  );
-  mockFetchFlowNodeInstances(contextPath).withSuccess(
-    processInstancesMock.level1,
-  );
+  mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+  mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
   mockFetchFlownodeInstancesStatistics().withSuccess({
     items: [
       {
@@ -136,18 +132,24 @@ const mockRequests = (contextPath: string = '') => {
       },
     ],
   });
-  mockFetchVariables(contextPath).withSuccess([createVariable()]);
-  mockFetchVariables(contextPath).withSuccess([createVariable()]);
-  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+  mockFetchVariables().withSuccess([createVariable()]);
+  mockSearchVariables().withSuccess({
+    items: [createVariableV2()],
+    page: {
+      totalItems: 1,
+    },
+  });
+  mockFetchVariables().withSuccess([createVariable()]);
+  mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
   });
-  mockFetchProcessInstanceIncidents(contextPath).withSuccess({
+  mockFetchProcessInstanceIncidents().withSuccess({
     ...mockIncidents,
     count: 2,
   });
-  mockFetchProcess(contextPath).withSuccess(mockProcess);
-  mockFetchProcessInstanceListeners(contextPath).withSuccess(noListeners);
+  mockFetchProcess().withSuccess(mockProcess);
+  mockFetchProcessInstanceListeners().withSuccess(noListeners);
 };
 
 type FlowNodeSelectorProps = {
@@ -186,25 +188,44 @@ function getWrapper(options?: {
       return flowNodeSelectionStore.reset;
     }, []);
 
+    const router = createMemoryRouter(
+      [
+        {
+          path: Paths.processInstance(),
+          element: (
+            <>
+              {children}
+              {selectableFlowNode && (
+                <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
+              )}
+              <LocationLog />
+            </>
+          ),
+        },
+        {
+          path: Paths.processes(),
+          element: (
+            <>
+              instances page
+              <LocationLog />
+            </>
+          ),
+        },
+        {
+          path: Paths.dashboard(),
+          element: <>dashboard page</>,
+        },
+      ],
+      {
+        initialEntries: [initialPath],
+        basename: contextPath ?? '',
+      },
+    );
+
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
         <QueryClientProvider client={getMockQueryClient()}>
-          <HistoryRouter
-            history={createMemoryHistory({
-              initialEntries: [initialPath],
-            })}
-            basename={contextPath ?? ''}
-          >
-            <Routes>
-              <Route path={Paths.processInstance()} element={children} />
-              <Route path={Paths.processes()} element={<>instances page</>} />
-              <Route path={Paths.dashboard()} element={<>dashboard page</>} />
-            </Routes>
-            {selectableFlowNode && (
-              <FlowNodeSelector selectableFlowNode={selectableFlowNode} />
-            )}
-            <LocationLog />
-          </HistoryRouter>
+          <RouterProvider router={router} />
         </QueryClientProvider>
       </ProcessDefinitionKeyContext.Provider>
     );
@@ -216,9 +237,13 @@ function getWrapper(options?: {
 const waitForPollingsToBeComplete = async () => {
   await waitFor(() => {
     expect(variablesStore.isPollRequestRunning).toBe(false);
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
     expect(processInstanceDetailsStore.isPollRequestRunning).toBe(false);
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
     expect(sequenceFlowsStore.isPollRequestRunning).toBe(false);
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
     expect(incidentsStore.isPollRequestRunning).toBe(false);
+    // eslint-disable-next-line testing-library/no-wait-for-multiple-assertions
     expect(flowNodeInstanceStore.isPollRequestRunning).toBe(false);
   });
 };

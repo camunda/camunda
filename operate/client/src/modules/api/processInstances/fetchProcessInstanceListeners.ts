@@ -7,6 +7,10 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {
+  ProcessInstanceEntity,
+  ListenerEntity,
+} from 'modules/types/operate';
 
 type ListenersDto = {
   listeners: ListenerEntity[];

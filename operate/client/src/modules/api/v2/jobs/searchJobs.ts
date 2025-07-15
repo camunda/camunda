@@ -10,8 +10,8 @@ import {
   endpoints,
   type QueryJobsRequestBody,
   type QueryJobsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
-import {RequestResult, requestWithThrow} from 'modules/request';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type RequestResult, requestWithThrow} from 'modules/request';
 
 const searchJobs = async (
   payload: QueryJobsRequestBody,

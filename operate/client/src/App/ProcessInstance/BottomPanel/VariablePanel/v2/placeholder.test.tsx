@@ -7,15 +7,15 @@
  */
 
 import {VariablePanel} from './index';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -32,13 +32,14 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init} from 'modules/utils/flowNodeMetadata';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -50,7 +51,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -122,6 +122,20 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -138,12 +152,6 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-    await new Promise(process.nextTick);
-  });
-
   it.each([true, false])(
     'should show multiple scope placeholder when multiple nodes are selected - modification mode: %p',
     async (enableModificationMode) => {
@@ -158,14 +166,12 @@ describe('VariablePanel', () => {
         instanceMetadata: null,
       });
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -193,22 +199,22 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withServerError();
+      mockSearchVariables().withServerError();
+      mockSearchVariables().withServerError();
 
       act(() => {
-        variablesStore.fetchVariables({
-          fetchType: 'initial',
-          instanceId: 'invalid_instance',
-          payload: {pageSize: 10, scopeId: '1'},
+        flowNodeSelectionStore.setSelection({
+          flowNodeId: 'TEST_FLOW_NODE',
+          flowNodeInstanceId: '2',
         });
       });
 
@@ -224,30 +230,25 @@ describe('VariablePanel', () => {
   it.each([true, false])(
     'should show failed placeholder if network error occurs while fetching variables - modification mode: %p',
     async (enableModificationMode) => {
-      const consoleErrorMock = jest
-        .spyOn(global.console, 'error')
-        .mockImplementation();
-
       if (enableModificationMode) {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
         wrapper: getWrapper(),
       });
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withNetworkError();
+      mockSearchVariables().withNetworkError();
 
       act(() => {
-        variablesStore.fetchVariables({
-          fetchType: 'initial',
-          instanceId: 'invalid_instance',
-          payload: {pageSize: 10, scopeId: '1'},
+        flowNodeSelectionStore.setSelection({
+          flowNodeId: 'TEST_FLOW_NODE',
+          flowNodeInstanceId: '2',
         });
       });
 
@@ -257,8 +258,6 @@ describe('VariablePanel', () => {
       expect(
         screen.queryByRole('button', {name: /add variable/i}),
       ).not.toBeInTheDocument();
-
-      consoleErrorMock.mockRestore();
     },
   );
 });

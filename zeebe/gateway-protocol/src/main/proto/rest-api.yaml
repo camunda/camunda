@@ -1942,7 +1942,7 @@ paths:
         Cancels multiple running process instances.
         Since only ACTIVE root instances can be cancelled, any given filters for state and
         parentProcessInstanceKey are ignored and overridden during this batch operation.
-        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: false
         content:
@@ -1981,7 +1981,7 @@ paths:
         Resolves multiple instances of process instances.
         Since only process instances with ACTIVE state can have unresolved incidents, any given
         filters for state are ignored and overridden during this batch operation.
-        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: false
         content:
@@ -2020,7 +2020,7 @@ paths:
         Migrate multiple instances of process instances.
         Since only process instances with ACTIVE state can be migrated, any given
         filters for state are ignored and overridden during this batch operation.
-        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
         content:
@@ -2061,7 +2061,7 @@ paths:
         filters for state are ignored and overridden during this batch operation.
         In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
         It is only possible to use the element id of the source and target.
-        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
         content:
@@ -2912,7 +2912,7 @@ paths:
       operationId: searchUsersForRole
       summary: Search role users
       description: |
-        Search users assigned to a role.
+        Search users with assigned role.
       parameters:
         - name: roleId
           in: path
@@ -2928,7 +2928,7 @@ paths:
               $ref: "#/components/schemas/RoleUserSearchQueryRequest"
       responses:
         "200":
-          description: The users assigned to the role.
+          description: The users with the assigned role.
           content:
             application/json:
               schema:
@@ -2954,7 +2954,7 @@ paths:
       operationId: searchClientsForRole
       summary: Search role clients
       description: |
-        Search clients assigned to a role.
+        Search clients with assigned role.
       parameters:
         - name: roleId
           in: path
@@ -2970,7 +2970,7 @@ paths:
               $ref: "#/components/schemas/RoleClientSearchQueryRequest"
       responses:
         "200":
-          description: The clients assigned to the role.
+          description: The clients with the assigned role.
           content:
             application/json:
               schema:
@@ -2993,10 +2993,10 @@ paths:
     put:
       tags:
         - Role
-      operationId: addUserToRole
-      summary: Assign a user to a role
+      operationId: addRoleToUser
+      summary: Assign a role to a user
       description: |
-        Assigns a user to a role.
+        Assigns a role to a user.
       parameters:
         - name: roleId
           in: path
@@ -3012,7 +3012,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The user was assigned successfully to the role.
+          description: The role was assigned successfully to the user.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3024,7 +3024,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The user with the given ID is already assigned to the role.
+          description: The role is already assigned to the user with the given ID.
           content:
             application/problem+json:
               schema:
@@ -3070,10 +3070,10 @@ paths:
     put:
       tags:
         - Role
-      operationId: addClientToRole
-      summary: Assign a client to a role
+      operationId: addRoleToClient
+      summary: Assign a role to a client
       description: |
-        Assigns a client to a role.
+        Assigns a role to a client.
       parameters:
         - name: roleId
           in: path
@@ -3089,7 +3089,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The client was assigned successfully to the role.
+          description: The role was assigned successfully to the client.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3101,7 +3101,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The client with the given ID is already assigned to the role.
+          description: The role was already assigned to the client with the given ID.
           content:
             application/problem+json:
               schema:
@@ -3111,10 +3111,10 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeClientFromRole
-      summary: Unassign a client from a role
+      operationId: removeRoleFromClient
+      summary: Unassign a role from a client
       description: |
-        Unassigns a client from a role.
+        Unassigns a role from a client.
       parameters:
         - name: roleId
           in: path
@@ -3130,7 +3130,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The client was unassigned successfully from the role.
+          description: The role was unassigned successfully from the client.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3180,10 +3180,10 @@ paths:
     put:
       tags:
         - Role
-      operationId: addGroupToRole
-      summary: Assign a group to a role
+      operationId: addRoleToGroup
+      summary: Assign a role to a group
       description: |
-        Assigns a group to a role.
+        Assigns a role to a group.
       parameters:
         - name: roleId
           in: path
@@ -3199,7 +3199,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The group was assigned successfully to the role.
+          description: The role was assigned successfully to the group.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3211,7 +3211,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The group with the given ID is already assigned to the role.
+          description: The role is already assigned to the group with the given ID.
           content:
             application/problem+json:
               schema:
@@ -3221,10 +3221,10 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeGroupFromRole
-      summary: Unassign a group from a role
+      operationId: removeRoleFromGroup
+      summary: Unassign a role from a group
       description: |
-        Unassigns a group from a role.
+        Unassigns a role from a group.
       parameters:
         - name: roleId
           in: path
@@ -3240,7 +3240,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The group was unassigned successfully from the role.
+          description: The role was unassigned successfully from the group.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3260,7 +3260,7 @@ paths:
       operationId: searchGroupsForRole
       summary: Search role groups
       description: |
-        Search groups assigned to a role.
+        Search groups with assigned role.
       parameters:
         - name: roleId
           in: path
@@ -3276,7 +3276,7 @@ paths:
               $ref: "#/components/schemas/RoleGroupSearchQueryRequest"
       responses:
         "200":
-          description: The groups assigned to the role.
+          description: The groups with assigned role.
           content:
             application/json:
               schema:
@@ -3299,10 +3299,10 @@ paths:
     put:
       tags:
         - Role
-      operationId: addMappingRuleToRole
-      summary: Assign a mapping rule to a role
+      operationId: addRoleToMappingRule
+      summary: Assign a role to a mapping rule
       description: |
-        Assigns a mapping rule to a role.
+        Assigns a role to a mapping rule.
       parameters:
         - name: roleId
           in: path
@@ -3318,7 +3318,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The mapping rule was assigned successfully to the role.
+          description: The role was assigned successfully to the mapping rule.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3330,7 +3330,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: The mapping rule with the given ID is already assigned to the role.
+          description: The role is already assigned to the mapping rule with the given ID.
           content:
             application/problem+json:
               schema:
@@ -3340,10 +3340,10 @@ paths:
     delete:
       tags:
         - Role
-      operationId: removeMappingRuleFromRole
-      summary: Unassign a mapping from a role
+      operationId: removeRoleFromMappingRule
+      summary: Unassign a role from a mapping rule
       description: |
-        Unassigns a mapping from a role.
+        Unassigns a role from a mapping rule.
       parameters:
         - name: roleId
           in: path
@@ -3359,7 +3359,7 @@ paths:
             type: string
       responses:
         "202":
-          description: The mapping rule was unassigned successfully from the role.
+          description: The role was unassigned successfully from the mapping rule.
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -3379,7 +3379,7 @@ paths:
       operationId: searchMappingRulesForRole
       summary: Search role mapping rules
       description: |
-        Search mapping rules assigned to a role.
+        Search mapping rules with assigned role.
       parameters:
         - name: roleId
           in: path
@@ -3395,7 +3395,7 @@ paths:
               $ref: "#/components/schemas/MappingRuleSearchQueryRequest"
       responses:
         "200":
-          description: The mapping rules assigned to the role.
+          description: The mapping rules with assigned role.
           content:
             application/json:
               schema:
@@ -3592,7 +3592,7 @@ paths:
       operationId: searchMappingRulesForGroup
       summary: Search group mapping rules
       description: |
-        Search mapping rules to a group.
+        Search mapping rules assigned to a group.
       parameters:
         - name: groupId
           in: path
@@ -4396,7 +4396,7 @@ paths:
             type: string
         - name: contentHash
           in: query
-          required: false
+          required: true
           schema:
             type: string
           description: >
@@ -4481,7 +4481,7 @@ paths:
             type: string
         - name: contentHash
           in: query
-          required: false
+          required: true
           schema:
             type: string
           description: >
@@ -5098,7 +5098,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}:
+  /batch-operations/{batchOperationKey}:
     get:
       tags:
         - Batch operation
@@ -5106,7 +5106,7 @@ paths:
       summary: Get batch operation
       description: Get batch operation by key.
       parameters:
-        - name: batchOperationId
+        - name: batchOperationKey
           in: path
           required: true
           description: |
@@ -5164,7 +5164,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/cancellation:
+  /batch-operations/{batchOperationKey}/cancellation:
     put:
       tags:
         - Batch operation
@@ -5172,9 +5172,9 @@ paths:
       summary: Cancel Batch operation
       description: |
         Cancels a running batch operation.
-        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       parameters:
-        - name: batchOperationId
+        - name: batchOperationKey
           in: path
           required: true
           description: |
@@ -5205,7 +5205,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/suspension:
+  /batch-operations/{batchOperationKey}/suspension:
     put:
       tags:
         - Batch operation
@@ -5213,9 +5213,9 @@ paths:
       summary: Suspend Batch operation
       description: |
         Suspends a running batch operation.
-        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       parameters:
-        - name: batchOperationId
+        - name: batchOperationKey
           in: path
           required: true
           description: |
@@ -5246,7 +5246,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/resumption:
+  /batch-operations/{batchOperationKey}/resumption:
     put:
       tags:
         - Batch operation
@@ -5254,9 +5254,9 @@ paths:
       summary: Resume Batch operation
       description: |
         Resumes a suspended batch operation.
-        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       parameters:
-        - name: batchOperationId
+        - name: batchOperationKey
           in: path
           required: true
           description: |
@@ -5529,8 +5529,13 @@ components:
           type: string
           description: The state of the user task.
           enum:
+            - CREATING
             - CREATED
+            - ASSIGNING
+            - UPDATING
+            - COMPLETING
             - COMPLETED
+            - CANCELING
             - CANCELED
             - FAILED
         assignee:
@@ -5632,8 +5637,13 @@ components:
           type: string
           description: The state of the user task.
           enum:
+            - CREATING
             - CREATED
+            - ASSIGNING
+            - UPDATING
+            - COMPLETING
             - COMPLETED
+            - CANCELING
             - CANCELED
             - FAILED
         assignee:
@@ -5859,6 +5869,12 @@ components:
         name:
           description: Name of this process definition.
           type: string
+        isLatestVersion:
+          description: >
+            Whether to only return the latest version of each process definition.
+            When using this filter, pagination functionality is limited, you can only paginate forward using `after` and `limit`.
+            The response contains no `startCursor` in the `page`, and requests ignore the `from` and `before` in the `page`.
+          type: boolean
         resourceName:
           description: Resource name of this process definition.
           type: string
@@ -7079,7 +7095,7 @@ components:
         messageSubscriptionKey:
           description: The message subscription key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         processDefinitionId:
           description: The process definition ID associated with this message subscription.
           allOf:
@@ -7091,7 +7107,7 @@ components:
         processInstanceKey:
           description: The process instance key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         elementId:
           description: The element ID associated with this message subscription.
           allOf:
@@ -7099,7 +7115,7 @@ components:
         elementInstanceKey:
           description: The element instance key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         messageSubscriptionType:
           description: The message subscription type.
           allOf:
@@ -8599,6 +8615,10 @@ components:
             The unique key identifying the associated task, unique within the scope of the
             process instance.
           type: string
+        kind:
+          $ref: "#/components/schemas/JobKindEnum"
+        listenerEventType:
+          $ref: "#/components/schemas/JobListenerEventTypeEnum"
         userTask:
           $ref: "#/components/schemas/UserTaskProperties"
     UserTaskProperties:
@@ -9232,7 +9252,7 @@ components:
           format: int64
         hasMoreTotalItems:
           description: |
-            Indicates if more results exist beyond the reported totalItems value. If ElasticSearch or OpenSearch is used, the totalItems value is capped at 10,000 due to search limitations. This field is true if additional results exist beyond this cap; otherwise, it is false.
+            Indicates if more results exist beyond the reported totalItems value. Due to system limitations, the totalItems value can be capped.
           type: boolean
         startCursor:
           description: The cursor value for getting the previous page of results. Use this in the `before` field of an ensuing request.
@@ -10399,8 +10419,8 @@ components:
     BatchOperationCreatedResult:
       type: object
       properties:
-        batchOperationId:
-          description: Id of the batch operation.
+        batchOperationKey:
+          description: Key of the batch operation.
           type: string
         batchOperationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
@@ -10411,7 +10431,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - batchOperationId
+            - batchOperationKey
             - operationType
             - state
             - startDate
@@ -10439,7 +10459,7 @@ components:
       description: Batch operation filter request.
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: The key (or operate legacy ID) of the batch operation.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
@@ -10524,7 +10544,7 @@ components:
         - ACTIVE
         - SUSPENDED
         - COMPLETED
-        - COMPLETED_WITH_ERRORS
+        - PARTIALLY_COMPLETED
         - CANCELED
         - INCOMPLETED
     BatchOperationItemSearchQuerySortRequest:
@@ -10534,7 +10554,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - batchOperationId
+            - batchOperationKey
             - itemKey
             - processInstanceKey
             - state
@@ -10561,7 +10581,7 @@ components:
       description: Batch operation item filter request.
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: The key (or operate legacy ID) of the batch operation.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
@@ -10631,7 +10651,7 @@ components:
     BatchOperationResponse:
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: Key or (Operate Legacy ID = UUID) of the batch operation.
           type: string
         state:
@@ -10642,7 +10662,7 @@ components:
             - ACTIVE
             - SUSPENDED
             - COMPLETED
-            - COMPLETED_WITH_ERRORS
+            - PARTIALLY_COMPLETED
             - CANCELED
             - INCOMPLETED
         batchOperationType:
@@ -10657,16 +10677,36 @@ components:
           format: date-time
         operationsTotalCount:
           type: integer
-          description: The total number of items contained in this stacking process.
+          description: The total number of items contained in this batch operation.
           format: int32
         operationsFailedCount:
           type: integer
-          description: The number of items which failed during execution of the batch operation. (e.g. because they are rejected by the machine)
+          description: The number of items which failed during execution of the batch operation. (e.g. because they are rejected by the Zeebe engine).
           format: int32
         operationsCompletedCount:
           type: integer
           description: The number of successfully completed tasks.
           format: int32
+        errors:
+          description: The errors that occurred per partition during the batch operation.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationError"
+    BatchOperationError:
+      type: object
+      properties:
+        partitionId:
+          description: The partition ID where the error occurred.
+          type: integer
+          format: int32
+        type:
+          description: The type of the error that occurred during the batch operation.
+          type: string
+          enum:
+            - QUERY_FAILED
+        message:
+          description: The error message that occurred during the batch operation.
+          type: string
     BatchOperationItemSearchQueryResult:
       type: object
       allOf:
@@ -10680,7 +10720,7 @@ components:
     BatchOperationItemResponse:
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: The key (or operate legacy ID) of the batch operation.
           type: string
         itemKey:
@@ -10698,7 +10738,7 @@ components:
             - CANCELED
             - FAILED
         processedDate:
-          description: the date this item was processed. This can be either completed, canceled or failed.
+          description: the date this item was processed.
           type: string
           format: date-time
         errorMessage:

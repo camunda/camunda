@@ -7,13 +7,13 @@
  */
 
 import {mockServer} from 'modules/mock-server/node';
-import {DefaultBodyType, RestRequest, rest} from 'msw';
+import {type DefaultBodyType, delay, http, HttpResponse} from 'msw';
 
 const checkPollingHeader = ({
   req,
   expectPolling,
 }: {
-  req: RestRequest;
+  req: Request;
   expectPolling?: boolean;
 }) => {
   if (req.headers.get('x-is-polling') !== null && expectPolling === false) {
@@ -39,44 +39,66 @@ const mockPostRequest = function <Type extends DefaultBodyType>(url: string) {
      */
     withSuccess: (
       responseData: Type,
-      options?: {expectPolling?: boolean; mockResolverFn?: jest.Mock},
+      options?: {
+        expectPolling?: boolean;
+        mockResolverFn?: ReturnType<typeof vi.fn>;
+      },
     ) => {
       mockServer.use(
-        rest.post(url, (req, res, ctx) => {
-          options?.mockResolverFn?.();
-          checkPollingHeader({req, expectPolling: options?.expectPolling});
-          return res.once(ctx.json(responseData));
-        }),
+        http.post(
+          url,
+          ({request}) => {
+            options?.mockResolverFn?.();
+            checkPollingHeader({
+              req: request,
+              expectPolling: options?.expectPolling,
+            });
+            return HttpResponse.json(responseData);
+          },
+          {once: true},
+        ),
       );
     },
     withServerError: (statusCode: number = 500) => {
       mockServer.use(
-        rest.post(url, (_, res, ctx) =>
-          res.once(
-            ctx.status(statusCode),
-            ctx.json({error: 'an error occurred'}),
-          ),
+        http.post(
+          url,
+          () =>
+            HttpResponse.json(
+              {error: 'an error occurred'},
+              {status: statusCode},
+            ),
+          {once: true},
         ),
       );
     },
     withDelayedServerError: (statusCode: number = 500) => {
       mockServer.use(
-        rest.post(url, (_, res, ctx) =>
-          res.once(
-            ctx.delay(100),
-            ctx.status(statusCode),
-            ctx.json({error: 'an error occurred'}),
-          ),
+        http.post(
+          url,
+          async () => {
+            await delay(100);
+            return HttpResponse.json(
+              {error: 'an error occurred'},
+              {status: statusCode},
+            );
+          },
+          {once: true},
         ),
       );
     },
     withNetworkError: () => {
-      mockServer.use(rest.post(url, (_, res) => res.networkError('')));
+      mockServer.use(http.post(url, () => HttpResponse.error()));
     },
     withDelay: (responseData: Type) => {
       mockServer.use(
-        rest.post(url, (_, res, ctx) =>
-          res.once(ctx.delay(100), ctx.json(responseData)),
+        http.post(
+          url,
+          async () => {
+            await delay(100);
+            return HttpResponse.json(responseData);
+          },
+          {once: true},
         ),
       );
     },
@@ -94,40 +116,59 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
      */
     withSuccess: (responseData: Type, options?: {expectPolling?: boolean}) => {
       mockServer.use(
-        rest.get(url, (req, res, ctx) => {
-          checkPollingHeader({req, expectPolling: options?.expectPolling});
-          return res.once(ctx.json(responseData));
-        }),
+        http.get(
+          url,
+          ({request}) => {
+            checkPollingHeader({
+              req: request,
+              expectPolling: options?.expectPolling,
+            });
+            return HttpResponse.json(responseData);
+          },
+          {once: true},
+        ),
       );
     },
     withServerError: (statusCode: number = 500) => {
       mockServer.use(
-        rest.get(url, (_, res, ctx) =>
-          res.once(
-            ctx.status(statusCode),
-            ctx.json({error: 'an error occurred'}),
-          ),
+        http.get(
+          url,
+          () =>
+            HttpResponse.json(
+              {error: 'an error occurred'},
+              {status: statusCode},
+            ),
+          {once: true},
         ),
       );
     },
     withDelayedServerError: (statusCode: number = 500) => {
       mockServer.use(
-        rest.get(url, (_, res, ctx) =>
-          res.once(
-            ctx.delay(100),
-            ctx.status(statusCode),
-            ctx.json({error: 'an error occurred'}),
-          ),
+        http.get(
+          url,
+          async () => {
+            await delay(100);
+            return HttpResponse.json(
+              {error: 'an error occurred'},
+              {status: statusCode},
+            );
+          },
+          {once: true},
         ),
       );
     },
     withNetworkError: () => {
-      mockServer.use(rest.get(url, (_, res) => res.networkError('')));
+      mockServer.use(http.get(url, () => HttpResponse.error()));
     },
     withDelay: (responseData: Type) => {
       mockServer.use(
-        rest.get(url, (_, res, ctx) =>
-          res.once(ctx.delay(100), ctx.json(responseData)),
+        http.get(
+          url,
+          async () => {
+            await delay(100);
+            return HttpResponse.json(responseData);
+          },
+          {once: true},
         ),
       );
     },
@@ -138,26 +179,34 @@ const mockDeleteRequest = function <Type extends DefaultBodyType>(url: string) {
   return {
     withSuccess: (responseData: Type) => {
       mockServer.use(
-        rest.delete(url, (_, res, ctx) => res.once(ctx.json(responseData))),
+        http.delete(url, () => HttpResponse.json(responseData), {once: true}),
       );
     },
     withServerError: (statusCode: number = 500) => {
       mockServer.use(
-        rest.delete(url, (_, res, ctx) =>
-          res.once(
-            ctx.status(statusCode),
-            ctx.json({error: 'an error occurred'}),
-          ),
+        http.delete(
+          url,
+          () =>
+            HttpResponse.json(
+              {error: 'an error occurred'},
+              {status: statusCode},
+            ),
+          {once: true},
         ),
       );
     },
     withNetworkError: () => {
-      mockServer.use(rest.delete(url, (_, res) => res.networkError('')));
+      mockServer.use(http.delete(url, () => HttpResponse.error()));
     },
     withDelay: (responseData: Type) => {
       mockServer.use(
-        rest.delete(url, (_, res, ctx) =>
-          res.once(ctx.delay(100), ctx.json(responseData)),
+        http.delete(
+          url,
+          async () => {
+            await delay(100);
+            return HttpResponse.json(responseData);
+          },
+          {once: true},
         ),
       );
     },
@@ -168,23 +217,30 @@ const mockXmlGetRequest = (url: string) => {
   return {
     withSuccess: (initialValue: string) => {
       mockServer.use(
-        rest.get(url, (_, res, ctx) => res.once(ctx.text(initialValue))),
+        http.get(url, () => HttpResponse.text(initialValue), {once: true}),
       );
     },
     withServerError: (statusCode: number = 500) => {
       mockServer.use(
-        rest.get(url, (_, res, ctx) =>
-          res.once(ctx.status(statusCode), ctx.text('an error occurred')),
+        http.get(
+          url,
+          () => HttpResponse.text('an error occurred', {status: statusCode}),
+          {once: true},
         ),
       );
     },
     withNetworkError: () => {
-      mockServer.use(rest.get(url, (_, res) => res.networkError('')));
+      mockServer.use(http.get(url, () => HttpResponse.error()));
     },
     withDelay: (initialValue: string) => {
       mockServer.use(
-        rest.get(url, (_, res, ctx) =>
-          res.once(ctx.delay(100), ctx.text(initialValue)),
+        http.get(
+          url,
+          async () => {
+            await delay(100);
+            return HttpResponse.text(initialValue);
+          },
+          {once: true},
         ),
       );
     },

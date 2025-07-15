@@ -21,6 +21,14 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 
+/**
+ * Abstract base class for handling the status of batch operation items. Subclasses of this class
+ * should listen to zeebe records issued after a successful execution of a single item operation
+ * command or when one of these commands is rejected. For each batch operation type one subclass
+ * handler should exist overriding the <code>isCompleted()</code> or <code>isFailed()</code> method.
+ *
+ * @param <T> the type of the record value handled by this operation status handler
+ */
 public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordValue>
     implements RdbmsExportHandler<T> {
   public static final String ERROR_MSG = "%s: %s";
@@ -67,6 +75,20 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
     }
   }
 
+  /**
+   * Checks if the record is relevant for the batch operation type handled by this handler. The
+   * record is relevant, when the operationType of the overall batch operation is the same as the
+   * monitored batch operation type of this record.<br>
+   * <br>
+   * This needs to be checked, because the <code>Record.getBatchOperationReference()</code> is
+   * present for all follow-up records of the actual operation command and not just the direct
+   * response record. E.g. an incident present on a canceled process instance is also resolved
+   * during the cancellation and the appended <code>Incident.RESOLVED</code> also has a valid
+   * batchOperationReference.
+   *
+   * @param record the record to check for relevance
+   * @return true if the record is relevant, otherwise false
+   */
   boolean isRelevantForBatchOperation(final Record<T> record) {
     final var cachedEntity =
         batchOperationCache.get(String.valueOf(record.getBatchOperationReference()));
@@ -78,8 +100,20 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
         .isPresent();
   }
 
+  /**
+   * Extract the operation itemKey from the record.
+   *
+   * @param record the record
+   * @return the item key
+   */
   abstract long getItemKey(Record<T> record);
 
+  /**
+   * Extract the process instance key from the record.
+   *
+   * @param record the record
+   * @return the process instance key
+   */
   abstract long getProcessInstanceKey(Record<T> record);
 
   /** Checks if the batch operation item is completed */

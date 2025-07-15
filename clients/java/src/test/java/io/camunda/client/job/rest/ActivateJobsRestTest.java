@@ -23,12 +23,17 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsComman
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ActivateJobsResponse;
+import io.camunda.client.api.search.enums.JobKind;
+import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.protocol.rest.ActivatedJobResult;
 import io.camunda.client.protocol.rest.JobActivationRequest;
 import io.camunda.client.protocol.rest.JobActivationResult;
+import io.camunda.client.protocol.rest.JobKindEnum;
+import io.camunda.client.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.protocol.rest.UserTaskProperties;
 import io.camunda.client.util.ClientRestTest;
@@ -64,7 +69,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .retries(34)
             .deadline(1231L)
             .variables(singletonMap("key", "val"))
-            .tenantId("test-tenant-1");
+            .tenantId("test-tenant-1")
+            .kind(JobKindEnum.BPMN_ELEMENT)
+            .listenerEventType(JobListenerEventTypeEnum.START);
 
     final ActivatedJobResult activatedJob2 =
         new ActivatedJobResult()
@@ -81,7 +88,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             .retries(334)
             .deadline(3131L)
             .variables(singletonMap("bar", 3))
-            .tenantId("test-tenant-2");
+            .tenantId("test-tenant-2")
+            .kind(JobKindEnum.BPMN_ELEMENT)
+            .listenerEventType(JobListenerEventTypeEnum.END);
 
     gatewayService.onActivateJobsRequest(
         new JobActivationResult().addJobsItem(activatedJob1).addJobsItem(activatedJob2));
@@ -121,6 +130,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(job.getVariablesAsMap()).isEqualTo(activatedJob1.getVariables());
     assertThat(job.getUserTask()).isNull();
     assertThat(job.getTenantId()).isEqualTo(activatedJob1.getTenantId());
+    assertThat(job.getKind()).isEqualTo(EnumUtil.convert(activatedJob1.getKind(), JobKind.class));
+    assertThat(job.getListenerEventType())
+        .isEqualTo(EnumUtil.convert(activatedJob1.getListenerEventType(), ListenerEventType.class));
 
     job = response.getJobs().get(1);
     assertThat(String.valueOf(job.getKey())).isEqualTo(activatedJob2.getJobKey());
@@ -142,6 +154,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(job.getVariablesAsMap()).isEqualTo(activatedJob2.getVariables());
     assertThat(job.getUserTask()).isNull();
     assertThat(job.getTenantId()).isEqualTo(activatedJob2.getTenantId());
+    assertThat(job.getKind()).isEqualTo(EnumUtil.convert(activatedJob2.getKind(), JobKind.class));
+    assertThat(job.getListenerEventType())
+        .isEqualTo(EnumUtil.convert(activatedJob2.getListenerEventType(), ListenerEventType.class));
 
     final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
     assertThat(request.getType()).isEqualTo("foo");

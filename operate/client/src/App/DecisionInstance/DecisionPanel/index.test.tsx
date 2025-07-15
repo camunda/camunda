@@ -21,6 +21,20 @@ import {useEffect} from 'react';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 
+vi.mock('modules/components/DecisionViewer', () => ({
+  DecisionViewer: vi.fn(
+    ({decisionViewId}: {decisionViewId: string | undefined}) => {
+      if (decisionViewId === 'invoiceClassification') {
+        return <div>DecisionTable view mock</div>;
+      } else if (decisionViewId === 'calc-key-figures') {
+        return <div>LiteralExpression view mock</div>;
+      } else {
+        return <div>Default View mock</div>;
+      }
+    },
+  ),
+}));
+
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {

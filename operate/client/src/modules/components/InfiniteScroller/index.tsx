@@ -17,7 +17,7 @@ type Props = {
   children: React.ReactElement<ChildProps>;
   onVerticalScrollStartReach?: (scrollUp: (distance: number) => void) => void;
   onVerticalScrollEndReach?: (scrollDown: (distance: number) => void) => void;
-  scrollableContainerRef: React.RefObject<HTMLElement>;
+  scrollableContainerRef: React.RefObject<HTMLElement | null>;
 };
 
 const InfiniteScroller: React.FC<Props> = ({

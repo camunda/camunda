@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
 import {getStatisticsByFlowNode} from 'modules/utils/statistics/flownodeInstances';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
 const totalRunningInstancesForFlowNodeParser =

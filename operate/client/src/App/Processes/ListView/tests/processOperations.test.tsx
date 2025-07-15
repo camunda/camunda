@@ -19,11 +19,9 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 
 describe('<ListView /> - operations', () => {
-  const originalWindow = {...window};
-  const locationSpy = jest.spyOn(window, 'location', 'get');
-
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
@@ -36,19 +34,18 @@ describe('<ListView /> - operations', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchBatchOperations().withSuccess(operations);
-  });
-
-  afterEach(() => {
-    locationSpy.mockClear();
+    mockFetchProcessInstancesStatistics().withSuccess({
+      items: [],
+    });
   });
 
   it('should show delete button when version is selected', async () => {
     const queryString = '?process=demoProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     render(<ListView />, {
       wrapper: createWrapper(`/processes${queryString}`),
@@ -62,7 +59,7 @@ describe('<ListView /> - operations', () => {
       await screen.findByRole('heading', {
         name: 'Process Instances',
       }),
-    );
+    ).toBeInTheDocument();
     expect(
       await screen.findByRole('button', {
         name: /^delete process definition "new demo process - version 1"$/i,
@@ -82,7 +79,7 @@ describe('<ListView /> - operations', () => {
       await screen.findByRole('heading', {
         name: 'Process Instances',
       }),
-    );
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
@@ -93,10 +90,10 @@ describe('<ListView /> - operations', () => {
   it('should not show delete button when no version is selected', async () => {
     const queryString = '?process=demoProcess';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     render(<ListView />, {
       wrapper: createWrapper(`/processes${queryString}`),
@@ -109,7 +106,7 @@ describe('<ListView /> - operations', () => {
       await screen.findByRole('heading', {
         name: 'Process Instances',
       }),
-    );
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {
         name: /delete process definition/i,
@@ -120,10 +117,10 @@ describe('<ListView /> - operations', () => {
   it('should show delete button when user has resource based permissions', async () => {
     const queryString = '?process=demoProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     authenticationStore.setUser({
       displayName: 'demo',
@@ -144,16 +141,18 @@ describe('<ListView /> - operations', () => {
         name: /delete process definition/i,
       }),
     ).toBeInTheDocument();
-    expect(await screen.findByRole('button', {name: 'Zoom in diagram'}));
+    expect(
+      await screen.findByRole('button', {name: 'Zoom in diagram'}),
+    ).toBeInTheDocument();
   });
 
   it('should not show delete button when user has no resource based permissions', async () => {
     const queryString = '?process=demoProcess&version=1';
 
-    locationSpy.mockImplementation(() => ({
-      ...originalWindow.location,
+    vi.stubGlobal('location', {
+      ...window.location,
       search: queryString,
-    }));
+    });
 
     authenticationStore.setUser({
       displayName: 'demo',
@@ -165,9 +164,9 @@ describe('<ListView /> - operations', () => {
       tenants: [],
     });
 
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
-    };
+    });
 
     render(<ListView />, {
       wrapper: createWrapper(`/processes${queryString}`),
@@ -178,7 +177,5 @@ describe('<ListView /> - operations', () => {
         name: /delete process definition/i,
       }),
     ).not.toBeInTheDocument();
-
-    window.clientConfig = undefined;
   });
 });

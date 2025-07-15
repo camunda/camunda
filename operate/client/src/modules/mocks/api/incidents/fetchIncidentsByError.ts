@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {IncidentByErrorDto} from 'modules/api/incidents/fetchIncidentsByError';
+import type {IncidentByErrorDto} from 'modules/api/incidents/fetchIncidentsByError';
 import {mockGetRequest} from '../mockRequest';
 
 const mockFetchIncidentsByError = () =>

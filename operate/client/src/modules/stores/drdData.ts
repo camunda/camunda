@@ -9,7 +9,7 @@
 import {
   action,
   computed,
-  IReactionDisposer,
+  type IReactionDisposer,
   makeObservable,
   observable,
   override,
@@ -17,10 +17,14 @@ import {
 } from 'mobx';
 import {
   fetchDrdData,
-  DrdDataDto,
+  type DrdDataDto,
 } from 'modules/api/decisionInstances/fetchDrdData';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
+import type {
+  DecisionInstanceEntity,
+  DecisionInstanceEntityState,
+} from 'modules/types/operate';
 
 type DecisionStateOverlay = {
   state: DecisionInstanceEntityState;
@@ -68,7 +72,7 @@ class Drd extends NetworkReconnectionHandler {
       (decisionDefinitionId) => {
         if (decisionDefinitionId !== undefined) {
           this.fetchDrdData(
-            decisionInstanceDetailsStore.state.decisionInstanceId,
+            decisionInstanceDetailsStore.state.decisionInstanceId!,
           );
         }
       },
@@ -92,7 +96,7 @@ class Drd extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
   };
 

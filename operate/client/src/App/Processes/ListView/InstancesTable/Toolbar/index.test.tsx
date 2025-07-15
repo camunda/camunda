@@ -35,7 +35,7 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('<ProcessOperations />', () => {
-  it('should not display toolbar if selected instances count is 0 ', async () => {
+  it('should not display toolbar if selected instances count is 0', async () => {
     render(<Toolbar selectedInstancesCount={0} />, {wrapper: Wrapper});
 
     expect(screen.queryByText(/items selected/i)).not.toBeInTheDocument();
@@ -56,13 +56,13 @@ describe('<ProcessOperations />', () => {
     });
 
     expect(screen.getAllByRole('button', {name: 'Cancel'}).length).toBe(2);
-    expect(screen.getByRole('button', {name: 'Retry'}));
-    expect(screen.getByRole('button', {name: 'Discard'}));
-    expect(screen.getByText('1 item selected'));
+    expect(screen.getByRole('button', {name: 'Retry'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Discard'})).toBeInTheDocument();
+    expect(screen.getByText('1 item selected')).toBeInTheDocument();
 
     rerender(<Toolbar selectedInstancesCount={10} />);
 
-    expect(screen.getByText('10 items selected'));
+    expect(screen.getByText('10 items selected')).toBeInTheDocument();
   });
 
   it('should disable cancel and retry in batch modification mode', async () => {

@@ -28,6 +28,7 @@ import io.camunda.client.CamundaClientCloudBuilderStep1;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
+import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4.CamundaClientCloudBuilderStep5;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
@@ -47,12 +48,12 @@ public class CamundaClientCloudBuilderImpl
     implements CamundaClientCloudBuilderStep1,
         CamundaClientCloudBuilderStep2,
         CamundaClientCloudBuilderStep3,
-        CamundaClientCloudBuilderStep4 {
+        CamundaClientCloudBuilderStep4,
+        CamundaClientCloudBuilderStep5 {
 
-  private static final String BASE_ADDRESS = "zeebe.camunda.io";
-  private static final String BASE_AUTH_URL = "https://login.cloud.camunda.io/oauth/token";
-
+  private static final String DEFAULT_DOMAIN = "camunda.io";
   private static final String DEFAULT_REGION = "bru-2";
+  private static final String ZEEBE_DOMAIN_COMPONENT = "zeebe";
 
   private final CamundaClientBuilderImpl innerBuilder = new CamundaClientBuilderImpl();
 
@@ -60,6 +61,7 @@ public class CamundaClientCloudBuilderImpl
   private String clientId;
   private String clientSecret;
   private String region = DEFAULT_REGION;
+  private String domain = DEFAULT_DOMAIN;
 
   @Override
   public CamundaClientCloudBuilderStep2 withClusterId(final String clusterId) {
@@ -80,8 +82,14 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
-  public CamundaClientCloudBuilderStep4 withRegion(final String region) {
+  public CamundaClientCloudBuilderStep5 withRegion(final String region) {
     this.region = region;
+    return this;
+  }
+
+  @Override
+  public CamundaClientCloudBuilderStep5 withDomain(final String domain) {
+    this.domain = domain;
     return this;
   }
 
@@ -312,7 +320,8 @@ public class CamundaClientCloudBuilderImpl
     if (isNeedToSetCloudRestAddress()) {
       ensureNotNull("cluster id", clusterId);
       final String cloudRestAddress =
-          String.format("https://%s.zeebe.%s:443/%s", region, BASE_ADDRESS, clusterId);
+          String.format(
+              "https://%s.%s.%s:443/%s", region, ZEEBE_DOMAIN_COMPONENT, domain, clusterId);
       return getURIFromString(cloudRestAddress);
     } else {
       Loggers.LOGGER.debug(
@@ -327,7 +336,8 @@ public class CamundaClientCloudBuilderImpl
     if (isNeedToSetCloudGrpcAddress() && isNeedToSetCloudGatewayAddress()) {
       ensureNotNull("cluster id", clusterId);
       final String cloudGrpcAddress =
-          String.format("https://%s.%s.%s:443", clusterId, region, BASE_ADDRESS);
+          String.format(
+              "https://%s.%s.%s.%s:443", clusterId, region, ZEEBE_DOMAIN_COMPONENT, domain);
       return getURIFromString(cloudGrpcAddress);
     } else {
       if (!isNeedToSetCloudGrpcAddress()) {
@@ -358,10 +368,10 @@ public class CamundaClientCloudBuilderImpl
         Loggers.LOGGER.debug("Expected setting 'usePlaintext' to be 'false', but found 'true'.");
       }
       return builder
-          .audience(String.format("%s.%s.%s", clusterId, region, BASE_ADDRESS))
+          .audience(String.format("%s.%s", ZEEBE_DOMAIN_COMPONENT, domain))
           .clientId(clientId)
           .clientSecret(clientSecret)
-          .authorizationServerUrl(BASE_AUTH_URL)
+          .authorizationServerUrl(String.format("https://login.cloud.%s/oauth/token", domain))
           .build();
     } else {
       Loggers.LOGGER.debug(

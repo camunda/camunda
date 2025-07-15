@@ -27,16 +27,12 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 
-jest.mock('modules/hooks/useFilters');
-jest.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useFilters');
+vi.mock('modules/hooks/useProcessInstancesFilters');
 
 describe('Target Diagram', () => {
   beforeEach(() => {
-    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
   });
 
   it('should display initial state in the diagram header and diagram panel', async () => {
@@ -133,9 +129,15 @@ describe('Target Diagram', () => {
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: /reset diagram zoom/i}));
-    expect(screen.getByRole('button', {name: /zoom in diagram/i}));
-    expect(screen.getByRole('button', {name: /zoom out diagram/i}));
+    expect(
+      screen.getByRole('button', {name: /reset diagram zoom/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /zoom in diagram/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /zoom out diagram/i}),
+    ).toBeInTheDocument();
 
     mockFetchProcessDefinitionXml().withDelay(
       mockProcessWithInputOutputMappingsXML,
@@ -147,7 +149,7 @@ describe('Target Diagram', () => {
     expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('diagram-spinner'),
+      screen.queryByTestId('diagram-spinner'),
     );
   });
 

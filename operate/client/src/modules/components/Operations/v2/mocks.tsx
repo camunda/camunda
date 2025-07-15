@@ -13,7 +13,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';

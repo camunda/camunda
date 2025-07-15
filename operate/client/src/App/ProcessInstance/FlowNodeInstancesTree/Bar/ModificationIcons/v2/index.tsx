@@ -9,7 +9,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Container, AddIcon, CancelIcon, WarningIcon} from '../styled';
-import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {type FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {Stack} from '@carbon/react';
 import {useModificationsByFlowNode} from 'modules/hooks/modifications';
 import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';

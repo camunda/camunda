@@ -27,13 +27,13 @@ import org.apache.hc.client5.http.config.RequestConfig;
 /** Implementation of the command to cancel a batch operation. */
 public final class CancelBatchOperationCommandImpl implements CancelBatchOperationStep1 {
 
-  private final String batchOperationOd;
+  private final String batchOperationKey;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public CancelBatchOperationCommandImpl(
-      final HttpClient httpClient, final String batchOperationId) {
-    this.batchOperationOd = batchOperationId;
+      final HttpClient httpClient, final String batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
@@ -48,7 +48,7 @@ public final class CancelBatchOperationCommandImpl implements CancelBatchOperati
   public CamundaFuture<Void> send() {
     final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>();
     httpClient.put(
-        "/batch-operations/" + batchOperationOd + "/cancellation",
+        "/batch-operations/" + batchOperationKey + "/cancellation",
         null,
         httpRequestConfig.build(),
         result);

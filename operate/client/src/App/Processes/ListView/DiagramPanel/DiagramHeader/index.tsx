@@ -31,7 +31,7 @@ type DiagramHeaderProps = {
   processDefinitionId?: string;
   tenant?: string;
   isVersionSelected: boolean;
-  panelHeaderRef?: React.RefObject<HTMLDivElement>;
+  panelHeaderRef?: React.RefObject<HTMLDivElement | null>;
 };
 
 const DiagramHeader: React.FC<DiagramHeaderProps> = observer(

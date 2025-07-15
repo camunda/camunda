@@ -13,8 +13,6 @@ import {
 } from 'modules/testUtils/dateTimeRange';
 import {getWrapper, MockDateRangeField} from './mocks';
 
-jest.unmock('modules/utils/date/formatDate');
-
 describe('Date Range Field', () => {
   it('should close modal on cancel click', async () => {
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
@@ -99,8 +97,7 @@ describe('Date Range Field', () => {
     expect(screen.getByTestId('toTime')).toHaveValue('01:02:03');
   });
 
-  // Unskip when this bug on Carbon side is fixed: https://github.com/carbon-design-system/carbon/issues/16125
-  it.skip('should apply from and to dates', async () => {
+  it('should apply from and to dates', async () => {
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     await user.click(screen.getByLabelText('Start Date Range'));
@@ -146,7 +143,7 @@ describe('Date Range Field', () => {
   });
 
   it('should show validation error on invalid time format', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
     const TIME_ERROR = 'Time has to be in the format hh:mm:ss';
@@ -168,13 +165,13 @@ describe('Date Range Field', () => {
     expect(screen.queryByText(TIME_ERROR)).not.toBeInTheDocument();
     expect(screen.queryByText('Apply')).not.toBeDisabled();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(await screen.findByText(TIME_ERROR)).toBeInTheDocument();
     expect(screen.getByTestId('fromTime')).toBeInvalid();
     expect(screen.getByText('Apply')).toBeDisabled();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

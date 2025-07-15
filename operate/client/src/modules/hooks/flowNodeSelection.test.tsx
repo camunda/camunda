@@ -12,37 +12,32 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {useWillAllFlowNodesBeCanceled} from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
-describe('useWillAllFlowNodesBeCanceled', () => {
-  const getWrapper = (
-    initialEntries: React.ComponentProps<
-      typeof MemoryRouter
-    >['initialEntries'] = [Paths.processInstance('processId')],
-  ) => {
-    const Wrapper = ({children}: {children: React.ReactNode}) => {
-      return (
-        <ProcessDefinitionKeyContext.Provider value="123">
-          <QueryClientProvider client={getMockQueryClient()}>
-            <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-              <Routes>
-                <Route path={Paths.processInstance()} element={children} />
-              </Routes>
-            </MemoryRouter>
-          </QueryClientProvider>
-        </ProcessDefinitionKeyContext.Provider>
-      );
-    };
-    return Wrapper;
+const getWrapper = () => {
+  const Wrapper = ({children}: {children: React.ReactNode}) => {
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+            <Routes>
+              <Route path={Paths.processInstance()} element={children} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
   };
+  return Wrapper;
+};
 
+describe('useWillAllFlowNodesBeCanceled', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     modificationsStore.reset();
   });
 
@@ -91,6 +86,10 @@ describe('useWillAllFlowNodesBeCanceled', () => {
       },
     });
 
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
+
     const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
       wrapper: getWrapper(),
     });
@@ -119,6 +118,9 @@ describe('useWillAllFlowNodesBeCanceled', () => {
     };
 
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
       wrapper: getWrapper(),
@@ -148,6 +150,9 @@ describe('useWillAllFlowNodesBeCanceled', () => {
     };
 
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
       wrapper: getWrapper(),
@@ -158,6 +163,9 @@ describe('useWillAllFlowNodesBeCanceled', () => {
 
   it('should return false if there are no statistics', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
     const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
       wrapper: getWrapper(),

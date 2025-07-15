@@ -6,11 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
+import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
-import {OverlayData} from 'modules/bpmn-js/BpmnJS';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {OverlayData} from 'modules/bpmn-js/BpmnJS';
 import {
   ACTIVE_BADGE,
   CANCELED_BADGE,
@@ -22,7 +22,7 @@ import {
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
 import {flowNodeStatesParser} from './useFlowNodeStates';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
 const overlayPositions = {

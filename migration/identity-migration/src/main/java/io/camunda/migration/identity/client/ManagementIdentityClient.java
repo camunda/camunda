@@ -9,13 +9,11 @@ package io.camunda.migration.identity.client;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.dto.Authorization;
+import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
-import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
 import io.camunda.migration.identity.dto.Permission;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
-import io.camunda.migration.identity.dto.TenantMappingRule;
-import io.camunda.migration.identity.dto.UserTenants;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -23,12 +21,10 @@ import org.springframework.web.client.RestTemplate;
 
 public class ManagementIdentityClient {
 
-  private static final String URL_PARAMS = "pageSize={0}";
-  private static final String MIGRATION_TENANTS_ENDPOINT = "/api/migration/tenant?" + URL_PARAMS;
-  private static final String MIGRATION_USER_TENANTS_ENDPOINT =
-      "/api/migration/tenant/user?" + URL_PARAMS;
-  private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
-      "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
+  private static final String MIGRATION_TENANTS_ENDPOINT = "/api/tenants";
+  private static final String MIGRATION_USER_TENANTS_ENDPOINT = "/api/tenants/{0}/users";
+  private static final String MIGRATION_GROUP_TENANTS_ENDPOINT = "/api/tenants/{0}/groups";
+  private static final String MIGRATION_CLIENT_TENANTS_ENDPOINT = "/api/tenants/{0}/applications";
   private static final String MIGRATION_GROUPS_ENDPOINT = "/api/groups?page={0}&organizationId={1}";
   private static final String MIGRATION_GROUPS_ROLES_ENDPOINT = "/api/groups/{0}/roles";
   private static final String MIGRATION_GROUPS_AUTHORISATIONS_ENDPOINT =
@@ -43,6 +39,9 @@ public class ManagementIdentityClient {
   private static final String MIGRATION_USERS_ROLES_ENDPOINT = "/api/users/{0}/roles";
   private static final String MIGRATION_USERS_AUTHORIZATIONS_ENDPOINT =
       "/api/users/{0}/authorizations";
+  private static final String MIGRATION_CLIENTS_ENDPOINT = "/api/clients";
+  private static final String MIGRATION_CLIENTS_PERMISSIONS_ENDPOINT =
+      "/api/clients/{0}/permissions";
 
   private final String organizationId;
   private final RestTemplate restTemplate;
@@ -52,29 +51,33 @@ public class ManagementIdentityClient {
     this.organizationId = organizationId;
   }
 
-  public List<TenantMappingRule> fetchTenantMappingRules(final int pageSize) {
+  public List<Tenant> fetchTenants() {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(
-                    MIGRATION_MAPPING_RULE_ENDPOINT,
-                    TenantMappingRule[].class,
-                    pageSize,
-                    MappingRuleType.TENANT)))
+                restTemplate.getForObject(MIGRATION_TENANTS_ENDPOINT, Tenant[].class)))
         .toList();
   }
 
-  public List<UserTenants> fetchUserTenants(final int pageSize) {
+  public List<User> fetchTenantUsers(final String tenantId) {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(
-                    MIGRATION_USER_TENANTS_ENDPOINT, UserTenants[].class, pageSize)))
+                restTemplate.getForObject(MIGRATION_USER_TENANTS_ENDPOINT, User[].class, tenantId)))
         .toList();
   }
 
-  public List<Tenant> fetchTenants(final int pageSize) {
+  public List<Group> fetchTenantGroups(final String tenantId) {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(MIGRATION_TENANTS_ENDPOINT, Tenant[].class, pageSize)))
+                restTemplate.getForObject(
+                    MIGRATION_GROUP_TENANTS_ENDPOINT, Group[].class, tenantId)))
+        .toList();
+  }
+
+  public List<Client> fetchTenantClients(final String tenantId) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_CLIENT_TENANTS_ENDPOINT, Client[].class, tenantId)))
         .toList();
   }
 
@@ -151,6 +154,21 @@ public class ManagementIdentityClient {
             Objects.requireNonNull(
                 restTemplate.getForObject(
                     MIGRATION_USERS_AUTHORIZATIONS_ENDPOINT, Authorization[].class, userId)))
+        .toList();
+  }
+
+  public List<Client> fetchClients() {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(MIGRATION_CLIENTS_ENDPOINT, Client[].class)))
+        .toList();
+  }
+
+  public List<Permission> fetchClientPermissions(final String clientId) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_CLIENTS_PERMISSIONS_ENDPOINT, Permission[].class, clientId)))
         .toList();
   }
 }

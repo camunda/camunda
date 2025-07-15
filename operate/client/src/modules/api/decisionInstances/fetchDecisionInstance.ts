@@ -7,6 +7,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {DecisionInstanceEntityState} from 'modules/types/operate';
 
 type DecisionInstanceDto = {
   id: string;

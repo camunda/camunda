@@ -959,12 +959,18 @@
         #       minimumAge: 30d
         #       policyName: camunda-retention-policy
         #
+        #   batchOperations:
+        #     exportItemsOnCreation: true
+        #
         #   createSchema: true
         #
         #   processCache:
         #     maxCacheSize: 10000
         #
         #   formCache:
+        #     maxCacheSize: 10000
+        #
+        #   batchOperationCache:
         #     maxCacheSize: 10000
 
     # processing:
@@ -1008,6 +1014,10 @@
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.
       # It might be that also some of them are actually dangerous so be aware when you change one of these!
+
+      # Toggles continuous backups, a new feature that prevents log compaction until entries are backed up.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_CONTINUOUSBACKUPS
+      # continuousBackups = false
 
       # Toggles the version check restriction, used for migration. Useful for testing migration logic on
       # snapshot or alpha versions. Default: True, means it is not allowed to migrate to incompatible version
@@ -1301,6 +1311,29 @@
           # the broker is under heavy load.  This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_PAUSECOMMANDDISTRIBUTION.
           # The default value is false, meaning that command redistribution is not paused.
           # pauseCommandDistribution: false
+
+        # batchOperation:
+          # for larger batch operations, the items to process are split into multiple records ("chunks") to avoid exceeding the maximum record size of 4MB.
+          # This means, that at most ~240000 batch operation items can be transported in a single record.
+          # chunkSize: 200000
+
+          # The items of a batch operation are stored in a separate column family in the RocksDB database.
+          # To keep the single records/values of the RocksDb to a reasonable size, the items are split into multiple chunks.
+          # Setting this value to a higher value will result in larger chunks, which can lead to a more inefficient RocksDB cache.
+          # The default value 3500 means that each chunk record will be smaller than the default rocksdb block size of 32KB.
+          # dbChunkSize: 3500
+
+          # To initialize a batch operation, the engine will query the secondaryDb for relevant items using the given filter object.
+          # Since the secondaryDb uses paginated queries, this setting allows to configure the maximum number of items that can be returned in a single query.
+          # The higher the value, the more items can be returned in a single query, which can lead to better performance but also to memory issues when the pages are too large.
+          # When using Elasticsearch or OpenSearch as secondaryDb, the default value of 10000 items is also the maximum pageSize of these databases and a higher value here will be ignored.
+          # queryPageSize: 10000
+
+          # Some batch operation types need to query the secondaryDb in multiple steps. E.g. RESOLVE_INCIDENT first queries for processInstances and in a second step for all open incidents of these processInstances.
+          # This setting allows to configure the maximum number of itemKeys to be given in the second step query as processInstances "IN" clause.
+          # A higher value will result in fewer queries to the secondaryDb, but may not be supported by all database systems. E.g. OracleDb only supports 1000 elements in an IN clause.
+          # The default value is 1000, which is also the maximum supported by OracleDb.
+          # queryInClauseSize: 1000
 
         # Allows to configure the maximum depth of child process instances that can be created.
         # The root process instance is considered depth `1`, and each called instance is considered

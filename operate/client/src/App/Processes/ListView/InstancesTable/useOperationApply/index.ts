@@ -12,7 +12,8 @@ import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
-import {Modifications} from 'modules/api/processInstances/operations';
+import {type Modifications} from 'modules/api/processInstances/operations';
+import type {OperationEntityType} from 'modules/types/operate';
 
 type ApplyBatchOperationParams = {
   operationType: OperationEntityType;

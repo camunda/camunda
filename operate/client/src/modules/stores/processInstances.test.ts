@@ -7,14 +7,13 @@
  */
 
 import {processInstancesStore} from './processInstances';
-import {groupedProcessesMock} from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
+import {http, HttpResponse} from 'msw';
 import {checkPollingHeader} from 'modules/mocks/api/mockRequest';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 const instance: ProcessInstanceEntity = {
   id: '2251799813685625',
@@ -60,10 +59,11 @@ const mockProcessInstances = {
 };
 
 describe('stores/processInstances', () => {
-  mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-
   afterEach(() => {
     processInstancesStore.reset();
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should fetch initial instances', async () => {
@@ -497,7 +497,6 @@ describe('stores/processInstances', () => {
   });
 
   it('should unmark instances with active operations', async () => {
-    // when polling all visible instances
     mockFetchProcessInstances().withSuccess({
       totalCount: 100,
       processInstances: [
@@ -624,8 +623,8 @@ describe('stores/processInstances', () => {
   });
 
   it('should refresh instances and and call handlers every time there is an instance with completed operation', async () => {
-    jest.useFakeTimers();
-    const handlerMock = jest.fn();
+    vi.useFakeTimers({shouldAdvanceTime: true});
+    const handlerMock = vi.fn();
     processInstancesStore.addCompletedOperationsHandler(handlerMock);
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
@@ -641,44 +640,45 @@ describe('stores/processInstances', () => {
     ).toEqual(['2251799813685627']);
 
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
+      http.post(
+        '/api/process-instances',
+        () =>
+          HttpResponse.json({
             processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
             totalCount: 2,
           }),
-        ),
+        {once: true},
       ),
-      // mock for refresh all instances
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
+      http.post(
+        '/api/process-instances',
+        () =>
+          HttpResponse.json({
             processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
             totalCount: 3,
           }),
-        ),
+        {once: true},
       ),
-      // mock for refresh running process instances count
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
+      http.post(
+        '/api/process-instances',
+        () =>
+          HttpResponse.json({
             processInstances: [
               instance,
               {...instanceWithActiveOperation, hasActiveOperation: false},
             ],
             totalCount: 3,
           }),
-        ),
+        {once: true},
       ),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(3),
@@ -686,11 +686,12 @@ describe('stores/processInstances', () => {
 
     expect(handlerMock).toHaveBeenCalledTimes(1);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should poll instances by id when there are instances with active operations', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     mockFetchProcessInstances().withSuccess(
       {
         totalCount: 100,
@@ -701,8 +702,6 @@ describe('stores/processInstances', () => {
       },
       {expectPolling: false},
     );
-
-    jest.useFakeTimers();
 
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -715,78 +714,58 @@ describe('stores/processInstances', () => {
     ).toEqual(['2']);
 
     mockServer.use(
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            processInstances: [
-              {
-                ...instanceWithActiveOperation,
-                hasActiveOperation: false,
-                id: '2',
-              },
-            ],
-            totalCount: 100,
-          }),
-        );
+      http.post('/api/process-instances', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          processInstances: [
+            {...instance, id: '1'},
+            {
+              ...instanceWithActiveOperation,
+              id: '2',
+              hasActiveOperation: false,
+            },
+          ],
+          totalCount: 2,
+        });
       }),
-      // mock for refreshing instances when an instance operation is complete
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            processInstances: [
-              {...instance, id: '1'},
-              {
-                ...instanceWithActiveOperation,
-                id: '2',
-                hasActiveOperation: false,
-              },
-            ],
-            totalCount: 2,
-          }),
-        );
-      }),
-      // mock for refresh running process instances count
-      rest.post('/api/process-instances', (req, res, ctx) => {
-        checkPollingHeader({req, expectPolling: true});
-        return res.once(
-          ctx.json({
-            processInstances: [
-              {...instance, id: '1'},
-              {
-                ...instanceWithActiveOperation,
-                id: '2',
-                hasActiveOperation: false,
-              },
-            ],
-            totalCount: 2,
-          }),
-        );
+      http.post('/api/process-instances', ({request}) => {
+        checkPollingHeader({req: request, expectPolling: true});
+        return HttpResponse.json({
+          processInstances: [
+            {...instance, id: '1'},
+            {
+              ...instanceWithActiveOperation,
+              id: '2',
+              hasActiveOperation: false,
+            },
+          ],
+          totalCount: 2,
+        });
       }),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
-    await waitFor(() => {
+    await waitFor(() =>
       expect(processInstancesStore.state.filteredProcessInstancesCount).toEqual(
         2,
-      );
-    });
+      ),
+    );
     expect(
       processInstancesStore.processInstanceIdsWithActiveOperations,
     ).toEqual([]);
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     const mockedProcessInstances = {
       processInstances: [instance],
@@ -822,7 +801,5 @@ describe('stores/processInstances', () => {
         newProcessInstancesResponse.processInstances,
       ),
     );
-
-    window.addEventListener = originalEventListener;
   });
 });

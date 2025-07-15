@@ -12,8 +12,6 @@ jobs:
     name: Add issue to team projects if no project assigned and by corresponding component label
     runs-on: ubuntu-latest
     steps:
-      - name: Wait
-        run: sleep 30s
       - id: get_project_count
         uses: octokit/graphql-action@v2.3.2
         with:
@@ -135,7 +133,9 @@ jobs:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
           labeled: component/clients, component/spring-sdk, component/camunda-process-test, component/c8-api
-      # this steps needs to stay as last step to not interfer with other steps
+      - name: Wait
+        run: sleep 30s
+          # this steps needs to stay as last step to not interfer with other steps
       - id: add-to-qualityboard
         name: Add to Quality Board project
         uses: actions/add-to-project@v1.0.2

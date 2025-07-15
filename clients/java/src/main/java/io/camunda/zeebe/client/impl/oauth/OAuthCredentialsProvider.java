@@ -103,7 +103,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
                   value -> {
                     final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
                     credentialsCache.put(clientId, fetchedCredentials).writeCache();
-                    return !fetchedCredentials.equals(value) || !value.isValid();
+                    return !fetchedCredentials.equals(value);
                   })
               .orElse(false);
     } catch (final IOException e) {
@@ -121,6 +121,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     final String scope = builder.getScope();
     if (scope != null) {
       payload.put("scope", scope);
+    }
+    final String resource = builder.getResource();
+    if (resource != null) {
+      payload.put("resource", resource);
     }
 
     return payload.entrySet().stream()

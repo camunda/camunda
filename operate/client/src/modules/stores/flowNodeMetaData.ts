@@ -9,12 +9,12 @@
 import {
   action,
   computed,
-  IReactionDisposer,
   makeObservable,
   observable,
   override,
+  type IReactionDisposer,
 } from 'mobx';
-import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 
 type State = {

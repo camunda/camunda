@@ -28,6 +28,7 @@ import io.camunda.search.os.transformers.search.SearchQueryHitTransformer;
 import io.camunda.search.os.transformers.search.SearchRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchWriteResponseTransformer;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
@@ -75,7 +76,8 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
       final var request = requestTransformer.apply(searchRequest);
       final SearchResponse<T> rawSearchResponse = client.search(request, documentClass);
       final SearchResponseTransformer<T> searchResponseTransformer = getSearchResponseTransformer();
-      return searchResponseTransformer.apply(rawSearchResponse);
+      return searchResponseTransformer.apply(
+          Tuple.of(rawSearchResponse, searchRequest.aggregations()));
     } catch (final IOException | OpenSearchException e) {
       LOGGER.warn(ErrorMessages.ERROR_FAILED_SEARCH_QUERY, e);
       throw new CamundaSearchException(
@@ -102,7 +104,8 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, Docume
         // stop early; no need to continue with scroll
         final SearchResponseTransformer<T> searchResponseTransformer =
             getSearchResponseTransformer();
-        return searchResponseTransformer.apply(rawSearchResponse);
+        return searchResponseTransformer.apply(
+            Tuple.of(rawSearchResponse, searchRequest.aggregations()));
       }
 
       List<Hit<T>> scrollResponseHits;

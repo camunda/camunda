@@ -12,13 +12,11 @@ import {render, screen, within} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('IncidentsTable', () => {
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
-
   it('should render the right column headers', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents(incidentsMock);
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -33,6 +31,7 @@ describe('IncidentsTable', () => {
   });
 
   it('should render the right column headers for restricted user', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents(incidentsMock);
     authenticationStore.setUser({
       displayName: 'demo',
@@ -56,9 +55,10 @@ describe('IncidentsTable', () => {
   });
 
   it('should render the right column headers for restricted user (with resource-based permissions)', () => {
-    window.clientConfig = {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
-    };
+    });
 
     incidentsStore.setIncidents(incidentsMock);
     authenticationStore.setUser({
@@ -83,6 +83,7 @@ describe('IncidentsTable', () => {
   });
 
   it('should render incident details', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents(incidentsMock);
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -131,9 +132,10 @@ describe('IncidentsTable', () => {
   });
 
   it('should render incident details (with resource-based permissions enabled)', () => {
-    window.clientConfig = {
+    mockFetchProcessDefinitionXml().withSuccess('');
+    vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
-    };
+    });
 
     incidentsStore.setIncidents(incidentsMock);
     authenticationStore.setUser({
@@ -199,6 +201,7 @@ describe('IncidentsTable', () => {
   });
 
   it('should display -- for jobId', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     const incidentMock = {...firstIncident, jobId: null};
     const incidents = [incidentMock];
 
@@ -216,6 +219,7 @@ describe('IncidentsTable', () => {
   });
 
   it('should show a more button for long error messages', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents(incidentsMock);
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinFirstRow = within(
@@ -237,6 +241,7 @@ describe('IncidentsTable', () => {
 
   it('should open an modal when clicking on the more button', async () => {
     incidentsStore.setIncidents(incidentsMock);
+    mockFetchProcessDefinitionXml().withSuccess('');
     const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
 
     let withinSecondRow = within(
@@ -254,7 +259,7 @@ describe('IncidentsTable', () => {
     const modal = screen.getByRole('dialog');
 
     expect(
-      await within(modal).findByText(secondIncident.errorMessage),
+      await within(modal).findByTestId('monaco-editor'),
     ).toBeInTheDocument();
     expect(
       within(modal).getByText(`Flow Node "${secondIncident.flowNodeId}" Error`),

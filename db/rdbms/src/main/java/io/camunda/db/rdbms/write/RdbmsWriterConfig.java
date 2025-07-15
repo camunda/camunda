@@ -17,6 +17,9 @@ public record RdbmsWriterConfig(
     Duration minHistoryCleanupInterval,
     Duration maxHistoryCleanupInterval,
     int historyCleanupBatchSize,
+    /*
+     * The number of batch operation items to insert in a single insert statement.
+     */
     int batchOperationItemInsertBlockSize,
     /*
      * Export the batch operation items when the initial chunk records are processed. If set to

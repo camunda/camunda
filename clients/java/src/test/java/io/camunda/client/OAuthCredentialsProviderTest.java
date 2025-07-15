@@ -421,7 +421,35 @@ public final class OAuthCredentialsProviderTest {
     currentWiremockRuntimeInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
+  @Test
+  void shouldRequestTokenWithResourceAndAddToCall() throws IOException {
+    // given
+    final String resource = "https://api.example.com";
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .resource(resource)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentialsWithResource(ACCESS_TOKEN, null, resource);
+
+    // when
+    provider.applyCredentials(applier);
+
+    // then
+    assertThat(applier.getCredentials())
+        .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+  }
+
   private void mockCredentials(final String token, final String scope) {
+    mockCredentialsWithResource(token, scope, null);
+  }
+
+  private void mockCredentialsWithResource(
+      final String token, final String scope, final String resource) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
     map.put("client_id", CLIENT_ID);
@@ -430,21 +458,29 @@ public final class OAuthCredentialsProviderTest {
     if (scope != null) {
       map.put("scope", scope);
     }
+    if (resource != null) {
+      map.put("resource", resource);
+    }
 
     final String encodedBody =
         map.entrySet().stream()
             .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
             .collect(Collectors.joining("&"));
 
-    map.put("access_token", token);
-    map.put("token_type", TOKEN_TYPE);
-    map.put(
+    // Create response body - resource parameter should not be included in response
+    final HashMap<String, String> responseMap = new HashMap<>();
+    responseMap.put("access_token", token);
+    responseMap.put("token_type", TOKEN_TYPE);
+    responseMap.put(
         "expires_in",
         String.valueOf(
             EXPIRY.getLong(ChronoField.INSTANT_SECONDS) - Instant.now().getEpochSecond()));
+    if (scope != null) {
+      responseMap.put("scope", scope);
+    }
 
     try {
-      final String body = jsonMapper.writeValueAsString(map);
+      final String body = jsonMapper.writeValueAsString(responseMap);
       currentWiremockRuntimeInfo
           .getWireMock()
           .register(
@@ -461,35 +497,43 @@ public final class OAuthCredentialsProviderTest {
   }
 
   private void mockTokenRequest(final boolean withAssertion) {
+    mockTokenRequestWithResource(withAssertion, null);
+  }
+
+  private void mockTokenRequestWithResource(final boolean withAssertion, final String resource) {
     final String assertionRegex = ".*client_assertion\\=[\\._\\-A-Za-z0-9]{400,500}.*";
     final String assertionTypeRegex = ".*client_assertion_type.*";
     final String clientSecret = ".*client_secret.*";
+    final String resourceRegex = resource != null ? ".*resource.*" : ".*";
     final HashMap<String, String> map = new HashMap<>();
     map.put("access_token", ACCESS_TOKEN);
     map.put("token_type", TOKEN_TYPE);
     map.put("expires_in", "3600");
 
     try {
+      com.github.tomakehurst.wiremock.client.MappingBuilder requestBuilder =
+          WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+              .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+              .withHeader("Accept", equalTo("application/json"))
+              .withHeader("User-Agent", matching("camunda-client-java/\\d+\\.\\d+\\.\\d+.*"))
+              .withRequestBody(
+                  withAssertion ? matching(assertionRegex) : notMatching(assertionRegex))
+              .withRequestBody(
+                  withAssertion ? matching(assertionTypeRegex) : notMatching(assertionTypeRegex))
+              .withRequestBody(!withAssertion ? matching(clientSecret) : notMatching(clientSecret));
+
+      if (resource != null) {
+        requestBuilder = requestBuilder.withRequestBody(matching(resourceRegex));
+      }
+
       currentWiremockRuntimeInfo
           .getWireMock()
           .register(
-              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
-                  .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
-                  .withHeader("Accept", equalTo("application/json"))
-                  .withHeader("User-Agent", matching("camunda-client-java/\\d+\\.\\d+\\.\\d+.*"))
-                  .withRequestBody(
-                      withAssertion ? matching(assertionRegex) : notMatching(assertionRegex))
-                  .withRequestBody(
-                      withAssertion
-                          ? matching(assertionTypeRegex)
-                          : notMatching(assertionTypeRegex))
-                  .withRequestBody(
-                      !withAssertion ? matching(clientSecret) : notMatching(clientSecret))
-                  .willReturn(
-                      WireMock.aResponse()
-                          .withBody(jsonMapper.writeValueAsString(map))
-                          .withHeader("Content-Type", "application/json")
-                          .withStatus(200)));
+              requestBuilder.willReturn(
+                  WireMock.aResponse()
+                      .withBody(jsonMapper.writeValueAsString(map))
+                      .withHeader("Content-Type", "application/json")
+                      .withStatus(200)));
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
@@ -744,6 +788,22 @@ public final class OAuthCredentialsProviderTest {
       final OAuthCredentialsProvider provider =
           initializeCredentialsProviderBuilder(false, true).build();
       mockTokenRequest(false);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldUseEntraCredentialsWithResourceParameter() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+      final String resource = "https://api.example.com";
+
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(true, true).resource(resource).build();
+      mockTokenRequestWithResource(true, resource);
 
       provider.applyCredentials(applier);
 

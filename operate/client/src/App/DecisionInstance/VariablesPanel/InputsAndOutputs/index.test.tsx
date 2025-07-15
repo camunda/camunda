@@ -41,7 +41,7 @@ describe('<InputsAndOutputs />', () => {
     });
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton'),
+      screen.queryByTestId('inputs-skeleton'),
     );
 
     expect(screen.getByRole('heading', {name: /inputs/i})).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('<InputsAndOutputs />', () => {
     expect(screen.getByTestId('outputs-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton'),
+      screen.queryByTestId('inputs-skeleton'),
     );
 
     expect(screen.queryByTestId('inputs-skeleton')).not.toBeInTheDocument();
@@ -112,7 +112,7 @@ describe('<InputsAndOutputs />', () => {
     render(<InputsAndOutputs />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('inputs-skeleton'),
+      screen.queryByTestId('inputs-skeleton'),
     );
 
     const [inputsTable, outputsTable] = screen.getAllByRole('table');

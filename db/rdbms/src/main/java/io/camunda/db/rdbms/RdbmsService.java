@@ -24,12 +24,15 @@ import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.RoleReader;
 import io.camunda.db.rdbms.read.service.SequenceFlowReader;
 import io.camunda.db.rdbms.read.service.TenantReader;
+import io.camunda.db.rdbms.read.service.UsageMetricReader;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
+import java.util.function.Consumer;
 
 /** A holder for all rdbms services */
 public class RdbmsService {
@@ -55,6 +58,7 @@ public class RdbmsService {
   private final SequenceFlowReader sequenceFlowReader;
   private final BatchOperationItemReader batchOperationItemReader;
   private final JobReader jobReader;
+  private final UsageMetricReader usageMetricReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -77,7 +81,8 @@ public class RdbmsService {
       final BatchOperationReader batchOperationReader,
       final SequenceFlowReader sequenceFlowReader,
       final BatchOperationItemReader batchOperationItemReader,
-      final JobReader jobReader) {
+      final JobReader jobReader,
+      final UsageMetricReader usageMetricReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -99,6 +104,7 @@ public class RdbmsService {
     this.sequenceFlowReader = sequenceFlowReader;
     this.batchOperationItemReader = batchOperationItemReader;
     this.jobReader = jobReader;
+    this.usageMetricReader = usageMetricReader;
   }
 
   public AuthorizationReader getAuthorizationReader() {
@@ -173,6 +179,10 @@ public class RdbmsService {
     return sequenceFlowReader;
   }
 
+  public UsageMetricReader getUsageMetricReader() {
+    return usageMetricReader;
+  }
+
   public BatchOperationItemReader getBatchOperationItemReader() {
     return batchOperationItemReader;
   }
@@ -187,5 +197,11 @@ public class RdbmsService {
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
     return rdbmsWriterFactory.createWriter(config);
+  }
+
+  public RdbmsWriter createWriter(final Consumer<Builder> configBuilder) {
+    final RdbmsWriterConfig.Builder builder = new RdbmsWriterConfig.Builder();
+    configBuilder.accept(builder);
+    return rdbmsWriterFactory.createWriter(builder.build());
   }
 }

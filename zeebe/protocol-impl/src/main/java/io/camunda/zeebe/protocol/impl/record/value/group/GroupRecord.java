@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
@@ -19,13 +20,21 @@ import org.agrona.DirectBuffer;
 
 public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue {
 
-  private final LongProperty groupKeyProp = new LongProperty("groupKey", -1L);
-  private final StringProperty groupId = new StringProperty("groupId");
-  private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty descriptionProp = new StringProperty("description", "");
-  private final StringProperty entityIdProp = new StringProperty("entityId", "");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue GROUP_KEY_KEY = new StringValue("groupKey");
+  private static final StringValue GROUP_ID_KEY = new StringValue("groupId");
+  private static final StringValue NAME_KEY = new StringValue("name");
+  private static final StringValue DESCRIPTION_KEY = new StringValue("description");
+  private static final StringValue ENTITY_ID_KEY = new StringValue("entityId");
+  private static final StringValue ENTITY_TYPE_KEY = new StringValue("entityType");
+
+  private final LongProperty groupKeyProp = new LongProperty(GROUP_KEY_KEY, -1L);
+  private final StringProperty groupId = new StringProperty(GROUP_ID_KEY);
+  private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
+  private final StringProperty descriptionProp = new StringProperty(DESCRIPTION_KEY, "");
+  private final StringProperty entityIdProp = new StringProperty(ENTITY_ID_KEY, "");
   private final EnumProperty<EntityType> entityTypeProp =
-      new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
+      new EnumProperty<>(ENTITY_TYPE_KEY, EntityType.class, EntityType.UNSPECIFIED);
 
   public GroupRecord() {
     super(6);

@@ -15,7 +15,7 @@
     <relocation>
       <artifactId>camunda-client-java</artifactId>
       <message>The artifact 'zeebe-client-java' has been relocated to 'camunda-client-java'.
-        Note: Relocation for 'zeebe-client-java' will be removed starting from the 8.8 release.
+        Note: Relocation for 'zeebe-client-java' will be removed starting from the 8.10 release.
         Please update your dependencies to use 'camunda-client-java' to avoid build issues.</message>
     </relocation>
   </distributionManagement>

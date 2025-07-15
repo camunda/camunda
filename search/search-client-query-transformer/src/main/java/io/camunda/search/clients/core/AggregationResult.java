@@ -8,14 +8,35 @@
 package io.camunda.search.clients.core;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.List;
 import java.util.Map;
 
-public record AggregationResult(Long docCount, Map<String, AggregationResult> aggregations) {
+public record AggregationResult(
+    Long docCount,
+    Map<String, AggregationResult> aggregations,
+    List<SearchQueryHit> hits,
+    String endCursor) {
+
+  public AggregationResult(final Long docCount, final Map<String, AggregationResult> aggregations) {
+    this(docCount, aggregations, List.of(), null);
+  }
 
   public static final class Builder implements ObjectBuilder<AggregationResult> {
 
     private Long docCount;
     private Map<String, AggregationResult> aggregations;
+    private List<SearchQueryHit> hits;
+    private String endCursor;
+
+    public Builder endCursor(final String value) {
+      endCursor = value;
+      return this;
+    }
+
+    public Builder hits(final List<SearchQueryHit> value) {
+      hits = value;
+      return this;
+    }
 
     public Builder docCount(final Long value) {
       docCount = value;
@@ -29,7 +50,7 @@ public record AggregationResult(Long docCount, Map<String, AggregationResult> ag
 
     @Override
     public AggregationResult build() {
-      return new AggregationResult(docCount, aggregations);
+      return new AggregationResult(docCount, aggregations, hits, endCursor);
     }
   }
 }

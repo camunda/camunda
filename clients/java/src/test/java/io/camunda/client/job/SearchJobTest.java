@@ -15,6 +15,7 @@
  */
 package io.camunda.client.job;
 
+import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
@@ -210,12 +211,6 @@ public class SearchJobTest extends ClientRestTest {
     assertSort(sorts.get(17), "hasFailedWithRetriesLeft", SortOrderEnum.DESC);
     assertSort(sorts.get(18), "isDenied", SortOrderEnum.ASC);
     assertSort(sorts.get(19), "retries", SortOrderEnum.DESC);
-  }
-
-  private void assertSort(
-      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
-    assertThat(sort.getField()).isEqualTo(name);
-    assertThat(sort.getOrder()).isEqualTo(order);
   }
 
   @Test

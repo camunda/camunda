@@ -16,37 +16,66 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {cancelAllTokens} from 'modules/utils/modifications';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
-describe('Modification Dropdown - Multi Scopes', () => {
-  const stats = {
-    items: [
-      {
-        elementId: 'OuterSubProcess',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        elementId: 'InnerSubProcess',
-        active: 10,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        elementId: 'TaskB',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ],
-  };
+const stats = {
+  items: [
+    {
+      elementId: 'OuterSubProcess',
+      active: 1,
+      incidents: 0,
+      completed: 0,
+      canceled: 0,
+    },
+    {
+      elementId: 'InnerSubProcess',
+      active: 10,
+      incidents: 0,
+      completed: 0,
+      canceled: 0,
+    },
+    {
+      elementId: 'TaskB',
+      active: 1,
+      incidents: 0,
+      completed: 0,
+      canceled: 0,
+    },
+  ],
+};
 
+describe('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
+    vi.stubGlobal(
+      'ResizeObserver',
+      class ResizeObserver {
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+
+        constructor(callback: ResizeObserverCallback) {
+          setTimeout(() => {
+            try {
+              callback([], this);
+            } catch {
+              // Ignore errors in mock
+            }
+          }, 0);
+        }
+      },
+    );
+    vi.stubGlobal(
+      'SVGElement',
+      class MockSVGElement extends Element {
+        getBBox = vi.fn(() => ({
+          x: 0,
+          y: 0,
+          width: 100,
+          height: 100,
+        }));
+      },
+    );
     const mockProcessInstance: ProcessInstance = {
       processInstanceKey: 'instance_id',
       state: 'ACTIVE',
@@ -66,10 +95,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess(stats);
     mockFetchFlownodeInstancesStatistics().withSuccess(stats);
     modificationsStore.enableModificationMode();
-  });
-
-  afterEach(async () => {
-    await new Promise(process.nextTick);
   });
 
   it('should support add modification for task with multiple scopes', async () => {

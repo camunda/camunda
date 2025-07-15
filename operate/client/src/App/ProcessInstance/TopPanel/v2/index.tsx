@@ -28,7 +28,7 @@ import {
 } from 'modules/bpmn-js/badgePositions';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
-import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram/v2';
 import {MetadataPopover} from '../MetadataPopover/v2';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
@@ -67,6 +67,7 @@ import {
   useIsRootNodeSelected,
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
+import type {FlowNodeState} from 'modules/types/operate';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';

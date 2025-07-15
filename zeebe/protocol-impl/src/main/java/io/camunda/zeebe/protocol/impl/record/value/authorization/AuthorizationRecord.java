@@ -26,17 +26,27 @@ import java.util.stream.Collectors;
 public final class AuthorizationRecord extends UnifiedRecordValue
     implements AuthorizationRecordValue {
 
-  private final LongProperty authorizationKeyProp = new LongProperty("authorizationKey", -1L);
-  private final StringProperty ownerIdProp = new StringProperty("ownerId", "");
+  // Static StringValue keys for property names
+  private static final StringValue AUTHORIZATION_KEY_KEY = new StringValue("authorizationKey");
+  private static final StringValue OWNER_ID_KEY = new StringValue("ownerId");
+  private static final StringValue OWNER_TYPE_KEY = new StringValue("ownerType");
+  private static final StringValue RESOURCE_ID_KEY = new StringValue("resourceId");
+  private static final StringValue RESOURCE_TYPE_KEY = new StringValue("resourceType");
+  private static final StringValue PERMISSION_TYPES_KEY = new StringValue("permissionTypes");
+
+  private final LongProperty authorizationKeyProp = new LongProperty(AUTHORIZATION_KEY_KEY, -1L);
+  private final StringProperty ownerIdProp = new StringProperty(OWNER_ID_KEY, "");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>(
-          "ownerType", AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
-  private final StringProperty resourceIdProp = new StringProperty("resourceId", "");
+          OWNER_TYPE_KEY, AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
+  private final StringProperty resourceIdProp = new StringProperty(RESOURCE_ID_KEY, "");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>(
-          "resourceType", AuthorizationResourceType.class, AuthorizationResourceType.UNSPECIFIED);
+          RESOURCE_TYPE_KEY,
+          AuthorizationResourceType.class,
+          AuthorizationResourceType.UNSPECIFIED);
   private final ArrayProperty<StringValue> permissionTypesProp =
-      new ArrayProperty<>("permissionTypes", StringValue::new);
+      new ArrayProperty<>(PERMISSION_TYPES_KEY, StringValue::new);
 
   public AuthorizationRecord() {
     super(6);

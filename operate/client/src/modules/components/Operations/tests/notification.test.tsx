@@ -13,9 +13,9 @@ import {Operations} from '../index';
 import {INSTANCE, Wrapper} from './mocks';
 import {notificationsStore} from 'modules/stores/notifications';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 

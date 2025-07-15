@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useFilters} from 'modules/hooks/useFilters';
-import {GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const formatToISO = (dateString: string | undefined): string | undefined => {
   if (!dateString) return undefined;
@@ -102,7 +102,7 @@ function mapFiltersToRequest(
     };
   }
 
-  const state: ProcessInstanceState[] = [];
+  const state: Array<'ACTIVE' | 'COMPLETED' | 'TERMINATED'> = [];
   if (active) state.push(ProcessInstanceState.ACTIVE);
   if (completed) state.push(ProcessInstanceState.COMPLETED);
   if (canceled) state.push(ProcessInstanceState.TERMINATED);

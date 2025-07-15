@@ -9,6 +9,7 @@
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Link} from '@carbon/react';
 import {ActionableNotification, Text} from './styled';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 function getParentAndRootProcessInformation(
   processInstance: null | ProcessInstanceEntity,

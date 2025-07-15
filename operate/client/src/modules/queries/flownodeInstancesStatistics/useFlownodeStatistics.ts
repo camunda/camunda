@@ -7,10 +7,11 @@
  */
 
 import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {getStatisticsByFlowNode} from 'modules/utils/statistics/flownodeInstances';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
-import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
+import type {FlowNodeState} from 'modules/types/operate';
 
 const statisticsByFlowNodeParser =
   (businessObjects?: BusinessObjects) =>

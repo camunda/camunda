@@ -14,8 +14,6 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetch
 
 const currentInstanceMock = createInstance();
 
-jest.unmock('modules/utils/date/formatDate');
-
 describe('stores/currentInstance', () => {
   afterEach(() => {
     processInstanceDetailsStore.reset();
@@ -35,7 +33,7 @@ describe('stores/currentInstance', () => {
   });
 
   it('should poll if current instance is running', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstanceDetailsStore.init({id: '1'});
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
@@ -47,7 +45,7 @@ describe('stores/currentInstance', () => {
 
     mockFetchProcessInstance().withSuccess(secondCurrentInstanceMock);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
@@ -59,7 +57,7 @@ describe('stores/currentInstance', () => {
 
     mockFetchProcessInstance().withSuccess(thirdCurrentInstanceMock);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
@@ -71,7 +69,7 @@ describe('stores/currentInstance', () => {
 
     mockFetchProcessInstance().withSuccess(finishedCurrentInstanceMock);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
@@ -80,15 +78,15 @@ describe('stores/currentInstance', () => {
     );
 
     // do not poll since instance is not running anymore
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
         finishedCurrentInstanceMock,
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should set current instance', async () => {
@@ -280,11 +278,12 @@ describe('stores/currentInstance', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     processInstanceDetailsStore.init({id: '1'});
 
@@ -307,12 +306,10 @@ describe('stores/currentInstance', () => {
         state: 'INCIDENT',
       }),
     );
-
-    window.addEventListener = originalEventListener;
   });
 
   it('should poll with polling header', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     // expect the first request not to be a polling request
     mockFetchProcessInstance().withSuccess(currentInstanceMock, {
@@ -333,7 +330,7 @@ describe('stores/currentInstance', () => {
       expectPolling: true,
     });
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(processInstanceDetailsStore.state.processInstance).toEqual(
@@ -341,7 +338,7 @@ describe('stores/currentInstance', () => {
       ),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

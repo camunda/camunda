@@ -144,7 +144,7 @@ public final class BatchOperationMultiPartitionTest {
   }
 
   @Test
-  public void shouldTreatFailedAsFinished() {
+  public void shouldTreatFailedAsPartiallyCompleted() {
     // given
     final long batchOperationKey = createDistributedBatchOperation();
 
@@ -152,7 +152,7 @@ public final class BatchOperationMultiPartitionTest {
     // fail partition 3 and complete the others
     engine
         .batchOperation()
-        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .newPartitionLifecycle()
         .withBatchOperationKey(batchOperationKey)
         .onPartition(PARTITION_COUNT)
         .fail();
@@ -307,7 +307,7 @@ public final class BatchOperationMultiPartitionTest {
     // fail one partition
     engine
         .batchOperation()
-        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .newPartitionLifecycle()
         .withBatchOperationKey(batchOperationKey)
         .onPartition(PARTITION_COUNT)
         .fail();

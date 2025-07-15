@@ -142,6 +142,23 @@ public final class TestHelper {
         .join();
   }
 
+  public static void createTenant(
+      final CamundaClient client,
+      final String tenantId,
+      final String tenantName,
+      final String... usernames) {
+    client
+        .newCreateTenantCommand()
+        .tenantId(tenantId)
+        .name(tenantName)
+        .send()
+        .join()
+        .getTenantKey();
+    for (final var username : usernames) {
+      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
+    }
+  }
+
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId) {
     return camundaClient
@@ -365,7 +382,7 @@ public final class TestHelper {
   }
 
   public static void waitForBatchOperationWithCorrectTotalCount(
-      final CamundaClient camundaClient, final String batchOperationId, final int expectedItems) {
+      final CamundaClient camundaClient, final String batchOperationKey, final int expectedItems) {
     Awaitility.await("should start batch operation with correct total count")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -373,7 +390,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
             });
@@ -381,7 +398,7 @@ public final class TestHelper {
 
   public static void waitForBatchOperationCompleted(
       final CamundaClient camundaClient,
-      final String batchOperationId,
+      final String batchOperationKey,
       final int expectedCompletedItems,
       final int expectedFailedItems) {
     Awaitility.await("should complete batch operation with correct completed/failed count")
@@ -391,7 +408,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
               assertThat(batch.getOperationsCompletedCount()).isEqualTo(expectedCompletedItems);
@@ -401,7 +418,7 @@ public final class TestHelper {
 
   public static void waitForBatchOperationStatus(
       final CamundaClient camundaClient,
-      final String batchOperationId,
+      final String batchOperationKey,
       final BatchOperationState expectedStatus) {
     Awaitility.await("batch operation should have state " + expectedStatus)
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -410,7 +427,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(expectedStatus);
             });
@@ -418,7 +435,7 @@ public final class TestHelper {
 
   public static void waitForBatchOperationStatus(
       final CamundaClient camundaClient,
-      final String batchOperationId,
+      final String batchOperationKey,
       final Set<BatchOperationState> acceptedStates) {
     Awaitility.await("batch operation should have state " + acceptedStates)
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -427,7 +444,7 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus())
                   .withFailMessage(
@@ -501,6 +518,34 @@ public final class TestHelper {
               final var result =
                   camundaClient.newProcessDefinitionSearchRequest().filter(filter).send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessDefinitions);
+            });
+  }
+
+  public static void waitForDecisionsToBeDeployed(
+      final CamundaClient camundaClient,
+      final int expectedDecisionDefinitions,
+      final int expectedDecisionRequirements) {
+    Awaitility.await("should receive data from ES")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      camundaClient
+                          .newDecisionDefinitionSearchRequest()
+                          .send()
+                          .join()
+                          .items()
+                          .size())
+                  .isEqualTo(expectedDecisionDefinitions);
+              assertThat(
+                      camundaClient
+                          .newDecisionRequirementsSearchRequest()
+                          .send()
+                          .join()
+                          .items()
+                          .size())
+                  .isEqualTo(expectedDecisionRequirements);
             });
   }
 
@@ -658,6 +703,18 @@ public final class TestHelper {
               assertThat(users)
                   .extracting(u -> u.getUsername())
                   .containsExactlyInAnyOrder(usernames);
+            });
+  }
+
+  public static void waitForMessageSubscriptions(
+      final CamundaClient camundaClient, final int expectedMessageSubscriptions) {
+    Awaitility.await("should wait until message subscriptions are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newMessageSubscriptionSearchRequest().send().join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedMessageSubscriptions);
             });
   }
 

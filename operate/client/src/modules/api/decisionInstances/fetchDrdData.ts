@@ -7,6 +7,10 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import type {
+  DecisionInstanceEntity,
+  DecisionInstanceEntityState,
+} from 'modules/types/operate';
 
 type DrdDataDto = {
   [decisionId: string]: [

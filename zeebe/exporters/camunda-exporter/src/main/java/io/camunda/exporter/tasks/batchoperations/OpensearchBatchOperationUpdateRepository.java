@@ -75,24 +75,24 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
 
   @Override
   public CompletionStage<List<OperationsAggData>> getOperationsCount(
-      final Collection<String> batchOperationIds) {
-    if (batchOperationIds == null || batchOperationIds.isEmpty()) {
+      final Collection<String> batchOperationKeys) {
+    if (batchOperationKeys == null || batchOperationKeys.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
     }
-    final var batchOperationIdsValues = batchOperationIds.stream().map(FieldValue::of).toList();
-    final var batchOperationIdsQ =
+    final var batchOperationKeysValues = batchOperationKeys.stream().map(FieldValue::of).toList();
+    final var batchOperationKeysQ =
         QueryBuilders.bool()
             .must(
                 m ->
                     m.terms(
                         t ->
                             t.field(OperationTemplate.BATCH_OPERATION_ID)
-                                .terms(v -> v.value(batchOperationIdsValues))))
+                                .terms(v -> v.value(batchOperationKeysValues))))
             .build();
     final var aggregation =
         Aggregation.of(
             a ->
-                a.terms(t -> t.field(BATCH_OPERATION_ID).size(batchOperationIds.size()))
+                a.terms(t -> t.field(BATCH_OPERATION_ID).size(batchOperationKeys.size()))
                     .aggregations(
                         BATCH_OPERATION_STATEAGG_NAME,
                         Aggregation.of(
@@ -105,7 +105,7 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
     final var request =
         new SearchRequest.Builder()
             .index(operationIndex)
-            .query(batchOperationIdsQ.toQuery())
+            .query(batchOperationKeysQ.toQuery())
             .size(0)
             .aggregations(BATCH_OPERATION_IDAGG_NAME, aggregation)
             .build();

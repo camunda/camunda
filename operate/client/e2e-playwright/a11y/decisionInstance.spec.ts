@@ -36,7 +36,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('decision detail', () => {
-  test(`have no violations for evaluated decision`, async ({
+  test('have no violations for evaluated decision', async ({
     page,
     decisionInstancePage,
     makeAxeBuilder,
@@ -61,7 +61,7 @@ test.describe('decision detail', () => {
     validateResults(results);
   });
 
-  test(`have no violations for an incident`, async ({
+  test('have no violations for an incident', async ({
     page,
     decisionInstancePage,
     makeAxeBuilder,
@@ -86,7 +86,7 @@ test.describe('decision detail', () => {
     validateResults(results);
   });
 
-  test(`have no violations for a decision without input output panels`, async ({
+  test('have no violations for a decision without input output panels', async ({
     page,
     decisionInstancePage,
     makeAxeBuilder,

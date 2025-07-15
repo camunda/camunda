@@ -28,19 +28,30 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobBatchRecord extends UnifiedRecordValue implements JobBatchRecordValue {
 
-  private final StringProperty typeProp = new StringProperty("type");
-  private final StringProperty workerProp = new StringProperty("worker", "");
-  private final LongProperty timeoutProp = new LongProperty("timeout", -1);
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue TYPE_KEY = new StringValue("type");
+  private static final StringValue WORKER_KEY = new StringValue("worker");
+  private static final StringValue TIMEOUT_KEY = new StringValue("timeout");
+  private static final StringValue MAX_JOBS_TO_ACTIVATE_KEY = new StringValue("maxJobsToActivate");
+  private static final StringValue JOB_KEYS_KEY = new StringValue("jobKeys");
+  private static final StringValue JOBS_KEY = new StringValue("jobs");
+  private static final StringValue TENANT_IDS_KEY = new StringValue("tenantIds");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
+
+  private final StringProperty typeProp = new StringProperty(TYPE_KEY);
+  private final StringProperty workerProp = new StringProperty(WORKER_KEY, "");
+  private final LongProperty timeoutProp = new LongProperty(TIMEOUT_KEY, -1);
   private final IntegerProperty maxJobsToActivateProp =
-      new IntegerProperty("maxJobsToActivate", -1);
+      new IntegerProperty(MAX_JOBS_TO_ACTIVATE_KEY, -1);
   private final ArrayProperty<LongValue> jobKeysProp =
-      new ArrayProperty<>("jobKeys", LongValue::new);
-  private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>("jobs", JobRecord::new);
+      new ArrayProperty<>(JOB_KEYS_KEY, LongValue::new);
+  private final ArrayProperty<JobRecord> jobsProp = new ArrayProperty<>(JOBS_KEY, JobRecord::new);
   private final ArrayProperty<StringValue> tenantIdsProp =
-      new ArrayProperty<>("tenantIds", StringValue::new);
+      new ArrayProperty<>(TENANT_IDS_KEY, StringValue::new);
   private final ArrayProperty<StringValue> variablesProp =
-      new ArrayProperty<>("variables", StringValue::new);
-  private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);
+      new ArrayProperty<>(VARIABLES_KEY, StringValue::new);
+  private final BooleanProperty truncatedProp = new BooleanProperty(TRUNCATED_KEY, false);
 
   public JobBatchRecord() {
     super(9);

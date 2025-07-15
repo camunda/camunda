@@ -24,4 +24,5 @@ public enum JobState {
   MIGRATED,
   RETRIES_UPDATED,
   TIMED_OUT,
+  UNKNOWN_ENUM_VALUE;
 }

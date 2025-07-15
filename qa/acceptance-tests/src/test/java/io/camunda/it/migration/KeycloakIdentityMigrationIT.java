@@ -23,10 +23,13 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.RoleUser;
+import io.camunda.client.api.search.response.Tenant;
+import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -41,6 +44,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.awaitility.Awaitility;
@@ -128,6 +132,23 @@ public class KeycloakIdentityMigrationIT {
           .withEnv("IDENTITY_AUTHORIZATIONS_3_RESOURCE_TYPE", "decision-definition")
           .withEnv("IDENTITY_AUTHORIZATIONS_3_PERMISSIONS_0", "READ")
           .withEnv("IDENTITY_AUTHORIZATIONS_3_PERMISSIONS_1", "DELETE")
+          // tenant
+          .withEnv("IDENTITY_TENANTS_0_NAME", "tenant 1")
+          .withEnv("IDENTITY_TENANTS_0_TENANT-ID", "tenant1")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_0_TYPE", "GROUP")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_0_GROUP-NAME", "groupA")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_1_TYPE", "USER")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_1_USERNAME", "user0")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_2_TYPE", "APPLICATION")
+          .withEnv("IDENTITY_TENANTS_0_MEMBERS_2_APPLICATION-ID", IDENTITY_CLIENT)
+          .withEnv("IDENTITY_TENANTS_1_NAME", "tenant 2")
+          .withEnv("IDENTITY_TENANTS_1_TENANT-ID", "tenant2")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_0_TYPE", "GROUP")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_0_GROUP-NAME", "groupB")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_1_TYPE", "USER")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_1_USERNAME", "user1")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_2_TYPE", "APPLICATION")
+          .withEnv("IDENTITY_TENANTS_1_MEMBERS_2_APPLICATION-ID", IDENTITY_CLIENT)
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
@@ -182,7 +203,7 @@ public class KeycloakIdentityMigrationIT {
   }
 
   @Test
-  public void canMigrateRoles() throws URISyntaxException, IOException, InterruptedException {
+  public void canMigrateRoles() {
     // when
     migration.start();
 
@@ -209,13 +230,12 @@ public class KeycloakIdentityMigrationIT {
             tuple("zeebe", "Zeebe"),
             tuple("identity", "Identity"));
 
-    final var restAddress = client.getConfiguration().getRestAddress().toString();
-    final var authorizations = searchAuthorizations(restAddress);
+    final var authorizations = client.newAuthorizationSearchRequest().send().join();
     assertThat(authorizations.items())
         .extracting(
-            AuthorizationResponse::ownerId,
-            AuthorizationResponse::resourceType,
-            AuthorizationResponse::permissionTypes)
+            Authorization::getOwnerId,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple("operate", ResourceType.MESSAGE, Set.of(PermissionType.READ)),
             tuple("operate", ResourceType.RESOURCE, Set.of(PermissionType.READ)),
@@ -320,11 +340,10 @@ public class KeycloakIdentityMigrationIT {
   }
 
   @Test
-  public void canMigrateGroups() throws URISyntaxException, IOException, InterruptedException {
+  public void canMigrateGroups() {
     // when
     migration.start();
 
-    final var restAddress = client.getConfiguration().getRestAddress().toString();
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
@@ -335,9 +354,9 @@ public class KeycloakIdentityMigrationIT {
                   .extracting(Group::getGroupId)
                   .contains("groupa", "groupb", "groupc");
 
-              final var authorizations = searchAuthorizations(restAddress);
+              final var authorizations = client.newAuthorizationSearchRequest().send().join();
               assertThat(authorizations.items())
-                  .extracting(AuthorizationResponse::ownerId)
+                  .extracting(Authorization::getOwnerId)
                   .contains("groupa", "groupb");
             });
 
@@ -356,13 +375,13 @@ public class KeycloakIdentityMigrationIT {
     final var usersGroupC = client.newUsersByGroupSearchRequest("groupc").send().join();
     assertThat(usersGroupC.items()).extracting(GroupUser::getUsername).containsExactly("user1");
 
-    final var authorizations = searchAuthorizations(restAddress);
+    final var authorizations = client.newAuthorizationSearchRequest().send().join();
     assertThat(authorizations.items())
         .extracting(
-            AuthorizationResponse::ownerId,
-            AuthorizationResponse::ownerType,
-            AuthorizationResponse::resourceType,
-            AuthorizationResponse::permissionTypes)
+            Authorization::getOwnerId,
+            Authorization::getOwnerType,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple(
                 "groupa",
@@ -417,31 +436,29 @@ public class KeycloakIdentityMigrationIT {
   }
 
   @Test
-  public void canMigrateAuthorizations()
-      throws URISyntaxException, IOException, InterruptedException {
+  public void canMigrateAuthorizations() {
     // when
     migration.start();
 
-    final var restAddress = client.getConfiguration().getRestAddress().toString();
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var authorizations = searchAuthorizations(restAddress);
+              final var authorizations = client.newAuthorizationSearchRequest().send().join();
               assertThat(authorizations.items())
-                  .extracting(AuthorizationResponse::ownerId)
+                  .extracting(Authorization::getOwnerId)
                   .contains("user0@email.com", "user1@email.com");
             });
 
-    final var authorizations = searchAuthorizations(restAddress);
+    final var authorizations = client.newAuthorizationSearchRequest().send().join();
     assertThat(authorizations.items())
         .extracting(
-            AuthorizationResponse::ownerId,
-            AuthorizationResponse::ownerType,
-            AuthorizationResponse::resourceId,
-            AuthorizationResponse::resourceType,
-            AuthorizationResponse::permissionTypes)
+            Authorization::getOwnerId,
+            Authorization::getOwnerType,
+            Authorization::getResourceId,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple(
                 "user0@email.com",
@@ -463,30 +480,212 @@ public class KeycloakIdentityMigrationIT {
                     PermissionType.READ_DECISION_DEFINITION)));
   }
 
-  // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
-  private AuthorizationSearchResponse searchAuthorizations(final String restAddress)
+  @Test
+  public void canMigrateClients() {
+    // when
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              assertThat(authorizations.items())
+                  .extracting(Authorization::getOwnerId)
+                  .contains("migration-app");
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    assertThat(authorizations.items())
+        .extracting(
+            Authorization::getOwnerId,
+            Authorization::getOwnerType,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
+        .contains(
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.DELETE, PermissionType.UPDATE)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.DELETE_PROCESS_INSTANCE,
+                    PermissionType.CREATE_PROCESS_INSTANCE)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_RESOURCE,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_PROCESS)),
+            tuple(
+                "migration-app", OwnerType.CLIENT, ResourceType.USER, Set.of(PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.APPLICATION,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.AUTHORIZATION,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.GROUP,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.TENANT,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.SYSTEM,
+                Set.of(PermissionType.UPDATE, PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.ROLE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.READ)),
+            tuple(
+                "migration-app",
+                OwnerType.CLIENT,
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.CREATE)));
+  }
+
+  @Test
+  public void canMigrateTenants() throws URISyntaxException, IOException, InterruptedException {
+    // when
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var tenants = client.newTenantsSearchRequest().send().join();
+              assertThat(tenants.items())
+                  .extracting(Tenant::getTenantId)
+                  .contains("tenant1", "tenant2");
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var tenants = client.newTenantsSearchRequest().send().join().items();
+    assertThat(tenants)
+        .extracting(Tenant::getTenantId, Tenant::getName)
+        .contains(tuple("tenant1", "tenant 1"), tuple("tenant2", "tenant 2"));
+
+    final var tenant1Users = client.newUsersByTenantSearchRequest("tenant1").send().join();
+    assertThat(tenant1Users.items())
+        .extracting(TenantUser::getUsername)
+        .containsExactlyInAnyOrder("user0");
+    final var tenant2Users = client.newUsersByTenantSearchRequest("tenant2").send().join();
+    assertThat(tenant2Users.items())
+        .extracting(TenantUser::getUsername)
+        .containsExactlyInAnyOrder("user1");
+
+    final var restAddress = client.getConfiguration().getRestAddress().toString();
+    final var tenant1Groups = searchGroupsInTenant(restAddress, "tenant1");
+    assertThat(tenant1Groups.items())
+        .extracting(TenantGroup::groupId)
+        .containsExactlyInAnyOrder("groupa");
+    final var tenant2Groups = searchGroupsInTenant(restAddress, "tenant2");
+    assertThat(tenant2Groups.items())
+        .extracting(TenantGroup::groupId)
+        .containsExactlyInAnyOrder("groupb");
+    final var tenant1Clients = searchClientsInTenant(restAddress, "tenant1");
+    assertThat(tenant1Clients.items())
+        .extracting(TenantClient::clientId)
+        .containsExactlyInAnyOrder(IDENTITY_CLIENT);
+    final var tenant2Clients = searchClientsInTenant(restAddress, "tenant2");
+    assertThat(tenant2Clients.items())
+        .extracting(TenantClient::clientId)
+        .containsExactlyInAnyOrder(IDENTITY_CLIENT);
+  }
+
+  private GroupsTenantResponse searchGroupsInTenant(final String restAddress, final String tenantId)
       throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
         Base64.getEncoder().encodeToString("%s:%s".formatted("demo", "demo").getBytes());
     final HttpRequest request =
         HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/authorizations/search")))
+            .uri(
+                new URI("%s%s".formatted(restAddress, "v2/tenants/" + tenantId + "/groups/search")))
             .POST(HttpRequest.BodyPublishers.ofString(""))
             .header("Authorization", "Basic %s".formatted(encodedCredentials))
             .build();
 
     final HttpResponse<String> response =
         httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
+    return OBJECT_MAPPER.readValue(response.body(), GroupsTenantResponse.class);
   }
 
-  private record AuthorizationSearchResponse(List<AuthorizationResponse> items) {}
+  private ClientsTenantResponse searchClientsInTenant(
+      final String restAddress, final String tenantId)
+      throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder().encodeToString("%s:%s".formatted("demo", "demo").getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s".formatted(restAddress, "v2/tenants/" + tenantId + "/clients/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
 
-  private record AuthorizationResponse(
-      String ownerId,
-      OwnerType ownerType,
-      ResourceType resourceType,
-      String resourceId,
-      Set<PermissionType> permissionTypes,
-      String authorizationKey) {}
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), ClientsTenantResponse.class);
+  }
+
+  private record GroupsTenantResponse(List<TenantGroup> items) {}
+
+  private record TenantGroup(String groupId) {}
+
+  private record ClientsTenantResponse(List<TenantClient> items) {}
+
+  private record TenantClient(String clientId) {}
 }

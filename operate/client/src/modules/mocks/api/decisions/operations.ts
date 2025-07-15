@@ -7,6 +7,7 @@
  */
 
 import {mockDeleteRequest} from '../mockRequest';
+import type {OperationEntity} from 'modules/types/operate';
 
 const mockApplyDeleteDefinitionOperation = () =>
   mockDeleteRequest<OperationEntity>('/api/decisions/:decisionDefinitionId');

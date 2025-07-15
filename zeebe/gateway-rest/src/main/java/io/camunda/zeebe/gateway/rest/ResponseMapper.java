@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static java.time.temporal.ChronoField.HOUR_OF_DAY;
 import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
@@ -24,6 +25,7 @@ import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
 import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobResult;
@@ -49,6 +51,8 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
+import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
+import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
@@ -88,7 +92,6 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
-import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.Either;
@@ -196,12 +199,14 @@ public final class ResponseMapper {
         .variables(job.getVariables())
         .customHeaders(job.getCustomHeadersObjectMap())
         .userTask(toUserTaskProperties(job))
-        .tenantId(job.getTenantId());
+        .tenantId(job.getTenantId())
+        .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
+        .listenerEventType(
+            EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class));
   }
 
   private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
-    if (job.getJobKind() != JobKind.TASK_LISTENER
-        || CollectionUtils.isEmpty(job.getCustomHeaders())) {
+    if (job.getJobKind() != TASK_LISTENER || CollectionUtils.isEmpty(job.getCustomHeaders())) {
       return null;
     }
 
@@ -543,7 +548,7 @@ public final class ResponseMapper {
       final BatchOperationCreationRecord brokerResponse) {
     final var response =
         new BatchOperationCreatedResult()
-            .batchOperationId(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+            .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
             .batchOperationType(
                 BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
     return new ResponseEntity<>(response, HttpStatus.OK);

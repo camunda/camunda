@@ -17,6 +17,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {Paths} from 'modules/Routes';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -40,6 +41,8 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('<Bar />', () => {
   it('should show the node name and an icon based on node state', () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+
     render(
       <Bar
         flowNodeInstance={mockStartNode}
@@ -57,9 +60,11 @@ describe('<Bar />', () => {
   });
 
   it('should toggle the timestamp', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+
     render(
       <Bar
-        flowNodeInstance={mockStartNode}
+        flowNodeInstance={{...mockStartNode, endDate: MOCK_TIMESTAMP}}
         nodeName={mockStartEventBusinessObject.name}
         isTimestampLabelVisible
       />,
@@ -74,10 +79,12 @@ describe('<Bar />', () => {
       flowNodeTimeStampStore.toggleTimeStampVisibility();
     });
 
-    expect(await screen.findByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
   });
 
   it('should show latest successful migration date', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+
     render(
       <Bar
         flowNodeInstance={mockStartNode}
@@ -96,6 +103,8 @@ describe('<Bar />', () => {
   });
 
   it('should not show latest successful migration date for non-root', async () => {
+    mockFetchProcessDefinitionXml().withSuccess('');
+
     render(
       <Bar
         flowNodeInstance={mockStartNode}

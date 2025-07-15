@@ -32,8 +32,8 @@ public final class EngineConfiguration {
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
-  // key has 8 bytes, stay below 4MB
-  public static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 400000;
+  // item-key and process-instance-key have both 8 bytes, stay below 4MB
+  public static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 200000;
   // key has 8 bytes, stay below 32KB block size
   public static final int DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE = 3500;
   // ES/OS have max 10000 entities per query

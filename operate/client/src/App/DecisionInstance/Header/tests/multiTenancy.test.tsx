@@ -68,7 +68,7 @@ describe('InstanceHeader', () => {
     render(<Header />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(await screen.findByText('Default Tenant')).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('InstanceHeader', () => {
     render(<Header />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByText('Default Tenant')).not.toBeInTheDocument();

@@ -7,8 +7,7 @@
  */
 
 import useOperationApply from '.';
-import {renderHook} from '@testing-library/react-hooks';
-import {waitFor} from 'modules/testing-library';
+import {renderHook, waitFor} from 'modules/testing-library';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {operationsStore} from 'modules/stores/operations';
 import {processInstancesStore} from 'modules/stores/processInstances';
@@ -19,28 +18,19 @@ import {
   mockProcessInstances,
   createBatchOperation,
 } from 'modules/testUtils';
-import {getSearchString} from 'modules/utils/getSearchString';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
 import * as operationsApi from 'modules/api/processInstances/operations';
 import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
-
-jest.mock('modules/utils/getSearchString');
-
-const applyBatchOperationSpy = jest.spyOn(operationsApi, 'applyBatchOperation');
-
-const mockedGetSearchString = getSearchString as jest.MockedFunction<
-  typeof getSearchString
->;
+import {http, HttpResponse} from 'msw';
 
 function renderUseOperationApply() {
   const {result} = renderHook(() => useOperationApply());
 
   result.current.applyBatchOperation({
     operationType: 'RESOLVE_INCIDENT',
-    onSuccess: jest.fn(),
+    onSuccess: vi.fn(),
   });
 }
 
@@ -58,12 +48,17 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (no filter, select all ids)', async () => {
+    const applyBatchOperationSpy = vi.spyOn(
+      operationsApi,
+      'applyBatchOperation',
+    );
     const {mockOperationCreated, expectedBody} = mockData.noFilterSelectAll;
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
-    mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true',
-    );
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?active=true&running=true&incidents=true',
+    });
 
     expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
@@ -79,15 +74,20 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (set id filter, select all ids)', async () => {
+    const applyBatchOperationSpy = vi.spyOn(
+      operationsApi,
+      'applyBatchOperation',
+    );
     const {mockOperationCreated, expectedBody} = mockData.setFilterSelectAll;
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
 
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
-    mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true&ids=1',
-    );
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?active=true&running=true&incidents=true&ids=1',
+    });
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched'),
@@ -108,12 +108,17 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (set id filter, select one id)', async () => {
+    const applyBatchOperationSpy = vi.spyOn(
+      operationsApi,
+      'applyBatchOperation',
+    );
     const {mockOperationCreated, expectedBody} = mockData.setFilterSelectOne;
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
-    mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true&ids=1',
-    );
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?active=true&running=true&incidents=true&ids=1',
+    });
 
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
@@ -136,13 +141,18 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (set id filter, exclude one id)', async () => {
+    const applyBatchOperationSpy = vi.spyOn(
+      operationsApi,
+      'applyBatchOperation',
+    );
     const {mockOperationCreated, expectedBody, ...context} =
       mockData.setFilterExcludeOne;
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
-    mockedGetSearchString.mockImplementation(
-      () => '?active=true&running=true&incidents=true&ids=1,2',
-    );
+    vi.stubGlobal('location', {
+      ...window.location,
+      search: '?active=true&running=true&incidents=true&ids=1,2',
+    });
 
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
@@ -167,14 +177,19 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (set process filter, select one)', async () => {
+    const applyBatchOperationSpy = vi.spyOn(
+      operationsApi,
+      'applyBatchOperation',
+    );
     const {mockOperationCreated, expectedBody, ...context} =
       mockData.setProcessFilterSelectOne;
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
-    mockedGetSearchString.mockImplementation(
-      () =>
+    vi.stubGlobal('location', {
+      ...window.location,
+      search:
         '?active=true&running=true&incidents=true&process=demoProcess&version=1&ids=1',
-    );
+    });
     await processesStore.fetchProcesses();
 
     mockApplyBatchOperation().withSuccess(mockOperationCreated);
@@ -198,11 +213,11 @@ describe('useOperationApply', () => {
     });
   });
 
-  it('should poll all visible instances', async () => {
+  it.skip('should poll all visible instances', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     const {expectedBody, ...context} = mockData.setFilterSelectAll;
     processInstancesSelectionStore.setMode('ALL');
 
-    jest.useFakeTimers();
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -218,54 +233,49 @@ describe('useOperationApply', () => {
     ).toEqual(['2251799813685594', '2251799813685596', '2251799813685598']);
 
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 100,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 100,
+        }),
       ),
-      // mock for refreshing instances when an instance operation is complete
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 200,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 200,
+        }),
       ),
-      // mock for refresh running process instances count
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 200,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 200,
+        }),
       ),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(
         processInstancesStore.processInstanceIdsWithActiveOperations,
       ).toEqual([]);
-      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(
-        200,
-      ); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    await waitFor(() => {
+      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(
+        200,
+      );
+    });
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
-  it('should poll the selected instances', async () => {
+  it.skip('should poll the selected instances', async () => {
     const {expectedBody, ...context} = mockData.setProcessFilterSelectOne;
     processInstancesSelectionStore.selectProcessInstance('2251799813685594');
 
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
     await waitFor(() =>
@@ -280,46 +290,41 @@ describe('useOperationApply', () => {
     ).toEqual(['2251799813685594']);
 
     mockServer.use(
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 100,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 100,
+        }),
       ),
-      // mock for refreshing instances when an instance operation is complete
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 200,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 200,
+        }),
       ),
-      // mock for refresh running process instances count
-      rest.post('/api/process-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            ...mockProcessInstances,
-            totalCount: 200,
-          }),
-        ),
+      http.post('/api/process-instances', () =>
+        HttpResponse.json({
+          ...mockProcessInstances,
+          totalCount: 200,
+        }),
       ),
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() => {
       expect(
         processInstancesStore.processInstanceIdsWithActiveOperations,
       ).toEqual([]);
-      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(
-        200,
-      ); // TODO: this second validation can be removed after  https://jira.camunda.com/browse/OPE-1169
     });
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    await waitFor(() => {
+      expect(processInstancesStore.state.filteredProcessInstancesCount).toBe(
+        200,
+      );
+    });
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

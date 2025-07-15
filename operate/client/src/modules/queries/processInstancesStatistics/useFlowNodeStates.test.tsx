@@ -13,8 +13,8 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processI
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import * as filterModule from 'modules/hooks/useProcessInstancesFilters';
 
-jest.mock('modules/hooks/useFilters');
-jest.mock('modules/hooks/useProcessInstancesFilters');
+vi.mock('modules/hooks/useFilters');
+vi.mock('modules/hooks/useProcessInstancesFilters');
 
 describe('useProcessInstancesFlowNodeStates', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => (
@@ -24,11 +24,7 @@ describe('useProcessInstancesFlowNodeStates', () => {
   );
 
   beforeEach(() => {
-    jest.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    vi.spyOn(filterModule, 'useProcessInstanceFilters').mockReturnValue({});
   });
 
   it('should fetch flow node states successfully', async () => {
@@ -125,6 +121,10 @@ describe('useProcessInstancesFlowNodeStates', () => {
   });
 
   it('should handle loading state', async () => {
+    mockFetchProcessInstancesStatistics().withDelay({
+      items: [],
+    });
+
     const {result} = renderHook(
       () => useProcessInstancesFlowNodeStates({}, 'processId'),
       {

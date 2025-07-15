@@ -8,11 +8,16 @@
 
 import {observer} from 'mobx-react';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {JSONViewer} from './JSONViewer/index';
 import {Container} from './styled';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {Loading} from '@carbon/react';
+import {lazy, Suspense} from 'react';
+
+const JSONViewer = lazy(async () => {
+  const {JSONViewer} = await import('./JSONViewer');
+  return {default: JSONViewer};
+});
 
 const Result: React.FC = observer(() => {
   const {
@@ -25,10 +30,12 @@ const Result: React.FC = observer(() => {
       {status === 'fetched' &&
         decisionInstance !== null &&
         decisionInstance.state !== 'FAILED' && (
-          <JSONViewer
-            data-testid="results-json-viewer"
-            value={decisionInstance.result ?? '{}'}
-          />
+          <Suspense>
+            <JSONViewer
+              data-testid="results-json-viewer"
+              value={decisionInstance.result ?? '{}'}
+            />
+          </Suspense>
         )}
       {status === 'fetched' && decisionInstance?.state === 'FAILED' && (
         <EmptyMessage message="No result available because the evaluation failed" />

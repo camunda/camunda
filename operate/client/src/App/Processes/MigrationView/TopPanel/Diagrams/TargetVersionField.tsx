@@ -8,7 +8,7 @@
 
 import {FieldContainer, Label} from './styled';
 import {observer} from 'mobx-react';
-import {isNil} from 'lodash';
+import isNil from 'lodash/isNil';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {Dropdown} from '@carbon/react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';

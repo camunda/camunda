@@ -29,7 +29,7 @@ describe('stores/incidents', () => {
       createInstance({id: '123', state: 'INCIDENT'}),
     );
 
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
     incidentsStore.init();
 
     await waitFor(() =>
@@ -44,7 +44,7 @@ describe('stores/incidents', () => {
       {expectPolling: true},
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(incidentsStore.state.response).toEqual({
@@ -61,7 +61,7 @@ describe('stores/incidents', () => {
       {expectPolling: true},
     );
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(incidentsStore.state.response).toEqual({
@@ -75,8 +75,8 @@ describe('stores/incidents', () => {
       createInstance({id: '123', state: 'CANCELED'}),
     );
 
-    jest.runOnlyPendingTimers();
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(incidentsStore.state.response).toEqual({
@@ -85,8 +85,8 @@ describe('stores/incidents', () => {
       }),
     );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should reset store', async () => {
@@ -122,11 +122,12 @@ describe('stores/incidents', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    const eventListeners: any = {};
-    const originalEventListener = window.addEventListener;
-    window.addEventListener = jest.fn((event: string, cb: any) => {
-      eventListeners[event] = cb;
-    });
+    const eventListeners: Record<string, () => void> = {};
+    vi.spyOn(window, 'addEventListener').mockImplementation(
+      (event: string, cb: EventListenerOrEventListenerObject) => {
+        eventListeners[event] = cb as () => void;
+      },
+    );
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -153,7 +154,5 @@ describe('stores/incidents', () => {
         count: 3,
       }),
     );
-
-    window.addEventListener = originalEventListener;
   });
 });

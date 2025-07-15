@@ -7,6 +7,7 @@
  */
 
 import {mockPostRequest} from './mockRequest';
+import type {OperationEntity} from 'modules/types/operate';
 
 const mockFetchBatchOperations = () =>
   mockPostRequest<OperationEntity[]>('/api/batch-operations');

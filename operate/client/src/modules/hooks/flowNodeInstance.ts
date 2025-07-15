@@ -8,7 +8,7 @@
 
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {
-  FlowNodeInstance,
+  type FlowNodeInstance,
   flowNodeInstanceStore,
 } from 'modules/stores/flowNodeInstance';
 

@@ -6,8 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {endpoints, ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
-import {RequestResult, requestWithThrow} from 'modules/request';
+import {
+  endpoints,
+  type ProcessInstance,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type RequestResult, requestWithThrow} from 'modules/request';
 
 const fetchProcessInstance = async (
   processInstanceKey: string,

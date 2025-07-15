@@ -8,7 +8,7 @@
 
 import React, {useState} from 'react';
 import {Modal, TextInput} from '@carbon/react';
-import {StateProps} from 'modules/components/ModalStateManager';
+import {type StateProps} from 'modules/components/ModalStateManager';
 import {MigrationDetails} from '../MigrationDetails';
 
 type Props = {onSubmit: () => void} & StateProps;

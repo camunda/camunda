@@ -7,7 +7,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
-import {BatchOperationDto} from '../sharedTypes';
+import {type BatchOperationDto} from '../sharedTypes';
 
 async function deleteDecisionDefinition(decisionDefinitionId: string) {
   return requestAndParse<BatchOperationDto>({

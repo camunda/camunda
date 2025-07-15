@@ -31,6 +31,12 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
+  public ProcessDefinitionFilter isLatestVersion(final boolean latestVersion) {
+    filter.setIsLatestVersion(latestVersion);
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionFilter processDefinitionKey(final long processDefinitionKey) {
     filter.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;

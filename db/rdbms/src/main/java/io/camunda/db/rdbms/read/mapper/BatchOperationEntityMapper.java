@@ -9,18 +9,26 @@ package io.camunda.db.rdbms.read.mapper;
 
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 
 public class BatchOperationEntityMapper {
 
   public static BatchOperationEntity toEntity(final BatchOperationDbModel dbModel) {
     return new BatchOperationEntity(
-        dbModel.batchOperationId(),
+        dbModel.batchOperationKey(),
         dbModel.state(),
         dbModel.operationType(),
         dbModel.startDate(),
         dbModel.endDate(),
         dbModel.operationsTotalCount(),
         dbModel.operationsFailedCount(),
-        dbModel.operationsCompletedCount());
+        dbModel.operationsCompletedCount(),
+        dbModel.errors().stream().map(BatchOperationEntityMapper::toErrorEntity).toList());
+  }
+
+  public static BatchOperationErrorEntity toErrorEntity(
+      final BatchOperationDbModel.BatchOperationErrorDbModel errorDbModel) {
+    return new BatchOperationEntity.BatchOperationErrorEntity(
+        errorDbModel.partitionId(), errorDbModel.type(), errorDbModel.message());
   }
 }

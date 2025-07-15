@@ -116,9 +116,8 @@ describe('User info', () => {
   });
 
   it('should render links', async () => {
-    const originalWindowOpen = window.open;
-    const mockOpenFn = jest.fn();
-    window.open = mockOpenFn;
+    const mockOpenFn = vi.fn();
+    vi.stubGlobal('open', mockOpenFn);
 
     mockMe().withSuccess(mockUser);
 
@@ -169,23 +168,19 @@ describe('User info', () => {
     expect(
       screen.queryByRole('button', {name: 'Cookie preferences'}),
     ).not.toBeInTheDocument();
-
-    window.open = originalWindowOpen;
   });
 
   it('should cookie preferences with correct link', async () => {
-    const originalWindowOpen = window.open;
-    const mockOpenFn = jest.fn();
-    const mockShowDrawer = jest.fn();
-
-    window.open = mockOpenFn;
-    window.Osano = {
+    const mockOpenFn = vi.fn();
+    vi.stubGlobal('open', mockOpenFn);
+    const mockShowDrawer = vi.fn();
+    vi.stubGlobal('Osano', {
       cm: {
         analytics: false,
         showDrawer: mockShowDrawer,
-        addEventListener: jest.fn(),
+        addEventListener: vi.fn(),
       },
-    };
+    });
 
     mockMe().withSuccess(mockUser);
 
@@ -212,9 +207,6 @@ describe('User info', () => {
     expect(mockShowDrawer).toHaveBeenLastCalledWith(
       'osano-cm-dom-info-dialog-open',
     );
-
-    window.open = originalWindowOpen;
-    window.Osano = undefined;
   });
 
   it('should hide nav links if operate is unauthorized', async () => {

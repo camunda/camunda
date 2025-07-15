@@ -38,20 +38,22 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
 
-jest.mock('react-transition-group', () => {
-  const FakeTransition = jest.fn(({children}) => children);
-  const FakeCSSTransition = jest.fn((props) =>
+vi.mock('react-transition-group', () => {
+  const FakeTransition = vi.fn(({children}) => children);
+  const FakeCSSTransition = vi.fn((props) =>
     props.in ? <FakeTransition>{props.children}</FakeTransition> : null,
   );
 
   return {
     CSSTransition: FakeCSSTransition,
     Transition: FakeTransition,
-    TransitionGroup: jest.fn(({children}) => {
-      return children.map((transition: any) => {
+    TransitionGroup: vi.fn(({children}) => {
+      return children.map((transition: {props: object}) => {
         const completedTransition = {...transition};
         completedTransition.props = {...transition.props, in: true};
         return completedTransition;
@@ -95,12 +97,14 @@ const getWrapper = (
 
 describe('TopPanel', () => {
   beforeAll(() => {
-    //@ts-ignore
+    //@ts-expect-error - Use to mute act warnings
+    // eslint-disable-next-line no-undef
     IS_REACT_ACT_ENVIRONMENT = false;
   });
 
   afterAll(() => {
-    //@ts-ignore
+    //@ts-expect-error - Use to mute act warnings
+    // eslint-disable-next-line no-undef
     IS_REACT_ACT_ENVIRONMENT = true;
   });
 
@@ -133,14 +137,17 @@ describe('TopPanel', () => {
         },
       ],
     });
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+    mockServer.use(
+      http.post('/api/process-instances/:instanceId/flow-node-metadata', () => {
+        return HttpResponse.json(calledInstanceMetadata);
+      }),
+    );
   });
 
   afterEach(() => {
     processInstanceDetailsStore.reset();
     flowNodeSelectionStore.reset();
     modificationsStore.reset();
-    jest.clearAllMocks();
   });
 
   it('should render spinner while loading', async () => {
@@ -156,7 +163,7 @@ describe('TopPanel', () => {
     processInstanceDetailsStore.init({id: 'active_instance'});
 
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('diagram-spinner'));
   });
 
   it('should render incident bar', async () => {
@@ -186,9 +193,9 @@ describe('TopPanel', () => {
   });
 
   it('should show an error when a network error occurs', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockFetchProcessDefinitionXml().withNetworkError();
 

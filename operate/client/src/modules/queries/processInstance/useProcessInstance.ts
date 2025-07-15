@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
-import {RequestError} from 'modules/request';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
+import type {RequestError} from 'modules/request';
+import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {fetchProcessInstance} from 'modules/api/v2/processInstances/fetchProcessInstance';
+import {isInstanceRunning} from 'modules/utils/instance';
 
 const PROCESS_INSTANCE_QUERY_KEY = 'processInstance';
 
@@ -25,7 +26,7 @@ const useProcessInstance = <T = ProcessInstance>(
 
   return useQuery({
     queryKey: getQueryKey(processInstanceId),
-    queryFn: !!processInstanceId
+    queryFn: processInstanceId
       ? async () => {
           const {response, error} =
             await fetchProcessInstance(processInstanceId);
@@ -38,6 +39,13 @@ const useProcessInstance = <T = ProcessInstance>(
         }
       : skipToken,
     select,
+
+    refetchInterval: (query) => {
+      const processInstance = query.state.data;
+      if (processInstance !== undefined && isInstanceRunning(processInstance)) {
+        return 5000;
+      }
+    },
   });
 };
 

@@ -18,9 +18,11 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.Batc
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,15 +32,28 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DbBatchOperationState.class);
 
-  private final DbLong batchKey = new DbLong();
+  private final DbLong batchKey = new DbLong(); // the generated PK for the batch operation
   private final DbForeignKey<DbLong> fkBatchKey;
-  private final DbLong chunkKey;
+  private final DbLong chunkKey; // the chunk key, a sequential number for each batch operation
   private final DbCompositeKey<DbForeignKey<DbLong>, DbLong> fkBatchKeyAndChunkKey;
 
+  /**
+   * Stores the batch operation with the given key and general status data of the batch operation.
+   */
   private final ColumnFamily<DbLong, PersistedBatchOperation> batchOperationColumnFamily;
+
+  /**
+   * Stores the pending itemKeys of a batch operation. The itemKeys are divided into smaller chunks
+   * to keep the single records rather small to not overload the rocksDb cache.
+   */
   private final ColumnFamily<
           DbCompositeKey<DbForeignKey<DbLong>, DbLong>, PersistedBatchOperationChunk>
       batchOperationChunksColumnFamily;
+
+  /**
+   * A quick lookup for pending batch operations. This column family is used to find batch
+   * operations which have not been initialized and don't have any itemKeys yet.
+   */
   private final ColumnFamily<DbLong, DbNil> pendingBatchOperationColumnFamily;
 
   public DbBatchOperationState(
@@ -71,6 +86,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var batchOperation = new PersistedBatchOperation();
     batchOperation.wrap(record).setStatus(BatchOperationStatus.CREATED);
     batchOperationColumnFamily.upsert(batchKey, batchOperation);
+
+    // newly created batch operations are pending, so we add them to the pending column family
     pendingBatchOperationColumnFamily.upsert(batchKey, DbNil.INSTANCE);
   }
 
@@ -83,6 +100,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
       batchOperation.get().setStatus(BatchOperationStatus.STARTED);
       batchOperation.get().markAsInitialized();
       batchOperationColumnFamily.update(batchKey, batchOperation.get());
+
+      // remove from pending batch operations, since it is now started
       pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
     } else {
       LOGGER.error("Batch operation with key {} not found, cannot start it.", batchOperationKey);
@@ -97,6 +116,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     if (batchOperation.isPresent()) {
       batchOperation.get().setStatus(BatchOperationStatus.FAILED);
       batchOperationColumnFamily.update(batchKey, batchOperation.get());
+
+      // remove from pending batch operations, the initialization failed and will not be retried
       pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
     } else {
       LOGGER.error("Batch operation with key {} not found, cannot fail it.", batchOperationKey);
@@ -105,6 +126,12 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys) {
+    /*
+     * This method appends the given itemKeys to the given batch operation. The itemKeys are added
+     * to separate chunks. Each chunk has a maximum size of MAX_CHUNK_SIZE items.
+     * When one chunk is full, a new one is created and also appended to the batch operation and the
+     * batchOperationChunksColumnFamily.
+     */
     LOGGER.trace(
         "Appending {} item keys to batch operation with key {}",
         itemKeys.size(),
@@ -121,7 +148,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     final var batch = oBatch.get();
 
-    // Second, get the chunk to append the keys to
+    // Second, get the first chunk to append the keys to
     var chunk = getOrCreateChunk(batch);
 
     // Third, append the keys to the chunk, if the chunk is full, a new one is returned
@@ -199,6 +226,22 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void failPartition(
+      final long batchOperationKey, final int partitionId, final BatchOperationError error) {
+    LOGGER.trace(
+        "Fail batch operation with key {} on partition {} with error: {}",
+        batchOperationKey,
+        partitionId,
+        error);
+    batchKey.wrapLong(batchOperationKey);
+
+    final var batch = batchOperationColumnFamily.get(batchKey);
+    batch.addFinishedPartition(partitionId);
+    batch.addError(error);
+    batchOperationColumnFamily.update(batchKey, batch);
+  }
+
+  @Override
   public void finishPartition(final long batchOperationKey, final int partitionId) {
     LOGGER.trace(
         "Finish batch operation with key {} on partition {}", batchOperationKey, partitionId);
@@ -221,15 +264,21 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void foreachPendingBatchOperation(final BatchOperationVisitor visitor) {
+  public Optional<PersistedBatchOperation> getNextPendingBatchOperation() {
+    final var pendingBatchOperation = new AtomicReference<PersistedBatchOperation>();
+
     pendingBatchOperationColumnFamily.whileTrue(
         (key, nil) -> {
           final var batchOperation = batchOperationColumnFamily.get(key);
           if (batchOperation != null) {
-            visitor.visit(batchOperation);
+            pendingBatchOperation.set(batchOperation);
           }
-          return true;
+          // only return the first pending batch operation
+          return false;
         });
+
+    // return that first pending batch operation if it exists
+    return Optional.ofNullable(pendingBatchOperation.get());
   }
 
   @Override
@@ -241,10 +290,13 @@ public class DbBatchOperationState implements MutableBatchOperationState {
       return List.of();
     }
 
-    if (batch.get().getMinChunkKey() == -1) {
+    if (!batch.get().hasChunks()) {
       return List.of();
     }
 
+    // return the next item keys for the batch operation. This will not return more than batchSize
+    // itemKeys but _can_ return less if the chunk has less than batchSize items. This does not
+    // mean, that the batch operation has no more item chunks with items.
     chunkKey.wrapLong(batch.get().getMinChunkKey());
     final var chunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
     final var chunkKeys = chunk.getItemKeys();

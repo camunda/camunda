@@ -6,12 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useInfiniteQuery, UseInfiniteQueryResult} from '@tanstack/react-query';
+import {
+  useInfiniteQuery,
+  type UseInfiniteQueryResult,
+} from '@tanstack/react-query';
 import {
   type QueryJobsRequestBody,
   type QueryJobsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
-import {RequestError} from 'modules/request';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {RequestError} from 'modules/request';
 import {searchJobs} from 'modules/api/v2/jobs/searchJobs';
 
 const MAX_JOBS_PER_REQUEST = 50;

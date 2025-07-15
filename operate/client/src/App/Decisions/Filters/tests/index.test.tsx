@@ -23,14 +23,6 @@ import {
 } from 'modules/testUtils/selectComboBoxOption';
 import {Paths} from 'modules/Routes';
 
-jest.unmock('modules/utils/date/formatDate');
-
-function reset() {
-  jest.clearAllTimers();
-  jest.useRealTimers();
-  localStorage.clear();
-}
-
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
@@ -70,10 +62,14 @@ describe('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     await groupedDecisionsStore.fetchDecisions();
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
 
-  afterEach(reset);
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    localStorage.clear();
+  });
 
   it('should render the correct elements', () => {
     render(<Filters />, {
@@ -133,6 +129,7 @@ describe('<Filters />', () => {
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -172,6 +169,7 @@ describe('<Filters />', () => {
     });
     await user.click(screen.getByText('Apply'));
 
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -504,7 +502,6 @@ describe('<Filters />', () => {
   });
 
   it('should omit all versions option', async () => {
-    reset();
     const firstDecision = groupedDecisions[0]!;
     const firstVersion = firstDecision.decisions[1]!;
 
@@ -514,7 +511,7 @@ describe('<Filters />', () => {
 
     await groupedDecisionsStore.fetchDecisions();
 
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     const {user} = render(<Filters />, {
       wrapper: getWrapper(

@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 
@@ -21,11 +22,14 @@ public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordV
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
   private final IntegerProperty sourcePartitionIdProp =
       new IntegerProperty(PROP_SOURCE_PARTITION_ID, -1);
+  private final ObjectProperty<BatchOperationError> errorProp =
+      new ObjectProperty<>("error", new BatchOperationError());
 
   public BatchOperationPartitionLifecycleRecord() {
-    super(2);
+    super(3);
     declareProperty(batchOperationKeyProp);
     declareProperty(sourcePartitionIdProp);
+    declareProperty(errorProp);
   }
 
   @Override
@@ -50,10 +54,20 @@ public final class BatchOperationPartitionLifecycleRecord extends UnifiedRecordV
     return this;
   }
 
+  public BatchOperationError getError() {
+    return errorProp.getValue();
+  }
+
+  public BatchOperationPartitionLifecycleRecord setError(final BatchOperationError error) {
+    errorProp.getValue().wrap(error);
+    return this;
+  }
+
   public BatchOperationPartitionLifecycleRecord wrap(
       final BatchOperationPartitionLifecycleRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
     setSourcePartitionId(record.getSourcePartitionId());
+    setError(record.getError());
     return this;
   }
 }

@@ -16,7 +16,7 @@ import {useEffect} from 'react';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {PAGE_TITLE} from 'modules/constants';

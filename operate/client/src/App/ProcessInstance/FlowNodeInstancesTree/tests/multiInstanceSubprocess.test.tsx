@@ -136,7 +136,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   });
 
   it('should poll for instances on root level', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
@@ -161,6 +161,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     const withinMultiInstanceFlowNode = within(
       screen.getByTestId(
         `tree-node-${
+          // eslint-disable-next-line testing-library/no-node-access
           flowNodeInstances.level1Poll[processInstanceId]!.children[1]!.id
         }`,
       ),
@@ -177,7 +178,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1Poll);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
     expect(
       await withinMultiInstanceFlowNode.findByTestId('COMPLETED-icon'),
@@ -186,7 +187,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
       withinMultiInstanceFlowNode.queryByTestId('INCIDENT-icon'),
     ).not.toBeInTheDocument();
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

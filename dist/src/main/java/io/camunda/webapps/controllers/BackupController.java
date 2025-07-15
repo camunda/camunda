@@ -23,7 +23,6 @@ import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.micrometer.common.lang.NonNull;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import org.slf4j.Logger;
@@ -35,8 +34,8 @@ import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
 @WebEndpoint(id = "backupHistory")
@@ -72,7 +71,7 @@ public class BackupController {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> getBackupState(@Selector @NonNull final long backupId) {
+  public WebEndpointResponse<?> getBackupState(@Selector final long backupId) {
     try {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();
@@ -87,12 +86,12 @@ public class BackupController {
 
   @ReadOperation
   public WebEndpointResponse<?> getBackups(
-      @RequestParam(value = "verbose", defaultValue = "true", required = false)
-          final boolean verbose,
-      @RequestParam(value = "pattern", defaultValue = "*", required = false) final String pattern) {
+      @Nullable final Boolean verbose, @Nullable final String pattern) {
     try {
+      final boolean verboseValue = verbose != null ? verbose : true;
+      final String patternValue = pattern != null ? pattern : "*";
       validateRepositoryNameIsConfigured();
-      final var respDTO = backupService.getBackups(verbose, pattern);
+      final var respDTO = backupService.getBackups(verboseValue, patternValue);
       final var resp = respDTO.stream().map(this::mapTo).toList();
       return new WebEndpointResponse<>(resp);
     } catch (final Exception e) {
@@ -102,7 +101,7 @@ public class BackupController {
   }
 
   @DeleteOperation
-  public WebEndpointResponse<?> deleteBackup(@Selector @NonNull final long backupId) {
+  public WebEndpointResponse<?> deleteBackup(@Selector final long backupId) {
     try {
       validateBackupId(backupId);
       validateRepositoryNameIsConfigured();

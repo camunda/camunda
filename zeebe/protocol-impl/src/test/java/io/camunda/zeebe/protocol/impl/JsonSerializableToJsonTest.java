@@ -38,7 +38,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord.ReconstructionProgress;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -206,7 +205,6 @@ final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
                   .setChecksum(checksum);
-              record.setReconstructionProgress(ReconstructionProgress.DECISION_REQUIREMENTS);
 
               final int key = 1234;
               final int position = 4321;
@@ -379,10 +377,7 @@ final class JsonSerializableToJsonTest {
                   .setDeploymentKey(deploymentKey)
                   .setDuplicate(true)
                   .setVersionTag(versionTag);
-              record
-                  .setTenantId("tenant-23")
-                  .setReconstructionKey(123)
-                  .setReconstructionProgress(ReconstructionProgress.FORM);
+              record.setTenantId("tenant-23").setReconstructionKey(123);
               return record;
             },
         """
@@ -2935,7 +2930,6 @@ final class JsonSerializableToJsonTest {
           "redistributedPartitions": [],
           "relocatedPartitions": [],
           "messageCorrelationPartitions": -1,
-          "bootstrappedAt": -1,
           "scalingPosition": -1
         }
         """
@@ -2949,13 +2943,12 @@ final class JsonSerializableToJsonTest {
           "redistributedPartitions": [],
           "relocatedPartitions": [],
           "messageCorrelationPartitions": -1,
-          "bootstrappedAt": -1,
           "scalingPosition": -1
         }
         """
       },
       {
-        "ScaleRecord w/ redistributedPartitions & relocatedPartitions & bootstrappedAt",
+        "ScaleRecord w/ redistributedPartitions & relocatedPartitions & scalingPosition",
         (Supplier<ScaleRecord>)
             () ->
                 new ScaleRecord()
@@ -2963,7 +2956,6 @@ final class JsonSerializableToJsonTest {
                     .setRelocatedPartitions(List.of(4, 5))
                     .setRedistributedPartitions(List.of(4, 5))
                     .setMessageCorrelationPartitions(5)
-                    .setBootstrappedAt(123L)
                     .setScalingPosition(199L),
         """
         {
@@ -2971,7 +2963,6 @@ final class JsonSerializableToJsonTest {
           "redistributedPartitions": [4,5],
           "relocatedPartitions": [4,5],
           "messageCorrelationPartitions": 5,
-          "bootstrappedAt": 123,
           "scalingPosition": 199
         }
         """
@@ -3426,7 +3417,8 @@ final class JsonSerializableToJsonTest {
             () -> new BatchOperationLifecycleManagementRecord().setBatchOperationKey(12345L),
         """
   {
-    "batchOperationKey": 12345
+    "batchOperationKey": 12345,
+    "errors":[]
   }
   """
       },
@@ -3447,6 +3439,30 @@ final class JsonSerializableToJsonTest {
       {
         "intervalType": "ACTIVE",
         "eventType": "RPI",
+        "resetTime": -1,
+        "startTime": 123,
+        "endTime": 124,
+        "values": {"tenant1":5}
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord eDI //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UsageMetricRecord eDI",
+        (Supplier<UsageMetricRecord>)
+            () ->
+                new UsageMetricRecord()
+                    .setIntervalType(IntervalType.ACTIVE)
+                    .setEventType(EventType.EDI)
+                    .setStartTime(123L)
+                    .setEndTime(124L)
+                    .setValues(USAGE_METRICS_MSGPACK),
+        """
+      {
+        "intervalType": "ACTIVE",
+        "eventType": "EDI",
         "resetTime": -1,
         "startTime": 123,
         "endTime": 124,

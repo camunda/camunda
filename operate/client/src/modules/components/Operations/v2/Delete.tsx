@@ -8,11 +8,15 @@
 
 import {useState} from 'react';
 import {Modal} from '@carbon/react';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {Restricted} from 'modules/components/Restricted';
 import {useOperations} from 'modules/queries/operations/useOperations';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 import {DangerButton} from 'modules/components/OperationItem/DangerButton';
+import type {
+  ResourceBasedPermissionDto,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];

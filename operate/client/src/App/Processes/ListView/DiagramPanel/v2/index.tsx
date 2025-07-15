@@ -7,7 +7,7 @@
  */
 
 import React, {useRef} from 'react';
-import {useLocation, useNavigate, Location} from 'react-router-dom';
+import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {observer} from 'mobx-react';
 import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
 import {deleteSearchParams} from 'modules/utils/filter';
@@ -33,6 +33,7 @@ import {
   getSubprocessOverlayFromIncidentFlowNodes,
 } from 'modules/utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
+import type {FlowNodeState} from 'modules/types/operate';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 

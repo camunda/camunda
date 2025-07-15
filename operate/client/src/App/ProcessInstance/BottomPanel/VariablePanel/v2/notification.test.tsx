@@ -8,6 +8,7 @@
 
 import {VariablePanel} from './index';
 import {
+  fireEvent,
   render,
   screen,
   waitFor,
@@ -20,10 +21,9 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
-  createBatchOperation,
   createInstance,
-  createOperation,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -31,8 +31,6 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
-import {mockGetOperation} from 'modules/mocks/api/getOperation';
-import * as operationApi from 'modules/api/getOperation';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -44,15 +42,14 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init} from 'modules/utils/flowNodeMetadata';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
-const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
-
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -111,6 +108,9 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
 
     const statistics = [
       {
@@ -137,6 +137,14 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -154,15 +162,14 @@ describe('VariablePanel', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() =>
@@ -214,7 +221,7 @@ describe('VariablePanel', () => {
     );
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -256,7 +263,7 @@ describe('VariablePanel', () => {
     });
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() =>
@@ -308,7 +315,7 @@ describe('VariablePanel', () => {
     );
 
     await waitForElementToBeRemoved(
-      within(screen.getByTestId('foo')).getByTestId(
+      within(screen.getByTestId('foo')).queryByTestId(
         'variable-operation-spinner',
       ),
     );
@@ -328,10 +335,10 @@ describe('VariablePanel', () => {
   });
 
   it('should display error notification if add variable operation fails', async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
     );
     await waitFor(() =>
@@ -370,7 +377,7 @@ describe('VariablePanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -380,13 +387,9 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
-    mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id'}),
-    );
+    mockApplyOperation().withNetworkError();
 
-    mockGetOperation().withSuccess([createOperation({state: 'FAILED'})]);
-
-    await user.click(
+    fireEvent.click(
       screen.getByRole('button', {
         name: /save variable/i,
       }),
@@ -398,9 +401,9 @@ describe('VariablePanel', () => {
       ),
     ).toBeInTheDocument();
 
-    jest.runOnlyPendingTimers();
+    vi.runOnlyPendingTimers();
 
-    await waitForElementToBeRemoved(screen.getByTestId('foo'));
+    await waitForElementToBeRemoved(screen.queryByTestId('foo'));
 
     expect(
       screen.getByRole('button', {
@@ -414,9 +417,7 @@ describe('VariablePanel', () => {
       title: 'Variable could not be saved',
     });
 
-    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 });

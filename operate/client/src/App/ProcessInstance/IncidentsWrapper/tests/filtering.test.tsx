@@ -12,10 +12,21 @@ import {Wrapper, mockIncidents, mockResolvedIncidents} from './mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {act} from 'react';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {createInstance, createProcessInstance} from 'modules/testUtils';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('Filtering', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstance().withSuccess(createInstance());
+    mockFetchProcessInstanceV2().withSuccess(
+      createProcessInstance({
+        hasIncident: true,
+      }),
+    );
 
     await incidentsStore.fetchIncidents('1');
 
@@ -23,7 +34,7 @@ describe('Filtering', () => {
   });
 
   it('should not have active filters by default', () => {
-    render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+    render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
       wrapper: Wrapper,
     });
 
@@ -35,7 +46,7 @@ describe('Filtering', () => {
   });
 
   it('should filter the incidents when errorTypes are selected', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
       wrapper: Wrapper,
     });
 
@@ -63,7 +74,7 @@ describe('Filtering', () => {
   });
 
   it('should filter the incidents when flowNodes are selected', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
       wrapper: Wrapper,
     });
 
@@ -91,7 +102,7 @@ describe('Filtering', () => {
   });
 
   it('should filter the incidents when both errorTypes & flowNodes are selected', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
       wrapper: Wrapper,
     });
 
@@ -128,7 +139,7 @@ describe('Filtering', () => {
 
   it('should remove filter when only related incident gets resolved', async () => {
     const {user, rerender} = render(
-      <IncidentsWrapper setIsInTransition={jest.fn()} />,
+      <IncidentsWrapper setIsInTransition={vi.fn()} />,
       {
         wrapper: Wrapper,
       },
@@ -159,7 +170,7 @@ describe('Filtering', () => {
 
     await act(() => incidentsStore.fetchIncidents('1'));
 
-    rerender(<IncidentsWrapper setIsInTransition={jest.fn()} />);
+    rerender(<IncidentsWrapper setIsInTransition={vi.fn()} />);
 
     expect(
       screen.queryByRole('option', {
@@ -177,7 +188,7 @@ describe('Filtering', () => {
   });
 
   it('should drop all filters when clicking the clear all button', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
+    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
       wrapper: Wrapper,
     });
 

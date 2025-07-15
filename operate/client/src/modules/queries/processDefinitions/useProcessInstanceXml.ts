@@ -7,10 +7,10 @@
  */
 
 import {
-  ParsedXmlData,
+  type ParsedXmlData,
   useProcessDefinitionXml,
 } from './useProcessDefinitionXml';
-import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {businessObjectsParser} from './useBusinessObjects';
 
 type ExtendedParsedXmlData = ParsedXmlData & {

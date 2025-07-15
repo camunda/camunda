@@ -16,8 +16,8 @@ import {createInstance, createOperation} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 
-jest.mock('modules/constants/variables', () => ({
-  ...jest.requireActual('modules/constants/variables'),
+vi.mock('modules/constants/variables', () => ({
+  ...vi.importActual('modules/constants/variables'),
   MAX_VARIABLES_STORED: 5,
   MAX_VARIABLES_PER_REQUEST: 3,
 }));
@@ -138,7 +138,7 @@ describe('Update Variable', () => {
 
     mockApplyOperation().withServerError();
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
     await variablesStore.updateVariable({
       id: '1',
       name: 'mwst',
@@ -150,9 +150,9 @@ describe('Update Variable', () => {
   });
 
   it('should not update variable on network error', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     await variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -163,7 +163,7 @@ describe('Update Variable', () => {
 
     mockApplyOperation().withNetworkError();
 
-    const mockOnError = jest.fn();
+    const mockOnError = vi.fn();
     await variablesStore.updateVariable({
       id: '1',
       name: 'mwst',

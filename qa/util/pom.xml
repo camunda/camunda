@@ -228,11 +228,11 @@
       <artifactId>regions</artifactId>
       <scope>compile</scope>
     </dependency>
-    <dependency>
-      <groupId>com.amazonaws</groupId>
-      <artifactId>aws-java-sdk-core</artifactId>
-      <scope>compile</scope>
-    </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>

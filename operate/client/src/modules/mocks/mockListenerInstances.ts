@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {ListenerEntity} from 'modules/types/operate';
+
 const mockListenerInstances: ListenerEntity[] = [
   {
     listenerType: 'TASK_LISTENER',

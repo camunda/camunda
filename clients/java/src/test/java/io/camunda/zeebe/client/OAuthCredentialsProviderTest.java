@@ -174,6 +174,29 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Test
+  void shouldRequestTokenWithResourceAndAddToCall() throws IOException {
+    // given
+    final String resource = "https://api.example.com";
+    final OAuthCredentialsProvider provider =
+        new OAuthCredentialsProviderBuilder()
+            .clientId(CLIENT_ID)
+            .clientSecret(SECRET)
+            .audience(AUDIENCE)
+            .resource(resource)
+            .authorizationServerUrl(tokenUrlString())
+            .credentialsCachePath(cacheFilePath.toString())
+            .build();
+    mockCredentialsWithResource(ACCESS_TOKEN, null, resource);
+
+    // when
+    provider.applyCredentials(applier);
+
+    // then
+    assertThat(applier.credentials)
+        .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+  }
+
+  @Test
   void shouldRefreshCredentialsOnRetry() throws IOException {
     // given
     final OAuthCredentialsProvider provider =
@@ -364,6 +387,11 @@ public final class OAuthCredentialsProviderTest {
   }
 
   private void mockCredentials(final String token, final String scope) {
+    mockCredentialsWithResource(token, scope, null);
+  }
+
+  private void mockCredentialsWithResource(
+      final String token, final String scope, final String resource) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
     map.put("client_id", CLIENT_ID);
@@ -372,22 +400,30 @@ public final class OAuthCredentialsProviderTest {
     if (scope != null) {
       map.put("scope", scope);
     }
+    if (resource != null) {
+      map.put("resource", resource);
+    }
 
     final String encodedBody =
         map.entrySet().stream()
             .map(e -> encode(e.getKey()) + "=" + encode(e.getValue()))
             .collect(Collectors.joining("&"));
 
-    map.put("access_token", token);
-    map.put("token_type", TOKEN_TYPE);
-    map.put(
+    // Create response body - resource parameter should not be included in response
+    final HashMap<String, String> responseMap = new HashMap<>();
+    responseMap.put("access_token", token);
+    responseMap.put("token_type", TOKEN_TYPE);
+    responseMap.put(
         "expires_in",
         String.valueOf(
             EXPIRY.getLong(ChronoField.INSTANT_SECONDS) - Instant.now().getEpochSecond()));
+    if (scope != null) {
+      responseMap.put("scope", scope);
+    }
 
     final String body;
     try {
-      body = jsonMapper.writeValueAsString(map);
+      body = jsonMapper.writeValueAsString(responseMap);
       wireMockInfo
           .getWireMock()
           .register(

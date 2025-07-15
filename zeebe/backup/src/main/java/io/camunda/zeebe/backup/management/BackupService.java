@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -46,14 +47,15 @@ public final class BackupService extends Actor implements BackupManager {
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
       final JournalInfoProvider raftMetadataProvider,
-      final MeterRegistry partitionRegistry) {
+      final MeterRegistry partitionRegistry,
+      final LogStreamWriter logStreamWriter) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     metrics = new BackupManagerMetrics(partitionRegistry);
-    internalBackupManager = new BackupServiceImpl(backupStore);
+    internalBackupManager = new BackupServiceImpl(backupStore, logStreamWriter);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
   }

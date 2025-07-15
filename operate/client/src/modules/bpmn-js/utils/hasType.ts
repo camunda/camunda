@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {BusinessObject, ElementType} from 'bpmn-js/lib/NavigatedViewer';
+import {
+  type BusinessObject,
+  type ElementType,
+} from 'bpmn-js/lib/NavigatedViewer';
 
 const hasType = ({
   businessObject,

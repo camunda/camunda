@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +47,33 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
             .schedulingService()
             .submitActor(snapshotStore, SchedulingHints.ioBound())
             .thenApply(v -> context.snapshotStore(snapshotStore), context.concurrencyControl());
+
     if (context.isInitializeFromSnapshot()) {
+      // Delete the persisted snapshot if the id is the same we "expect" when bootstrapping
+      // this may happen if the startup fails in later steps, but the snapshot was already
+      // persisted.
+      // It's not possible to persist the same snapshot twice, so we must delete it first
+      if (snapshotStore.getLatestSnapshot().isPresent()) {
+        final var latestSnapshot = snapshotStore.getLatestSnapshot().get();
+        final var isBootstrap = latestSnapshot.getMetadata().isBootstrap();
+        if (isBootstrap) {
+          LOG.info(
+              "A bootstrapped snapshot is present, deleting it in order to be able to fetch it again and bootstrap cleanly.");
+          result =
+              result.andThen(
+                  ctx -> snapshotStore.delete().thenApply(empty -> ctx),
+                  context.concurrencyControl());
+        } else {
+          final var errorMessage =
+              "Snapshot {} is not for bootstrap, aborting bootstrap. Manual intervention is required to successfully bootstrap this partition. Verify why the snapshot is present and if it's safe to to do so please delete it."
+                  .formatted(latestSnapshot.getId());
+          result.andThen(
+              ctx ->
+                  CompletableActorFuture.completedExceptionally(
+                      new IllegalStateException(errorMessage)),
+              context.concurrencyControl());
+        }
+      }
       result =
           result
               .andThen(
@@ -67,7 +94,8 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
                             context.concurrencyControl());
                   },
                   context.concurrencyControl())
-              .andThen(this::initializeFromBootstrapSnapshot, context.concurrencyControl());
+              .andThen(this::initializeFromBootstrapSnapshot, context.concurrencyControl())
+              .andThen(this::deleteBootstrapSnapshot, context.concurrencyControl());
     }
     return result;
   }
@@ -79,7 +107,26 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
         .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
   }
 
-  ActorFuture<PartitionStartupContext> initializeFromBootstrapSnapshot(
+  /** Deletes the snapshot for bootstrap, even if an error was raised. */
+  private ActorFuture<PartitionStartupContext> deleteBootstrapSnapshot(
+      final PartitionStartupContext context, final Throwable error) {
+    final var result =
+        Optional.ofNullable(context.snapshotStore())
+            .map(FileBasedSnapshotStore::deleteBootstrapSnapshots)
+            .orElse(CompletableActorFuture.completed());
+
+    return result.andThen(
+        ignored -> {
+          if (error != null) {
+            return CompletableActorFuture.completedExceptionally(error);
+          } else {
+            return CompletableActorFuture.completed(context);
+          }
+        },
+        context.concurrencyControl());
+  }
+
+  private ActorFuture<PartitionStartupContext> initializeFromBootstrapSnapshot(
       final PartitionStartupContext context) {
     final var fut = context.snapshotTransfer().getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION);
     return fut.andThen(

@@ -41,8 +41,8 @@ public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord>
     final var desiredPartitions = routingState.desiredPartitions();
     final var response = new ScaleRecord();
     final var desiredPartitionCount = routingState.desiredPartitions().size();
-    final var bootstrappedAt = routingState.bootstrappedAt(desiredPartitionCount);
-    if (bootstrappedAt <= 0) {
+    final var scalingStartedAt = routingState.scalingStartedAt(desiredPartitionCount);
+    if (scalingStartedAt <= 0) {
       final var reason =
           "Scaling has not started for the desired partition count " + desiredPartitionCount;
       writers.rejection().appendRejection(command, RejectionType.INVALID_STATE, reason);
@@ -52,7 +52,7 @@ public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord>
         desiredPartitions.size(),
         routingState.currentPartitions(),
         routingState.messageCorrelation().partitionCount(),
-        routingState.bootstrappedAt(desiredPartitionCount));
+        routingState.scalingStartedAt(desiredPartitionCount));
     writers.state().appendFollowUpEvent(key, ScaleIntent.STATUS_RESPONSE, response);
     writers.response().writeEventOnCommand(key, ScaleIntent.STATUS_RESPONSE, response, command);
   }

@@ -15,7 +15,7 @@ import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstan
 import {Paths} from 'modules/Routes';
 
 const mockProps = {
-  onClick: jest.fn(),
+  onClick: vi.fn(),
   isArrowFlipped: false,
   isOpen: false,
 };

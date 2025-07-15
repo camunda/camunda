@@ -8,6 +8,10 @@
 
 import {PERMISSIONS} from 'modules/constants';
 import {useProcessInstanceDeprecated} from '../processInstance/deprecated/useProcessInstanceDeprecated';
+import type {
+  ProcessInstanceEntity,
+  ResourceBasedPermissionDto,
+} from 'modules/types/operate';
 
 const permissionsParser = (processInstance: ProcessInstanceEntity) => {
   if (!window.clientConfig?.resourcePermissionsEnabled) {

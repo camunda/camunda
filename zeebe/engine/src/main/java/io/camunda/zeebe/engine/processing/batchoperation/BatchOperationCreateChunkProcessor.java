@@ -17,6 +17,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Processes commands to create batch operation chunks. */
 @ExcludeAuthorizationCheck
 public final class BatchOperationCreateChunkProcessor
     implements TypedRecordProcessor<BatchOperationChunkRecord> {

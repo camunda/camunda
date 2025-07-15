@@ -14,6 +14,7 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
@@ -28,7 +29,9 @@ public class StandaloneCamundaTest {
 
   @MultiDbTestApplication
   private static final TestCamundaApplication CAMUNDA_APPLICATION =
-      new TestCamundaApplication().withUnauthenticatedAccess();
+      new TestCamundaApplication()
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withUnauthenticatedAccess();
 
   private static CamundaClient camundaClient;
 

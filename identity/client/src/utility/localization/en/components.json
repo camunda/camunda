@@ -67,5 +67,6 @@
   "setupEmailLabel": "Email",
   "setupEmailPlaceholder": "Enter email",
   "setupEmailInvalid": "Please enter a valid email",
-  "setupCreateUser": "Create user"
+  "setupCreateUser": "Create user",
+  "setupCreateAdminUserGenericError": "An error occurred while creating the admin user. Please try again."
 }

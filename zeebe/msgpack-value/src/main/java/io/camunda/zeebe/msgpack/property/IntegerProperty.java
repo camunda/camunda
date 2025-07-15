@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack.property;
 
 import io.camunda.zeebe.msgpack.value.IntegerValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 
 public final class IntegerProperty extends BaseProperty<IntegerValue> {
   public IntegerProperty(final String key) {
@@ -15,6 +16,14 @@ public final class IntegerProperty extends BaseProperty<IntegerValue> {
   }
 
   public IntegerProperty(final String key, final int defaultValue) {
+    super(key, new IntegerValue(), new IntegerValue(defaultValue));
+  }
+
+  public IntegerProperty(final StringValue key) {
+    super(key, new IntegerValue());
+  }
+
+  public IntegerProperty(final StringValue key, final int defaultValue) {
     super(key, new IntegerValue(), new IntegerValue(defaultValue));
   }
 

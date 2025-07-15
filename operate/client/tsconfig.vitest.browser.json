@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.vitest.tsbuildinfo",
+    "types": ["vitest/globals", "@vitest/browser/matchers"]
+  },
+  "include": [
+    "src/**/*",
+    "src/**/*.browser.test.ts",
+    "src/**/*.browser.test.tsx",
+    "src/**/*.browser.spec.ts",
+    "src/**/*.browser.spec.tsx",
+    "./vitest.browser.setup.ts",
+    "src/test-extend.ts",
+    "src/**/__mocks__/**/*",
+    "src/modules/mocks/**/*",
+    "src/**/mocks.ts",
+    "src/**/mocks.tsx",
+    "src/**/*.setup.ts",
+    "src/modules/testUtils.tsx",
+    "src/modules/testUtils/**/*"
+  ],
+  "exclude": []
+}

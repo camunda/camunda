@@ -75,6 +75,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
               onClick: deleteAuthorization,
             },
           ]}
+          maxDisplayCellLength={25}
         />
       ) : (
         <C3EmptyState

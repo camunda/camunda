@@ -9,39 +9,143 @@
 import {
   validateModifiedNameComplete,
   validateModifiedNameNotDuplicate,
+  validateModifiedNameNotDuplicateDeprecated,
   validateModifiedValueComplete,
   validateModifiedValueValid,
   validateNameCharacters,
   validateNameComplete,
+  validateNameCompleteDeprecated,
+  validateNameNotDuplicate,
   validateValueComplete,
   validateValueValid,
 } from './validators';
 import {variablesStore} from 'modules/stores/variables';
+import type {Variable} from '@vzeta/camunda-api-zod-schemas';
+import {createVariableV2} from 'modules/testUtils';
 
 const MOCK_FIELD_META_STATE = {
-  blur: jest.fn(),
-  change: jest.fn(),
-  focus: jest.fn(),
+  blur: vi.fn(),
+  change: vi.fn(),
+  focus: vi.fn(),
   name: 'fieldName',
 } as const;
 
-describe('validators', () => {
-  let setTimeoutSpy: jest.SpyInstance;
+describe('validators with allVariables', () => {
+  const allVariables: Variable[] = [
+    createVariableV2({
+      variableKey: '1',
+      name: 'existingName1',
+      value: 'value1',
+    }),
+    createVariableV2({
+      variableKey: '2',
+      name: 'existingName2',
+      value: 'value2',
+    }),
+  ];
 
+  describe('validateNameNotDuplicate', () => {
+    it('should return undefined if name is unique', async () => {
+      const result = await validateNameNotDuplicate(allVariables)(
+        'uniqueName',
+        {},
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      );
+      expect(result).toBeUndefined();
+    });
+
+    it('should return error if name is a duplicate in allVariables', async () => {
+      const result = await validateNameNotDuplicate(allVariables)(
+        'existingName2',
+        {},
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      );
+      expect(result).toBe('Name should be unique');
+    });
+
+    it('should return undefined if name is a duplicate but meta is not dirty', async () => {
+      const result = await validateNameNotDuplicate(allVariables)(
+        'existingName2',
+        {},
+        {...MOCK_FIELD_META_STATE, dirty: false},
+      );
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('validateModifiedNameNotDuplicate', () => {
+    it('should return undefined if no duplicate exists', () => {
+      const result = validateModifiedNameNotDuplicate(allVariables)(
+        'uniqueName',
+        {newVariables: [{name: 'uniqueName'}]},
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      );
+      expect(result).toBeUndefined();
+    });
+
+    it('should return error if duplicate exists in allVariables', () => {
+      const result = validateModifiedNameNotDuplicate(allVariables)(
+        'existingName1',
+        {newVariables: [{name: 'existingName1'}]},
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      );
+      expect(result).toBe('Name should be unique');
+    });
+
+    it('should return undefined if duplicate exists but meta is not dirty', () => {
+      const result = validateModifiedNameNotDuplicate(allVariables)(
+        'existingName1',
+        {newVariables: [{name: 'existingName1'}]},
+        {...MOCK_FIELD_META_STATE, dirty: false},
+      );
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('validateNameComplete', () => {
+    it('should return error if name is empty and value is not empty', () => {
+      const result = validateNameComplete(allVariables)(
+        '',
+        {value: 'someValue'},
+        {...MOCK_FIELD_META_STATE},
+      );
+      expect(result).toBe('Name has to be filled');
+    });
+
+    it('should return error if name is a duplicate in allVariables', () => {
+      const result = validateNameComplete(allVariables)(
+        'existingName1',
+        {value: 'someValue'},
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      );
+      expect(result).toBe('Name should be unique');
+    });
+
+    it('should return undefined if name is unique', () => {
+      const result = validateNameComplete(allVariables)(
+        'uniqueName',
+        {value: 'someValue'},
+        {...MOCK_FIELD_META_STATE, dirty: true},
+      );
+      expect(result).toBeUndefined();
+    });
+  });
+});
+
+describe('validators', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    setTimeoutSpy = jest.spyOn(window, 'setTimeout');
+    vi.useFakeTimers({shouldAdvanceTime: true});
   });
   afterEach(() => {
-    jest.clearAllTimers();
-    jest.useRealTimers();
-    jest.restoreAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
   afterAll(() => {
     variablesStore.reset();
   });
 
   it('should validate name without delay', async () => {
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     expect(validateNameCharacters('', {})).toBeUndefined();
     expect(validateNameCharacters('test', {})).toBeUndefined();
     expect(validateNameCharacters('"test"', {})).toBe('Name is invalid');
@@ -53,6 +157,7 @@ describe('validators', () => {
   });
 
   it('should validate name with delay', async () => {
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     variablesStore.setItems([
       {
         id: '2251799813686037-clientNo',
@@ -65,12 +170,12 @@ describe('validators', () => {
       },
     ]);
 
-    expect(validateNameComplete('', {value: '"something"'})).resolves.toBe(
-      'Name has to be filled',
-    );
+    await expect(
+      validateNameCompleteDeprecated('', {value: '"something"'}),
+    ).resolves.toBe('Name has to be filled');
 
-    expect(
-      validateNameComplete(
+    await expect(
+      validateNameCompleteDeprecated(
         'clientNo',
         {value: '"something"'},
         {...MOCK_FIELD_META_STATE, dirty: true},
@@ -78,7 +183,7 @@ describe('validators', () => {
     ).resolves.toBe('Name should be unique');
 
     expect(
-      validateNameComplete(
+      validateNameCompleteDeprecated(
         'clientNo',
         {value: '"something"'},
         {...MOCK_FIELD_META_STATE, dirty: false},
@@ -86,13 +191,14 @@ describe('validators', () => {
     ).toBeUndefined();
 
     expect(
-      validateNameComplete('anotherName', {value: '"something"'}),
+      validateNameCompleteDeprecated('anotherName', {value: '"something"'}),
     ).toBeUndefined();
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });
 
   it('should validate value with delay', async () => {
+    const setTimeoutSpy = vi.spyOn(global, 'setTimeout');
     expect(validateValueComplete('', {name: ''})).toBeUndefined();
 
     expect(validateValueComplete('123', {name: 'name'})).toBeUndefined();
@@ -113,12 +219,12 @@ describe('validators', () => {
       validateValueComplete('invalid json', {name: 'name'}),
     ).toBeUndefined();
 
-    expect(validateValueValid('invalid json', {name: 'name'})).resolves.toBe(
-      'Value has to be JSON',
-    );
+    await expect(
+      validateValueValid('invalid json', {name: 'name'}),
+    ).resolves.toBe('Value has to be JSON');
 
-    expect(validateValueComplete('', {name: 'name'})).resolves.toBe(
-      'Name has to be filled',
+    await expect(validateValueComplete('', {name: 'name'})).resolves.toBe(
+      'Value has to be filled',
     );
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
@@ -156,7 +262,7 @@ describe('validators', () => {
     ]);
 
     expect(
-      validateModifiedNameNotDuplicate(
+      validateModifiedNameNotDuplicateDeprecated(
         'clientNo',
         {newVariables: undefined},
         {...MOCK_FIELD_META_STATE, dirty: true},
@@ -164,7 +270,7 @@ describe('validators', () => {
     ).toBeUndefined();
 
     expect(
-      validateModifiedNameNotDuplicate(
+      validateModifiedNameNotDuplicateDeprecated(
         'clientNo',
         {newVariables: [{name: 'clientNo'}]},
         {...MOCK_FIELD_META_STATE, dirty: true},
@@ -172,7 +278,7 @@ describe('validators', () => {
     ).toBe('Name should be unique');
 
     expect(
-      validateModifiedNameNotDuplicate(
+      validateModifiedNameNotDuplicateDeprecated(
         'test',
         {newVariables: [{name: 'test'}, {name: 'test'}]},
         {...MOCK_FIELD_META_STATE, active: true},
@@ -180,7 +286,7 @@ describe('validators', () => {
     ).toBe('Name should be unique');
 
     expect(
-      validateModifiedNameNotDuplicate(
+      validateModifiedNameNotDuplicateDeprecated(
         'test',
         {newVariables: [{name: 'test'}, {name: 'test'}]},
         {...MOCK_FIELD_META_STATE, error: 'Name should be unique'},
@@ -188,7 +294,7 @@ describe('validators', () => {
     ).toBe('Name should be unique');
 
     expect(
-      validateModifiedNameNotDuplicate(
+      validateModifiedNameNotDuplicateDeprecated(
         'test',
         {newVariables: [{name: 'test'}, {name: 'test'}]},
         {...MOCK_FIELD_META_STATE, validating: true},
@@ -196,7 +302,7 @@ describe('validators', () => {
     ).toBe('Name should be unique');
 
     expect(
-      validateModifiedNameNotDuplicate(
+      validateModifiedNameNotDuplicateDeprecated(
         'test',
         {newVariables: [{name: 'test'}, {name: 'test'}]},
         {...MOCK_FIELD_META_STATE},
@@ -204,7 +310,7 @@ describe('validators', () => {
     ).toBeUndefined();
 
     expect(
-      validateModifiedNameNotDuplicate(
+      validateModifiedNameNotDuplicateDeprecated(
         'test',
         {newVariables: [{name: 'test'}]},
         {...MOCK_FIELD_META_STATE, active: true},

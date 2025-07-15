@@ -58,11 +58,15 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
+import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -151,9 +155,10 @@ public class CamundaServicesConfiguration {
   public ElementInstanceServices elementInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient) {
+      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
+      final ProcessCache processCache) {
     return new ElementInstanceServices(
-        brokerClient, securityContextProvider, flowNodeInstanceSearchClient, null);
+        brokerClient, securityContextProvider, flowNodeInstanceSearchClient, processCache, null);
   }
 
   @Bean
@@ -214,7 +219,8 @@ public class CamundaServicesConfiguration {
       final UserTaskSearchClient userTaskSearchClient,
       final FormSearchClient formSearchClient,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final VariableSearchClient variableSearchClient) {
+      final VariableSearchClient variableSearchClient,
+      final ProcessCache processCache) {
     return new UserTaskServices(
         brokerClient,
         securityContextProvider,
@@ -222,6 +228,7 @@ public class CamundaServicesConfiguration {
         formSearchClient,
         flowNodeInstanceSearchClient,
         variableSearchClient,
+        processCache,
         null);
   }
 
@@ -326,5 +333,21 @@ public class CamundaServicesConfiguration {
   public AuthorizationChecker authorizationChecker(
       final AuthorizationSearchClient authorizationSearchClient) {
     return new AuthorizationChecker(authorizationSearchClient);
+  }
+
+  @Bean
+  public ProcessCache processCache(
+      final GatewayRestConfiguration configuration,
+      final ProcessDefinitionServices processDefinitionServices,
+      final BrokerTopologyManager brokerTopologyManager,
+      final MeterRegistry meterRegistry) {
+
+    final var cacheConfiguration =
+        new ProcessCache.Configuration(
+            configuration.getProcessCache().getMaxSize(),
+            configuration.getProcessCache().getExpirationIdleMillis());
+
+    return new ProcessCache(
+        cacheConfiguration, processDefinitionServices, brokerTopologyManager, meterRegistry);
   }
 }

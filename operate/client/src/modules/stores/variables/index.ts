@@ -13,7 +13,7 @@ import {
   computed,
   when,
   autorun,
-  IReactionDisposer,
+  type IReactionDisposer,
   override,
   reaction,
 } from 'mobx';
@@ -21,7 +21,7 @@ import {getOperation} from 'modules/api/getOperation';
 import {fetchVariable} from 'modules/api/fetchVariable';
 import {
   fetchVariables,
-  VariablePayload,
+  type VariablePayload,
 } from 'modules/api/processInstances/fetchVariables';
 import {applyOperation} from 'modules/api/processInstances/operations';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -31,9 +31,13 @@ import {
   MAX_VARIABLES_STORED,
 } from 'modules/constants/variables';
 import {logger} from 'modules/logger';
-import {flowNodeMetaDataStore} from '../flowNodeMetaData';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {modificationsStore} from '../modifications';
+import {getScopeId} from 'modules/utils/variables';
+import type {
+  ProcessInstanceEntity,
+  VariableEntity,
+} from 'modules/types/operate';
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
@@ -101,7 +105,6 @@ class Variables extends NetworkReconnectionHandler {
       setSingleVariable: action,
       hasNoVariables: computed,
       hasActiveOperation: computed,
-      scopeId: computed,
       setLatestFetchDetails: action,
       setAreVariablesLoadedOnce: action,
       areVariablesLoadedOnce: observable,
@@ -124,7 +127,7 @@ class Variables extends NetworkReconnectionHandler {
     );
 
     this.disposer = autorun(() => {
-      if (processInstanceDetailsStore.isRunning && this.scopeId !== null) {
+      if (processInstanceDetailsStore.isRunning && getScopeId() !== null) {
         if (
           this.intervalId === null &&
           !modificationsStore.isModificationModeEnabled
@@ -137,7 +140,7 @@ class Variables extends NetworkReconnectionHandler {
     });
 
     this.fetchVariablesDisposer = reaction(
-      () => this.scopeId,
+      () => getScopeId(),
       (scopeId) => {
         this.clearItems();
 
@@ -219,7 +222,7 @@ class Variables extends NetworkReconnectionHandler {
       instanceId,
       payload: {
         pageSize: MAX_VARIABLES_PER_REQUEST,
-        scopeId: this.scopeId ?? instanceId,
+        scopeId: getScopeId() ?? instanceId,
         searchBefore: this.getSortValues('prev'),
       },
     });
@@ -233,7 +236,7 @@ class Variables extends NetworkReconnectionHandler {
       instanceId,
       payload: {
         pageSize: MAX_VARIABLES_PER_REQUEST,
-        scopeId: this.scopeId ?? instanceId,
+        scopeId: getScopeId() ?? instanceId,
         searchAfter: this.getSortValues('next'),
       },
     });
@@ -247,7 +250,7 @@ class Variables extends NetworkReconnectionHandler {
       instanceId,
       payload: {
         pageSize: MAX_VARIABLES_PER_REQUEST,
-        scopeId: this.scopeId ?? instanceId,
+        scopeId: getScopeId() ?? instanceId,
       },
     });
   };
@@ -285,12 +288,13 @@ class Variables extends NetworkReconnectionHandler {
 
   getVariables = (fetchType: FetchType, items: VariableEntity[]) => {
     switch (fetchType) {
-      case 'next':
-        const allVariables = [...this.state.items, ...items];
+      case 'next': {
+        const allVariables: VariableEntity[] = [...this.state.items, ...items];
 
         return allVariables.slice(
           Math.max(allVariables.length - MAX_VARIABLES_STORED, 0),
         );
+      }
       case 'prev':
         return [...items, ...this.state.items].slice(0, MAX_VARIABLES_STORED);
       case 'initial':
@@ -299,7 +303,7 @@ class Variables extends NetworkReconnectionHandler {
     }
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
   };
 
@@ -307,7 +311,7 @@ class Variables extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchVariableFailure = (error?: unknown) => {
+  handleFetchVariableFailure = () => {
     this.setLoadingItemId(null);
   };
 
@@ -343,15 +347,6 @@ class Variables extends NetworkReconnectionHandler {
     this.state.pendingItem = item;
   };
 
-  get scopeId() {
-    const {selection} = flowNodeSelectionStore.state;
-    const {metaData} = flowNodeMetaDataStore.state;
-
-    return (
-      selection?.flowNodeInstanceId ?? metaData?.flowNodeInstanceId ?? null
-    );
-  }
-
   getSortValues = (fetchType: FetchType) => {
     const {items} = this.state;
 
@@ -383,7 +378,7 @@ class Variables extends NetworkReconnectionHandler {
       {
         instanceId,
         payload: {
-          scopeId: this.scopeId || instanceId,
+          scopeId: getScopeId() || instanceId,
           pageSize:
             items.length <= MAX_VARIABLES_PER_REQUEST
               ? MAX_VARIABLES_PER_REQUEST
@@ -527,7 +522,7 @@ class Variables extends NetworkReconnectionHandler {
     this.stopPolling();
     const response = await applyOperation(id, {
       operationType: 'ADD_VARIABLE',
-      variableScopeId: this.scopeId || undefined,
+      variableScopeId: getScopeId() || undefined,
       variableName: name,
       variableValue: value,
     });
@@ -577,7 +572,7 @@ class Variables extends NetworkReconnectionHandler {
 
     const response = await applyOperation(id, {
       operationType: 'UPDATE_VARIABLE',
-      variableScopeId: this.scopeId || undefined,
+      variableScopeId: getScopeId() || undefined,
       variableName: name,
       variableValue: value,
     });

@@ -16,8 +16,13 @@
 package io.camunda.client.api.search.enums;
 
 public enum UserTaskState {
+  CREATING,
   CREATED,
+  ASSIGNING,
+  UPDATING,
+  COMPLETING,
   COMPLETED,
+  CANCELING,
   CANCELED,
   FAILED,
   UNKNOWN_ENUM_VALUE;

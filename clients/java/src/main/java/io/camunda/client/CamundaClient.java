@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
+import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
@@ -65,6 +66,7 @@ import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
@@ -102,6 +104,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
+import io.camunda.client.api.fetch.TenantGetRequest;
 import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
@@ -123,11 +126,13 @@ import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequ
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingsByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
+import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.RolesByGroupSearchRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
+import io.camunda.client.api.search.request.TenantsSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.UsersByGroupSearchRequest;
@@ -2035,6 +2040,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UpdateTenantCommandStep1 newUpdateTenantCommand(String tenantId);
 
   /**
+   * Request to get a tenant by tenant ID.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newTenantGetRequest("tenantId")
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the request to get a tenant by ID
+   */
+  TenantGetRequest newTenantGetRequest(String tenantId);
+
+  /**
+   * Executes a search request to query tenants.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newTenantsSearchRequest()
+   *  .filter((f) -> f.name("tenantName"))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the tenants search request
+   */
+  TenantsSearchRequest newTenantsSearchRequest();
+
+  /**
    * Command to delete a tenant.
    *
    * <pre>
@@ -2140,6 +2177,43 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the unassign group from tenant command
    */
   UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(String tenantId);
+
+  /**
+   * Command to assign a client to a group.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignClientToGroupCommand()
+   *  .clientId("clientId")
+   *  .groupId("groupId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign client to group command
+   */
+  AssignClientToGroupCommandStep1 newAssignClientToGroupCommand();
+
+  /**
+   * Command to unassign a client from a group.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignClientFromGroupCommand()
+   *   .clientId("clientId")
+   *   .groupId("groupId")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the unassign client from group command
+   */
+  UnassignClientFromGroupCommandStep1 newUnassignClientFromGroupCommand();
 
   /**
    * Command to create an authorization
@@ -2252,14 +2326,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newBatchOperationGetRequest(batchOperationId)
+   *  .newBatchOperationGetRequest(batchOperationKey)
    *  .send();
    * </pre>
    *
-   * @param batchOperationId the key which identifies the corresponding batch operation
+   * @param batchOperationKey the key which identifies the corresponding batch operation
    * @return a builder for the request
    */
-  BatchOperationGetRequest newBatchOperationGetRequest(String batchOperationId);
+  BatchOperationGetRequest newBatchOperationGetRequest(String batchOperationKey);
 
   /**
    * Executes a search request to query batch operations.
@@ -2291,7 +2365,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder to configure and send the cancel batch operation command
    */
-  CancelBatchOperationStep1 newCancelBatchOperationCommand(String batchOperationId);
+  CancelBatchOperationStep1 newCancelBatchOperationCommand(String batchOperationKey);
 
   /**
    * Command to suspend a batch operation
@@ -2306,7 +2380,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder to configure and send the suspend batch operation command
    */
-  SuspendBatchOperationStep1 newSuspendBatchOperationCommand(String batchOperationId);
+  SuspendBatchOperationStep1 newSuspendBatchOperationCommand(String batchOperationKey);
 
   /**
    * Command to resume a batch operation
@@ -2321,7 +2395,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder to configure and send the resume batch operation command
    */
-  ResumeBatchOperationStep1 newResumeBatchOperationCommand(String batchOperationId);
+  ResumeBatchOperationStep1 newResumeBatchOperationCommand(String batchOperationKey);
 
   /**
    * Executes a search request to query batch operation items.
@@ -2540,4 +2614,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the job search request
    */
   JobSearchRequest newJobSearchRequest();
+
+  /**
+   * Executes a search request to query message subscriptions.
+   *
+   * <pre>
+   * camundaClient
+   *  .newMessageSubscriptionSearchRequest()
+   *  .filter((f) -> f.messageSubscriptionKey(messageSubscriptionKey))
+   *  .sort((s) -> s.messageName().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the message subscription search request
+   */
+  MessageSubscriptionSearchRequest newMessageSubscriptionSearchRequest();
 }

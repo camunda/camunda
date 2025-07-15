@@ -21,6 +21,11 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import java.util.List;
 import org.immutables.value.Value;
 
+/**
+ * A record value that represents the creation of a batch operation. It contains the type of the
+ * batch operation, a filter to specify the entities to operate on and optionally a migrationPlan
+ * and a modification plan (depending on the type of the batch operation)
+ */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationCreationRecordValue.Builder.class)
 public interface BatchOperationCreationRecordValue extends BatchOperationRelated, RecordValue {
@@ -48,7 +53,7 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
 
   /**
    * The list of partitions this batch operation is executed on. THis list will be filled by the
-   * engine.
+   * engine and is only available after the batch operation was created.
    *
    * @return the list of partitions
    */

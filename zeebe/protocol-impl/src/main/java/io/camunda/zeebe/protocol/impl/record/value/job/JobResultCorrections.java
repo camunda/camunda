@@ -29,14 +29,23 @@ import org.agrona.DirectBuffer;
 public final class JobResultCorrections extends UnpackedObject
     implements JobResultCorrectionsValue {
 
-  private final StringProperty assigneeProp = new StringProperty("assignee", "");
-  private final StringProperty dueDateProp = new StringProperty("dueDate", "");
-  private final StringProperty followUpDateProp = new StringProperty("followUpDate", "");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue ASSIGNEE_KEY = new StringValue("assignee");
+  private static final StringValue DUE_DATE_KEY = new StringValue("dueDate");
+  private static final StringValue FOLLOW_UP_DATE_KEY = new StringValue("followUpDate");
+  private static final StringValue CANDIDATE_USERS_LIST_KEY = new StringValue("candidateUsersList");
+  private static final StringValue CANDIDATE_GROUPS_LIST_KEY =
+      new StringValue("candidateGroupsList");
+  private static final StringValue PRIORITY_KEY = new StringValue("priority");
+
+  private final StringProperty assigneeProp = new StringProperty(ASSIGNEE_KEY, "");
+  private final StringProperty dueDateProp = new StringProperty(DUE_DATE_KEY, "");
+  private final StringProperty followUpDateProp = new StringProperty(FOLLOW_UP_DATE_KEY, "");
   private final ArrayProperty<StringValue> candidateUsersListProp =
-      new ArrayProperty<>("candidateUsersList", StringValue::new);
+      new ArrayProperty<>(CANDIDATE_USERS_LIST_KEY, StringValue::new);
   private final ArrayProperty<StringValue> candidateGroupsListProp =
-      new ArrayProperty<>("candidateGroupsList", StringValue::new);
-  private final IntegerProperty priorityProp = new IntegerProperty("priority", -1);
+      new ArrayProperty<>(CANDIDATE_GROUPS_LIST_KEY, StringValue::new);
+  private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY_KEY, -1);
 
   public JobResultCorrections() {
     super(6);

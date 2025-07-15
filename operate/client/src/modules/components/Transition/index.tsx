@@ -10,7 +10,7 @@ import React, {Children, useRef} from 'react';
 import {CSSTransition, TransitionGroup} from 'react-transition-group';
 
 type Props = {
-  children: React.ReactElement;
+  children: React.ReactElement<React.RefAttributes<HTMLElement>>;
 } & React.ComponentProps<typeof CSSTransition>;
 
 const Transition: React.FC<Props> = ({children, ...props}) => {

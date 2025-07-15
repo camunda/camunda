@@ -8,16 +8,16 @@
 
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
-import {OverlayData} from 'modules/bpmn-js/BpmnJS';
+import type {OverlayData} from 'modules/bpmn-js/BpmnJS';
 import {
   getInstancesCount,
   getProcessInstanceKey,
 } from 'modules/utils/statistics/processInstances';
 import {useQuery} from '@tanstack/react-query';
-import {
+import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;

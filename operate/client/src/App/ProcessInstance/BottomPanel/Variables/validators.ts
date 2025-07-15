@@ -6,14 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {FieldValidator} from 'final-form';
+import {type FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
-import {variablesStore} from 'modules/stores/variables';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {ERRORS, VALIDATION_DELAY} from './constants';
 import get from 'lodash/get';
 import {getNewVariablePrefix} from './getNewVariablePrefix';
-import {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
+import type {Variable} from '@vzeta/camunda-api-zod-schemas';
+import {variablesStore} from 'modules/stores/variables';
 
 const validateNameCharacters: FieldValidator<string | undefined> = (
   variableName = '',
@@ -38,7 +39,9 @@ const validateModifiedNameComplete: FieldValidator<string | undefined> = (
   }
 };
 
-const validateModifiedNameNotDuplicate: FieldValidator<string | undefined> = (
+const validateModifiedNameNotDuplicateDeprecated: FieldValidator<
+  string | undefined
+> = (
   variableName = '',
   allValues:
     | {value?: string; newVariables?: Array<VariableFormValues>}
@@ -75,7 +78,47 @@ const validateModifiedNameNotDuplicate: FieldValidator<string | undefined> = (
   return;
 };
 
-const validateNameComplete: FieldValidator<string | undefined> =
+const validateModifiedNameNotDuplicate =
+  (allVariables: Variable[]): FieldValidator<string | undefined> =>
+  (
+    variableName = '',
+    allValues:
+      | {value?: string; newVariables?: Array<VariableFormValues>}
+      | undefined,
+    meta,
+  ) => {
+    if (allValues?.newVariables === undefined) {
+      return;
+    }
+
+    const isVariableDuplicate = allVariables.some(
+      ({name}) => name === variableName,
+    );
+
+    if (meta?.dirty && isVariableDuplicate) {
+      return ERRORS.DUPLICATE_NAME;
+    }
+
+    if (
+      allValues.newVariables.filter(
+        (variable) => variable?.name === variableName,
+      ).length <= 1
+    ) {
+      return;
+    }
+
+    if (
+      meta?.active ||
+      meta?.error === ERRORS.DUPLICATE_NAME ||
+      meta?.validating
+    ) {
+      return ERRORS.DUPLICATE_NAME;
+    }
+
+    return;
+  };
+
+const validateNameCompleteDeprecated: FieldValidator<string | undefined> =
   promisifyValidator(
     (variableName = '', allValues: {value?: string} | undefined, meta) => {
       const variableValue = allValues?.value ?? '';
@@ -95,9 +138,40 @@ const validateNameComplete: FieldValidator<string | undefined> =
     VALIDATION_DELAY,
   );
 
-const validateNameNotDuplicate: FieldValidator<string | undefined> =
+const validateNameComplete =
+  (allVariables: Variable[]): FieldValidator<string | undefined> =>
+  (variableName = '', allValues: {value?: string} | undefined, meta) => {
+    const variableValue = allValues?.value ?? '';
+
+    if (variableValue.trim() !== '' && variableName === '') {
+      return ERRORS.EMPTY_NAME;
+    }
+
+    const isVariableDuplicate = allVariables.some(
+      ({name}) => name === variableName,
+    );
+
+    if (meta?.dirty && isVariableDuplicate) {
+      return ERRORS.DUPLICATE_NAME;
+    }
+  };
+
+const validateNameNotDuplicateDeprecated: FieldValidator<string | undefined> =
   promisifyValidator((variableName = '', _, meta) => {
     const isVariableDuplicate = variablesStore.state.items.some(
+      ({name}) => name === variableName,
+    );
+
+    if (meta?.dirty && isVariableDuplicate) {
+      return ERRORS.DUPLICATE_NAME;
+    }
+  }, VALIDATION_DELAY);
+
+const validateNameNotDuplicate = (
+  allVariables: Variable[],
+): FieldValidator<string | undefined> =>
+  promisifyValidator((variableName = '', _, meta) => {
+    const isVariableDuplicate = allVariables.some(
       ({name}) => name === variableName,
     );
 
@@ -166,11 +240,14 @@ const validateModifiedValueValid: FieldValidator<string | undefined> = (
 export {
   validateNameCharacters,
   validateNameComplete,
+  validateNameCompleteDeprecated,
   validateNameNotDuplicate,
+  validateNameNotDuplicateDeprecated,
   validateValueComplete,
   validateValueValid,
   validateModifiedNameComplete,
   validateModifiedValueComplete,
   validateModifiedValueValid,
   validateModifiedNameNotDuplicate,
+  validateModifiedNameNotDuplicateDeprecated,
 };

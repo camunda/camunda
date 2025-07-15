@@ -29,20 +29,30 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     implements ProcessInstanceCreationRecordValue {
 
-  private final StringProperty bpmnProcessIdProperty = new StringProperty("bpmnProcessId", "");
-  private final LongProperty processDefinitionKeyProperty =
-      new LongProperty("processDefinitionKey", -1);
-  private final IntegerProperty versionProperty = new IntegerProperty("version", -1);
-  private final StringProperty tenantIdProperty =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final DocumentProperty variablesProperty = new DocumentProperty("variables");
-  private final LongProperty processInstanceKeyProperty =
-      new LongProperty("processInstanceKey", -1);
-  private final ArrayProperty<StringValue> fetchVariablesProperty =
-      new ArrayProperty<>("fetchVariables", StringValue::new);
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+  private static final StringValue VERSION_KEY = new StringValue("version");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue FETCH_VARIABLES_KEY = new StringValue("fetchVariables");
+  private static final StringValue START_INSTRUCTIONS_KEY = new StringValue("startInstructions");
 
+  private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
+  private final LongProperty processDefinitionKeyProperty =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1);
+  private final IntegerProperty versionProperty = new IntegerProperty(VERSION_KEY, -1);
+  private final StringProperty tenantIdProperty =
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final DocumentProperty variablesProperty = new DocumentProperty(VARIABLES_KEY);
+  private final LongProperty processInstanceKeyProperty =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
+  private final ArrayProperty<StringValue> fetchVariablesProperty =
+      new ArrayProperty<>(FETCH_VARIABLES_KEY, StringValue::new);
   private final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructionsProperty =
-      new ArrayProperty<>("startInstructions", ProcessInstanceCreationStartInstruction::new);
+      new ArrayProperty<>(START_INSTRUCTIONS_KEY, ProcessInstanceCreationStartInstruction::new);
 
   private final ArrayProperty<ProcessInstanceCreationRuntimeInstruction>
       runtimeInstructionsProperty =

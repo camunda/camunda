@@ -157,7 +157,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   void delete() {
-    LOGGER.debug("Deleting snapshot {}", snapshotId);
     // the checksum, as a mark file, should be deleted first
     try {
       Files.deleteIfExists(checksumFile);

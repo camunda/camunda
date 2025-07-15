@@ -10,7 +10,7 @@ import {action, makeObservable, observable, override} from 'mobx';
 
 import {
   fetchIncidentsByError,
-  IncidentByErrorDto,
+  type IncidentByErrorDto,
 } from 'modules/api/incidents/fetchIncidentsByError';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import isEqual from 'lodash/isEqual';

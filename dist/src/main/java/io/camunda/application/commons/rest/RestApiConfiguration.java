@@ -12,13 +12,8 @@ import io.camunda.authentication.DefaultCamundaAuthenticationConverter;
 import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -31,23 +26,6 @@ import org.springframework.security.core.Authentication;
 @ConditionalOnRestGatewayEnabled
 @EnableConfigurationProperties(GatewayRestProperties.class)
 public class RestApiConfiguration {
-
-  @Bean
-  public ProcessElementProvider processElementProvider(
-      final ProcessDefinitionServices processDefinitionServices) {
-    return new ProcessElementProvider(processDefinitionServices);
-  }
-
-  @Bean
-  public ProcessCache processCache(
-      final GatewayRestConfiguration configuration,
-      final ProcessElementProvider processElementProvider,
-      final BrokerTopologyManager brokerTopologyManager,
-      final MeterRegistry meterRegistry) {
-
-    return new ProcessCache(
-        configuration, processElementProvider, brokerTopologyManager, meterRegistry);
-  }
 
   @Bean
   public CamundaAuthenticationConverter<Authentication> camundaAuthenticationConverter() {

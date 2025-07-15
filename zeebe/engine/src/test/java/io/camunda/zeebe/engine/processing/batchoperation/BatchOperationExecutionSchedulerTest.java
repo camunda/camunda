@@ -22,16 +22,17 @@ import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
-import io.camunda.zeebe.engine.state.immutable.BatchOperationState.BatchOperationVisitor;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -68,6 +70,9 @@ public class BatchOperationExecutionSchedulerTest {
   @Captor private ArgumentCaptor<Task> taskCaptor;
   @Captor private ArgumentCaptor<BatchOperationChunkRecord> chunkRecordCaptor;
 
+  @Captor
+  private ArgumentCaptor<BatchOperationPartitionLifecycleRecord> lifecycleRecordArgumentCaptor;
+
   private BatchOperationExecutionScheduler scheduler;
 
   @BeforeEach
@@ -80,14 +85,8 @@ public class BatchOperationExecutionSchedulerTest {
     lenient()
         .when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
         .thenReturn(filter);
-    doAnswer(
-            invocation -> {
-              final BatchOperationVisitor visitor = invocation.getArgument(0);
-              visitor.visit(batchOperation);
-              return null;
-            })
-        .when(batchOperationState)
-        .foreachPendingBatchOperation(any(BatchOperationVisitor.class));
+    when(batchOperationState.getNextPendingBatchOperation())
+        .thenReturn(Optional.of(batchOperation));
     lenient().when(batchOperationState.exists(anyLong())).thenReturn(true);
 
     final var engineConfiguration = mock(EngineConfiguration.class);
@@ -107,13 +106,13 @@ public class BatchOperationExecutionSchedulerTest {
   public void shouldAppendFailedEvent() {
     // given
     when(batchOperation.getEntityFilter(eq(ProcessInstanceFilter.class)))
-        .thenThrow(new RuntimeException("error", new RuntimeException()));
+        .thenThrow(new RuntimeException("errors", new RuntimeException()));
 
     // when our scheduler fires
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -124,7 +123,7 @@ public class BatchOperationExecutionSchedulerTest {
         .appendCommandRecord(
             anyLong(),
             eq(BatchOperationIntent.FAIL),
-            any(BatchOperationCreationRecord.class),
+            lifecycleRecordArgumentCaptor.capture(),
             any());
 
     // and should NOT append an execute command
@@ -134,6 +133,13 @@ public class BatchOperationExecutionSchedulerTest {
             eq(BatchOperationExecutionIntent.EXECUTE),
             any(UnifiedRecordValue.class),
             any());
+
+    // and should contain an errors
+    final var error = lifecycleRecordArgumentCaptor.getValue().getError();
+    assertThat(error).isNotNull();
+    assertThat(error.getPartitionId()).isEqualTo(PARTITION_ID);
+    assertThat(error.getType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
+    assertThat(error.getMessage()).contains("errors");
   }
 
   @Test
@@ -146,7 +152,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -248,7 +254,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -276,7 +282,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
@@ -304,7 +310,7 @@ public class BatchOperationExecutionSchedulerTest {
     execute();
 
     // then
-    verify(batchOperationState).foreachPendingBatchOperation(any());
+    verify(batchOperationState).getNextPendingBatchOperation();
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),

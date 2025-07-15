@@ -11,12 +11,16 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
-import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {
+  createProcessInstance,
+  mockProcessWithInputOutputMappingsXML,
+} from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('useFlownodeInstancesStatistics', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
@@ -37,10 +41,7 @@ describe('useFlownodeInstancesStatistics', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
+    mockFetchProcessInstance().withSuccess(createProcessInstance());
   });
 
   it('should fetch flownode instances statistics successfully', async () => {

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Screen, UserEvent} from 'modules/testing-library';
+import type {Screen, UserEvent} from 'modules/testing-library';
 
 const removeOptionalFilter = async ({
   label,

@@ -9,11 +9,11 @@
 import {render, screen} from 'modules/testing-library';
 import {DiagramHeader} from '.';
 
-jest.mock('modules/stores/processInstances', () => ({
+vi.mock('modules/stores/processInstances', () => ({
   processInstancesStore: {
     state: {},
-    fetchRunningInstancesCount: jest.fn(),
-    setRunningInstancesCount: jest.fn(),
+    fetchRunningInstancesCount: vi.fn(),
+    setRunningInstancesCount: vi.fn(),
   },
 }));
 

@@ -24,6 +24,7 @@ import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
@@ -32,9 +33,12 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 
 public class PingConsoleRunnerIT {
 
+  private ApplicationContext applicationContext;
   private WireMockServer wireMockServer;
   private ManagementServices managementServices;
 
@@ -66,13 +70,22 @@ public class PingConsoleRunnerIT {
           "isCommercial": true
         },
         "clusterId": "test-cluster-id",
-        "clusterName": "test-cluster-name"
+        "clusterName": "test-cluster-name",
+        "version":"%s",
+        "profiles": ["gateway", "broker"]
       }
-    """;
+    """
+            .formatted(VersionUtil.getVersion());
+
+    applicationContext = mock(ApplicationContext.class);
+    final Environment environment = mock(Environment.class);
     managementServices = mock(ManagementServices.class);
     when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
     when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
+    when(applicationContext.getEnvironment()).thenReturn(environment);
+    when(environment.getActiveProfiles())
+        .thenReturn(new String[] {"gateway", "broker", "identity"});
 
     final ConsolePingConfiguration config =
         new ConsolePingConfiguration(
@@ -84,7 +97,8 @@ public class PingConsoleRunnerIT {
             retryConfig,
             null);
 
-    final PingConsoleRunner pingConsoleRunner = new PingConsoleRunner(config, managementServices);
+    final PingConsoleRunner pingConsoleRunner =
+        new PingConsoleRunner(config, managementServices, applicationContext);
 
     // when
     pingConsoleRunner.run(null);

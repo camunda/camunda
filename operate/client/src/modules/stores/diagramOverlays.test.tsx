@@ -20,7 +20,7 @@ describe('diagramOverlaysStore', () => {
     diagramOverlaysStore.reset();
   });
 
-  it('should add and remove overlays ', async () => {
+  it('should add and remove overlays', async () => {
     const {container} = render(<div />);
 
     const startEventOverlay = createStartEventOverlay(container, OVERLAY_TYPE);

@@ -25,12 +25,14 @@ import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.broker.utils.InlineThreadContext;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.test.DynamicAutoCloseable;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -121,7 +123,8 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
                 dataDirectory,
                 // RaftPartitions implements this interface, but the RaftServer is not started
                 index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()),
-                meterRegistry));
+                meterRegistry,
+                (context, entries, source) -> Either.left(WriteFailure.CLOSED)));
     actorScheduler.submitActor(backupService);
   }
 

@@ -21,7 +21,6 @@ import {
   Wrapper,
   mockInstanceDeprecated,
 } from './index.setup';
-import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -31,10 +30,11 @@ import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations'
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
+import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
 
-jest.mock('modules/stores/notifications', () => ({
+vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
-    displayNotification: jest.fn(() => () => {}),
+    displayNotification: vi.fn(() => () => {}),
   },
 }));
 
@@ -42,11 +42,10 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchCallHierarchy().withSuccess([]);
   });
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
 
   it('should render process instance data', async () => {
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
@@ -56,7 +55,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     const processDefinitionName = getProcessDefinitionName(mockInstance);
@@ -72,7 +71,7 @@ describe('InstanceHeader', () => {
         }" instances`,
       }),
     ).toHaveTextContent(mockInstance.processDefinitionVersion.toString());
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText(mockInstance.endDate ?? '--')).toBeInTheDocument();
     expect(screen.getByText('--')).toBeInTheDocument();
     expect(
       screen.getByTestId(`${mockInstance.state}-icon`),
@@ -91,7 +90,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should render "View All" link for call activity process', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -100,7 +99,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -109,10 +108,9 @@ describe('InstanceHeader', () => {
   });
 
   it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
-    jest.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -122,7 +120,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
@@ -134,13 +132,10 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
   it('should render parent Process Instance Key', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -157,7 +152,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -168,7 +163,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner when instance has active operations', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -177,14 +172,14 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
   });
 
   it('should not show spinner when instance has no active operations', async () => {
-    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
     mockFetchProcessInstance().withSuccess({
       ...mockInstanceDeprecated,
       operations: [],
@@ -196,7 +191,7 @@ describe('InstanceHeader', () => {
     });
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -223,7 +218,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -261,7 +256,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -293,7 +288,7 @@ describe('InstanceHeader', () => {
     );
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
@@ -312,13 +307,13 @@ describe('InstanceHeader', () => {
       }),
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    await waitFor(() => {
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+    });
   });
 
   it('should hide delete operation button when user has no resource based permission for delete process instance', async () => {
-    window.clientConfig = {
-      resourcePermissionsEnabled: true,
-    };
+    vi.stubGlobal('clientConfig', {resourcePermissionsEnabled: true});
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
@@ -345,7 +340,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -354,9 +349,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should hide operation buttons when user has no resource based permission for update process instance', async () => {
-    window.clientConfig = {
-      resourcePermissionsEnabled: true,
-    };
+    vi.stubGlobal('clientConfig', {resourcePermissionsEnabled: true});
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
@@ -378,7 +371,7 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
+      screen.queryByTestId('instance-header-skeleton'),
     );
 
     expect(
@@ -387,6 +380,50 @@ describe('InstanceHeader', () => {
 
     expect(
       screen.queryByRole('button', {name: /Modify Instance/}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show spinner on process instance cancellation', async () => {
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored https://github.com/camunda/camunda/issues/33512
+    mockFetchProcessInstance().withSuccess({
+      ...mockInstanceDeprecated,
+      operations: [],
+    });
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockCancelProcessInstance().withSuccess({});
+
+    const {user, rerender} = render(
+      <ProcessInstanceHeader processInstance={mockInstance} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.queryByTestId('instance-header-skeleton'),
+    );
+
+    await user.click(screen.getByRole('button', {name: /cancel instance/i}));
+    await user.click(screen.getByRole('button', {name: /apply/i}));
+
+    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /cancel instance/i}),
+    ).toBeDisabled();
+
+    rerender(
+      <ProcessInstanceHeader
+        processInstance={{...mockInstance, state: 'TERMINATED'}}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByRole('button', {name: /cancel instance/i}),
     ).not.toBeInTheDocument();
   });
 });

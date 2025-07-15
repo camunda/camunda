@@ -9,7 +9,7 @@
 import {batchModificationStore} from './batchModification';
 
 describe('batchModificationStore', () => {
-  it('should initialize, enable and reset ', async () => {
+  it('should initialize, enable and reset', async () => {
     batchModificationStore.enable();
     expect(batchModificationStore.state.isEnabled).toBe(true);
 

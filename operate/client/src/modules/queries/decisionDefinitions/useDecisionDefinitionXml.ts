@@ -8,7 +8,7 @@
 
 import {
   fetchDecisionDefinitionXml,
-  DecisionDefinitionKey,
+  type DecisionDefinitionKey,
 } from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
 import {genericQueryOptions} from '../genericQuery';
 

@@ -15,7 +15,8 @@
   "prHourlyLimit": 10,
   "updateNotScheduled": false,
   "schedule": [
-    "at any time"
+    "before 8am every weekday",
+    "after 8pm every weekday"
   ],
   "helmv3": {
     "registryAliases": {
@@ -188,22 +189,6 @@
         "/io.camunda:tasklist-qa/",
         "/io.camunda:tasklist-qa-migration-tests-parent/",
         "/net.jcip:jcip-annotations/"
-      ],
-      "enabled": false
-    },
-    {
-      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
-      "matchManagers": [
-        "npm",
-        "nvm"
-      ],
-      "matchFileNames": [
-        "operate/**"
-      ],
-      "matchPackageNames": [
-        "/react-router-dom/",
-        "/msw/",
-        "/@carbon/react/"
       ],
       "enabled": false
     },

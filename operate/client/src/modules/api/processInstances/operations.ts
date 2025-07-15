@@ -7,8 +7,12 @@
  */
 
 import {requestAndParse} from 'modules/request';
-import {BatchOperationDto} from '../sharedTypes';
-import {RequestFilters} from 'modules/utils/filter';
+import {type BatchOperationDto} from '../sharedTypes';
+import {type RequestFilters} from 'modules/utils/filter';
+import type {
+  ProcessInstanceEntity,
+  OperationEntityType,
+} from 'modules/types/operate';
 
 type Modifications = {
   modification: 'MOVE_TOKEN';

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -26,8 +27,12 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceModificationVariableInstruction extends ObjectValue
     implements ProcessInstanceModificationVariableInstructionValue {
 
-  private final DocumentProperty variablesProp = new DocumentProperty("variables");
-  private final StringProperty elementIdProp = new StringProperty("elementId", "");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
 
   public ProcessInstanceModificationVariableInstruction() {
     super(2);

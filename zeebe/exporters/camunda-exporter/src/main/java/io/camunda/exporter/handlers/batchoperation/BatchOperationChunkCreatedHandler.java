@@ -21,6 +21,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * This handler updates the {@link BatchOperationEntity} and increases the total number of items of
+ * a batch operation. This is not done in the {@link BatchOperationUpdateTask} because - depending
+ * on the configuration <code>exportItemsOnCreation</code> - the operation items are not exported
+ * and therefore cannot be counted properly. <br>
+ * <br>
  * Additionally to the {@link BatchOperationChunkCreatedItemHandler}, this handler removes an
  * existing endDate of the batch operation from the document. This way the {@link
  * BatchOperationUpdateTask} will process this batch operation again to update all counts. <br>

@@ -7,15 +7,15 @@
  */
 
 import Manager from 'dmn-js-shared/lib/base/Manager';
-// @ts-expect-error
+// @ts-expect-error - DMN library lacks TypeScript definitions
 import {is} from 'dmn-js-shared/lib/util/ModelUtil';
-// @ts-expect-error
+// @ts-expect-error - DMN library lacks TypeScript definitions
 import {containsDi} from 'dmn-js-shared/lib/util/DiUtil';
-// @ts-expect-error
+// @ts-expect-error - DMN library lacks TypeScript definitions
 import DecisionTableViewer from 'dmn-js-decision-table/lib/Viewer';
-// @ts-expect-error
+// @ts-expect-error - DMN library lacks TypeScript definitions
 import LiteralExpressionViewer from 'dmn-js-literal-expression/lib/Viewer';
-// @ts-expect-error
+// @ts-expect-error - DMN library lacks TypeScript definitions
 import DrdViewer from 'dmn-js-drd/lib/NavigatedViewer';
 
 type Options = {

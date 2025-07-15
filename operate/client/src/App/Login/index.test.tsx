@@ -11,8 +11,9 @@ import {
   screen,
   waitForElementToBeRemoved,
   waitFor,
+  fireEvent,
 } from 'modules/testing-library';
-import {Link, MemoryRouter, To} from 'react-router-dom';
+import {Link, MemoryRouter, type To} from 'react-router-dom';
 import {Login} from './index';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -74,17 +75,17 @@ describe('<Login />', () => {
 
     await user.type(screen.getByLabelText(/^username$/i), 'demo');
     await user.type(screen.getByLabelText(/^password$/i), 'demo');
-    await user.click(screen.getByRole('button', {name: 'Login'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('spinner'));
 
     mockLogin().withSuccess(null);
 
-    await user.click(screen.getByRole('button', {name: 'Login'}));
+    fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+    await waitForElementToBeRemoved(screen.queryByTestId('spinner'));
   });
 
   it('should redirect to the previous page', async () => {
@@ -151,7 +152,7 @@ describe('<Login />', () => {
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
     await user.type(screen.getByLabelText(/^username$/i), 'demo');
-    await user.click(screen.getByRole('button', {name: /login/i}));
+    fireEvent.click(screen.getByRole('button', {name: /login/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
     await waitFor(() =>
@@ -188,9 +189,9 @@ describe('<Login />', () => {
   });
 
   it('should handle request failures', async () => {
-    const consoleErrorMock = jest
+    const consoleErrorMock = vi
       .spyOn(global.console, 'error')
-      .mockImplementation();
+      .mockImplementation(() => {});
 
     mockLogin().withNetworkError();
 

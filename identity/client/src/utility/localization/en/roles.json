@@ -52,5 +52,18 @@
   "assignClientToRole": "Assign client to role",
   "roleClientRemoved": "Role client removed",
   "removeClientFromRole": "Are you sure you want to remove <strong>{{clientId}}</strong> from this role?",
-  "assignClientsToRole": "Assign clients to this role"
+  "assignClientsToRole": "Assign clients to this role",
+  "searchByGroupId": "Search by group ID",
+  "assignGroupsToRole": "Assign groups to this Role",
+  "assignGroup": "Assign group",
+  "assigningGroup": "Assigning group",
+  "removeGroup": "Remove group",
+  "removingGroup": "Removing group",
+  "roleGroupRemoved": "Role group has been removed.",
+  "groupsCouldNotLoad": "Groups could not be loaded.",
+  "unableToLoadGroups": "We were unable to load the groups. Click \"Retry\" to try again.",
+  "groupId": "Group ID",
+  "groupName": "Group name",
+  "roleMemberAccessDisclaimer": "Members of this Group will be given access to the data within the Role.",
+  "searchAndAssignGroupToRole": "Search and assign group to role"
 }

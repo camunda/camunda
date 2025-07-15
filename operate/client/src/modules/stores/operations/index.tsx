@@ -12,23 +12,24 @@ import {
   action,
   computed,
   autorun,
-  IReactionDisposer,
   override,
+  type IReactionDisposer,
 } from 'mobx';
 import {fetchBatchOperations} from 'modules/api/fetchBatchOperations';
-import {BatchOperationDto} from 'modules/api/sharedTypes';
+import type {BatchOperationDto} from 'modules/api/sharedTypes';
 import {
-  BatchOperationQuery,
-  MigrationPlan,
-  Modifications,
   applyBatchOperation,
   applyOperation,
+  type BatchOperationQuery,
+  type MigrationPlan,
+  type Modifications,
 } from 'modules/api/processInstances/operations';
 import {sortOperations} from '../utils/sortOperations';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {deleteDecisionDefinition} from 'modules/api/decisions/operations';
 import {deleteProcessDefinition} from 'modules/api/processes/operations';
+import type {OperationEntity, OperationEntityType} from 'modules/types/operate';
 
 type Query = BatchOperationQuery;
 type OperationPayload = Parameters<typeof applyOperation>['1'];
@@ -272,13 +273,13 @@ class Operations extends NetworkReconnectionHandler {
     this.state.operations.unshift({...response, sortValues: undefined});
   };
 
-  setOperations(response: any) {
+  setOperations(response: OperationEntity[]) {
     const operations = [...this.state.operations, ...response].reduce(
       (accumulator, operation) => {
         accumulator[operation.id] = operation;
         return accumulator;
       },
-      {},
+      {} as Record<string, OperationEntity>,
     );
 
     this.state.operations = sortOperations(Object.values(operations));

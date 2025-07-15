@@ -14,7 +14,6 @@ import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
-import {variablesStore} from 'modules/stores/variables';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
@@ -43,9 +42,8 @@ import {
   init as initFlowNodeInstance,
   startPolling as startPollingFlowNodeInstance,
 } from 'modules/utils/flowNodeInstance';
-import {startPolling as startPollingVariables} from 'modules/utils/variables';
 import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
-import {ProcessInstance as ProcessInstanceT} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance as ProcessInstanceT} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {
   useIsRootNodeSelected,
   useRootNode,
@@ -55,7 +53,6 @@ import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 
 const startPolling = (processInstance?: ProcessInstanceT) => {
-  startPollingVariables(processInstance, {runImmediately: true});
   startPollingIncidents(processInstance, {
     runImmediately: true,
   });
@@ -63,7 +60,6 @@ const startPolling = (processInstance?: ProcessInstanceT) => {
 };
 
 const stopPolling = () => {
-  variablesStore.stopPolling();
   incidentsStore.stopPolling();
   flowNodeInstanceStore.stopPolling();
 };
@@ -73,7 +69,6 @@ const ProcessInstance: React.FC = observer(() => {
   const {data: processTitle} = useProcessTitle();
   const {data: callHierarchy} = useCallHierarchy();
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const {data: processInstanceData} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
   const rootNode = useRootNode();
   const navigate = useNavigate();
@@ -108,14 +103,14 @@ const ProcessInstance: React.FC = observer(() => {
           stopPolling();
         } else {
           instanceHistoryModificationStore.reset();
-          startPolling(processInstanceData);
+          startPolling(processInstance);
         }
       },
     );
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        startPolling(processInstanceData);
+        startPolling(processInstance);
       } else {
         stopPolling();
       }
@@ -127,7 +122,7 @@ const ProcessInstance: React.FC = observer(() => {
       disposer();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [processInstanceData]);
+  }, [processInstance]);
 
   const isInitialized = useRef(false);
   useEffect(() => {

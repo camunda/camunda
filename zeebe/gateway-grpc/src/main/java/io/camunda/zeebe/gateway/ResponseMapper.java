@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.util.EnumUtil;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -61,7 +62,6 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
-import io.camunda.zeebe.protocol.record.value.JobKind;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -376,9 +376,14 @@ public final class ResponseMapper {
             .setRetries(job.getRetries())
             .setDeadline(job.getDeadline())
             .setVariables(bufferAsJson(job.getVariablesBuffer()))
-            .setTenantId(job.getTenantId());
+            .setTenantId(job.getTenantId())
+            .setKind(EnumUtil.convert(job.getJobKind(), ActivatedJob.JobKind.class))
+            .setListenerEventType(
+                EnumUtil.convert(
+                    job.getJobListenerEventType(), ActivatedJob.ListenerEventType.class));
 
-    if (job.getJobKind() == JobKind.TASK_LISTENER && !job.getCustomHeaders().isEmpty()) {
+    if (job.getJobKind().equals(io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER)
+        && !job.getCustomHeaders().isEmpty()) {
       builder.setUserTask(toUserTaskProperties(job.getCustomHeaders()));
     }
 
