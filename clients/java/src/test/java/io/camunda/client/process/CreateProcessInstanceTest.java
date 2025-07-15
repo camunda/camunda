@@ -26,7 +26,6 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationRuntimeInstruction.RuntimeInstructionType;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -330,8 +329,10 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .hasSize(1)
         .allSatisfy(
             instruction ->
-                assertThat(instruction.getType())
-                    .isEqualTo(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE));
+                assertThat(instruction.getSuspend())
+                    .satisfies(
+                        suspend ->
+                            assertThat(suspend.getAfterElementId()).isEqualTo("elementId_A")));
   }
 
   @Test
@@ -351,8 +352,11 @@ public final class CreateProcessInstanceTest extends ClientTest {
         .hasSize(2)
         .allSatisfy(
             instruction ->
-                assertThat(instruction.getType())
-                    .isEqualTo(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE));
+                assertThat(instruction.getSuspend())
+                    .satisfies(
+                        suspend ->
+                            assertThat(suspend.getAfterElementId())
+                                .isIn("elementId_A", "elementId_B")));
   }
 
   public static class VariableDocument {

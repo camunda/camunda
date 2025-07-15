@@ -75,14 +75,15 @@ public class BrokerCreateProcessInstanceRequest
     runtimeInstructions.stream()
         .map(
             instruction ->
-                switch (instruction.getType()) {
-                  case SUSPEND_PROCESS_INSTANCE ->
+                switch (instruction.getInstructionCase()) {
+                  case SUSPEND ->
                       new ProcessInstanceCreationRuntimeInstruction()
                           .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
-                          .setAfterElementId(instruction.getAfterElementId());
-                  case UNRECOGNIZED ->
+                          .setAfterElementId(instruction.getSuspend().getAfterElementId());
+                  case INSTRUCTION_NOT_SET ->
                       throw new IllegalArgumentException(
-                          "Unsupported runtime instruction type: " + instruction.getType().name());
+                          "Unsupported runtime instruction type: "
+                              + instruction.getInstructionCase().name());
                 })
         .forEach(requestDto::addRuntimeInstruction);
     return this;

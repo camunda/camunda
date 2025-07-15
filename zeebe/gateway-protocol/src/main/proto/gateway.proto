@@ -263,14 +263,13 @@ message ProcessInstanceCreationStartInstruction {
 }
 
 message ProcessInstanceCreationRuntimeInstruction {
-  enum RuntimeInstructionType {
-    SUSPEND_PROCESS_INSTANCE = 0;
+  oneof instruction {
+    SuspendProcessInstanceInstruction suspend = 1;
   }
+}
 
-  // discriminator
-  RuntimeInstructionType type = 1;
-  // necessary for SUSPEND_PROCESS_INSTANCE instruction
-  optional string afterElementId = 2;
+message SuspendProcessInstanceInstruction {
+  string afterElementId = 1;
 }
 
 message CreateProcessInstanceResponse {
