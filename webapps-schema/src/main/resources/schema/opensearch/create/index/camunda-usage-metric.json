@@ -1,0 +1,26 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "eventTime": {
+        "format": "date_time || epoch_millis",
+        "type": "date"
+      },
+      "eventType": {
+        "type": "keyword"
+      },
+      "eventValue": {
+        "type": "long"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      }
+    }
+  }
+}

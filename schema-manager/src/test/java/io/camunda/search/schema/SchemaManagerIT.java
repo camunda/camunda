@@ -875,6 +875,7 @@ public class SchemaManagerIT {
             newPrefix + "-camunda-mapping-rule-8.8.0_",
             newPrefix + "-camunda-role-8.8.0_",
             newPrefix + "-camunda-tenant-8.8.0_",
+            newPrefix + "-camunda-usage-metric-8.8.0_",
             newPrefix + "-camunda-user-8.8.0_",
             newPrefix + "-camunda-web-session-8.8.0_",
             newPrefix + "-operate-batch-operation-1.0.0_",
