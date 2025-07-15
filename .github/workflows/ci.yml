@@ -654,6 +654,7 @@ jobs:
     secrets: inherit
     permissions:
       contents: read
+    if: always() && needs.check-results.result == 'success'
     with:
       job_to_run: 'concurrency-group'
       base_group_name: deploy-maven-snapshot
@@ -725,6 +726,7 @@ jobs:
     secrets: inherit
     permissions:
       contents: read
+    if: always() && needs.check-results.result == 'success'
     with:
       base_group_name: deploy-camunda-docker-snapshot
 
