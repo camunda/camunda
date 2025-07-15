@@ -66,138 +66,138 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final BatchOperationItemQuery query) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery query) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
       final long processInstanceKey) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
       final MessageSubscriptionQuery filter) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
@@ -207,25 +207,21 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public Long countAssignees(final UsageMetricsQuery query) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public Long countProcessInstances(final UsageMetricsQuery query) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public Long countDecisionInstances(final UsageMetricsQuery query) {
-    return throwNoSecondaryStorage();
+    throw new NoSecondaryStorageException();
   }
 
   @Override
   public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
-    return throwNoSecondaryStorage();
-  }
-
-  private <T> T throwNoSecondaryStorage() {
     throw new NoSecondaryStorageException();
   }
 }
