@@ -10,15 +10,16 @@ import {Outlet} from 'react-router-dom';
 import {AppHeader} from './AppHeader';
 import {PageContent} from './styled';
 import {observer} from 'mobx-react';
+import {C3Provider} from './C3Provider';
 
 const Layout: React.FC = observer(() => {
   return (
-    <>
+    <C3Provider>
       <AppHeader />
       <PageContent id="main-content">
         <Outlet />
       </PageContent>
-    </>
+    </C3Provider>
   );
 });
 
