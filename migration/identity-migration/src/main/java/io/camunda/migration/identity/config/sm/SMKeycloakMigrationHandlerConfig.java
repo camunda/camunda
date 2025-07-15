@@ -20,11 +20,13 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 @Configuration
 @ConditionalOnKeycloak
 public class SMKeycloakMigrationHandlerConfig {
   @Bean
+  @Order(1)
   public RoleMigrationHandler roleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -35,6 +37,7 @@ public class SMKeycloakMigrationHandlerConfig {
   }
 
   @Bean
+  @Order(2)
   public GroupMigrationHandler groupMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final GroupServices groupServices,
@@ -45,6 +48,7 @@ public class SMKeycloakMigrationHandlerConfig {
   }
 
   @Bean
+  @Order(3)
   public UserRoleMigrationHandler userRoleMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -53,15 +57,7 @@ public class SMKeycloakMigrationHandlerConfig {
   }
 
   @Bean
-  public AuthorizationMigrationHandler authorizationMigrationHandler(
-      final CamundaAuthentication authentication,
-      final AuthorizationServices authorizationService,
-      final ManagementIdentityClient managementIdentityClient) {
-    return new AuthorizationMigrationHandler(
-        authentication, authorizationService, managementIdentityClient);
-  }
-
-  @Bean
+  @Order(4)
   public ClientMigrationHandler clientMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
@@ -71,6 +67,17 @@ public class SMKeycloakMigrationHandlerConfig {
   }
 
   @Bean
+  @Order(5)
+  public AuthorizationMigrationHandler authorizationMigrationHandler(
+      final CamundaAuthentication authentication,
+      final AuthorizationServices authorizationService,
+      final ManagementIdentityClient managementIdentityClient) {
+    return new AuthorizationMigrationHandler(
+        authentication, authorizationService, managementIdentityClient);
+  }
+
+  @Bean
+  @Order(6)
   public TenantMigrationHandler tenantMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final io.camunda.service.TenantServices tenantService,
