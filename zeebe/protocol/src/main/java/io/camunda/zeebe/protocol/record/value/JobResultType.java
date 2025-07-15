@@ -33,6 +33,11 @@ public enum JobResultType {
   }
 
   public static JobResultType from(final String resultType) {
+    // If resultType is null or empty we will default to USER_TASK for backward compatibility.
+    if (resultType == null || resultType.isEmpty()) {
+      return USER_TASK;
+    }
+
     for (final JobResultType type : values()) {
       if (type.type.equals(resultType)) {
         return type;
