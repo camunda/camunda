@@ -74,6 +74,11 @@ import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOp
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ResolveIncidentOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromChunkItemHandler;
+import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromIncidentResolutionOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceCancellationOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceMigrationOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceModificationOperationHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
@@ -300,6 +305,18 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 batchOperationCache),
             new ResolveIncidentOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new ListViewFromProcessInstanceCancellationOperationHandler(
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new ListViewFromProcessInstanceMigrationOperationHandler(
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new ListViewFromProcessInstanceModificationOperationHandler(
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
+            new ListViewFromIncidentResolutionOperationHandler(
+                indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache)));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
@@ -307,6 +324,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
       exportHandlers.add(
           new BatchOperationChunkCreatedItemHandler(
               indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
+      exportHandlers.add(
+          new ListViewFromChunkItemHandler(
+              indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()));
     }
 
     indicesWithCustomErrorHandlers =
