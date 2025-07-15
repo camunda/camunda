@@ -7,16 +7,14 @@
  */
 package io.camunda.search.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
-@ResponseStatus(HttpStatus.FORBIDDEN)
-public class NoSecondaryStorageException extends RuntimeException {
+public class NoSecondaryStorageException extends CamundaSearchException {
 
   private static final long serialVersionUID = 1L;
 
   public NoSecondaryStorageException() {
-    super("This endpoint requires a secondary storage and none is set.");
+    super(
+        "The search client requires a secondary storage, but none is set",
+        Reason.SECONDARY_STORAGE_NOT_SET);
   }
 
   public NoSecondaryStorageException(final String message) {
