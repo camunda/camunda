@@ -4103,6 +4103,10 @@ paths:
       responses:
         "200":
           description: The mapping rule was returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingRuleResult"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
