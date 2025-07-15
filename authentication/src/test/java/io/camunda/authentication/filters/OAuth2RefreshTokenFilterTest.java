@@ -10,6 +10,7 @@ package io.camunda.authentication.filters;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,7 +38,6 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
@@ -134,7 +134,8 @@ class OAuth2RefreshTokenFilterTest {
   void shouldThrowExceptionWhenNoAuthorizedClientFound() {
     // Given
     when(securityContext.getAuthentication()).thenReturn(authenticationToken);
-    when(authorizedClientRepository.loadAuthorizedClient(CLIENT_REGISTRATION_ID, authenticationToken, any()))
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
         .thenReturn(null);
 
     // When & Then
@@ -151,7 +152,8 @@ class OAuth2RefreshTokenFilterTest {
     // Given
     final OAuth2AuthorizedClient authorizedClient = createValidAuthorizedClient();
     when(securityContext.getAuthentication()).thenReturn(authenticationToken);
-    when(authorizedClientRepository.loadAuthorizedClient(CLIENT_REGISTRATION_ID, authenticationToken, any()))
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
         .thenReturn(authorizedClient);
 
     // When
@@ -168,7 +170,8 @@ class OAuth2RefreshTokenFilterTest {
     final OAuth2AuthorizedClient authorizedClient =
         createExpiredAuthorizedClientWithoutRefreshToken();
     when(securityContext.getAuthentication()).thenReturn(authenticationToken);
-    when(authorizedClientRepository.loadAuthorizedClient(CLIENT_REGISTRATION_ID, authenticationToken, any()))
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
         .thenReturn(authorizedClient);
 
     // When & Then
@@ -188,7 +191,8 @@ class OAuth2RefreshTokenFilterTest {
     final OAuth2AuthorizedClient refreshedClient = createValidAuthorizedClient();
 
     when(securityContext.getAuthentication()).thenReturn(authenticationToken);
-    when(authorizedClientRepository.loadAuthorizedClient(CLIENT_REGISTRATION_ID, authenticationToken, any()))
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
         .thenReturn(expiredClient);
     when(authorizedClientManager.authorize(any(OAuth2AuthorizeRequest.class)))
         .thenReturn(refreshedClient);
@@ -206,7 +210,8 @@ class OAuth2RefreshTokenFilterTest {
     // Given
     final OAuth2AuthorizedClient expiredClient = createExpiredAuthorizedClientWithRefreshToken();
     when(securityContext.getAuthentication()).thenReturn(authenticationToken);
-    when(authorizedClientRepository.loadAuthorizedClient(CLIENT_REGISTRATION_ID, authenticationToken, any()))
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
         .thenReturn(expiredClient);
     when(authorizedClientManager.authorize(any(OAuth2AuthorizeRequest.class)))
         .thenReturn(expiredClient);
@@ -224,7 +229,8 @@ class OAuth2RefreshTokenFilterTest {
     // Given
     final OAuth2AuthorizedClient expiredClient = createExpiredAuthorizedClientWithRefreshToken();
     when(securityContext.getAuthentication()).thenReturn(authenticationToken);
-    when(authorizedClientRepository.loadAuthorizedClient(CLIENT_REGISTRATION_ID, authenticationToken, any()))
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
         .thenReturn(expiredClient);
     when(authorizedClientManager.authorize(any(OAuth2AuthorizeRequest.class)))
         .thenThrow(new OAuth2AuthenticationException(new OAuth2Error("invalid_grant")));
@@ -245,7 +251,8 @@ class OAuth2RefreshTokenFilterTest {
         createExpiredAuthorizedClientWithRefreshToken();
 
     when(securityContext.getAuthentication()).thenReturn(authenticationToken);
-    when(authorizedClientRepository.loadAuthorizedClient(CLIENT_REGISTRATION_ID, authenticationToken, any()))
+    when(authorizedClientRepository.loadAuthorizedClient(
+            eq(CLIENT_REGISTRATION_ID), eq(authenticationToken), any()))
         .thenReturn(expiredClient);
     when(authorizedClientManager.authorize(any(OAuth2AuthorizeRequest.class)))
         .thenReturn(stillExpiredClient);

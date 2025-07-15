@@ -145,7 +145,8 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   protected OAuth2AuthorizedClient getAuthorizedClient(
       final OAuth2AuthenticationToken authenticationToken, final HttpServletRequest request) {
     final var clientRegistrationId = authenticationToken.getAuthorizedClientRegistrationId();
-    return authorizedClientRepository.loadAuthorizedClient(clientRegistrationId, authenticationToken, request);
+    return authorizedClientRepository.loadAuthorizedClient(
+        clientRegistrationId, authenticationToken, request);
   }
 
   protected boolean hasTokenExpired(final OAuth2AuthorizedClient authorizedClient) {

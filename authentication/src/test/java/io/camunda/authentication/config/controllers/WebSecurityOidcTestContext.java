@@ -11,7 +11,6 @@ import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaOAuthPrincipalService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 
 /** Additional dependency beans for the OIDC setup */
 @Configuration
@@ -26,10 +25,5 @@ public class WebSecurityOidcTestContext {
   @Bean
   public CamundaOAuthPrincipalService createOAuthPrincipalService() {
     return new TestCamundaOAuthPrincipalService();
-  }
-
-  @Bean
-  public OAuth2AuthorizedClientService authorizedClientService() {
-    return new TestOAuth2AuthorizedClientService();
   }
 }
