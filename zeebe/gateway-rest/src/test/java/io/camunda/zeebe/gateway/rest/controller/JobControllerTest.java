@@ -338,6 +338,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": true,
               "corrections": {}
             }
@@ -372,6 +373,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": true,
               "deniedReason": "Reason to deny lifecycle transition",
               "corrections": {}
@@ -409,6 +411,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": false,
               "corrections": {
                 "assignee": "Test",
@@ -468,6 +471,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": false,
               "corrections": {
                 "assignee": "Test",
@@ -521,6 +525,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": false,
               "corrections": {
                 "assignee": null,
@@ -573,6 +578,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": false,
               "corrections": {}
             }
@@ -608,6 +614,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "unknownField": true,
               "corrections": {}
             }
