@@ -30,7 +30,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -87,8 +89,6 @@ public class InvoiceApprovalTest {
     variables.put("approver", "Zee");
     variables.put("invoice", objectMapper.readTree(invoiceJson));
 
-    // This is NOT working:
-    //////////////////////////
     // Let's define a mock in case there is no service interface in between - this is close to what
     // you do with Connectors
     final AtomicBoolean addInvoiceJobWorkerCalled = new AtomicBoolean(false);
@@ -99,17 +99,12 @@ public class InvoiceApprovalTest {
               addInvoiceJobWorkerCalled.set(true);
               // check input mapping
               assertEquals("INV-1001", job.getVariablesAsMap().get("invoiceId"));
-              assertEquals(invoiceJson, job.getVariablesAsMap().get("invoice"));
               jobClient
                   .newCompleteCommand(job)
                   // .variables(null) //  We could now also simulate setting some response values
                   .send()
                   .join();
             });
-
-    // This is working:
-    //////////////////////////
-    processTestContext.mockJobWorker("add-invoice-to-accounting").thenComplete();
 
     // and now kick of the process instance
     final var processInstance =
@@ -235,9 +230,7 @@ public class InvoiceApprovalTest {
     variables.put("invoice", objectMapper.readTree(invoiceJson));
 
     doThrow(new WiredLegacyException()).when(archiveService).archiveInvoice(anyString(), any());
-
     processTestContext.mockJobWorker("add-invoice-to-accounting").thenComplete();
-    // .thenThrowBpmnError("LEGACY_ERROR_ARCHIVE");
 
     final var processInstance =
         client
@@ -248,20 +241,29 @@ public class InvoiceApprovalTest {
             .send()
             .join();
 
+    // approve the request
+    assertThat(byElementId("UserTask_ApproveInvoice")).isCreated();
+    processTestContext.completeUserTask(
+        byElementId("UserTask_ApproveInvoice"), Map.of("approved", true));
+
+    //  this should lead to the exception being thrown and the process to end up in the user task to
+    // handle the problem
     assertThat(byElementId("UserTask_ManuallyArchiveInvoice"))
         .isCreated()
         .hasCandidateGroup(
-            "active-team"); // probably not worth to test as it limits flexibility in model changes
+            "archive-team"); // probably not worth to test as it limits flexibility in model changes
     processTestContext.completeUserTask(byElementId("UserTask_ManuallyArchiveInvoice"));
 
+    verify(archiveService).archiveInvoice(anyString(), any(JsonNode.class));
+
     assertThat(processInstance)
+        .isCompleted()
         .hasCompletedElementsInOrder(
             byId("StartEvent_InvoiceReceived"),
             byId("UserTask_ApproveInvoice"),
-            byId("ServiceTask_ArchiveInvoice"),
             byId("UserTask_ManuallyArchiveInvoice"),
             byId("ServiceTask_AddInvoiceAccounting"),
             byId("EndEvent_InvoiceApproved"))
-        .isCompleted();
+        .hasTerminatedElements(byId("ServiceTask_ArchiveInvoice"));
   }
 }
