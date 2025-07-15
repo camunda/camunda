@@ -52,7 +52,7 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
   private List<UsageMetricDbModel> mapRecord(final Record<UsageMetricRecordValue> record) {
     final var value = record.getValue();
     final List<UsageMetricDbModel> list = new ArrayList<>();
-    for (final Entry<String, Long> entry : value.getValues().entrySet()) {
+    for (final Entry<String, Long> entry : value.getCounterValues().entrySet()) {
       final var eventType = mapEventType(value.getEventType());
       if (eventType != null) {
         final UsageMetricDbModel usageMetricDbModel =

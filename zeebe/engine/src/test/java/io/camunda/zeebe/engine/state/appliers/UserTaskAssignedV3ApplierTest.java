@@ -13,7 +13,9 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Optional;
 import java.util.Random;
@@ -22,12 +24,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-public class UserTaskAssignedV2ApplierTest {
+public class UserTaskAssignedV3ApplierTest {
   /** Injected by {@link ProcessingStateExtension} */
   private MutableProcessingState processingState;
 
   /** The class under test. */
-  private UserTaskAssignedV2Applier userTaskAssignedV2Applier;
+  private UserTaskAssignedV3Applier userTaskAssignedV3Applier;
 
   /** Used for state assertions. */
   private MutableUserTaskState userTaskState;
@@ -37,7 +39,7 @@ public class UserTaskAssignedV2ApplierTest {
 
   @BeforeEach
   public void setup() {
-    userTaskAssignedV2Applier = new UserTaskAssignedV2Applier(processingState);
+    userTaskAssignedV3Applier = new UserTaskAssignedV3Applier(processingState);
     userTaskState = processingState.getUserTaskState();
     testSetup = new AppliersTestSetupHelper(processingState);
   }
@@ -61,9 +63,9 @@ public class UserTaskAssignedV2ApplierTest {
     // but we clear the assignee for created event
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
-
+    testSetup.applyEventToState(userTaskKey, UsageMetricIntent.EXPORTED, new UsageMetricRecord());
     // when
-    userTaskAssignedV2Applier.applyState(userTaskKey, userTaskRecord);
+    userTaskAssignedV3Applier.applyState(userTaskKey, userTaskRecord);
 
     // then
     assertThat(userTaskState.getLifecycleState(userTaskKey))
@@ -90,6 +92,7 @@ public class UserTaskAssignedV2ApplierTest {
     final UserTaskRecord recordWithoutAssignee = userTaskRecord.unsetAssignee();
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, recordWithoutAssignee);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
+    testSetup.applyEventToState(userTaskKey, UsageMetricIntent.EXPORTED, new UsageMetricRecord());
 
     assertThat(userTaskState.getIntermediateState(userTaskKey).getRecord().getAssignee())
         .describedAs("Expect intermediate user task to be stored without assignee")
@@ -100,7 +103,7 @@ public class UserTaskAssignedV2ApplierTest {
         .isEqualTo(Optional.of(initialAssignee));
 
     // when
-    userTaskAssignedV2Applier.applyState(userTaskKey, userTaskRecord);
+    userTaskAssignedV3Applier.applyState(userTaskKey, userTaskRecord);
 
     // then
     assertThat(userTaskState.getIntermediateState(userTaskKey))

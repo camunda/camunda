@@ -7,9 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.metrics;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -55,6 +54,7 @@ public class DbUsageMetricStateTest {
     assertThat(actual.getToTime()).isEqualTo(1001L);
     assertThat(actual.getTenantRPIMap()).isEmpty();
     assertThat(actual.getTenantEDIMap()).isEmpty();
+    assertThat(actual.getTenantTUMap()).isEmpty();
   }
 
   @Test
