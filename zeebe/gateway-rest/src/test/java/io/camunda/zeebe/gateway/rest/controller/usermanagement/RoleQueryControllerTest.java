@@ -334,7 +334,9 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(mappingsServices)
         .search(
-            new MappingRuleQuery.Builder().filter(f -> f.roleId(roleId).claimNames(List.of())).build());
+            new MappingRuleQuery.Builder()
+                .filter(f -> f.roleId(roleId).claimNames(List.of()))
+                .build());
   }
 
   @Test

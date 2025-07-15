@@ -308,7 +308,8 @@ public class GroupController {
         .build();
   }
 
-  private MappingRuleQuery buildMappingQuery(final String groupId, final MappingRuleQuery mappingRuleQuery) {
+  private MappingRuleQuery buildMappingQuery(
+      final String groupId, final MappingRuleQuery mappingRuleQuery) {
     return mappingRuleQuery.toBuilder()
         .filter(mappingRuleQuery.filter().toBuilder().groupId(groupId).build())
         .build();

@@ -386,7 +386,8 @@ public class TenantController {
         .build();
   }
 
-  private MappingRuleQuery buildMappingQuery(final String tenantId, final MappingRuleQuery mappingRuleQuery) {
+  private MappingRuleQuery buildMappingQuery(
+      final String tenantId, final MappingRuleQuery mappingRuleQuery) {
     return mappingRuleQuery.toBuilder()
         .filter(mappingRuleQuery.filter().toBuilder().tenantId(tenantId).build())
         .build();

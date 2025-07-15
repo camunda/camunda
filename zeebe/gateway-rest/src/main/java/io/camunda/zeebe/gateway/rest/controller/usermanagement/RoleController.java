@@ -223,7 +223,8 @@ public class RoleController {
     }
   }
 
-  private MappingRuleQuery buildMappingQuery(final String roleId, final MappingRuleQuery mappingRuleQuery) {
+  private MappingRuleQuery buildMappingQuery(
+      final String roleId, final MappingRuleQuery mappingRuleQuery) {
     return mappingRuleQuery.toBuilder()
         .filter(mappingRuleQuery.filter().toBuilder().roleId(roleId).build())
         .build();

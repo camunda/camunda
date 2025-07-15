@@ -95,7 +95,8 @@ public class IdentityMigrationModuleConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient) {
-    return new MappingServices(brokerClient, securityContextProvider, mappingRuleSearchClient, null);
+    return new MappingServices(
+        brokerClient, securityContextProvider, mappingRuleSearchClient, null);
   }
 
   @Bean

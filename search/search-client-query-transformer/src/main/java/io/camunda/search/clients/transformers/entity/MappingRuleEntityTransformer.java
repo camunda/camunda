@@ -12,7 +12,7 @@ import io.camunda.search.entities.MappingRuleEntity;
 
 public class MappingRuleEntityTransformer
     implements ServiceTransformer<
-    io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity, MappingRuleEntity> {
+        io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity, MappingRuleEntity> {
 
   @Override
   public MappingRuleEntity apply(

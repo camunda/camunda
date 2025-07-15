@@ -184,7 +184,8 @@ public class MappingServicesTest {
     // when
     services.getMatchingMappings(claims);
     // then
-    final ArgumentCaptor<MappingRuleQuery> queryCaptor = ArgumentCaptor.forClass(MappingRuleQuery.class);
+    final ArgumentCaptor<MappingRuleQuery> queryCaptor =
+        ArgumentCaptor.forClass(MappingRuleQuery.class);
     verify(client, times(1)).searchMappingRules(queryCaptor.capture());
     final MappingRuleQuery query = queryCaptor.getValue();
     assertThat(query.filter().claimName()).isNull();

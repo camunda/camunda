@@ -25,7 +25,7 @@ public interface SearchClientsProxy
         UserTaskSearchClient,
         UserSearchClient,
         VariableSearchClient,
-    MappingRuleSearchClient,
+        MappingRuleSearchClient,
         GroupSearchClient,
         UsageMetricsSearchClient,
         BatchOperationSearchClient,
