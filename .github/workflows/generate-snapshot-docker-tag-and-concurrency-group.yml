@@ -35,7 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions: {}
-    if: (github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))) &&
+    if: >-
+      github.repository == 'camunda/camunda' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) &&
       (inputs.job_to_run == 'all' || inputs.job_to_run == 'snapshot-tag')
     outputs:
       tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
@@ -57,8 +59,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions: { }
-    if: (github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))) &&
-      (inputs.job_to_run == 'all' || inputs.job_to_run == 'concurrency-group') && inputs.base_group_name != ''
+    if: >-
+      github.repository == 'camunda/camunda' &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')) &&
+      (inputs.job_to_run == 'all' || inputs.job_to_run == 'concurrency-group') &&
+      inputs.base_group_name != ''
     outputs:
       result: ${{ steps.split_branch.outputs.result }}
     steps:
