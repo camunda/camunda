@@ -27,11 +27,13 @@ import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessI
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
-import {useQueryClient} from '@tanstack/react-query';
+import {useMutationState, useQueryClient} from '@tanstack/react-query';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 import {useNavigate} from 'react-router-dom';
 import {useProcessInstanceOperations} from 'modules/hooks/useProcessInstanceOperations';
 import {ProcessInstanceOperationsContext} from './processInstanceOperationsContext';
+import {getMutationKey} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
+import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
 
 const headerColumns = [
   'Process Name',
@@ -86,7 +88,15 @@ type Props = {
 const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const queryClient = useQueryClient();
   const {data: permissions} = usePermissions();
-  const {data: hasActiveOperation} = useHasActiveOperations();
+  const {data: hasActiveOperationLegacy} = useHasActiveOperations();
+
+  const mutationStates = useMutationState({
+    filters: {mutationKey: getMutationKey(processInstance.processInstanceKey)},
+  });
+  const hasActiveOperation = mutationStates?.some(
+    (mutation) => mutation.status === 'pending',
+  );
+
   const navigate = useNavigate();
 
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
@@ -324,7 +334,11 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                   });
                 }
               }}
-              forceSpinner={hasActiveOperation || cancellation.isPending}
+              forceSpinner={
+                cancellation.isPending ||
+                hasActiveOperationLegacy ||
+                (IS_BATCH_OPERATIONS_V2 && hasActiveOperation)
+              }
               isInstanceModificationVisible={
                 !modificationsStore.isModificationModeEnabled
               }
