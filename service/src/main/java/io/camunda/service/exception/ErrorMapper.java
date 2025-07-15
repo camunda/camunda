@@ -49,7 +49,7 @@ public class ErrorMapper {
   }
 
   public static ServiceException mapBrokerError(final BrokerError error) {
-    return new ServiceException(mapBrokerErrorToServiceError(null, error, LOGGER));
+    return new ServiceException(mapBrokerErrorToServiceError(null, error));
   }
 
   public static ServiceException mapBrokerRejection(final BrokerRejection rejection) {
@@ -95,163 +95,149 @@ public class ErrorMapper {
   }
 
   private static ServiceError mapErrorToServiceError(final Throwable error) {
-    return mapErrorToServiceError(error, error, ErrorMapper.LOGGER);
+    return mapErrorToServiceError(error, error);
   }
 
   private static ServiceError mapErrorToServiceError(
-      final Throwable rootError, final Throwable error, final Logger logger) {
-    final var builder = ServiceError.newBuilder();
+      final Throwable rootError, final Throwable error) {
 
-    switch (error) {
-      case final ExecutionException e -> {
-        return mapErrorToServiceError(rootError, e.getCause(), logger);
-      }
-      case final CompletionException e -> {
-        return mapErrorToServiceError(rootError, e.getCause(), logger);
-      }
-      case final BrokerErrorException brokerError -> {
-        final ServiceError serviceError =
-            mapBrokerErrorToServiceError(rootError, brokerError.getError(), logger);
-        builder.mergeFrom(serviceError);
-        logger.trace("Expected to handle request, but the broker rejected it", rootError);
-      }
-      case final BrokerRejectionException rejection -> {
-        final ServiceError serviceError = mapRejectionToServiceError(rejection.getRejection());
-        builder.mergeFrom(serviceError);
-        logger.trace("Expected to handle request, but the broker rejected it", rootError);
-      }
+    return switch (error) {
+      case final ExecutionException e -> mapErrorToServiceError(rootError, e.getCause());
+      case final CompletionException e -> mapErrorToServiceError(rootError, e.getCause());
+      case final ServiceException e -> new ServiceError(e.getMessage(), e.getStatus());
+      case final BrokerErrorException brokerError ->
+          mapBrokerErrorToServiceError(rootError, brokerError.getError());
+      case final BrokerRejectionException rejection ->
+          mapRejectionToServiceError(rejection.getRejection());
       case final TimeoutException ignored -> {
         final var message =
             "Expected to handle request, but request timed out between gateway and broker";
-        builder.status(DEADLINE_EXCEEDED).message(message);
-        logger.debug(message, rootError);
+        LOGGER.debug(message, rootError);
+        yield new ServiceError(message, DEADLINE_EXCEEDED);
       }
       case final MsgpackException ignored -> {
         final var message = "Expected to handle request, but messagepack property was invalid";
-        builder.status(INVALID_ARGUMENT).message(message);
-        logger.debug(message, rootError);
+        LOGGER.debug(message, rootError);
+        yield new ServiceError(message, INVALID_ARGUMENT);
       }
       case final io.camunda.zeebe.msgpack.spec.MsgpackException ignored -> {
         final var message = "Expected to handle request, but messagepack property was invalid";
-        builder.status(INVALID_ARGUMENT).message(message);
-        logger.debug(message, rootError);
+        LOGGER.debug(message, rootError);
+        yield new ServiceError(message, INVALID_ARGUMENT);
       }
       case final JsonParseException ignored -> {
         final var message = "Expected to handle request, but JSON property was invalid";
-        builder.status(INVALID_ARGUMENT).message(message);
-        logger.debug(message, rootError);
+        LOGGER.debug(message, rootError);
+        yield new ServiceError(message, INVALID_ARGUMENT);
       }
       case final InvalidTenantRequestException ignored -> {
-        builder.status(INVALID_ARGUMENT).message(error.getMessage());
-        logger.debug(error.getMessage(), rootError);
+        LOGGER.debug(error.getMessage(), rootError);
+        yield new ServiceError(error.getMessage(), INVALID_ARGUMENT);
       }
       case final IllegalTenantRequestException ignored -> {
-        builder.status(UNAUTHORIZED).message(error.getMessage());
-        logger.debug(error.getMessage(), rootError);
+        LOGGER.debug(error.getMessage(), rootError);
+        yield new ServiceError(error.getMessage(), UNAUTHORIZED);
       }
       case final IllegalArgumentException ignored -> {
         final var message = "Expected to handle request, but JSON property was invalid";
-        builder.status(INVALID_ARGUMENT).message(message);
-        logger.debug(message, rootError);
+        LOGGER.debug(message, rootError);
+        yield new ServiceError(message, INVALID_ARGUMENT);
       }
       case final PartitionNotFoundException ignored -> {
         final var message = "Expected to handle request, but request could not be delivered";
-        builder.status(UNAVAILABLE).message(message);
-        logger.debug(message, rootError);
+        LOGGER.debug(message, rootError);
+        yield new ServiceError(message, UNAVAILABLE);
       }
       case final RequestRetriesExhaustedException ignored -> {
         final var message = "Expected to handle request, but all retries have been exhausted";
-        builder.status(RESOURCE_EXHAUSTED).message(message);
         // this error occurs when all partitions have exhausted for requests which have no fixed
         // partitions - it will then also occur when back pressure kicks in, leading to a large
         // burst
         // of error logs that is, in fact, expected
-        logger.trace(message, rootError);
+        LOGGER.trace(message, rootError);
+        yield new ServiceError(message, RESOURCE_EXHAUSTED);
       }
       case final PartitionInactiveException ignored -> {
         final var message =
             "Expected to handle request, but the target partition is currently inactive";
-        builder.status(UNAVAILABLE).message(message);
-        logger.trace(message, rootError);
+        LOGGER.trace(message, rootError);
+        yield new ServiceError(message, UNAVAILABLE);
       }
       case final NoTopologyAvailableException ignored -> {
         final var message =
             "Expected to handle request, but the gateway does not know any partitions yet";
-        builder.status(UNAVAILABLE).message(message);
-        logger.trace(message, rootError);
+        LOGGER.trace(message, rootError);
+        yield new ServiceError(message, UNAVAILABLE);
       }
       case final ConnectTimeoutException ignored -> {
         final var message =
             "Expected to handle request, but a connection timeout exception occurred";
-        builder.status(UNAVAILABLE).message(message);
-        logger.warn(message, rootError);
+        LOGGER.warn(message, rootError);
+        yield new ServiceError(message, UNAVAILABLE);
       }
       case final ConnectException ignored -> {
         final var message =
             "Expected to handle request, but there was a connection error with one of the brokers";
-        builder.status(UNAVAILABLE).message(message);
-        logger.warn(message, rootError);
+        LOGGER.warn(message, rootError);
+        yield new ServiceError(message, UNAVAILABLE);
       }
       case final MessagingException.ConnectionClosed ignored -> {
         final var message =
             "Expected to handle request, but the connection was cut prematurely with the broker; "
                 + "the request may or may not have been accepted, and may not be safe to retry.";
-        builder.status(ABORTED).message(message);
-        logger.warn(message, rootError);
+        LOGGER.warn(message, rootError);
+        yield new ServiceError(message, ABORTED);
       }
       default -> {
-        builder
-            .status(INTERNAL)
-            .message(
-                "Unexpected error occurred during the request processing: " + error.getMessage());
-        logger.error("Expected to handle request, but an unexpected error occurred", rootError);
+        LOGGER.error("Expected to handle request, but an unexpected error occurred", rootError);
+        yield new ServiceError(
+            "Unexpected error occurred during the request processing: " + error.getMessage(),
+            INTERNAL);
       }
-    }
-
-    return builder.build();
+    };
   }
 
   private static ServiceError mapBrokerErrorToServiceError(
-      final Throwable rootError, final BrokerError error, final Logger logger) {
-    final var builder = ServiceError.newBuilder();
-    String message = error.getMessage();
+      final Throwable rootError, final BrokerError error) {
+    final String message = error.getMessage();
 
-    switch (error.getCode()) {
-      case PROCESS_NOT_FOUND -> builder.status(NOT_FOUND);
+    return switch (error.getCode()) {
+      case PROCESS_NOT_FOUND -> {
+        LOGGER.trace("Entity was not found: {}", error, rootError);
+        yield new ServiceError(message, NOT_FOUND);
+      }
       case RESOURCE_EXHAUSTED -> {
-        builder.status(RESOURCE_EXHAUSTED);
-        logger.trace("Target broker is currently overloaded: {}", error, rootError);
+        LOGGER.trace("Target broker is currently overloaded: {}", error, rootError);
+        yield new ServiceError(message, RESOURCE_EXHAUSTED);
       }
       case PARTITION_LEADER_MISMATCH -> {
         // return UNAVAILABLE to indicate to the user that retrying might solve the issue, as this
         // is usually a transient issue
-        logger.trace("Target broker was not the leader of the partition: {}", error, rootError);
-        builder.status(UNAVAILABLE);
+        LOGGER.trace("Target broker was not the leader of the partition: {}", error, rootError);
+        yield new ServiceError(message, UNAVAILABLE);
       }
       case MALFORMED_REQUEST -> {
-        logger.debug("Malformed request: {}", message, rootError);
-        builder.status(INVALID_ARGUMENT);
+        LOGGER.debug("Malformed request: {}", message, rootError);
+        yield new ServiceError(message, INVALID_ARGUMENT);
       }
       case PARTITION_UNAVAILABLE -> {
-        logger.debug("Partition is currently unavailable: {}", error, rootError);
-        builder.status(UNAVAILABLE);
+        LOGGER.debug("Partition is currently unavailable: {}", error, rootError);
+        yield new ServiceError(message, UNAVAILABLE);
       }
       default -> {
         // all the following are for cases where retrying (with the same gateway) is not expected
         // to solve anything
-        logger.error(
+        LOGGER.error(
             "Expected to handle request, but received an internal error from broker: {}",
             error,
             rootError);
-        builder.status(INTERNAL);
-        message =
+        yield new ServiceError(
             String.format(
                 "Unexpected error occurred between gateway and broker (code: %s) (message: %s)",
-                error.getCode(), error.getMessage());
+                error.getCode(), error.getMessage()),
+            INTERNAL);
       }
-    }
-
-    return builder.message(message).build();
+    };
   }
 
   private static ServiceError mapRejectionToServiceError(final BrokerRejection rejection) {
@@ -259,17 +245,16 @@ public class ErrorMapper {
         String.format(
             "Command '%s' rejected with code '%s': %s",
             rejection.intent(), rejection.type(), rejection.reason());
-    final var builder = ServiceError.newBuilder().message(message);
-
+    LOGGER.trace("Expected to handle request, but the broker rejected it: {}", message);
     return switch (rejection.type()) {
-      case INVALID_ARGUMENT -> builder.status(INVALID_ARGUMENT).build();
-      case NOT_FOUND -> builder.status(NOT_FOUND).build();
-      case ALREADY_EXISTS -> builder.status(ALREADY_EXISTS).build();
-      case INVALID_STATE -> builder.status(INVALID_STATE).build();
-      case PROCESSING_ERROR, EXCEEDED_BATCH_RECORD_SIZE -> builder.status(INTERNAL).build();
-      case UNAUTHORIZED -> builder.status(UNAUTHORIZED).build();
-      case FORBIDDEN -> builder.status(FORBIDDEN).build();
-      default -> builder.status(UNKNOWN).build();
+      case INVALID_ARGUMENT -> new ServiceError(message, INVALID_ARGUMENT);
+      case NOT_FOUND -> new ServiceError(message, NOT_FOUND);
+      case ALREADY_EXISTS -> new ServiceError(message, ALREADY_EXISTS);
+      case INVALID_STATE -> new ServiceError(message, INVALID_STATE);
+      case PROCESSING_ERROR, EXCEEDED_BATCH_RECORD_SIZE -> new ServiceError(message, INTERNAL);
+      case UNAUTHORIZED -> new ServiceError(message, UNAUTHORIZED);
+      case FORBIDDEN -> new ServiceError(message, FORBIDDEN);
+      default -> new ServiceError(message, UNKNOWN);
     };
   }
 

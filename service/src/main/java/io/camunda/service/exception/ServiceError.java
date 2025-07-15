@@ -9,32 +9,4 @@ package io.camunda.service.exception;
 
 import io.camunda.service.exception.ServiceException.Status;
 
-public record ServiceError(String message, Status status) {
-  public static Builder newBuilder() {
-    return new Builder();
-  }
-
-  public static class Builder {
-    String message;
-    Status status;
-
-    public ServiceError build() {
-      return new ServiceError(message, status);
-    }
-
-    public Builder message(final String message) {
-      this.message = message;
-      return this;
-    }
-
-    public Builder status(final Status status) {
-      this.status = status;
-      return this;
-    }
-
-    public void mergeFrom(final ServiceError other) {
-      message = other.message == null ? message : other.message;
-      status = other.status == null ? status : other.status;
-    }
-  }
-}
+public record ServiceError(String message, Status status) {}
