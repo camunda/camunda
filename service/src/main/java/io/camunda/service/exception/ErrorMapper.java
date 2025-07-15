@@ -43,7 +43,9 @@ public class ErrorMapper {
   private static final Logger LOGGER = LoggerFactory.getLogger(ErrorMapper.class);
 
   public static ServiceException mapError(final Throwable error) {
-    return new ServiceException(mapErrorToServiceError(error));
+    return error instanceof ServiceException
+        ? (ServiceException) error
+        : new ServiceException(mapErrorToServiceError(error));
   }
 
   public static ServiceException mapBrokerError(final BrokerError error) {
