@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.AdHocSubProcessActivityFilter;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
 import io.camunda.client.api.search.filter.BatchOperationItemFilter;
@@ -61,7 +60,6 @@ import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
-import io.camunda.client.impl.search.filter.AdHocSubProcessActivityFilterImpl;
 import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;
@@ -223,13 +221,6 @@ public final class SearchRequestBuilders {
     final ElementInstanceSort sort = new ElementInstanceSortImpl();
     fn.accept(sort);
     return sort;
-  }
-
-  public static AdHocSubProcessActivityFilter adHocSubProcessActivityFilter(
-      final Consumer<AdHocSubProcessActivityFilter> fn) {
-    final AdHocSubProcessActivityFilter filter = new AdHocSubProcessActivityFilterImpl();
-    fn.accept(filter);
-    return filter;
   }
 
   public static VariableFilter variableFilter(final Consumer<VariableFilter> fn) {
