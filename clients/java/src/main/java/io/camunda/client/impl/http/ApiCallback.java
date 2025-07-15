@@ -66,12 +66,11 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
   @Override
   public void failed(final Exception ex) {
-    if (ex instanceof ClientException) {
+    if (ex instanceof ClientException || ex.getCause() instanceof ClientException) {
       response.completeExceptionally(ex);
-      return;
+    } else {
+      response.completeExceptionally(new ClientException(ex));
     }
-
-    response.completeExceptionally(new ClientException(ex));
   }
 
   @Override
