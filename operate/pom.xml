@@ -64,7 +64,7 @@
 
     <!-- Version overrides from spring-boot parent pom, these should be re-reviewed anytime spring boot version is updated -->
     <snakeyaml.version>2.2</snakeyaml.version>
-    <commons-lang3.version>3.14.0</commons-lang3.version>
+    <commons-lang3.version>3.18.0</commons-lang3.version>
 
     <!-- Library versions not provided by spring boot -->
     <version.zeebe>8.5.20</version.zeebe>
