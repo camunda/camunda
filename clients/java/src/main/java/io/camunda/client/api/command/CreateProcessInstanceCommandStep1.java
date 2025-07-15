@@ -133,7 +133,8 @@ public interface CreateProcessInstanceCommandStep1
 
     /**
      * Adds a runtime instruction to suspend the process instance after the given element is
-     * completed or terminated.
+     * completed or terminated. This method can be called more than once to add multiple runtime
+     * instructions.
      *
      * @param elementId the id of the BPMN element after which the process instance should be
      *     suspended
