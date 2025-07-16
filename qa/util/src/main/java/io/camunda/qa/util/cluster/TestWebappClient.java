@@ -18,6 +18,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class TestWebappClient {
@@ -100,8 +101,16 @@ public class TestWebappClient {
       return findCookie(WebSecurityConfig.X_CSRF_TOKEN);
     }
 
+    public URI getRootEndpoint() {
+      return endpoint;
+    }
+
+    public List<HttpCookie> getCookies() {
+      return cookieManager.getCookieStore().getCookies();
+    }
+
     private HttpCookie findCookie(final String cookieName) {
-      final var cookies = cookieManager.getCookieStore().getCookies();
+      final var cookies = getCookies();
 
       return cookies.stream()
           .filter(c -> cookieName.equals(c.getName()))
