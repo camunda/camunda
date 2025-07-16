@@ -149,6 +149,11 @@ public class KeycloakIdentityMigrationIT {
           .withEnv("IDENTITY_TENANTS_1_MEMBERS_1_USERNAME", "user1")
           .withEnv("IDENTITY_TENANTS_1_MEMBERS_2_TYPE", "APPLICATION")
           .withEnv("IDENTITY_TENANTS_1_MEMBERS_2_APPLICATION-ID", IDENTITY_CLIENT)
+          // public client to be ignored
+          .withEnv("KEYCLOAK_CLIENTS_1_NAME", "console")
+          .withEnv("KEYCLOAK_CLIENTS_1_ID", "console")
+          .withEnv("KEYCLOAK_CLIENTS_1_ROOT_URL", "http://console.camunda.com")
+          .withEnv("KEYCLOAK_CLIENTS_1_TYPE", "public")
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
