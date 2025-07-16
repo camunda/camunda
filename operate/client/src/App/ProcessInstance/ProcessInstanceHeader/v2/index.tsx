@@ -32,6 +32,8 @@ import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInst
 import {useNavigate} from 'react-router-dom';
 import {useProcessInstanceOperations} from 'modules/hooks/useProcessInstanceOperations';
 import {ProcessInstanceOperationsContext} from './processInstanceOperationsContext';
+import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
+import {useHasActiveBatchOperationMutation} from 'modules/mutations/processInstance/useHasActiveBatchOperationMutation';
 
 const headerColumns = [
   'Process Name',
@@ -86,7 +88,11 @@ type Props = {
 const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const queryClient = useQueryClient();
   const {data: permissions} = usePermissions();
-  const {data: hasActiveOperation} = useHasActiveOperations();
+  const {data: hasActiveOperationLegacy} = useHasActiveOperations();
+  const hasActiveBatchOperationMutation = useHasActiveBatchOperationMutation(
+    processInstance.processInstanceKey,
+  );
+
   const navigate = useNavigate();
 
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
@@ -324,7 +330,11 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                   });
                 }
               }}
-              forceSpinner={hasActiveOperation || cancellation.isPending}
+              forceSpinner={
+                cancellation.isPending ||
+                hasActiveOperationLegacy ||
+                (IS_BATCH_OPERATIONS_V2 && hasActiveBatchOperationMutation)
+              }
               isInstanceModificationVisible={
                 !modificationsStore.isModificationModeEnabled
               }

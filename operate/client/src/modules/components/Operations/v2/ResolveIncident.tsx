@@ -6,54 +6,39 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {Restricted} from 'modules/components/Restricted';
-import {useOperations} from 'modules/queries/operations/useOperations';
-import {ACTIVE_OPERATION_STATES} from 'modules/constants';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {OperationItem} from 'modules/components/OperationItem';
-import type {
-  ResourceBasedPermissionDto,
-  OperationEntityType,
-} from 'modules/types/operate';
+import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
+import {notificationsStore} from 'modules/stores/notifications';
 
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
-  permissions?: ResourceBasedPermissionDto[] | null;
-  applyOperation: (operationType: OperationEntityType) => Promise<void>;
 };
 
-const ResolveIncident: React.FC<Props> = ({
-  processInstanceKey,
-  permissions,
-  applyOperation,
-}) => {
-  const {data: operations} = useOperations();
-
-  const isOperationActive = (operationType: OperationEntityType) => {
-    return operations?.some(
-      (operation) =>
-        operation.type === operationType &&
-        ACTIVE_OPERATION_STATES.includes(operation.state),
-    );
-  };
+const ResolveIncident: React.FC<Props> = ({processInstanceKey}) => {
+  const {mutate, isPending} = useCreateIncidentResolutionBatchOperation(
+    processInstanceKey,
+    {
+      onError: (error) =>
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Failed to retry process instance',
+          subtitle: error.message,
+          isDismissable: true,
+        }),
+    },
+  );
 
   return (
-    <>
-      <Restricted
-        resourceBasedRestrictions={{
-          scopes: ['UPDATE_PROCESS_INSTANCE'],
-          permissions,
-        }}
-      >
-        <OperationItem
-          type="RESOLVE_INCIDENT"
-          onClick={() => applyOperation('RESOLVE_INCIDENT')}
-          title={`Retry Instance ${processInstanceKey}`}
-          disabled={isOperationActive('RESOLVE_INCIDENT')}
-          size="sm"
-        />
-      </Restricted>
-    </>
+    <OperationItem
+      type="RESOLVE_INCIDENT"
+      onClick={() => {
+        mutate();
+      }}
+      title={`Retry Instance ${processInstanceKey}`}
+      disabled={isPending}
+      size="sm"
+    />
   );
 };
 
