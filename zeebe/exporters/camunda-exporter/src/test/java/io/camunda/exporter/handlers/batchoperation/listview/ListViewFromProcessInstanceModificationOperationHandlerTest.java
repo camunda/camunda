@@ -14,7 +14,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 
 class ListViewFromProcessInstanceModificationOperationHandlerTest
-    extends ProcessInstanceFromOperationItemHandlerTest<ProcessInstanceModificationRecordValue> {
+    extends AbstractProcessInstanceFromOperationItemHandlerTest<
+        ProcessInstanceModificationRecordValue> {
 
   ListViewFromProcessInstanceModificationOperationHandlerTest() {
     super(new ListViewFromProcessInstanceModificationOperationHandler(INDEX_NAME, CACHE));

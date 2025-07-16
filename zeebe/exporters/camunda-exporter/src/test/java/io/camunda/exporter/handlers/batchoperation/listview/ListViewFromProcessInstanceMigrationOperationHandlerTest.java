@@ -14,7 +14,8 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 
 class ListViewFromProcessInstanceMigrationOperationHandlerTest
-    extends ProcessInstanceFromOperationItemHandlerTest<ProcessInstanceMigrationRecordValue> {
+    extends AbstractProcessInstanceFromOperationItemHandlerTest<
+        ProcessInstanceMigrationRecordValue> {
 
   ListViewFromProcessInstanceMigrationOperationHandlerTest() {
     super(new ListViewFromProcessInstanceMigrationOperationHandler(INDEX_NAME, CACHE));

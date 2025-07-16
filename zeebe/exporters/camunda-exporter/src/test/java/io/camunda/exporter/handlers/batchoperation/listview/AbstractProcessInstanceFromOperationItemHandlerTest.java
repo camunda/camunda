@@ -31,7 +31,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public abstract class ProcessInstanceFromOperationItemHandlerTest<
+public abstract class AbstractProcessInstanceFromOperationItemHandlerTest<
     R extends RecordValue & ProcessInstanceRelated> {
   protected static final ExporterEntityCache<String, CachedBatchOperationEntity> CACHE =
       mock(ExporterEntityCache.class);
@@ -39,7 +39,7 @@ public abstract class ProcessInstanceFromOperationItemHandlerTest<
   protected final ProtocolFactory factory = new ProtocolFactory();
   final AbstractProcessInstanceFromOperationItemHandler<R> underTest;
 
-  ProcessInstanceFromOperationItemHandlerTest(
+  AbstractProcessInstanceFromOperationItemHandlerTest(
       final AbstractProcessInstanceFromOperationItemHandler<R> underTest) {
     this.underTest = underTest;
   }
