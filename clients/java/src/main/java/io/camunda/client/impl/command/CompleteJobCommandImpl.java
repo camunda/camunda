@@ -28,6 +28,8 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.client.protocol.rest.JobResult.TypeEnum;
+import io.camunda.client.protocol.rest.JobResultCorrections;
+import io.camunda.client.protocol.rest.JobResultUserTask;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -54,11 +56,6 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private boolean useRest;
   private final long jobKey;
   private final JsonMapper jsonMapper;
-  private JobResult.Builder resultGrpc;
-  private io.camunda.client.protocol.rest.JobResultUserTask resultRest;
-  private io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections.Builder
-      correctionsGrpc;
-  private io.camunda.client.protocol.rest.JobResultCorrections correctionsRest;
 
   public CompleteJobCommandImpl(
       final GatewayStub asyncStub,
@@ -112,53 +109,62 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   private CompleteJobCommandStep1 setJobResult(final CompleteUserTaskJobResult jobResult) {
     if (useRest) {
-      resultRest = new io.camunda.client.protocol.rest.JobResultUserTask();
-      correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
-      correctionsRest
-          .assignee(jobResult.getCorrections().getAssignee())
-          .dueDate(jobResult.getCorrections().getDueDate())
-          .followUpDate(jobResult.getCorrections().getFollowUpDate())
-          .candidateUsers(jobResult.getCorrections().getCandidateUsers())
-          .candidateGroups(jobResult.getCorrections().getCandidateGroups())
-          .priority(jobResult.getCorrections().getPriority());
-      resultRest
-          .type(TypeEnum.USER_TASK)
-          .denied(jobResult.isDenied())
-          .deniedReason(jobResult.getDeniedReason())
-          .corrections(correctionsRest);
-      httpRequestObject.setResult(resultRest);
+      setRestJobResult(jobResult);
     } else {
-      resultGrpc = JobResult.newBuilder();
-      correctionsGrpc = GatewayOuterClass.JobResultCorrections.newBuilder();
-      if (jobResult.getCorrections().getAssignee() != null) {
-        correctionsGrpc.setAssignee(jobResult.getCorrections().getAssignee());
-      }
-      if (jobResult.getCorrections().getDueDate() != null) {
-        correctionsGrpc.setDueDate(jobResult.getCorrections().getDueDate());
-      }
-      if (jobResult.getCorrections().getFollowUpDate() != null) {
-        correctionsGrpc.setFollowUpDate(jobResult.getCorrections().getFollowUpDate());
-      }
-      if (jobResult.getCorrections().getCandidateUsers() != null) {
-        correctionsGrpc.setCandidateUsers(
-            StringList.newBuilder().addAllValues(jobResult.getCorrections().getCandidateUsers()));
-      }
-      if (jobResult.getCorrections().getCandidateGroups() != null) {
-        correctionsGrpc.setCandidateGroups(
-            StringList.newBuilder().addAllValues(jobResult.getCorrections().getCandidateGroups()));
-      }
-      if (jobResult.getCorrections().getPriority() != null) {
-        correctionsGrpc.setPriority(jobResult.getCorrections().getPriority());
-      }
-      resultGrpc
-          .setType(TypeEnum.USER_TASK.getValue())
-          .setDenied(jobResult.isDenied())
-          .setDeniedReason(jobResult.getDeniedReason() == null ? "" : jobResult.getDeniedReason())
-          .setCorrections(correctionsGrpc);
-      grpcRequestObjectBuilder.setResult(resultGrpc);
+      setGrpcJobResult(jobResult);
     }
 
     return this;
+  }
+
+  private void setRestJobResult(final CompleteUserTaskJobResult jobResult) {
+    final JobResultUserTask resultRest = new JobResultUserTask();
+    final JobResultCorrections correctionsRest = new JobResultCorrections();
+    correctionsRest
+        .assignee(jobResult.getCorrections().getAssignee())
+        .dueDate(jobResult.getCorrections().getDueDate())
+        .followUpDate(jobResult.getCorrections().getFollowUpDate())
+        .candidateUsers(jobResult.getCorrections().getCandidateUsers())
+        .candidateGroups(jobResult.getCorrections().getCandidateGroups())
+        .priority(jobResult.getCorrections().getPriority());
+    resultRest
+        .type(TypeEnum.USER_TASK)
+        .denied(jobResult.isDenied())
+        .deniedReason(jobResult.getDeniedReason())
+        .corrections(correctionsRest);
+    httpRequestObject.setResult(resultRest);
+  }
+
+  private void setGrpcJobResult(final CompleteUserTaskJobResult jobResult) {
+    final JobResult.Builder resultGrpc = JobResult.newBuilder();
+    final GatewayOuterClass.JobResultCorrections.Builder correctionsGrpc =
+        GatewayOuterClass.JobResultCorrections.newBuilder();
+    if (jobResult.getCorrections().getAssignee() != null) {
+      correctionsGrpc.setAssignee(jobResult.getCorrections().getAssignee());
+    }
+    if (jobResult.getCorrections().getDueDate() != null) {
+      correctionsGrpc.setDueDate(jobResult.getCorrections().getDueDate());
+    }
+    if (jobResult.getCorrections().getFollowUpDate() != null) {
+      correctionsGrpc.setFollowUpDate(jobResult.getCorrections().getFollowUpDate());
+    }
+    if (jobResult.getCorrections().getCandidateUsers() != null) {
+      correctionsGrpc.setCandidateUsers(
+          StringList.newBuilder().addAllValues(jobResult.getCorrections().getCandidateUsers()));
+    }
+    if (jobResult.getCorrections().getCandidateGroups() != null) {
+      correctionsGrpc.setCandidateGroups(
+          StringList.newBuilder().addAllValues(jobResult.getCorrections().getCandidateGroups()));
+    }
+    if (jobResult.getCorrections().getPriority() != null) {
+      correctionsGrpc.setPriority(jobResult.getCorrections().getPriority());
+    }
+    resultGrpc
+        .setType(TypeEnum.USER_TASK.getValue())
+        .setDenied(jobResult.isDenied())
+        .setDeniedReason(jobResult.getDeniedReason() == null ? "" : jobResult.getDeniedReason())
+        .setCorrections(correctionsGrpc);
+    grpcRequestObjectBuilder.setResult(resultGrpc);
   }
 
   @Override
