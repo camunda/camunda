@@ -19,14 +19,14 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-public class OptimizeRoleValidator implements OAuth2TokenValidator<Jwt> {
+public class RoleValidator implements OAuth2TokenValidator<Jwt> {
 
   static final String ORGANIZATION_CLAIM_KEY = "https://camunda.com/orgs";
-  private static final Logger LOG = LoggerFactory.getLogger(OptimizeRoleValidator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RoleValidator.class);
   
   private final List<String> allowedRoles;
 
-  public OptimizeRoleValidator(final List<String> allowedRoles) {
+  public RoleValidator(final List<String> allowedRoles) {
     this.allowedRoles = Objects.requireNonNull(allowedRoles, "allowedRoles must not be null");
   }
 

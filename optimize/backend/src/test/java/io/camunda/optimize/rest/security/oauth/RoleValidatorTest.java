@@ -22,10 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-class OptimizeRoleValidatorTest {
+class RoleValidatorTest {
 
   private final List<String> allowedRoles = Arrays.asList("admin", "analyst");
-  private final OptimizeRoleValidator validator = new OptimizeRoleValidator(allowedRoles);
+  private final RoleValidator validator = new RoleValidator(allowedRoles);
 
   @Test
   void shouldSucceedWhenTokenHasNoOrganizationClaim() {
@@ -151,7 +151,7 @@ class OptimizeRoleValidatorTest {
   void shouldWorkWithCustomAllowedRoles() {
     // given
     final List<String> customRoles = Arrays.asList("owner", "manager");
-    final OptimizeRoleValidator customValidator = new OptimizeRoleValidator(customRoles);
+    final RoleValidator customValidator = new RoleValidator(customRoles);
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
     final Map<String, Object> org = new HashMap<>();

@@ -22,7 +22,7 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOUR
 import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
-import io.camunda.optimize.rest.security.oauth.OptimizeRoleValidator;
+import io.camunda.optimize.rest.security.oauth.RoleValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -43,7 +43,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -65,11 +64,9 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSMSecurityConfigurerAdapter.class);
+  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst");
 
   private final CCSMTokenService ccsmTokenService;
-  
-  @Value("${optimize.allowed-org-roles:admin,analyst}")
-  private List<String> allowedOrgRoles;
 
   public CCSMSecurityConfigurerAdapter(
       final ConfigurationService configurationService,
@@ -206,7 +203,7 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
     final NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwtSetUri).build();
     final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAudienceFromConfiguration());
-    final OAuth2TokenValidator<Jwt> roleValidator = new OptimizeRoleValidator(allowedOrgRoles);
+    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
     // The default validator already contains validation for timestamp and X509 thumbprint
     final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
         JwtValidators.createDefaultWithValidators(audienceValidator, roleValidator);
