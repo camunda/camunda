@@ -7,11 +7,13 @@
  */
 package io.camunda.optimize;
 
+import org.junit.platform.suite.api.ExcludePackages;
 import org.junit.platform.suite.api.SelectClasses;
 import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages({"io.camunda.optimize.service"})
+@SelectPackages({"io.camunda.optimize"})
 @SelectClasses({CodeQualityTest.class})
+@ExcludePackages({"io.camunda.optimize.upgrade"})
 public class OptimizeCoreFeaturesTestSuite {}

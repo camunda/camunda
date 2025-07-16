@@ -7,9 +7,11 @@
  */
 package io.camunda.tasklist.webapp;
 
+import org.junit.platform.suite.api.ExcludePackages;
 import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages({"io.camunda.tasklist.zeebeimport.common"})
+@SelectPackages({"io.camunda.tasklist.webapp"})
+@ExcludePackages({"io.camunda.tasklist.webapp.es"})
 public class TasklistCoreFeaturesTestSuite {}
