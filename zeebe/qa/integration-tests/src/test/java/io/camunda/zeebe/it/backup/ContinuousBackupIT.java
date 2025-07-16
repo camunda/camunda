@@ -102,6 +102,7 @@ final class ContinuousBackupIT {
     backupActuator.take(backupId);
 
     await("backup is completed")
+        .ignoreExceptions()
         .untilAsserted(
             () ->
                 assertThat(backupActuator.status(backupId).getState())
