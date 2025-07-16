@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.authentication.ConditionalOnSecondaryStorageAuthentication;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MappingServices;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/mapping-rules")
+@ConditionalOnSecondaryStorageAuthentication
 public class MappingRuleController {
   private final MappingServices mappingServices;
   private final CamundaAuthenticationProvider authenticationProvider;

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
+import io.camunda.authentication.ConditionalOnSecondaryStorageAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -29,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/setup")
+@ConditionalOnSecondaryStorageAuthentication
 public class SetupController {
 
   public static final String WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE =

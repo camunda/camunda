@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.authentication.ConditionalOnSecondaryStorageAuthentication;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -50,6 +51,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/roles")
+@ConditionalOnSecondaryStorageAuthentication
 public class RoleController {
   private final RoleServices roleServices;
   private final UserServices userServices;
