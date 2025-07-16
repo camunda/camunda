@@ -18,6 +18,7 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.TestPlugin;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.util.FileUtil;
@@ -34,7 +35,6 @@ import org.junit.Test;
 import org.opensearch.client.opensearch.cluster.HealthRequest;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -47,10 +47,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       OpensearchProperties.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
-      DatabaseInfo.class
+      DatabaseInfo.class,
+      TestOperatePropertiesOverride.class
     },
     properties = OperateProperties.PREFIX + ".database=opensearch")
-@EnableConfigurationProperties(OperateProperties.class)
 public class OpensearchConnectorIT extends OperateAbstractIT {
 
   private static final OpensearchContainer<?> OPENSEARCH_CONTAINER =
