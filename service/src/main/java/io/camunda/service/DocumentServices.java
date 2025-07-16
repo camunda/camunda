@@ -133,8 +133,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
   public CompletableFuture<Void> deleteDocument(final String documentId, final String storeId) {
 
-    final DocumentStoreRecord documentStore = getDocumentStore(storeId);
-    return documentStore
+    return getDocumentStore(storeId)
         .instance()
         .deleteDocument(documentId)
         .handleAsync(this::requireRightOrThrow);
