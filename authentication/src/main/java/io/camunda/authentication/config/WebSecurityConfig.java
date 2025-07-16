@@ -14,7 +14,10 @@ import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
+import io.camunda.authentication.ConditionalOnSecondaryStorageAuthentication;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.NoSecondaryStorageUserDetailsService;
+import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
@@ -34,6 +37,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -374,6 +378,7 @@ public class WebSecurityConfig {
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   public static class BasicConfiguration {
     @Bean
+    @ConditionalOnSecondaryStorageAuthentication
     @ConditionalOnMissingBean(UserDetailsService.class)
     public CamundaUserDetailsService camundaUserDetailsService(
         final UserServices userServices,
@@ -383,6 +388,12 @@ public class WebSecurityConfig {
         final GroupServices groupServices) {
       return new CamundaUserDetailsService(
           userServices, authorizationServices, roleServices, tenantServices, groupServices);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(UserDetailsService.class)
+    public NoSecondaryStorageUserDetailsService noSecondaryStorageUserDetailsService() {
+      return new NoSecondaryStorageUserDetailsService();
     }
 
     @Bean
@@ -439,7 +450,7 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
-        final RoleServices roleServices,
+        final Optional<RoleServices> roleServices,
         final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
       LOG.info("Web Applications Login/Logout is setup.");
@@ -482,10 +493,14 @@ public class WebSecurityConfig {
                           .accessDeniedHandler(authFailureHandler))
               .addFilterAfter(
                   new WebApplicationAuthorizationCheckFilter(securityConfiguration),
-                  AuthorizationFilter.class)
-              .addFilterBefore(
-                  new AdminUserCheckFilter(securityConfiguration, roleServices),
                   AuthorizationFilter.class);
+
+      // Only add AdminUserCheckFilter if RoleServices is available (secondary storage enabled)
+      if (roleServices.isPresent()) {
+        filterChainBuilder.addFilterBefore(
+            new AdminUserCheckFilter(securityConfiguration, roleServices.get()),
+            AuthorizationFilter.class);
+      }
 
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 

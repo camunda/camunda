@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
 import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuthorizationSearchClient;
@@ -176,6 +177,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  @ConditionalOnSecondaryStorage
   public RoleServices roleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
@@ -184,6 +186,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  @ConditionalOnSecondaryStorage
   public TenantServices tenantServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
@@ -192,6 +195,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  @ConditionalOnSecondaryStorage
   public GroupServices groupServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
@@ -200,6 +204,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  @ConditionalOnSecondaryStorage
   public UserServices userServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
@@ -254,6 +259,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  @ConditionalOnSecondaryStorage
   public AuthorizationServices authorizationServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
