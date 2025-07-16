@@ -33,6 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -154,6 +155,28 @@ final class AuthorizationMigrationHandlerTest {
             PermissionType.READ_DECISION_DEFINITION,
             PermissionType.READ_DECISION_INSTANCE,
             PermissionType.DELETE_DECISION_INSTANCE));
+  }
+
+  @Test
+  public void shouldContinueMigrationWithUserAuthorizationEndpointUnavailable() {
+    // given
+    final var users =
+        List.of(
+            new User("user1", "username1", "name1", "email1"),
+            new User("user2", "username2", "name2", "email2"));
+    when(managementIdentityClient.fetchUsers(any(Integer.class)))
+        .thenReturn(users)
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchUserAuthorizations(anyString()))
+        .thenThrow(new NotImplementedException("Authorization endpoint unavailable"));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    // the migration to stops after the first failed invocation of fetching user authorizations
+    verify(managementIdentityClient, times(1)).fetchUserAuthorizations(any());
+    verify(authorizationServices, times(0)).createAuthorization(any());
   }
 
   @Test
