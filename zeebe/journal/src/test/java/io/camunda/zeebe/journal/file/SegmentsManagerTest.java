@@ -16,27 +16,36 @@ import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import org.agrona.CloseHelper;
 import org.agrona.collections.ArrayUtil;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 
 class SegmentsManagerTest {
   private static final String JOURNAL_NAME = "journal";
-  private final TestJournalFactory journalFactory = new TestJournalFactory();
-
+  private TestJournalFactory journalFactory;
   private @TempDir Path directory;
   private SegmentsManager segments;
+  private final List<AutoCloseable> closeables = new ArrayList<>();
+
+  @BeforeEach
+  void beforeEach() {
+    journalFactory = new TestJournalFactory();
+  }
 
   @AfterEach
   void afterEach() {
     CloseHelper.quietClose(segments);
+    closeables.forEach(CloseHelper::quietClose);
   }
 
   @Test
@@ -168,7 +177,7 @@ class SegmentsManagerTest {
     // given
     final var journal = openJournal();
     final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
-    journal.append(2, journalFactory.entry()).index();
+    journal.append(2, journalFactory.entry());
     final var firstSegmentFile = journal.getFirstSegment().file().file();
     journal.close();
     journalFactory.metaStore().storeLastFlushedIndex(0);
@@ -293,7 +302,126 @@ class SegmentsManagerTest {
     }
   }
 
+  @Test
+  void shouldReplaceSegmentWithLargerOneOnOpen() throws IOException {
+    // given two journals, to simulate segments with same id but different lastIndex
+    final var journal = openJournal(directory, 3);
+    final var journal2 = openJournal(directory.resolve("secondary"), 3);
+    journal.append(1, journalFactory.entry()).index();
+    journal.getLastSegment().updateDescriptor();
+    journal.close();
+
+    journal2.append(1, journalFactory.entry());
+    journal2.append(2, journalFactory.entry());
+    journal2.append(3, journalFactory.entry());
+    journal2.getLastSegment().updateDescriptor();
+    journal2.close();
+
+    // move the segment file from the second journal to the first one, replacing the suffix to point
+    // to a segment further in time
+    Files.move(
+        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
+        directory.resolve("data").resolve("journal-2.log"));
+
+    // when opening the journal
+    final var segmentsManager = journalFactory.segmentsManager(directory);
+    segmentsManager.open();
+
+    // then the segment with the greater lastIndex should be used
+    final var segment = segmentsManager.getCurrentSegment();
+    assertThat(segment.id()).isEqualTo(1);
+    assertThat(segment.file().file().getName()).isEqualTo("journal-2.log");
+    assertThat(segment.lastIndex()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldNotReplaceSegmentWithSmallerOneOnOpen() throws IOException {
+    // given two journals, to simulate segments with same id but different lastIndex
+    final var journal = openJournal(directory, 3);
+    final var journal2 = openJournal(directory.resolve("secondary"), 3);
+    journal.append(1, journalFactory.entry()).index();
+    journal.append(2, journalFactory.entry()).index();
+    journal.append(3, journalFactory.entry()).index();
+    journal.getLastSegment().updateDescriptor();
+    journal.close();
+
+    journal2.append(1, journalFactory.entry());
+    journal2.append(2, journalFactory.entry());
+    journal2.getLastSegment().updateDescriptor();
+    journal2.close();
+
+    // move the segment file from the second journal to the first one, replacing the suffix to point
+    // to a segment further in time
+    Files.move(
+        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
+        directory.resolve("data").resolve("journal-2.log"));
+
+    // when opening the journal
+    final var segmentsManager = journalFactory.segmentsManager(directory);
+    segmentsManager.open();
+
+    // then the segment with the greater lastIndex should be used
+    final var segment = segmentsManager.getCurrentSegment();
+    assertThat(segment.id()).isEqualTo(1);
+    assertThat(segment.file().file().getName()).isEqualTo("journal-1.log");
+    assertThat(segment.lastIndex()).isEqualTo(3);
+  }
+
+  @Test
+  void shouldReplaceSegmentWithLargerOneOnOpenEvenOutOfOrder() throws IOException {
+    // given three journals, to simulate segments with same id but different lastIndex
+    final var journal = openJournal(directory, 3);
+    final var journal2 = openJournal(directory.resolve("secondary"), 3);
+    final var journal3 = openJournal(directory.resolve("third"), 3);
+    journal.append(1, journalFactory.entry()).index();
+    journal.getLastSegment().updateDescriptor();
+    journal.close();
+
+    journal2.append(1, journalFactory.entry());
+    journal2.append(2, journalFactory.entry());
+    journal2.append(3, journalFactory.entry());
+    journal2.getLastSegment().updateDescriptor();
+    journal2.close();
+
+    journal3.append(1, journalFactory.entry());
+    journal3.append(2, journalFactory.entry());
+    journal3.getLastSegment().updateDescriptor();
+    journal3.close();
+
+    // move the segment file from the second journal to the first one, replacing the suffix to point
+    // to a segment further in time
+    Files.move(
+        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
+        directory.resolve("data").resolve("journal-2.log"));
+
+    Files.move(
+        directory.resolve("third").resolve("data").resolve("journal-1.log"),
+        directory.resolve("data").resolve("journal-3.log"));
+
+    // when opening the journal
+    final var segmentsManager = journalFactory.segmentsManager(directory);
+    segmentsManager.open();
+
+    // then the segment with the greater lastIndex should be used
+    final var segment = segmentsManager.getCurrentSegment();
+    assertThat(segment.id()).isEqualTo(1);
+    assertThat(segment.file().file().getName()).isEqualTo("journal-2.log");
+    assertThat(segment.lastIndex()).isEqualTo(3);
+  }
+
   private SegmentedJournal openJournal() {
     return journalFactory.journal(journalFactory.segmentsManager(directory));
+  }
+
+  private SegmentedJournal openJournal(final Path directory, final int entriesPerSegment) {
+    return openJournal("test", directory, entriesPerSegment);
+  }
+
+  private SegmentedJournal openJournal(
+      final String data, final Path directory, final int entriesPerSegment) {
+    journalFactory = new TestJournalFactory(data, entriesPerSegment);
+    final var journal = journalFactory.journal(journalFactory.segmentsManager(directory));
+    closeables.add(journal);
+    return journal;
   }
 }
