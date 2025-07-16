@@ -615,7 +615,7 @@
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
   </changeSet>
-  <changeSet id="rename_mapping_rule_table" author="camunda">
+  <changeSet id="create_mapping_rule_table" author="camunda">
     <createTable tableName="${prefix}MAPPING_RULES">
       <column name="MAPPING_RULE_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
