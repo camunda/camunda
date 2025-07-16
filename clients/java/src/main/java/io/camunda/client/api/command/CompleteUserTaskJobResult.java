@@ -18,13 +18,13 @@ package io.camunda.client.api.command;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-public class CompleteJobResult {
+public class CompleteUserTaskJobResult {
 
   private boolean isDenied;
   private String deniedReason;
   private JobResultCorrections corrections;
 
-  public CompleteJobResult() {
+  public CompleteUserTaskJobResult() {
     corrections = new JobResultCorrections();
   }
 
@@ -38,7 +38,7 @@ public class CompleteJobResult {
    * @param isDenied indicates if the worker has denied the reason for the job
    * @return this job result
    */
-  public CompleteJobResult deny(final boolean isDenied) {
+  public CompleteUserTaskJobResult deny(final boolean isDenied) {
     this.isDenied = isDenied;
     return this;
   }
@@ -51,7 +51,7 @@ public class CompleteJobResult {
    * @param deniedReason indicates the reason why the worker denied the job
    * @return this job result
    */
-  public CompleteJobResult deniedReason(final String deniedReason) {
+  public CompleteUserTaskJobResult deniedReason(final String deniedReason) {
     this.deniedReason = deniedReason;
     return this;
   }
@@ -65,7 +65,7 @@ public class CompleteJobResult {
    * @param corrections the corrections to apply to the user task.
    * @return this job result
    */
-  public CompleteJobResult correct(final JobResultCorrections corrections) {
+  public CompleteUserTaskJobResult correct(final JobResultCorrections corrections) {
     if (corrections == null) {
       this.corrections = new JobResultCorrections();
     } else {
@@ -86,7 +86,7 @@ public class CompleteJobResult {
    * @param corrections a lambda expression to modify the {@link JobResultCorrections}.
    * @return this job result
    */
-  public CompleteJobResult correct(final UnaryOperator<JobResultCorrections> corrections) {
+  public CompleteUserTaskJobResult correct(final UnaryOperator<JobResultCorrections> corrections) {
     return correct(corrections.apply(this.corrections));
   }
 
@@ -96,7 +96,7 @@ public class CompleteJobResult {
    * @param assignee assignee of the task
    * @return this job result
    */
-  public CompleteJobResult correctAssignee(final String assignee) {
+  public CompleteUserTaskJobResult correctAssignee(final String assignee) {
     corrections.assignee(assignee);
     return this;
   }
@@ -107,7 +107,7 @@ public class CompleteJobResult {
    * @param dueDate due date of the task
    * @return this job result
    */
-  public CompleteJobResult correctDueDate(final String dueDate) {
+  public CompleteUserTaskJobResult correctDueDate(final String dueDate) {
     corrections.dueDate(dueDate);
     return this;
   }
@@ -118,7 +118,7 @@ public class CompleteJobResult {
    * @param followUpDate follow up date of the task
    * @return this job result
    */
-  public CompleteJobResult correctFollowUpDate(final String followUpDate) {
+  public CompleteUserTaskJobResult correctFollowUpDate(final String followUpDate) {
     corrections.followUpDate(followUpDate);
     return this;
   }
@@ -129,7 +129,7 @@ public class CompleteJobResult {
    * @param candidateGroups candidate groups of the task
    * @return this job result
    */
-  public CompleteJobResult correctCandidateGroups(final List<String> candidateGroups) {
+  public CompleteUserTaskJobResult correctCandidateGroups(final List<String> candidateGroups) {
     corrections.candidateGroups(candidateGroups);
     return this;
   }
@@ -140,7 +140,7 @@ public class CompleteJobResult {
    * @param candidateUsers candidate users of the task
    * @return this job result
    */
-  public CompleteJobResult correctCandidateUsers(final List<String> candidateUsers) {
+  public CompleteUserTaskJobResult correctCandidateUsers(final List<String> candidateUsers) {
     corrections.candidateUsers(candidateUsers);
     return this;
   }
@@ -151,7 +151,7 @@ public class CompleteJobResult {
    * @param priority priority of the task
    * @return this job result
    */
-  public CompleteJobResult correctPriority(final Integer priority) {
+  public CompleteUserTaskJobResult correctPriority(final Integer priority) {
     corrections.priority(priority);
     return this;
   }

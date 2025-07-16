@@ -20,7 +20,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
-import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.JobResultCorrections;
 import io.camunda.client.api.response.CompleteJobResponse;
@@ -108,7 +108,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep1 withResult(final CompleteJobResult jobResult) {
+  public CompleteJobCommandStep1 withResult(final CompleteUserTaskJobResult jobResult) {
     return withResult()
         .deny(jobResult.isDenied())
         .deniedReason(jobResult.getDeniedReason())
@@ -118,10 +118,10 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
 
   @Override
   public CompleteJobCommandStep1 withResult(
-      final UnaryOperator<CompleteJobResult> jobResultModifier) {
+      final UnaryOperator<CompleteUserTaskJobResult> jobResultModifier) {
     initJobResult();
-    final CompleteJobResult reconstructedJobResult =
-        new CompleteJobResult()
+    final CompleteUserTaskJobResult reconstructedJobResult =
+        new CompleteUserTaskJobResult()
             .deny(resultRest.getDenied() != null ? resultRest.getDenied() : false)
             .deniedReason(resultRest.getDeniedReason())
             .correct(reconstructCorrections());

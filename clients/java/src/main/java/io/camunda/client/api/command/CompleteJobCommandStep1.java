@@ -104,7 +104,7 @@ public interface CompleteJobCommandStep1
    * Sets the result of the completed job, allowing the worker to apply corrections to user task
    * attributes or explicitly deny the user task lifecycle transition.
    *
-   * <p>The {@link CompleteJobResult} object provides a flexible way to:
+   * <p>The {@link CompleteUserTaskJobResult} object provides a flexible way to:
    *
    * <ul>
    *   <li>Correct user task attributes such as {@code assignee}, {@code dueDate}, {@code priority},
@@ -128,16 +128,16 @@ public interface CompleteJobCommandStep1
    *     to the broker.
    * @apiNote This API is currently relevant only for user task listeners.
    */
-  CompleteJobCommandStep1 withResult(CompleteJobResult jobResult);
+  CompleteJobCommandStep1 withResult(CompleteUserTaskJobResult jobResult);
 
   /**
    * Modifies the result of the completed job using a lambda expression, allowing the worker to
    * dynamically apply corrections to user task attributes or explicitly deny the user task
    * lifecycle transition.
    *
-   * <p>This is a convenience method for {@link #withResult(CompleteJobResult)}, allowing
+   * <p>This is a convenience method for {@link #withResult(CompleteUserTaskJobResult)}, allowing
    * modifications to be applied directly via a functional interface rather than constructing the
-   * {@link CompleteJobResult} manually, enabling:
+   * {@link CompleteUserTaskJobResult} manually, enabling:
    *
    * <ul>
    *   <li>Correcting user task attributes such as {@code assignee}, {@code dueDate}, {@code
@@ -145,9 +145,9 @@ public interface CompleteJobCommandStep1
    *   <li>Denying the lifecycle transition associated with the user task.
    * </ul>
    *
-   * <p>The lambda expression receives the current {@link CompleteJobResult}, which can be modified
-   * as needed. If no result has been set yet, a default {@link CompleteJobResult} is provided for
-   * modification.
+   * <p>The lambda expression receives the current {@link CompleteUserTaskJobResult}, which can be
+   * modified as needed. If no result has been set yet, a default {@link CompleteUserTaskJobResult}
+   * is provided for modification.
    *
    * <pre>{@code
    * client.newCompleteJobCommand(jobKey)
@@ -155,12 +155,12 @@ public interface CompleteJobCommandStep1
    *     .send();
    * }</pre>
    *
-   * @param jobResultModifier a function to modify the {@link CompleteJobResult}.
+   * @param jobResultModifier a function to modify the {@link CompleteUserTaskJobResult}.
    * @return the builder for this command. Call {@link #send()} to finalize the command and send it
    *     to the broker.
    * @apiNote This API is currently relevant only for user task listeners.
    */
-  CompleteJobCommandStep1 withResult(UnaryOperator<CompleteJobResult> jobResultModifier);
+  CompleteJobCommandStep1 withResult(UnaryOperator<CompleteUserTaskJobResult> jobResultModifier);
 
   interface CompleteJobCommandStep2 extends FinalCommandStep<CompleteJobResponse> {
 

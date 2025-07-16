@@ -17,7 +17,7 @@ package io.camunda.client.job.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
@@ -390,7 +390,7 @@ class CompleteJobRestTest extends ClientRestTest {
     client
         .newCompleteCommand(jobKey)
         .withResult(
-            new CompleteJobResult()
+            new CompleteUserTaskJobResult()
                 .deny(false)
                 .correctAssignee("Test")
                 .correctDueDate(null)
@@ -430,7 +430,7 @@ class CompleteJobRestTest extends ClientRestTest {
     client
         .newCompleteCommand(jobKey)
         .withResult(
-            new CompleteJobResult()
+            new CompleteUserTaskJobResult()
                 .correct(
                     c ->
                         c.assignee("Test")
