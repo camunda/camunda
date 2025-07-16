@@ -111,26 +111,28 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private CompleteJobCommandStep1 setJobResult(final CompleteUserTaskJobResult jobResult) {
-    resultRest = new io.camunda.client.protocol.rest.JobResultUserTask();
-    correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
-    correctionsRest
-        .assignee(jobResult.getCorrections().getAssignee())
-        .dueDate(jobResult.getCorrections().getDueDate())
-        .followUpDate(jobResult.getCorrections().getFollowUpDate())
-        .candidateUsers(jobResult.getCorrections().getCandidateUsers())
-        .candidateGroups(jobResult.getCorrections().getCandidateGroups())
-        .priority(jobResult.getCorrections().getPriority());
-    resultRest
-        .type(TypeEnum.USER_TASK)
-        .denied(jobResult.isDenied())
-        .deniedReason(jobResult.getDeniedReason())
-        .corrections(correctionsRest);
-    httpRequestObject.setResult(resultRest);
-
-    resultGrpc = JobResult.newBuilder();
-    correctionsGrpc = GatewayOuterClass.JobResultCorrections.newBuilder();
-    resultGrpc.setCorrections(correctionsGrpc);
-    grpcRequestObjectBuilder.setResult(resultGrpc);
+    if (useRest) {
+      resultRest = new io.camunda.client.protocol.rest.JobResultUserTask();
+      correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
+      correctionsRest
+          .assignee(jobResult.getCorrections().getAssignee())
+          .dueDate(jobResult.getCorrections().getDueDate())
+          .followUpDate(jobResult.getCorrections().getFollowUpDate())
+          .candidateUsers(jobResult.getCorrections().getCandidateUsers())
+          .candidateGroups(jobResult.getCorrections().getCandidateGroups())
+          .priority(jobResult.getCorrections().getPriority());
+      resultRest
+          .type(TypeEnum.USER_TASK)
+          .denied(jobResult.isDenied())
+          .deniedReason(jobResult.getDeniedReason())
+          .corrections(correctionsRest);
+      httpRequestObject.setResult(resultRest);
+    } else {
+      resultGrpc = JobResult.newBuilder();
+      correctionsGrpc = GatewayOuterClass.JobResultCorrections.newBuilder();
+      resultGrpc.setCorrections(correctionsGrpc);
+      grpcRequestObjectBuilder.setResult(resultGrpc);
+    }
 
     return this;
   }
