@@ -8,6 +8,7 @@
 package io.camunda.zeebe.qa.util.cluster;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
+import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
@@ -250,7 +251,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   private String databaseType() {
-    return property("camunda.database.type", String.class, "es");
+    return property(PROPERTY_CAMUNDA_DATABASE_TYPE, String.class, "es");
   }
 
   private int monitoringPort() {
