@@ -34,5 +34,4 @@ public class Main {
     optimize.setDefaultProperties(defaultProperties);
     optimize.run(args);
   }
-
 }

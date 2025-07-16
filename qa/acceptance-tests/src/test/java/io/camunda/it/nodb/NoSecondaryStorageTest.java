@@ -23,10 +23,6 @@ import org.junit.jupiter.api.Test;
 /**
  * Acceptance test to verify that Camunda can run in headless mode with no secondary storage. This
  * test validates the complete engine-only deployment scenario where database.type=none.
- * 
- * <p>Note: In no-secondary-storage mode, Optimize should not be started as it requires secondary
- * storage to function properly. Optimize will fail startup with a clear error message if 
- * database.type=none is detected.
  */
 @ZeebeIntegration
 public class NoSecondaryStorageTest {

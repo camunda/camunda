@@ -31,8 +31,8 @@ public class OptimizeDatabaseConfiguration {
   public void checkDatabaseConfiguration() {
     final String errorMessage = "Optimize is not supported without secondary storage. "
         + "The database type is configured as 'none', but Optimize requires a secondary storage "
-        + "backend (Elasticsearch or OpenSearch) to function properly. "
-        + "Please configure 'camunda.database.type' to either 'elasticsearch' or 'opensearch', "
+        + "backend to function properly. "
+        + "Please configure 'camunda.database.type' to a valid secondary storage type, "
         + "or remove Optimize from your deployment when running in no-secondary-storage mode.";
     
     LOGGER.error(errorMessage);
