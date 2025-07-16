@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.document.api.DocumentError.DocumentHashMismatch;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -21,6 +22,7 @@ import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.util.Either;
@@ -376,6 +378,62 @@ public class DocumentControllerTest extends RestControllerTest {
         .isOk()
         .expectBody(byte[].class)
         .isEqualTo(content);
+  }
+
+  @Test
+  void shouldYieldBadRequestWhenNoHashDocumentForGetDocument() {
+    // given
+    when(documentServices.getDocumentContent(any(), any(), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapDocumentError(new DocumentHashMismatch("foo", null))));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/foo")
+        .accept(MediaType.APPLICATION_OCTET_STREAM)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "No document hash provided for document foo"
+                }
+                """);
+  }
+
+  @Test
+  void shouldYieldBadRequestWhenWrongHashForGetDocument() {
+    // given
+    when(documentServices.getDocumentContent(any(), any(), any()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                ErrorMapper.mapDocumentError(new DocumentHashMismatch("foo", "barbaz"))));
+
+    // when/then
+    webClient
+        .get()
+        .uri(DOCUMENTS_BASE_URL + "/foo")
+        .accept(MediaType.APPLICATION_OCTET_STREAM)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Document hash for document foo doesn't match the provided hash barbaz"
+                }
+                """);
   }
 
   // TODO: test error cases

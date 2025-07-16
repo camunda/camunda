@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
+import io.camunda.document.api.DocumentError.DocumentHashMismatch;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
 import io.camunda.document.api.DocumentError.InvalidInput;
 import io.camunda.document.api.DocumentError.OperationNotSupported;
@@ -277,6 +278,15 @@ public class ErrorMapper {
               INVALID_ARGUMENT);
       case final OperationNotSupported operationNotSupported ->
           new ServiceError(operationNotSupported.message(), FORBIDDEN);
+      case final DocumentHashMismatch dhm ->
+          dhm.providedHash() == null || dhm.providedHash().isBlank()
+              ? new ServiceError(
+                  "No document hash provided for document %s".formatted(dhm.documentId()),
+                  INVALID_ARGUMENT)
+              : new ServiceError(
+                  "Document hash for document %s doesn't match the provided hash %s"
+                      .formatted(dhm.documentId(), dhm.providedHash()),
+                  INVALID_ARGUMENT);
       default -> new ServiceError("Unexpected error occurred when handling document", INTERNAL);
     };
   }
