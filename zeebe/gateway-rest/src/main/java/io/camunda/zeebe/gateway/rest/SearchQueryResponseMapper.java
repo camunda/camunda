@@ -337,7 +337,7 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(List::of));
   }
 
-  public static MappingRuleSearchQueryResult toMappingSearchQueryResponse(
+  public static MappingRuleSearchQueryResult toMappingRuleSearchQueryResponse(
       final SearchQueryResult<MappingEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new MappingRuleSearchQueryResult()
@@ -692,10 +692,10 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<MappingRuleResult> toMappings(final List<MappingEntity> mappings) {
-    return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
+    return mappings.stream().map(SearchQueryResponseMapper::toMappingRule).toList();
   }
 
-  public static MappingRuleResult toMapping(final MappingEntity mappingEntity) {
+  public static MappingRuleResult toMappingRule(final MappingEntity mappingEntity) {
     return new MappingRuleResult()
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())

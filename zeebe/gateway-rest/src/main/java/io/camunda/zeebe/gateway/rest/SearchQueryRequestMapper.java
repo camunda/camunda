@@ -517,7 +517,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
-  public static Either<ProblemDetail, MappingQuery> toMappingQuery(
+  public static Either<ProblemDetail, MappingQuery> toMappingRuleSearchQuery(
       final MappingRuleSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.mappingSearchQuery().build());

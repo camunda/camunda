@@ -158,7 +158,7 @@ public class GroupController {
   public ResponseEntity<MappingRuleSearchQueryResult> mappingsByGroup(
       @PathVariable final String groupId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toMappingQuery(query)
+    return SearchQueryRequestMapper.toMappingRuleSearchQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mappingQuery -> searchMappingsInGroup(groupId, mappingQuery));
@@ -280,7 +280,7 @@ public class GroupController {
           mappingServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedMappingQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

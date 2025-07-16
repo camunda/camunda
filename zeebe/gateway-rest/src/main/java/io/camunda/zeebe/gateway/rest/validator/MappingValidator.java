@@ -24,7 +24,7 @@ import org.springframework.http.ProblemDetail;
 
 public class MappingValidator {
 
-  public static Optional<ProblemDetail> validateMappingRequest(
+  public static Optional<ProblemDetail> validateMappingRuleRequest(
       final MappingRuleUpdateRequest request) {
     return validate(
         violations -> {
@@ -33,7 +33,7 @@ public class MappingValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateMappingRequest(
+  public static Optional<ProblemDetail> validateMappingRuleRequest(
       final MappingRuleCreateRequest request) {
     return validate(
         violations -> {

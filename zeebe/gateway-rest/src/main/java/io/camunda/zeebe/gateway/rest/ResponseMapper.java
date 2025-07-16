@@ -630,7 +630,7 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  public static ResponseEntity<Object> toMappingCreateResponse(final MappingRecord record) {
+  public static ResponseEntity<Object> toMappingRuleCreateResponse(final MappingRecord record) {
     final var response =
         new MappingRuleCreateResult()
             .claimName(record.getClaimName())
@@ -640,7 +640,7 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
-  public static ResponseEntity<Object> toMappingUpdateResponse(final MappingRecord record) {
+  public static ResponseEntity<Object> toMappingRuleUpdateResponse(final MappingRecord record) {
     final var response =
         new MappingRuleUpdateResult()
             .claimName(record.getClaimName())
