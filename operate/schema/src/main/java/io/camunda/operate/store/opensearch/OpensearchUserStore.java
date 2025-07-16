@@ -29,9 +29,7 @@ import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
-@Profile(
-    "!"
-        + OperateProfileService.IDENTITY_AUTH_PROFILE)
+@Profile("!" + OperateProfileService.IDENTITY_AUTH_PROFILE)
 public class OpensearchUserStore implements UserStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchUserStore.class);
