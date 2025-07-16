@@ -14,8 +14,8 @@ import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.TenantReader;
-import io.camunda.db.rdbms.read.service.UserReader;
+import io.camunda.db.rdbms.read.service.TenantDbReader;
+import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
@@ -45,7 +45,7 @@ public class TenantIT {
   public void shouldSaveAndFindTenantByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader reader = rdbmsService.getTenantReader();
+    final TenantDbReader reader = rdbmsService.getTenantReader();
 
     final var tenant = createAndSaveTenant(rdbmsWriter);
 
@@ -57,7 +57,7 @@ public class TenantIT {
   public void shouldFindByTenantId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader reader = rdbmsService.getTenantReader();
+    final TenantDbReader reader = rdbmsService.getTenantReader();
 
     final var tenant = createAndSaveTenant(rdbmsWriter);
 
@@ -79,7 +79,7 @@ public class TenantIT {
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader tenantReader = rdbmsService.getTenantReader();
+    final TenantDbReader tenantReader = rdbmsService.getTenantReader();
 
     final var tenantId = nextStringId();
     final var tenant = TenantFixtures.createRandomized(b -> b.tenantId(tenantId));
@@ -98,7 +98,7 @@ public class TenantIT {
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader tenantReader = rdbmsService.getTenantReader();
+    final TenantDbReader tenantReader = rdbmsService.getTenantReader();
 
     final var tenant = TenantFixtures.createRandomized(b -> b);
     createAndSaveTenant(rdbmsWriter, tenant);
@@ -116,7 +116,7 @@ public class TenantIT {
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader reader = rdbmsService.getTenantReader();
+    final TenantDbReader reader = rdbmsService.getTenantReader();
 
     final var tenantName = "tenant-" + nextStringId();
     createAndSaveRandomTenants(rdbmsWriter, b -> b.name(tenantName));
@@ -136,7 +136,7 @@ public class TenantIT {
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader reader = rdbmsService.getTenantReader();
+    final TenantDbReader reader = rdbmsService.getTenantReader();
 
     createAndSaveRandomTenants(rdbmsWriter, b -> b.name("test"));
     final var instance = createAndSaveTenant(rdbmsWriter);
@@ -161,7 +161,7 @@ public class TenantIT {
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader tenantReader = rdbmsService.getTenantReader();
+    final TenantDbReader tenantReader = rdbmsService.getTenantReader();
 
     final var tenantName = nextStringId();
     createAndSaveRandomTenants(rdbmsWriter, b -> b.name(tenantName));
@@ -194,7 +194,7 @@ public class TenantIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
     final var tenant = TenantFixtures.createRandomized(b -> b);
     createAndSaveTenant(rdbmsWriter, tenant);
     final var user = UserFixtures.createRandomized(b -> b);
@@ -220,7 +220,7 @@ public class TenantIT {
     // given
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
     final var tenant = TenantFixtures.createRandomized(b -> b);
     createAndSaveTenant(rdbmsWriter, tenant);
     final var user = UserFixtures.createRandomized(b -> b);

@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
@@ -25,11 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@Conditional(SearchEngineEnabledCondition.class)
+@ConditionalOnSecondaryStorageType({DatabaseConfig.ELASTICSEARCH, DatabaseConfig.OPENSEARCH})
 @EnableConfigurationProperties({
   SearchEngineConnectProperties.class,
   SearchEngineIndexProperties.class,

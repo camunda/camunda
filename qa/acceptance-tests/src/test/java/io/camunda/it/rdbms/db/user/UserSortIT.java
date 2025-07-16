@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveRandomUs
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.UserReader;
+import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -80,7 +80,7 @@ public class UserSortIT {
       final Function<Builder, ObjectBuilder<UserSort>> sortBuilder,
       final Comparator<UserEntity> comparator) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader reader = rdbmsService.getUserReader();
+    final UserDbReader reader = rdbmsService.getUserReader();
 
     final var email = nextStringId();
     createAndSaveRandomUsers(rdbmsWriter, b -> b.email(email));

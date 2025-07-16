@@ -135,14 +135,7 @@ public class UserTaskTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              assertThat(
-                      camundaClient
-                          .newProcessInstanceSearchRequest()
-                          .filter(filter -> filter.processDefinitionId(fn -> fn.in(PROCESS_ID)))
-                          .send()
-                          .join()
-                          .items())
-                  .hasSize(2);
+              assertThat(camundaClient.newUserTaskSearchRequest().send().join().items()).hasSize(4);
             });
   }
 }
