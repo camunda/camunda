@@ -21,6 +21,7 @@ import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
+import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
@@ -37,6 +38,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public final class CompleteJobTest extends ClientTest {
+
+  public static final String USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK.getValue();
 
   @Test
   public void shouldCompleteJobByKey() {
@@ -362,6 +365,9 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
+                    .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")
@@ -412,6 +418,9 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
+                    .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")
@@ -459,6 +468,9 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
+                    .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .clearAssignee()
@@ -504,6 +516,7 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
                     .setDenied(false)
                     .setDeniedReason("")
                     .setCorrections(
@@ -556,6 +569,7 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
                     .setDenied(false)
                     .setDeniedReason("")
                     .setCorrections(
@@ -595,6 +609,9 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
+                    .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(JobResultCorrections.newBuilder().build())
                     .build())
             .build();

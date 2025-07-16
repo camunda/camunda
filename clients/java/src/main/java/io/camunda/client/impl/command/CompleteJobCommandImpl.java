@@ -34,6 +34,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -130,7 +131,31 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     } else {
       resultGrpc = JobResult.newBuilder();
       correctionsGrpc = GatewayOuterClass.JobResultCorrections.newBuilder();
-      resultGrpc.setCorrections(correctionsGrpc);
+      if (jobResult.getCorrections().getAssignee() != null) {
+        correctionsGrpc.setAssignee(jobResult.getCorrections().getAssignee());
+      }
+      if (jobResult.getCorrections().getDueDate() != null) {
+        correctionsGrpc.setDueDate(jobResult.getCorrections().getDueDate());
+      }
+      if (jobResult.getCorrections().getFollowUpDate() != null) {
+        correctionsGrpc.setFollowUpDate(jobResult.getCorrections().getFollowUpDate());
+      }
+      if (jobResult.getCorrections().getCandidateUsers() != null) {
+        correctionsGrpc.setCandidateUsers(
+            StringList.newBuilder().addAllValues(jobResult.getCorrections().getCandidateUsers()));
+      }
+      if (jobResult.getCorrections().getCandidateGroups() != null) {
+        correctionsGrpc.setCandidateGroups(
+            StringList.newBuilder().addAllValues(jobResult.getCorrections().getCandidateGroups()));
+      }
+      if (jobResult.getCorrections().getPriority() != null) {
+        correctionsGrpc.setPriority(jobResult.getCorrections().getPriority());
+      }
+      resultGrpc
+          .setType(TypeEnum.USER_TASK.getValue())
+          .setDenied(jobResult.isDenied())
+          .setDeniedReason(jobResult.getDeniedReason() == null ? "" : jobResult.getDeniedReason())
+          .setCorrections(correctionsGrpc);
       grpcRequestObjectBuilder.setResult(resultGrpc);
     }
 
