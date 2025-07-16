@@ -36,11 +36,12 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(
     properties = {
@@ -57,7 +58,7 @@ public class InvoiceApprovalTest {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @MockBean private ArchiveService archiveService;
+  @MockitoBean private ArchiveService archiveService;
 
   private final String invoiceJson =
       """
@@ -72,6 +73,7 @@ public class InvoiceApprovalTest {
         "contactEmail": "accounting@acme.com"
       }""";
 
+  @DisplayName("Happy path through the process")
   @Test
   public void happyPath() throws Exception {
     final HashMap<String, Object> variables = new HashMap<String, Object>();
@@ -126,6 +128,7 @@ public class InvoiceApprovalTest {
     assertTrue("add-invoice-to-accounting job worker was called", addInvoiceJobWorkerCalled.get());
   }
 
+  @DisplayName("Test path when invoice was rejected")
   @Test
   public void testRejectionPath() throws Exception {
     final HashMap<String, Object> variables = new HashMap<String, Object>();
@@ -166,6 +169,7 @@ public class InvoiceApprovalTest {
         .isCompleted();
   }
 
+  @DisplayName("Test path when there is a timeout on the approval")
   @Test
   public void testApprovalTimeout() throws Exception {
     final HashMap<String, Object> variables = new HashMap<String, Object>();
@@ -198,6 +202,7 @@ public class InvoiceApprovalTest {
         .hasTerminatedElements(byId("UserTask_ApproveInvoice"));
   }
 
+  @DisplayName("Test path when the archive system raises an error")
   @Test
   public void testArchiveSystemError() throws Exception {
     final HashMap<String, Object> variables = new HashMap<String, Object>();
