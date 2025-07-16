@@ -11,6 +11,9 @@ import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.reader.AuthorizationDocumentReader;
 import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.GroupMemberDocumentReader;
+import io.camunda.search.clients.reader.RoleMemberDocumentReader;
+import io.camunda.search.clients.reader.TenantMemberDocumentReader;
 import io.camunda.search.clients.reader.UserDocumentReader;
 import io.camunda.search.clients.reader.UserReader;
 import io.camunda.search.clients.transformers.ServiceTransformers;
@@ -33,12 +36,14 @@ public class SearchClientsUtil {
 
   public static UserReader createUserReader(final DocumentBasedSearchClient client) {
     final var indexDescriptors = new IndexDescriptors("", true);
-    return new UserDocumentReader(
+    final var executor =
         new SearchClientBasedQueryExecutor(
-            client, ServiceTransformers.newInstance(indexDescriptors)),
-        null,
-        null,
-        null);
+            client, ServiceTransformers.newInstance(indexDescriptors));
+    final var roleMemberReader = new RoleMemberDocumentReader(executor);
+    final var tenantMemberReader = new TenantMemberDocumentReader(executor);
+    final var groupMemberReader = new GroupMemberDocumentReader(executor);
+    return new UserDocumentReader(
+        executor, roleMemberReader, tenantMemberReader, groupMemberReader);
   }
 
   public static AuthorizationReader createAuthorizationReader(

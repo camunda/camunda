@@ -33,10 +33,10 @@ public class GroupMemberDocumentReader extends DocumentBasedReader implements Gr
   }
 
   public Set<String> getGroupMembers(final String groupId, final EntityType entityType) {
-    final var tenantMemberQuery =
+    final var groupMemberQuery =
         GroupQuery.of(
             b -> b.filter(f -> f.joinParentId(groupId).memberType(entityType)).unlimited());
-    return search(tenantMemberQuery, ResourceAccessChecks.disabled()).items().stream()
+    return search(groupMemberQuery, ResourceAccessChecks.disabled()).items().stream()
         .map(GroupMemberEntity::id)
         .collect(Collectors.toSet());
   }
