@@ -808,6 +808,7 @@
         <configuration>
           <ignoredUnusedDeclaredDependencies>
             <ignoredUnusedDeclaredDependency>io.camunda:zeebe-protocol-jackson:jar</ignoredUnusedDeclaredDependency>
+            <ignoredUnusedDeclaredDependency>org.junit.platform:junit-platform-suite</ignoredUnusedDeclaredDependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
         <executions>

@@ -171,6 +171,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.platform</groupId>
       <artifactId>junit-platform-suite-api</artifactId>
       <scope>test</scope>
@@ -178,7 +184,7 @@
 
     <dependency>
       <groupId>org.junit.platform</groupId>
-      <artifactId>junit-platform-suite</artifactId>
+      <artifactId>junit-platform-suite-engine</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -187,5 +193,20 @@
       <artifactId>commons-collections4</artifactId>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUnusedDeclaredDependencies>
+            <dep>org.junit.platform:junit-platform-suite</dep>
+            <dep>org.junit.platform:junit-platform-suite-engine</dep>
+          </ignoredUnusedDeclaredDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
