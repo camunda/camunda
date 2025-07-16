@@ -18,10 +18,12 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DbAuthorizationState implements MutableAuthorizationState {
 
@@ -96,7 +98,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
         .getPermissionTypes()
         .forEach(
             permissionType -> {
-              permissions.addResourceIdentifier(permissionType, authorization.getResourceId());
+              permissions.addResourceIdentifier(
+                  permissionType,
+                  authorization.getResourceIdFormat(),
+                  authorization.getResourceId());
             });
     permissionsColumnFamily.upsert(ownerTypeOwnerIdAndResourceType, permissions);
 
@@ -133,7 +138,10 @@ public class DbAuthorizationState implements MutableAuthorizationState {
                   persistedAuthorization.getOwnerId(),
                   persistedAuthorization.getResourceType(),
                   permissionType,
-                  Set.of(persistedAuthorization.getResourceId()));
+                  Set.of(
+                      AuthorizationScope.of(
+                          persistedAuthorization.getResourceIdFormat(),
+                          persistedAuthorization.getResourceId())));
             });
 
     // delete the old authorization record
@@ -167,11 +175,21 @@ public class DbAuthorizationState implements MutableAuthorizationState {
 
     final var persistedPermissions = permissionsColumnFamily.get(ownerTypeOwnerIdAndResourceType);
 
-    return persistedPermissions == null
-        ? Collections.emptySet()
-        : persistedPermissions
-            .getPermissions()
-            .getOrDefault(permissionType, Collections.emptySet());
+    final Set<AuthorizationScope> collectedPermissions =
+        persistedPermissions == null
+            ? Collections.emptySet()
+            : persistedPermissions
+                .getPermissions()
+                .getOrDefault(permissionType, Collections.emptySet());
+
+    // TODO: remove when better resource id handling is supported
+    if (!collectedPermissions.isEmpty()) {
+      return collectedPermissions.stream()
+          .map(AuthorizationScope::getValue)
+          .collect(Collectors.toUnmodifiableSet());
+    }
+
+    return Collections.emptySet();
   }
 
   @Override
@@ -188,7 +206,7 @@ public class DbAuthorizationState implements MutableAuthorizationState {
       final String ownerId,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final Set<String> resourceIds) {
+      final Set<AuthorizationScope> resourceIds) {
     this.ownerType.wrapString(ownerType.name());
     this.ownerId.wrapString(ownerId);
     this.resourceType.wrapString(resourceType.name());

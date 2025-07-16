@@ -1,0 +1,43 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.protocol.record.value;
+
+public class AuthorizationScope {
+
+  private ResourceIdFormat format;
+  private String value;
+
+  public AuthorizationScope(final ResourceIdFormat format, final String value) {
+    this.format = format;
+    this.value = value;
+  }
+
+  public ResourceIdFormat getFormat() {
+    return format;
+  }
+
+  public void setFormat(final ResourceIdFormat format) {
+    this.format = format;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(final String value) {
+    this.value = value;
+  }
+
+  public static AuthorizationScope of(final ResourceIdFormat format, final String value) {
+    return new AuthorizationScope(format, value);
+  }
+
+  public static AuthorizationScope wildcard() {
+    return new AuthorizationScope(ResourceIdFormat.ANY, null);
+  }
+}
