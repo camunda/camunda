@@ -9,7 +9,7 @@ package io.camunda.application.commons.utils;
 
 import org.springframework.core.env.Environment;
 
-public class DatabaseTypeUtils {
+public final class DatabaseTypeUtils {
   public static final String PROPERTY_CAMUNDA_DATABASE_TYPE = "camunda.database.type";
 
   private DatabaseTypeUtils() {}
