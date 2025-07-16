@@ -17,7 +17,21 @@ package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -227,5 +241,146 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // then
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo(expectedVersion);
+  }
+
+  @Test
+  void shouldParseCamundaEnvVars() {
+    // given
+    final Map<String, String> envVars = new HashMap<>();
+    envVars.put("camundaEnvVars.keyA", "valueA");
+    envVars.put("camundaEnvVars.keyB", "valueB");
+    envVars.put("camundaEnvVars.keyC", "valueC");
+
+    final Properties properties = new Properties();
+    properties.putAll(envVars);
+
+    // when
+    final ContainerRuntimePropertiesUtil propertiesUtil =
+        new ContainerRuntimePropertiesUtil(properties);
+
+    // then
+    final Map<String, String> expected = new HashMap<>();
+    envVars.put("keyA", "valueA");
+    envVars.put("keyB", "valueB");
+    envVars.put("keyC", "valueC");
+
+    assertThat(propertiesUtil.getCamundaEnvVars()).containsAllEntriesOf(expected);
+  }
+
+  @Test
+  void shouldParseCamundaExposedPorts() {
+    final Map<String, String> envVars = new HashMap<>();
+    envVars.put("camundaExposedPorts.0", "8080");
+    envVars.put("camundaExposedPorts.1", "8081");
+    envVars.put("camundaExposedPorts.2", "8088");
+
+    final Properties properties = new Properties();
+    properties.putAll(envVars);
+
+    // when
+    final ContainerRuntimePropertiesUtil propertiesUtil =
+        new ContainerRuntimePropertiesUtil(properties);
+
+    // then
+    final List<Integer> expected = Arrays.asList(8080, 8081, 8088);
+
+    assertThat(propertiesUtil.getCamundaExposedPorts()).containsAll(expected);
+  }
+
+  @Nested
+  class UserOverridePropertiesFile {
+
+    private final String defaultsBackupFile = "camunda-container-runtime-version.properties.bk";
+    private final String defaultsFile = "camunda-container-runtime-version.properties";
+    private final String overridesBackupFile = "camunda-container-runtime.properties.bk";
+    private final String overridesFile = "camunda-container-runtime.properties";
+
+    @BeforeEach
+    void setUp() throws Exception {
+      final URL defaultsBackupUrl =
+          ContainerRuntimePropertiesUtil.class.getResource("/" + defaultsBackupFile);
+      final InputStream defaultsBackupInputStream =
+          ContainerRuntimePropertiesUtil.class.getResourceAsStream("/" + defaultsBackupFile);
+      Files.copy(
+          defaultsBackupInputStream,
+          Paths.get(defaultsBackupUrl.toURI()).resolveSibling(defaultsFile),
+          StandardCopyOption.REPLACE_EXISTING);
+
+      final URL overridesBackupUrl =
+          ContainerRuntimePropertiesUtil.class.getResource("/" + overridesBackupFile);
+      final InputStream overridesBackupInputStream =
+          ContainerRuntimePropertiesUtil.class.getResourceAsStream("/" + overridesBackupFile);
+      Files.copy(
+          overridesBackupInputStream,
+          Paths.get(overridesBackupUrl.toURI()).resolveSibling(overridesFile),
+          StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+      final URL defaults = ContainerRuntimePropertiesUtil.class.getResource("/" + defaultsFile);
+      final URL overrides = ContainerRuntimePropertiesUtil.class.getResource("/" + overridesFile);
+
+      Files.deleteIfExists(Paths.get(defaults.toURI()));
+      Files.deleteIfExists(Paths.get(overrides.toURI()));
+    }
+
+    @Test
+    public void shouldOverrideDefaults() {
+      // when
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          ContainerRuntimePropertiesUtil.readProperties();
+
+      // then
+      assertThat(propertiesUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
+      assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("1.1.0");
+      assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/custom-camunda");
+      assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("8.8.0-rc1");
+      assertThat(propertiesUtil.getConnectorsDockerImageName())
+          .isEqualTo("camunda/connectors-bundle");
+      assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8.3");
+    }
+
+    @Test
+    public void shouldHaveCustomConfigurationParams() {
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          ContainerRuntimePropertiesUtil.readProperties();
+
+      // then
+      final Map<String, String> expectedCamundaEnvVars = new HashMap<>();
+      expectedCamundaEnvVars.put("keyA", "valueA");
+      expectedCamundaEnvVars.put("keyB", "valueB");
+      expectedCamundaEnvVars.put("keyC", "valueC");
+
+      final Map<String, String> expectedConnectorsEnvVars = new HashMap<>();
+      expectedConnectorsEnvVars.put("keyD", "valueD");
+      expectedConnectorsEnvVars.put("keyE", "valueE");
+      expectedConnectorsEnvVars.put("keyF", "valueF");
+
+      final Map<String, String> expectedConnectorsSecrets = new HashMap<>();
+      expectedConnectorsSecrets.put("keyG", "secret1");
+      expectedConnectorsSecrets.put("keyH", "secret2");
+      expectedConnectorsSecrets.put("keyI", "secret3");
+
+      assertThat(propertiesUtil.getCamundaExposedPorts())
+          .containsExactlyInAnyOrder(8080, 8081, 8088);
+      assertThat(propertiesUtil.getCamundaEnvVars()).containsAllEntriesOf(expectedCamundaEnvVars);
+
+      assertThat(propertiesUtil.isConnectorsEnabled()).isTrue();
+      assertThat(propertiesUtil.getConnectorsEnvVars())
+          .containsAllEntriesOf(expectedConnectorsEnvVars);
+      assertThat(propertiesUtil.getConnectorsSecrets())
+          .containsAllEntriesOf(expectedConnectorsSecrets);
+
+      assertThat(propertiesUtil.getRuntimeMode()).isEqualTo(CamundaProcessTestRuntimeMode.REMOTE);
+      assertThat(propertiesUtil.getRemoteCamundaMonitoringApiAddress())
+          .isEqualTo(URI.create("http://0.0.0.0:8080"));
+      assertThat(propertiesUtil.getRemoteConnectorsRestApiAddress())
+          .isEqualTo(URI.create("http://0.0.0.0:8085"));
+      assertThat(propertiesUtil.getRemoteClientGrpcAddress())
+          .isEqualTo(URI.create("http://0.0.0.0:8088"));
+      assertThat(propertiesUtil.getRemoteClientRestAddress())
+          .isEqualTo(URI.create("http://0.0.0.0:8089"));
+    }
   }
 }

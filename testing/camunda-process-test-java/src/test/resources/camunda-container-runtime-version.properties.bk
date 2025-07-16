@@ -1,0 +1,7 @@
+elasticsearch.version=1.0.0
+
+camunda.dockerImageName=camunda/camunda
+camunda.dockerImageVersion=8.8.0
+
+connectors.dockerImageName=camunda/connectors-bundle
+connectors.dockerImageVersion=8.8.0
