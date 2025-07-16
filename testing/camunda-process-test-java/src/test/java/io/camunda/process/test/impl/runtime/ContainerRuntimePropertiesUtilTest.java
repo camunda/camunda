@@ -17,7 +17,16 @@ package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -48,21 +57,21 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_VERSION, "${project.version}");
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_VERSION, "${project.version}");
     properties.put(
         ContainerRuntimePropertiesUtil.PROPERTY_NAME_ELASTICSEARCH_VERSION,
         "${version.elasticsearch}");
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
         "${io.camunda.process.test.camundaDockerImageName}");
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
         "${io.camunda.process.test.camundaDockerImageVersion}");
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
         "camunda/connectors-bundle");
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
         "${project.version}");
 
     // when
@@ -96,7 +105,8 @@ public class ContainerRuntimePropertiesUtilTest {
   void shouldReturnCamundaVersion(final String propertyVersion, final String expectedVersion) {
     // given
     final Properties properties = new Properties();
-    properties.put(ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_VERSION, propertyVersion);
+    properties.put(
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_VERSION, propertyVersion);
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -139,7 +149,7 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME, propertyName);
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME, propertyName);
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -168,7 +178,8 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION, propertyVersion);
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
+        propertyVersion);
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -189,7 +200,8 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME, propertyName);
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
+        propertyName);
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -218,7 +230,7 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
         propertyVersion);
 
     // when
@@ -227,5 +239,111 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // then
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo(expectedVersion);
+  }
+
+  @Test
+  void shouldParseCamundaEnvVars() {
+    // given
+    final Map<String, String> envVars = new HashMap<>();
+    envVars.put("camundaEnvVars.keyA", "valueA");
+    envVars.put("camundaEnvVars.keyB", "valueB");
+    envVars.put("camundaEnvVars.keyC", "valueC");
+
+    final Properties properties = new Properties();
+    properties.putAll(envVars);
+
+    // when
+    final ContainerRuntimePropertiesUtil propertiesUtil =
+        new ContainerRuntimePropertiesUtil(properties);
+
+    // then
+    final Map<String, String> expected = new HashMap<>();
+    envVars.put("keyA", "valueA");
+    envVars.put("keyB", "valueB");
+    envVars.put("keyC", "valueC");
+
+    assertThat(propertiesUtil.getCamundaEnvVars()).containsAllEntriesOf(expected);
+  }
+
+  @Test
+  void shouldParseCamundaExposedPorts() {
+    final Map<String, String> envVars = new HashMap<>();
+    envVars.put("camundaExposedPorts[0]", "8080");
+    envVars.put("camundaExposedPorts[1]", "8081");
+    envVars.put("camundaExposedPorts[2]", "8088");
+
+    final Properties properties = new Properties();
+    properties.putAll(envVars);
+
+    // when
+    final ContainerRuntimePropertiesUtil propertiesUtil =
+        new ContainerRuntimePropertiesUtil(properties);
+
+    // then
+    final List<Integer> expected = Arrays.asList(8080, 8081, 8088);
+
+    assertThat(propertiesUtil.getCamundaExposedPorts()).containsAll(expected);
+  }
+
+  @Nested
+  class UserOverridePropertiesFile {
+
+    @Test
+    public void shouldOverrideDefaults() {
+      // when
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          ContainerRuntimePropertiesUtil.readProperties("/containerRuntimePropertiesUtil/");
+
+      // then
+      assertThat(propertiesUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
+      assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("1.1.0");
+      assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/custom-camunda");
+      assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("8.8.0-rc1");
+      assertThat(propertiesUtil.getConnectorsDockerImageName())
+          .isEqualTo("camunda/connectors-bundle");
+      assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("8.8.3");
+    }
+
+    @Test
+    public void shouldHaveCustomConfigurationParams() {
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          ContainerRuntimePropertiesUtil.readProperties("/containerRuntimePropertiesUtil/");
+
+      // then
+      final Map<String, String> expectedCamundaEnvVars = new HashMap<>();
+      expectedCamundaEnvVars.put("keyA", "valueA");
+      expectedCamundaEnvVars.put("keyB", "valueB");
+      expectedCamundaEnvVars.put("keyC", "valueC");
+
+      final Map<String, String> expectedConnectorsEnvVars = new HashMap<>();
+      expectedConnectorsEnvVars.put("keyD", "valueD");
+      expectedConnectorsEnvVars.put("keyE", "valueE");
+      expectedConnectorsEnvVars.put("keyF", "valueF");
+
+      final Map<String, String> expectedConnectorsSecrets = new HashMap<>();
+      expectedConnectorsSecrets.put("keyG", "secret1");
+      expectedConnectorsSecrets.put("keyH", "secret2");
+      expectedConnectorsSecrets.put("keyI", "secret3");
+
+      assertThat(propertiesUtil.getCamundaExposedPorts())
+          .containsExactlyInAnyOrder(8080, 8081, 8088);
+      assertThat(propertiesUtil.getCamundaEnvVars()).containsAllEntriesOf(expectedCamundaEnvVars);
+
+      assertThat(propertiesUtil.isConnectorsEnabled()).isTrue();
+      assertThat(propertiesUtil.getConnectorsEnvVars())
+          .containsAllEntriesOf(expectedConnectorsEnvVars);
+      assertThat(propertiesUtil.getConnectorsSecrets())
+          .containsAllEntriesOf(expectedConnectorsSecrets);
+
+      assertThat(propertiesUtil.getRuntimeMode()).isEqualTo(CamundaProcessTestRuntimeMode.REMOTE);
+      assertThat(propertiesUtil.getRemoteCamundaMonitoringApiAddress())
+          .isEqualTo(URI.create("http://0.0.0.0:8080"));
+      assertThat(propertiesUtil.getRemoteConnectorsRestApiAddress())
+          .isEqualTo(URI.create("http://0.0.0.0:8085"));
+      assertThat(propertiesUtil.getRemoteClientGrpcAddress())
+          .isEqualTo(URI.create("http://0.0.0.0:8088"));
+      assertThat(propertiesUtil.getRemoteClientRestAddress())
+          .isEqualTo(URI.create("http://0.0.0.0:8089"));
+    }
   }
 }
