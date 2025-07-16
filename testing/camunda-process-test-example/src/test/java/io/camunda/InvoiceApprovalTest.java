@@ -128,7 +128,7 @@ public class InvoiceApprovalTest {
     assertTrue("add-invoice-to-accounting job worker was called", addInvoiceJobWorkerCalled.get());
   }
 
-  @DisplayName("Test path when invoice was rejected")
+  @DisplayName("Path when invoice was rejected")
   @Test
   public void testRejectionPath() throws Exception {
     final HashMap<String, Object> variables = new HashMap<String, Object>();
@@ -169,7 +169,7 @@ public class InvoiceApprovalTest {
         .isCompleted();
   }
 
-  @DisplayName("Test path when there is a timeout on the approval")
+  @DisplayName("Path when there is a timeout on the approval")
   @Test
   public void testApprovalTimeout() throws Exception {
     final HashMap<String, Object> variables = new HashMap<String, Object>();
@@ -202,7 +202,7 @@ public class InvoiceApprovalTest {
         .hasTerminatedElements(byId("UserTask_ApproveInvoice"));
   }
 
-  @DisplayName("Test path when the archive system raises an error")
+  @DisplayName("Path when the archive system raises an error")
   @Test
   public void testArchiveSystemError() throws Exception {
     final HashMap<String, Object> variables = new HashMap<String, Object>();
