@@ -15,11 +15,11 @@ import io.camunda.authentication.NoSecondaryStorageOAuthPrincipalService;
 import io.camunda.authentication.NoSecondaryStorageUserDetailsService;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
+import io.camunda.service.exception.ServiceException;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.test.context.TestPropertySource;
 
@@ -68,12 +68,15 @@ public class OidcNoSecondaryStorageIntegrationTest {
     final UserDetailsService userDetailsService = new NoSecondaryStorageUserDetailsService();
 
     // when & then
-    final UsernameNotFoundException exception = assertThrows(
-        UsernameNotFoundException.class,
+    final ServiceException exception = assertThrows(
+        ServiceException.class,
         () -> userDetailsService.loadUserByUsername("demo"));
 
     assertThat(exception.getMessage())
         .contains("Authentication is not available when secondary storage is disabled")
         .contains("camunda.database.type=none");
+        
+    assertThat(exception.getStatus())
+        .isEqualTo(ServiceException.Status.FORBIDDEN);
   }
 }

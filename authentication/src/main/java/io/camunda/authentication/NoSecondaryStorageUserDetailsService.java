@@ -7,11 +7,11 @@
  */
 package io.camunda.authentication;
 
+import io.camunda.service.exception.ServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 /**
  * Fallback UserDetailsService that is used when secondary storage is not available.
@@ -22,13 +22,14 @@ public class NoSecondaryStorageUserDetailsService implements UserDetailsService 
   private static final Logger LOG = LoggerFactory.getLogger(NoSecondaryStorageUserDetailsService.class);
 
   @Override
-  public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
+  public UserDetails loadUserByUsername(final String username) {
     LOG.error(
         "Authentication attempted for user '{}' but secondary storage is disabled (camunda.database.type=none). "
             + "User authentication requires secondary storage to be configured.",
         username);
-    throw new UsernameNotFoundException(
+    throw new ServiceException(
         "Authentication is not available when secondary storage is disabled (camunda.database.type=none). "
-            + "Please configure secondary storage to enable authentication.");
+            + "Please configure secondary storage to enable authentication.",
+        ServiceException.Status.FORBIDDEN);
   }
 }

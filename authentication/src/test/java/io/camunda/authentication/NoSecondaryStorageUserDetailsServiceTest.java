@@ -10,47 +10,50 @@ package io.camunda.authentication;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.camunda.service.exception.ServiceException;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class NoSecondaryStorageUserDetailsServiceTest {
 
   @Test
-  public void shouldThrowUsernameNotFoundExceptionWithClearMessage() {
+  public void shouldThrowServiceExceptionWithClearMessage() {
     // given
     final NoSecondaryStorageUserDetailsService userDetailsService = new NoSecondaryStorageUserDetailsService();
 
     // when & then
-    final UsernameNotFoundException exception = assertThrows(
-        UsernameNotFoundException.class,
+    final ServiceException exception = assertThrows(
+        ServiceException.class,
         () -> userDetailsService.loadUserByUsername("demo"));
 
     assertThat(exception.getMessage())
         .contains("Authentication is not available when secondary storage is disabled")
         .contains("camunda.database.type=none")
         .contains("Please configure secondary storage to enable authentication");
+        
+    assertThat(exception.getStatus())
+        .isEqualTo(ServiceException.Status.FORBIDDEN);
   }
 
   @Test
-  public void shouldThrowUsernameNotFoundExceptionForAnyUsername() {
+  public void shouldThrowServiceExceptionForAnyUsername() {
     // given
     final NoSecondaryStorageUserDetailsService userDetailsService = new NoSecondaryStorageUserDetailsService();
 
     // when & then
     assertThrows(
-        UsernameNotFoundException.class,
+        ServiceException.class,
         () -> userDetailsService.loadUserByUsername("admin"));
 
     assertThrows(
-        UsernameNotFoundException.class,
+        ServiceException.class,
         () -> userDetailsService.loadUserByUsername("user"));
 
     assertThrows(
-        UsernameNotFoundException.class,
+        ServiceException.class,
         () -> userDetailsService.loadUserByUsername(""));
 
     assertThrows(
-        UsernameNotFoundException.class,
+        ServiceException.class,
         () -> userDetailsService.loadUserByUsername(null));
   }
 }
