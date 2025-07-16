@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import org.junit.jupiter.api.Test;
 
 class ListViewFromProcessInstanceCancellationOperationHandlerTest
-    extends ProcessInstanceFromOperationItemHandlerTest<ProcessInstanceRecordValue> {
+    extends AbstractProcessInstanceFromOperationItemHandlerTest<ProcessInstanceRecordValue> {
 
   ListViewFromProcessInstanceCancellationOperationHandlerTest() {
     super(new ListViewFromProcessInstanceCancellationOperationHandler(INDEX_NAME, CACHE));

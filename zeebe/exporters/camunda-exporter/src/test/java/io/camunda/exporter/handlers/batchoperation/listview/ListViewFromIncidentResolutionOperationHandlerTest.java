@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 
 class ListViewFromIncidentResolutionOperationHandlerTest
-    extends ProcessInstanceFromOperationItemHandlerTest<IncidentRecordValue> {
+    extends AbstractProcessInstanceFromOperationItemHandlerTest<IncidentRecordValue> {
 
   ListViewFromIncidentResolutionOperationHandlerTest() {
     super(new ListViewFromIncidentResolutionOperationHandler(INDEX_NAME, CACHE));
