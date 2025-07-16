@@ -25,7 +25,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -140,7 +139,9 @@ public final class ProcessInstanceServices
         executeSearchRequest(
                 () ->
                     processInstanceSearchClient
-                        .withSecurityContext(SecurityContext.withoutAuthentication())
+                        .withSecurityContext(
+                            securityContextProvider.provideSecurityContext(
+                                CamundaAuthentication.anonymous()))
                         .searchProcessInstances(
                             processInstanceSearchQuery(
                                 q ->
