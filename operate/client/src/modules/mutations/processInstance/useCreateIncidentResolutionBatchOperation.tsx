@@ -19,11 +19,11 @@ import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOpe
 import {createIncidentResolutionBatchOperation} from 'modules/api/v2/processInstances/createIncidentResolutionBatchOperation';
 
 const getMutationKey = (processInstanceKey: string) => {
-  return ['batchOperations', processInstanceKey, {type: 'incidentResolution'}];
+  return ['mutateBatchOperations', processInstanceKey, 'incidentResolution'];
 };
 
 function getQueryKey(payload: QueryBatchOperationsRequestBody) {
-  return ['queryBatchOperationItems', ...Object.values(payload)];
+  return ['queryBatchOperations', ...Object.values(payload)];
 }
 
 const useCreateIncidentResolutionBatchOperation = (
