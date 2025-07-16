@@ -14,7 +14,6 @@ import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.util.VisibleForTesting;
 
 public abstract class AbstractOperationHandler<T extends ExporterEntity<T>, R extends RecordValue>
     implements ExportHandler<T, R> {
@@ -22,7 +21,7 @@ public abstract class AbstractOperationHandler<T extends ExporterEntity<T>, R ex
   protected static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
   protected final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
-  @VisibleForTesting final OperationType relevantOperationType;
+  private final OperationType relevantOperationType;
 
   public AbstractOperationHandler(
       final String indexName,
@@ -31,6 +30,10 @@ public abstract class AbstractOperationHandler<T extends ExporterEntity<T>, R ex
     this.indexName = indexName;
     this.batchOperationCache = batchOperationCache;
     this.relevantOperationType = relevantOperationType;
+  }
+
+  public OperationType getRelevantOperationType() {
+    return relevantOperationType;
   }
 
   @Override
