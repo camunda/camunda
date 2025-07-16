@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -107,6 +108,7 @@ public class AuthorizationServices
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
             .setResourceType(request.resourceType())
+            .setResourceIdFormat(request.resourceIdFormat())
             .setResourceId(request.resourceId())
             .setPermissionTypes(request.permissionTypes());
     return sendBrokerRequest(brokerRequest);
@@ -134,6 +136,7 @@ public class AuthorizationServices
             .setAuthorizationKey(request.authorizationKey())
             .setOwnerId(request.ownerId())
             .setOwnerType(request.ownerType())
+            .setResourceIdFormat(request.resourceIdFormat())
             .setResourceId(request.resourceId())
             .setResourceType(request.resourceType())
             .setPermissionTypes(request.permissionTypes());
@@ -143,6 +146,7 @@ public class AuthorizationServices
   public record CreateAuthorizationRequest(
       String ownerId,
       AuthorizationOwnerType ownerType,
+      ResourceIdFormat resourceIdFormat,
       String resourceId,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionTypes) {}
@@ -151,6 +155,7 @@ public class AuthorizationServices
       long authorizationKey,
       String ownerId,
       AuthorizationOwnerType ownerType,
+      ResourceIdFormat resourceIdFormat,
       String resourceId,
       AuthorizationResourceType resourceType,
       Set<PermissionType> permissionTypes) {}
