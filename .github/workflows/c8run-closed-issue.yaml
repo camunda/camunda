@@ -25,6 +25,12 @@ permissions:
   statuses: write
 
 jobs:
+  generate-github-token:
+    uses: camunda/camunda-platform-helm/.github/workflows/generate-github-app-token.yaml@main
+    secrets:
+      GH_APP_ID: ${{ secrets.GH_APP_ID }}
+      GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
   update-closed-at-field:
     name: Update closed at field
     runs-on: ubuntu-latest
@@ -40,20 +46,12 @@ jobs:
               echo "match=true" >> "$GITHUB_OUTPUT"
             fi
 
-        - name: Generate GitHub token
-          if: ${{ steps.vars.outputs.match == 'true' }}
-          uses: tibdex/github-app-token@v2
-          id: generate-github-token
-          with:
-            app_id: ${{ secrets.GH_APP_ID_DISTRO_CI }}
-            private_key: ${{ secrets.GH_APP_PRIVATE_KEY_DISTRO_CI }}
-
         - name: Update Closed At field
           if: ${{ steps.vars.outputs.match == 'true' }}
           uses: github/update-project-action@f980378bc179626af5b4e20ec05ec39c7f7a6f6d # main
           id: update-closed-at
           with:
-            github_token: ${{ steps.generate-github-token.outputs.token }} }}
+            github_token: ${{ needs.generate-github-token.outputs.token }}
             organization: ${{ github.repository_owner }}
             project_number: ${{ steps.vars.outputs.project_id }}
             content_id: ${{ github.event.issue.node_id }}
