@@ -104,10 +104,8 @@ public class UsageMetricsIT {
 
   @AfterEach
   void tearDown() {
-    usageMetricWriter.cleanupMetrics(
-        PARTITION_ID.intValue(), NOW.plusDays(1), Integer.MAX_VALUE);
-    usageMetricTUWriter.cleanupMetrics(
-        PARTITION_ID.intValue(), NOW.plusDays(1), Integer.MAX_VALUE);
+    usageMetricWriter.cleanupMetrics(PARTITION_ID.intValue(), NOW.plusDays(1), Integer.MAX_VALUE);
+    usageMetricTUWriter.cleanupMetrics(PARTITION_ID.intValue(), NOW.plusDays(1), Integer.MAX_VALUE);
   }
 
   @TestTemplate
