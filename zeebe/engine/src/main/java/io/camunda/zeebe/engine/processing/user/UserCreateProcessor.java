@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Set;
@@ -119,6 +120,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
             .setOwnerId(username)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.USER)
+            .setResourceIdFormat(ResourceIdFormat.ID)
             .setResourceId(username)
             .setPermissionTypes(Set.of(PermissionType.READ, PermissionType.UPDATE));
 

@@ -41,9 +41,10 @@ public final class AuthorizationRecord extends UnifiedRecordValue
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>(
           OWNER_TYPE_KEY, AuthorizationOwnerType.class, AuthorizationOwnerType.UNSPECIFIED);
+  // TODO: set the default value to UNSPECIFIED, as setting the default to ID is meant to avoid test
+  // failures, but is insecure
   private final EnumProperty<ResourceIdFormat> resourceIdFormatProp =
-      new EnumProperty<>(
-          RESOURCE_ID_FORMAT_KEY, ResourceIdFormat.class, ResourceIdFormat.UNSPECIFIED);
+      new EnumProperty<>(RESOURCE_ID_FORMAT_KEY, ResourceIdFormat.class, ResourceIdFormat.ID);
   private final StringProperty resourceIdValueProp = new StringProperty(RESOURCE_ID_VALUE_KEY, "");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>(
