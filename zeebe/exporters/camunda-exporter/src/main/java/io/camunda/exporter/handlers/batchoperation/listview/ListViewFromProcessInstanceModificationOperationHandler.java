@@ -14,10 +14,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 
 public class ListViewFromProcessInstanceModificationOperationHandler
-    extends AbstractProcessInstanceFromOperationItemHandler<ProcessInstanceRecordValue> {
+    extends AbstractProcessInstanceFromOperationItemHandler<
+        ProcessInstanceModificationRecordValue> {
 
   public ListViewFromProcessInstanceModificationOperationHandler(
       final String indexName,
@@ -31,13 +32,13 @@ public class ListViewFromProcessInstanceModificationOperationHandler
   }
 
   @Override
-  protected boolean isFailed(final Record<ProcessInstanceRecordValue> record) {
+  protected boolean isFailed(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceModificationIntent.MODIFY)
         && record.getRejectionType() != RejectionType.NULL_VAL;
   }
 
   @Override
-  protected boolean isCompleted(final Record<ProcessInstanceRecordValue> record) {
+  protected boolean isCompleted(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getIntent() == ProcessInstanceModificationIntent.MODIFIED;
   }
 }
