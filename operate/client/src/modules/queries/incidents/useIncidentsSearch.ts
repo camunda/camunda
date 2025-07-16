@@ -13,15 +13,27 @@ import {searchIncidents} from 'modules/api/v2/incidents/searchIncidents.ts';
 
 const INCIDENTS_SEARCH_QUERY_KEY = 'incidentsSearch';
 
-const useIncidentsSearch = (params: QueryIncidentsRequestBody) => {
+const useIncidentsSearch = (
+  elementInstanceKey: string | undefined,
+  options: {enabled: boolean} = {enabled: true},
+) => {
+  const payload: QueryIncidentsRequestBody = {
+    filter: {
+      elementInstanceKey,
+    },
+    page: {limit: 1},
+  };
+
   return useQuery({
-    queryKey: [INCIDENTS_SEARCH_QUERY_KEY, params],
-    queryFn: () =>
-      searchIncidents(params).then(({response, error}) => {
-        if (response !== null) return response;
-        throw error;
-      }),
-    enabled: !!params,
+    queryKey: [INCIDENTS_SEARCH_QUERY_KEY, payload],
+    queryFn: async () => {
+      const {response, error} = await searchIncidents(payload);
+      if (response !== null) {
+        return response;
+      }
+      throw error;
+    },
+    ...options,
   });
 };
 
