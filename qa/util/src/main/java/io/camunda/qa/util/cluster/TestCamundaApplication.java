@@ -309,4 +309,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   public TestRestTasklistClient newTasklistClient() {
     return new TestRestTasklistClient(restAddress());
   }
+
+  public TestWebappClient newWebappClient() {
+    return new TestWebappClient(restAddress());
+  }
 }
