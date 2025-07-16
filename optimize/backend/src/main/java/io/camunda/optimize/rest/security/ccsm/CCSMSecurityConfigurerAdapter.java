@@ -22,6 +22,7 @@ import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOUR
 import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
+import io.camunda.optimize.rest.security.oauth.OptimizeRoleValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthCookieService;
 import io.camunda.optimize.service.security.CCSMTokenService;
@@ -32,6 +33,8 @@ import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +43,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -63,6 +67,9 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   private static final Logger LOG = LoggerFactory.getLogger(CCSMSecurityConfigurerAdapter.class);
 
   private final CCSMTokenService ccsmTokenService;
+  
+  @Value("${optimize.allowed-org-roles:admin,analyst}")
+  private List<String> allowedOrgRoles;
 
   public CCSMSecurityConfigurerAdapter(
       final ConfigurationService configurationService,
@@ -199,9 +206,10 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
     final NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwtSetUri).build();
     final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAudienceFromConfiguration());
+    final OAuth2TokenValidator<Jwt> roleValidator = new OptimizeRoleValidator(allowedOrgRoles);
     // The default validator already contains validation for timestamp and X509 thumbprint
     final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
-        JwtValidators.createDefaultWithValidators(audienceValidator);
+        JwtValidators.createDefaultWithValidators(audienceValidator, roleValidator);
     jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
     return jwtDecoder;
   }
