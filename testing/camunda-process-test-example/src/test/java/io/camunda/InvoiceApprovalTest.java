@@ -15,13 +15,6 @@
  */
 package io.camunda;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import static io.camunda.process.test.api.assertions.ElementSelectors.byId;
 import static io.camunda.process.test.api.assertions.UserTaskSelectors.byElementId;
@@ -48,17 +41,13 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 
 @SpringBootTest(
     properties = {
       "camunda.client.worker.defaults.enabled=false", // disable job workers
-      "camunda.client.worker.override.archive-invoice.enabled=true", // use this worker to test the
-      // scope with the glue code#
-      "io.camunda.process.test.connectors-enabled=true",
-      "io.camunda.process.test.connectors-secrets.INVOICE_REJECTION_URL=http://localhost:8089"
+      // but enable the normal glue code that just delegates to the ArchiveService
+      "camunda.client.worker.override.archive-invoice.enabled=true",
     })
-@AutoConfigureWireMock(port = 8089)
 @CamundaSpringProcessTest
 public class InvoiceApprovalTest {
 
@@ -143,10 +132,8 @@ public class InvoiceApprovalTest {
     variables.put("approver", "Zee");
     variables.put("invoice", objectMapper.readTree(invoiceJson));
 
-    // Create a stub for the HTTP endpoint that is invoked by the Connector
-    stubFor(
-        post(urlEqualTo("/reject"))
-            .willReturn(aResponse().withStatus(200))); // this could also send a response
+    // We skip HTTP for the simple unit test - mock the http connector
+    processTestContext.mockJobWorker("io.camunda:http-json:1").thenComplete();
 
     // Kick of the process instance
     final var processInstance =
@@ -177,18 +164,6 @@ public class InvoiceApprovalTest {
             byId("ServiceTask_SendRejection"),
             byId("EndEvent_InvoiceRejected"))
         .isCompleted();
-
-    // Assert that the HTTP endpoint was actually invoked with the right parameters
-    verify(
-        postRequestedFor(urlEqualTo("/reject"))
-            .withRequestBody(
-                equalToJson(
-                    """
-          {
-            "invoiceId": "INV-1001",
-            "rejectionReason": "it is a test case :-)"
-          }
-        """)));
   }
 
   @Test
