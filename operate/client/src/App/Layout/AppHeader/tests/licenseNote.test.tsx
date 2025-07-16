@@ -102,7 +102,13 @@ describe('license note', () => {
       expect(licenseTagStore.state.status).toEqual('fetched'),
     );
 
-    // e/;
+    expect(
+      await screen.findByText(/^production license$/i),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/^Non-production license$/i),
+    ).not.toBeInTheDocument();
   });
 
   it('should not show license note on fetch error', async () => {
