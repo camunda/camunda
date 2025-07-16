@@ -61,7 +61,7 @@ const C3Provider: React.FC<Props> = ({children}) => {
       userToken={token}
       getNewUserToken={fetchToken}
       currentClusterUuid={clusterId}
-      currentApp="tasklist"
+      currentApp="operate"
       stage={STAGE === 'unknown' ? 'dev' : STAGE}
       handleTheme
     >
