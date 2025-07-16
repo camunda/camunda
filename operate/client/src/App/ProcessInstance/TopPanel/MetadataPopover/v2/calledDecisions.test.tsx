@@ -32,14 +32,14 @@ import {
 import {init} from 'modules/utils/flowNodeMetadata';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchElementInstance} from '../../../../../modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
-import {mockSearchElementInstances} from '../../../../../modules/mocks/api/v2/elementInstances/searchElementInstances.ts';
-import {mockFetchFlownodeInstancesStatistics} from '../../../../../modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics.ts';
-import {mockFetchProcessInstanceIncidents} from '../../../../../modules/mocks/api/processInstances/fetchProcessInstanceIncidents.ts';
-import {mockIncidents} from '../../../../../modules/mocks/incidents.ts';
-import {flowNodeMetaDataStore} from '../../../../../modules/stores/flowNodeMetaData.ts';
-import {incidentsStore} from '../../../../../modules/stores/incidents.ts';
-import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances.ts';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics.ts';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents.ts';
+import {mockIncidents} from 'modules/mocks/incidents.ts';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData.ts';
+import {incidentsStore} from 'modules/stores/incidents.ts';
+import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 

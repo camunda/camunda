@@ -33,6 +33,8 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const elementId = flowNodeSelectionStore.state.selection?.flowNodeId;
   const elementInstanceId =
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
+  const isMultiInstance =
+    flowNodeSelectionStore.state.selection?.isMultiInstance;
   const {metaData} = flowNodeMetaDataStore.state;
 
   const {data: statistics} = useFlownodeInstancesStatistics();
@@ -43,13 +45,14 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       (stat) => stat.elementId === elementId,
     );
     if (!elementStats) return 0;
+    if (isMultiInstance) return 1;
     return (
       elementStats.active +
       elementStats.completed +
       elementStats.canceled +
       elementStats.incidents
     );
-  }, [statistics, elementId]);
+  }, [statistics, elementId, isMultiInstance]);
 
   const shouldFetchElementInstances =
     instanceCount === 1 &&
@@ -63,9 +66,14 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     });
 
   const {data: elementInstancesSearchResult, isLoading: isSearchingInstances} =
-    useElementInstancesSearch(elementId, processInstance?.processInstanceKey, {
-      enabled: shouldFetchElementInstances,
-    });
+    useElementInstancesSearch(
+      elementId,
+      processInstance?.processInstanceKey,
+      isMultiInstance,
+      {
+        enabled: shouldFetchElementInstances,
+      },
+    );
 
   const elementInstanceMetadata = useMemo(() => {
     if (elementInstanceId && elementInstance) {

@@ -39,9 +39,9 @@ import {
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {init} from 'modules/utils/flowNodeMetadata';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
-import {mockFetchElementInstance} from '../../../../../modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances.ts';
-import {metadataDemoProcess} from '../../../../../modules/mocks/metadataDemoProcess.ts';
+import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess.ts';
 import {waitFor} from '@testing-library/react';
 
 const MOCK_EXECUTION_DATE = '21 seconds';

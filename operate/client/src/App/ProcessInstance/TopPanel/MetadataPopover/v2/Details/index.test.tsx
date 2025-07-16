@@ -92,7 +92,8 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should render Tasklist link for user tasks when configured', () => {
-    window.clientConfig = {tasklistUrl: 'https://tasklist.example.com'};
+    const tasklistUrl = 'https://tasklist.example.com';
+    vi.stubGlobal('clientConfig', {tasklistUrl});
 
     const meta: V2MetaDataDto = {
       ...baseMetaData,
@@ -112,7 +113,8 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should not render Tasklist link for non-user tasks', () => {
-    window.clientConfig = {tasklistUrl: 'https://tasklist.example.com'};
+    const tasklistUrl = 'https://tasklist.example.com';
+    vi.stubGlobal('clientConfig', {tasklistUrl});
 
     render(<Details metaData={baseMetaData} elementId="Task_1" />, {
       wrapper: TestWrapper,

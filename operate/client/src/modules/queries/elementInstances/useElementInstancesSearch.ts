@@ -15,23 +15,27 @@ const ELEMENT_INSTANCES_SEARCH_QUERY_KEY = 'elementInstancesSearch';
 const useElementInstancesSearch = (
   elementId: string | undefined,
   processInstanceKey: string | undefined,
+  isMultiInstance: boolean | undefined,
   options: {enabled: boolean} = {enabled: true},
 ) => {
   const payload: QueryElementInstancesRequestBody = {
     filter: {
       elementId,
       processInstanceKey: processInstanceKey ?? '',
+      type: isMultiInstance ? 'MULTI_INSTANCE_BODY' : undefined,
     },
     page: {limit: 1},
   };
 
   return useQuery({
     queryKey: [ELEMENT_INSTANCES_SEARCH_QUERY_KEY, payload],
-    queryFn: () =>
-      searchElementInstances(payload).then(({response, error}) => {
-        if (response !== null) return response;
-        throw error;
-      }),
+    queryFn: async () => {
+      const {response, error} = await searchElementInstances(payload);
+      if (response !== null) {
+        return response;
+      }
+      throw error;
+    },
     ...options,
   });
 };
