@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.RoleReader;
+import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
@@ -62,7 +62,7 @@ public class RoleSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private RoleReader roleReader;
+  @Autowired private RoleDbReader roleReader;
 
   private RdbmsWriter rdbmsWriter;
 

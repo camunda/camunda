@@ -37,7 +37,7 @@ public class GroupTenancyIT {
 
   private static final String ADMIN = "admin";
   private static final String USER1 = "user1";
-  private static final String TENANT_A = "tena" + "ntA";
+  private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
   private static final String GROUP_A = "groupA";
   private static final String GROUP_B = "groupB";

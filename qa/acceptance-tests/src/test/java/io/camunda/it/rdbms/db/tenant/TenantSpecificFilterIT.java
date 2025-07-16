@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.TenantReader;
+import io.camunda.db.rdbms.read.service.TenantDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -44,7 +44,7 @@ public class TenantSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private TenantReader tenantReader;
+  @Autowired private TenantDbReader tenantReader;
 
   private RdbmsWriter rdbmsWriter;
 

@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.RoleFixtures.createAndSaveRole;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.RoleReader;
+import io.camunda.db.rdbms.read.service.RoleDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
 import io.camunda.it.rdbms.db.fixtures.RoleFixtures;
@@ -39,7 +39,7 @@ public class RoleIT {
   public void shouldSaveAndFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final RoleReader roleReader = rdbmsService.getRoleReader();
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
@@ -53,7 +53,7 @@ public class RoleIT {
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final RoleReader roleReader = rdbmsService.getRoleReader();
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
@@ -72,7 +72,7 @@ public class RoleIT {
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final RoleReader roleReader = rdbmsService.getRoleReader();
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
@@ -90,7 +90,7 @@ public class RoleIT {
   public void shouldFindByName(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final RoleReader roleReader = rdbmsService.getRoleReader();
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRole(rdbmsWriter, role);
@@ -117,7 +117,7 @@ public class RoleIT {
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final RoleReader roleReader = rdbmsService.getRoleReader();
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     createAndSaveRandomRoles(rdbmsWriter, b -> b.name("John Doe"));
 
@@ -137,7 +137,7 @@ public class RoleIT {
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final RoleReader roleReader = rdbmsService.getRoleReader();
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     final var role = RoleFixtures.createRandomized(b -> b);
     createAndSaveRandomRoles(rdbmsWriter);
@@ -159,7 +159,7 @@ public class RoleIT {
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final RoleReader roleReader = rdbmsService.getRoleReader();
+    final RoleDbReader roleReader = rdbmsService.getRoleReader();
 
     createAndSaveRandomRoles(rdbmsWriter, b -> b.name("Alice Doe"));
     final var sort = RoleSort.of(s -> s.name().asc());

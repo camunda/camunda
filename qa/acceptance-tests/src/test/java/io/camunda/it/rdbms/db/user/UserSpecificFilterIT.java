@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.UserReader;
+import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
@@ -52,7 +52,7 @@ public class UserSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private UserReader userReader;
+  @Autowired private UserDbReader userReader;
 
   private RdbmsWriter rdbmsWriter;
 

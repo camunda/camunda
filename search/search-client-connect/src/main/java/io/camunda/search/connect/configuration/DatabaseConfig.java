@@ -8,6 +8,7 @@
 package io.camunda.search.connect.configuration;
 
 public final class DatabaseConfig {
+  public static final String DATABASE_TYPE_CONFIGURATION = "camunda.database.type";
   public static final String ELASTICSEARCH = "elasticsearch";
   public static final String RDBMS = "rdbms";
   public static final String OPENSEARCH = "opensearch";

@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures.createAndS
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
+import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -160,7 +160,7 @@ public class ElementInstanceSortIT {
       final Function<Builder, ObjectBuilder<FlowNodeInstanceSort>> sortBuilder,
       final Comparator<FlowNodeInstanceEntity> comparator) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final FlowNodeInstanceReader reader = rdbmsService.getFlowNodeInstanceReader();
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
 
     final var processDefinitionKey = nextKey();
     createAndSaveRandomElementInstances(

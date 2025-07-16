@@ -8,7 +8,7 @@
 package io.camunda.db.rdbms.write;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.BatchOperationReader;
+import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
@@ -37,7 +37,7 @@ public class RdbmsWriterFactory {
   private final UserTaskMapper userTaskMapper;
   private final VariableMapper variableMapper;
   private final RdbmsWriterMetrics metrics;
-  private final BatchOperationReader batchOperationReader;
+  private final BatchOperationDbReader batchOperationReader;
   private final JobMapper jobMapper;
   private final SequenceFlowMapper sequenceFlowMapper;
   private final UsageMetricMapper usageMetricMapper;
@@ -54,7 +54,7 @@ public class RdbmsWriterFactory {
       final UserTaskMapper userTaskMapper,
       final VariableMapper variableMapper,
       final RdbmsWriterMetrics metrics,
-      final BatchOperationReader batchOperationReader,
+      final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper) {

@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.MappingFixtures.createAndSaveRando
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.MappingReader;
+import io.camunda.db.rdbms.read.service.MappingDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingDbModel;
 import io.camunda.it.rdbms.db.fixtures.MappingFixtures;
@@ -152,7 +152,7 @@ public class MappingIT {
   public void shouldFindMappingWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final MappingReader mappingReader = rdbmsService.getMappingReader();
+    final MappingDbReader mappingReader = rdbmsService.getMappingReader();
 
     final String claimName = "claimName-" + MappingFixtures.nextStringId();
     createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));

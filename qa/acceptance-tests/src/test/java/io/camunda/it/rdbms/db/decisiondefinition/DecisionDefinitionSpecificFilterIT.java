@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
+import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -41,7 +41,7 @@ public class DecisionDefinitionSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private DecisionDefinitionReader decisionDefinitionReader;
+  @Autowired private DecisionDefinitionDbReader decisionDefinitionReader;
 
   private RdbmsWriter rdbmsWriter;
 

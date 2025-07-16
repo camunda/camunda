@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.DecisionDefinitionFixtures.createA
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
+import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -140,7 +140,7 @@ public class DecisionDefinitionSortIT {
       final Function<Builder, ObjectBuilder<DecisionDefinitionSort>> sortBuilder,
       final Comparator<DecisionDefinitionEntity> comparator) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final DecisionDefinitionReader reader = rdbmsService.getDecisionDefinitionReader();
+    final DecisionDefinitionDbReader reader = rdbmsService.getDecisionDefinitionReader();
 
     final var requirementsKey = nextKey();
     createAndSaveRandomDecisionDefinitions(

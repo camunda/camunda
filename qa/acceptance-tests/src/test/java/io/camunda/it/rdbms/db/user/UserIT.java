@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.UserFixtures.createAndSaveUser;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.UserReader;
+import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.UserDbModel;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
@@ -39,7 +39,7 @@ public class UserIT {
   public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriter, user);
@@ -53,7 +53,7 @@ public class UserIT {
   public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriter, user);
@@ -72,7 +72,7 @@ public class UserIT {
   public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriter, user);
@@ -90,7 +90,7 @@ public class UserIT {
   public void shouldFindByUsername(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveUser(rdbmsWriter, user);
@@ -119,7 +119,7 @@ public class UserIT {
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
 
     final String userId = UserFixtures.nextStringId();
     createAndSaveRandomUsers(rdbmsWriter, b -> b.name("John Doe"));
@@ -140,7 +140,7 @@ public class UserIT {
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
 
     final var user = UserFixtures.createRandomized(b -> b);
     createAndSaveRandomUsers(rdbmsWriter);
@@ -167,7 +167,7 @@ public class UserIT {
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserReader userReader = rdbmsService.getUserReader();
+    final UserDbReader userReader = rdbmsService.getUserReader();
 
     createAndSaveRandomUsers(rdbmsWriter, b -> b.name("Alice Doe"));
     final var sort = UserSort.of(s -> s.name().asc().username().asc().email().desc());
