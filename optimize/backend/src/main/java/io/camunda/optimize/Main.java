@@ -25,9 +25,6 @@ public class Main {
   public static void main(final String[] args) {
     new LoggingConfigurationReader().defineLog4jLoggingConfiguration();
 
-    // Check if running in no-db mode and fail fast if so
-    checkForNoSecondaryStorageMode();
-
     final ConfigurationService configurationService = ConfigurationService.createDefault();
     final SpringApplication optimize = new SpringApplication(Main.class);
 
@@ -38,35 +35,4 @@ public class Main {
     optimize.run(args);
   }
 
-  private static void checkForNoSecondaryStorageMode() {
-    final String databaseType = getDatabaseType();
-    
-    if (isNoSecondaryStorageMode(databaseType)) {
-      final String errorMessage = "Optimize is not supported without secondary storage. "
-          + "The database type is configured as 'none', but Optimize requires a secondary storage "
-          + "backend (Elasticsearch or OpenSearch) to function properly. "
-          + "Please configure 'camunda.database.type' to either 'elasticsearch' or 'opensearch', "
-          + "or remove Optimize from your deployment when running in no-secondary-storage mode.";
-      
-      System.err.println("ERROR: " + errorMessage);
-      System.exit(1);
-    }
-  }
-
-  static boolean isNoSecondaryStorageMode(final String databaseType) {
-    return "none".equalsIgnoreCase(databaseType);
-  }
-
-  static String getDatabaseType() {
-    // Check environment variable first (standard Spring Boot pattern)
-    String databaseType = System.getenv("CAMUNDA_DATABASE_TYPE");
-    
-    if (databaseType == null) {
-      // Check system property (for -Dcamunda.database.type=none)
-      databaseType = System.getProperty("camunda.database.type");
-    }
-    
-    // Default to elasticsearch if not specified
-    return databaseType != null ? databaseType : "elasticsearch";
-  }
 }
