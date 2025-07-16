@@ -93,18 +93,19 @@ public class DocumentController {
   @CamundaGetMapping(
       path = "/{documentId}",
       produces = {}) // produces arbitrary content type
-  public CompletableFuture<ResponseEntity<StreamingResponseBody>> getDocumentContent(
+  public ResponseEntity<StreamingResponseBody> getDocumentContent(
       @PathVariable final String documentId,
       @RequestParam(required = false) final String storeId,
       @RequestParam(required = false) final String contentHash) {
 
     // handle the future explicitly here because a StreamingResponseBody is needed as result instead
-    // of Object
+    // of a future wrapping the stream response
     return documentServices
         .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .getDocumentContent(documentId, storeId, contentHash)
         // Any service exception that can occur is handled by the GlobalControllerExceptionHandler
-        .thenApplyAsync(ResponseMapper::toDocumentContentResponse);
+        .thenApply(ResponseMapper::toDocumentContentResponse)
+        .join();
   }
 
   @CamundaDeleteMapping(path = "/{documentId}")
