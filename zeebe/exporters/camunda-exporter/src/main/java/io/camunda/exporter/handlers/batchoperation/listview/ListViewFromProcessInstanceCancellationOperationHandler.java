@@ -35,14 +35,21 @@ public class ListViewFromProcessInstanceCancellationOperationHandler
     return record.getValue().getBpmnElementType() == BpmnElementType.PROCESS;
   }
 
+  private boolean isRootProcessInstance(final Record<ProcessInstanceRecordValue> record) {
+    return record.getValue().getParentProcessInstanceKey() == -1;
+  }
+
   @Override
   protected boolean isFailed(final Record<ProcessInstanceRecordValue> record) {
-    return record.getIntent().equals(ProcessInstanceIntent.CANCEL)
+    return isRootProcessInstance(record)
+        && record.getIntent().equals(ProcessInstanceIntent.CANCEL)
         && record.getRejectionType() != RejectionType.NULL_VAL;
   }
 
   @Override
   protected boolean isCompleted(final Record<ProcessInstanceRecordValue> record) {
-    return isProcess(record) && record.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED;
+    return isProcess(record)
+        && isRootProcessInstance(record)
+        && record.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATED;
   }
 }
