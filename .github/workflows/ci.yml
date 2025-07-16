@@ -1206,7 +1206,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Vacuum
-        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh > /dev/null
+        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh
         shell: bash
       - name: Run OpenAPI Linter
         run: >
