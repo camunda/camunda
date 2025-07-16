@@ -65,7 +65,7 @@ public class ReceivedSnapshotTest {
     // given
 
     // when
-    final var receivedSnapshot = receiverSnapshotStore.newReceivedSnapshot("1-0-123-121").join();
+    final var receivedSnapshot = receiverSnapshotStore.newReceivedSnapshot("1-0-123-121-1").join();
 
     // then
     assertThat(receivedSnapshot.index()).isEqualTo(1L);

@@ -18,16 +18,18 @@ import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotId implements SnapshotId {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotId.class);
-  private static final int SNAPSHOT_ID_PARTS = 5;
-  private static final int PREV_SNAPSHOT_ID_PARTS = 4;
+  private static final int SNAPSHOT_ID_PARTS = 6;
+  private static final int PREV_SNAPSHOT_ID_PARTS = 5;
 
   private final long index;
   private final long term;
   private final long processedPosition;
   private final long exporterPosition;
-  // To ensure snapshots taken by different replicas have unique Ids, we include the brokerId. For
-  // backward compatibility we make it an optional. Can be eventually make it mandatory.
-  private final Optional<Integer> brokerId;
+  private final int brokerId;
+
+  // To ensure snapshots have unique ids, we include a checksum. For backward compatibility we
+  // make it optional. Eventually we can make it mandatory.
+  private final Optional<String> checksum;
 
   FileBasedSnapshotId(
       final long index,
@@ -39,19 +41,23 @@ public final class FileBasedSnapshotId implements SnapshotId {
     this.term = term;
     this.processedPosition = processedPosition;
     this.exporterPosition = exporterPosition;
-    this.brokerId = Optional.of(brokerId);
+    this.brokerId = brokerId;
+    checksum = Optional.empty();
   }
 
   FileBasedSnapshotId(
       final long index,
       final long term,
       final long processedPosition,
-      final long exporterPosition) {
+      final long exporterPosition,
+      final int brokerId,
+      final String checksum) {
     this.index = index;
     this.term = term;
     this.processedPosition = processedPosition;
     this.exporterPosition = exporterPosition;
-    brokerId = Optional.empty();
+    this.brokerId = brokerId;
+    this.checksum = Optional.of(checksum);
   }
 
   static FileBasedSnapshotId forBoostrap(final int brokerId) {
@@ -71,10 +77,11 @@ public final class FileBasedSnapshotId implements SnapshotId {
         final var processedPosition = Long.parseLong(parts[2]);
         final var exporterPosition = Long.parseLong(parts[3]);
         final var brokerId = Integer.parseInt((parts[4]));
+        final var checksum = parts[5];
 
         return new Parsed(
             new FileBasedSnapshotId(
-                index, term, processedPosition, exporterPosition, brokerId));
+                index, term, processedPosition, exporterPosition, brokerId, checksum));
       } catch (final NumberFormatException e) {
         return new Invalid(new IllegalArgumentException("Failed to parse part of snapshot id", e));
       }
@@ -94,7 +101,7 @@ public final class FileBasedSnapshotId implements SnapshotId {
     } else {
       return new Invalid(
           new IllegalArgumentException(
-              "Expected snapshot file format to be %%d-%%d-%%d-%%d-%%d, but was %s"
+              "Expected snapshot file format to be %%d-%%d-%%d-%%d-%%d-%%s, but was %s"
                   .formatted(name)));
     }
   }
@@ -121,22 +128,28 @@ public final class FileBasedSnapshotId implements SnapshotId {
 
   @Override
   public String getSnapshotIdAsString() {
-    return brokerId
-        .map(
-            broker ->
-                String.format(
-                    "%d-%d-%d-%d-%d",
-                    getIndex(), getTerm(), getProcessedPosition(), getExportedPosition(), broker))
-        // For backward compatibility
-        .orElse(
-            String.format(
-                "%d-%d-%d-%d",
-                getIndex(), getTerm(), getProcessedPosition(), getExportedPosition()));
+    if (checksum.isPresent()) {
+      // Checksum was added after broker id, so that needs to be present too
+      return String.format(
+          "%d-%d-%d-%d-%d-%s",
+          getIndex(),
+          getTerm(),
+          getProcessedPosition(),
+          getExportedPosition(),
+          brokerId,
+          checksum.get());
+    } else {
+      // For backward compatibility
+      return String.format(
+          "%d-%d-%d-%d-%d",
+          getIndex(), getTerm(), getProcessedPosition(), getExportedPosition(), brokerId);
+    }
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(index, term, processedPosition, exporterPosition, brokerId.hashCode());
+    return Objects.hash(
+        index, term, processedPosition, exporterPosition, brokerId, checksum.hashCode());
   }
 
   @Override
@@ -152,7 +165,8 @@ public final class FileBasedSnapshotId implements SnapshotId {
         && term == that.term
         && processedPosition == that.processedPosition
         && exporterPosition == that.exporterPosition
-        && brokerId.equals(that.brokerId);
+        && brokerId == that.brokerId
+        && checksum.equals(that.checksum);
   }
 
   @Override
@@ -168,6 +182,8 @@ public final class FileBasedSnapshotId implements SnapshotId {
         + exporterPosition
         + ", brokerId="
         + brokerId
+        + ", checksum="
+        + checksum
         + '}';
   }
 
