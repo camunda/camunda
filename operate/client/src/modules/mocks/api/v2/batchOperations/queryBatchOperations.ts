@@ -9,7 +9,7 @@
 import {endpoints} from '@vzeta/camunda-api-zod-schemas';
 import {mockPostRequest} from '../../mockRequest';
 
-const mockQueryBatchOperations = (contextPath = '') =>
-  mockPostRequest(`${contextPath}${endpoints.queryBatchOperations.getUrl()}`);
+const mockQueryBatchOperations = () =>
+  mockPostRequest(endpoints.queryBatchOperations.getUrl());
 
 export {mockQueryBatchOperations};

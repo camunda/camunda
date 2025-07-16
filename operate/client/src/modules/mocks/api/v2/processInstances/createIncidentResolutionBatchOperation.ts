@@ -9,9 +9,7 @@
 import {endpoints} from '@vzeta/camunda-api-zod-schemas';
 import {mockPostRequest} from '../../mockRequest';
 
-const mockCreateIncidentResolutionBatchOperation = (contextPath = '') =>
-  mockPostRequest(
-    `${contextPath}${endpoints.createIncidentResolutionBatchOperation.getUrl()}`,
-  );
+const mockCreateIncidentResolutionBatchOperation = () =>
+  mockPostRequest(endpoints.createIncidentResolutionBatchOperation.getUrl());
 
 export {mockCreateIncidentResolutionBatchOperation};
