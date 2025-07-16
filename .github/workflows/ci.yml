@@ -610,6 +610,39 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+<<<<<<< HEAD
+=======
+  openapi-lint:
+    name: C8 REST OpenAPI linting
+    if: needs.detect-changes.outputs.openapi-changes == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vacuum
+        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh
+        shell: bash
+      - name: Run OpenAPI Linter
+        run: >
+          vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml
+          --ruleset zeebe/gateway-protocol/vacuum-ruleset.yaml
+          --ignore-file zeebe/gateway-protocol/vacuum-ignores.yaml
+          --functions zeebe/gateway-protocol/vacuum-rules
+          --details --no-clip --errors
+        shell: bash
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+>>>>>>> fd9ef6fd (ci: help debugging intermittent checksum errors by showing installer output)
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
