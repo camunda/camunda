@@ -121,6 +121,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.VariableResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
@@ -820,7 +821,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
         .elementInstanceKey(KeyUtil.keyToString(t.elementInstanceKey()))
         .processDefinitionId(t.processDefinitionId())
-        .state(UserTaskResult.StateEnum.fromValue(t.state().name()))
+        .state(UserTaskStateEnum.fromValue(t.state().name()))
         .assignee(t.assignee())
         .candidateUsers(t.candidateUsers())
         .candidateGroups(t.candidateGroups())
