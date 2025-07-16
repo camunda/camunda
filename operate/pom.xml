@@ -73,6 +73,7 @@
     <version.parsson>1.1.7</version.parsson>
     <version.opensearch>2.5.0</version.opensearch>
     <version.springdoc>2.2.0</version.springdoc>
+    <version.tomcat>10.1.43</version.tomcat>
     <version.jakarta.json>2.0.1</version.jakarta.json>
     <version.node>v20.8.0</version.node>
     <version.yarn>v1.22.10</version.yarn>
@@ -303,6 +304,22 @@
       </dependency>
 
       <!-- START have to define this to override wrong version coming from spring-boot-dependencies BOM -->
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-el</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-websocket</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+
       <dependency>
         <groupId>org.elasticsearch</groupId>
         <artifactId>elasticsearch-x-content</artifactId>
