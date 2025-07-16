@@ -10,6 +10,7 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -18,8 +19,8 @@ import java.util.Objects;
 public record ProcessDefinitionFilter(
     Boolean isLatestVersion,
     List<Long> processDefinitionKeys,
-    List<String> names,
-    List<String> processDefinitionIds,
+    List<Operation<String>> namesOperations,
+    List<Operation<String>> processDefinitionIdsOperations,
     List<String> resourceNames,
     List<Integer> versions,
     List<String> versionTags,
@@ -31,8 +32,8 @@ public record ProcessDefinitionFilter(
     private Boolean isLatestVersion;
     private List<String> tenantIds;
     private List<Long> processDefinitionKeys;
-    private List<String> names;
-    private List<String> processDefinitionIds;
+    private List<Operation<String>> namesOperations;
+    private List<Operation<String>> processDefinitionIdsOperations;
     private List<String> resourceNames;
     private List<Integer> versions;
     private List<String> versionTags;
@@ -46,22 +47,35 @@ public record ProcessDefinitionFilter(
       return processDefinitionKeys(collectValues(value, values));
     }
 
-    public Builder names(final List<String> values) {
-      names = addValuesToList(names, values);
+    public Builder namesOperations(final List<Operation<String>> operations) {
+      namesOperations = addValuesToList(namesOperations, operations);
       return this;
     }
 
-    public Builder names(final String value, final String... values) {
-      return names(collectValues(value, values));
+    @SafeVarargs
+    public final Builder namesOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return namesOperations(collectValues(operation, operations));
     }
 
-    public Builder processDefinitionIds(final List<String> values) {
-      processDefinitionIds = addValuesToList(processDefinitionIds, values);
+    public Builder names(final String value, final String... values) {
+      return namesOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionIdsOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return processDefinitionIdsOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionIdsOperations(final List<Operation<String>> operations) {
+      processDefinitionIdsOperations = addValuesToList(processDefinitionIdsOperations, operations);
       return this;
     }
 
     public Builder processDefinitionIds(final String value, final String... values) {
-      return processDefinitionIds(collectValues(value, values));
+      processDefinitionIdsOperations(FilterUtil.mapDefaultToOperation(value, values));
+      return this;
     }
 
     public Builder resourceNames(final List<String> values) {
@@ -110,8 +124,8 @@ public record ProcessDefinitionFilter(
       return new ProcessDefinitionFilter(
           Objects.requireNonNullElse(isLatestVersion, false),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(names, Collections.emptyList()),
-          Objects.requireNonNullElse(processDefinitionIds, Collections.emptyList()),
+          Objects.requireNonNullElse(namesOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionIdsOperations, Collections.emptyList()),
           Objects.requireNonNullElse(resourceNames, Collections.emptyList()),
           Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(versionTags, Collections.emptyList()),
