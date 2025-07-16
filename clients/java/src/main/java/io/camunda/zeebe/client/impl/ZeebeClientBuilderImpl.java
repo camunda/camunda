@@ -80,7 +80,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
       getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
-  public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8080");
+  public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8088");
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
   public static final Duration DEFAULT_MESSAGE_TTL = Duration.ofHours(1);
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
