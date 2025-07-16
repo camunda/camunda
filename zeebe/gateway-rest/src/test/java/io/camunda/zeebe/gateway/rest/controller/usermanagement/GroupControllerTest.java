@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.GROUPS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -61,9 +62,10 @@ public class GroupControllerTest {
           "type": "about:blank",
           "status": 403,
           "title": "Access issue",
-          "detail": "Due to security configuration, %s endpoint is not accessible",
-          "instance": "%s"
-        }""";
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
 
     @Test
     void shouldReturnErrorOnCreate() {
