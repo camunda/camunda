@@ -15,7 +15,10 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 public class CamundaProcessTestRuntimeDefaults {
 
@@ -47,9 +50,27 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getCamundaDockerImageName();
   public static final String CAMUNDA_DOCKER_IMAGE_VERSION =
       PROPERTIES_UTIL.getCamundaDockerImageVersion();
+  public static final Map<String, String> CAMUNDA_ENV_VARS = PROPERTIES_UTIL.getCamundaEnvVars();
+  public static final List<Integer> CAMUNDA_EXPOSED_PORTS =
+      PROPERTIES_UTIL.getCamundaExposedPorts();
 
+  public static final boolean CONNECTORS_ENABLED = PROPERTIES_UTIL.isConnectorsEnabled();
   public static final String CONNECTORS_DOCKER_IMAGE_NAME =
       PROPERTIES_UTIL.getConnectorsDockerImageName();
   public static final String CONNECTORS_DOCKER_IMAGE_VERSION =
       PROPERTIES_UTIL.getConnectorsDockerImageVersion();
+  public static final Map<String, String> CONNECTORS_ENV_VARS =
+      PROPERTIES_UTIL.getConnectorsEnvVars();
+  public static final Map<String, String> CONNECTORS_SECRETS =
+      PROPERTIES_UTIL.getConnectorsSecrets();
+
+  public static final CamundaProcessTestRuntimeMode RUNTIME_MODE = PROPERTIES_UTIL.getRuntimeMode();
+
+  public static final URI REMOTE_CAMUNDA_MONITORING_API_ADDRESS =
+      PROPERTIES_UTIL.getRemoteCamundaMonitoringApiAddress();
+  public static final URI REMOTE_CONNECTORS_REST_API_ADDRESS =
+      PROPERTIES_UTIL.getRemoteConnectorsRestApiAddress();
+
+  public static final URI REMOTE_CLIENT_GRPC_ADDRESS = PROPERTIES_UTIL.getRemoteClientGrpcAddress();
+  public static final URI REMOTE_CLIENT_REST_ADDRESS = PROPERTIES_UTIL.getRemoteClientRestAddress();
 }
