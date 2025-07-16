@@ -7,15 +7,23 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER;
+
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -23,12 +31,12 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
@@ -38,7 +46,7 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
+public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
       """
@@ -96,47 +104,65 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           JobListenerEventType.COMPLETING);
 
   private final UserTaskState userTaskState;
+  private final JobState jobState;
   private final ElementInstanceState elementInstanceState;
-  private final DefaultJobCommandPreconditionGuard defaultProcessor;
+  private final JobCommandPreconditionChecker preconditionChecker;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final JobProcessingMetrics jobMetrics;
   private final EventHandle eventHandle;
 
+  private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
+  private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
+
   public JobCompleteProcessor(
       final ProcessingState state,
+      final Writers writers,
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
       final AuthorizationCheckBehavior authCheckBehavior) {
     userTaskState = state.getUserTaskState();
+    jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
-    defaultProcessor =
-        new DefaultJobCommandPreconditionGuard(
-            "complete",
+    commandWriter = writers.command();
+    stateWriter = writers.state();
+    responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
+    preconditionChecker =
+        new JobCommandPreconditionChecker(
             state.getJobState(),
-            this::acceptCommand,
-            authCheckBehavior,
+            "complete",
+            List.of(State.ACTIVATABLE, State.ACTIVATED),
             List.of(
                 this::checkTaskListenerJobForProvidingVariables,
                 this::checkTaskListenerJobForSupportingDenying,
                 this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkCreatingListenerJobForAssigneeCorrection,
-                this::checkTaskListenerJobForUnknownPropertyCorrections));
+                this::checkTaskListenerJobForUnknownPropertyCorrections),
+            authCheckBehavior);
+    this.authCheckBehavior = authCheckBehavior;
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    return defaultProcessor.onCommand(command, commandControl);
+  public void processRecord(final TypedRecord<JobRecord> record) {
+    final long jobKey = record.getKey();
+    final JobState.State state = jobState.getState(jobKey);
+    preconditionChecker
+        .check(state, record)
+        .flatMap(job -> checkAuthorization(record, job))
+        .ifRightOrLeft(
+            job -> completeJob(record, job),
+            rejection -> {
+              rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
+              responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
+            });
   }
 
-  @Override
-  public void afterAccept(
-      final TypedCommandWriter commandWriter,
-      final StateWriter stateWriter,
-      final long key,
-      final Intent intent,
-      final JobRecord value) {
+  private void completeJob(final TypedRecord<JobRecord> record, final JobRecord job) {
+    final var value = record.getValue();
 
     final var elementInstanceKey = value.getElementInstanceKey();
 
@@ -203,7 +229,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private Either<Rejection, JobRecord> checkTaskListenerJobForProvidingVariables(
       final TypedRecord<JobRecord> command, final JobRecord job) {
 
-    if (job.getJobKind() == JobKind.TASK_LISTENER && hasVariables(command)) {
+    if (job.getJobKind() == TASK_LISTENER && hasVariables(command)) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
@@ -214,13 +240,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     return Either.right(job);
   }
 
-  private boolean hasVariables(final TypedRecord<JobRecord> command) {
-    return !DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getVariablesBuffer());
-  }
-
   private Either<Rejection, JobRecord> checkTaskListenerJobForSupportingDenying(
       final TypedRecord<JobRecord> command, final JobRecord job) {
-    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+    if (job.getJobKind() != TASK_LISTENER) {
       return Either.right(job);
     }
 
@@ -250,7 +272,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private Either<Rejection, JobRecord> checkTaskListenerJobForDenyingWithCorrections(
       final TypedRecord<JobRecord> command, final JobRecord job) {
-    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+    if (job.getJobKind() != TASK_LISTENER) {
       return Either.right(job);
     }
 
@@ -269,7 +291,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private Either<Rejection, JobRecord> checkCreatingListenerJobForAssigneeCorrection(
       final TypedRecord<JobRecord> command, final JobRecord job) {
 
-    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+    if (job.getJobKind() != TASK_LISTENER) {
       return Either.right(job);
     }
 
@@ -295,20 +317,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
     return Either.right(job);
   }
 
-  private long getUserTaskKey(final JobRecord job) {
-    return Optional.ofNullable(elementInstanceState.getInstance(job.getElementInstanceKey()))
-        .map(ElementInstance::getUserTaskKey)
-        .filter(key -> key > 0)
-        .orElseThrow(
-            () ->
-                new IllegalStateException(
-                    MISSING_OR_INVALID_USER_TASK_KEY_FROM_ELEMENT_INSTANCE_MESSAGE.formatted(
-                        job.getElementInstanceKey(), job.getProcessInstanceKey())));
-  }
-
   private Either<Rejection, JobRecord> checkTaskListenerJobForUnknownPropertyCorrections(
       final TypedRecord<JobRecord> command, final JobRecord job) {
-    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+    if (job.getJobKind() != TASK_LISTENER) {
       return Either.right(job);
     }
 
@@ -334,14 +345,39 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
                 correctableProperties)));
   }
 
-  private void acceptCommand(
-      final TypedRecord<JobRecord> command,
-      final CommandControl<JobRecord> commandControl,
-      final JobRecord job) {
+  private boolean hasVariables(final TypedRecord<JobRecord> command) {
+    return !DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getVariablesBuffer());
+  }
+
+  private long getUserTaskKey(final JobRecord job) {
+    return Optional.ofNullable(elementInstanceState.getInstance(job.getElementInstanceKey()))
+        .map(ElementInstance::getUserTaskKey)
+        .filter(key -> key > 0)
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    MISSING_OR_INVALID_USER_TASK_KEY_FROM_ELEMENT_INSTANCE_MESSAGE.formatted(
+                        job.getElementInstanceKey(), job.getProcessInstanceKey())));
+  }
+
+  private void acceptCommand(final TypedRecord<JobRecord> command, final JobRecord job) {
     job.setVariables(command.getValue().getVariablesBuffer());
     job.setResult(command.getValue().getResult());
-
-    commandControl.accept(JobIntent.COMPLETED, job);
+    final var jobKey = command.getKey();
+    stateWriter.appendFollowUpEvent(jobKey, JobIntent.COMPLETED, job);
+    responseWriter.writeEventOnCommand(jobKey, JobIntent.COMPLETED, job, command);
     jobMetrics.countJobEvent(JobAction.COMPLETED, job.getJobKind(), job.getType());
+  }
+
+  private Either<Rejection, JobRecord> checkAuthorization(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    final var request =
+        new AuthorizationRequest(
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                job.getTenantId())
+            .addResourceId(job.getBpmnProcessId());
+    return authCheckBehavior.isAuthorized(request).map(unused -> job);
   }
 }
