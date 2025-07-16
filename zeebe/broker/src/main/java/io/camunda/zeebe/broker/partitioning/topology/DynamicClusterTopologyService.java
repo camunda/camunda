@@ -24,7 +24,13 @@ public class DynamicClusterTopologyService implements ClusterTopologyService {
 
   private PartitionDistribution partitionDistribution;
 
+<<<<<<< HEAD:zeebe/broker/src/main/java/io/camunda/zeebe/broker/partitioning/topology/DynamicClusterTopologyService.java
   private ClusterTopologyManagerService clusterTopologyManagerService;
+=======
+  private volatile ClusterConfiguration initialClusterConfiguration;
+
+  private ClusterConfigurationManagerService clusterConfigurationManagerService;
+>>>>>>> 2931fd4a (fix: set initialClusterConfiguration as volatile):zeebe/broker/src/main/java/io/camunda/zeebe/broker/partitioning/topology/DynamicClusterConfigurationService.java
 
   @Override
   public PartitionDistribution getPartitionDistribution() {
