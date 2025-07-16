@@ -82,7 +82,8 @@ public class UserTaskListenersTest {
             t -> t.zeebeTaskListener(l -> l.completing().type("my_listener")));
 
     final JobHandler completeJobHandler =
-        (jobClient, job) -> client.newCompleteCommand(job).withResult().deny(false).send().join();
+        (jobClient, job) ->
+            client.newCompleteCommand(job).withResult(r -> r.deny(false)).send().join();
     client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
@@ -358,9 +359,7 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult()
-                .deny(true)
-                .deniedReason("Reason to deny lifecycle transition")
+                .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
                 .send()
                 .join();
     client.newWorker().jobType(listenerType).handler(completeJobWithDenialHandler).open();
@@ -410,9 +409,7 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult()
-                .deny(true)
-                .deniedReason("Reason to deny lifecycle transition")
+                .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
                 .send()
                 .join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
@@ -464,7 +461,8 @@ public class UserTaskListenersTest {
             t -> t.zeebeTaskListener(l -> l.completing().type(listenerType)));
 
     final JobHandler completeJobHandler =
-        (jobClient, job) -> client.newCompleteCommand(job).withResult().deny(true).send().join();
+        (jobClient, job) ->
+            client.newCompleteCommand(job).withResult(r -> r.deny(true)).send().join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
 
     client.newWorker().jobType(listenerType).handler(recordingHandler).open();
@@ -516,9 +514,7 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult()
-                .deny(true)
-                .deniedReason("Reason to deny lifecycle transition")
+                .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
                 .send()
                 .join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
@@ -577,13 +573,14 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult()
-                .correctAssignee("new_assignee")
-                .correctDueDate("new_due_date")
-                .correctFollowUpDate("new_follow_up_date")
-                .correctCandidateUsers(List.of("new_user_A", "new_user_B"))
-                .correctCandidateGroups(List.of("new_group_C"))
-                .correctPriority(99)
+                .withResult(
+                    r ->
+                        r.correctAssignee("new_assignee")
+                            .correctDueDate("new_due_date")
+                            .correctFollowUpDate("new_follow_up_date")
+                            .correctCandidateUsers(List.of("new_user_A", "new_user_B"))
+                            .correctCandidateGroups(List.of("new_group_C"))
+                            .correctPriority(99))
                 .send()
                 .join();
 
@@ -659,12 +656,14 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult()
-                .correctAssignee("corrected_assignee")
-                .correctDueDate(correctedDueDate) // overrides the update
-                .correctFollowUpDate(correctedFollowUpDate)
-                .correctCandidateUsers(List.of("corrected_user_a", "corrected_user_b"))
-                .correctPriority(10) // resets to the initial value, overriding the update
+                .withResult(
+                    r ->
+                        r.correctAssignee("corrected_assignee")
+                            .correctDueDate(correctedDueDate) // overrides the update
+                            .correctFollowUpDate(correctedFollowUpDate)
+                            .correctCandidateUsers(List.of("corrected_user_a", "corrected_user_b"))
+                            .correctPriority(
+                                10)) // resets to the initial value, overriding the update
                 .send()
                 .join();
 
@@ -735,13 +734,14 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult()
-                .correctAssignee("Test")
-                .correctDueDate("due date")
-                .correctFollowUpDate("follow up date")
-                .correctCandidateUsers(Arrays.asList("User A", "User B"))
-                .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
-                .correctPriority(80)
+                .withResult(
+                    r ->
+                        r.correctAssignee("Test")
+                            .correctDueDate("due date")
+                            .correctFollowUpDate("follow up date")
+                            .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                            .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
+                            .correctPriority(80))
                 .send()
                 .join();
 
@@ -802,11 +802,12 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult()
-                .correctAssignee("Test")
-                .correctFollowUpDate("follow up date")
-                .correctCandidateUsers(Arrays.asList("User A", "User B"))
-                .correctPriority(80)
+                .withResult(
+                    r ->
+                        r.correctAssignee("Test")
+                            .correctFollowUpDate("follow up date")
+                            .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                            .correctPriority(80))
                 .send()
                 .join();
 
@@ -861,9 +862,7 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult()
-                .correctPriority(3)
-                .correctAssignee("corrected_assignee")
+                .withResult(r -> r.correctPriority(3).correctAssignee("corrected_assignee"))
                 .send()
                 .join();
 

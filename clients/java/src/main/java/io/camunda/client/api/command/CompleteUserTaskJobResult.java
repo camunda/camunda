@@ -44,6 +44,24 @@ public class CompleteUserTaskJobResult {
   }
 
   /**
+   * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For example,
+   * a user task listener can deny the completion of a task by setting this flag to true. In this
+   * example, the completion of a task is represented by a job that the worker can complete as
+   * denied. As a result, the completion request is rejected and the task remains active. Defaults
+   * to {@code false}. This method also allows setting the reason for denying the job. Default to an
+   * empty string.
+   *
+   * @param isDenied indicates if the worker has denied the reason for the job
+   * @param deniedReason indicates the reason why the worker denied the job
+   * @return this job result
+   */
+  public CompleteUserTaskJobResult deny(final boolean isDenied, final String deniedReason) {
+    deny(isDenied);
+    deniedReason(deniedReason);
+    return this;
+  }
+
+  /**
    * Indicates the reason why the worker denied the job. For example, a user task listener can deny
    * the completion of a task by setting the deny flag to true and specifying the reason to deny.
    * Defaults to an empty string.

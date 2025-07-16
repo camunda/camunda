@@ -163,7 +163,7 @@ public final class CompleteJobTest {
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
-    getCommand(client, useRest, jobKey).withResult().deny(denied).send().join();
+    getCommand(client, useRest, jobKey).withResult(r -> r.deny(denied)).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -178,7 +178,7 @@ public final class CompleteJobTest {
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
-    getCommand(client, useRest, jobKey).withResult().send().join();
+    getCommand(client, useRest, jobKey).withResult(r -> r).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(

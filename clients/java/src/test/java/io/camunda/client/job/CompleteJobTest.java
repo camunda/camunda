@@ -194,7 +194,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().send().join();
+    client.newCompleteCommand(job).withResult(r -> r).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -212,7 +212,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().deny(false).send().join();
+    client.newCompleteCommand(job).withResult(r -> r.deny(false)).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -232,9 +232,7 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .deny(true)
-        .deniedReason("Reason to deny lifecycle transition")
+        .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
         .send()
         .join();
 
@@ -257,8 +255,7 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .deny(true, "Reason to deny lifecycle transition")
+        .withResult(r -> r.deny(true, "Reason to deny lifecycle transition"))
         .send()
         .join();
 
@@ -322,9 +319,7 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .deny(false)
-        .resultDone()
+        .withResult(r -> r.deny(false))
         .variable("we_can", "still_set_vars")
         .send()
         .join();
@@ -348,13 +343,14 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .correctAssignee("Test")
-        .correctDueDate("due date")
-        .correctFollowUpDate("follow up date")
-        .correctCandidateUsers(Arrays.asList("User A", "User B"))
-        .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
-        .correctPriority(80)
+        .withResult(
+            r ->
+                r.correctAssignee("Test")
+                    .correctDueDate("due date")
+                    .correctFollowUpDate("follow up date")
+                    .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                    .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
+                    .correctPriority(80))
         .send()
         .join();
 
@@ -398,12 +394,13 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .correctAssignee("Test")
-        .correctDueDate("due date")
-        .correctFollowUpDate("")
-        .correctCandidateUsers(Arrays.asList("User A", "User B"))
-        .correctPriority(80)
+        .withResult(
+            r ->
+                r.correctAssignee("Test")
+                    .correctDueDate("due date")
+                    .correctFollowUpDate("")
+                    .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                    .correctPriority(80))
         .send()
         .join();
 
@@ -443,13 +440,14 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .correctAssignee(null)
-        .correctDueDate(null)
-        .correctFollowUpDate(null)
-        .correctCandidateGroups(null)
-        .correctCandidateUsers(null)
-        .correctPriority(null)
+        .withResult(
+            r ->
+                r.correctAssignee(null)
+                    .correctDueDate(null)
+                    .correctFollowUpDate(null)
+                    .correctCandidateGroups(null)
+                    .correctCandidateUsers(null)
+                    .correctPriority(null))
         .send()
         .join();
 
@@ -587,7 +585,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().send().join();
+    client.newCompleteCommand(job).withResult(r -> r).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();

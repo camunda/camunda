@@ -159,7 +159,8 @@ public class OperationReferenceTest {
     client
         .newWorker()
         .jobType(listenerType)
-        .handler((jobClient, job) -> jobClient.newCompleteCommand(job).withResult().send().join())
+        .handler(
+            (jobClient, job) -> jobClient.newCompleteCommand(job).withResult(r -> r).send().join())
         .open();
 
     // When
@@ -196,7 +197,8 @@ public class OperationReferenceTest {
     client
         .newWorker()
         .jobType(listenerType)
-        .handler((jobClient, job) -> jobClient.newCompleteCommand(job).withResult().send().join())
+        .handler(
+            (jobClient, job) -> jobClient.newCompleteCommand(job).withResult(r -> r).send().join())
         .open();
 
     // When
@@ -238,9 +240,7 @@ public class OperationReferenceTest {
             (jobClient, job) ->
                 jobClient
                     .newCompleteCommand(job)
-                    .withResult()
-                    .deny(true)
-                    .deniedReason("Denied by listener")
+                    .withResult(r -> r.deny(true).deniedReason("Denied by listener"))
                     .send()
                     .join())
         .open();

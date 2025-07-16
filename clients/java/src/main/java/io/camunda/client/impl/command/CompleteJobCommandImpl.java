@@ -19,7 +19,6 @@ import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
 import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.JobResultCorrections;
@@ -35,17 +34,15 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
-    implements CompleteJobCommandStep1, CompleteJobCommandStep2 {
+    implements CompleteJobCommandStep1 {
 
   private final GatewayStub asyncStub;
   private final Builder grpcRequestObjectBuilder;
@@ -102,159 +99,39 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep2 withResult() {
-    initJobResult();
-    return this;
-  }
-
-  @Override
   public CompleteJobCommandStep1 withResult(final CompleteUserTaskJobResult jobResult) {
-    return withResult()
-        .deny(jobResult.isDenied())
-        .deniedReason(jobResult.getDeniedReason())
-        .correct(jobResult.getCorrections())
-        .resultDone();
+    return setJobResult(jobResult);
   }
 
   @Override
   public CompleteJobCommandStep1 withResult(
       final UnaryOperator<CompleteUserTaskJobResult> jobResultModifier) {
-    initJobResult();
-    final CompleteUserTaskJobResult reconstructedJobResult =
-        new CompleteUserTaskJobResult()
-            .deny(resultRest.getDenied() != null ? resultRest.getDenied() : false)
-            .deniedReason(resultRest.getDeniedReason())
-            .correct(reconstructCorrections());
-    return withResult(jobResultModifier.apply(reconstructedJobResult));
+    final CompleteUserTaskJobResult jobResult = new CompleteUserTaskJobResult();
+    return withResult(jobResultModifier.apply(jobResult));
   }
 
-  private void initJobResult() {
+  private CompleteJobCommandStep1 setJobResult(final CompleteUserTaskJobResult jobResult) {
     resultRest = new io.camunda.client.protocol.rest.JobResultUserTask();
-    resultRest.setType(
-        TypeEnum.USER_TASK); // TODO replace later when ad hoc subprocess is supported
     correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
-    resultRest.setCorrections(correctionsRest);
+    correctionsRest
+        .assignee(jobResult.getCorrections().getAssignee())
+        .dueDate(jobResult.getCorrections().getDueDate())
+        .followUpDate(jobResult.getCorrections().getFollowUpDate())
+        .candidateUsers(jobResult.getCorrections().getCandidateUsers())
+        .candidateGroups(jobResult.getCorrections().getCandidateGroups())
+        .priority(jobResult.getCorrections().getPriority());
+    resultRest
+        .type(TypeEnum.USER_TASK)
+        .denied(jobResult.isDenied())
+        .deniedReason(jobResult.getDeniedReason())
+        .corrections(correctionsRest);
     httpRequestObject.setResult(resultRest);
 
     resultGrpc = JobResult.newBuilder();
     correctionsGrpc = GatewayOuterClass.JobResultCorrections.newBuilder();
     resultGrpc.setCorrections(correctionsGrpc);
     grpcRequestObjectBuilder.setResult(resultGrpc);
-  }
 
-  @Override
-  public CompleteJobCommandStep2 deny(final boolean isDenied) {
-    resultRest.setDenied(isDenied);
-    resultGrpc.setDenied(isDenied);
-    onResultChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 deny(final boolean isDenied, final String deniedReason) {
-    return deny(isDenied).deniedReason(deniedReason);
-  }
-
-  @Override
-  public CompleteJobCommandStep2 deniedReason(final String deniedReason) {
-    resultRest.setDeniedReason(deniedReason);
-    resultGrpc.setDeniedReason(deniedReason == null ? "" : deniedReason);
-    onResultChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correct(final JobResultCorrections corrections) {
-    return correctAssignee(corrections.getAssignee())
-        .correctCandidateGroups(corrections.getCandidateGroups())
-        .correctCandidateUsers(corrections.getCandidateUsers())
-        .correctDueDate(corrections.getDueDate())
-        .correctFollowUpDate(corrections.getFollowUpDate())
-        .correctPriority(corrections.getPriority());
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correct(final UnaryOperator<JobResultCorrections> corrections) {
-    final JobResultCorrections reconstructedCorrections = reconstructCorrections();
-    return correct(corrections.apply(reconstructedCorrections));
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctAssignee(final String assignee) {
-    correctionsRest.setAssignee(assignee);
-    if (assignee == null) {
-      correctionsGrpc.clearAssignee();
-    } else {
-      correctionsGrpc.setAssignee(assignee);
-    }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctDueDate(final String dueDate) {
-    correctionsRest.setDueDate(dueDate);
-    if (dueDate == null) {
-      correctionsGrpc.clearDueDate();
-    } else {
-      correctionsGrpc.setDueDate(dueDate);
-    }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctFollowUpDate(final String followUpDate) {
-    correctionsRest.setFollowUpDate(followUpDate);
-    if (followUpDate == null) {
-      correctionsGrpc.clearFollowUpDate();
-    } else {
-      correctionsGrpc.setFollowUpDate(followUpDate);
-    }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctCandidateUsers(final List<String> candidateUsers) {
-    correctionsRest.setCandidateUsers(candidateUsers);
-    if (candidateUsers == null) {
-      correctionsGrpc.clearCandidateUsers();
-    } else {
-      correctionsGrpc.setCandidateUsers(
-          StringList.newBuilder().addAllValues(candidateUsers).build());
-    }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctCandidateGroups(final List<String> candidateGroups) {
-    correctionsRest.setCandidateGroups(candidateGroups);
-    if (candidateGroups == null) {
-      correctionsGrpc.clearCandidateGroups();
-    } else {
-      correctionsGrpc.setCandidateGroups(
-          StringList.newBuilder().addAllValues(candidateGroups).build());
-    }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctPriority(final Integer priority) {
-    correctionsRest.setPriority(priority);
-    if (priority == null) {
-      correctionsGrpc.clearPriority();
-    } else {
-      correctionsGrpc.setPriority(priority);
-    }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep1 resultDone() {
     return this;
   }
 
