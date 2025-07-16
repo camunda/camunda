@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize;
 
-import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.util.tomcat.LoggingConfigurationReader;
@@ -26,14 +26,7 @@ public class Main {
 
   public static void main(final String[] args) {
     new LoggingConfigurationReader().defineLog4jLoggingConfiguration();
-
-    // Check for camunda.database.type=none and override CAMUNDA_OPTIMIZE_DATABASE
-    final String databaseType = System.getProperty("camunda.database.type", 
-        System.getenv("CAMUNDA_DATABASE_TYPE"));
-    
-    if (DatabaseConfig.NONE.equalsIgnoreCase(databaseType)) {
-      System.setProperty(CAMUNDA_OPTIMIZE_DATABASE, DatabaseConfig.NONE);
-    }
+    overrideOptimizeDatabaseType();
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();
     final SpringApplication optimize = new SpringApplication(Main.class);
@@ -43,5 +36,16 @@ public class Main {
 
     optimize.setDefaultProperties(defaultProperties);
     optimize.run(args);
+  }
+
+  private static void overrideOptimizeDatabaseType() {
+    final String databaseType = getDatabaseType();
+    if (DatabaseConfig.NONE.equalsIgnoreCase(databaseType)) {
+      System.setProperty(CAMUNDA_OPTIMIZE_DATABASE, DatabaseConfig.NONE);
+    }
+  }
+
+  private static String getDatabaseType() {
+    return System.getProperty("camunda.database.type", System.getenv("CAMUNDA_DATABASE_TYPE"));
   }
 }
