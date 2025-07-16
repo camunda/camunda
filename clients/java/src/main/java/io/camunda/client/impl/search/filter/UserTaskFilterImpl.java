@@ -27,6 +27,7 @@ import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -50,8 +51,7 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter state(final UserTaskState state) {
-    filter.setState(
-        EnumUtil.convert(state, io.camunda.client.protocol.rest.UserTaskFilter.StateEnum.class));
+    filter.setState(EnumUtil.convert(state, UserTaskStateEnum.class));
     return this;
   }
 

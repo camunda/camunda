@@ -24,6 +24,7 @@ import io.camunda.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskFilter;
 import io.camunda.client.protocol.rest.UserTaskSearchQuery;
+import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
@@ -70,7 +71,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getState()).isEqualTo(UserTaskFilter.StateEnum.COMPLETED);
+    assertThat(request.getFilter().getState()).isEqualTo(UserTaskStateEnum.COMPLETED);
   }
 
   @Test
