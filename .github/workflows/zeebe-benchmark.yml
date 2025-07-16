@@ -215,10 +215,8 @@ jobs:
       - calculate-image-tag
       - build-zeebe-image
       - build-benchmark-images
-    # Deploy will be run:
-    # - after build jobs if they are not skipped
-    # - after calculate-image-tag if build jobs are skipped
-    # this is to have the possibility to re-deploy the benchmarks without rebuilding the images
+    # To have the possibility to re-deploy the benchmarks without rebuilding the images,
+    # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
       (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
