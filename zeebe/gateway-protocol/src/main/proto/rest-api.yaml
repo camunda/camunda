@@ -5594,18 +5594,7 @@ components:
       type: object
       properties:
         state:
-          type: string
-          description: The state of the user task.
-          enum:
-            - CREATING
-            - CREATED
-            - ASSIGNING
-            - UPDATING
-            - COMPLETING
-            - COMPLETED
-            - CANCELING
-            - CANCELED
-            - FAILED
+          $ref: "#/components/schemas/UserTaskStateEnum"
         assignee:
           description: The assignee of the user task.
           allOf:
@@ -5702,18 +5691,7 @@ components:
           type: string
           description: The name for this user task.
         state:
-          type: string
-          description: The state of the user task.
-          enum:
-            - CREATING
-            - CREATED
-            - ASSIGNING
-            - UPDATING
-            - COMPLETING
-            - COMPLETED
-            - CANCELING
-            - CANCELED
-            - FAILED
+          $ref: "#/components/schemas/UserTaskStateEnum"
         assignee:
           description: The assignee of the user task.
           type: string
@@ -5785,6 +5763,19 @@ components:
         formKey:
           type: string
           description: The key of the form.
+    UserTaskStateEnum:
+      description: The state of the user task.
+      type: string
+      enum:
+        - CREATING
+        - CREATED
+        - ASSIGNING
+        - UPDATING
+        - COMPLETING
+        - COMPLETED
+        - CANCELING
+        - CANCELED
+        - FAILED
     VariableSearchQuerySortRequest:
       type: object
       properties:
