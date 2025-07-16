@@ -17,6 +17,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +98,7 @@ public class PingConsoleTask implements Runnable {
       String clusterId,
       String clusterName,
       String version,
+      List<String> profiles,
       Map<String, String> properties) {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record License(boolean validLicense, String licenseType) {}
