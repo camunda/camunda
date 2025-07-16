@@ -86,14 +86,7 @@ class BatchOperationChunkCreatedHandlerTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    final var recordValue =
-        new BatchOperationChunkRecord()
-            .setBatchOperationKey(123L)
-            .setItems(List.of(new BatchOperationItem(1L, 11L)));
-    final Record<BatchOperationChunkRecordValue> record =
-        factory.generateRecord(
-            ValueType.BATCH_OPERATION_CHUNK,
-            r -> r.withIntent(BatchOperationChunkIntent.CREATED).withValue(recordValue));
+    final Record<BatchOperationChunkRecordValue> record = createRecord(1L, 11L);
 
     final var entity = new BatchOperationEntity();
 
@@ -102,6 +95,23 @@ class BatchOperationChunkCreatedHandlerTest {
 
     // then
     assertThat(entity.getOperationsTotalCount()).isEqualTo(1);
+    assertThat(entity.getEndDate()).isNull();
+  }
+
+  @Test
+  void shouldUpdateEntityFromMultipleRecords() {
+    // given
+    final Record<BatchOperationChunkRecordValue> record1 = createRecord(1L, 11L);
+    final Record<BatchOperationChunkRecordValue> record2 = createRecord(2L, 12L);
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    underTest.updateEntity(record1, entity);
+    underTest.updateEntity(record2, entity);
+
+    // then
+    assertThat(entity.getOperationsTotalCount()).isEqualTo(2);
     assertThat(entity.getEndDate()).isNull();
   }
 
@@ -130,5 +140,17 @@ class BatchOperationChunkCreatedHandlerTest {
         .contains(
             "ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount");
     assertThat(script).contains("ctx._source.endDate = null");
+  }
+
+  private Record<BatchOperationChunkRecordValue> createRecord(
+      final long itemKey, final long processInstanceKey) {
+    return factory.generateRecord(
+        ValueType.BATCH_OPERATION_CHUNK,
+        r ->
+            r.withIntent(BatchOperationChunkIntent.CREATED)
+                .withValue(
+                    new BatchOperationChunkRecord()
+                        .setBatchOperationKey(123L)
+                        .setItems(List.of(new BatchOperationItem(itemKey, processInstanceKey)))));
   }
 }
