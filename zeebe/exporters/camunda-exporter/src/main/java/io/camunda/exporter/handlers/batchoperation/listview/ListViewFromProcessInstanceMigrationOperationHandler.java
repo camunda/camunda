@@ -14,10 +14,10 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
-import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 
 public class ListViewFromProcessInstanceMigrationOperationHandler
-    extends AbstractProcessInstanceFromOperationItemHandler<ProcessInstanceRecordValue> {
+    extends AbstractProcessInstanceFromOperationItemHandler<ProcessInstanceMigrationRecordValue> {
 
   public ListViewFromProcessInstanceMigrationOperationHandler(
       final String indexName,
@@ -31,13 +31,13 @@ public class ListViewFromProcessInstanceMigrationOperationHandler
   }
 
   @Override
-  protected boolean isFailed(final Record<ProcessInstanceRecordValue> record) {
+  protected boolean isFailed(final Record<ProcessInstanceMigrationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceMigrationIntent.MIGRATE)
         && record.getRejectionType() != RejectionType.NULL_VAL;
   }
 
   @Override
-  protected boolean isCompleted(final Record<ProcessInstanceRecordValue> record) {
+  protected boolean isCompleted(final Record<ProcessInstanceMigrationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceMigrationIntent.MIGRATED);
   }
 }
