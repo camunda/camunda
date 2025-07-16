@@ -35,9 +35,9 @@ class OptimizeNoSecondaryStorageIT {
       Main.main(new String[]{});
     });
 
-    // then - Spring should fail to start due to OptimizeDatabaseConfiguration
+    // then - ConfigurationService should fail to start due to invalid database type
     assertThat(exception)
-        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasRootCauseInstanceOf(io.camunda.optimize.service.exceptions.OptimizeConfigurationException.class)
         .hasMessageContaining("Optimize is not supported without secondary storage");
   }
 
@@ -51,9 +51,9 @@ class OptimizeNoSecondaryStorageIT {
       Main.main(new String[]{});
     });
 
-    // then - Spring should fail to start due to OptimizeDatabaseConfiguration
+    // then - ConfigurationService should fail to start due to invalid database type
     assertThat(exception)
-        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasRootCauseInstanceOf(io.camunda.optimize.service.exceptions.OptimizeConfigurationException.class)
         .hasMessageContaining("Optimize is not supported without secondary storage");
   }
 }

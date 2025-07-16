@@ -10,13 +10,10 @@ package io.camunda.it.nodb;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.optimize.Main;
+import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * Integration test to verify that Optimize properly fails startup when running in no-secondary-storage mode
@@ -35,17 +32,14 @@ public class OptimizeNoSecondaryStorageFailureIT {
     // given - system configured with database.type=none
     System.setProperty("camunda.database.type", "none");
 
-    // when - attempting to start a Spring context with a configuration that should fail
+    // when - attempting to start Optimize
     final Exception exception = assertThrows(Exception.class, () -> {
-      try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
-        context.register(TestOptimizeConfiguration.class);
-        context.refresh();
-      }
+      Main.main(new String[]{});
     });
 
     // then - startup should fail with clear error message
     assertThat(exception)
-        .hasRootCauseInstanceOf(IllegalStateException.class)
+        .hasRootCauseInstanceOf(OptimizeConfigurationException.class)
         .hasMessageContaining("Optimize is not supported without secondary storage");
   }
 
@@ -54,34 +48,17 @@ public class OptimizeNoSecondaryStorageFailureIT {
     // given - system configured with database.type=elasticsearch
     System.setProperty("camunda.database.type", "elasticsearch");
 
-    // when - starting a Spring context with valid database type
-    // then - should not throw exception
-    try (AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext()) {
-      context.register(TestOptimizeConfiguration.class);
-      context.refresh();
-      // Context should start successfully
-    }
-  }
-
-  /**
-   * Test configuration that mimics the behavior of OptimizeDatabaseConfiguration.
-   * This configuration will be active when database.type=none and will throw an exception.
-   */
-  @Configuration
-  @ConditionalOnProperty(
-      prefix = "camunda.database",
-      name = "type",
-      havingValue = DatabaseConfig.NONE)
-  static class TestOptimizeConfiguration {
-    
-    public TestOptimizeConfiguration() {
-      final String errorMessage = "Optimize is not supported without secondary storage. "
-          + "The database type is configured as 'none', but Optimize requires a secondary storage "
-          + "backend (Elasticsearch or OpenSearch) to function properly. "
-          + "Please configure 'camunda.database.type' to either 'elasticsearch' or 'opensearch', "
-          + "or remove Optimize from your deployment when running in no-secondary-storage mode.";
-      
-      throw new IllegalStateException(errorMessage);
+    // when - starting Optimize with valid database type
+    // then - should not throw exception during configuration validation
+    // Note: We only test that the configuration service doesn't throw an exception,
+    // we don't actually start the full application
+    try {
+      // This would normally start Spring, but we just want to validate configuration
+      // The actual startup would require more infrastructure setup
+      Main.main(new String[]{"--spring.main.web-application-type=none", "--spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.web.servlet.WebMvcAutoConfiguration"});
+    } catch (Exception e) {
+      // We expect other exceptions related to missing dependencies, just not configuration errors
+      assertThat(e).hasRootCauseMessageNotContaining("Optimize is not supported without secondary storage");
     }
   }
 }
