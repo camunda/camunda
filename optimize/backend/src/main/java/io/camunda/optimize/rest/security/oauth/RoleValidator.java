@@ -23,7 +23,7 @@ public class RoleValidator implements OAuth2TokenValidator<Jwt> {
 
   static final String ORGANIZATION_CLAIM_KEY = "https://camunda.com/orgs";
   private static final Logger LOG = LoggerFactory.getLogger(RoleValidator.class);
-  
+
   private final List<String> allowedRoles;
 
   public RoleValidator(final List<String> allowedRoles) {
@@ -54,11 +54,13 @@ public class RoleValidator implements OAuth2TokenValidator<Jwt> {
       }
     }
 
-    LOG.debug("Rejected token with organizations '{}', required roles: {}", claimValue, allowedRoles);
+    LOG.debug(
+        "Rejected token with organizations '{}', required roles: {}", claimValue, allowedRoles);
     return OAuth2TokenValidatorResult.failure(
         new OAuth2Error(
             OAuth2ErrorCodes.INVALID_TOKEN,
-            "Token does not contain required organization role for Optimize access. Required roles: %s".formatted(allowedRoles),
+            "Token does not contain required organization role for Optimize access. Required roles: %s"
+                .formatted(allowedRoles),
             null));
   }
 }
