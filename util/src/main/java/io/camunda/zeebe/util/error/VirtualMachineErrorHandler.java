@@ -43,7 +43,7 @@ public final class VirtualMachineErrorHandler
    */
   @Override
   public void handleError(final Throwable e) {
-    if (e instanceof VirtualMachineError) {
+    if (e instanceof VirtualMachineError || e instanceof ClassCircularityError) {
       tryLoggingThenExit(e);
     }
 
