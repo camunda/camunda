@@ -16,6 +16,7 @@ ARG DIST="build"
 
 ### Build camunda from scratch ###
 FROM reg.mini.dev/openjdk:21 AS build
+USER root
 WORKDIR /camunda
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -27,6 +28,7 @@ RUN --mount=type=cache,target=/root/.m2,rw \
 ### Extract camunda from distball ###
 # hadolint ignore=DL3006
 FROM base AS distball
+USER root
 WORKDIR /camunda
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} camunda.tar.gz
@@ -44,7 +46,7 @@ FROM ${DIST} AS dist
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
 #FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
-FROM reg.mini.dev/openjre:21 AS app
+FROM reg.mini.dev/openjre:21-dev AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -78,30 +80,22 @@ LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 LABEL io.openshift.wants="elasticsearch"
 
-ENV CAMUNDA_HOME=/usr/local/camunda
+ENV CAMUNDA_HOME=/home/build
 ENV PATH "${CAMUNDA_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
 # We know there's no need to check for musl on this image
 ENV ROCKSDB_MUSL_LIBC=false
 
-WORKDIR ${CAMUNDA_HOME}
 EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
 VOLUME ${CAMUNDA_HOME}/data
 VOLUME ${CAMUNDA_HOME}/logs
 
-RUN groupadd --gid 1001 camunda && \
-    useradd --system --gid 1001 --uid 1001 --home ${CAMUNDA_HOME} camunda && \
-    chmod g=u /etc/passwd && \
-    # These directories are to be mounted by users, eagerly creating them and setting ownership
-    # helps to avoid potential permission issues due to default volume ownership.
-    mkdir ${CAMUNDA_HOME}/data && \
-    mkdir ${CAMUNDA_HOME}/logs && \
-    chown -R 1001:0 ${CAMUNDA_HOME} && \
-    chmod -R 0775 ${CAMUNDA_HOME}
+# These directories are to be mounted by users, eagerly creating them and setting ownership
+# helps to avoid potential permission issues due to default volume ownership.
+RUN mkdir ${CAMUNDA_HOME}/data && \
+    mkdir ${CAMUNDA_HOME}/logs
 
-COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
-
-USER 1001:1001
+COPY --from=dist --chown=1000:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
 ENTRYPOINT ["tini", "--", "/usr/local/camunda/bin/camunda"]
