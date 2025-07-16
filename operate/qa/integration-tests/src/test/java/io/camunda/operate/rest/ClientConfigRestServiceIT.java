@@ -23,7 +23,12 @@ import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
+import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -52,13 +57,29 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class ClientConfigRestServiceIT extends OperateAbstractIT {
 
   @MockBean private OperateProfileService operateProfileService;
+  @MockBean private SecurityConfiguration securityConfiguration;
+  @MockBean private AuthorizationsConfiguration authorizationsConfiguration;
+  @MockBean private AuthenticationConfiguration authenticationConfiguration;
+  @MockBean private MultiTenancyConfiguration multiTenancyConfiguration;
+  @MockBean private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
 
   @Autowired private OperateProperties operateProperties;
+
+  @Before
+  public void setUp() {
+    // Mock the behavior of the security configuration
+    given(securityConfiguration.getAuthentication()).willReturn(authenticationConfiguration);
+    given(securityConfiguration.getAuthorizations()).willReturn(authorizationsConfiguration);
+    given(securityConfiguration.getMultiTenancy()).willReturn(multiTenancyConfiguration);
+    given(authenticationConfiguration.getOidc()).willReturn(oidcAuthenticationConfiguration);
+  }
 
   @Test
   public void testGetClientConfig() throws Exception {
     // given
     operateProperties.setTasklistUrl("https://tasklist.camunda.io/tl");
+    given(authorizationsConfiguration.isEnabled()).willReturn(true);
+    given(oidcAuthenticationConfiguration.getOrganizationId()).willReturn(null);
     // when
     final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
@@ -91,6 +112,8 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
   public void testGetClientConfigForCantLogout() throws Exception {
     // given
     operateProperties.setTasklistUrl(null);
+    given(oidcAuthenticationConfiguration.getOrganizationId()).willReturn("test-org-id");
+    given(authorizationsConfiguration.isEnabled()).willReturn(true);
     // when
     final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
     final MvcResult mvcResult =
@@ -124,6 +147,8 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     // given
     operateProperties.setTasklistUrl(null);
     given(operateProfileService.isDevelopmentProfileActive()).willReturn(false);
+    given(authorizationsConfiguration.isEnabled()).willReturn(true);
+    given(oidcAuthenticationConfiguration.getOrganizationId()).willReturn("test-org-id");
 
     // when
     final MockHttpServletRequestBuilder request = get("/operate/client-config.js");
