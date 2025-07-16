@@ -148,9 +148,7 @@ test.beforeAll(async ({request}) => {
     .toHaveProperty('total', totalInstances);
 });
 
-// TODO: Replace 'skip' by 'serial' after https://github.com/camunda/camunda/issues/24084 is fixed
-// test.describe.serial('Process Instance Migration', () => {
-test.describe.skip('Process Instance Migration', () => {
+test.describe.serial('Process Instance Migration', () => {
   /**
    * Migrate from ProcessV1 to ProcessV2
    * ProcessV1 and ProcessV2 have identical bpmnProcess id and flow node names,
@@ -193,7 +191,7 @@ test.describe.skip('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(48);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(54);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
