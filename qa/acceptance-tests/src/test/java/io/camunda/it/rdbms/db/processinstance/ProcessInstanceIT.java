@@ -14,7 +14,7 @@ import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndS
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
+import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -44,7 +44,7 @@ public class ProcessInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final Long processInstanceKey = nextKey();
     createAndSaveProcessInstance(
@@ -79,7 +79,7 @@ public class ProcessInstanceIT {
   public void shouldSaveLogAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final ProcessInstanceDbModel original = ProcessInstanceFixtures.createRandomized(b -> b);
     createAndSaveProcessInstance(rdbmsWriter, original);
@@ -106,7 +106,7 @@ public class ProcessInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final Long processInstanceKey = nextKey();
     createAndSaveProcessInstance(
@@ -152,7 +152,7 @@ public class ProcessInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final Long processDefinitionKey = nextKey();
     createAndSaveRandomProcessInstances(
@@ -185,7 +185,7 @@ public class ProcessInstanceIT {
   public void shouldFindAllProcessInstancePaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final String processDefinitionId = ProcessInstanceFixtures.nextStringId();
     createAndSaveRandomProcessInstances(
@@ -209,7 +209,7 @@ public class ProcessInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final Long processInstanceKey = nextKey();
     createAndSaveRandomProcessInstances(rdbmsWriter);
@@ -254,7 +254,7 @@ public class ProcessInstanceIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final var processDefinition =
         ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
@@ -305,7 +305,7 @@ public class ProcessInstanceIT {
   public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
 
     final var cleanupDate = NOW.minusDays(1);
 

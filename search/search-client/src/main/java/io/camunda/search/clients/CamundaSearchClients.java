@@ -1,0 +1,335 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.clients;
+
+import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.search.clients.reader.SearchEntityReader;
+import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.entities.DecisionDefinitionEntity;
+import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
+import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
+import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
+import io.camunda.search.entities.UsageMetricsEntity;
+import io.camunda.search.entities.UserEntity;
+import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
+import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
+import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
+import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.search.query.BatchOperationItemQuery;
+import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.search.query.DecisionDefinitionQuery;
+import io.camunda.search.query.DecisionInstanceQuery;
+import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobQuery;
+import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.query.MessageSubscriptionQuery;
+import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
+import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.TypedSearchQuery;
+import io.camunda.search.query.UsageMetricsQuery;
+import io.camunda.search.query.UserQuery;
+import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableQuery;
+import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.ResourceAccessController;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class CamundaSearchClients implements SearchClientsProxy {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaSearchClients.class);
+
+  private final SearchClientReaders readers;
+  private final ResourceAccessController resourceAccessController;
+  private final SecurityContext securityContext;
+
+  public CamundaSearchClients(
+      final SearchClientReaders readers,
+      final ResourceAccessController resourceAccessController,
+      final SecurityContext securityContext) {
+    this.readers = readers;
+    this.resourceAccessController = resourceAccessController;
+    this.securityContext = securityContext;
+  }
+
+  @Override
+  public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
+      final AuthorizationQuery query) {
+    return doSearchWithReader(readers.authorizationReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery query) {
+    return doSearchWithReader(readers.sequenceFlowReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
+      final MessageSubscriptionQuery query) {
+    return doSearchWithReader(readers.messageSubscriptionReader(), query);
+  }
+
+  @Override
+  public CamundaSearchClients withSecurityContext(final SecurityContext securityContext) {
+    return new CamundaSearchClients(readers, resourceAccessController, securityContext);
+  }
+
+  @Override
+  public SearchQueryResult<MappingRuleEntity> searchMappingRules(
+      final MappingRuleQuery mappingQuery) {
+    return doSearchWithReader(readers.mappingRuleReader(), mappingQuery);
+  }
+
+  @Override
+  public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
+      final DecisionDefinitionQuery query) {
+    return doSearchWithReader(readers.decisionDefinitionReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
+      final DecisionInstanceQuery query) {
+    return doSearchWithReader(readers.decisionInstanceReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
+      final DecisionRequirementsQuery query) {
+    return doSearchWithReader(readers.decisionRequirementsReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
+      final FlowNodeInstanceQuery query) {
+    return doSearchWithReader(readers.flowNodeInstanceReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<FormEntity> searchForms(final FormQuery query) {
+    return doSearchWithReader(readers.formReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery query) {
+    return doSearchWithReader(readers.incidentReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
+      final ProcessDefinitionQuery query) {
+    return doSearchWithReader(readers.processDefinitionReader(), query);
+  }
+
+  @Override
+  public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
+      final ProcessDefinitionStatisticsFilter filter) {
+    return doReadWithResourceAccessController(
+        access ->
+            readers
+                .processDefinitionStatisticsReader()
+                .aggregate(new ProcessDefinitionFlowNodeStatisticsQuery(filter), access));
+  }
+
+  @Override
+  public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
+      final ProcessInstanceQuery query) {
+    return doSearchWithReader(readers.processInstanceReader(), query);
+  }
+
+  @Override
+  public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
+      final long processInstanceKey) {
+    return doReadWithResourceAccessController(
+        access ->
+            readers
+                .processInstanceStatisticsReader()
+                .aggregate(
+                    new ProcessInstanceFlowNodeStatisticsQuery(
+                        new ProcessInstanceStatisticsFilter(processInstanceKey)),
+                    access));
+  }
+
+  @Override
+  public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
+    return doSearchWithReader(readers.jobReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
+    return doSearchWithReader(readers.roleReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery query) {
+    return doSearchWithReader(readers.roleMemberReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
+    return doSearchWithReader(readers.tenantReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery query) {
+    return doSearchWithReader(readers.tenantMemberReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
+    return doSearchWithReader(readers.groupReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
+    return doSearchWithReader(readers.groupMemberReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
+    return doSearchWithReader(readers.userReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
+    return doSearchWithReader(readers.userTaskReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
+    return doSearchWithReader(readers.variableReader(), query);
+  }
+
+  @Override
+  public Long countAssignees(final UsageMetricsQuery query) {
+    return distinctCountUsageMetricsFor("task_completed_by_assignee", query);
+  }
+
+  @Override
+  public Long countProcessInstances(final UsageMetricsQuery query) {
+    return distinctCountUsageMetricsFor("EVENT_PROCESS_INSTANCE_STARTED", query);
+  }
+
+  @Override
+  public Long countDecisionInstances(final UsageMetricsQuery query) {
+    return distinctCountUsageMetricsFor("EVENT_DECISION_INSTANCE_EVALUATED", query);
+  }
+
+  /*
+   * The distinct count is implemented here by using Java Stream API until aggregations are in place.
+   */
+  private Long distinctCountUsageMetricsFor(final String event, final UsageMetricsQuery query) {
+    final var finalQuery =
+        UsageMetricsQuery.of(
+            b ->
+                b.filter(
+                        f ->
+                            f.startTime(query.filter().startTime())
+                                .endTime(query.filter().endTime())
+                                .events(event))
+                    .unlimited());
+    return doSearchWithReader(readers.usageMetricsReader(), finalQuery).items().stream()
+        .map(UsageMetricsEntity::value)
+        .distinct()
+        .count();
+  }
+
+  @Override
+  public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
+      final BatchOperationQuery query) {
+    return doSearchWithReader(readers.batchOperationReader(), query);
+  }
+
+  @Override
+  public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
+      final BatchOperationItemQuery query) {
+    return doSearchWithReader(readers.batchOperationItemReader(), query);
+  }
+
+  protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearchWithReader(
+      final SearchEntityReader<T, Q> reader, final Q query) {
+    return withResultTypeCheck(reader, query);
+  }
+
+  protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> withResultTypeCheck(
+      final SearchEntityReader<T, Q> reader, final Q query) {
+    return ensureSingeResultIfNecessary(() -> doSearch(reader, query), query);
+  }
+
+  protected <T> SearchQueryResult<T> ensureSingeResultIfNecessary(
+      final Supplier<SearchQueryResult<T>> resultSupplier, final TypedSearchQuery<?, ?> query) {
+    final var result = resultSupplier.get();
+    if (SearchQueryResultType.SINGLE_RESULT.equals(query.page().resultType())) {
+      if (result.items().isEmpty()) {
+        throw new CamundaSearchException(
+            ErrorMessages.ERROR_SINGLE_RESULT_NOT_FOUND.formatted(query),
+            CamundaSearchException.Reason.NOT_FOUND);
+      } else if (result.items().size() > 1) {
+        throw new CamundaSearchException(
+            ErrorMessages.ERROR_SINGLE_RESULT_NOT_UNIQUE.formatted(query),
+            CamundaSearchException.Reason.NOT_UNIQUE);
+      }
+    }
+    return result;
+  }
+
+  protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearch(
+      final SearchEntityReader<T, Q> reader, final Q query) {
+    try {
+      return doReadWithResourceAccessController(a -> reader.search(query, a));
+    } catch (final ResourceAccessDeniedException denied) {
+      final var missingAuthorization = denied.getMissingAuthorization();
+      LOG.trace(
+          "Unauthorized to perform a Search Query with permission '{}' on resource '{}', returning an empty search query result",
+          missingAuthorization.permissionType(),
+          missingAuthorization.resourceType(),
+          denied);
+      return SearchQueryResult.empty();
+    }
+  }
+
+  protected <T> T doReadWithResourceAccessController(
+      final Function<ResourceAccessChecks, T> applier) {
+    return resourceAccessController.doSearch(securityContext, applier);
+  }
+}

@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures.createAndSaveR
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.MappingRuleReader;
+import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
 import io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures;
@@ -40,7 +40,10 @@ public class MappingRuleIT {
     createAndSaveMapping(rdbmsWriter, randomizedMappingRule);
 
     final var mappingRule =
-        rdbmsService.getMappingReader().findOne(randomizedMappingRule.mappingRuleId()).orElse(null);
+        rdbmsService
+            .getMappingRuleReader()
+            .findOne(randomizedMappingRule.mappingRuleId())
+            .orElse(null);
     assertThat(mappingRule).isNotNull();
     assertThat(mappingRule).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
   }
@@ -56,7 +59,7 @@ public class MappingRuleIT {
 
     // Verify the mapping is saved
     final var mappingRuleId = randomizedMappingRule.mappingRuleId();
-    final var mappingRule = rdbmsService.getMappingReader().findOne(mappingRuleId).orElse(null);
+    final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId).orElse(null);
     assertThat(mappingRule).isNotNull();
     assertThat(mappingRule).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
 
@@ -66,7 +69,7 @@ public class MappingRuleIT {
     writer.flush();
 
     // Verify the mapping is deleted
-    final var deletedMappingResult = rdbmsService.getMappingReader().findOne(mappingRuleId);
+    final var deletedMappingResult = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
     assertThat(deletedMappingResult).isEmpty();
   }
 
@@ -82,7 +85,7 @@ public class MappingRuleIT {
     // Search for the mapping by claimName
     final var searchResult =
         rdbmsService
-            .getMappingReader()
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder()
@@ -112,7 +115,7 @@ public class MappingRuleIT {
     // Search for the mapping by claimValue
     final var searchResult =
         rdbmsService
-            .getMappingReader()
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder()
@@ -140,7 +143,7 @@ public class MappingRuleIT {
 
     final var searchResult =
         rdbmsService
-            .getMappingReader()
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder().claimName(claimName).build(),
@@ -156,7 +159,7 @@ public class MappingRuleIT {
   public void shouldFindMappingWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final MappingRuleReader mappingRuleReader = rdbmsService.getMappingReader();
+    final MappingRuleDbReader mappingRuleReader = rdbmsService.getMappingRuleReader();
 
     final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
     createAndSaveRandomMappings(rdbmsWriter, b -> b.claimName(claimName));

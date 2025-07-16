@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAn
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -38,7 +38,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessDefinitionReader processDefinitionReader =
+    final ProcessDefinitionDbReader processDefinitionReader =
         rdbmsService.getProcessDefinitionReader();
 
     final var processDefinition = ProcessDefinitionFixtures.createRandomized(b -> b);
@@ -59,7 +59,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessDefinitionReader processDefinitionReader =
+    final ProcessDefinitionDbReader processDefinitionReader =
         rdbmsService.getProcessDefinitionReader();
 
     final var processDefinition =
@@ -94,7 +94,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessDefinitionReader processDefinitionReader =
+    final ProcessDefinitionDbReader processDefinitionReader =
         rdbmsService.getProcessDefinitionReader();
 
     final String processDefinitionId = ProcessDefinitionFixtures.nextStringId();
@@ -120,7 +120,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessDefinitionReader processDefinitionReader =
+    final ProcessDefinitionDbReader processDefinitionReader =
         rdbmsService.getProcessDefinitionReader();
 
     createAndSaveRandomProcessDefinitions(rdbmsWriter);
@@ -142,7 +142,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessDefinitionReader processDefinitionReader =
+    final ProcessDefinitionDbReader processDefinitionReader =
         rdbmsService.getProcessDefinitionReader();
 
     final var processDefinition = ProcessDefinitionFixtures.createRandomized(b -> b);
@@ -175,7 +175,7 @@ public class ProcessDefinitionIT {
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final ProcessDefinitionReader processDefinitionReader =
+    final ProcessDefinitionDbReader processDefinitionReader =
         rdbmsService.getProcessDefinitionReader();
 
     createAndSaveRandomProcessDefinitions(rdbmsWriter, b -> b.versionTag("search-after-123456"));

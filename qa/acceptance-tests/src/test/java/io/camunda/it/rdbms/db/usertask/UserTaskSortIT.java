@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.nextStringId;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.UserTaskReader;
+import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.UserTaskEntity;
@@ -118,7 +118,7 @@ public class UserTaskSortIT {
       final RdbmsService rdbmsService,
       final Function<Builder, ObjectBuilder<UserTaskSort>> sortBuilder,
       final Comparator<UserTaskEntity> comparator) {
-    final UserTaskReader reader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
 
     final var processDefinitionId = nextStringId();
     createAndSaveRandomUserTasks(rdbmsService, b -> b.processDefinitionId(processDefinitionId));

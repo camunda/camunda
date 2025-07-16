@@ -1,0 +1,59 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.db.rdbms.read.service;
+
+import io.camunda.db.rdbms.read.domain.MappingRuleDbQuery;
+import io.camunda.db.rdbms.sql.MappingRuleMapper;
+import io.camunda.db.rdbms.sql.columns.MappingRuleSearchColumn;
+import io.camunda.search.clients.reader.MappingRuleReader;
+import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
+    implements MappingRuleReader {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MappingRuleDbReader.class);
+
+  private final MappingRuleMapper mappingMapper;
+
+  public MappingRuleDbReader(final MappingRuleMapper mappingMapper) {
+    super(MappingRuleSearchColumn.values());
+    this.mappingMapper = mappingMapper;
+  }
+
+  public Optional<MappingRuleEntity> findOne(final String mappingId) {
+    LOG.trace("[RDBMS DB] Search for mapping with mapping ID {}", mappingId);
+    final SearchQueryResult<MappingRuleEntity> queryResult =
+        search(MappingRuleQuery.of(b -> b.filter(f -> f.mappingRuleId(mappingId))));
+    return Optional.ofNullable(queryResult.items()).flatMap(hits -> hits.stream().findFirst());
+  }
+
+  public SearchQueryResult<MappingRuleEntity> search(final MappingRuleQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
+  }
+
+  @Override
+  public SearchQueryResult<MappingRuleEntity> search(
+      final MappingRuleQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    final var dbSort = convertSort(query.sort(), MappingRuleSearchColumn.MAPPING_RULE_ID);
+    final var dbQuery =
+        MappingRuleDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+
+    LOG.trace("[RDBMS DB] Search for mapping with filter {}", dbQuery);
+    final var totalHits = mappingMapper.count(dbQuery);
+    final var hits = mappingMapper.search(dbQuery);
+    ensureSingleResultIfRequired(hits, query);
+    return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+}

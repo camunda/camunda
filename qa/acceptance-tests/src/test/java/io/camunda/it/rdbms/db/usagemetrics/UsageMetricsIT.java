@@ -11,7 +11,7 @@ import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbMod
 import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.UsageMetricReader;
+import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel;
@@ -41,7 +41,7 @@ public class UsageMetricsIT {
 
   private CamundaRdbmsTestApplication testApplication;
   private RdbmsWriter rdbmsWriter;
-  private UsageMetricReader usageMetricReader;
+  private UsageMetricsDbReader usageMetricReader;
   private UsageMetricWriter usageMetricWriter;
 
   private void writeMetric(

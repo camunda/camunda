@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.IncidentReader;
+import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
@@ -47,7 +47,7 @@ public class IncidentSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private IncidentReader processDefinitionReader;
+  @Autowired private IncidentDbReader processDefinitionReader;
 
   private RdbmsWriter rdbmsWriter;
 

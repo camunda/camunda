@@ -13,7 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveRandom
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.TenantReader;
+import io.camunda.db.rdbms.read.service.TenantDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -95,7 +95,7 @@ public class TenantSortIT {
       final Function<TenantDbModel.Builder, TenantDbModel.Builder> aggregatorBuilderFunction,
       final Function<TenantFilter.Builder, TenantFilter.Builder> aggregatorFilterFunction) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final TenantReader reader = rdbmsService.getTenantReader();
+    final TenantDbReader reader = rdbmsService.getTenantReader();
 
     aggregatorBuilderFunction.apply(new TenantDbModel.Builder().name("test"));
     createAndSaveRandomTenants(rdbmsWriter, aggregatorBuilderFunction);

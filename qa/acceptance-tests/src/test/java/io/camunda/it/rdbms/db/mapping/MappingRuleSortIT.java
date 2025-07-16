@@ -41,7 +41,7 @@ public class MappingRuleSortIT {
 
     final var searchResult =
         rdbmsService
-            .getMappingReader()
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder().claimName(claimName).build(),
@@ -63,7 +63,7 @@ public class MappingRuleSortIT {
 
     final var searchResult =
         rdbmsService
-            .getMappingReader()
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder().claimName(claimName).build(),
@@ -85,7 +85,7 @@ public class MappingRuleSortIT {
 
     final var searchResult =
         rdbmsService
-            .getMappingReader()
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder().claimName(claimName).build(),
@@ -108,7 +108,7 @@ public class MappingRuleSortIT {
 
     final var searchResult =
         rdbmsService
-            .getMappingReader()
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder().claimName(claimName).build(),
@@ -130,7 +130,7 @@ public class MappingRuleSortIT {
 
     final var searchResult =
         rdbmsService
-            .getMappingReader()
+            .getMappingRuleReader()
             .search(
                 new MappingRuleQuery(
                     new MappingRuleFilter.Builder().name(name).build(),
