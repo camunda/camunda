@@ -141,10 +141,29 @@ public class TenantMigrationHandlerTest {
   }
 
   @Test
-  public void shouldContinueMigrationWithEndpointsUnavailable() {
+  public void shouldContinueMigrationWithFetchTenantsEndpointsUnavailable() {
     when(managementIdentityClient.fetchTenants())
         .thenThrow(new NotImplementedException("Tenants endpoint unavailable"));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
     verify(tenantServices, times(0)).createTenant(any(TenantDTO.class));
+    verify(tenantServices, times(0)).addMember(any(TenantMemberRequest.class));
+    verify(managementIdentityClient, times(1)).fetchTenants();
+  }
+
+  @Test
+  public void shouldContinueMigrationWithFetchTenantUsersGroupAndClientsEndpointsUnavailable() {
+    when(managementIdentityClient.fetchTenants())
+        .thenReturn(
+            List.of(
+                new Tenant("tenant1", "Tenant 1"),
+                new Tenant("tenant2", "Tenant 2"),
+                new Tenant("<default>", "Default Tenant")));
+    when(tenantServices.createTenant(any(TenantDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     when(managementIdentityClient.fetchTenantUsers(anyString()))
         .thenThrow(new NotImplementedException("Tenant users endpoint unavailable"));
@@ -152,7 +171,19 @@ public class TenantMigrationHandlerTest {
         .thenThrow(new NotImplementedException("Tenant groups endpoint unavailable"));
     when(managementIdentityClient.fetchTenantClients(anyString()))
         .thenThrow(new NotImplementedException("Tenant clients endpoint unavailable"));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    // only for the non default tenants
+    verify(tenantServices, times(2)).createTenant(any(TenantDTO.class));
     verify(tenantServices, times(0)).addMember(any(TenantMemberRequest.class));
+    verify(managementIdentityClient, times(1)).fetchTenants();
+    // once for every tenant
+    verify(managementIdentityClient, times(3)).fetchTenantUsers(anyString());
+    verify(managementIdentityClient, times(3)).fetchTenantGroups(anyString());
+    verify(managementIdentityClient, times(3)).fetchTenantClients(anyString());
   }
 
   @Test
