@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication;
 
-import io.camunda.application.commons.utils.DatabaseTypeUtils;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -22,8 +21,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * Conditional annotation that only loads authentication components when secondary storage is enabled.
- * This prevents authentication services that depend on secondary storage from being loaded in no-db mode.
+ * Conditional annotation that only loads authentication components when secondary storage is
+ * enabled. This prevents authentication services that depend on secondary storage from being loaded
+ * in no-db mode.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
@@ -33,7 +33,8 @@ public @interface ConditionalOnSecondaryStorageAuthentication {
 
   class SecondaryStorageEnabledCondition implements Condition {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SecondaryStorageEnabledCondition.class);
+    private static final Logger LOG =
+        LoggerFactory.getLogger(SecondaryStorageEnabledCondition.class);
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
