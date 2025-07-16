@@ -54,6 +54,10 @@ describe('User info', () => {
   });
 
   it('should handle a SSO user', async () => {
+    vi.stubGlobal('clientConfig', {
+      ...window.clientConfig,
+      canLogout: false,
+    });
     mockMe().withSuccess(mockSsoUser);
 
     const {user} = render(<AppHeader />, {

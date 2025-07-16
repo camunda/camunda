@@ -7,30 +7,23 @@
  */
 
 import {C3UserConfigurationProvider} from '@camunda/camunda-composite-components';
-import {C3ThemePersister} from 'common/theme/C3ThemePersister';
-import {api} from 'v2/api';
-import {getClientConfig} from 'common/config/getClientConfig';
-import {getStage} from 'common/config/getStage';
+import {C3ThemePersister} from './C3ThemePersister';
 import {useEffect, useState} from 'react';
-import {logger} from 'common/utils/logger';
+import {logger} from 'modules/logger';
+import {getStage} from 'modules/tracking/getStage';
+import {getSaasUserToken} from 'modules/api/v2/authentication/token';
 
 const STAGE = getStage(window.location.host);
 
 async function fetchToken() {
-  try {
-    const response = await fetch(api.getSaasUserToken());
+  const {isSuccess, data} = await getSaasUserToken();
 
-    if (!response.ok) {
-      logger.error('Failed to fetch user token', response);
-      return '';
-    }
-
-    const token = await response.json();
-    return token;
-  } catch (error) {
-    logger.error('Failed to fetch user token', error);
-    return '';
+  if (isSuccess) {
+    return data;
   }
+
+  logger.error('Failed to fetch user token');
+  return '';
 }
 
 type Props = {
@@ -39,13 +32,14 @@ type Props = {
 
 const C3Provider: React.FC<Props> = ({children}) => {
   const [token, setToken] = useState<string | null>(null);
-  const {organizationId, clusterId} = getClientConfig();
+  const organizationId = window.clientConfig?.organizationId;
+  const clusterId = window.clientConfig?.clusterId;
 
   useEffect(() => {
     async function init() {
-      const {organizationId} = getClientConfig();
+      const organizationId = window.clientConfig?.organizationId;
 
-      if (organizationId !== null) {
+      if (typeof organizationId === 'string') {
         setToken(await fetchToken());
       }
     }
@@ -53,7 +47,11 @@ const C3Provider: React.FC<Props> = ({children}) => {
     init();
   }, []);
 
-  if (token === null || organizationId === null || clusterId === null) {
+  if (
+    token === null ||
+    typeof organizationId !== 'string' ||
+    typeof clusterId !== 'string'
+  ) {
     return children;
   }
 
@@ -63,7 +61,7 @@ const C3Provider: React.FC<Props> = ({children}) => {
       userToken={token}
       getNewUserToken={fetchToken}
       currentClusterUuid={clusterId}
-      currentApp="tasklist"
+      currentApp="operate"
       stage={STAGE === 'unknown' ? 'dev' : STAGE}
       handleTheme
     >
