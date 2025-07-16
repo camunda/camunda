@@ -146,4 +146,24 @@ class OptimizeRoleValidatorTest {
     // then
     assertTrue(result.hasErrors());
   }
+
+  @Test
+  void shouldWorkWithCustomAllowedRoles() {
+    // given
+    final List<String> customRoles = Arrays.asList("owner", "manager");
+    final OptimizeRoleValidator customValidator = new OptimizeRoleValidator(customRoles);
+    final Jwt token = mock(Jwt.class);
+    final Map<String, Object> claims = new HashMap<>();
+    final Map<String, Object> org = new HashMap<>();
+    org.put("id", "org1");
+    org.put("roles", Arrays.asList("owner", "viewer"));
+    claims.put("https://camunda.com/orgs", List.of(org));
+    when(token.getClaims()).thenReturn(claims);
+
+    // when
+    final OAuth2TokenValidatorResult result = customValidator.validate(token);
+
+    // then
+    assertFalse(result.hasErrors());
+  }
 }
