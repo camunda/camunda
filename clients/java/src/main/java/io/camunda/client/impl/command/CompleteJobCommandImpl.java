@@ -21,7 +21,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.JobResultCorrections;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -160,29 +159,6 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     }
 
     return this;
-  }
-
-  private JobResultCorrections reconstructCorrections() {
-    return new JobResultCorrections()
-        .assignee(correctionsRest.getAssignee())
-        .candidateGroups(correctionsRest.getCandidateGroups())
-        .candidateUsers(correctionsRest.getCandidateUsers())
-        .dueDate(correctionsRest.getDueDate())
-        .followUpDate(correctionsRest.getFollowUpDate())
-        .priority(correctionsRest.getPriority());
-  }
-
-  private void onResultChange() {
-    // grpcRequestObjectBuilder.setResult() makes immutable copy of passed value so we need to
-    // refresh it everytime when we need to set another jobResult property
-    grpcRequestObjectBuilder.setResult(resultGrpc);
-  }
-
-  private void onCorrectionsChange() {
-    // resultGrpc.setCorrections() makes immutable copy of passed value so we need to
-    // refresh it everytime when we need to set another correctionsGrpc property
-    resultGrpc.setCorrections(correctionsGrpc);
-    onResultChange();
   }
 
   @Override
