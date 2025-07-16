@@ -13,7 +13,9 @@ import java.time.OffsetDateTime;
 public record UsageMetricTUDbModel(
     long key, OffsetDateTime eventTime, String tenantId, long assigneeHash, int partitionId) {
 
-  public record UsageMetricTUAssigneesStatisticsDbModel(String tenantId, Long assigneeHash) {}
+  public record UsageMetricTUStatisticsDbModel(Long atu) {}
+
+  public record UsageMetricTUTenantStatisticsDbModel(String tenantId, Long atu) {}
 
   public static class Builder implements ObjectBuilder<UsageMetricTUDbModel> {
 

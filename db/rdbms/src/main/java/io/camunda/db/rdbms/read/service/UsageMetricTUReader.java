@@ -7,13 +7,12 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import static java.util.Optional.ofNullable;
+
+import io.camunda.db.rdbms.read.mapper.UsageMetricTUEntityMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
-import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel.UsageMetricTUAssigneesStatisticsDbModel;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.filter.UsageMetricsFilter;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,15 +28,12 @@ public class UsageMetricTUReader {
   public UsageMetricTUStatisticsEntity usageMetricTUStatistics(final UsageMetricsFilter filter) {
     LOG.trace("[RDBMS DB] Usage metrics assignees with {}", filter);
 
-    final var result = usageMetricTUMapper.usageMetricTUAssigneesStatistics(filter);
-    Map<String, Set<Long>> tenantAssigneesMap =
-        result.stream()
-            .collect(
-                Collectors.groupingBy(
-                    UsageMetricTUAssigneesStatisticsDbModel::tenantId,
-                    Collectors.mapping(
-                        UsageMetricTUAssigneesStatisticsDbModel::assigneeHash,
-                        Collectors.toSet())));
-    return new UsageMetricTUStatisticsEntity(tenantAssigneesMap);
+    if (filter.withTenants()) {
+      final var result = usageMetricTUMapper.usageMetricTUTenantsStatistics(filter);
+      return UsageMetricTUEntityMapper.toEntity(result);
+    } else {
+      final var result = usageMetricTUMapper.usageMetricTUStatistics(filter);
+      return new UsageMetricTUStatisticsEntity(ofNullable(result.atu()).orElse(0L), null);
+    }
   }
 }

@@ -13,22 +13,40 @@
 <mapper namespace="io.camunda.db.rdbms.sql.UsageMetricTUMapper">
 
   <resultMap id="UsageMetricTUStatisticsResultMap"
-    type="io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel$UsageMetricTUAssigneesStatisticsDbModel">
+    type="io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel$UsageMetricTUStatisticsDbModel">
     <constructor>
-      <arg column="TENANT_ID" javaType="java.lang.String"/>
-      <arg column="ASSIGNEE_HASH" javaType="java.lang.Long"/>
+      <arg column="ATU" javaType="java.lang.Long"/>
     </constructor>
   </resultMap>
 
-  <select id="usageMetricTUAssigneesStatistics"
+  <resultMap id="UsageMetricTUStatisticsResultMap2"
+    type="io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel$UsageMetricTUTenantStatisticsDbModel">
+    <constructor>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="ATU" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
+  <select id="usageMetricTUStatistics"
     parameterType="io.camunda.search.filter.UsageMetricsFilter"
     resultMap="UsageMetricTUStatisticsResultMap"
     statementType="PREPARED">
+    SELECT COUNT(*) AS ATU
+        FROM ${prefix}USAGE_METRIC_TU
+    <bind name="filter" value="_parameter"/>
+    <include refid="io.camunda.db.rdbms.sql.UsageMetricTUMapper.usageMetricStatisticsFilter"/>
+  </select>
+
+  <select id="usageMetricTUTenantsStatistics"
+    parameterType="io.camunda.search.filter.UsageMetricsFilter"
+    resultMap="UsageMetricTUStatisticsResultMap2"
+    statementType="PREPARED">
     SELECT TENANT_ID,
-            ASSIGNEE_HASH
+           COUNT(*) AS ATU
     FROM ${prefix}USAGE_METRIC_TU
     <bind name="filter" value="_parameter"/>
     <include refid="io.camunda.db.rdbms.sql.UsageMetricTUMapper.usageMetricStatisticsFilter"/>
+    GROUP BY TENANT_ID
   </select>
 
   <sql id="usageMetricStatisticsFilter">

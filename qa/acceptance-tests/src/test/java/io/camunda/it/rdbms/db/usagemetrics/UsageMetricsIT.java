@@ -7,7 +7,9 @@
  */
 package io.camunda.it.rdbms.db.usagemetrics;
 
-import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.*;
+import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.ATU;
+import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.EDI;
+import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.RPI;
 import static io.camunda.zeebe.engine.utils.HashUtils.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -25,11 +27,12 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricStatisticsEntity.UsageMetricStatisticsEntityTenant;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
+import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UsageMetricsFilter.Builder;
 import java.time.OffsetDateTime;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -128,30 +131,32 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final var actual =
-        usageMetricReader.usageMetricStatistics(
-            new UsageMetricsFilter.Builder().withTenants(true).build());
-    final var actualTU =
-        usageMetricTUReader.usageMetricTUStatistics(new UsageMetricsFilter.Builder().build());
+    final UsageMetricsFilter filter = new Builder().withTenants(true).build();
+    final var actual = usageMetricReader.usageMetricStatistics(filter);
+    final var actualTU = usageMetricTUReader.usageMetricTUStatistics(filter);
 
     // then
-    assertThat(actualTU).isNotNull();
-    final Map<String, Set<Long>> stringSetMap = actualTU.assigneesPerTenant();
-    int stringSetSize = stringSetMap.values().stream().mapToInt(Set::size).sum();
     assertThat(actual)
         .isEqualTo(
             new UsageMetricStatisticsEntity(
                 19,
                 17,
-                stringSetSize,
                 2,
                 Map.of(
                     TENANT1,
-                    new UsageMetricStatisticsEntityTenant(
-                        13L, 11L, stringSetMap.get(TENANT1).size()),
+                    new UsageMetricStatisticsEntityTenant(13L, 11L),
                     TENANT2,
-                    new UsageMetricStatisticsEntityTenant(
-                        6L, 6L, stringSetMap.get(TENANT2).size()))));
+                    new UsageMetricStatisticsEntityTenant(6L, 6L))));
+
+    assertThat(actualTU)
+        .isEqualTo(
+            new UsageMetricTUStatisticsEntity(
+                5,
+                Map.of(
+                    TENANT1,
+                    new UsageMetricTUStatisticsEntityTenant(2L),
+                    TENANT2,
+                    new UsageMetricTUStatisticsEntityTenant(3L))));
   }
 
   @TestTemplate
@@ -173,17 +178,14 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final var actual =
-        usageMetricReader.usageMetricStatistics(new UsageMetricsFilter.Builder().build());
+    final UsageMetricsFilter filter = new Builder().build();
+    final var actual = usageMetricReader.usageMetricStatistics(filter);
 
-    final var actualTU =
-        usageMetricTUReader.usageMetricTUStatistics(new UsageMetricsFilter.Builder().build());
+    final var actualTU = usageMetricTUReader.usageMetricTUStatistics(filter);
 
     // then
-    assertThat(actualTU).isNotNull();
-    final Map<String, Set<Long>> stringSetMap = actualTU.assigneesPerTenant();
-    int stringSetSize = stringSetMap.values().stream().mapToInt(Set::size).sum();
-    assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(16, 14, stringSetSize, 2, null));
+    assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(16, 14, 2, null));
+    assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(5, null));
   }
 
   @TestTemplate
@@ -208,10 +210,8 @@ public class UsageMetricsIT {
     final var actualTU = usageMetricTUReader.usageMetricTUStatistics(umFilter);
 
     // then
-    assertThat(actualTU).isNotNull();
-    final Map<String, Set<Long>> stringSetMap = actualTU.assigneesPerTenant();
-    int stringSetSize = stringSetMap.values().stream().mapToInt(Set::size).sum();
-    assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(1, 1, stringSetSize, 1, null));
+    assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(1, 1, 1, null));
+    assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(2, null));
   }
 
   @TestTemplate
@@ -229,31 +229,28 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final var actual =
-        usageMetricReader.usageMetricStatistics(
-            new UsageMetricsFilter.Builder()
-                .startTime(now.minusMinutes(6))
-                .endTime(now.plusMinutes(6))
-                .withTenants(true)
-                .build());
-    final var actualTU =
-        usageMetricTUReader.usageMetricTUStatistics(
-            new Builder().startTime(now.minusMinutes(6)).endTime(now.plusMinutes(6)).build());
+    final UsageMetricsFilter filter =
+        new Builder()
+            .startTime(now.minusMinutes(6))
+            .endTime(now.plusMinutes(6))
+            .withTenants(true)
+            .build();
+    final var actual = usageMetricReader.usageMetricStatistics(filter);
+    final var actualTU = usageMetricTUReader.usageMetricTUStatistics(filter);
 
-    // then
-    assertThat(actualTU).isNotNull();
-    final Map<String, Set<Long>> stringSetMap = actualTU.assigneesPerTenant();
-    int stringSetSize = stringSetMap.values().stream().mapToInt(Set::size).sum();
     // then
     assertThat(actual)
         .isEqualTo(
             new UsageMetricStatisticsEntity(
                 2,
                 1,
-                stringSetSize,
                 2,
                 Map.of(
-                    TENANT1, new UsageMetricStatisticsEntityTenant(1L, 0L, 0L),
-                    TENANT2, new UsageMetricStatisticsEntityTenant(1L, 1L, 1L))));
+                    TENANT1, new UsageMetricStatisticsEntityTenant(1L, 0L),
+                    TENANT2, new UsageMetricStatisticsEntityTenant(1L, 1L))));
+    assertThat(actualTU)
+        .isEqualTo(
+            new UsageMetricTUStatisticsEntity(
+                1, Map.of(TENANT2, new UsageMetricTUStatisticsEntityTenant(1L))));
   }
 }

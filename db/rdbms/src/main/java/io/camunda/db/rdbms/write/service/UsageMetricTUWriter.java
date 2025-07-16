@@ -30,7 +30,7 @@ public class UsageMetricTUWriter {
   public void create(final UsageMetricTUDbModel dbModel) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.USAGE_METRIC,
+            ContextType.USAGE_METRIC_TU,
             WriteStatementType.INSERT,
             dbModel.key(),
             "io.camunda.db.rdbms.sql.UsageMetricTUMapper.insert",

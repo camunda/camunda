@@ -7,7 +7,27 @@
  */
 package io.camunda.search.entities;
 
+import io.camunda.util.ObjectBuilder;
 import java.util.Map;
-import java.util.Set;
 
-public record UsageMetricTUStatisticsEntity(Map<String, Set<Long>> assigneesPerTenant) {}
+public record UsageMetricTUStatisticsEntity(
+    long totalAtu, Map<String, UsageMetricTUStatisticsEntityTenant> tenants) {
+
+  public record UsageMetricTUStatisticsEntityTenant(long atu) {
+
+    public static class Builder implements ObjectBuilder<UsageMetricTUStatisticsEntityTenant> {
+
+      private long atu = 0;
+
+      public UsageMetricTUStatisticsEntityTenant.Builder atu(final long atu) {
+        this.atu = atu;
+        return this;
+      }
+
+      @Override
+      public UsageMetricTUStatisticsEntityTenant build() {
+        return new UsageMetricTUStatisticsEntityTenant(atu);
+      }
+    }
+  }
+}

@@ -18,9 +18,9 @@ public record UsageMetricDbModel(
     long value,
     int partitionId) {
 
-  public record UsageMetricStatisticsDbModel(Long rpi, Long edi, Long atu, Long at) {}
+  public record UsageMetricStatisticsDbModel(Long rpi, Long edi, Long at) {}
 
-  public record UsageMetricTenantStatisticsDbModel(String tenantId, Long rpi, Long edi, Long atu) {}
+  public record UsageMetricTenantStatisticsDbModel(String tenantId, Long rpi, Long edi) {}
 
   public static class Builder implements ObjectBuilder<UsageMetricDbModel> {
 
