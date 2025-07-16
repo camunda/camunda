@@ -64,15 +64,15 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
 
     final var isRPIMapEmpty = bucket.getTenantRPIMap().isEmpty();
     final var isEDIMapEmpty = bucket.getTenantEDIMap().isEmpty();
-    final var isTUMapEmpty = bucket.getTenantTUMap().isEmpty();
+    final var isATUMapEmpty = bucket.getTenantATUMap().isEmpty();
 
-    if (!isRPIMapEmpty || !isEDIMapEmpty || !isTUMapEmpty) {
+    if (!isRPIMapEmpty || !isEDIMapEmpty || !isATUMapEmpty) {
       processMetricType(
           bucket, eventRecord, EventType.RPI, isRPIMapEmpty, bucket.getTenantRPIMapValue());
       processMetricType(
           bucket, eventRecord, EventType.EDI, isEDIMapEmpty, bucket.getTenantEDIMapValue());
       processMetricType(
-          bucket, eventRecord, EventType.TU, isTUMapEmpty, bucket.getTenantTUMapValue());
+          bucket, eventRecord, EventType.ATU, isATUMapEmpty, bucket.getTenantATUMapValue());
     } else {
       appendFollowUpEvent(eventRecord);
     }
@@ -110,7 +110,7 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
         .setEventType(eventType)
         .setStartTime(bucket.getFromTime())
         .setEndTime(bucket.getToTime());
-    if (eventType == EventType.TU) {
+    if (eventType == EventType.ATU) {
       usageMetricRecord.setSetValues(valuesBuffer);
     } else {
       usageMetricRecord.setCounterValues(valuesBuffer);
@@ -126,8 +126,8 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
     }
 
     final int halfCapacity = (int) Math.ceil(size / 2.0f);
-    final var values1 = new HashMap<String, Set<String>>(halfCapacity);
-    final var values2 = new HashMap<String, Set<String>>(halfCapacity);
+    final var values1 = new HashMap<String, Set<Long>>(halfCapacity);
+    final var values2 = new HashMap<String, Set<Long>>(halfCapacity);
 
     setValues.forEach(
         (tenantId, value) -> {
@@ -152,7 +152,7 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
 
   private List<UsageMetricRecord> checkRecordLength(final UsageMetricRecord usageMetricRecord) {
     if (!stateWriter.canWriteEventOfLength(usageMetricRecord.getLength())
-        && EventType.TU.equals(usageMetricRecord.getEventType())) {
+        && EventType.ATU.equals(usageMetricRecord.getEventType())) {
       return divideRecord(usageMetricRecord);
     }
     return List.of(usageMetricRecord);

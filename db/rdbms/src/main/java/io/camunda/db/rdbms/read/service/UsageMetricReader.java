@@ -36,6 +36,7 @@ public class UsageMetricReader {
       return new UsageMetricStatisticsEntity(
           ofNullable(result.rpi()).orElse(0L),
           ofNullable(result.edi()).orElse(0L),
+          ofNullable(result.atu()).orElse(0L),
           ofNullable(result.at()).orElse(0L),
           null);
     }

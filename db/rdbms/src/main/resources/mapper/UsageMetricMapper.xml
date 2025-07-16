@@ -18,6 +18,7 @@
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="RPI" javaType="java.lang.Long"/>
       <arg column="EDI" javaType="java.lang.Long"/>
+      <arg column="ATU" javaType="java.lang.Long"/>
     </constructor>
   </resultMap>
 
@@ -26,6 +27,7 @@
     <constructor>
       <arg column="RPI" javaType="java.lang.Long"/>
       <arg column="EDI" javaType="java.lang.Long"/>
+      <arg column="ATU" javaType="java.lang.Long"/>
       <arg column="AT" javaType="java.lang.Long"/>
     </constructor>
   </resultMap>
@@ -36,7 +38,8 @@
     statementType="PREPARED">
     SELECT TENANT_ID,
       SUM(CASE WHEN EVENT_TYPE = 0 THEN EVENT_VALUE END) AS RPI,
-      SUM(CASE WHEN EVENT_TYPE = 1 THEN EVENT_VALUE END) AS EDI
+      SUM(CASE WHEN EVENT_TYPE = 1 THEN EVENT_VALUE END) AS EDI,
+      SUM(CASE WHEN EVENT_TYPE = 2 THEN EVENT_VALUE END) AS ATU
     FROM ${prefix}USAGE_METRIC
     <bind name="filter" value="_parameter" />
     <include refid="io.camunda.db.rdbms.sql.UsageMetricMapper.usageMetricStatisticsFilter"/>
@@ -50,6 +53,7 @@
     SELECT
       SUM(CASE WHEN EVENT_TYPE = 0 THEN EVENT_VALUE END) AS RPI,
       SUM(CASE WHEN EVENT_TYPE = 1 THEN EVENT_VALUE END) AS EDI,
+      SUM(CASE WHEN EVENT_TYPE = 2 THEN EVENT_VALUE END) AS ATU,
       COUNT(distinct TENANT_ID)                          AS AT
     FROM ${prefix}USAGE_METRIC
     <bind name="filter" value="_parameter" />

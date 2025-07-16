@@ -24,7 +24,7 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
   private final LongProperty toTimeProp = new LongProperty("toTime");
   private final DocumentProperty tenantRPIMapProp = new DocumentProperty("tenantRPI");
   private final DocumentProperty tenantEDIMapProp = new DocumentProperty("tenantEDI");
-  private final DocumentProperty tenantTUMapProp = new DocumentProperty("tenantTU");
+  private final DocumentProperty tenantATUMapProp = new DocumentProperty("tenantATU");
 
   public PersistedUsageMetrics() {
     super(5);
@@ -32,7 +32,7 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
         .declareProperty(toTimeProp)
         .declareProperty(tenantRPIMapProp)
         .declareProperty(tenantEDIMapProp)
-        .declareProperty(tenantTUMapProp);
+        .declareProperty(tenantATUMapProp);
   }
 
   public long getFromTime() {
@@ -81,16 +81,16 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public DirectBuffer getTenantTUMapValue() {
-    return tenantTUMapProp.getValue();
+  public DirectBuffer getTenantATUMapValue() {
+    return tenantATUMapProp.getValue();
   }
 
-  public Map<String, Set<String>> getTenantTUMap() {
-    return MsgPackConverter.convertToSetStringMap(tenantTUMapProp.getValue());
+  public Map<String, Set<Long>> getTenantATUMap() {
+    return MsgPackConverter.convertToSetLongMap(tenantATUMapProp.getValue());
   }
 
-  public PersistedUsageMetrics setTenantTUMap(final Map<String, Set<String>> tenantTUMap) {
-    tenantTUMapProp.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantTUMap)));
+  public PersistedUsageMetrics setTenantATUMap(final Map<String, Set<Long>> tenantTUMap) {
+    tenantATUMapProp.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantTUMap)));
     return this;
   }
 
@@ -108,11 +108,12 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public PersistedUsageMetrics recordTU(final String tenantId, final String assignee) {
-    final var tenantTUMap = getTenantTUMap();
-    final boolean added = tenantTUMap.computeIfAbsent(tenantId, k -> new HashSet<>()).add(assignee);
+  public PersistedUsageMetrics recordATU(final String tenantId, final Long assignee) {
+    final var tenantATUMap = getTenantATUMap();
+    final boolean added =
+        tenantATUMap.computeIfAbsent(tenantId, k -> new HashSet<>()).add(assignee);
     if (added) {
-      setTenantTUMap(tenantTUMap);
+      setTenantATUMap(tenantATUMap);
     }
     return this;
   }

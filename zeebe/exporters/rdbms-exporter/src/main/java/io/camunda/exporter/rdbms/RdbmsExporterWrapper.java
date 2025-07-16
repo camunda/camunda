@@ -288,7 +288,9 @@ public class RdbmsExporterWrapper implements Exporter {
         ValueType.PROCESS_INSTANCE,
         new SequenceFlowExportHandler(rdbmsWriter.getSequenceFlowWriter()));
     builder.withHandler(
-        ValueType.USAGE_METRIC, new UsageMetricExportHandler(rdbmsWriter.getUsageMetricWriter()));
+        ValueType.USAGE_METRIC,
+        new UsageMetricExportHandler(
+            rdbmsWriter.getUsageMetricWriter(), rdbmsWriter.getUsageMetricTUWriter()));
   }
 
   private void createBatchOperationHandlers(

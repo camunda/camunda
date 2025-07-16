@@ -22,18 +22,22 @@ public class UsageMetricEntityMapper {
 
     long totalRpi = 0;
     long totalEdi = 0;
+    long totalAtu = 0;
     final var tenants = new HashMap<String, UsageMetricStatisticsEntityTenant>(dbModels.size());
 
     for (final UsageMetricTenantStatisticsDbModel dbModel : dbModels) {
       final long tenantRpi = Optional.ofNullable(dbModel.rpi()).orElse(0L);
       final long tenantEdi = Optional.ofNullable(dbModel.edi()).orElse(0L);
+      final long tenantAtu = Optional.ofNullable(dbModel.atu()).orElse(0L);
 
       totalRpi += tenantRpi;
       totalEdi += tenantEdi;
+      totalAtu += tenantAtu;
 
-      tenants.put(dbModel.tenantId(), new Builder().rpi(tenantRpi).edi(tenantEdi).build());
+      tenants.put(
+          dbModel.tenantId(), new Builder().rpi(tenantRpi).edi(tenantEdi).atu(tenantAtu).build());
     }
 
-    return new UsageMetricStatisticsEntity(totalRpi, totalEdi, tenants.size(), tenants);
+    return new UsageMetricStatisticsEntity(totalRpi, totalEdi, totalAtu, tenants.size(), tenants);
   }
 }

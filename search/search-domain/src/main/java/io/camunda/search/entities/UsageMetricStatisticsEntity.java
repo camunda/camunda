@@ -11,14 +11,19 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Map;
 
 public record UsageMetricStatisticsEntity(
-    long totalRpi, long totalEdi, long at, Map<String, UsageMetricStatisticsEntityTenant> tenants) {
+    long totalRpi,
+    long totalEdi,
+    long atu,
+    long at,
+    Map<String, UsageMetricStatisticsEntityTenant> tenants) {
 
-  public record UsageMetricStatisticsEntityTenant(long rpi, long edi) {
+  public record UsageMetricStatisticsEntityTenant(long rpi, long edi, long atu) {
 
     public static class Builder implements ObjectBuilder<UsageMetricStatisticsEntityTenant> {
 
       private long rpi = 0;
       private long edi = 0;
+      private long atu = 0;
 
       public Builder rpi(final long rpi) {
         this.rpi = rpi;
@@ -30,9 +35,14 @@ public record UsageMetricStatisticsEntity(
         return this;
       }
 
+      public Builder atu(final long atu) {
+        this.atu = atu;
+        return this;
+      }
+
       @Override
       public UsageMetricStatisticsEntityTenant build() {
-        return new UsageMetricStatisticsEntityTenant(rpi, edi);
+        return new UsageMetricStatisticsEntityTenant(rpi, edi, atu);
       }
     }
   }

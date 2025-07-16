@@ -18,9 +18,9 @@ public record UsageMetricDbModel(
     long value,
     int partitionId) {
 
-  public record UsageMetricStatisticsDbModel(Long rpi, Long edi, Long at) {}
+  public record UsageMetricStatisticsDbModel(Long rpi, Long edi, Long atu, Long at) {}
 
-  public record UsageMetricTenantStatisticsDbModel(String tenantId, Long rpi, Long edi) {}
+  public record UsageMetricTenantStatisticsDbModel(String tenantId, Long rpi, Long edi, Long atu) {}
 
   public static class Builder implements ObjectBuilder<UsageMetricDbModel> {
 
@@ -69,7 +69,8 @@ public record UsageMetricDbModel(
 
   public enum EventTypeDbModel {
     RPI(0),
-    EDI(1);
+    EDI(1),
+    ATU(2);
 
     private final int code;
 
