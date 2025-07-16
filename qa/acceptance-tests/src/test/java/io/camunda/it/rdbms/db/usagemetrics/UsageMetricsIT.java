@@ -46,10 +46,12 @@ public class UsageMetricsIT {
   private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
   private static final long ASSIGNEE_HASH_2 = getStringHashValue("assignee2");
   private static final long ASSIGNEE_HASH_3 = getStringHashValue("assignee3");
-  public static final Long PARTITION_ID = 0L;
-  public static final OffsetDateTime NOW = OffsetDateTime.now();
-  public static final String TENANT1 = "tenant1";
-  public static final String TENANT2 = "tenant2";
+  private static final Long PARTITION_ID = 0L;
+  private static final OffsetDateTime NOW = OffsetDateTime.now();
+  private static final OffsetDateTime NOW_MINUS_5M = NOW.minusMinutes(5);
+  private static final OffsetDateTime NOW_MINUS_10M = NOW.minusMinutes(10);
+  private static final String TENANT1 = "tenant1";
+  private static final String TENANT2 = "tenant2";
 
   private CamundaRdbmsTestApplication testApplication;
   private RdbmsWriter rdbmsWriter;
@@ -103,31 +105,30 @@ public class UsageMetricsIT {
   @AfterEach
   void tearDown() {
     usageMetricWriter.cleanupMetrics(
-        PARTITION_ID.intValue(), OffsetDateTime.now().plusDays(1), Integer.MAX_VALUE);
+        PARTITION_ID.intValue(), NOW.plusDays(1), Integer.MAX_VALUE);
     usageMetricTUWriter.cleanupMetrics(
-        PARTITION_ID.intValue(), OffsetDateTime.now().plusDays(1), Integer.MAX_VALUE);
+        PARTITION_ID.intValue(), NOW.plusDays(1), Integer.MAX_VALUE);
   }
 
   @TestTemplate
   public void shouldAggregateMetricsWithTenant() {
     // given
-    final var now = OffsetDateTime.now();
-    writeMetric(usageMetricWriter, RPI, now, TENANT1, 11L);
-    writeMetric(usageMetricWriter, EDI, now, TENANT1, 11L);
-    writeMetric(usageMetricWriter, ATU, now, TENANT1, 1L);
-    writeTUMetric(usageMetricTUWriter, now, TENANT1, ASSIGNEE_HASH_1);
-    writeMetric(usageMetricWriter, RPI, now.minusMinutes(5), TENANT1, 2L);
-    writeMetric(usageMetricWriter, RPI, now.minusMinutes(5), TENANT2, 3L);
-    writeMetric(usageMetricWriter, EDI, now.minusMinutes(5), TENANT2, 3L);
-    writeMetric(usageMetricWriter, ATU, now.minusMinutes(5), TENANT2, 2L);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(5), TENANT2, ASSIGNEE_HASH_1);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(5), TENANT2, ASSIGNEE_HASH_2);
-    writeMetric(usageMetricWriter, RPI, now.minusMinutes(10), TENANT2, 3L);
-    writeMetric(usageMetricWriter, EDI, now.minusMinutes(10), TENANT2, 3L);
-    writeMetric(usageMetricWriter, ATU, now.minusMinutes(10), TENANT2, 1L);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(10), TENANT2, ASSIGNEE_HASH_3);
-    writeMetric(usageMetricWriter, ATU, now.minusMinutes(10), TENANT1, 1L);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(10), TENANT1, ASSIGNEE_HASH_3);
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
+    writeMetric(usageMetricWriter, EDI, NOW, TENANT1, 11L);
+    writeMetric(usageMetricWriter, ATU, NOW, TENANT1, 1L);
+    writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
+    writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT1, 2L);
+    writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT2, 3L);
+    writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 3L);
+    writeMetric(usageMetricWriter, ATU, NOW_MINUS_5M, TENANT2, 2L);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_1);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_2);
+    writeMetric(usageMetricWriter, RPI, NOW_MINUS_10M, TENANT2, 3L);
+    writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 3L);
+    writeMetric(usageMetricWriter, ATU, NOW_MINUS_10M, TENANT2, 1L);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT2, ASSIGNEE_HASH_3);
+    writeMetric(usageMetricWriter, ATU, NOW_MINUS_10M, TENANT1, 1L);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_3);
     rdbmsWriter.flush();
 
     // when
@@ -162,19 +163,18 @@ public class UsageMetricsIT {
   @TestTemplate
   public void shouldAggregateMetricsWithoutTenant() {
     // given
-    final var now = OffsetDateTime.now();
-    writeMetric(usageMetricWriter, RPI, now, TENANT1, 11L);
-    writeMetric(usageMetricWriter, EDI, now, TENANT1, 11L);
-    writeMetric(usageMetricWriter, ATU, now, TENANT1, 2L);
-    writeTUMetric(usageMetricTUWriter, now, TENANT1, ASSIGNEE_HASH_1);
-    writeTUMetric(usageMetricTUWriter, now, TENANT1, ASSIGNEE_HASH_2);
-    writeMetric(usageMetricWriter, RPI, now.minusMinutes(5), TENANT1, 2L);
-    writeMetric(usageMetricWriter, RPI, now.minusMinutes(5), TENANT2, 3L);
-    writeMetric(usageMetricWriter, EDI, now.minusMinutes(5), TENANT2, 3L);
-    writeMetric(usageMetricWriter, ATU, now.minusMinutes(5), TENANT2, 3L);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(5), TENANT2, ASSIGNEE_HASH_1);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(5), TENANT2, ASSIGNEE_HASH_2);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(5), TENANT2, ASSIGNEE_HASH_3);
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
+    writeMetric(usageMetricWriter, EDI, NOW, TENANT1, 11L);
+    writeMetric(usageMetricWriter, ATU, NOW, TENANT1, 2L);
+    writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
+    writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_2);
+    writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT1, 2L);
+    writeMetric(usageMetricWriter, RPI, NOW_MINUS_5M, TENANT2, 3L);
+    writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 3L);
+    writeMetric(usageMetricWriter, ATU, NOW_MINUS_5M, TENANT2, 3L);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_1);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_2);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_3);
     rdbmsWriter.flush();
 
     // when
@@ -191,21 +191,20 @@ public class UsageMetricsIT {
   @TestTemplate
   public void shouldFilterMetricsByDate() {
     // given
-    final var now = OffsetDateTime.now();
-    writeMetric(usageMetricWriter, RPI, now, TENANT1, 1L);
-    writeMetric(usageMetricWriter, EDI, now.minusMinutes(5), TENANT1, 1L);
-    writeMetric(usageMetricWriter, ATU, now.minusMinutes(5), TENANT1, 2L);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(5), TENANT1, ASSIGNEE_HASH_1);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(5), TENANT1, ASSIGNEE_HASH_2);
-    writeMetric(usageMetricWriter, EDI, now.minusMinutes(10), TENANT2, 1L);
-    writeMetric(usageMetricWriter, ATU, now.minusMinutes(10), TENANT2, 1L);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(10), TENANT1, ASSIGNEE_HASH_1);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(10), TENANT1, ASSIGNEE_HASH_2);
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
+    writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT1, 1L);
+    writeMetric(usageMetricWriter, ATU, NOW_MINUS_5M, TENANT1, 2L);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT1, ASSIGNEE_HASH_1);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT1, ASSIGNEE_HASH_2);
+    writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 1L);
+    writeMetric(usageMetricWriter, ATU, NOW_MINUS_10M, TENANT2, 1L);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_1);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_2);
     rdbmsWriter.flush();
 
     // when
     final UsageMetricsFilter umFilter =
-        new Builder().startTime(now.minusMinutes(6)).endTime(now.plusMinutes(6)).build();
+        new Builder().startTime(NOW.minusMinutes(6)).endTime(NOW.plusMinutes(6)).build();
     final var actual = usageMetricReader.usageMetricStatistics(umFilter);
     final var actualTU = usageMetricTUReader.usageMetricTUStatistics(umFilter);
 
@@ -217,22 +216,21 @@ public class UsageMetricsIT {
   @TestTemplate
   public void shouldFilterMetricsWithTenantByDate() {
     // given
-    final var now = OffsetDateTime.now();
-    writeMetric(usageMetricWriter, RPI, now, TENANT1, 1L);
-    writeMetric(usageMetricWriter, RPI, now, TENANT2, 1L);
-    writeMetric(usageMetricWriter, EDI, now.minusMinutes(5), TENANT2, 1L);
-    writeMetric(usageMetricWriter, ATU, now.minusMinutes(5), TENANT2, 1L);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(5), TENANT2, ASSIGNEE_HASH_1);
-    writeMetric(usageMetricWriter, EDI, now.minusMinutes(10), TENANT2, 1L);
-    writeMetric(usageMetricWriter, ATU, now.minusMinutes(10), TENANT2, 1L);
-    writeTUMetric(usageMetricTUWriter, now.minusMinutes(10), TENANT1, ASSIGNEE_HASH_2);
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT2, 1L);
+    writeMetric(usageMetricWriter, EDI, NOW_MINUS_5M, TENANT2, 1L);
+    writeMetric(usageMetricWriter, ATU, NOW_MINUS_5M, TENANT2, 1L);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_1);
+    writeMetric(usageMetricWriter, EDI, NOW_MINUS_10M, TENANT2, 1L);
+    writeMetric(usageMetricWriter, ATU, NOW_MINUS_10M, TENANT2, 1L);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_2);
     rdbmsWriter.flush();
 
     // when
     final UsageMetricsFilter filter =
         new Builder()
-            .startTime(now.minusMinutes(6))
-            .endTime(now.plusMinutes(6))
+            .startTime(NOW.minusMinutes(6))
+            .endTime(NOW.plusMinutes(6))
             .withTenants(true)
             .build();
     final var actual = usageMetricReader.usageMetricStatistics(filter);
