@@ -73,7 +73,8 @@ public record UsageMetricDbModel(
 
   public enum EventTypeDbModel {
     RPI(0),
-    EDI(1);
+    EDI(1),
+    TU(2);
 
     private final int code;
 

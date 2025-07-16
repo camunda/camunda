@@ -27,7 +27,8 @@ public enum ContextType {
   BATCH_OPERATION(false),
   JOB(false),
   SEQUENCE_FLOW(false),
-  USAGE_METRIC(false);
+  USAGE_METRIC(false),
+  USAGE_METRIC_TU(false);
 
   private final boolean preserveOrder;
 

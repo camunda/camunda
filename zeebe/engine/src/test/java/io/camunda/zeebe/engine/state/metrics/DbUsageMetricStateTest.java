@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.metrics;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -27,6 +29,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(ProcessingStateExtension.class)
 public class DbUsageMetricStateTest {
 
+  private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
+  private static final long ASSIGNEE_HASH_2 = getStringHashValue("assignee2");
+  private static final long ASSIGNEE_HASH_3 = getStringHashValue("assignee3");
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private TransactionContext transactionContext;
   private InstantSource mockClock;
@@ -129,10 +134,10 @@ public class DbUsageMetricStateTest {
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(
                 TenantOwned.DEFAULT_TENANT_IDENTIFIER,
-                Set.of("assignee1", "assignee2"),
+                Set.of(ASSIGNEE_HASH_1, ASSIGNEE_HASH_2),
                 "tenant1",
-                Set.of("assignee1", "assignee2", "assignee3"),
+                Set.of(ASSIGNEE_HASH_1, ASSIGNEE_HASH_2, ASSIGNEE_HASH_3),
                 "tenant2",
-                Set.of("assignee1")));
+                Set.of(ASSIGNEE_HASH_1)));
   }
 }

@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
+import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -39,6 +40,7 @@ import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RoleWriter;
 import io.camunda.db.rdbms.write.service.SequenceFlowWriter;
 import io.camunda.db.rdbms.write.service.TenantWriter;
+import io.camunda.db.rdbms.write.service.UsageMetricTUWriter;
 import io.camunda.db.rdbms.write.service.UsageMetricWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
@@ -69,6 +71,7 @@ public class RdbmsWriter {
   private final JobWriter jobWriter;
   private final SequenceFlowWriter sequenceFlowWriter;
   private final UsageMetricWriter usageMetricWriter;
+  private final UsageMetricTUWriter usageMetricTUWriter;
 
   private final HistoryCleanupService historyCleanupService;
 
@@ -88,7 +91,8 @@ public class RdbmsWriter {
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
-      final UsageMetricMapper usageMetricMapper) {
+      final UsageMetricMapper usageMetricMapper,
+      final UsageMetricTUMapper usageMetricTUMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     rdbmsPurger = new RdbmsPurger(purgeMapper, vendorDatabaseProperties);
@@ -112,6 +116,7 @@ public class RdbmsWriter {
     jobWriter = new JobWriter(executionQueue, jobMapper);
     sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
     usageMetricWriter = new UsageMetricWriter(executionQueue, usageMetricMapper);
+    usageMetricTUWriter = new UsageMetricTUWriter(executionQueue, usageMetricTUMapper);
 
     historyCleanupService =
         new HistoryCleanupService(
@@ -205,6 +210,10 @@ public class RdbmsWriter {
 
   public UsageMetricWriter getUsageMetricWriter() {
     return usageMetricWriter;
+  }
+
+  public UsageMetricTUWriter getUsageMetricTUWriter() {
+    return usageMetricTUWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {

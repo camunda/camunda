@@ -44,7 +44,8 @@ public class RdbmsPurger {
           "BATCH_OPERATION",
           "JOB",
           "SEQUENCE_FLOW",
-          "USAGE_METRIC");
+          "USAGE_METRIC",
+          "USAGE_METRIC_TU");
 
   private final PurgeMapper purgeMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;

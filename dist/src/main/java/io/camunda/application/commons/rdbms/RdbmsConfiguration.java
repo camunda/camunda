@@ -33,6 +33,7 @@ import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
 import io.camunda.db.rdbms.read.service.SequenceFlowDbReader;
 import io.camunda.db.rdbms.read.service.TenantDbReader;
 import io.camunda.db.rdbms.read.service.TenantMemberDbReader;
+import io.camunda.db.rdbms.read.service.UsageMetricTUDbReader;
 import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
 import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.read.service.UserTaskDbReader;
@@ -56,6 +57,7 @@ import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
+import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
@@ -219,6 +221,11 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public UsageMetricTUDbReader usageMetricTUReader(final UsageMetricTUMapper usageMetricTUMapper) {
+    return new UsageMetricTUDbReader(usageMetricTUMapper);
+  }
+
+  @Bean
   public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
     return new RdbmsWriterMetrics(meterRegistry);
   }
@@ -239,7 +246,8 @@ public class RdbmsConfiguration {
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
       final SequenceFlowMapper sequenceFlowMapper,
-      final UsageMetricMapper usageMetricMapper) {
+      final UsageMetricMapper usageMetricMapper,
+      final UsageMetricTUMapper usageMetricTUMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -255,7 +263,8 @@ public class RdbmsConfiguration {
         batchOperationReader,
         jobMapper,
         sequenceFlowMapper,
-        usageMetricMapper);
+        usageMetricMapper,
+        usageMetricTUMapper);
   }
 
   @Bean
@@ -281,7 +290,8 @@ public class RdbmsConfiguration {
       final SequenceFlowDbReader sequenceFlowReader,
       final BatchOperationItemDbReader batchOperationItemReader,
       final JobDbReader jobReader,
-      final UsageMetricsDbReader usageMetricReader) {
+      final UsageMetricsDbReader usageMetricReader,
+      final UsageMetricTUDbReader usageMetricTUDbReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         authorizationReader,
@@ -304,6 +314,7 @@ public class RdbmsConfiguration {
         sequenceFlowReader,
         batchOperationItemReader,
         jobReader,
-        usageMetricReader);
+        usageMetricReader,
+        usageMetricTUDbReader);
   }
 }
