@@ -29,6 +29,7 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
+import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -57,7 +58,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private final long jobKey;
   private final JsonMapper jsonMapper;
   private JobResult.Builder resultGrpc;
-  private io.camunda.client.protocol.rest.JobResult resultRest;
+  private io.camunda.client.protocol.rest.JobResultUserTask resultRest;
   private io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections.Builder
       correctionsGrpc;
   private io.camunda.client.protocol.rest.JobResultCorrections correctionsRest;
@@ -128,7 +129,9 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private void initJobResult() {
-    resultRest = new io.camunda.client.protocol.rest.JobResult();
+    resultRest = new io.camunda.client.protocol.rest.JobResultUserTask();
+    resultRest.setType(
+        TypeEnum.USER_TASK); // TODO replace later when ad hoc subprocess is supported
     correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
     resultRest.setCorrections(correctionsRest);
     httpRequestObject.setResult(resultRest);
