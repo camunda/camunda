@@ -192,12 +192,6 @@
       <artifactId>opensearch-java</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>configuration</artifactId>
-      <version>8.8.0-SNAPSHOT</version>
-      <scope>test</scope>
-    </dependency>
 
   </dependencies>
 
