@@ -15,7 +15,7 @@ ARG DIST="build"
 
 
 ### Build camunda from scratch ###
-FROM reg.mini.dev/openjdk:21 AS build
+FROM reg.mini.dev/openjdk:21-dev AS build
 USER root
 WORKDIR /camunda
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
