@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -3069,13 +3069,13 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Mapping record",
-        (Supplier<MappingRecord>)
+        (Supplier<MappingRuleRecord>)
             () ->
-                new MappingRecord()
-                    .setMappingKey(1L)
+                new MappingRuleRecord()
+                    .setMappingRuleKey(1L)
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
-                    .setMappingId("id1")
+                    .setMappingRuleId("id1")
                     .setName("name"),
         """
       {
@@ -3092,7 +3092,7 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MappingRecord",
-        (Supplier<MappingRecord>) () -> new MappingRecord().setMappingId("mappingId"),
+        (Supplier<MappingRuleRecord>) () -> new MappingRuleRecord().setMappingRuleId("mappingId"),
         """
       {
         "mappingKey": -1,
@@ -3146,23 +3146,23 @@ final class JsonSerializableToJsonTest {
                             .setEntityType(EntityType.ROLE)
                             .setEntityId("id"))
                     .addMapping(
-                        new MappingRecord()
-                            .setMappingKey(6)
-                            .setMappingId("id1")
+                        new MappingRuleRecord()
+                            .setMappingRuleKey(6)
+                            .setMappingRuleId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
                     .addMapping(
-                        new MappingRecord()
-                            .setMappingKey(7)
-                            .setMappingId("id2")
+                        new MappingRuleRecord()
+                            .setMappingRuleKey(7)
+                            .setMappingRuleId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
                             .setName("Claim 2"))
                     .addAuthorization(
                         new AuthorizationRecord()
                             .setOwnerId("id2")
-                            .setOwnerType(AuthorizationOwnerType.MAPPING)
+                            .setOwnerType(AuthorizationOwnerType.MAPPING_RULE)
                             .setResourceType(AuthorizationResourceType.RESOURCE)
                             .setResourceId("resource-id")
                             .setPermissionTypes(Set.of(PermissionType.CREATE))),

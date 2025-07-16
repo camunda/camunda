@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
@@ -38,7 +38,7 @@ public class RoleAppliersTest {
   private MutableRoleState roleState;
   private MutableUserState userState;
   private MutableAuthorizationState authorizationState;
-  private MutableMappingState mappingState;
+  private MutableMappingRuleState mappingState;
   private RoleDeletedApplier roleDeletedApplier;
   private RoleEntityAddedApplier roleEntityAddedApplier;
   private RoleEntityRemovedApplier roleEntityRemovedApplier;

@@ -70,7 +70,7 @@ public class UnassignMappingFromGroupTest {
         groupId,
         mappingId,
         group -> {
-          assertThat(group).hasEntityType(EntityType.MAPPING);
+          assertThat(group).hasEntityType(EntityType.MAPPING_RULE);
         });
   }
 
@@ -137,7 +137,7 @@ public class UnassignMappingFromGroupTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be null");
+        .hasMessageContaining("mappingRuleId must not be null");
   }
 
   @Test
@@ -152,6 +152,6 @@ public class UnassignMappingFromGroupTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be empty");
+        .hasMessageContaining("mappingRuleId must not be empty");
   }
 }

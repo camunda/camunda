@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -69,8 +69,8 @@ public class DeleteMappingMultiPartitionTest {
                     ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
                     : r.getPartitionId())
         .containsSubsequence(
-            tuple(MappingIntent.DELETE, RecordType.COMMAND, 1),
-            tuple(MappingIntent.DELETED, RecordType.EVENT, 1),
+            tuple(MappingRuleIntent.DELETE, RecordType.COMMAND, 1),
+            tuple(MappingRuleIntent.DELETED, RecordType.EVENT, 1),
             tuple(CommandDistributionIntent.STARTED, RecordType.EVENT, 1))
         .containsSubsequence(
             tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
@@ -83,12 +83,12 @@ public class DeleteMappingMultiPartitionTest {
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
-              RecordingExporter.mappingRecords()
+              RecordingExporter.mappingRuleRecords()
                   .withPartitionId(partitionId)
-                  .limit(record -> record.getIntent().equals(MappingIntent.DELETED))
+                  .limit(record -> record.getIntent().equals(MappingRuleIntent.DELETED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .containsSubsequence(MappingIntent.DELETE, MappingIntent.DELETED);
+          .containsSubsequence(MappingRuleIntent.DELETE, MappingRuleIntent.DELETED);
     }
   }
 
@@ -121,7 +121,7 @@ public class DeleteMappingMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      engine.interceptInterPartitionIntent(partitionId, MappingIntent.CREATE);
+      engine.interceptInterPartitionIntent(partitionId, MappingRuleIntent.CREATE);
     }
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -146,7 +146,7 @@ public class DeleteMappingMultiPartitionTest {
                 .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.MAPPING, MappingIntent.CREATE),
-            tuple(ValueType.MAPPING, MappingIntent.DELETE));
+            tuple(ValueType.MAPPING_RULE, MappingRuleIntent.CREATE),
+            tuple(ValueType.MAPPING_RULE, MappingRuleIntent.DELETE));
   }
 }

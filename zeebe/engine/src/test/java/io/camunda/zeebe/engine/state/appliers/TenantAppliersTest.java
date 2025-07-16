@@ -12,13 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -37,7 +37,7 @@ public class TenantAppliersTest {
 
   private MutableProcessingState processingState;
 
-  private MutableMappingState mappingState;
+  private MutableMappingRuleState mappingState;
   private MutableTenantState tenantState;
   private MutableUserState userState;
   private MutableGroupState groupState;
@@ -84,15 +84,15 @@ public class TenantAppliersTest {
     // given
     final var mappingId = "mappingRuleId";
     mappingState.create(
-        new MappingRecord()
-            .setMappingId(mappingId)
+        new MappingRuleRecord()
+            .setMappingRuleId(mappingId)
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final String tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
+    tenantRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING_RULE);
 
     // when
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
@@ -100,7 +100,7 @@ public class TenantAppliersTest {
     // then
     assertThat(
             membershipState.hasRelation(
-                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+                EntityType.MAPPING_RULE, mappingId, RelationType.TENANT, tenantId))
         .isTrue();
   }
 
@@ -186,21 +186,21 @@ public class TenantAppliersTest {
     // given
     final var mappingId = "mappingRuleId";
     mappingState.create(
-        new MappingRecord()
-            .setMappingId(mappingId)
+        new MappingRuleRecord()
+            .setMappingRuleId(mappingId)
             .setClaimName("claimName")
             .setClaimValue("claimValue"));
     final String tenantId = "tenantId";
     final long tenantKey = 11L;
     final var tenantRecord = new TenantRecord().setTenantId(tenantId).setTenantKey(tenantKey);
     tenantState.createTenant(tenantRecord);
-    tenantRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING);
+    tenantRecord.setEntityId(mappingId).setEntityType(EntityType.MAPPING_RULE);
     tenantEntityAddedApplier.applyState(tenantKey, tenantRecord);
 
     // Ensure the mapping is associated with the tenant before removal
     assertThat(
             membershipState.hasRelation(
-                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+                EntityType.MAPPING_RULE, mappingId, RelationType.TENANT, tenantId))
         .isTrue();
 
     // when
@@ -209,7 +209,7 @@ public class TenantAppliersTest {
     // then
     assertThat(
             membershipState.hasRelation(
-                EntityType.MAPPING, mappingId, RelationType.TENANT, tenantId))
+                EntityType.MAPPING_RULE, mappingId, RelationType.TENANT, tenantId))
         .isFalse();
   }
 

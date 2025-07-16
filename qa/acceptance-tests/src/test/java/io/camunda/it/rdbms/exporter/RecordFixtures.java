@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -322,8 +322,8 @@ public class RecordFixtures {
   }
 
   protected static ImmutableRecord<RecordValue> getMappingRecord(
-      final Long position, final MappingIntent intent) {
-    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.MAPPING);
+      final Long position, final MappingRuleIntent intent) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.MAPPING_RULE);
 
     return ImmutableRecord.builder()
         .from(recordValueRecord)

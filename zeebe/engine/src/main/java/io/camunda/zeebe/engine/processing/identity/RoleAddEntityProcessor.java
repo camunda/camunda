@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
@@ -41,7 +41,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
   private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
       "Expected to add entity with ID '%s' to role with ID '%s', but the entity is already assigned to this role.";
   private final RoleState roleState;
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
   private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -58,7 +58,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
-    mappingState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
     groupState = processingState.getGroupState();
     this.authCheckBehavior = authCheckBehavior;
@@ -144,7 +144,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       case GROUP ->
           authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
               || groupState.get(entityId).isPresent();
-      case MAPPING -> mappingState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       default -> false;
     };
   }

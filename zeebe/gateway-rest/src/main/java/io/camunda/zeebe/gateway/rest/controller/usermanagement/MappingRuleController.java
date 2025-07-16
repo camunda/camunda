@@ -11,8 +11,8 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.service.MappingServices;
-import io.camunda.service.MappingServices.MappingDTO;
+import io.camunda.service.MappingRuleServices;
+import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
@@ -37,11 +37,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/mapping-rules")
 public class MappingRuleController {
-  private final MappingServices mappingServices;
+  private final MappingRuleServices mappingServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public MappingRuleController(
-      final MappingServices mappingServices,
+      final MappingRuleServices mappingServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.mappingServices = mappingServices;
     this.authenticationProvider = authenticationProvider;
@@ -69,7 +69,7 @@ public class MappingRuleController {
         () ->
             mappingServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .deleteMapping(mappingRuleId));
+                .deleteMappingRule(mappingRuleId));
   }
 
   @CamundaGetMapping(path = "/{mappingRuleId}")
@@ -81,7 +81,7 @@ public class MappingRuleController {
               SearchQueryResponseMapper.toMapping(
                   mappingServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                      .getMapping(mappingRuleId)));
+                      .getMappingRule(mappingRuleId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -94,21 +94,21 @@ public class MappingRuleController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createMapping(final MappingDTO request) {
+  private CompletableFuture<ResponseEntity<Object>> createMapping(final MappingRuleDTO request) {
     return RequestMapper.executeServiceMethod(
         () ->
             mappingServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .createMapping(request),
+                .createMappingRule(request),
         ResponseMapper::toMappingCreateResponse);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> updateMapping(final MappingDTO request) {
+  private CompletableFuture<ResponseEntity<Object>> updateMapping(final MappingRuleDTO request) {
     return RequestMapper.executeServiceMethod(
         () ->
             mappingServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .updateMapping(request),
+                .updateMappingRule(request),
         ResponseMapper::toMappingUpdateResponse);
   }
 

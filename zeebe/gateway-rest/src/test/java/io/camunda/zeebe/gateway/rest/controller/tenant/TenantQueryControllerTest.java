@@ -27,7 +27,7 @@ import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
@@ -223,7 +223,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   @MockitoBean private TenantServices tenantServices;
   @MockitoBean private UserServices userServices;
-  @MockitoBean private MappingServices mappingServices;
+  @MockitoBean private MappingRuleServices mappingServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;

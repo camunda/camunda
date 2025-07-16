@@ -14,37 +14,37 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class MappingRecord extends UnifiedRecordValue implements MappingRecordValue {
+public class MappingRuleRecord extends UnifiedRecordValue implements MappingRecordValue {
 
   // Static StringValue keys for property names
-  private static final StringValue MAPPING_KEY_KEY = new StringValue("mappingKey");
-  private static final StringValue MAPPING_ID_KEY = new StringValue("mappingId");
+  private static final StringValue MAPPING_RULE_KEY_KEY = new StringValue("mappingRuleKey");
+  private static final StringValue MAPPING_RULE_ID_KEY = new StringValue("mappingRuleId");
   private static final StringValue CLAIM_NAME_KEY = new StringValue("claimName");
   private static final StringValue CLAIM_VALUE_KEY = new StringValue("claimValue");
   private static final StringValue NAME_KEY = new StringValue("name");
 
-  private final LongProperty mappingKeyProp = new LongProperty(MAPPING_KEY_KEY, -1L);
-  private final StringProperty mappingIdProp = new StringProperty(MAPPING_ID_KEY);
+  private final LongProperty mappingRuleKeyProp = new LongProperty(MAPPING_RULE_KEY_KEY, -1L);
+  private final StringProperty mappingRuleIdProp = new StringProperty(MAPPING_RULE_ID_KEY);
   private final StringProperty claimNameProp = new StringProperty(CLAIM_NAME_KEY, "");
   private final StringProperty claimValueProp = new StringProperty(CLAIM_VALUE_KEY, "");
   private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
 
-  public MappingRecord() {
+  public MappingRuleRecord() {
     super(5);
-    declareProperty(mappingKeyProp)
-        .declareProperty(mappingIdProp)
+    declareProperty(mappingRuleKeyProp)
+        .declareProperty(mappingRuleIdProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp);
   }
 
   @Override
-  public long getMappingKey() {
-    return mappingKeyProp.getValue();
+  public long getMappingRuleKey() {
+    return mappingRuleKeyProp.getValue();
   }
 
-  public MappingRecord setMappingKey(final long mappingKey) {
-    mappingKeyProp.setValue(mappingKey);
+  public MappingRuleRecord setMappingRuleKey(final long mappingRuleKey) {
+    mappingRuleKeyProp.setValue(mappingRuleKey);
     return this;
   }
 
@@ -53,7 +53,7 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
     return BufferUtil.bufferAsString(claimNameProp.getValue());
   }
 
-  public MappingRecord setClaimName(final String claimName) {
+  public MappingRuleRecord setClaimName(final String claimName) {
     claimNameProp.setValue(claimName);
     return this;
   }
@@ -63,7 +63,7 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
     return BufferUtil.bufferAsString(claimValueProp.getValue());
   }
 
-  public MappingRecord setClaimValue(final String claimValue) {
+  public MappingRuleRecord setClaimValue(final String claimValue) {
     claimValueProp.setValue(claimValue);
     return this;
   }
@@ -73,18 +73,18 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
     return BufferUtil.bufferAsString(nameProp.getValue());
   }
 
-  public MappingRecord setName(final String name) {
+  public MappingRuleRecord setName(final String name) {
     nameProp.setValue(name);
     return this;
   }
 
   @Override
-  public String getMappingId() {
-    return BufferUtil.bufferAsString(mappingIdProp.getValue());
+  public String getMappingRuleId() {
+    return BufferUtil.bufferAsString(mappingRuleIdProp.getValue());
   }
 
-  public MappingRecord setMappingId(final String mappingId) {
-    mappingIdProp.setValue(mappingId);
+  public MappingRuleRecord setMappingRuleId(final String mappingRuleId) {
+    mappingRuleIdProp.setValue(mappingRuleId);
     return this;
   }
 }

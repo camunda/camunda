@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -57,13 +57,13 @@ public class UpdateMappingMultiPartitionTest {
 
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
-              RecordingExporter.mappingRecords()
+              RecordingExporter.mappingRuleRecords()
                   .withPartitionId(partitionId)
                   .skip(2)
-                  .limit(record -> record.getIntent().equals(MappingIntent.UPDATED))
+                  .limit(record -> record.getIntent().equals(MappingRuleIntent.UPDATED))
                   .toList())
           .extracting(Record::getIntent)
-          .containsExactly(MappingIntent.UPDATE, MappingIntent.UPDATED);
+          .containsExactly(MappingRuleIntent.UPDATE, MappingRuleIntent.UPDATED);
     }
   }
 
@@ -104,7 +104,7 @@ public class UpdateMappingMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the role creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      engine.interceptInterPartitionIntent(partitionId, MappingIntent.CREATE);
+      engine.interceptInterPartitionIntent(partitionId, MappingRuleIntent.CREATE);
     }
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -134,7 +134,7 @@ public class UpdateMappingMultiPartitionTest {
                 .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.MAPPING, MappingIntent.CREATE),
-            tuple(ValueType.MAPPING, MappingIntent.UPDATE));
+            tuple(ValueType.MAPPING_RULE, MappingRuleIntent.CREATE),
+            tuple(ValueType.MAPPING_RULE, MappingRuleIntent.UPDATE));
   }
 }

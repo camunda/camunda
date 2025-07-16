@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -35,12 +35,12 @@ public class PermissionsBehavior {
 
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
 
   public PermissionsBehavior(
       final ProcessingState processingState, final AuthorizationCheckBehavior authCheckBehavior) {
     authorizationState = processingState.getAuthorizationState();
-    mappingState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingState();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -106,11 +106,11 @@ public class PermissionsBehavior {
   }
 
   public Either<Rejection, AuthorizationRecord> mappingExists(final AuthorizationRecord record) {
-    if (record.getOwnerType() != AuthorizationOwnerType.MAPPING) {
+    if (record.getOwnerType() != AuthorizationOwnerType.MAPPING_RULE) {
       return Either.right(record);
     }
 
-    if (mappingState.get(record.getOwnerId()).isEmpty()) {
+    if (mappingRuleState.get(record.getOwnerId()).isEmpty()) {
       return Either.left(
           new Rejection(
               RejectionType.NOT_FOUND,

@@ -39,7 +39,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-class MappingAuthorizationIT {
+class MappingRuleAuthorizationIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -73,52 +73,37 @@ class MappingAuthorizationIT {
 
   @MappingRuleDefinition
   private static final TestMapping MAPPING_1 =
-      new TestMapping("mapping1", "test-name", "test-value");
+      new TestMapping("mappingRule1", "test-name", "test-value");
 
   @MappingRuleDefinition
   private static final TestMapping MAPPING_2 =
-      new TestMapping("mapping2", "test-name2", "test-value2");
+      new TestMapping("mappingRule2", "test-name2", "test-value2");
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @Test
-  void searchShouldReturnAuthorizedMappings(
+  void searchShouldReturnAuthorizedMappingRules(
       @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
     final var mappingSearchResponse =
-        searchMappings(userClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
+        searchMappingRules(userClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
 
     assertThat(mappingSearchResponse.items())
         .hasSizeGreaterThanOrEqualTo(2)
-        .map(MappingResponse::name)
-        .contains("mapping1", "mapping2");
+        .map(MappingRuleResponse::name)
+        .contains("mappingRule1", "mappingRule2");
   }
 
   @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
       @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
     final var mappingSearchResponse =
-        searchMappings(userClient.getConfiguration().getRestAddress().toString(), UNAUTHORIZED);
+        searchMappingRules(userClient.getConfiguration().getRestAddress().toString(), UNAUTHORIZED);
 
     assertThat(mappingSearchResponse.items()).isEmpty();
   }
 
-  private static void createMapping(
-      final CamundaClient adminClient,
-      final String name,
-      final String value,
-      final String mappingId) {
-    adminClient
-        .newCreateMappingCommand()
-        .claimName(name)
-        .claimValue(value)
-        .mappingId(mappingId)
-        .name(mappingId)
-        .send()
-        .join();
-  }
-
   // TODO once available, this test should use the client to make the request
-  private static MappingSearchResponse searchMappings(
+  private static MappingRuleSearchResponse searchMappingRules(
       final String restAddress, final String username)
       throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
@@ -133,10 +118,10 @@ class MappingAuthorizationIT {
 
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), MappingSearchResponse.class);
+    return OBJECT_MAPPER.readValue(response.body(), MappingRuleSearchResponse.class);
   }
 
-  private record MappingSearchResponse(List<MappingResponse> items) {}
+  private record MappingRuleSearchResponse(List<MappingRuleResponse> items) {}
 
-  private record MappingResponse(String name) {}
+  private record MappingRuleResponse(String name) {}
 }

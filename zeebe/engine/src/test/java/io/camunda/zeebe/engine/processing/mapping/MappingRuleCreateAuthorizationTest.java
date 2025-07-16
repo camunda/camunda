@@ -13,7 +13,7 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -28,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MappingCreateAuthorizationTest {
+public class MappingRuleCreateAuthorizationTest {
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
           UUID.randomUUID().toString(),
@@ -51,9 +51,9 @@ public class MappingCreateAuthorizationTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldBeAuthorizedToCreateMappingWithDefaultUser() {
+  public void shouldBeAuthorizedToCreateMappingRuleWithDefaultUser() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
@@ -61,7 +61,7 @@ public class MappingCreateAuthorizationTest {
     // when
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -69,8 +69,8 @@ public class MappingCreateAuthorizationTest {
 
     // then
     assertThat(
-            RecordingExporter.mappingRecords(MappingIntent.CREATED)
-                .withMappingId(mappingId)
+            RecordingExporter.mappingRuleRecords(MappingRuleIntent.CREATED)
+                .withMappingRuleId(mappingRuleId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValue)
                 .exists())
@@ -78,9 +78,9 @@ public class MappingCreateAuthorizationTest {
   }
 
   @Test
-  public void shouldBeAuthorizedToCreateMappingWithPermissions() {
+  public void shouldBeAuthorizedToCreateMappingRuleWithPermissions() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
@@ -90,7 +90,7 @@ public class MappingCreateAuthorizationTest {
     // when
     engine
         .mapping()
-        .newMapping(mappingId)
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -98,8 +98,8 @@ public class MappingCreateAuthorizationTest {
 
     // then
     assertThat(
-            RecordingExporter.mappingRecords(MappingIntent.CREATED)
-                .withMappingId(mappingId)
+            RecordingExporter.mappingRuleRecords(MappingRuleIntent.CREATED)
+                .withMappingRuleId(mappingRuleId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValue)
                 .exists())
@@ -107,9 +107,9 @@ public class MappingCreateAuthorizationTest {
   }
 
   @Test
-  public void shouldBeUnAuthorizedToCreateMappingWithoutPermissions() {
+  public void shouldBeUnAuthorizedToCreateMappingRuleWithoutPermissions() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var user = createUser();
@@ -118,7 +118,7 @@ public class MappingCreateAuthorizationTest {
     final var rejection =
         engine
             .mapping()
-            .newMapping(mappingId)
+            .newMapping(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .expectRejection()

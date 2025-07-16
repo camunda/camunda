@@ -138,7 +138,7 @@ public final class EntityManager {
                   .send()
                   .join();
               break;
-            case MAPPING:
+            case MAPPING_RULE:
               defaultClient
                   .newAssignMappingToGroupCommand()
                   .mappingId(membership.memberId())
@@ -173,7 +173,7 @@ public final class EntityManager {
                   .send()
                   .join();
               break;
-            case MAPPING:
+            case MAPPING_RULE:
               defaultClient
                   .newAssignRoleToMappingCommand()
                   .roleId(roleId)

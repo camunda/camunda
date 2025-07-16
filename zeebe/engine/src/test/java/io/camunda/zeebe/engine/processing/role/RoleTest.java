@@ -188,7 +188,7 @@ public class RoleTest {
             .role()
             .addEntity(roleId)
             .withEntityId(entityId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .expectRejection()
             .add();
 
@@ -196,7 +196,7 @@ public class RoleTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist."
-                .formatted(entityId, EntityType.MAPPING, roleId));
+                .formatted(entityId, EntityType.MAPPING_RULE, roleId));
   }
 
   @Test
@@ -371,14 +371,14 @@ public class RoleTest {
         .role()
         .addEntity(roleId)
         .withEntityId(mappingId)
-        .withEntityType(EntityType.MAPPING)
+        .withEntityType(EntityType.MAPPING_RULE)
         .add();
     final var removedEntity =
         engine
             .role()
             .removeEntity(roleId)
             .withEntityId(mappingId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .remove()
             .getValue();
 
@@ -386,7 +386,7 @@ public class RoleTest {
         .isNotNull()
         .hasRoleId(roleId)
         .hasEntityId(mappingId)
-        .hasEntityType(EntityType.MAPPING);
+        .hasEntityType(EntityType.MAPPING_RULE);
   }
 
   @Test
@@ -478,7 +478,7 @@ public class RoleTest {
             .role()
             .removeEntity(roleId)
             .withEntityId(entityId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .expectRejection()
             .remove();
 
@@ -488,7 +488,7 @@ public class RoleTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to remove an entity with ID '%s' and type '%s' from role with ID '%s', but the entity doesn't exist."
-                .formatted(entityId, EntityType.MAPPING, roleId));
+                .formatted(entityId, EntityType.MAPPING_RULE, roleId));
   }
 
   @Test

@@ -23,7 +23,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.GroupCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.GroupEntityAddedApplier;
-import io.camunda.zeebe.engine.state.appliers.MappingCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.MappingRuleCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.RoleCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.RoleEntityAddedApplier;
 import io.camunda.zeebe.engine.state.appliers.TenantCreatedApplier;
@@ -32,7 +32,7 @@ import io.camunda.zeebe.engine.state.appliers.UserCreatedApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -64,7 +64,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
   private AuthorizationCheckBehavior authorizationCheckBehavior;
   private UserCreatedApplier userCreatedApplier;
-  private MappingCreatedApplier mappingCreatedApplier;
+  private MappingRuleCreatedApplier mappingRuleCreatedApplier;
   private AuthorizationCreatedApplier authorizationCreatedApplier;
   private GroupCreatedApplier groupCreatedApplier;
   private GroupEntityAddedApplier groupEntityAddedApplier;
@@ -86,7 +86,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
-    mappingCreatedApplier = new MappingCreatedApplier(processingState.getMappingState());
+    mappingRuleCreatedApplier = new MappingRuleCreatedApplier(processingState.getMappingState());
     authorizationCreatedApplier =
         new AuthorizationCreatedApplier(processingState.getAuthorizationState());
     groupCreatedApplier = new GroupCreatedApplier(processingState.getGroupState());
@@ -147,13 +147,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = createMapping(claimName, claimValue).getMappingId();
+    final var mappingId = createMapping(claimName, claimValue).getMappingRuleId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingId, AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
-    final var tenantId = createAndAssignTenant(mappingId, EntityType.MAPPING);
+        mappingId, AuthorizationOwnerType.MAPPING_RULE, resourceType, permissionType, resourceId);
+    final var tenantId = createAndAssignTenant(mappingId, EntityType.MAPPING_RULE);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -176,12 +176,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
-        AuthorizationOwnerType.MAPPING,
+        mapping.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
         resourceId);
-    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var group =
+        createGroupAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var tenantId = createAndAssignTenant(group.getGroupId(), EntityType.GROUP);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
@@ -222,9 +223,9 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = createMapping(claimName, claimValue).getMappingId();
-    final var tenantId1 = createAndAssignTenant(mappingId, EntityType.MAPPING);
-    final var tenantId2 = createAndAssignTenant(mappingId, EntityType.MAPPING);
+    final var mappingId = createMapping(claimName, claimValue).getMappingRuleId();
+    final var tenantId1 = createAndAssignTenant(mappingId, EntityType.MAPPING_RULE);
+    final var tenantId2 = createAndAssignTenant(mappingId, EntityType.MAPPING_RULE);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -270,7 +271,8 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var group =
+        createGroupAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var tenantId1 = createAndAssignTenant(group.getGroupId(), EntityType.GROUP);
     final var tenantId2 = createAndAssignTenant(group.getGroupId(), EntityType.GROUP);
     final var command = mockCommandWithMapping(claimName, claimValue);
@@ -349,13 +351,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    createAndAssignTenant(mapping.getMappingId(), EntityType.MAPPING);
+    createAndAssignTenant(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
-        AuthorizationOwnerType.MAPPING,
+        mapping.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
         resourceId);
@@ -376,14 +378,14 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var mappingId = createMapping(claimName, claimValue).getMappingId();
+    final var mappingId = createMapping(claimName, claimValue).getMappingRuleId();
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mappingId, AuthorizationOwnerType.MAPPING, resourceType, permissionType, resourceId);
+        mappingId, AuthorizationOwnerType.MAPPING_RULE, resourceType, permissionType, resourceId);
     final var anotherTenantId = "authorizedForAnotherTenant";
-    createAndAssignTenant(mappingId, EntityType.MAPPING);
+    createAndAssignTenant(mappingId, EntityType.MAPPING_RULE);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // when
@@ -427,7 +429,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var mapping = createMapping(claimName, claimValue);
 
     // when
-    final var tenantId = createAndAssignTenant(mapping.getMappingId(), EntityType.MAPPING);
+    final var tenantId = createAndAssignTenant(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var command = mockCommandWithMapping(claimName, claimValue);
 
     // then
@@ -467,13 +469,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var mapping = createMapping(claimName, claimValue);
-    final var tenantId = createAndAssignTenant(mapping.getMappingId(), EntityType.MAPPING);
+    final var tenantId = createAndAssignTenant(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var resourceType = AuthorizationResourceType.RESOURCE;
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
-        AuthorizationOwnerType.MAPPING,
+        mapping.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
         resourceId);
@@ -545,12 +547,12 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
-        AuthorizationOwnerType.MAPPING,
+        mapping.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
         resourceId);
-    final var role = createRoleAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var role = createRoleAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var tenantId = createAndAssignTenant(role.getRoleId(), EntityType.ROLE);
     final var command = mockCommandWithMapping(mapping.getClaimName(), mapping.getClaimValue());
 
@@ -573,12 +575,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
-        AuthorizationOwnerType.MAPPING,
+        mapping.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
         resourceId);
-    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var group =
+        createGroupAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
     final var tenantId = createAndAssignTenant(role.getRoleId(), EntityType.ROLE);
     final var command = mockCommandWithMapping(mapping.getClaimName(), mapping.getClaimValue());
@@ -643,12 +646,12 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
-        AuthorizationOwnerType.MAPPING,
+        mapping.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
         resourceId);
-    final var role = createRoleAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var role = createRoleAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var tenantId = createAndAssignTenant(role.getRoleId(), EntityType.ROLE);
     final var command = mockCommandWithMapping(mapping.getClaimName(), mapping.getClaimValue());
 
@@ -668,12 +671,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var permissionType = PermissionType.CREATE;
     final var resourceId = UUID.randomUUID().toString();
     addPermission(
-        mapping.getMappingId(),
-        AuthorizationOwnerType.MAPPING,
+        mapping.getMappingRuleId(),
+        AuthorizationOwnerType.MAPPING_RULE,
         resourceType,
         permissionType,
         resourceId);
-    final var group = createGroupAndAssignEntity(mapping.getMappingId(), EntityType.MAPPING);
+    final var group =
+        createGroupAndAssignEntity(mapping.getMappingRuleId(), EntityType.MAPPING_RULE);
     final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
     final var tenantId = createAndAssignTenant(role.getRoleId(), EntityType.ROLE);
     final var command = mockCommandWithMapping(mapping.getClaimName(), mapping.getClaimValue());
@@ -708,12 +712,12 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
   private MappingRecordValue createMapping(final String claimName, final String claimValue) {
     final var mapping =
-        new MappingRecord()
-            .setMappingId(UUID.randomUUID().toString())
+        new MappingRuleRecord()
+            .setMappingRuleId(UUID.randomUUID().toString())
             .setName(Strings.newRandomValidUsername())
             .setClaimName(claimName)
             .setClaimValue(claimValue);
-    mappingCreatedApplier.applyState(random.nextLong(), mapping);
+    mappingRuleCreatedApplier.applyState(random.nextLong(), mapping);
     return mapping;
   }
 

@@ -19,7 +19,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
-import io.camunda.zeebe.engine.state.appliers.MappingCreatedApplier;
+import io.camunda.zeebe.engine.state.appliers.MappingRuleCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.RoleCreatedApplier;
 import io.camunda.zeebe.engine.state.appliers.RoleEntityAddedApplier;
 import io.camunda.zeebe.engine.state.appliers.TenantCreatedApplier;
@@ -28,7 +28,7 @@ import io.camunda.zeebe.engine.state.appliers.UserCreatedApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -57,7 +57,7 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
   private AuthorizationCheckBehavior authorizationCheckBehavior;
   private UserCreatedApplier userCreatedApplier;
-  private MappingCreatedApplier mappingCreatedApplier;
+  private MappingRuleCreatedApplier mappingRuleCreatedApplier;
   private AuthorizationCreatedApplier authorizationCreatedApplier;
   private RoleCreatedApplier roleCreatedApplier;
   private RoleEntityAddedApplier roleEntityAddedApplier;
@@ -74,7 +74,7 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
     authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
-    mappingCreatedApplier = new MappingCreatedApplier(processingState.getMappingState());
+    mappingRuleCreatedApplier = new MappingRuleCreatedApplier(processingState.getMappingState());
     authorizationCreatedApplier =
         new AuthorizationCreatedApplier(processingState.getAuthorizationState());
     roleCreatedApplier = new RoleCreatedApplier(processingState.getRoleState());
@@ -248,12 +248,12 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
 
   private MappingRecordValue createMapping(final String claimName, final String claimValue) {
     final var mapping =
-        new MappingRecord()
-            .setMappingId(UUID.randomUUID().toString())
+        new MappingRuleRecord()
+            .setMappingRuleId(UUID.randomUUID().toString())
             .setName(Strings.newRandomValidUsername())
             .setClaimName(claimName)
             .setClaimValue(claimValue);
-    mappingCreatedApplier.applyState(random.nextLong(), mapping);
+    mappingRuleCreatedApplier.applyState(random.nextLong(), mapping);
     return mapping;
   }
 

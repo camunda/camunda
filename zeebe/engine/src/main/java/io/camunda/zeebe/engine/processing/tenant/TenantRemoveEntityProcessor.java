@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -37,7 +37,7 @@ import java.util.Map;
 public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
   private final TenantState tenantState;
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final GroupState groupState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -54,7 +54,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
-    mappingState = state.getMappingState();
+    mappingRuleState = state.getMappingState();
     groupState = state.getGroupState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
@@ -130,7 +130,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final EntityType entityType,
       final String entityId) {
     return switch (entityType) {
-      case MAPPING -> mappingState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       case GROUP ->
           authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
               || groupState.get(entityId).isPresent();

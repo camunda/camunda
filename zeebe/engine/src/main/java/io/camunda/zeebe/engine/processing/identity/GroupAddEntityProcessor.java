@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -34,7 +34,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
       "Expected to add entity with ID '%s' to group with ID '%s', but the entity is already assigned to this group.";
 
   private final GroupState groupState;
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -54,7 +54,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     this.authCheckBehavior = authCheckBehavior;
     groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
-    mappingState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -135,7 +135,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     return switch (entityType) {
       case EntityType.USER, CLIENT ->
           true; // With simple mappings, any username or client id can be assigned
-      case EntityType.MAPPING -> mappingState.get(entityId).isPresent();
+      case EntityType.MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       default -> false;
     };
   }

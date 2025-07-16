@@ -8,20 +8,21 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 
-public class MappingCreatedApplier implements TypedEventApplier<MappingIntent, MappingRecord> {
+public class MappingRuleCreatedApplier
+    implements TypedEventApplier<MappingRuleIntent, MappingRuleRecord> {
 
-  private final MutableMappingState mappingState;
+  private final MutableMappingRuleState mappingState;
 
-  public MappingCreatedApplier(final MutableMappingState mappingState) {
+  public MappingRuleCreatedApplier(final MutableMappingRuleState mappingState) {
     this.mappingState = mappingState;
   }
 
   @Override
-  public void applyState(final long key, final MappingRecord value) {
+  public void applyState(final long key, final MappingRuleRecord value) {
     mappingState.create(value);
   }
 }

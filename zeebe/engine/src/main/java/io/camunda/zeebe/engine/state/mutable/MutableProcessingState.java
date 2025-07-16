@@ -100,7 +100,7 @@ public interface MutableProcessingState extends ProcessingState {
   MutableTenantState getTenantState();
 
   @Override
-  MutableMappingState getMappingState();
+  MutableMappingRuleState getMappingState();
 
   @Override
   MutableBatchOperationState getBatchOperationState();

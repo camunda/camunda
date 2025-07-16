@@ -46,7 +46,7 @@ import io.camunda.service.FormServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageSubscriptionServices;
 import io.camunda.service.ProcessDefinitionServices;
@@ -305,10 +305,10 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public MappingServices mappingServices(
+  public MappingRuleServices mappingServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final MappingRuleSearchClient mappingRuleSearchClient) {
+       final MappingRuleSearchClient mappingRuleSearchClient) {
     return new MappingServices(
         brokerClient, securityContextProvider, mappingRuleSearchClient, null);
   }

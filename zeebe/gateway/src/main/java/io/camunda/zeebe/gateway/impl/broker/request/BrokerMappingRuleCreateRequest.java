@@ -9,48 +9,48 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerMappingCreateRequest extends BrokerExecuteCommand<MappingRecord> {
+public class BrokerMappingRuleCreateRequest extends BrokerExecuteCommand<MappingRuleRecord> {
 
-  private final MappingRecord requestDto = new MappingRecord();
+  private final MappingRuleRecord requestDto = new MappingRuleRecord();
 
-  public BrokerMappingCreateRequest() {
-    super(ValueType.MAPPING, MappingIntent.CREATE);
+  public BrokerMappingRuleCreateRequest() {
+    super(ValueType.MAPPING_RULE, MappingRuleIntent.CREATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerMappingCreateRequest setClaimName(final String claimName) {
+  public BrokerMappingRuleCreateRequest setClaimName(final String claimName) {
     requestDto.setClaimName(claimName);
     return this;
   }
 
-  public BrokerMappingCreateRequest setClaimValue(final String claimValue) {
+  public BrokerMappingRuleCreateRequest setClaimValue(final String claimValue) {
     requestDto.setClaimValue(claimValue);
     return this;
   }
 
-  public BrokerMappingCreateRequest setName(final String name) {
+  public BrokerMappingRuleCreateRequest setName(final String name) {
     requestDto.setName(name);
     return this;
   }
 
-  public BrokerMappingCreateRequest setMappingId(final String mappingId) {
-    requestDto.setMappingId(mappingId);
+  public BrokerMappingRuleCreateRequest setMappingRuleId(final String mappingRuleId) {
+    requestDto.setMappingRuleId(mappingRuleId);
     return this;
   }
 
   @Override
-  public MappingRecord getRequestWriter() {
+  public MappingRuleRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected MappingRecord toResponseDto(final DirectBuffer buffer) {
-    final var response = new MappingRecord();
+  protected MappingRuleRecord toResponseDto(final DirectBuffer buffer) {
+    final var response = new MappingRuleRecord();
     response.wrap(buffer);
     return response;
   }

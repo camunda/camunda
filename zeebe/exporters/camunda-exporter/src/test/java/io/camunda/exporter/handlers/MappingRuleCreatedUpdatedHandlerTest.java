@@ -17,7 +17,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableMappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -34,7 +34,7 @@ public class MappingRuleCreatedUpdatedHandlerTest {
 
   @Test
   void testGetHandledValueType() {
-    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.MAPPING);
+    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.MAPPING_RULE);
   }
 
   @Test
@@ -44,13 +44,13 @@ public class MappingRuleCreatedUpdatedHandlerTest {
 
   @ParameterizedTest
   @EnumSource(
-      value = MappingIntent.class,
+      value = MappingRuleIntent.class,
       names = {"CREATED", "UPDATED"},
       mode = Mode.INCLUDE)
-  void shouldHandleRecord(final MappingIntent intent) {
+  void shouldHandleRecord(final MappingRuleIntent intent) {
     // given
     final Record<MappingRecordValue> mappingRecord =
-        factory.generateRecordWithIntent(ValueType.MAPPING, intent);
+        factory.generateRecordWithIntent(ValueType.MAPPING_RULE, intent);
 
     // when - then
     assertThat(underTest.handlesRecord(mappingRecord)).isTrue();
@@ -58,19 +58,19 @@ public class MappingRuleCreatedUpdatedHandlerTest {
 
   @ParameterizedTest
   @EnumSource(
-      value = MappingIntent.class,
+      value = MappingRuleIntent.class,
       names = {"CREATED", "UPDATED"},
       mode = Mode.INCLUDE)
-  void shouldGenerateIds(final MappingIntent intent) {
+  void shouldGenerateIds(final MappingRuleIntent intent) {
     // given
     final Record<MappingRecordValue> mappingRecord =
-        factory.generateRecordWithIntent(ValueType.MAPPING, intent);
+        factory.generateRecordWithIntent(ValueType.MAPPING_RULE, intent);
 
     // when
     final var idList = underTest.generateIds(mappingRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getMappingId()));
+    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getMappingRuleId()));
   }
 
   @Test
@@ -92,13 +92,13 @@ public class MappingRuleCreatedUpdatedHandlerTest {
             .withClaimName("updated-claim")
             .withClaimValue("updated-value")
             .withName("updated-name")
-            .withMappingId("updated-id")
+            .withMappingRuleId("updated-id")
             .build();
 
     final Record<MappingRecordValue> mappingRecord =
         factory.generateRecord(
-            ValueType.MAPPING,
-            r -> r.withIntent(MappingIntent.UPDATED).withValue(mappingRecordValue));
+            ValueType.MAPPING_RULE,
+            r -> r.withIntent(MappingRuleIntent.UPDATED).withValue(mappingRecordValue));
 
     // when
     final MappingRuleEntity mappingEntity =

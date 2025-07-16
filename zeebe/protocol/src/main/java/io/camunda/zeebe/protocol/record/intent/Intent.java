@@ -67,7 +67,7 @@ public interface Intent {
           TenantIntent.class,
           ScaleIntent.class,
           GroupIntent.class,
-          MappingIntent.class,
+          MappingRuleIntent.class,
           IdentitySetupIntent.class,
           BatchOperationIntent.class,
           BatchOperationChunkIntent.class,
@@ -178,8 +178,8 @@ public interface Intent {
         return ScaleIntent.from(intent);
       case GROUP:
         return GroupIntent.from(intent);
-      case MAPPING:
-        return MappingIntent.from(intent);
+      case MAPPING_RULE:
+        return MappingRuleIntent.from(intent);
       case IDENTITY_SETUP:
         return IdentitySetupIntent.from(intent);
       case BATCH_OPERATION_CREATION:
@@ -291,8 +291,8 @@ public interface Intent {
         return ScaleIntent.valueOf(intent);
       case GROUP:
         return GroupIntent.valueOf(intent);
-      case MAPPING:
-        return MappingIntent.valueOf(intent);
+      case MAPPING_RULE:
+        return MappingRuleIntent.valueOf(intent);
       case IDENTITY_SETUP:
         return IdentitySetupIntent.valueOf(intent);
       case BATCH_OPERATION_CREATION:

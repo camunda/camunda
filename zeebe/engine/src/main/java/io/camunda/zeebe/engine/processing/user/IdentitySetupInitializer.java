@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -101,8 +101,8 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
         .forEach(
             mapping ->
                 setupRecord.addMapping(
-                    new MappingRecord()
-                        .setMappingId(mapping.getMappingId())
+                    new MappingRuleRecord()
+                        .setMappingRuleId(mapping.getMappingId())
                         .setClaimName(mapping.getClaimName())
                         .setClaimValue(mapping.getClaimValue())
                         .setName(mapping.getMappingId())));
@@ -125,7 +125,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             switch (assignmentsForEntityType.getKey()) {
               case "users" -> EntityType.USER;
               case "clients" -> EntityType.CLIENT;
-              case "mappings" -> EntityType.MAPPING;
+              case "mappings" -> EntityType.MAPPING_RULE;
               case "groups" -> EntityType.GROUP;
               case "roles" -> EntityType.ROLE;
               default ->

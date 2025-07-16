@@ -16,7 +16,7 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
@@ -59,7 +59,7 @@ import org.springframework.web.bind.annotation.*;
 public class TenantController {
   private final TenantServices tenantServices;
   private final UserServices userServices;
-  private final MappingServices mappingServices;
+  private final MappingRuleServices mappingServices;
   private final GroupServices groupServices;
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
@@ -67,7 +67,7 @@ public class TenantController {
   public TenantController(
       final TenantServices tenantServices,
       final UserServices userServices,
-      final MappingServices mappingServices,
+      final MappingRuleServices mappingServices,
       final GroupServices groupServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider) {
@@ -142,7 +142,7 @@ public class TenantController {
   @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING)
+    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -197,7 +197,7 @@ public class TenantController {
   @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingId}")
   public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
       @PathVariable final String tenantId, @PathVariable final String mappingId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING)
+    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 

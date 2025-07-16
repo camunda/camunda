@@ -49,7 +49,7 @@ public class MappingTest {
         .hasClaimName(claimName)
         .hasClaimValue(claimValue)
         .hasName(name)
-        .hasMappingId(id);
+        .hasMappingRuleId(id);
   }
 
   @Test
@@ -150,7 +150,7 @@ public class MappingTest {
     // then
     assertThat(updatedMapping)
         .isNotNull()
-        .hasMappingId(id)
+        .hasMappingRuleId(id)
         .hasName(name + "New")
         .hasClaimName(claimName + "New")
         .hasClaimValue(claimValue + "New");
@@ -250,7 +250,7 @@ public class MappingTest {
     final var deletedMapping = engine.mapping().deleteMapping(mappingId).delete().getValue();
 
     // then
-    assertThat(deletedMapping).isNotNull().hasMappingId(mappingId);
+    assertThat(deletedMapping).isNotNull().hasMappingRuleId(mappingId);
   }
 
   @Test
@@ -275,31 +275,31 @@ public class MappingTest {
         .group()
         .addEntity(groupId)
         .withEntityId(mappingId)
-        .withEntityType(EntityType.MAPPING)
+        .withEntityType(EntityType.MAPPING_RULE)
         .add();
     engine
         .role()
         .addEntity(roleId)
         .withEntityId(mappingId)
-        .withEntityType(EntityType.MAPPING)
+        .withEntityType(EntityType.MAPPING_RULE)
         .add();
 
     // when
-    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingId()).delete();
+    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingRuleId()).delete();
 
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupId(groupId)
                 .withEntityId(mappingId)
-                .withEntityType(EntityType.MAPPING)
+                .withEntityType(EntityType.MAPPING_RULE)
                 .exists())
         .isTrue();
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleId(roleId)
                 .withEntityId(mappingId)
-                .withEntityType(EntityType.MAPPING)
+                .withEntityType(EntityType.MAPPING_RULE)
                 .exists())
         .isTrue();
   }

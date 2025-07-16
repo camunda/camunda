@@ -30,9 +30,9 @@ import io.camunda.zeebe.engine.processing.identity.GroupCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupUpdateProcessor;
-import io.camunda.zeebe.engine.processing.identity.MappingCreateProcessor;
-import io.camunda.zeebe.engine.processing.identity.MappingDeleteProcessor;
-import io.camunda.zeebe.engine.processing.identity.MappingUpdateProcessor;
+import io.camunda.zeebe.engine.processing.identity.MappingRuleCreateProcessor;
+import io.camunda.zeebe.engine.processing.identity.MappingRuleDeleteProcessor;
+import io.camunda.zeebe.engine.processing.identity.MappingRuleUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleAddEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleDeleteProcessor;
@@ -67,7 +67,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -422,38 +422,41 @@ public class CommandDistributionIdempotencyTest {
           {
             "Mapping.CREATE is idempotent",
             new Scenario(
-                ValueType.MAPPING,
-                MappingIntent.CREATE,
+                ValueType.MAPPING_RULE,
+                MappingRuleIntent.CREATE,
                 CommandDistributionIdempotencyTest::createMapping),
-            MappingCreateProcessor.class
+            MappingRuleCreateProcessor.class
           },
           {
             "Mapping.UPDATE is idempotent",
             new Scenario(
-                ValueType.MAPPING,
-                MappingIntent.UPDATE,
+                ValueType.MAPPING_RULE,
+                MappingRuleIntent.UPDATE,
                 () -> {
                   final var mapping = createMapping();
                   return ENGINE
                       .mapping()
-                      .updateMapping(mapping.getValue().getMappingId())
+                      .updateMapping(mapping.getValue().getMappingRuleId())
                       .withName(mapping.getValue().getName())
                       .withClaimName(mapping.getValue().getClaimName())
                       .withClaimValue(mapping.getValue().getClaimValue())
                       .update();
                 }),
-            MappingUpdateProcessor.class
+            MappingRuleUpdateProcessor.class
           },
           {
             "Mapping.DELETE is idempotent",
             new Scenario(
-                ValueType.MAPPING,
-                MappingIntent.DELETE,
+                ValueType.MAPPING_RULE,
+                MappingRuleIntent.DELETE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().deleteMapping(mapping.getValue().getMappingId()).delete();
+                  return ENGINE
+                      .mapping()
+                      .deleteMapping(mapping.getValue().getMappingRuleId())
+                      .delete();
                 }),
-            MappingDeleteProcessor.class
+            MappingRuleDeleteProcessor.class
           },
           {
             "ResourceDeletion.DELETE is idempotent",
