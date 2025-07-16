@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -161,6 +162,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
               .setOwnerType(AuthorizationOwnerType.ROLE)
               .setOwnerId(readOnlyAdminRoleId)
               .setResourceType(resourceType)
+              .setResourceIdFormat(ResourceIdFormat.ANY)
               .setResourceId(WILDCARD_PERMISSION)
               .setPermissionTypes(readBasedPermissions));
     }
@@ -180,6 +182,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
               .setOwnerType(AuthorizationOwnerType.ROLE)
               .setOwnerId(adminRoleId)
               .setResourceType(resourceType)
+              .setResourceIdFormat(ResourceIdFormat.ANY)
               .setResourceId(WILDCARD_PERMISSION)
               .setPermissionTypes(resourceType.getSupportedPermissionTypes()));
     }
@@ -198,6 +201,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             .setOwnerType(AuthorizationOwnerType.ROLE)
             .setOwnerId(connectorsRoleId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setResourceIdFormat(ResourceIdFormat.ANY)
             .setResourceId(WILDCARD_PERMISSION)
             .setPermissionTypes(
                 Set.of(
@@ -208,6 +212,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             .setOwnerType(AuthorizationOwnerType.ROLE)
             .setOwnerId(connectorsRoleId)
             .setResourceType(AuthorizationResourceType.MESSAGE)
+            .setResourceIdFormat(ResourceIdFormat.ANY)
             .setResourceId(WILDCARD_PERMISSION)
             .setPermissionTypes(Set.of(PermissionType.CREATE)));
     setupRecord.addTenantMember(
@@ -225,12 +230,14 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             new AuthorizationRecord()
                 .setOwnerId(rpaRoleId)
                 .setResourceType(AuthorizationResourceType.RESOURCE)
+                .setResourceIdFormat(ResourceIdFormat.ANY)
                 .setResourceId(WILDCARD_PERMISSION)
                 .setPermissionTypes(Set.of(PermissionType.READ)))
         .addAuthorization(
             new AuthorizationRecord()
                 .setOwnerId(rpaRoleId)
                 .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                .setResourceIdFormat(ResourceIdFormat.ANY)
                 .setResourceId(WILDCARD_PERMISSION)
                 .setPermissionTypes(Set.of(PermissionType.UPDATE_PROCESS_INSTANCE)))
         .addTenantMember(
