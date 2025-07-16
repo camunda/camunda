@@ -18,6 +18,8 @@ package io.camunda.process.test.impl.runtime;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.containerRuntimeProperties.CamundaContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.containerRuntimeProperties.ConnectorsContainerRuntimeProperties;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
@@ -62,21 +64,21 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_VERSION, "${project.version}");
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_VERSION, "${project.version}");
     properties.put(
         ContainerRuntimePropertiesUtil.PROPERTY_NAME_ELASTICSEARCH_VERSION,
         "${version.elasticsearch}");
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
         "${io.camunda.process.test.camundaDockerImageName}");
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
         "${io.camunda.process.test.camundaDockerImageVersion}");
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
         "camunda/connectors-bundle");
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
         "${project.version}");
 
     // when
@@ -110,7 +112,8 @@ public class ContainerRuntimePropertiesUtilTest {
   void shouldReturnCamundaVersion(final String propertyVersion, final String expectedVersion) {
     // given
     final Properties properties = new Properties();
-    properties.put(ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_VERSION, propertyVersion);
+    properties.put(
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_VERSION, propertyVersion);
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -153,7 +156,7 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME, propertyName);
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME, propertyName);
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -182,7 +185,8 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION, propertyVersion);
+        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
+        propertyVersion);
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -203,7 +207,8 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME, propertyName);
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
+        propertyName);
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
@@ -232,7 +237,7 @@ public class ContainerRuntimePropertiesUtilTest {
     // given
     final Properties properties = new Properties();
     properties.put(
-        ContainerRuntimePropertiesUtil.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
+        ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
         propertyVersion);
 
     // when
