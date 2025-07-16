@@ -96,7 +96,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No mappingId provided.",
+              "detail": "No mappingRuleId provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -121,7 +121,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No mappingId provided.",
+              "detail": "No mappingRuleId provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -268,7 +268,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+              "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
             .formatted(IdentifierPatterns.ID_PATTERN, MAPPING_RULES_PATH));
@@ -294,7 +294,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided mappingId exceeds the limit of 256 characters.",
+              "detail": "The provided mappingRuleId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
