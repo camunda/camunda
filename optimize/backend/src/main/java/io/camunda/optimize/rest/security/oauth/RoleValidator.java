@@ -39,18 +39,8 @@ public class RoleValidator implements OAuth2TokenValidator<Jwt> {
     }
 
     if (claimValue instanceof final Collection<?> claimedOrgs) {
-      for (final Object claimedOrg : claimedOrgs) {
-        if (claimedOrg instanceof final Map<?, ?> orgDetails) {
-          final Object rolesObj = orgDetails.get("roles");
-          if (rolesObj instanceof final Collection<?> userRoles) {
-            for (final Object userRole : userRoles) {
-              if (userRole instanceof String && allowedRoles.contains(userRole)) {
-                LOG.debug("User has allowed role '{}' for Optimize access", userRole);
-                return OAuth2TokenValidatorResult.success();
-              }
-            }
-          }
-        }
+      if (hasAllowedRole(claimedOrgs)) {
+        return OAuth2TokenValidatorResult.success();
       }
     }
 
@@ -62,5 +52,22 @@ public class RoleValidator implements OAuth2TokenValidator<Jwt> {
             "Token does not contain required organization role for Optimize access. Required roles: %s"
                 .formatted(allowedRoles),
             null));
+  }
+
+  private boolean hasAllowedRole(final Collection<?> claimedOrgs) {
+    for (final Object claimedOrg : claimedOrgs) {
+      if (claimedOrg instanceof final Map<?, ?> orgDetails) {
+        final Object rolesObj = orgDetails.get("roles");
+        if (rolesObj instanceof final Collection<?> userRoles) {
+          for (final Object userRole : userRoles) {
+            if (userRole instanceof String && allowedRoles.contains(userRole)) {
+              LOG.debug("User has allowed role '{}' for Optimize access", userRole);
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
   }
 }

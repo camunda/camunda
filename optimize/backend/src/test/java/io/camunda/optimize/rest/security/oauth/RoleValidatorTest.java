@@ -38,7 +38,7 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertTrue(result.hasErrors() == false);
+    assertFalse(result.hasErrors());
   }
 
   @Test
