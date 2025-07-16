@@ -63,7 +63,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), handler.relevantOperationType)));
+                      String.valueOf(batchOperationKey), handler.getRelevantOperationType())));
     }
 
     @Test
@@ -89,7 +89,7 @@ class BatchOperationStatusHandlerTest {
       Mockito.reset(batchOperationCache);
       final var otherOperationType =
           Arrays.stream(OperationType.values())
-              .filter(t -> !t.equals(handler.relevantOperationType))
+              .filter(t -> !t.equals(handler.getRelevantOperationType()))
               .findAny()
               .get();
 
@@ -131,7 +131,7 @@ class BatchOperationStatusHandlerTest {
       Mockito.reset(batchOperationCache);
       final var otherOperationType =
           Arrays.stream(OperationType.values())
-              .filter(t -> !t.equals(handler.relevantOperationType))
+              .filter(t -> !t.equals(handler.getRelevantOperationType()))
               .findAny()
               .get();
 
