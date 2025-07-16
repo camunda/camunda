@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -163,7 +164,7 @@ public final class CompleteJobTest {
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
-    getCommand(client, useRest, jobKey).withResult(r -> r.deny(denied)).send().join();
+    getCommand(client, useRest, jobKey).withResult(r -> r.forUserTask().deny(denied)).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
@@ -178,7 +179,10 @@ public final class CompleteJobTest {
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
-    getCommand(client, useRest, jobKey).withResult(r -> r).send().join();
+    getCommand(client, useRest, jobKey)
+        .withResult(CompleteJobCommandJobResultStep::forUserTask)
+        .send()
+        .join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(

@@ -18,7 +18,7 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.Map;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 public interface CompleteJobCommandStep1
     extends CommandWithCommunicationApiStep<CompleteJobCommandStep1>,
@@ -77,64 +77,34 @@ public interface CompleteJobCommandStep1
   CompleteJobCommandStep1 variable(String key, Object value);
 
   /**
-   * Sets the result of the completed job, allowing the worker to apply corrections to user task
-   * attributes or explicitly deny the user task lifecycle transition.
+   * Initializes the job result to allow followup actions to be configured.
    *
-   * <p>The {@link CompleteUserTaskJobResult} object provides a flexible way to:
-   *
-   * <ul>
-   *   <li>Correct user task attributes such as {@code assignee}, {@code dueDate}, {@code priority},
-   *       and more.
-   *   <li>Deny the lifecycle transition associated with the user task.
-   * </ul>
-   *
-   * <pre>{@code
-   * final CompleteJobResult jobResult =
-   *     new CompleteJobResult()
-   *         .correctAssignee("newAssignee") // dynamically assigns the task
-   *         .correctPriority(42);           // updates the task priority
-   *
-   * client.newCompleteJobCommand(jobKey)
-   *     .withResult(jobResult)
-   *     .send();
-   * }</pre>
-   *
-   * @param jobResult the result of the job, containing corrections and/or a denial flag.
-   * @return the builder for this command. Call {@link #send()} to finalize the command and send it
-   *     to the broker.
-   * @apiNote This API is currently relevant only for user task listeners.
+   * @return the builder for this command.
    */
-  CompleteJobCommandStep1 withResult(CompleteUserTaskJobResult jobResult);
+  CompleteJobCommandStep1 withResult(
+      Function<CompleteJobCommandJobResultStep, CompleteJobResult> consumer);
 
-  /**
-   * Modifies the result of the completed job using a lambda expression, allowing the worker to
-   * dynamically apply corrections to user task attributes or explicitly deny the user task
-   * lifecycle transition.
-   *
-   * <p>This is a convenience method for {@link #withResult(CompleteUserTaskJobResult)}, allowing
-   * modifications to be applied directly via a functional interface rather than constructing the
-   * {@link CompleteUserTaskJobResult} manually, enabling:
-   *
-   * <ul>
-   *   <li>Correcting user task attributes such as {@code assignee}, {@code dueDate}, {@code
-   *       priority}, and more.
-   *   <li>Denying the lifecycle transition associated with the user task.
-   * </ul>
-   *
-   * <p>The lambda expression receives the current {@link CompleteUserTaskJobResult}, which can be
-   * modified as needed. If no result has been set yet, a default {@link CompleteUserTaskJobResult}
-   * is provided for modification.
-   *
-   * <pre>{@code
-   * client.newCompleteJobCommand(jobKey)
-   *     .withResult(r -> r.deny(true))
-   *     .send();
-   * }</pre>
-   *
-   * @param jobResultModifier a function to modify the {@link CompleteUserTaskJobResult}.
-   * @return the builder for this command. Call {@link #send()} to finalize the command and send it
-   *     to the broker.
-   * @apiNote This API is currently relevant only for user task listeners.
-   */
-  CompleteJobCommandStep1 withResult(UnaryOperator<CompleteUserTaskJobResult> jobResultModifier);
+  interface CompleteJobCommandJobResultStep {
+    /**
+     * Initializes the job result to allow corrections or a denial to be configured.
+     *
+     * <p>This method is used to apply changes to user task attributes (such as {@code assignee},
+     * {@code priority}, {@code dueDate}, and so on) or explicitly deny a user task lifecycle
+     * transition.
+     *
+     * <p>Example usage:
+     *
+     * <pre>{@code
+     * client.newCompleteJobCommand(jobKey)
+     *     .withResult()
+     *     .correctAssignee("john_doe")                 // dynamically reassigns the task to 'john_doe'
+     *     .correctPriority(84)                         // adjusts the priority of the task
+     *     .correctDueDate("2024-11-22T11:44:55.0000Z") // sets a new due date
+     *     .send();
+     * }</pre>
+     *
+     * @return the builder for this command.
+     */
+    CompleteUserTaskJobResult forUserTask();
+  }
 }

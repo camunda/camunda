@@ -19,6 +19,8 @@ import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
+import io.camunda.client.api.command.CompleteJobResult;
 import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteJobResponse;
@@ -38,12 +40,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
-    implements CompleteJobCommandStep1 {
+    implements CompleteJobCommandStep1, CompleteJobCommandJobResultStep {
 
   private final GatewayStub asyncStub;
   private final Builder grpcRequestObjectBuilder;
@@ -95,25 +97,26 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep1 withResult(final CompleteUserTaskJobResult jobResult) {
-    return setJobResult(jobResult);
+  public CompleteJobCommandStep1 withResult(
+      final Function<CompleteJobCommandJobResultStep, CompleteJobResult> function) {
+    final CompleteJobResult result = function.apply(this);
+    if (result instanceof CompleteUserTaskJobResult) {
+      setJobResult((CompleteUserTaskJobResult) result);
+    }
+    return this;
   }
 
   @Override
-  public CompleteJobCommandStep1 withResult(
-      final UnaryOperator<CompleteUserTaskJobResult> jobResultModifier) {
-    final CompleteUserTaskJobResult jobResult = new CompleteUserTaskJobResult();
-    return withResult(jobResultModifier.apply(jobResult));
+  public CompleteUserTaskJobResult forUserTask() {
+    return new CompleteUserTaskJobResult();
   }
 
-  private CompleteJobCommandStep1 setJobResult(final CompleteUserTaskJobResult jobResult) {
+  private void setJobResult(final CompleteUserTaskJobResult jobResult) {
     if (useRest) {
       setRestJobResult(jobResult);
     } else {
       setGrpcJobResult(jobResult);
     }
-
-    return this;
   }
 
   private void setRestJobResult(final CompleteUserTaskJobResult jobResult) {

@@ -83,7 +83,11 @@ public class UserTaskListenersTest {
 
     final JobHandler completeJobHandler =
         (jobClient, job) ->
-            client.newCompleteCommand(job).withResult(r -> r.deny(false)).send().join();
+            client
+                .newCompleteCommand(job)
+                .withResult(r -> r.forUserTask().deny(false))
+                .send()
+                .join();
     client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
@@ -359,7 +363,11 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
+                .withResult(
+                    r ->
+                        r.forUserTask()
+                            .deny(true)
+                            .deniedReason("Reason to deny lifecycle transition"))
                 .send()
                 .join();
     client.newWorker().jobType(listenerType).handler(completeJobWithDenialHandler).open();
@@ -409,7 +417,11 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
+                .withResult(
+                    r ->
+                        r.forUserTask()
+                            .deny(true)
+                            .deniedReason("Reason to deny lifecycle transition"))
                 .send()
                 .join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
@@ -462,7 +474,11 @@ public class UserTaskListenersTest {
 
     final JobHandler completeJobHandler =
         (jobClient, job) ->
-            client.newCompleteCommand(job).withResult(r -> r.deny(true)).send().join();
+            client
+                .newCompleteCommand(job)
+                .withResult(r -> r.forUserTask().deny(true))
+                .send()
+                .join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
 
     client.newWorker().jobType(listenerType).handler(recordingHandler).open();
@@ -514,7 +530,11 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
+                .withResult(
+                    r ->
+                        r.forUserTask()
+                            .deny(true)
+                            .deniedReason("Reason to deny lifecycle transition"))
                 .send()
                 .join();
     final var recordingHandler = new RecordingJobHandler(completeJobHandler);
@@ -575,7 +595,8 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult(
                     r ->
-                        r.correctAssignee("new_assignee")
+                        r.forUserTask()
+                            .correctAssignee("new_assignee")
                             .correctDueDate("new_due_date")
                             .correctFollowUpDate("new_follow_up_date")
                             .correctCandidateUsers(List.of("new_user_A", "new_user_B"))
@@ -658,7 +679,8 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult(
                     r ->
-                        r.correctAssignee("corrected_assignee")
+                        r.forUserTask()
+                            .correctAssignee("corrected_assignee")
                             .correctDueDate(correctedDueDate) // overrides the update
                             .correctFollowUpDate(correctedFollowUpDate)
                             .correctCandidateUsers(List.of("corrected_user_a", "corrected_user_b"))
@@ -736,7 +758,8 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult(
                     r ->
-                        r.correctAssignee("Test")
+                        r.forUserTask()
+                            .correctAssignee("Test")
                             .correctDueDate("due date")
                             .correctFollowUpDate("follow up date")
                             .correctCandidateUsers(Arrays.asList("User A", "User B"))
@@ -804,7 +827,8 @@ public class UserTaskListenersTest {
                 .newCompleteCommand(job)
                 .withResult(
                     r ->
-                        r.correctAssignee("Test")
+                        r.forUserTask()
+                            .correctAssignee("Test")
                             .correctFollowUpDate("follow up date")
                             .correctCandidateUsers(Arrays.asList("User A", "User B"))
                             .correctPriority(80))
@@ -862,7 +886,8 @@ public class UserTaskListenersTest {
         (jobClient, job) ->
             client
                 .newCompleteCommand(job)
-                .withResult(r -> r.correctPriority(3).correctAssignee("corrected_assignee"))
+                .withResult(
+                    r -> r.forUserTask().correctPriority(3).correctAssignee("corrected_assignee"))
                 .send()
                 .join();
 

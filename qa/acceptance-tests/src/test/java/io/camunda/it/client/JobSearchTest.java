@@ -128,7 +128,7 @@ public class JobSearchTest {
 
     camundaClient
         .newCompleteCommand(userTaskListenerAssigningJob1.getJobKey())
-        .withResult(r -> r.deny(true, "test denied reason"))
+        .withResult(r -> r.forUserTask().deny(true, "test denied reason"))
         .send()
         .join();
 
