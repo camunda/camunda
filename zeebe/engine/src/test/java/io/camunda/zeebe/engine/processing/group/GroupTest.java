@@ -176,7 +176,7 @@ public class GroupTest {
             .group()
             .addEntity(groupId)
             .withEntityId(notPresentEntityId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .expectRejection()
             .add();
 
@@ -186,7 +186,7 @@ public class GroupTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to add an entity with ID '%s' and type '%s' to group with ID '%s', but the entity does not exist."
-                .formatted(notPresentEntityId, EntityType.MAPPING, groupId));
+                .formatted(notPresentEntityId, EntityType.MAPPING_RULE, groupId));
   }
 
   @Test
@@ -316,7 +316,7 @@ public class GroupTest {
             .group()
             .removeEntity(groupId)
             .withEntityId(notPresentEntityId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .expectRejection()
             .remove();
 
@@ -326,7 +326,7 @@ public class GroupTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to remove an entity with ID '%s' and type '%s' from group with ID '%s', but the entity does not exist."
-                .formatted(notPresentEntityId, EntityType.MAPPING, groupId));
+                .formatted(notPresentEntityId, EntityType.MAPPING_RULE, groupId));
   }
 
   @Test

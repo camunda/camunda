@@ -12,7 +12,7 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -345,14 +345,14 @@ public class IdentitySetupInitializeTest {
     // given
     final var role = new RoleRecord().setRoleId(UUID.randomUUID().toString());
     final var mapping1 =
-        new MappingRecord()
-            .setMappingId(UUID.randomUUID().toString())
+        new MappingRuleRecord()
+            .setMappingRuleId(UUID.randomUUID().toString())
             .setName(UUID.randomUUID().toString())
             .setClaimName(UUID.randomUUID().toString())
             .setClaimValue(UUID.randomUUID().toString());
     final var mapping2 =
-        new MappingRecord()
-            .setMappingId(UUID.randomUUID().toString())
+        new MappingRuleRecord()
+            .setMappingRuleId(UUID.randomUUID().toString())
             .setName(UUID.randomUUID().toString())
             .setClaimName(UUID.randomUUID().toString())
             .setClaimValue(UUID.randomUUID().toString());
@@ -368,13 +368,13 @@ public class IdentitySetupInitializeTest {
             .withRoleMember(
                 new RoleRecord()
                     .setRoleId(role.getRoleId())
-                    .setEntityType(EntityType.MAPPING)
-                    .setEntityId(mapping1.getMappingId()))
+                    .setEntityType(EntityType.MAPPING_RULE)
+                    .setEntityId(mapping1.getMappingRuleId()))
             .withRoleMember(
                 new RoleRecord()
                     .setRoleId(role.getRoleId())
-                    .setEntityType(EntityType.MAPPING)
-                    .setEntityId(mapping2.getMappingId()))
+                    .setEntityType(EntityType.MAPPING_RULE)
+                    .setEntityId(mapping2.getMappingRuleId()))
             .initialize()
             .getValue();
 
@@ -383,7 +383,7 @@ public class IdentitySetupInitializeTest {
             RecordingExporter.roleRecords(RoleIntent.CREATED).withRoleId(role.getRoleId()).exists())
         .isTrue();
     final var createdMappings =
-        RecordingExporter.mappingRecords(MappingIntent.CREATED).limit(2).toList().stream()
+        RecordingExporter.mappingRuleRecords(MappingRuleIntent.CREATED).limit(2).toList().stream()
             .map(Record::getValue)
             .toList();
     Assertions.assertThat(createdMappings)
@@ -392,16 +392,16 @@ public class IdentitySetupInitializeTest {
             tuple(mapping1.getClaimName(), mapping1.getClaimValue()),
             tuple(mapping2.getClaimName(), mapping2.getClaimValue()));
     Assertions.assertThat(createdMappings)
-        .extracting(MappingRecordValue::getMappingId)
-        .containsExactly(mapping1.getMappingId(), mapping2.getMappingId());
+        .extracting(MappingRecordValue::getMappingRuleId)
+        .containsExactly(mapping1.getMappingRuleId(), mapping2.getMappingRuleId());
     Assertions.assertThat(createdMappings)
         .satisfiesExactly(
             m1 ->
                 assertThatEntityIsAssignedToRole(
-                    role.getRoleId(), m1.getMappingId(), EntityType.MAPPING),
+                    role.getRoleId(), m1.getMappingRuleId(), EntityType.MAPPING_RULE),
             m2 ->
                 assertThatEntityIsAssignedToRole(
-                    role.getRoleId(), m2.getMappingId(), EntityType.MAPPING));
+                    role.getRoleId(), m2.getMappingRuleId(), EntityType.MAPPING_RULE));
   }
 
   private static void assertUserIsNotCreated(final String username) {

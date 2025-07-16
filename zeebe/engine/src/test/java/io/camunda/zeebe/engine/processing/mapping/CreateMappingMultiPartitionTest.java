@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.Strings;
@@ -67,8 +67,8 @@ public class CreateMappingMultiPartitionTest {
                     ? ((CommandDistributionRecordValue) r.getValue()).getPartitionId()
                     : r.getPartitionId())
         .startsWith(
-            tuple(MappingIntent.CREATE, RecordType.COMMAND, 1),
-            tuple(MappingIntent.CREATED, RecordType.EVENT, 1),
+            tuple(MappingRuleIntent.CREATE, RecordType.COMMAND, 1),
+            tuple(MappingRuleIntent.CREATED, RecordType.EVENT, 1),
             tuple(CommandDistributionIntent.STARTED, RecordType.EVENT, 1))
         .containsSubsequence(
             tuple(CommandDistributionIntent.DISTRIBUTING, RecordType.EVENT, 2),
@@ -81,12 +81,12 @@ public class CreateMappingMultiPartitionTest {
         .endsWith(tuple(CommandDistributionIntent.FINISHED, RecordType.EVENT, 1));
     for (int partitionId = 2; partitionId < PARTITION_COUNT; partitionId++) {
       assertThat(
-              RecordingExporter.mappingRecords()
+              RecordingExporter.mappingRuleRecords()
                   .withPartitionId(partitionId)
-                  .limit(record -> record.getIntent().equals(MappingIntent.CREATED))
+                  .limit(record -> record.getIntent().equals(MappingRuleIntent.CREATED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .containsExactly(MappingIntent.CREATE, MappingIntent.CREATED);
+          .containsExactly(MappingRuleIntent.CREATE, MappingRuleIntent.CREATED);
     }
   }
 
@@ -145,6 +145,6 @@ public class CreateMappingMultiPartitionTest {
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.ROLE, RoleIntent.CREATE),
-            tuple(ValueType.MAPPING, MappingIntent.CREATE));
+            tuple(ValueType.MAPPING_RULE, MappingRuleIntent.CREATE));
   }
 }

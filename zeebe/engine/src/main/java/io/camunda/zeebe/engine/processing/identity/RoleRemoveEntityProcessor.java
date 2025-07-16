@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
@@ -41,7 +41,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
       "Expected to remove entity with ID '%s' from role with ID '%s', but the entity is not assigned to this role.";
   private final RoleState roleState;
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final GroupState groupState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -58,7 +58,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
-    mappingState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingState();
     groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
@@ -149,7 +149,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       case GROUP ->
           authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
               || groupState.get(entityId).isPresent();
-      case MAPPING -> mappingState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       default -> false;
     };
   }

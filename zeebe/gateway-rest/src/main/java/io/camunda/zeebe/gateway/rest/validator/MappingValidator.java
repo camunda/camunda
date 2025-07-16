@@ -46,11 +46,11 @@ public class MappingValidator {
   private static List<String> validateId(final String mappingId) {
     final List<String> violations = new ArrayList<>();
     if (mappingId == null || mappingId.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingId"));
+      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingRuleId"));
     } else if (mappingId.length() > MAX_LENGTH) {
-      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("mappingId", MAX_LENGTH));
+      violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("mappingRuleId", MAX_LENGTH));
     } else if (!ID_PATTERN.matcher(mappingId).matches()) {
-      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("mappingId", ID_REGEX));
+      violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("mappingRuleId", ID_REGEX));
     }
     return violations;
   }

@@ -12,11 +12,11 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class MappingProcessors {
-  public static void addMappingProcessors(
+public class MappingRuleProcessors {
+  public static void addMappingRuleProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
@@ -24,27 +24,27 @@ public class MappingProcessors {
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     typedRecordProcessors.onCommand(
-        ValueType.MAPPING,
-        MappingIntent.CREATE,
-        new MappingCreateProcessor(
+        ValueType.MAPPING_RULE,
+        MappingRuleIntent.CREATE,
+        new MappingRuleCreateProcessor(
             processingState.getMappingState(),
             authCheckBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior));
     typedRecordProcessors.onCommand(
-        ValueType.MAPPING,
-        MappingIntent.DELETE,
-        new MappingDeleteProcessor(
+        ValueType.MAPPING_RULE,
+        MappingRuleIntent.DELETE,
+        new MappingRuleDeleteProcessor(
             processingState,
             authCheckBehavior,
             keyGenerator,
             writers,
             commandDistributionBehavior));
     typedRecordProcessors.onCommand(
-        ValueType.MAPPING,
-        MappingIntent.UPDATE,
-        new MappingUpdateProcessor(
+        ValueType.MAPPING_RULE,
+        MappingRuleIntent.UPDATE,
+        new MappingRuleUpdateProcessor(
             processingState.getMappingState(),
             authCheckBehavior,
             keyGenerator,

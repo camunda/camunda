@@ -18,7 +18,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchResult;
@@ -55,13 +55,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class GroupController {
 
   private final GroupServices groupServices;
-  private final MappingServices mappingServices;
+  private final MappingRuleServices mappingServices;
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public GroupController(
       final GroupServices groupServices,
-      final MappingServices mappingServices,
+      final MappingRuleServices mappingServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.groupServices = groupServices;
@@ -117,7 +117,7 @@ public class GroupController {
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> assignMappingToGroup(
       @PathVariable final String groupId, @PathVariable final String mappingId) {
-    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -140,7 +140,7 @@ public class GroupController {
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> unassignMappingFromGroup(
       @PathVariable final String groupId, @PathVariable final String mappingId) {
-    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 

@@ -70,7 +70,7 @@ class AssignMappingToTenantTest {
         ID,
         tenant -> {
           assertThat(tenant.getTenantId()).isEqualTo(TENANT_ID);
-          assertThat(tenant.getEntityType()).isEqualTo(EntityType.MAPPING);
+          assertThat(tenant.getEntityType()).isEqualTo(EntityType.MAPPING_RULE);
         });
   }
 

@@ -80,7 +80,8 @@ public class InheritedOIDCAuthorizationIT {
       TestGroup.withoutPermissions(
           "unauthorizedGroup",
           "unauthorized",
-          List.of(new Membership(MAPPING_THROUGH_UNAUTHORIZED_GROUP.id(), EntityType.MAPPING)));
+          List.of(
+              new Membership(MAPPING_THROUGH_UNAUTHORIZED_GROUP.id(), EntityType.MAPPING_RULE)));
 
   @GroupDefinition
   private static final TestGroup AUTHORIZED_GROUP =
@@ -91,7 +92,7 @@ public class InheritedOIDCAuthorizationIT {
               new Permissions(ResourceType.RESOURCE, PermissionType.CREATE, List.of("*")),
               new Permissions(
                   ResourceType.GROUP, PermissionType.READ, List.of(UNAUTHORIZED_GROUP.id()))),
-          List.of(new Membership(MAPPING_THROUGH_AUTHORIZED_GROUP.id(), EntityType.MAPPING)));
+          List.of(new Membership(MAPPING_THROUGH_AUTHORIZED_GROUP.id(), EntityType.MAPPING_RULE)));
 
   @GroupDefinition
   private static final TestGroup GROUP_THROUGH_AUTHORIZED_ROLE =
@@ -100,7 +101,7 @@ public class InheritedOIDCAuthorizationIT {
           "authorized",
           List.of(
               new Membership(
-                  MAPPING_THROUGH_GROUP_THROUGH_AUTHORIZED_ROLE.id(), EntityType.MAPPING)));
+                  MAPPING_THROUGH_GROUP_THROUGH_AUTHORIZED_ROLE.id(), EntityType.MAPPING_RULE)));
 
   @RoleDefinition
   private static final TestRole AUTHORIZED_ROLE =
@@ -112,7 +113,7 @@ public class InheritedOIDCAuthorizationIT {
               new Permissions(
                   ResourceType.GROUP, PermissionType.READ, List.of(UNAUTHORIZED_GROUP.id()))),
           List.of(
-              new Membership(MAPPING_THROUGH_AUTHORIZED_ROLE.id(), EntityType.MAPPING),
+              new Membership(MAPPING_THROUGH_AUTHORIZED_ROLE.id(), EntityType.MAPPING_RULE),
               new Membership(GROUP_THROUGH_AUTHORIZED_ROLE.id(), EntityType.GROUP)));
 
   @GroupDefinition
@@ -122,7 +123,7 @@ public class InheritedOIDCAuthorizationIT {
           "unauthorized",
           List.of(
               new Membership(
-                  MAPPING_THROUGH_GROUP_THROUGH_UNAUTHORIZED_ROLE.id(), EntityType.MAPPING)));
+                  MAPPING_THROUGH_GROUP_THROUGH_UNAUTHORIZED_ROLE.id(), EntityType.MAPPING_RULE)));
 
   @RoleDefinition
   private static final TestRole UNAUTHORIZED_ROLE =
@@ -130,7 +131,7 @@ public class InheritedOIDCAuthorizationIT {
           "unauthorizedRole",
           "unauthorized",
           List.of(
-              new Membership(MAPPING_THROUGH_UNAUTHORIZED_ROLE.id(), EntityType.MAPPING),
+              new Membership(MAPPING_THROUGH_UNAUTHORIZED_ROLE.id(), EntityType.MAPPING_RULE),
               new Membership(GROUP_THROUGH_UNAUTHORIZED_ROLE.id(), EntityType.GROUP)));
 
   @ParameterizedTest

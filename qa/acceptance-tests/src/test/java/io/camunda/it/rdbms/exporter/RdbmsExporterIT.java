@@ -46,7 +46,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -593,18 +593,18 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportCreatedAndDeletedMapping() {
     // given
-    final var mappingCreatedRecord = getMappingRecord(1L, MappingIntent.CREATED);
+    final var mappingCreatedRecord = getMappingRecord(1L, MappingRuleIntent.CREATED);
 
     // when
     exporter.export(mappingCreatedRecord);
 
     // then
-    final var mappingId = ((MappingRecordValue) mappingCreatedRecord.getValue()).getMappingId();
+    final var mappingId = ((MappingRecordValue) mappingCreatedRecord.getValue()).getMappingRuleId();
     final var mapping = rdbmsService.getMappingReader().findOne(mappingId);
     assertThat(mapping).isNotNull();
 
     // given
-    final var mappingDeletedRecord = mappingCreatedRecord.withIntent(MappingIntent.DELETED);
+    final var mappingDeletedRecord = mappingCreatedRecord.withIntent(MappingRuleIntent.DELETED);
 
     // when
     exporter.export(mappingDeletedRecord);

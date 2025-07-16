@@ -9,32 +9,32 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerMappingDeleteRequest extends BrokerExecuteCommand<MappingRecord> {
-  private final MappingRecord requestDto = new MappingRecord();
+public class BrokerMappingRuleDeleteRequest extends BrokerExecuteCommand<MappingRuleRecord> {
+  private final MappingRuleRecord requestDto = new MappingRuleRecord();
 
-  public BrokerMappingDeleteRequest() {
-    super(ValueType.MAPPING, MappingIntent.DELETE);
+  public BrokerMappingRuleDeleteRequest() {
+    super(ValueType.MAPPING_RULE, MappingRuleIntent.DELETE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerMappingDeleteRequest setMappingId(final String mappingId) {
-    requestDto.setMappingId(mappingId);
+  public BrokerMappingRuleDeleteRequest setMappingRuleId(final String mappingRuleId) {
+    requestDto.setMappingRuleId(mappingRuleId);
     return this;
   }
 
   @Override
-  public MappingRecord getRequestWriter() {
+  public MappingRuleRecord getRequestWriter() {
     return requestDto;
   }
 
   @Override
-  protected MappingRecord toResponseDto(final DirectBuffer buffer) {
-    final var response = new MappingRecord();
+  protected MappingRuleRecord toResponseDto(final DirectBuffer buffer) {
+    final var response = new MappingRuleRecord();
     response.wrap(buffer);
     return response;
   }

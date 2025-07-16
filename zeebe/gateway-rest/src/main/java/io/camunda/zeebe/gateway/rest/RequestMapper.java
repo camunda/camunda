@@ -49,7 +49,7 @@ import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
-import io.camunda.service.MappingServices.MappingDTO;
+import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
@@ -482,24 +482,24 @@ public class RequestMapper {
                 request.getPassword()));
   }
 
-  public static Either<ProblemDetail, MappingDTO> toMappingDTO(
+  public static Either<ProblemDetail, MappingRuleDTO> toMappingDTO(
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),
         () ->
-            new MappingDTO(
+            new MappingRuleDTO(
                 request.getClaimName(),
                 request.getClaimValue(),
                 request.getName(),
                 request.getMappingRuleId()));
   }
 
-  public static Either<ProblemDetail, MappingDTO> toMappingDTO(
+  public static Either<ProblemDetail, MappingRuleDTO> toMappingDTO(
       final String mappingId, final MappingRuleUpdateRequest request) {
     return getResult(
         validateMappingRequest(request),
         () ->
-            new MappingDTO(
+            new MappingRuleDTO(
                 request.getClaimName(), request.getClaimValue(), request.getName(), mappingId));
   }
 

@@ -15,24 +15,24 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
-import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
+import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -42,11 +42,12 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<MappingRecord> {
+public class MappingRuleDeleteProcessor
+    implements DistributedTypedRecordProcessor<MappingRuleRecord> {
 
   private static final String MAPPING_NOT_FOUND_ERROR_MESSAGE =
       "Expected to delete mapping with id '%s', but a mapping with this id does not exist.";
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final TenantState tenantState;
   private final RoleState roleState;
   private final GroupState groupState;
@@ -59,13 +60,13 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
-  public MappingDeleteProcessor(
+  public MappingRuleDeleteProcessor(
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    mappingState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingState();
     tenantState = processingState.getTenantState();
     roleState = processingState.getRoleState();
     groupState = processingState.getGroupState();
@@ -80,11 +81,11 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<MappingRecord> command) {
+  public void processNewCommand(final TypedRecord<MappingRuleRecord> command) {
     final var record = command.getValue();
-    final String id = record.getMappingId();
-    final var persistedMappingOptional = mappingState.get(id);
-    if (persistedMappingOptional.isEmpty()) {
+    final String id = record.getMappingRuleId();
+    final var persistedMappingRuleOptional = mappingRuleState.get(id);
+    if (persistedMappingRuleOptional.isEmpty()) {
       final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(id);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
@@ -102,8 +103,8 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
       return;
     }
     final long key = keyGenerator.nextKey();
-    deleteMapping(persistedMappingOptional.get(), key);
-    responseWriter.writeEventOnCommand(key, MappingIntent.DELETED, record, command);
+    deleteMappingRule(persistedMappingRuleOptional.get(), key);
+    responseWriter.writeEventOnCommand(key, MappingRuleIntent.DELETED, record, command);
 
     commandDistributionBehavior
         .withKey(key)
@@ -112,27 +113,27 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
   }
 
   @Override
-  public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
+  public void processDistributedCommand(final TypedRecord<MappingRuleRecord> command) {
     final var record = command.getValue();
-    mappingState
-        .get(record.getMappingId())
+    mappingRuleState
+        .get(record.getMappingRuleId())
         .ifPresentOrElse(
-            persistedMapping -> deleteMapping(persistedMapping, command.getKey()),
+            persistedMapping -> deleteMappingRule(persistedMapping, command.getKey()),
             () -> {
               final var errorMessage =
-                  MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingKey());
+                  MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingRuleKey());
               rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
             });
 
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void deleteMapping(final PersistedMapping mapping, final long key) {
-    final var mappingId = mapping.getMappingId();
+  private void deleteMappingRule(final PersistedMappingRule mappingRule, final long key) {
+    final var mappingId = mappingRule.getMappingRuleId();
     deleteAuthorizations(mappingId);
     for (final var tenantId :
         membershipState.getMemberships(
-            EntityType.MAPPING, mapping.getMappingId(), RelationType.TENANT)) {
+            EntityType.MAPPING_RULE, mappingRule.getMappingRuleId(), RelationType.TENANT)) {
       final var tenant = tenantState.getTenantById(tenantId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           tenant.getTenantKey(),
@@ -140,11 +141,11 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           new TenantRecord()
               .setTenantKey(tenant.getTenantKey())
               .setTenantId(tenant.getTenantId())
-              .setEntityId(mapping.getMappingId())
-              .setEntityType(EntityType.MAPPING));
+              .setEntityId(mappingRule.getMappingRuleId())
+              .setEntityType(EntityType.MAPPING_RULE));
     }
     for (final var roleId :
-        membershipState.getMemberships(EntityType.MAPPING, mappingId, RelationType.ROLE)) {
+        membershipState.getMemberships(EntityType.MAPPING_RULE, mappingId, RelationType.ROLE)) {
       final var role = roleState.getRole(roleId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           role.getRoleKey(),
@@ -153,11 +154,11 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
               .setRoleKey(role.getRoleKey())
               .setRoleId(roleId)
               .setEntityId(mappingId)
-              .setEntityType(EntityType.MAPPING));
+              .setEntityType(EntityType.MAPPING_RULE));
     }
     for (final var groupId :
         membershipState.getMemberships(
-            EntityType.MAPPING, mapping.getMappingId(), RelationType.GROUP)) {
+            EntityType.MAPPING_RULE, mappingRule.getMappingRuleId(), RelationType.GROUP)) {
       final var group = groupState.get(groupId).orElseThrow();
       stateWriter.appendFollowUpEvent(
           group.getGroupKey(),
@@ -165,16 +166,19 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
           new GroupRecord()
               .setGroupKey(group.getGroupKey())
               .setGroupId(groupId)
-              .setEntityId(mapping.getMappingId())
-              .setEntityType(EntityType.MAPPING));
+              .setEntityId(mappingRule.getMappingRuleId())
+              .setEntityType(EntityType.MAPPING_RULE));
     }
     stateWriter.appendFollowUpEvent(
-        key, MappingIntent.DELETED, new MappingRecord().setMappingId(mapping.getMappingId()));
+        key,
+        MappingRuleIntent.DELETED,
+        new MappingRuleRecord().setMappingRuleId(mappingRule.getMappingRuleId()));
   }
 
   private void deleteAuthorizations(final String mappingId) {
     final var authorizationKeysForMapping =
-        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.MAPPING, mappingId);
+        authorizationState.getAuthorizationKeysForOwner(
+            AuthorizationOwnerType.MAPPING_RULE, mappingId);
 
     authorizationKeysForMapping.forEach(
         authorizationKey -> {

@@ -179,7 +179,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ROLE, this::summarizeRole);
     valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
-    valueLoggers.put(ValueType.MAPPING, this::summarizeMapping);
+    valueLoggers.put(ValueType.MAPPING_RULE, this::summarizeMapping);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
   }
 
@@ -1074,9 +1074,9 @@ public class CompactRecordLogger {
     final StringBuilder builder = new StringBuilder("Mapping[");
     builder
         .append("Key=")
-        .append(shortenKey(value.getMappingKey()))
+        .append(shortenKey(value.getMappingRuleKey()))
         .append(", mappingId=")
-        .append(formatId(value.getMappingId()))
+        .append(formatId(value.getMappingRuleId()))
         .append(", claimName=")
         .append(value.getClaimName())
         .append(", claimValue=")

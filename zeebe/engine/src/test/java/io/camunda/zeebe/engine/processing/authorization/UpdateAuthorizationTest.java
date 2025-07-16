@@ -152,7 +152,7 @@ public class UpdateAuthorizationTest {
             .authorization()
             .updateAuthorization(authorizationKey)
             .withOwnerId(nonexistentMappingId)
-            .withOwnerType(AuthorizationOwnerType.MAPPING)
+            .withOwnerType(AuthorizationOwnerType.MAPPING_RULE)
             .withResourceId("resource-id")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)

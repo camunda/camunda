@@ -11,12 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -33,7 +33,7 @@ public class GroupAppliersTest {
 
   private MutableGroupState groupState;
   private MutableUserState userState;
-  private MutableMappingState mappingState;
+  private MutableMappingRuleState mappingState;
   private MutableMembershipState membershipState;
 
   private GroupCreatedApplier groupCreatedApplier;
@@ -132,15 +132,15 @@ public class GroupAppliersTest {
     final var entityKey = 1L;
     final var mappingId = String.valueOf(entityKey);
     final var mappingRecord =
-        new MappingRecord()
-            .setMappingId(mappingId)
-            .setMappingKey(entityKey)
+        new MappingRuleRecord()
+            .setMappingRuleId(mappingId)
+            .setMappingRuleKey(entityKey)
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
     final var groupId = "123";
     final var groupName = "group";
-    final var entityType = EntityType.MAPPING;
+    final var entityType = EntityType.MAPPING_RULE;
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     groupRecord.setEntityId(mappingId).setEntityType(entityType);
@@ -150,7 +150,8 @@ public class GroupAppliersTest {
 
     // then
     assertThat(
-            membershipState.hasRelation(EntityType.MAPPING, mappingId, RelationType.GROUP, groupId))
+            membershipState.hasRelation(
+                EntityType.MAPPING_RULE, mappingId, RelationType.GROUP, groupId))
         .isTrue();
   }
 
@@ -187,14 +188,14 @@ public class GroupAppliersTest {
     // given
     final var mappingId = Strings.newRandomValidIdentityId();
     final var mappingRecord =
-        new MappingRecord()
-            .setMappingId(mappingId)
+        new MappingRuleRecord()
+            .setMappingRuleId(mappingId)
             .setClaimName("claimName")
             .setClaimValue("claimValue");
     mappingState.create(mappingRecord);
     final var groupId = "123";
     final var groupName = "group";
-    final var entityType = EntityType.MAPPING;
+    final var entityType = EntityType.MAPPING_RULE;
     final var groupRecord = new GroupRecord().setGroupId(groupId).setName(groupName);
     groupState.create(groupRecord);
     groupRecord.setEntityId(mappingId).setEntityType(entityType);
@@ -205,7 +206,8 @@ public class GroupAppliersTest {
 
     // then
     assertThat(
-            membershipState.hasRelation(EntityType.MAPPING, mappingId, RelationType.GROUP, groupId))
+            membershipState.hasRelation(
+                EntityType.MAPPING_RULE, mappingId, RelationType.GROUP, groupId))
         .isFalse();
   }
 

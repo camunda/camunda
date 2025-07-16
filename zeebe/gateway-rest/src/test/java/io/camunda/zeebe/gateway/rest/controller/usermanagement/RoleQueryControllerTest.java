@@ -24,7 +24,7 @@ import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -44,7 +44,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private UserServices userServices;
-  @MockitoBean private MappingServices mappingsServices;
+  @MockitoBean private MappingRuleServices mappingsServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 

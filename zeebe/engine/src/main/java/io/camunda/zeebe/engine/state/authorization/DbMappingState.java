@@ -13,20 +13,20 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Optional;
 
-public class DbMappingState implements MutableMappingState {
+public class DbMappingState implements MutableMappingRuleState {
 
   private final DbString claimName;
   private final DbString claimValue;
   private final DbCompositeKey<DbString, DbString> claim;
-  private final PersistedMapping persistedMapping = new PersistedMapping();
-  private final ColumnFamily<DbCompositeKey<DbString, DbString>, PersistedMapping>
+  private final PersistedMappingRule persistedMappingRule = new PersistedMappingRule();
+  private final ColumnFamily<DbCompositeKey<DbString, DbString>, PersistedMappingRule>
       mappingColumnFamily;
 
   private final DbForeignKey<DbCompositeKey<DbString, DbString>> fkClaim;
@@ -40,10 +40,10 @@ public class DbMappingState implements MutableMappingState {
     claimName = new DbString();
     claimValue = new DbString();
     claim = new DbCompositeKey<>(claimName, claimValue);
-    final PersistedMapping persistedMapping = new PersistedMapping();
+    final PersistedMappingRule persistedMappingRule = new PersistedMappingRule();
     mappingColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MAPPINGS, transactionContext, claim, persistedMapping);
+            ZbColumnFamilies.MAPPINGS, transactionContext, claim, persistedMappingRule);
 
     fkClaim = new DbForeignKey<>(claim, ZbColumnFamilies.MAPPINGS);
 
@@ -54,8 +54,8 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void create(final MappingRecord mappingRecord) {
-    final var mappingId = mappingRecord.getMappingId();
+  public void create(final MappingRuleRecord mappingRecord) {
+    final var mappingId = mappingRecord.getMappingRuleId();
     final var name = mappingRecord.getName();
     final var claimName = mappingRecord.getClaimName();
     final var value = mappingRecord.getClaimValue();
@@ -63,20 +63,20 @@ public class DbMappingState implements MutableMappingState {
     this.mappingId.wrapString(mappingId);
     this.claimName.wrapString(claimName);
     claimValue.wrapString(value);
-    persistedMapping.setClaimName(claimName);
-    persistedMapping.setClaimValue(value);
-    persistedMapping.setName(name);
-    persistedMapping.setMappingKey(mappingRecord.getMappingKey());
-    persistedMapping.setMappingId(mappingId);
+    persistedMappingRule.setClaimName(claimName);
+    persistedMappingRule.setClaimValue(value);
+    persistedMappingRule.setName(name);
+    persistedMappingRule.setMappingRuleKey(mappingRecord.getMappingRuleKey());
+    persistedMappingRule.setMappingRuleId(mappingId);
 
-    mappingColumnFamily.insert(claim, persistedMapping);
+    mappingColumnFamily.insert(claim, persistedMappingRule);
     claimByIdColumnFamily.insert(this.mappingId, fkClaim);
   }
 
   @Override
-  public void update(final MappingRecord mappingRecord) {
-    mappingId.wrapString(mappingRecord.getMappingId());
-    get(mappingRecord.getMappingId())
+  public void update(final MappingRuleRecord mappingRecord) {
+    mappingId.wrapString(mappingRecord.getMappingRuleId());
+    get(mappingRecord.getMappingRuleId())
         .ifPresentOrElse(
             persistedMapping -> {
               // remove old record from mapping by claim
@@ -97,7 +97,7 @@ public class DbMappingState implements MutableMappingState {
               throw new IllegalStateException(
                   String.format(
                       "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
-                      mappingRecord.getMappingId()));
+                      mappingRecord.getMappingRuleId()));
             });
   }
 
@@ -106,7 +106,7 @@ public class DbMappingState implements MutableMappingState {
     get(id)
         .ifPresentOrElse(
             persistedMapping -> {
-              mappingId.wrapString(persistedMapping.getMappingId());
+              mappingId.wrapString(persistedMapping.getMappingRuleId());
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
               mappingColumnFamily.deleteExisting(claim);
@@ -121,7 +121,7 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public Optional<PersistedMapping> get(final String id) {
+  public Optional<PersistedMappingRule> get(final String id) {
     mappingId.wrapString(id);
     final var fk = claimByIdColumnFamily.get(mappingId);
     if (fk != null) {
@@ -131,10 +131,10 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public Optional<PersistedMapping> get(final String claimName, final String claimValue) {
+  public Optional<PersistedMappingRule> get(final String claimName, final String claimValue) {
     this.claimName.wrapString(claimName);
     this.claimValue.wrapString(claimValue);
-    final var persistedMapping = mappingColumnFamily.get(claim, PersistedMapping::new);
+    final var persistedMapping = mappingColumnFamily.get(claim, PersistedMappingRule::new);
 
     if (persistedMapping == null) {
       return Optional.empty();
@@ -144,8 +144,8 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public Collection<PersistedMapping> getAll() {
-    final var mappings = new LinkedList<PersistedMapping>();
+  public Collection<PersistedMappingRule> getAll() {
+    final var mappings = new LinkedList<PersistedMappingRule>();
     mappingColumnFamily.forEach(mapping -> mappings.add(mapping.copy()));
     return mappings;
   }

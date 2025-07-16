@@ -116,7 +116,7 @@ final class TestSupport {
             ValueType.ROLE,
             ValueType.TENANT,
             ValueType.GROUP,
-            ValueType.MAPPING,
+            ValueType.MAPPING_RULE,
             ValueType.IDENTITY_SETUP,
             ValueType.RESOURCE,
             ValueType.BATCH_OPERATION_CREATION,

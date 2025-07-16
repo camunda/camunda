@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -564,9 +564,9 @@ public final class ZeebeAssertHelper {
       final String claimValue,
       final Consumer<MappingRecordValue> consumer) {
     final MappingRecordValue mapping =
-        RecordingExporter.mappingRecords()
-            .withIntent(MappingIntent.CREATED)
-            .withMappingId(mappingId)
+        RecordingExporter.mappingRuleRecords()
+            .withIntent(MappingRuleIntent.CREATED)
+            .withMappingRuleId(mappingId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .getFirst()

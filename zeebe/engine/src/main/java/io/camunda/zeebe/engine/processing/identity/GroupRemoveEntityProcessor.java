@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -33,7 +33,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
       "Expected to remove entity with ID '%s' from group with ID '%s', but the entity is not assigned to this group.";
   private final GroupState groupState;
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -49,7 +49,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     groupState = processingState.getGroupState();
-    mappingState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
@@ -139,7 +139,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
   private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
       case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
-      case MAPPING -> mappingState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       default -> false;
     };
   }

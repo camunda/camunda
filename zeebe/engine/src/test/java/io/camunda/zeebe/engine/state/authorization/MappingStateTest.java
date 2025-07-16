@@ -9,10 +9,10 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class MappingStateTest {
 
   private MutableProcessingState processingState;
-  private MutableMappingState mappingState;
+  private MutableMappingRuleState mappingState;
 
   @BeforeEach
   public void setup() {
@@ -37,9 +37,9 @@ public class MappingStateTest {
     final String name = "name";
     final String mappingId = "mappingId";
     final var mapping =
-        new MappingRecord()
-            .setMappingKey(key)
-            .setMappingId(mappingId)
+        new MappingRuleRecord()
+            .setMappingRuleKey(key)
+            .setMappingRuleId(mappingId)
             .setClaimName(claimName)
             .setName(name)
             .setClaimValue(claimValue);
@@ -49,8 +49,8 @@ public class MappingStateTest {
 
     // then
     final var persistedMapping = mappingState.get(mappingId).get();
-    assertThat(persistedMapping.getMappingId()).isEqualTo(mappingId);
-    assertThat(persistedMapping.getMappingKey()).isEqualTo(key);
+    assertThat(persistedMapping.getMappingRuleId()).isEqualTo(mappingId);
+    assertThat(persistedMapping.getMappingRuleKey()).isEqualTo(key);
     assertThat(persistedMapping.getName()).isEqualTo(name);
     assertThat(persistedMapping.getClaimName()).isEqualTo(claimName);
     assertThat(persistedMapping.getClaimValue()).isEqualTo(claimValue);
@@ -74,12 +74,12 @@ public class MappingStateTest {
     final String mappingId = "mappingId";
     final String name = "name";
     final var mapping =
-        new MappingRecord()
-            .setMappingKey(key)
+        new MappingRuleRecord()
+            .setMappingRuleKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(name)
-            .setMappingId(mappingId);
+            .setMappingRuleId(mappingId);
     mappingState.create(mapping);
 
     // when
@@ -88,8 +88,8 @@ public class MappingStateTest {
     // then
     assertThat(retrievedMapping).isPresent();
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
-    assertThat(retrievedMapping.get().getMappingId()).isEqualTo(mappingId);
-    assertThat(retrievedMapping.get().getMappingKey()).isEqualTo(key);
+    assertThat(retrievedMapping.get().getMappingRuleId()).isEqualTo(mappingId);
+    assertThat(retrievedMapping.get().getMappingRuleKey()).isEqualTo(key);
   }
 
   @Test
@@ -110,12 +110,12 @@ public class MappingStateTest {
     final String mappingId = "mappingId";
     final String name = "name";
     final var mapping =
-        new MappingRecord()
-            .setMappingKey(key)
+        new MappingRuleRecord()
+            .setMappingRuleKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(name)
-            .setMappingId(mappingId);
+            .setMappingRuleId(mappingId);
     mappingState.create(mapping);
 
     // when
@@ -123,7 +123,7 @@ public class MappingStateTest {
 
     // then
     assertThat(retrievedMapping).isPresent();
-    assertThat(retrievedMapping.get().getMappingId()).isEqualTo(mappingId);
+    assertThat(retrievedMapping.get().getMappingRuleId()).isEqualTo(mappingId);
     assertThat(retrievedMapping.get().getName()).isEqualTo(name);
     assertThat(retrievedMapping.get().getClaimName()).isEqualTo(claimName);
     assertThat(retrievedMapping.get().getClaimValue()).isEqualTo(claimValue);
@@ -137,9 +137,9 @@ public class MappingStateTest {
     final String claimValue = "bar";
     final String mappingId = "mappingId";
     final var mapping =
-        new MappingRecord()
-            .setMappingId(mappingId)
-            .setMappingKey(key)
+        new MappingRuleRecord()
+            .setMappingRuleId(mappingId)
+            .setMappingRuleKey(key)
             .setClaimName(claimName)
             .setClaimValue(claimValue);
     mappingState.create(mapping);
@@ -161,9 +161,9 @@ public class MappingStateTest {
     final String claimName = "claimName";
     final String claimValue = "claimValue";
     final var mapping =
-        new MappingRecord()
-            .setMappingKey(key)
-            .setMappingId(mappingId)
+        new MappingRuleRecord()
+            .setMappingRuleKey(key)
+            .setMappingRuleId(mappingId)
             .setName(name)
             .setClaimName(claimName)
             .setClaimValue(claimValue);
@@ -174,9 +174,9 @@ public class MappingStateTest {
     final String newClaimName = "newClaimName";
     final String newClaimValue = "newClaimValue";
     final var updateMapping =
-        new MappingRecord()
-            .setMappingKey(key)
-            .setMappingId(mappingId)
+        new MappingRuleRecord()
+            .setMappingRuleKey(key)
+            .setMappingRuleId(mappingId)
             .setName(newName)
             .setClaimName(newClaimName)
             .setClaimValue(newClaimValue);
@@ -193,6 +193,6 @@ public class MappingStateTest {
     assertThat(mappingState.get(newClaimName, newClaimValue)).isNotEmpty();
     final var mappingByClaim = mappingState.get(newClaimName, newClaimValue).get();
     assertThat(mappingByClaim.getName()).isEqualTo(newName);
-    assertThat(mappingByClaim.getMappingId()).isEqualTo(mappingId);
+    assertThat(mappingByClaim.getMappingRuleId()).isEqualTo(mappingId);
   }
 }

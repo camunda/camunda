@@ -334,14 +334,14 @@ public class RemoveEntityTenantTest {
         .tenant()
         .addEntity(tenantId)
         .withEntityId(mappingId)
-        .withEntityType(EntityType.MAPPING)
+        .withEntityType(EntityType.MAPPING_RULE)
         .add();
     final var removedEntity =
         engine
             .tenant()
             .removeEntity(tenantId)
             .withEntityId(mappingId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .remove()
             .getValue();
 
@@ -349,7 +349,7 @@ public class RemoveEntityTenantTest {
         .isNotNull()
         .hasTenantId(tenantId)
         .hasEntityId(mappingId)
-        .hasEntityType(EntityType.MAPPING);
+        .hasEntityType(EntityType.MAPPING_RULE);
   }
 
   @Test
@@ -373,7 +373,7 @@ public class RemoveEntityTenantTest {
             .tenant()
             .removeEntity(tenantId)
             .withEntityId(mappingId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .expectRejection()
             .remove();
 
@@ -406,7 +406,7 @@ public class RemoveEntityTenantTest {
             .tenant()
             .removeEntity(tenantId)
             .withEntityId(mappingId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .expectRejection()
             .remove();
 

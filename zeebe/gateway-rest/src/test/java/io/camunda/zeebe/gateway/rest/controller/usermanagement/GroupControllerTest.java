@@ -19,7 +19,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.exception.ErrorMapper;
@@ -212,7 +212,7 @@ public class GroupControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private UserServices userServices;
     @MockitoBean private RoleServices roleServices;
-    @MockitoBean private MappingServices mappingServices;
+    @MockitoBean private MappingRuleServices mappingServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
     @BeforeEach
@@ -675,7 +675,7 @@ public class GroupControllerTest {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingId = Strings.newRandomValidIdentityId();
-      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING_RULE);
       when(groupServices.assignMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -696,7 +696,7 @@ public class GroupControllerTest {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingId = Strings.newRandomValidIdentityId();
-      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING_RULE);
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
@@ -725,7 +725,7 @@ public class GroupControllerTest {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingId = Strings.newRandomValidIdentityId();
-      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING_RULE);
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
@@ -895,7 +895,7 @@ public class GroupControllerTest {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingId = Strings.newRandomValidIdentityId();
-      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING_RULE);
       when(groupServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
       // when
@@ -916,7 +916,7 @@ public class GroupControllerTest {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingId = Strings.newRandomValidIdentityId();
-      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING_RULE);
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
@@ -945,7 +945,7 @@ public class GroupControllerTest {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingId = Strings.newRandomValidIdentityId();
-      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING);
+      final var request = new GroupMemberDTO(groupId, mappingId, EntityType.MAPPING_RULE);
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
