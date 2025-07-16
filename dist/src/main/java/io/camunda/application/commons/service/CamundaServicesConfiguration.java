@@ -68,6 +68,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -309,6 +310,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  @ConditionalOnSecondaryStorage
   public MappingServices mappingServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
@@ -328,11 +330,12 @@ public class CamundaServicesConfiguration {
   @Bean
   public SecurityContextProvider securityContextProvider(
       final SecurityConfiguration securityConfiguration,
-      final AuthorizationChecker authorizationChecker) {
-    return new SecurityContextProvider(securityConfiguration, authorizationChecker);
+      final Optional<AuthorizationChecker> authorizationChecker) {
+    return new SecurityContextProvider(securityConfiguration, authorizationChecker.orElse(null));
   }
 
   @Bean
+  @ConditionalOnSecondaryStorage
   public AuthorizationChecker authorizationChecker(
       final AuthorizationSearchClient authorizationSearchClient) {
     return new AuthorizationChecker(authorizationSearchClient);

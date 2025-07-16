@@ -11,23 +11,29 @@ import static io.camunda.security.configuration.headers.ContentSecurityPolicyCon
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
+import io.camunda.authentication.CamundaOAuthPrincipalService;
+import io.camunda.authentication.CamundaOAuthPrincipalServiceImpl;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnSecondaryStorageAuthentication;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.NoSecondaryStorageOAuthPrincipalService;
 import io.camunda.authentication.NoSecondaryStorageUserDetailsService;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
+import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
@@ -511,6 +517,34 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   public static class OidcConfiguration {
+    @Bean
+    @ConditionalOnSecondaryStorageAuthentication
+    @ConditionalOnMissingBean(CamundaOAuthPrincipalService.class)
+    public CamundaOAuthPrincipalServiceImpl camundaOAuthPrincipalService(
+        final MappingServices mappingServices,
+        final TenantServices tenantServices,
+        final RoleServices roleServices,
+        final GroupServices groupServices,
+        final AuthorizationServices authorizationServices,
+        final OidcPrincipalLoader oidcPrincipalLoader,
+        final OidcGroupsLoader oidcGroupsLoader,
+        final SecurityConfiguration securityConfiguration) {
+      return new CamundaOAuthPrincipalServiceImpl(
+          mappingServices,
+          tenantServices,
+          roleServices,
+          groupServices,
+          authorizationServices,
+          oidcPrincipalLoader,
+          oidcGroupsLoader,
+          securityConfiguration);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(CamundaOAuthPrincipalService.class)
+    public NoSecondaryStorageOAuthPrincipalService noSecondaryStorageOAuthPrincipalService() {
+      return new NoSecondaryStorageOAuthPrincipalService();
+    }
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
