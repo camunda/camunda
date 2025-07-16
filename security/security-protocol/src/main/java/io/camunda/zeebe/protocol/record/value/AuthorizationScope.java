@@ -40,4 +40,14 @@ public class AuthorizationScope {
   public static AuthorizationScope wildcard() {
     return new AuthorizationScope(ResourceIdFormat.ANY, null);
   }
+
+  public static ResourceIdFormat getFormatOf(final String resourceId) {
+    if (resourceId == null || resourceId.isEmpty()) {
+      return ResourceIdFormat.UNSPECIFIED;
+    }
+    if ("*".equals(resourceId)) {
+      return ResourceIdFormat.ANY;
+    }
+    return ResourceIdFormat.ID;
+  }
 }

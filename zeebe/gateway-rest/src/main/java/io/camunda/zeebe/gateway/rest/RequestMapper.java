@@ -124,6 +124,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstru
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -369,6 +370,7 @@ public class RequestMapper {
             new CreateAuthorizationRequest(
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                AuthorizationScope.getFormatOf(request.getResourceId()),
                 request.getResourceId(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
                 transformPermissionTypes(request.getPermissionTypes())));
@@ -383,6 +385,7 @@ public class RequestMapper {
                 authorizationKey,
                 request.getOwnerId(),
                 AuthorizationOwnerType.valueOf(request.getOwnerType().name()),
+                AuthorizationScope.getFormatOf(request.getResourceId()),
                 request.getResourceId(),
                 AuthorizationResourceType.valueOf(request.getResourceType().name()),
                 transformPermissionTypes(request.getPermissionTypes())));

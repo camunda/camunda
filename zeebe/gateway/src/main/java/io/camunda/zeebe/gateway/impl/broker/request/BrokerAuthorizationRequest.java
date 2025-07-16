@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Set;
 import org.agrona.DirectBuffer;
@@ -39,6 +40,11 @@ public class BrokerAuthorizationRequest extends BrokerExecuteCommand<Authorizati
 
   public BrokerAuthorizationRequest setOwnerType(final AuthorizationOwnerType ownerType) {
     requestDto.setOwnerType(ownerType);
+    return this;
+  }
+
+  public BrokerAuthorizationRequest setResourceIdFormat(final ResourceIdFormat resourceIdFormat) {
+    requestDto.setResourceIdFormat(resourceIdFormat);
     return this;
   }
 
