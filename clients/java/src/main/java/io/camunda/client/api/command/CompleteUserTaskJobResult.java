@@ -15,10 +15,11 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-public class CompleteUserTaskJobResult {
+public class CompleteUserTaskJobResult implements CompleteJobResult {
 
   private boolean isDenied;
   private String deniedReason;
@@ -184,5 +185,10 @@ public class CompleteUserTaskJobResult {
 
   public JobResultCorrections getCorrections() {
     return corrections;
+  }
+
+  @Override
+  public TypeEnum getType() {
+    return TypeEnum.USER_TASK;
   }
 }

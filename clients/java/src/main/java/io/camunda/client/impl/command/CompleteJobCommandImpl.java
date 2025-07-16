@@ -27,7 +27,6 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
-import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.client.protocol.rest.JobResultCorrections;
 import io.camunda.client.protocol.rest.JobResultUserTask;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -128,7 +127,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         .candidateGroups(jobResult.getCorrections().getCandidateGroups())
         .priority(jobResult.getCorrections().getPriority());
     resultRest
-        .type(TypeEnum.USER_TASK)
+        .type(jobResult.getType())
         .denied(jobResult.isDenied())
         .deniedReason(jobResult.getDeniedReason())
         .corrections(correctionsRest);
@@ -160,7 +159,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       correctionsGrpc.setPriority(jobResult.getCorrections().getPriority());
     }
     resultGrpc
-        .setType(TypeEnum.USER_TASK.getValue())
+        .setType(jobResult.getType().getValue())
         .setDenied(jobResult.isDenied())
         .setDeniedReason(jobResult.getDeniedReason() == null ? "" : jobResult.getDeniedReason())
         .setCorrections(correctionsGrpc);
