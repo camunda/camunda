@@ -3,6 +3,11 @@
 #   ./executeProfiling.sh <POD-NAME>
 set -oxe pipefail
 
+if [ -z "$1" ]; then
+  echo "Error: Missing required argument <POD-NAME>."
+  echo "Usage: ./executeProfiling.sh <POD-NAME>"
+  exit 1
+fi
 node=$1
 
 # Download and extract latest async profiler
