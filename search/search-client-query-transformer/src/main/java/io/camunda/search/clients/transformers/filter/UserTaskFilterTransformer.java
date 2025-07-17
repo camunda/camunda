@@ -57,7 +57,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
     queries.addAll(getPrioritiesQuery(filter.priorityOperations()));
-    ofNullable(getStateQuery(filter.states())).ifPresent(queries::add);
+    queries.addAll(getStatesQuery(filter.stateOperations()));
     ofNullable(getTenantQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
     queries.addAll(getCreationTimeQuery(filter.creationDateOperations()));
@@ -132,8 +132,8 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return dateTimeOperations(DUE_DATE, dueTime);
   }
 
-  private SearchQuery getStateQuery(final List<String> state) {
-    return stringTerms(STATE, state);
+  private List<SearchQuery> getStatesQuery(final List<Operation<String>> states) {
+    return stringOperations(STATE, states);
   }
 
   private SearchQuery getTenantQuery(final List<String> tenant) {

@@ -21,6 +21,7 @@ import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
@@ -125,6 +126,33 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                         assertThat(term.value().stringValue()).isEqualTo("CREATED");
                       });
             });
+  }
+
+  @Test
+  public void shouldQueryByTaskStates() {
+    // given
+    final var filter =
+        FilterBuilders.userTask(
+            (f) -> f.stateOperations(Operation.in("CREATING", "UPDATING", "ASSIGNING")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) ->
+                assertThat(t.must().getFirst().queryOption())
+                    .isInstanceOfSatisfying(
+                        SearchTermsQuery.class,
+                        (term) -> {
+                          assertThat(term.field()).isEqualTo("state");
+                          assertThat(term.values())
+                              .extracting(TypedValue::value)
+                              .containsExactly("CREATING", "UPDATING", "ASSIGNING");
+                        }));
   }
 
   @Test
