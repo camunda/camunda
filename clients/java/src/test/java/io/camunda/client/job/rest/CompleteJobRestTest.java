@@ -17,7 +17,7 @@ package io.camunda.client.job.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
@@ -169,9 +169,7 @@ class CompleteJobRestTest extends ClientRestTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .withResult()
-        .deny(denied)
-        .deniedReason(deniedReason)
+        .withResult(r -> r.forUserTask().deny(denied).deniedReason(deniedReason))
         .send()
         .join();
 
@@ -191,7 +189,11 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).withResult().deny(denied, deniedReason).send().join();
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.forUserTask().deny(denied, deniedReason))
+        .send()
+        .join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
@@ -211,7 +213,7 @@ class CompleteJobRestTest extends ClientRestTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .withResult(r -> r.deny(denied).deniedReason(deniedReason))
+        .withResult(r -> r.forUserTask().deny(denied).deniedReason(deniedReason))
         .send()
         .join();
 
@@ -232,9 +234,7 @@ class CompleteJobRestTest extends ClientRestTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .withResult()
-        .deny(false)
-        .resultDone()
+        .withResult(r -> r.forUserTask().deny(false))
         .variable("we_can", "still_set_vars")
         .send()
         .join();
@@ -257,14 +257,18 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).withResult().send().join();
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(CompleteJobCommandJobResultStep::forUserTask)
+        .send()
+        .join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getResult()).isNotNull();
     assertThat(request.getResult().getType()).isEqualTo(USER_TASK_DISCRIMINATOR);
     final JobResultUserTask result = (JobResultUserTask) request.getResult();
-    assertThat(result.getDenied()).isNull();
+    assertThat(result.getDenied()).isFalse();
     assertThat(result.getDeniedReason()).isNull();
   }
 
@@ -276,13 +280,15 @@ class CompleteJobRestTest extends ClientRestTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .withResult()
-        .correctAssignee("Test")
-        .correctDueDate("due date")
-        .correctFollowUpDate("follow up date")
-        .correctCandidateUsers(Arrays.asList("User A", "User B"))
-        .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
-        .correctPriority(80)
+        .withResult(
+            r ->
+                r.forUserTask()
+                    .correctAssignee("Test")
+                    .correctDueDate("due date")
+                    .correctFollowUpDate("follow up date")
+                    .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                    .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
+                    .correctPriority(80))
         .send()
         .join();
 
@@ -294,6 +300,7 @@ class CompleteJobRestTest extends ClientRestTest {
             .result(
                 new JobResultUserTask()
                     .type(USER_TASK_DISCRIMINATOR)
+                    .denied(false)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
@@ -314,12 +321,14 @@ class CompleteJobRestTest extends ClientRestTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .withResult()
-        .correctAssignee("Test")
-        .correctDueDate("due date")
-        .correctFollowUpDate("")
-        .correctCandidateUsers(Arrays.asList("User A", "User B"))
-        .correctPriority(80)
+        .withResult(
+            r ->
+                r.forUserTask()
+                    .correctAssignee("Test")
+                    .correctDueDate("due date")
+                    .correctFollowUpDate("")
+                    .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                    .correctPriority(80))
         .send()
         .join();
 
@@ -331,6 +340,7 @@ class CompleteJobRestTest extends ClientRestTest {
             .result(
                 new JobResultUserTask()
                     .type(USER_TASK_DISCRIMINATOR)
+                    .denied(false)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
@@ -351,13 +361,15 @@ class CompleteJobRestTest extends ClientRestTest {
     // when
     client
         .newCompleteCommand(jobKey)
-        .withResult()
-        .correctAssignee(null)
-        .correctDueDate(null)
-        .correctFollowUpDate(null)
-        .correctCandidateGroups(null)
-        .correctCandidateUsers(null)
-        .correctPriority(null)
+        .withResult(
+            r ->
+                r.forUserTask()
+                    .correctAssignee(null)
+                    .correctDueDate(null)
+                    .correctFollowUpDate(null)
+                    .correctCandidateGroups(null)
+                    .correctCandidateUsers(null)
+                    .correctPriority(null))
         .send()
         .join();
 
@@ -369,6 +381,7 @@ class CompleteJobRestTest extends ClientRestTest {
             .result(
                 new JobResultUserTask()
                     .type(USER_TASK_DISCRIMINATOR)
+                    .denied(false)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee(null)
@@ -390,13 +403,14 @@ class CompleteJobRestTest extends ClientRestTest {
     client
         .newCompleteCommand(jobKey)
         .withResult(
-            new CompleteJobResult()
-                .deny(false)
-                .correctAssignee("Test")
-                .correctDueDate(null)
-                .correctFollowUpDate("")
-                .correctCandidateUsers(Arrays.asList("User A", "User B"))
-                .correctPriority(80))
+            r ->
+                r.forUserTask()
+                    .deny(false)
+                    .correctAssignee("Test")
+                    .correctDueDate(null)
+                    .correctFollowUpDate("")
+                    .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                    .correctPriority(80))
         .send()
         .join();
 
@@ -430,14 +444,15 @@ class CompleteJobRestTest extends ClientRestTest {
     client
         .newCompleteCommand(jobKey)
         .withResult(
-            new CompleteJobResult()
-                .correct(
-                    c ->
-                        c.assignee("Test")
-                            .dueDate(null)
-                            .followUpDate("")
-                            .candidateUsers(Arrays.asList("User A", "User B"))
-                            .priority(80)))
+            r ->
+                r.forUserTask()
+                    .correct(
+                        c ->
+                            c.assignee("Test")
+                                .dueDate(null)
+                                .followUpDate("")
+                                .candidateUsers(Arrays.asList("User A", "User B"))
+                                .priority(80)))
         .send()
         .join();
 
@@ -468,7 +483,11 @@ class CompleteJobRestTest extends ClientRestTest {
     final long jobKey = 12;
 
     // when
-    client.newCompleteCommand(jobKey).withResult().send().join();
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(CompleteJobCommandJobResultStep::forUserTask)
+        .send()
+        .join();
 
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
@@ -478,6 +497,7 @@ class CompleteJobRestTest extends ClientRestTest {
             .result(
                 new JobResultUserTask()
                     .type(USER_TASK_DISCRIMINATOR)
+                    .denied(false)
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee(null)

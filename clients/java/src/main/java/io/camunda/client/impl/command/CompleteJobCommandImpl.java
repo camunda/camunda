@@ -19,17 +19,18 @@ import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandStep2;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.JobResultCorrections;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
-import io.camunda.client.protocol.rest.JobResult.TypeEnum;
+import io.camunda.client.protocol.rest.JobResultCorrections;
+import io.camunda.client.protocol.rest.JobResultUserTask;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -38,14 +39,13 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
-    implements CompleteJobCommandStep1, CompleteJobCommandStep2 {
+    implements CompleteJobCommandStep1, CompleteJobCommandJobResultStep {
 
   private final GatewayStub asyncStub;
   private final Builder grpcRequestObjectBuilder;
@@ -57,11 +57,6 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   private boolean useRest;
   private final long jobKey;
   private final JsonMapper jsonMapper;
-  private JobResult.Builder resultGrpc;
-  private io.camunda.client.protocol.rest.JobResultUserTask resultRest;
-  private io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections.Builder
-      correctionsGrpc;
-  private io.camunda.client.protocol.rest.JobResultCorrections correctionsRest;
 
   public CompleteJobCommandImpl(
       final GatewayStub asyncStub,
@@ -102,183 +97,76 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteJobCommandStep2 withResult() {
-    initJobResult();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep1 withResult(final CompleteJobResult jobResult) {
-    return withResult()
-        .deny(jobResult.isDenied())
-        .deniedReason(jobResult.getDeniedReason())
-        .correct(jobResult.getCorrections())
-        .resultDone();
-  }
-
-  @Override
   public CompleteJobCommandStep1 withResult(
-      final UnaryOperator<CompleteJobResult> jobResultModifier) {
-    initJobResult();
-    final CompleteJobResult reconstructedJobResult =
-        new CompleteJobResult()
-            .deny(resultRest.getDenied() != null ? resultRest.getDenied() : false)
-            .deniedReason(resultRest.getDeniedReason())
-            .correct(reconstructCorrections());
-    return withResult(jobResultModifier.apply(reconstructedJobResult));
+      final Function<CompleteJobCommandJobResultStep, CompleteJobResult> function) {
+    final CompleteJobResult result = function.apply(this);
+    if (result instanceof CompleteUserTaskJobResult) {
+      setJobResult((CompleteUserTaskJobResult) result);
+    }
+    return this;
   }
 
-  private void initJobResult() {
-    resultRest = new io.camunda.client.protocol.rest.JobResultUserTask();
-    resultRest.setType(
-        TypeEnum.USER_TASK); // TODO replace later when ad hoc subprocess is supported
-    correctionsRest = new io.camunda.client.protocol.rest.JobResultCorrections();
-    resultRest.setCorrections(correctionsRest);
+  @Override
+  public CompleteUserTaskJobResult forUserTask() {
+    return new CompleteUserTaskJobResult();
+  }
+
+  private void setJobResult(final CompleteUserTaskJobResult jobResult) {
+    if (useRest) {
+      setRestJobResult(jobResult);
+    } else {
+      setGrpcJobResult(jobResult);
+    }
+  }
+
+  private void setRestJobResult(final CompleteUserTaskJobResult jobResult) {
+    final JobResultUserTask resultRest = new JobResultUserTask();
+    final JobResultCorrections correctionsRest = new JobResultCorrections();
+    correctionsRest
+        .assignee(jobResult.getCorrections().getAssignee())
+        .dueDate(jobResult.getCorrections().getDueDate())
+        .followUpDate(jobResult.getCorrections().getFollowUpDate())
+        .candidateUsers(jobResult.getCorrections().getCandidateUsers())
+        .candidateGroups(jobResult.getCorrections().getCandidateGroups())
+        .priority(jobResult.getCorrections().getPriority());
+    resultRest
+        .type(jobResult.getType())
+        .denied(jobResult.isDenied())
+        .deniedReason(jobResult.getDeniedReason())
+        .corrections(correctionsRest);
     httpRequestObject.setResult(resultRest);
-
-    resultGrpc = JobResult.newBuilder();
-    correctionsGrpc = GatewayOuterClass.JobResultCorrections.newBuilder();
-    resultGrpc.setCorrections(correctionsGrpc);
-    grpcRequestObjectBuilder.setResult(resultGrpc);
   }
 
-  @Override
-  public CompleteJobCommandStep2 deny(final boolean isDenied) {
-    resultRest.setDenied(isDenied);
-    resultGrpc.setDenied(isDenied);
-    onResultChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 deny(final boolean isDenied, final String deniedReason) {
-    return deny(isDenied).deniedReason(deniedReason);
-  }
-
-  @Override
-  public CompleteJobCommandStep2 deniedReason(final String deniedReason) {
-    resultRest.setDeniedReason(deniedReason);
-    resultGrpc.setDeniedReason(deniedReason == null ? "" : deniedReason);
-    onResultChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correct(final JobResultCorrections corrections) {
-    return correctAssignee(corrections.getAssignee())
-        .correctCandidateGroups(corrections.getCandidateGroups())
-        .correctCandidateUsers(corrections.getCandidateUsers())
-        .correctDueDate(corrections.getDueDate())
-        .correctFollowUpDate(corrections.getFollowUpDate())
-        .correctPriority(corrections.getPriority());
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correct(final UnaryOperator<JobResultCorrections> corrections) {
-    final JobResultCorrections reconstructedCorrections = reconstructCorrections();
-    return correct(corrections.apply(reconstructedCorrections));
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctAssignee(final String assignee) {
-    correctionsRest.setAssignee(assignee);
-    if (assignee == null) {
-      correctionsGrpc.clearAssignee();
-    } else {
-      correctionsGrpc.setAssignee(assignee);
+  private void setGrpcJobResult(final CompleteUserTaskJobResult jobResult) {
+    final JobResult.Builder resultGrpc = JobResult.newBuilder();
+    final GatewayOuterClass.JobResultCorrections.Builder correctionsGrpc =
+        GatewayOuterClass.JobResultCorrections.newBuilder();
+    if (jobResult.getCorrections().getAssignee() != null) {
+      correctionsGrpc.setAssignee(jobResult.getCorrections().getAssignee());
     }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctDueDate(final String dueDate) {
-    correctionsRest.setDueDate(dueDate);
-    if (dueDate == null) {
-      correctionsGrpc.clearDueDate();
-    } else {
-      correctionsGrpc.setDueDate(dueDate);
+    if (jobResult.getCorrections().getDueDate() != null) {
+      correctionsGrpc.setDueDate(jobResult.getCorrections().getDueDate());
     }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctFollowUpDate(final String followUpDate) {
-    correctionsRest.setFollowUpDate(followUpDate);
-    if (followUpDate == null) {
-      correctionsGrpc.clearFollowUpDate();
-    } else {
-      correctionsGrpc.setFollowUpDate(followUpDate);
+    if (jobResult.getCorrections().getFollowUpDate() != null) {
+      correctionsGrpc.setFollowUpDate(jobResult.getCorrections().getFollowUpDate());
     }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctCandidateUsers(final List<String> candidateUsers) {
-    correctionsRest.setCandidateUsers(candidateUsers);
-    if (candidateUsers == null) {
-      correctionsGrpc.clearCandidateUsers();
-    } else {
+    if (jobResult.getCorrections().getCandidateUsers() != null) {
       correctionsGrpc.setCandidateUsers(
-          StringList.newBuilder().addAllValues(candidateUsers).build());
+          StringList.newBuilder().addAllValues(jobResult.getCorrections().getCandidateUsers()));
     }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctCandidateGroups(final List<String> candidateGroups) {
-    correctionsRest.setCandidateGroups(candidateGroups);
-    if (candidateGroups == null) {
-      correctionsGrpc.clearCandidateGroups();
-    } else {
+    if (jobResult.getCorrections().getCandidateGroups() != null) {
       correctionsGrpc.setCandidateGroups(
-          StringList.newBuilder().addAllValues(candidateGroups).build());
+          StringList.newBuilder().addAllValues(jobResult.getCorrections().getCandidateGroups()));
     }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep2 correctPriority(final Integer priority) {
-    correctionsRest.setPriority(priority);
-    if (priority == null) {
-      correctionsGrpc.clearPriority();
-    } else {
-      correctionsGrpc.setPriority(priority);
+    if (jobResult.getCorrections().getPriority() != null) {
+      correctionsGrpc.setPriority(jobResult.getCorrections().getPriority());
     }
-    onCorrectionsChange();
-    return this;
-  }
-
-  @Override
-  public CompleteJobCommandStep1 resultDone() {
-    return this;
-  }
-
-  private JobResultCorrections reconstructCorrections() {
-    return new JobResultCorrections()
-        .assignee(correctionsRest.getAssignee())
-        .candidateGroups(correctionsRest.getCandidateGroups())
-        .candidateUsers(correctionsRest.getCandidateUsers())
-        .dueDate(correctionsRest.getDueDate())
-        .followUpDate(correctionsRest.getFollowUpDate())
-        .priority(correctionsRest.getPriority());
-  }
-
-  private void onResultChange() {
-    // grpcRequestObjectBuilder.setResult() makes immutable copy of passed value so we need to
-    // refresh it everytime when we need to set another jobResult property
+    resultGrpc
+        .setType(jobResult.getType().getValue())
+        .setDenied(jobResult.isDenied())
+        .setDeniedReason(jobResult.getDeniedReason() == null ? "" : jobResult.getDeniedReason())
+        .setCorrections(correctionsGrpc);
     grpcRequestObjectBuilder.setResult(resultGrpc);
-  }
-
-  private void onCorrectionsChange() {
-    // resultGrpc.setCorrections() makes immutable copy of passed value so we need to
-    // refresh it everytime when we need to set another correctionsGrpc property
-    resultGrpc.setCorrections(correctionsGrpc);
-    onResultChange();
   }
 
   @Override
