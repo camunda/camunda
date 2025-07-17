@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
-
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
@@ -22,25 +21,23 @@ import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 @CamundaRestController
+@RequiresSecondaryStorage
 @RequestMapping("/v2/batch-operations")
 public class BatchOperationController {
-
   private final BatchOperationServices batchOperationServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-
   public BatchOperationController(
       final BatchOperationServices batchOperationServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.batchOperationServices = batchOperationServices;
     this.authenticationProvider = authenticationProvider;
   }
-
   @CamundaGetMapping(path = "/{batchOperationKey}")
   public ResponseEntity<BatchOperationResponse> getById(
       @PathVariable("batchOperationKey") final String batchOperationKey) {
@@ -54,15 +51,11 @@ public class BatchOperationController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
-  }
-
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<BatchOperationSearchQueryResult> searchBatchOperations(
       @RequestBody(required = false) final BatchOperationSearchQuery query) {
     return SearchQueryRequestMapper.toBatchOperationQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
-  }
-
   @CamundaPutMapping(path = "/{batchOperationKey}/cancellation")
   public ResponseEntity<Object> cancelBatchOperation(@PathVariable final String batchOperationKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
@@ -71,38 +64,17 @@ public class BatchOperationController {
                     .withAuthentication(authenticationProvider.getCamundaAuthentication())
                     .cancel(batchOperationKey))
         .join();
-  }
-
   @CamundaPutMapping(path = "/{batchOperationKey}/suspension")
   public ResponseEntity<Object> suspendBatchOperation(
       @PathVariable final String batchOperationKey) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-            () ->
-                batchOperationServices
-                    .withAuthentication(authenticationProvider.getCamundaAuthentication())
                     .suspend(batchOperationKey))
-        .join();
-  }
-
   @CamundaPutMapping(path = "/{batchOperationKey}/resumption")
   public ResponseEntity<Object> resumeBatchOperation(@PathVariable final String batchOperationKey) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
-            () ->
-                batchOperationServices
-                    .withAuthentication(authenticationProvider.getCamundaAuthentication())
                     .resume(batchOperationKey))
-        .join();
-  }
-
   private ResponseEntity<BatchOperationSearchQueryResult> search(final BatchOperationQuery query) {
-    try {
       final var result =
           batchOperationServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
 }

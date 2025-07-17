@@ -17,6 +17,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import jakarta.servlet.http.Part;
@@ -32,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 @CamundaRestController
+@RequiresSecondaryStorage
 @RequestMapping("/v2/documents")
 public class DocumentController {
 

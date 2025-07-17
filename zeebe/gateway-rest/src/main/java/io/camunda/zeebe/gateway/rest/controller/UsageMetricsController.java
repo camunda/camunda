@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
-
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
@@ -17,33 +16,28 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
 @CamundaRestController
+@RequiresSecondaryStorage
 @RequestMapping("/v2/usage-metrics")
 public class UsageMetricsController {
-
   private final UsageMetricsServices usageMetricsServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-
   public UsageMetricsController(
       final UsageMetricsServices usageMetricsServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.usageMetricsServices = usageMetricsServices;
     this.authenticationProvider = authenticationProvider;
   }
-
   @CamundaGetMapping
   public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
       @RequestParam(required = false) final String startTime,
       @RequestParam(required = false) final String endTime) {
-
     return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime)
         .fold(RestErrorMapper::mapProblemToResponse, this::getMetrics);
-  }
-
   private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {
     try {
       final var result =
@@ -54,5 +48,4 @@ public class UsageMetricsController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
-  }
 }
