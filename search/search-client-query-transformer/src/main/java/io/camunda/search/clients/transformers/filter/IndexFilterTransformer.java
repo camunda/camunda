@@ -107,7 +107,7 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     return and(filteredQueries);
   }
 
-  protected abstract SearchQuery toAuthorizationCheckSearchQuery(Authorization authorization);
+  protected abstract SearchQuery toAuthorizationCheckSearchQuery(Authorization<?> authorization);
 
   @Override
   public IndexDescriptor getIndex() {

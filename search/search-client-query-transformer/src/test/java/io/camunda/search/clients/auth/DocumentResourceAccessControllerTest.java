@@ -8,10 +8,16 @@
 package io.camunda.search.clients.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.TenantOwnedEntity;
+import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -235,4 +241,120 @@ class DocumentResourceAccessControllerTest {
     assertThat(result.tenantCheck().enabled()).isFalse();
     assertThat(result.tenantCheck().tenantIds()).isNull();
   }
+
+  @Test
+  void shouldApplyResourceAccessChecksWhileDoGet() {
+    // given
+    final var resource = new TestResource("invoice", "order", "bar");
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo").tenants(List.of("bar")));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readProcessDefinition().resourceId("invoice"));
+    final var securityContext =
+        SecurityContext.of(
+            s -> s.withAuthentication(authentication).withAuthorization(authorization));
+
+    when(resourceAccessProvider.hasResourceAccess(
+            eq(authentication), eq(authorization), any(TestResource.class)))
+        .thenReturn(ResourceAccess.allowed(authorization));
+    when(tenantAccessProvider.hasTenantAccess(eq(authentication), any()))
+        .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+    // when
+    final var result = controller.doGet(securityContext, a -> resource);
+
+    // then
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void shouldUseResourceIdSupplierWhileDoGet() {
+    // given
+    final var resource = new TestResource("invoice", "order", "bar");
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo").tenants(List.of("bar")));
+    final var authorization =
+        Authorization.of(
+            (Authorization.Builder<TestResource> a) ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .resourceIdSupplier(TestResource::anotherValue));
+    final var securityContext =
+        SecurityContext.of(
+            s -> s.withAuthentication(authentication).withAuthorization(authorization));
+
+    when(resourceAccessProvider.hasResourceAccess(
+            eq(authentication), eq(authorization), any(TestResource.class)))
+        .thenReturn(ResourceAccess.allowed(authorization));
+    when(tenantAccessProvider.hasTenantAccess(eq(authentication), any()))
+        .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+    // when
+    final var result = controller.doGet(securityContext, a -> resource);
+
+    // then
+    assertThat(result).isNotNull();
+  }
+
+  @Test
+  void shouldThrowTenantAccessDeniedException() {
+    // given
+    final var resource = new TestResource("invoice", "order", "bar");
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo").tenants(List.of("bar")));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readProcessDefinition().resourceId("invoice"));
+    final var securityContext =
+        SecurityContext.of(
+            s -> s.withAuthentication(authentication).withAuthorization(authorization));
+
+    when(tenantAccessProvider.hasTenantAccess(eq(authentication), any()))
+        .thenReturn(TenantAccess.denied(List.of("bar")));
+
+    // when
+    assertThatThrownBy(() -> controller.doGet(securityContext, a -> resource))
+        .isInstanceOf(TenantAccessDeniedException.class);
+  }
+
+  @Test
+  void shouldThrowResourceAccessDeniedExceptionWhenDoingGet() {
+    // given
+    final var resource = new TestResource("invoice", "order", "bar");
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo").tenants(List.of("bar")));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readProcessDefinition().resourceId("invoice"));
+    final var securityContext =
+        SecurityContext.of(
+            s -> s.withAuthentication(authentication).withAuthorization(authorization));
+
+    when(resourceAccessProvider.hasResourceAccess(
+            eq(authentication), eq(authorization), any(TestResource.class)))
+        .thenReturn(ResourceAccess.denied(authorization));
+    when(tenantAccessProvider.hasTenantAccess(eq(authentication), any()))
+        .thenReturn(TenantAccess.allowed(List.of("bar")));
+
+    // when
+    assertThatThrownBy(() -> controller.doGet(securityContext, a -> resource))
+        .isInstanceOf(ResourceAccessDeniedException.class);
+  }
+
+  @Test
+  void shouldNotApplyAnyChecksWhenResourceIsNull() {
+    // given
+    final var resource = new TestResource("invoice", "order", "bar");
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo").tenants(List.of("bar")));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readProcessDefinition().resourceId("invoice"));
+    final var securityContext =
+        SecurityContext.of(
+            s -> s.withAuthentication(authentication).withAuthorization(authorization));
+
+    // when
+    final var result = controller.doGet(securityContext, a -> null);
+
+    // then
+    assertThat(result).isNull();
+    verify(resourceAccessProvider, times(0)).hasResourceAccess(any(), any(), any());
+    verify(tenantAccessProvider, times(0)).hasTenantAccess(any(), any());
+  }
+
+  record TestResource(String id, String anotherValue, String tenantId)
+      implements TenantOwnedEntity {}
 }

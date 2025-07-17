@@ -44,7 +44,7 @@ public final class AuthorizationFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return longTerms(ID, authorization.resourceIds().stream().map(Long::valueOf).toList());
   }
 

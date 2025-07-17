@@ -16,6 +16,13 @@ import java.util.function.Function;
 public class RdbmsResourceAccessController implements ResourceAccessController {
 
   @Override
+  public <T> T doGet(
+      final SecurityContext securityContext,
+      final Function<ResourceAccessChecks, T> resourceChecksApplier) {
+    return resourceChecksApplier.apply(ResourceAccessChecks.disabled());
+  }
+
+  @Override
   public <T> T doSearch(
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {

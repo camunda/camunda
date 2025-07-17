@@ -81,7 +81,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 
