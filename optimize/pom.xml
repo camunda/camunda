@@ -54,6 +54,7 @@
     <spring.boot.version>3.3.11</spring.boot.version>
     <spring.version>6.1.21</spring.version>
     <spring.security.version>6.4.7</spring.security.version>
+    <version.tomcat>10.1.43</version.tomcat>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
@@ -175,6 +176,24 @@
         <artifactId>jetty-util</artifactId>
         <version>${jetty.version}</version>
       </dependency>
+      <!-- override wrong tomcat embed version coming from spring-boot-dependencies BOM -->
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-el</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-websocket</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+
+
       <dependency>
         <groupId>jakarta.ws.rs</groupId>
         <artifactId>jakarta.ws.rs-api</artifactId>
