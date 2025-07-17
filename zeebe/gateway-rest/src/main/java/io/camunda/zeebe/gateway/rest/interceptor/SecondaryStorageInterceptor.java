@@ -22,6 +22,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
  * Interceptor that validates secondary storage availability for endpoints requiring it.
  * When secondary storage is not configured (database.type=none), requests to endpoints
  * marked with {@link RequiresSecondaryStorage} will be rejected with HTTP 403 Forbidden.
+ */
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
   private final DatabaseProperties databaseProperties;
