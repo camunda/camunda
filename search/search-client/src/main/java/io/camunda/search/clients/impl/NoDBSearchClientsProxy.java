@@ -168,7 +168,13 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<MappingRuleEntity> searchMappingRules(final MappingRuleQuery filter) {
+  public MappingRuleEntity getMappingRule(final String id) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchQueryResult<MappingRuleEntity> searchMappingRules(
+      final MappingRuleQuery mappingRuleQuery) {
     throw new NoSecondaryStorageException();
   }
 

@@ -16,6 +16,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.security.auth.Authorization;
 
@@ -49,6 +50,9 @@ public abstract class Authorizations {
 
   public static final Authorization<JobEntity> JOB_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
+
+  public static final Authorization<MappingRuleEntity> MAPPING_RULE_READ_AUTHORIZATION =
+      Authorization.of(a -> a.mappingRule().read());
 
   public static final Authorization<ProcessInstanceEntity> PROCESS_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());

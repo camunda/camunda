@@ -127,6 +127,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public MappingRuleEntity getMappingRule(final String id) {
+    return doGetWithReader(readers.mappingRuleReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Mapping", id));
+  }
+
+  @Override
   public SearchQueryResult<MappingRuleEntity> searchMappingRules(
       final MappingRuleQuery mappingQuery) {
     return doSearchWithReader(readers.mappingRuleReader(), mappingQuery);
