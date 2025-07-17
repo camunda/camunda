@@ -7,8 +7,12 @@
  */
 package io.camunda.it.migration;
 
+import static io.camunda.it.migration.IdentityMigrationTestUtil.CAMUNDA_IDENTITY_RESOURCE_SERVER;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
 import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
@@ -26,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.boot.context.logging.LoggingApplicationListener;
+import org.springframework.boot.context.properties.ConfigurationPropertiesBindException;
 import org.springframework.context.ApplicationListener;
 
 @ZeebeIntegration
@@ -35,6 +40,8 @@ public class IdentityMigrationFailureIT {
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled().withRdbmsExporter();
 
+  private static final String IDENTITY_URL = "identity.example.com";
+  private static final String KEYCLOAK_URL = "keycloak.example.com";
   private final LogCapturer logCapturer = new LogCapturer();
 
   @BeforeEach
@@ -49,6 +56,14 @@ public class IdentityMigrationFailureIT {
     final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
     // no contact points for cluster configured
     migrationProperties.getCluster().setAwaitClusterJoinMaxAttempts(1);
+    migrationProperties.getManagementIdentity().setBaseUrl(IDENTITY_URL);
+    migrationProperties
+        .getManagementIdentity()
+        .setIssuerBackendUrl(KEYCLOAK_URL + "/realms/camunda-platform/");
+    migrationProperties.getManagementIdentity().setIssuerType("KEYCLOAK");
+    migrationProperties.getManagementIdentity().setClientId(IDENTITY_CLIENT);
+    migrationProperties.getManagementIdentity().setClientSecret(IDENTITY_CLIENT_SECRET);
+    migrationProperties.getManagementIdentity().setAudience(CAMUNDA_IDENTITY_RESOURCE_SERVER);
 
     final TestStandaloneIdentityMigration testIdentityMigration =
         new TestStandaloneIdentityMigration(migrationProperties);
@@ -81,15 +96,19 @@ public class IdentityMigrationFailureIT {
     setupLogCapturing(testIdentityMigration, BlockingMigrationsRunner.class);
 
     // when
-    testIdentityMigration.start();
+    final Throwable thrown = catchThrowable(testIdentityMigration::start);
 
     // then
-    assertThat(testIdentityMigration.getExitCode()).isEqualTo(1);
-    assertThat(
-            logCapturer.contains(
-                "IdentityMigrator failed with: Execution of GroupMigrationHandler failed",
-                Level.ERROR))
-        .isTrue();
+    assertThat(thrown)
+        .isInstanceOf(ConfigurationPropertiesBindException.class)
+        .cause()
+        .cause()
+        .hasMessageContainingAll(
+            "Audience must be provided",
+            "Issuer Backend URL must be provided",
+            "Client Secret must be provided",
+            "Client ID must be provided",
+            "Base URL must be provided");
   }
 
   /**
