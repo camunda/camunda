@@ -7,6 +7,8 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
+
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SearchEntityReader;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -37,7 +39,9 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.CamundaSearchException.Reason;
 import io.camunda.search.exception.ErrorMessages;
+import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
@@ -71,6 +75,7 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -169,6 +174,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
             readers
                 .processDefinitionStatisticsReader()
                 .aggregate(new ProcessDefinitionFlowNodeStatisticsQuery(filter), access));
+  }
+
+  @Override
+  public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
+    return doGetWithReader(readers.processInstanceReader(), processInstanceKey)
+        .orElseThrow(() -> entityNotFoundException("Process Instance", processInstanceKey));
   }
 
   @Override
@@ -277,6 +288,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
     return doSearchWithReader(readers.batchOperationItemReader(), query);
   }
 
+  protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGetWithReader(
+      final SearchEntityReader<T, Q> reader, final long key) {
+    return doGet(a -> reader.getByKey(key, a));
+  }
+
   protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearchWithReader(
       final SearchEntityReader<T, Q> reader, final Q query) {
     return withResultTypeCheck(reader, query);
@@ -305,8 +321,29 @@ public class CamundaSearchClients implements SearchClientsProxy {
     return result;
   }
 
+  protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGet(
+      final Function<ResourceAccessChecks, T> applier) {
+    try {
+      return Optional.ofNullable(doGetWithResourceAccessController(applier));
+    } catch (final TenantAccessDeniedException e) {
+      LOG.trace("Forbidden to access tenant, returning null", e);
+      return Optional.empty();
+    }
+  }
+
   protected <T> T doReadWithResourceAccessController(
       final Function<ResourceAccessChecks, T> applier) {
     return resourceAccessController.doSearch(securityContext, applier);
+  }
+
+  protected <T> T doGetWithResourceAccessController(
+      final Function<ResourceAccessChecks, T> applier) {
+    return resourceAccessController.doGet(securityContext, applier);
+  }
+
+  protected CamundaSearchException entityNotFoundException(
+      final String entityType, final long key) {
+    return new CamundaSearchException(
+        ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted(entityType, key), Reason.NOT_FOUND);
   }
 }

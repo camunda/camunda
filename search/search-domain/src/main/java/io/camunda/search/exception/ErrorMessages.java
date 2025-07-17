@@ -9,6 +9,8 @@ package io.camunda.search.exception;
 
 public class ErrorMessages {
 
+  public static final String ERROR_ENTITY_BY_KEY_NOT_FOUND = "%s with key '%d' not found";
+
   public static final String ERROR_FAILED_DELETE_REQUEST = "Failed to execute delete request";
   public static final String ERROR_FAILED_FIND_ALL_QUERY = "Failed to execute findAll query";
   public static final String ERROR_FAILED_GET_ALIAS_REQUEST = "Failed to execute getAlias request";

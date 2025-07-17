@@ -8,6 +8,8 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
@@ -23,9 +25,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.service.util.TreePathParser;
@@ -98,8 +98,7 @@ public final class ProcessInstanceServices
             processInstanceSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .searchProcessInstances(query));
   }
 
@@ -114,8 +113,7 @@ public final class ProcessInstanceServices
             processInstanceSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .processInstanceFlowNodeStatistics(processInstanceKey));
   }
 
@@ -163,8 +161,7 @@ public final class ProcessInstanceServices
                 sequenceFlowSearchClient
                     .withSecurityContext(
                         securityContextProvider.provideSecurityContext(
-                            authentication,
-                            Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                            authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                     .searchSequenceFlows(
                         SequenceFlowQuery.of(
                             b ->
@@ -174,25 +171,16 @@ public final class ProcessInstanceServices
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
-    final var result =
-        executeSearchRequest(
-                () ->
-                    processInstanceSearchClient
-                        .withSecurityContext(
-                            securityContextProvider.provideSecurityContext(authentication))
-                        .searchProcessInstances(
-                            processInstanceSearchQuery(
-                                q ->
-                                    q.filter(f -> f.processInstanceKeys(processInstanceKey))
-                                        .singleResult())))
-            .items()
-            .getFirst();
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
-    if (!securityContextProvider.isAuthorized(
-        result.processDefinitionId(), authentication, authorization)) {
-      throw ErrorMapper.createForbiddenException(authorization);
-    }
-    return result;
+    return executeSearchRequest(
+        () ->
+            processInstanceSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withAuthorization(
+                            PROCESS_INSTANCE_READ_AUTHORIZATION,
+                            ProcessInstanceEntity::processDefinitionId)))
+                .getProcessInstance(processInstanceKey));
   }
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(
@@ -339,8 +327,7 @@ public final class ProcessInstanceServices
             incidentSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
                 .searchIncidents(
                     IncidentQuery.of(
                         b ->

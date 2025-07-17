@@ -66,6 +66,7 @@ public class ErrorMapper {
     return switch (cse.getReason()) {
       case NOT_FOUND -> new ServiceException(errorMessage, NOT_FOUND);
       case NOT_UNIQUE -> new ServiceException(errorMessage, ALREADY_EXISTS);
+      case FORBIDDEN -> new ServiceException(errorMessage, FORBIDDEN);
       case CONNECTION_FAILED -> {
         final String detail = "The search client could not connect to the search server";
         LOGGER.debug(detail, cse);

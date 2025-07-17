@@ -144,6 +144,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery query) {
     throw new NoSecondaryStorageException();

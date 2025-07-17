@@ -108,7 +108,7 @@ class ProcessInstanceIncidentSearchTest {
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
     assertThat(exception.details().getStatus()).isEqualTo(404);
     assertThat(exception.details().getDetail())
-        .contains("A single result was expected, but none was found matching");
+        .contains("Process Instance with key '%s' not found".formatted(processInstanceKey));
   }
 
   @ParameterizedTest

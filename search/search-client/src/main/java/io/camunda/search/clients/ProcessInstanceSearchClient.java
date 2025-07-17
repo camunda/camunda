@@ -16,6 +16,8 @@ import java.util.List;
 
 public interface ProcessInstanceSearchClient {
 
+  ProcessInstanceEntity getProcessInstance(final long processInstanceKey);
+
   SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(ProcessInstanceQuery query);
 
   List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(

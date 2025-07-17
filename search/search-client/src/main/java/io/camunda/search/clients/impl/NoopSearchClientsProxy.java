@@ -146,6 +146,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery query) {
     return SearchQueryResult.empty();
