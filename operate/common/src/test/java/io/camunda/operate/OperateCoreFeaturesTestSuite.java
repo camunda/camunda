@@ -7,9 +7,15 @@
  */
 package io.camunda.operate;
 
+import org.junit.platform.suite.api.ExcludePackages;
 import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages({"io.camunda.operate.util"})
+@SelectPackages({"io.camunda.operate"})
+@ExcludePackages({
+  "io.camunda.operate.connect",
+  "io.camunda.operate.opensearch",
+  "io.camunda.operate.zeebeimport"
+})
 public class OperateCoreFeaturesTestSuite {}

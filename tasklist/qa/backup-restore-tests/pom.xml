@@ -215,7 +215,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUsedUndeclaredDependencies>
-            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
+            <ignoredUnusedDeclaredDependency>jakarta.annotation:jakarta.annotation-api</ignoredUnusedDeclaredDependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>

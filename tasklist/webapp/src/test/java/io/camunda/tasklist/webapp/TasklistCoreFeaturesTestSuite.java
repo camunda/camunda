@@ -5,11 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate;
+package io.camunda.tasklist.webapp;
 
+import org.junit.platform.suite.api.ExcludePackages;
 import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages({"io.camunda.operate"})
-public class OperateDataLayerTestSuite {}
+@SelectPackages({"io.camunda.tasklist.webapp"})
+@ExcludePackages({"io.camunda.tasklist.webapp.es"})
+public class TasklistCoreFeaturesTestSuite {}

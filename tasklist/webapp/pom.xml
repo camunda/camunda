@@ -290,6 +290,18 @@
     </dependency>
 
     <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-suite-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-suite</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
     </dependency>
@@ -532,6 +544,7 @@
             <dependency>org.thymeleaf:thymeleaf</dependency>
             <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
+            <dependency>org.junit.platform:junit-platform-suite</dependency>
             <!-- This dependency are indirectly used by the awssdk auth plugin. It requires these
      classes on the classpath to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
