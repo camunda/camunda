@@ -279,7 +279,29 @@ final class SegmentsManager implements AutoCloseable {
   void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    loadSegments().forEach(segment -> segments.put(segment.descriptor().index(), segment));
+    loadSegments()
+        .forEach(
+            segment -> {
+              final var firstIndex = segment.descriptor().index();
+              final var lastIndex = segment.descriptor().lastIndex();
+
+              //noinspection resource
+              segments.compute(
+                  firstIndex,
+                  (index, existingSegment) -> {
+                    if (existingSegment == null) {
+                      journalMetrics.incSegmentCount();
+                      return segment;
+                    } else if (existingSegment.lastIndex() < lastIndex) {
+                      LOG.trace("Replacing segment {} with {}", existingSegment, segment);
+                      return segment;
+                    } else {
+                      return existingSegment;
+                    }
+                  });
+            });
+
+    validateLoadedSegments();
 
     // If a segment doesn't already exist, create an initial segment starting at index 1.
     if (!segments.isEmpty()) {
@@ -366,52 +388,43 @@ final class SegmentsManager implements AutoCloseable {
                 previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
                 journalIndex);
 
-        final long firstIndex = segment.descriptor().index();
-        final long lastIndex = segment.descriptor().lastIndex();
-
-        if (previousSegment != null
-            && previousSegment.descriptor().index() == firstIndex
-            && previousSegment.lastIndex() >= lastIndex) {
-          LOG.debug(
-              "Skipping segment {} as it is smaller than the previous segment {}",
-              segment.descriptor(),
-              previousSegment.descriptor());
-          continue;
-        }
-
-        if (!segments.isEmpty() && previousSegment.descriptor().index() != firstIndex) {
-          // throws CorruptedJournalException if there is gap
-          checkForIndexGaps(previousSegment, segment);
-        }
-
-        final boolean isLastSegment = i == files.size() - 1;
-        if (isLastSegment && segment.lastIndex() < lastFlushedIndex) {
-          throw new CorruptedJournalException(
-              "Expected to find records until index %d, but last index is %d"
-                  .formatted(lastFlushedIndex, segment.lastIndex()));
-        }
-
-        // Since the files parsed are sorted, we can safely assume that a possible overlap can be
-        // present between the current and the previously parsed segment.
-        if (previousSegment != null
-            && previousSegment.descriptor().index() == firstIndex
-            && previousSegment.lastIndex() < lastIndex) {
-          segments.remove(previousSegment);
-        } else {
-          journalMetrics.incSegmentCount();
-        }
         segments.add(segment);
         previousSegment = segment;
       } catch (final CorruptedJournalException e) {
         if (handleSegmentCorruption(files, segments, i, lastFlushedIndex)) {
           return segments;
         }
-
         throw e;
       }
     }
 
     return segments;
+  }
+
+  private void validateLoadedSegments() {
+    final long lastFlushedIndex = metaStore.loadLastFlushedIndex();
+    if (segments.isEmpty()) {
+      return;
+    }
+    Segment previousSegment = null;
+    for (final Segment segment : segments.values()) {
+      if (previousSegment != null) {
+        try {
+          checkForIndexGaps(previousSegment, segment);
+        } catch (final CorruptedJournalException e) {
+          if (!handleSegmentGap(previousSegment)) {
+            throw e;
+          }
+        }
+      }
+      previousSegment = segment;
+    }
+
+    if (previousSegment.lastIndex() < lastFlushedIndex) {
+      throw new CorruptedJournalException(
+          "Expected to find records until index %d, but last index is %d"
+              .formatted(lastFlushedIndex, previousSegment.lastIndex()));
+    }
   }
 
   private void checkForIndexGaps(final Segment prevSegment, final Segment segment) {
@@ -421,6 +434,22 @@ final class SegmentsManager implements AutoCloseable {
               "Log segment %s is not aligned with previous segment %s (last index: %d).",
               segment, prevSegment, prevSegment.lastIndex()));
     }
+  }
+
+  private boolean handleSegmentGap(final Segment segment) {
+    final long lastFlushedIndex = metaStore.loadLastFlushedIndex();
+    if (metaStore.hasLastFlushedIndex()) {
+
+      if (lastFlushedIndex > segment.lastIndex()) {
+        return false;
+      }
+    }
+
+    segments.values().stream()
+        .filter(seg -> seg.lastIndex() > lastFlushedIndex)
+        .peek(seg -> LOG.debug("Excluding unflushed segment {}", seg))
+        .forEach(this::removeSegment);
+    return true;
   }
 
   /** Returns true if segments after corrupted segment were deleted; false, otherwise */
