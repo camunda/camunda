@@ -31,7 +31,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.security.SecurityContextProvider;
@@ -93,11 +93,11 @@ public class IdentityMigrationModuleConfiguration {
   }
 
   @Bean
-  public MappingServices mappingServices(
+  public MappingRuleServices mappingServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient) {
-    return new MappingServices(
+    return new MappingRuleServices(
         brokerClient, securityContextProvider, mappingRuleSearchClient, null);
   }
 

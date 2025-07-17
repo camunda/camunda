@@ -21,17 +21,17 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.MappingServices.MappingDTO;
+import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingUpdateRequest;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleDeleteRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleUpdateRequest;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -41,9 +41,9 @@ import org.mockito.ArgumentCaptor;
 
 public class MappingServicesTest {
 
-  ArgumentCaptor<BrokerMappingDeleteRequest> mappingDeleteRequestArgumentCaptor;
-  ArgumentCaptor<BrokerMappingUpdateRequest> mappingUpdateRequestArgumentCaptor;
-  private MappingServices services;
+  ArgumentCaptor<BrokerMappingRuleDeleteRequest> mappingDeleteRequestArgumentCaptor;
+  ArgumentCaptor<BrokerMappingRuleUpdateRequest> mappingUpdateRequestArgumentCaptor;
+  private MappingRuleServices services;
   private MappingRuleSearchClient client;
   private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
@@ -57,27 +57,29 @@ public class MappingServicesTest {
     result = mock(SearchQueryResult.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(client.searchMappingRules(any())).thenReturn(result);
-    mappingDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingDeleteRequest.class);
-    mappingUpdateRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingUpdateRequest.class);
+    mappingDeleteRequestArgumentCaptor =
+        ArgumentCaptor.forClass(BrokerMappingRuleDeleteRequest.class);
+    mappingUpdateRequestArgumentCaptor =
+        ArgumentCaptor.forClass(BrokerMappingRuleUpdateRequest.class);
     services =
-        new MappingServices(
+        new MappingRuleServices(
             stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
   }
 
   @Test
-  public void shouldCreateMapping() {
+  public void shouldCreateMappingRule() {
     // given
     final var mappingDTO =
-        new MappingDTO("newClaimName", "newClaimValue", "mappingRuleName", "mappingRuleId");
+        new MappingRuleDTO("newClaimName", "newClaimValue", "mappingRuleName", "mappingRuleId");
 
     // when
-    services.createMapping(mappingDTO);
+    services.createMappingRule(mappingDTO);
 
     // then
-    final BrokerMappingCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
-    assertThat(request.getIntent()).isEqualTo(MappingIntent.CREATE);
-    assertThat(request.getValueType()).isEqualTo(ValueType.MAPPING);
-    final MappingRecord brokerRequestValue = request.getRequestWriter();
+    final BrokerMappingRuleCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(MappingRuleIntent.CREATE);
+    assertThat(request.getValueType()).isEqualTo(ValueType.MAPPING_RULE);
+    final MappingRuleRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(brokerRequestValue.getClaimValue()).isEqualTo(mappingDTO.claimValue());
     assertThat(brokerRequestValue.getName()).isEqualTo(mappingDTO.name());
@@ -90,7 +92,7 @@ public class MappingServicesTest {
     when(client.searchMappingRules(any())).thenReturn(result);
 
     final MappingRuleFilter filter = new MappingRuleFilter.Builder().build();
-    final var searchQuery = SearchQueryBuilders.mappingSearchQuery((b) -> b.filter(filter));
+    final var searchQuery = SearchQueryBuilders.mappingRuleSearchQuery((b) -> b.filter(filter));
 
     // when
     final var searchQueryResult = services.search(searchQuery);
@@ -115,7 +117,7 @@ public class MappingServicesTest {
     when(client.searchMappingRules(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getMapping("mappingRuleId");
+    final var searchQueryResult = services.getMappingRule("mappingRuleId");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -127,22 +129,22 @@ public class MappingServicesTest {
     final CamundaAuthentication testAuthentication = mock(CamundaAuthentication.class);
     when(testAuthentication.claims()).thenReturn(Map.of());
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
-    final MappingServices testMappingServices =
-        new MappingServices(
+    final MappingRuleServices testMappingRuleServices =
+        new MappingRuleServices(
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
-    final var mappingRecord = new MappingRecord();
-    mappingRecord.setMappingId("id");
+    final var mappingRecord = new MappingRuleRecord();
+    mappingRecord.setMappingRuleId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
     //  when
-    testMappingServices.deleteMapping("id");
+    testMappingRuleServices.deleteMappingRule("id");
 
     // then
     verify(mockBrokerClient).sendRequest(mappingDeleteRequestArgumentCaptor.capture());
     final var request = mappingDeleteRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingId()).isEqualTo("id");
+    assertThat(request.getRequestWriter().getMappingRuleId()).isEqualTo("id");
   }
 
   @Test
@@ -151,38 +153,41 @@ public class MappingServicesTest {
     final CamundaAuthentication testAuthentication = mock(CamundaAuthentication.class);
     when(testAuthentication.claims()).thenReturn(Map.of());
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
-    final MappingServices testMappingServices =
-        new MappingServices(
+    final MappingRuleServices testMappingRuleServices =
+        new MappingRuleServices(
             mockBrokerClient, mock(SecurityContextProvider.class), client, testAuthentication);
 
-    final var mappingRecord = new MappingRecord();
-    mappingRecord.setMappingId("id");
+    final var mappingRecord = new MappingRuleRecord();
+    mappingRecord.setMappingRuleId("id");
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
     final var mappingDTO =
-        new MappingDTO(
-            "newClaimName", "newClaimValue", "newMappingRuleName", mappingRecord.getMappingId());
+        new MappingRuleDTO(
+            "newClaimName",
+            "newClaimValue",
+            "newMappingRuleName",
+            mappingRecord.getMappingRuleId());
 
     //  when
-    testMappingServices.updateMapping(mappingDTO);
+    testMappingRuleServices.updateMappingRule(mappingDTO);
 
     // then
     verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
     final var request = mappingUpdateRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingId()).isEqualTo(mappingDTO.mappingId());
+    assertThat(request.getRequestWriter().getMappingRuleId()).isEqualTo(mappingDTO.mappingRuleId());
     assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingDTO.claimValue());
     assertThat(request.getRequestWriter().getName()).isEqualTo(mappingDTO.name());
   }
 
   @Test
-  public void getMatchingMappings() {
+  public void getMatchingMappingsRule() {
     // given
     final Map<String, Object> claims =
         Map.of("c1", "v1", "c2", List.of("v2.1", "v2.2"), "c3", 300, "c4", true);
     // when
-    services.getMatchingMappings(claims);
+    services.getMatchingMappingRules(claims);
     // then
     final ArgumentCaptor<MappingRuleQuery> queryCaptor =
         ArgumentCaptor.forClass(MappingRuleQuery.class);

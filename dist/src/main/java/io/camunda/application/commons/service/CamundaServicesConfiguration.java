@@ -308,8 +308,8 @@ public class CamundaServicesConfiguration {
   public MappingRuleServices mappingServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-       final MappingRuleSearchClient mappingRuleSearchClient) {
-    return new MappingServices(
+      final MappingRuleSearchClient mappingRuleSearchClient) {
+    return new MappingRuleServices(
         brokerClient, securityContextProvider, mappingRuleSearchClient, null);
   }
 
