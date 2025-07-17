@@ -24,6 +24,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.security.auth.Authorization;
 
 public abstract class Authorizations {
@@ -81,4 +82,7 @@ public abstract class Authorizations {
 
   public static final Authorization<UserTaskEntity> USER_TASK_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readUserTask());
+
+  public static final Authorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
+      Authorization.of(a -> a.processDefinition().readProcessInstance());
 }

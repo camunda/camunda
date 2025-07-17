@@ -34,18 +34,9 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
     this.variableMapper = variableMapper;
   }
 
-  public VariableEntity findOne(final Long key) {
-    return search(
-            new VariableQuery(
-                new Builder().variableKeys(key).build(),
-                VariableSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(1))))
-        .items()
-        .getFirst();
-  }
-
-  public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public VariableEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key);
   }
 
   @Override
@@ -60,6 +51,22 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
     final var hits = variableMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public VariableEntity findOne(final Long key) {
+    return search(
+            new VariableQuery(
+                new Builder().variableKeys(key).build(),
+                VariableSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(1))))
+        .items()
+        .stream()
+        .findFirst()
+        .orElse(null);
+  }
+
+  public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 
   public record SearchResult(List<VariableEntity> hits, Integer total) {}
