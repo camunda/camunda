@@ -31,19 +31,10 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
     this.decisionRequirementsMapper = decisionRequirementsMapper;
   }
 
-  public Optional<DecisionRequirementsEntity> findOne(final long decisionRequirementsKey) {
-    final var result =
-        search(
-            DecisionRequirementsQuery.of(
-                b ->
-                    b.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
-                        .resultConfig(c -> c.includeXml(true))));
-    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
-  }
-
-  public SearchQueryResult<DecisionRequirementsEntity> search(
-      final DecisionRequirementsQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public DecisionRequirementsEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getByKey(key, resourceAccessChecks, false);
   }
 
   @Override
@@ -64,5 +55,26 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
     final var hits = decisionRequirementsMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<DecisionRequirementsEntity> findOne(final long decisionRequirementsKey) {
+    final var result =
+        search(
+            DecisionRequirementsQuery.of(
+                b ->
+                    b.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
+                        .resultConfig(c -> c.includeXml(true))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
+  }
+
+  public SearchQueryResult<DecisionRequirementsEntity> search(
+      final DecisionRequirementsQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
+  }
+
+  @Override
+  public DecisionRequirementsEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks, final boolean includeXml) {
+    return findOne(key).orElse(null);
   }
 }

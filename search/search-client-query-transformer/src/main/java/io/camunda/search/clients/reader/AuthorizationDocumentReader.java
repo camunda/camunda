@@ -12,12 +12,24 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class AuthorizationDocumentReader extends DocumentBasedReader
     implements AuthorizationReader {
 
-  public AuthorizationDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public AuthorizationDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public AuthorizationEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getById(
+            String.valueOf(key),
+            io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class,
+            indexDescriptor.getFullQualifiedName());
   }
 
   @Override

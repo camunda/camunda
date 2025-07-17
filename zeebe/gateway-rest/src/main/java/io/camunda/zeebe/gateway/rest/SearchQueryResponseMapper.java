@@ -876,7 +876,8 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
-        .result(entity.result());
+        .result(entity.result())
+        .tenantId(entity.tenantId());
   }
 
   public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
@@ -896,7 +897,8 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
         .result(entity.result())
         .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
-        .matchedRules(toMatchedRules(entity.evaluatedOutputs()));
+        .matchedRules(toMatchedRules(entity.evaluatedOutputs()))
+        .tenantId(entity.tenantId());
   }
 
   private static List<EvaluatedDecisionInputItem> toEvaluatedInputs(

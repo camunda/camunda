@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +46,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.function.Executable;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
@@ -167,11 +169,16 @@ class GroupAuthorizationIT {
   }
 
   @Test
-  void getGroupByIdShouldReturnNotFoundIfUnauthorized(
+  void getGroupByIdShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newGroupGetRequest(GROUP_1.id()).send().join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("404: 'Not Found'");
+    // when
+    final Executable executeGet =
+        () -> camundaClient.newGroupGetRequest(GROUP_1.id()).send().join();
+    // then
+    final var problemException = assertThrows(ProblemException.class, executeGet);
+    assertThat(problemException.code()).isEqualTo(403);
+    assertThat(problemException.details().getDetail())
+        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'GROUP'");
   }
 
   @Test

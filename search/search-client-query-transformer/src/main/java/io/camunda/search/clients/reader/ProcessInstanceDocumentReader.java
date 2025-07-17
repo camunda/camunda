@@ -13,6 +13,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.util.List;
 
@@ -22,9 +23,20 @@ public class ProcessInstanceDocumentReader extends DocumentBasedReader
   private final IncidentDocumentReader incidentReader;
 
   public ProcessInstanceDocumentReader(
-      final SearchClientBasedQueryExecutor executor, final IncidentDocumentReader incidentReader) {
-    super(executor);
+      final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptor indexDescriptor,
+      final IncidentDocumentReader incidentReader) {
+    super(executor, indexDescriptor);
     this.incidentReader = incidentReader;
+  }
+
+  @Override
+  public ProcessInstanceEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            ProcessInstanceQuery.of(b -> b.filter(f -> f.processInstanceKeys(key)).singleResult()),
+            ProcessInstanceForListViewEntity.class);
   }
 
   @Override

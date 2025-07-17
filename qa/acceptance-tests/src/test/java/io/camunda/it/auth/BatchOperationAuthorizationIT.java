@@ -351,7 +351,7 @@ class BatchOperationAuthorizationIT {
               } catch (final ProblemException e) {
                 code = e.code();
               }
-              assertThat(code).isEqualTo(404);
+              assertThat(code).isEqualTo(403);
             });
   }
 

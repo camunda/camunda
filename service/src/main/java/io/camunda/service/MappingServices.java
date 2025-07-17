@@ -7,12 +7,13 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.MAPPING_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.query.MappingQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.service.search.core.SearchQueryService;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -48,7 +48,7 @@ public class MappingServices
             mappingSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.mapping().read())))
+                        authentication, MAPPING_READ_AUTHORIZATION))
                 .searchMappings(query));
   }
 
@@ -77,24 +77,13 @@ public class MappingServices
   }
 
   public MappingEntity getMapping(final String mappingId) {
-    return search(
-            SearchQueryBuilders.mappingSearchQuery()
-                .filter(f -> f.mappingId(mappingId))
-                .singleResult()
-                .build())
-        .items()
-        .getFirst();
-  }
-
-  public Optional<MappingEntity> findMapping(final MappingDTO request) {
-    return search(
-            SearchQueryBuilders.mappingSearchQuery()
-                .filter(f -> f.claimName(request.claimName()).claimValue(request.claimValue()))
-                .page(p -> p.size(1))
-                .build())
-        .items()
-        .stream()
-        .findFirst();
+    return executeSearchRequest(
+        () ->
+            mappingSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, withAuthorization(MAPPING_READ_AUTHORIZATION, mappingId)))
+                .getMapping(mappingId));
   }
 
   public CompletableFuture<MappingRecord> deleteMapping(final String mappingId) {

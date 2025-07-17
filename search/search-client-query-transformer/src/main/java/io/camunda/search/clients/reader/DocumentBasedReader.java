@@ -8,13 +8,17 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public abstract class DocumentBasedReader {
 
   protected final SearchClientBasedQueryExecutor executor;
+  protected final IndexDescriptor indexDescriptor;
 
-  public DocumentBasedReader(final SearchClientBasedQueryExecutor executor) {
+  public DocumentBasedReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
     this.executor = executor;
+    this.indexDescriptor = indexDescriptor;
   }
 
   protected SearchClientBasedQueryExecutor getSearchExecutor() {

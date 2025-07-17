@@ -14,6 +14,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class RoleDocumentReader extends DocumentBasedReader implements RoleReader {
 
@@ -21,9 +22,18 @@ public class RoleDocumentReader extends DocumentBasedReader implements RoleReade
 
   public RoleDocumentReader(
       final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptor indexDescriptor,
       final TenantMemberDocumentReader tenantMemberReader) {
-    super(executor);
+    super(executor, indexDescriptor);
     this.tenantMemberReader = tenantMemberReader;
+  }
+
+  @Override
+  public RoleEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            RoleQuery.of(b -> b.filter(f -> f.roleId(id)).singleResult()),
+            io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class);
   }
 
   @Override

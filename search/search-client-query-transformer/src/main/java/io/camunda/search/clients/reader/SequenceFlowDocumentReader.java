@@ -12,11 +12,13 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class SequenceFlowDocumentReader extends DocumentBasedReader implements SequenceFlowReader {
 
-  public SequenceFlowDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public SequenceFlowDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override

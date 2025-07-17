@@ -15,6 +15,9 @@ import java.util.function.Function;
 
 public interface ResourceAccessController {
 
+  <T> T doGet(
+      SecurityContext securityContext, Function<ResourceAccessChecks, T> resourceChecksApplier);
+
   <T> T doSearch(
       SecurityContext securityContext, Function<ResourceAccessChecks, T> resourceChecksApplier);
 

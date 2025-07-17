@@ -8,11 +8,12 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.auth.CamundaAuthentication;
-import java.util.List;
 
 public interface TenantAccessProvider {
 
-  TenantAccessProvider NONE = (authentication) -> TenantAccess.allowed(List.of());
-
   TenantAccess resolveTenantAccess(final CamundaAuthentication authentication);
+
+  <T> TenantAccess hasTenantAccess(CamundaAuthentication authentication, T resource);
+
+  TenantAccess hasTenantAccessByTenantId(CamundaAuthentication authentication, String tenantId);
 }

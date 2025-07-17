@@ -12,14 +12,16 @@ import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class TenantMemberDocumentReader extends DocumentBasedReader implements TenantMemberReader {
 
-  public TenantMemberDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public TenantMemberDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override

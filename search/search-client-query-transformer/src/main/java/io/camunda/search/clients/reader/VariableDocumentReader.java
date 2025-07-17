@@ -12,11 +12,21 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class VariableDocumentReader extends DocumentBasedReader implements VariableReader {
 
-  public VariableDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public VariableDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public VariableEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            VariableQuery.of(b -> b.filter(f -> f.variableKeys(key)).singleResult()),
+            io.camunda.webapps.schema.entities.VariableEntity.class);
   }
 
   @Override

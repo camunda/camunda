@@ -30,13 +30,9 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
     this.userMapper = userMapper;
   }
 
-  public Optional<UserEntity> findOne(final long userKey) {
-    final var result = search(UserQuery.of(b -> b.filter(f -> f.key(userKey))));
-    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
-  }
-
-  public SearchQueryResult<UserEntity> search(final UserQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public UserEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return findOneByUsername(id).orElse(null);
   }
 
   @Override
@@ -52,5 +48,19 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
     final var hits = userMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<UserEntity> findOneByUsername(final String username) {
+    final var result = search(UserQuery.of(b -> b.filter(f -> f.usernames(username))));
+    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
+  }
+
+  public Optional<UserEntity> findOne(final long userKey) {
+    final var result = search(UserQuery.of(b -> b.filter(f -> f.key(userKey))));
+    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
+  }
+
+  public SearchQueryResult<UserEntity> search(final UserQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

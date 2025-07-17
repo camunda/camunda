@@ -31,15 +31,6 @@ public class JobDbReader extends AbstractEntityReader<JobEntity> implements JobR
     this.jobMapper = jobMapper;
   }
 
-  public Optional<JobEntity> findOne(final long jobKey) {
-    final var result = search(JobQuery.of(b -> b.filter(f -> f.jobKeys(jobKey))));
-    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
-  }
-
-  public SearchQueryResult<JobEntity> search(final JobQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
-  }
-
   @Override
   public SearchQueryResult<JobEntity> search(
       final JobQuery query, final ResourceAccessChecks resourceAccessChecks) {
@@ -53,5 +44,14 @@ public class JobDbReader extends AbstractEntityReader<JobEntity> implements JobR
     final var hits = jobMapper.search(dbQuery).stream().map(JobEntityMapper::toEntity).toList();
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<JobEntity> findOne(final long jobKey) {
+    final var result = search(JobQuery.of(b -> b.filter(f -> f.jobKeys(jobKey))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
+  }
+
+  public SearchQueryResult<JobEntity> search(final JobQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

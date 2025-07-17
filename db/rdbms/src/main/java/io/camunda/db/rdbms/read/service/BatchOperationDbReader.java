@@ -41,14 +41,10 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
     return batchOperationMapper.count(query) == 1;
   }
 
-  public Optional<BatchOperationEntity> findOne(final String batchOperationKey) {
-    final var result =
-        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey))));
-    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
-  }
-
-  public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public BatchOperationEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(id).orElse(null);
   }
 
   @Override
@@ -67,5 +63,15 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
             .toList();
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<BatchOperationEntity> findOne(final String batchOperationKey) {
+    final var result =
+        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
+  }
+
+  public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

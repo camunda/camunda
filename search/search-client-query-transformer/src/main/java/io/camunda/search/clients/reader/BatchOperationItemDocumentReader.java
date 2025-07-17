@@ -12,12 +12,14 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class BatchOperationItemDocumentReader extends DocumentBasedReader
     implements BatchOperationItemReader {
 
-  public BatchOperationItemDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public BatchOperationItemDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override

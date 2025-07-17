@@ -7,11 +7,12 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.authorization.Authorizations.JOB_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -120,8 +121,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             jobSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                        authentication, JOB_READ_AUTHORIZATION))
                 .searchJobs(query));
   }
 

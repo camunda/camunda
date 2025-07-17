@@ -13,13 +13,25 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 
 public class ProcessDefinitionDocumentReader extends DocumentBasedReader
     implements ProcessDefinitionReader {
 
-  public ProcessDefinitionDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public ProcessDefinitionDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public ProcessDefinitionEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            ProcessDefinitionQuery.of(
+                b -> b.filter(f -> f.processDefinitionKeys(key)).singleResult()),
+            ProcessEntity.class);
   }
 
   @Override

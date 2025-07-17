@@ -41,7 +41,7 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return stringTerms(USERNAME, authorization.resourceIds());
   }
 }

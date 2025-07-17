@@ -65,9 +65,19 @@ import java.util.List;
 public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
+  public AuthorizationEntity getAuthorization(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery filter) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public BatchOperationEntity getBatchOperation(final String id) {
+    return null;
   }
 
   @Override
@@ -83,9 +93,19 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionDefinitionEntity getDecisionDefinition(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public DecisionInstanceEntity getDecisionInstance(final String id) {
+    return null;
   }
 
   @Override
@@ -95,9 +115,20 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionRequirementsEntity getDecisionRequirements(
+      final long key, final boolean includeXml) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery filter) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public FlowNodeInstanceEntity getFlowNodeInstance(final long key) {
+    return null;
   }
 
   @Override
@@ -112,6 +143,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public GroupEntity getGroup(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
     return SearchQueryResult.empty();
   }
@@ -122,13 +158,28 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public IncidentEntity getIncident(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     return SearchQueryResult.empty();
   }
 
   @Override
+  public MappingEntity getMapping(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public ProcessDefinitionEntity getProcessDefinition(final long key) {
+    return null;
   }
 
   @Override
@@ -144,6 +195,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery query) {
     return SearchQueryResult.empty();
@@ -153,6 +209,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
       final long processInstanceKey) {
     return emptyList();
+  }
+
+  @Override
+  public RoleEntity getRole(final String id) {
+    return null;
   }
 
   @Override
@@ -166,6 +227,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public TenantEntity getTenant(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
     return SearchQueryResult.empty();
   }
@@ -176,13 +242,28 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public UserEntity getUser(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
     return SearchQueryResult.empty();
   }
 
   @Override
+  public UserTaskEntity getUserTask(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
     return SearchQueryResult.empty();
+  }
+
+  @Override
+  public VariableEntity getVariable(final long key) {
+    return null;
   }
 
   @Override

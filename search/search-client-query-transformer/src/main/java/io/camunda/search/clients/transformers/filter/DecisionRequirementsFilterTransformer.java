@@ -42,7 +42,7 @@ public final class DecisionRequirementsFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return stringTerms(DECISION_REQUIREMENTS_ID, authorization.resourceIds());
   }
 }

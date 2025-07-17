@@ -14,6 +14,7 @@ import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class MappingDocumentReader extends DocumentBasedReader implements MappingReader {
 
@@ -23,13 +24,23 @@ public class MappingDocumentReader extends DocumentBasedReader implements Mappin
 
   public MappingDocumentReader(
       final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptor indexDescriptor,
       final RoleMemberDocumentReader roleMemberReader,
       final TenantMemberDocumentReader tenantMemberReader,
       final GroupMemberDocumentReader groupMemberReader) {
-    super(executor);
+    super(executor, indexDescriptor);
     this.roleMemberReader = roleMemberReader;
     this.tenantMemberReader = tenantMemberReader;
     this.groupMemberReader = groupMemberReader;
+  }
+
+  @Override
+  public MappingEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getById(
+            id,
+            io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class,
+            indexDescriptor.getFullQualifiedName());
   }
 
   @Override

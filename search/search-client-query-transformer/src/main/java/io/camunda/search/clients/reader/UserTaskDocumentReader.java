@@ -12,12 +12,22 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 
 public class UserTaskDocumentReader extends DocumentBasedReader implements UserTaskReader {
 
-  public UserTaskDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public UserTaskDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public UserTaskEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            UserTaskQuery.of(b -> b.filter(f -> f.userTaskKeys(key)).singleResult()),
+            TaskEntity.class);
   }
 
   @Override

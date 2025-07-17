@@ -12,13 +12,15 @@ import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 
 public class MessageSubscriptionDocumentReader extends DocumentBasedReader
     implements MessageSubscriptionReader {
 
-  public MessageSubscriptionDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public MessageSubscriptionDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override
