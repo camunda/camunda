@@ -642,12 +642,10 @@ public final class EventAppliers implements EventApplier {
         new BatchOperationCompletedApplier(state.getBatchOperationState()));
     register(
         BatchOperationIntent.PARTITION_COMPLETED,
-        new BatchOperationPartitionCompletedApplier(
-            state.getBatchOperationState(), state.getPartitionId()));
+        new BatchOperationPartitionCompletedApplier(state.getBatchOperationState()));
     register(
         BatchOperationIntent.PARTITION_FAILED,
-        new BatchOperationPartitionFailedApplier(
-            state.getBatchOperationState(), state.getPartitionId()));
+        new BatchOperationPartitionFailedApplier(state.getBatchOperationState()));
   }
 
   private void registerIdentitySetupAppliers() {

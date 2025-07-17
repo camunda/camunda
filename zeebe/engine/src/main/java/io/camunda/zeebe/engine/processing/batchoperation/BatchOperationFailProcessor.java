@@ -43,13 +43,11 @@ public final class BatchOperationFailProcessor
   private final KeyGenerator keyGenerator;
   private final BatchOperationMetrics metrics;
   private final BatchOperationState batchOperationState;
-  private final int partitionId;
 
   public BatchOperationFailProcessor(
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final KeyGenerator keyGenerator,
-      final int partitionId,
       final BatchOperationMetrics metrics,
       final ProcessingState processingState) {
     stateWriter = writers.state();
@@ -57,7 +55,6 @@ public final class BatchOperationFailProcessor
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
     this.metrics = metrics;
-    this.partitionId = partitionId;
     batchOperationState = processingState.getBatchOperationState();
   }
 
@@ -68,12 +65,12 @@ public final class BatchOperationFailProcessor
     LOGGER.debug(
         "Marking batch operation {} as failed on partition {}",
         command.getValue().getBatchOperationKey(),
-        partitionId);
+        command.getPartitionId());
 
     final var batchInternalFail =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(batchOperationKey)
-            .setSourcePartitionId(partitionId)
+            .setSourcePartitionId(command.getPartitionId())
             .setError(recordValue.getError());
 
     LOGGER.debug(
@@ -81,7 +78,7 @@ public final class BatchOperationFailProcessor
         batchOperationKey,
         getLeadPartition(recordValue));
 
-    if (isOnLeadPartition(recordValue, partitionId)) {
+    if (isOnLeadPartition(command)) {
       commandWriter.appendFollowUpCommand(
           batchOperationKey,
           BatchOperationIntent.FAIL_PARTITION,

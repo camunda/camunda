@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 
 public class PartitionUtil {
@@ -23,15 +24,12 @@ public class PartitionUtil {
   }
 
   /**
-   * Checks if the given partition ID is the lead partition for the given batch operation.
+   * Checks if the given record is on its lead partition.
    *
-   * @param recordValue the batch operation record value
-   * @param partitionId the partition ID to check
-   * @return <code>true</code> if the partition ID is the lead partition, <code>false</code>
-   *     otherwise
+   * @param record the batch operation related record
+   * @return {@code true} if the record is on its lead partition, {@code false} otherwise
    */
-  public static boolean isOnLeadPartition(
-      final BatchOperationRelated recordValue, final int partitionId) {
-    return getLeadPartition(recordValue) == partitionId;
+  public static boolean isOnLeadPartition(final Record<? extends BatchOperationRelated> record) {
+    return getLeadPartition(record.getValue()) == record.getPartitionId();
   }
 }

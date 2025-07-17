@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import static io.camunda.zeebe.engine.processing.batchoperation.PartitionUtil.isOnLeadPartition;
-
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
@@ -22,20 +20,15 @@ public class BatchOperationPartitionCompletedApplier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationPartitionLifecycleRecord> {
 
   private final MutableBatchOperationState batchOperationState;
-  private final int partitionId;
 
   public BatchOperationPartitionCompletedApplier(
-      final MutableBatchOperationState batchOperationState, final int partitionId) {
+      final MutableBatchOperationState batchOperationState) {
     this.batchOperationState = batchOperationState;
-    this.partitionId = partitionId;
   }
 
   @Override
   public void applyState(final long recordKey, final BatchOperationPartitionLifecycleRecord value) {
-    if (isOnLeadPartition(value, partitionId)) {
-      // mark the source partition as finished
-      batchOperationState.finishPartition(
-          value.getBatchOperationKey(), value.getSourcePartitionId());
-    }
+    // mark the source partition as finished
+    batchOperationState.finishPartition(value.getBatchOperationKey(), value.getSourcePartitionId());
   }
 }

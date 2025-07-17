@@ -80,7 +80,6 @@ public final class BatchOperationSetupProcessors {
                 writers,
                 commandDistributionBehavior,
                 keyGenerator,
-                partitionId,
                 batchOperationMetrics,
                 processingState))
         .onCommand(
@@ -95,7 +94,6 @@ public final class BatchOperationSetupProcessors {
                 processingState,
                 commandDistributionBehavior,
                 keyGenerator,
-                partitionId,
                 batchExecutionHandlers,
                 batchOperationMetrics))
         .onCommand(

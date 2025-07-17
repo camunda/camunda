@@ -77,7 +77,6 @@ public final class BatchOperationExecuteProcessor
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final int partitionId;
   private final BatchOperationState batchOperationState;
   private final KeyGenerator keyGenerator;
   private final BatchOperationMetrics metrics;
@@ -89,7 +88,6 @@ public final class BatchOperationExecuteProcessor
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
       final KeyGenerator keyGenerator,
-      final int partitionId,
       final Map<BatchOperationType, BatchOperationExecutor> handlers,
       final BatchOperationMetrics metrics) {
     commandWriter = writers.command();
@@ -97,7 +95,6 @@ public final class BatchOperationExecuteProcessor
     batchOperationState = processingState.getBatchOperationState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
-    this.partitionId = partitionId;
     this.handlers = handlers;
     this.metrics = metrics;
   }
@@ -108,7 +105,9 @@ public final class BatchOperationExecuteProcessor
     final var executionRecord = command.getValue();
     final long batchKey = executionRecord.getBatchOperationKey();
     LOGGER.trace(
-        "Executing next items of batch operation {} on partition {}", batchKey, partitionId);
+        "Executing next items of batch operation {} on partition {}",
+        batchKey,
+        command.getPartitionId());
 
     // Stop the measure for the batch operation execute cycle latency which was started the last
     // time
@@ -130,10 +129,12 @@ public final class BatchOperationExecuteProcessor
     // If there are no more items to process, we can mark the partition as completed
     if (entityKeys.isEmpty()) {
       LOGGER.debug(
-          "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
+          "No items to process for BatchOperation {} on partition {}",
+          batchKey,
+          command.getPartitionId());
 
       appendBatchOperationExecutionExecutedEvent(batchOperation, Collections.emptySet());
-      appendBatchOperationExecutionCompletedEvent(command.getValue());
+      appendBatchOperationExecutionCompletedEvent(command);
 
       metrics.stopTotalExecutionLatencyMeasure(batchKey);
       return;
@@ -170,7 +171,9 @@ public final class BatchOperationExecuteProcessor
       final long batchKey,
       final PersistedBatchOperation batchOperation) {
     LOGGER.trace(
-        "Scheduling next batch for BatchOperation {} on partition {}", batchKey, partitionId);
+        "Scheduling next batch for BatchOperation {} on partition {}",
+        batchKey,
+        command.getPartitionId());
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
     commandWriter.appendFollowUpCommand(
@@ -203,9 +206,8 @@ public final class BatchOperationExecuteProcessor
     // This modulo only works good if batch size is a divider of HEARTBEAT_INTERVAL
     if (batchOperation.getNumExecutedItems() % HEARTBEAT_INTERVAL == 0) {
       LOGGER.debug(
-          "Batch operation {} on partition {} has executed {} of {} items.",
+          "Batch operation {} has executed {} of {} items.",
           batchOperation.getKey(),
-          partitionId,
           batchOperation.getNumExecutedItems(),
           batchOperation.getNumTotalItems());
     }
@@ -220,19 +222,19 @@ public final class BatchOperationExecuteProcessor
   }
 
   private void appendBatchOperationExecutionCompletedEvent(
-      final BatchOperationExecutionRecord executionRecord) {
-
+      final TypedRecord<BatchOperationExecutionRecord> command) {
+    final var executionRecord = command.getValue();
     final var completePartitionCommand =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(executionRecord.getBatchOperationKey())
-            .setSourcePartitionId(partitionId);
+            .setSourcePartitionId(command.getPartitionId());
 
     LOGGER.debug(
         "Send internal complete command for batch operation {} to lead partition {}",
         executionRecord.getBatchOperationKey(),
         getLeadPartition(executionRecord));
 
-    if (isOnLeadPartition(executionRecord, partitionId)) {
+    if (isOnLeadPartition(command)) {
       // If we are the lead partition, we can directly append the follow-up command
       commandWriter.appendFollowUpCommand(
           executionRecord.getBatchOperationKey(),
