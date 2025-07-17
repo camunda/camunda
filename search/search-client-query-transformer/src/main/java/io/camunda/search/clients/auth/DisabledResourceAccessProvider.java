@@ -7,6 +7,9 @@
  */
 package io.camunda.search.clients.auth;
 
+import static io.camunda.security.auth.Authorization.WILDCARD;
+import static io.camunda.security.auth.Authorization.withAuthorization;
+
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.reader.ResourceAccess;
@@ -15,9 +18,9 @@ import io.camunda.security.reader.ResourceAccessProvider;
 public class DisabledResourceAccessProvider implements ResourceAccessProvider {
 
   @Override
-  public ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization requiredAuthorization) {
-    return ResourceAccess.wildcard(requiredAuthorization);
+  public <T> ResourceAccess resolveResourceAccess(
+      final CamundaAuthentication authentication, final Authorization<T> requiredAuthorization) {
+    return ResourceAccess.wildcard(withAuthorization(requiredAuthorization, WILDCARD));
   }
 
   @Override
@@ -25,7 +28,7 @@ public class DisabledResourceAccessProvider implements ResourceAccessProvider {
       final CamundaAuthentication authentication,
       final Authorization<T> requiredAuthorization,
       final T resource) {
-    return ResourceAccess.wildcard(requiredAuthorization);
+    return ResourceAccess.wildcard(withAuthorization(requiredAuthorization, WILDCARD));
   }
 
   @Override
@@ -33,6 +36,6 @@ public class DisabledResourceAccessProvider implements ResourceAccessProvider {
       final CamundaAuthentication authentication,
       final Authorization<T> requiredAuthorization,
       final String resourceId) {
-    return ResourceAccess.wildcard(requiredAuthorization);
+    return ResourceAccess.wildcard(withAuthorization(requiredAuthorization, WILDCARD));
   }
 }

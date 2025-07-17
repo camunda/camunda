@@ -25,8 +25,6 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -42,24 +40,21 @@ public final class DecisionDefinitionServiceTest {
   private DecisionDefinitionServices services;
   private DecisionDefinitionSearchClient client;
   private DecisionRequirementSearchClient decisionRequirementSearchClient;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(DecisionDefinitionSearchClient.class);
     decisionRequirementSearchClient = mock(DecisionRequirementSearchClient.class);
-    securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(decisionRequirementSearchClient.withSecurityContext(any()))
         .thenReturn(decisionRequirementSearchClient);
     services =
         new DecisionDefinitionServices(
             mock(BrokerClient.class),
-            securityContextProvider,
+            mock(SecurityContextProvider.class),
             client,
             decisionRequirementSearchClient,
-            authentication);
+            null);
   }
 
   @Test
@@ -91,11 +86,6 @@ public final class DecisionDefinitionServiceTest {
     when(requirementEntity.xml()).thenReturn("<foo>bar</foo>");
     when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(requirementEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(true);
 
     // when
     final var xml = services.getDecisionDefinitionXml(42L);

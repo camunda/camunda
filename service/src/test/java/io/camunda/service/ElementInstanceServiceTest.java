@@ -20,7 +20,6 @@ import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -42,22 +41,18 @@ public final class ElementInstanceServiceTest {
   private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
   private ProcessCache processCache;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(FlowNodeInstanceSearchClient.class);
     processCache = mock(ProcessCache.class);
-    securityContextProvider = mock(SecurityContextProvider.class);
-    authentication = mock(CamundaAuthentication.class);
     services =
         new ElementInstanceServices(
             mock(BrokerClient.class),
-            securityContextProvider,
+            mock(SecurityContextProvider.class),
             client,
             processCache,
-            authentication);
+            null);
 
     when(client.withSecurityContext(any())).thenReturn(client);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);

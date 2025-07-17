@@ -171,7 +171,7 @@ public class PermissionsService {
     final var authorization =
         Authorization.of(a -> a.resourceType(resourceType).permissionType(permissionType));
     final SecurityContext securityContext = getSecurityContext(authorization);
-    final List<String> ids = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+    final List<String> ids = authorizationChecker.retrieveAuthorizedResourceIds(securityContext);
 
     if (hasWildcardPermission(ids)) {
       return ResourcesAllowed.all();

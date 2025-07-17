@@ -42,7 +42,7 @@ class DefaultResourceAccessProviderTest {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
-    when(authorizationChecker.retrieveAuthorizedResourceKeys(any()))
+    when(authorizationChecker.retrieveAuthorizedResourceIds(any()))
         .thenReturn(List.of("bar", "baz"));
 
     // when
@@ -63,7 +63,7 @@ class DefaultResourceAccessProviderTest {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
-    when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of("*"));
+    when(authorizationChecker.retrieveAuthorizedResourceIds(any())).thenReturn(List.of("*"));
 
     // when
     final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
@@ -83,7 +83,7 @@ class DefaultResourceAccessProviderTest {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
-    when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of());
+    when(authorizationChecker.retrieveAuthorizedResourceIds(any())).thenReturn(List.of());
 
     // when
     final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);

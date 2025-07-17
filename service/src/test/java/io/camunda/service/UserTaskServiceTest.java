@@ -30,8 +30,6 @@ import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -56,8 +54,6 @@ public class UserTaskServiceTest {
   private FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
   private VariableSearchClient variableSearchClient;
   private ProcessCache processCache;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
@@ -66,18 +62,16 @@ public class UserTaskServiceTest {
     flowNodeInstanceSearchClient = mock(FlowNodeInstanceSearchClient.class);
     variableSearchClient = mock(VariableSearchClient.class);
     processCache = mock(ProcessCache.class);
-    securityContextProvider = mock(SecurityContextProvider.class);
-    authentication = mock(CamundaAuthentication.class);
     services =
         new UserTaskServices(
             mock(BrokerClient.class),
-            securityContextProvider,
+            mock(SecurityContextProvider.class),
             client,
             formSearchClient,
             flowNodeInstanceSearchClient,
             variableSearchClient,
             processCache,
-            authentication);
+            null);
 
     when(client.withSecurityContext(any())).thenReturn(client);
     when(formSearchClient.withSecurityContext(any())).thenReturn(formSearchClient);
@@ -85,12 +79,6 @@ public class UserTaskServiceTest {
         .thenReturn(flowNodeInstanceSearchClient);
     when(variableSearchClient.withSecurityContext(any())).thenReturn(variableSearchClient);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
-  }
-
-  private void authorizeReadUserTasksForProcess(final boolean authorized, final String processId) {
-    when(securityContextProvider.isAuthorized(
-            processId, authentication, Authorization.of(a -> a.processDefinition().readUserTask())))
-        .thenReturn(authorized);
   }
 
   @Nested
@@ -141,7 +129,6 @@ public class UserTaskServiceTest {
       when(variableSearchClient.searchVariables(
               variableSearchQuery(q -> q.filter(f -> f.scopeKeys(1L, 2L, 3L)))))
           .thenReturn(SearchQueryResult.of(variable));
-      authorizeReadUserTasksForProcess(true, entity.processDefinitionId());
 
       // when
       final SearchQueryResult<VariableEntity> searchQueryResult =
