@@ -13,7 +13,6 @@ import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbMod
 import static io.camunda.zeebe.util.HashUtils.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.hash.Hashing;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UsageMetricReader;
 import io.camunda.db.rdbms.read.service.UsageMetricTUReader;
@@ -32,7 +31,6 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UsageMetricsFilter.Builder;
-import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
