@@ -11,12 +11,21 @@ import {Field, useField, useForm} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ComboBox} from 'modules/components/ComboBox';
-import {authenticationStore} from 'modules/stores/authentication';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const ProcessField: React.FC = observer(() => {
   const {processes, versionsByProcessAndTenant} = processesStore;
   const form = useForm();
+  const {data: currentUser} = useCurrentUser();
+  const tenantsById: Record<string, string> =
+    currentUser?.tenants.reduce(
+      (acc, tenant) => ({
+        [tenant.tenantId]: tenant.name,
+        ...acc,
+      }),
+      {},
+    ) ?? {};
 
   const selectedTenant = useField('tenant').input.value;
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
@@ -64,7 +73,7 @@ const ProcessField: React.FC = observer(() => {
             return {
               label:
                 isMultiTenancyEnabled && !isSpecificTenantSelected
-                  ? `${label} - ${authenticationStore.tenantsById?.[tenantId]}`
+                  ? `${label} - ${tenantsById[tenantId]}`
                   : label,
               id,
             };

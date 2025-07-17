@@ -9,8 +9,14 @@
 import {AppHeader} from '../index';
 import {render, screen, within} from 'modules/testing-library';
 import {Wrapper} from './mocks';
+import {createUser} from 'modules/testUtils';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('Header', () => {
+  beforeEach(() => {
+    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+  });
+
   it('should go to the correct pages when clicking on header links', async () => {
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,

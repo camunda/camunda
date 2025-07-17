@@ -87,7 +87,10 @@ async function requestWithThrow<T>({
   }
 }
 
-async function request({url, method, body, headers, signal}: RequestParams) {
+async function request(
+  {url, method, body, headers, signal}: RequestParams,
+  {skipSessionCheck = false}: {skipSessionCheck?: boolean} = {},
+) {
   const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
   const hasCsrfToken =
     csrfToken !== null &&
@@ -110,12 +113,12 @@ async function request({url, method, body, headers, signal}: RequestParams) {
     },
   );
 
-  if (response.status === 401) {
-    authenticationStore.expireSession();
+  if (!skipSessionCheck && response.status === 401) {
+    authenticationStore.disableSession();
   }
 
   if (response.ok) {
-    authenticationStore.handleThirdPartySessionSuccess();
+    authenticationStore.activateSession();
 
     const csrfToken = response.headers.get('X-CSRF-TOKEN');
     if (csrfToken !== null) {

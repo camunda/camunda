@@ -23,13 +23,13 @@ import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {notificationsStore} from 'modules/stores/notifications';
-import {authenticationStore} from 'modules/stores/authentication';
 import {processStore} from 'modules/stores/process';
 import {VersionTag} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
 import type {OperationEntityType} from 'modules/types/operate';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const headerColumns = [
   'Process Name',
@@ -120,7 +120,16 @@ const ProcessInstanceHeader: React.FC = observer(() => {
   } = processInstance;
 
   const versionTag = process?.versionTag;
-  const tenantName = authenticationStore.tenantsById?.[tenantId] ?? tenantId;
+  const {data: currentUser} = useCurrentUser();
+  const tenantsById: Record<string, string> =
+    currentUser?.tenants.reduce(
+      (acc, tenant) => ({
+        [tenant.tenantId]: tenant.name,
+        ...acc,
+      }),
+      {},
+    ) ?? {};
+  const tenantName = tenantsById[tenantId] ?? tenantId;
   const versionColumnTitle = `View process "${getProcessName(
     processInstance,
   )} version ${processVersion}" instances${

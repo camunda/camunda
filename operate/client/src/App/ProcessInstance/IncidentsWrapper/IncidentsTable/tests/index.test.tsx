@@ -9,10 +9,11 @@
 import {IncidentsTable} from '../index';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
-import {authenticationStore} from 'modules/stores/authentication';
 import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {createUser} from 'modules/testUtils';
 
 describe('IncidentsTable', () => {
   it('should render the right column headers', () => {
@@ -33,15 +34,7 @@ describe('IncidentsTable', () => {
   it('should render the right column headers for restricted user', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
+    mockMe().withSuccess(createUser());
 
     render(<IncidentsTable />, {wrapper: Wrapper});
 
@@ -56,20 +49,12 @@ describe('IncidentsTable', () => {
 
   it('should render the right column headers for restricted user (with resource-based permissions)', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockMe().withSuccess(createUser());
     vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
     });
 
     incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
 
@@ -133,20 +118,12 @@ describe('IncidentsTable', () => {
 
   it('should render incident details (with resource-based permissions enabled)', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockMe().withSuccess(createUser());
     vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
     });
 
     incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinRow = within(

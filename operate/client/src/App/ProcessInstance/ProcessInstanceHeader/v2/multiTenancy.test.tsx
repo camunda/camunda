@@ -33,8 +33,6 @@ vi.mock('modules/stores/process', () => ({
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
-    authenticationStore.authenticate();
-
     return () => {
       operationsStore.reset();
       processInstanceDetailsStore.reset();
@@ -54,22 +52,18 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('InstanceHeader', () => {
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
-
   it('should render multi tenancy column and include tenant in version link', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: 'tenant-a', name: 'Tenant A'},
+          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
+          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
         ],
       }),
     );
@@ -109,8 +103,8 @@ describe('InstanceHeader', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: 'tenant-a', name: 'Tenant A'},
+          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
+          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
         ],
       }),
     );

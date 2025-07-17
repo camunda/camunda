@@ -8,7 +8,11 @@
 
 import {render, screen} from 'modules/testing-library';
 import {getWrapper} from './mocks';
-import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
+import {
+  createUser,
+  groupedProcessesMock,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.list';
 
 import {Filters} from '../index';
@@ -16,11 +20,13 @@ import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupe
 import {ERRORS} from 'modules/validators';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {act} from 'react';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('Validations', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockMe().withSuccess(createUser());
 
     processesStore.fetchProcesses();
 

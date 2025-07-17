@@ -19,6 +19,8 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {open} from 'modules/mocks/diagrams';
+import {createUser} from 'modules/testUtils';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 vi.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
@@ -76,6 +78,10 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
 describe('MigrationView', () => {
   beforeEach(() => {
     processInstanceMigrationStore.enable();
+    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe({contextPath: '/custom'}).withSuccess(
+      createUser({authorizedApplications: ['operate']}),
+    );
   });
 
   it.each(['/custom', ''])(

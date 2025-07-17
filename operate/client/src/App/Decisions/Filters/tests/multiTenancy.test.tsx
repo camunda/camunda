@@ -22,7 +22,8 @@ import {
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
-import {authenticationStore} from 'modules/stores/authentication';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -31,11 +32,13 @@ function getWrapper(initialPath: string = Paths.decisions()) {
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <AppHeader />
-        {children}
-        <LocationLog />
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <AppHeader />
+          {children}
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -66,21 +69,13 @@ describe('<Filters />', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: 'tenant-A', name: 'Tenant A'},
+          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
+          {key: 2, tenantId: 'tenant-A', name: 'Tenant A'},
         ],
       }),
     );
 
-    await authenticationStore.authenticate();
-
     await groupedDecisionsStore.fetchDecisions();
-    vi.useFakeTimers({shouldAdvanceTime: true});
-  });
-
-  afterEach(() => {
-    vi.clearAllTimers();
-    vi.useRealTimers();
   });
 
   it('should write filters to url', async () => {
@@ -145,7 +140,7 @@ describe('<Filters />', () => {
     );
   });
 
-  it('initialise filter values from url', () => {
+  it('initialise filter values from url', async () => {
     vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
     });
@@ -159,8 +154,10 @@ describe('<Filters />', () => {
     );
     expectVersion('2');
 
-    expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
-      'Tenant A',
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
+        'Tenant A',
+      ),
     );
   });
 

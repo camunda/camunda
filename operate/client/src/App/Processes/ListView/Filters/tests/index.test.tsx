@@ -9,7 +9,11 @@
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
+import {
+  createUser,
+  groupedProcessesMock,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
@@ -20,6 +24,7 @@ import {
 } from 'modules/testUtils/selectComboBoxOption';
 import {removeOptionalFilter} from 'modules/testUtils/removeOptionalFilter';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('Filters', () => {
   beforeEach(async () => {
@@ -28,6 +33,7 @@ describe('Filters', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     processesStore.fetchProcesses();
+    mockMe().withSuccess(createUser());
     vi.useFakeTimers({shouldAdvanceTime: true});
   });
 

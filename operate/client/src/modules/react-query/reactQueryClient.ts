@@ -6,10 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {mockGetRequest} from '../mockRequest';
+import {QueryClient} from '@tanstack/react-query';
 
-const mockMe = ({contextPath}: {contextPath?: string} = {}) =>
-  mockGetRequest<CurrentUser>(`${contextPath ?? ''}/v2/authentication/me`);
+const reactQueryClient = new QueryClient();
 
-export {mockMe};
+export {reactQueryClient};

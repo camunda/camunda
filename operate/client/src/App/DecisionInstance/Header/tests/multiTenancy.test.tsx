@@ -14,49 +14,45 @@ import {
 import {Header} from '../index';
 import {MemoryRouter} from 'react-router-dom';
 import {createUser} from 'modules/testUtils';
-import {authenticationStore} from 'modules/stores/authentication';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 const MOCK_DECISION_INSTANCE_ID = '123567';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
-    authenticationStore.authenticate();
-
     return () => {
-      authenticationStore.reset();
       decisionInstanceDetailsStore.reset();
     };
   }, []);
 
   return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      {children}
-    </MemoryRouter>
+    <QueryClientProvider client={getMockQueryClient()}>
+      <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+        {children}
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 };
 
 describe('InstanceHeader', () => {
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
-
   it('should render multi tenancy column and include tenant in version link', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       multiTenancyEnabled: true,
-    };
+    });
 
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: 'tenant-a', name: 'Tenant A'},
+          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
+          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
         ],
       }),
     );
@@ -94,8 +90,8 @@ describe('InstanceHeader', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: 'tenant-a', name: 'Tenant A'},
+          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
+          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
         ],
       }),
     );

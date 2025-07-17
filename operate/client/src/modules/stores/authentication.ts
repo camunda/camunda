@@ -6,100 +6,71 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {makeObservable, observable, action, computed} from 'mobx';
-import {getMe, type MeDto} from 'modules/api/v2/authentication/me';
-import {login, type Credentials} from 'modules/api/login';
-import {logout} from 'modules/api/logout';
-import {NetworkError} from 'modules/networkError';
+import {makeObservable, observable, action} from 'mobx';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
+import {currentUserQueryOptions} from 'modules/queries/useCurrentUser';
+import {reactQueryClient} from 'modules/react-query/reactQueryClient';
+import {request} from 'modules/request';
 
-type State = {
-  status:
-    | 'initial'
-    | 'logged-in'
-    | 'fetching-user-information'
-    | 'user-information-fetched'
-    | 'logged-out'
-    | 'session-expired'
-    | 'invalid-initial-session'
-    | 'invalid-third-party-session';
-  displayName: string | null;
-  canLogout: boolean;
-  userId: string | null;
-  salesPlanType: MeDto['salesPlanType'];
-  roles: ReadonlyArray<string> | null;
-  c8Links: MeDto['c8Links'];
-  tenants: MeDto['tenants'];
-  authorizedApplications: MeDto['authorizedApplications'];
-};
+type Status =
+  | 'initial'
+  | 'logged-in'
+  | 'logged-out'
+  | 'session-expired'
+  | 'session-invalid'
+  | 'invalid-third-party-session';
 
-const DEFAULT_STATE: State = {
-  status: 'initial',
-  displayName: null,
-  canLogout: false,
-  userId: null,
-  salesPlanType: null,
-  roles: [],
-  c8Links: {},
-  tenants: null,
-  authorizedApplications: ['*'],
-};
+const DEFAULT_STATUS: Status = 'initial';
 
 class Authentication {
-  state: State = {...DEFAULT_STATE};
+  status: Status = DEFAULT_STATUS;
+
   constructor() {
     makeObservable(this, {
-      state: observable,
-      disableSession: action,
-      expireSession: action,
-      startLoadingUser: action,
-      setUser: action,
-      reset: action,
-      resetUser: action,
+      status: observable,
       setStatus: action,
-      endLogin: action,
-      tenantsById: computed,
+      reset: action,
     });
   }
 
-  disableSession = () => {
-    this.resetUser();
+  handleLogin = async (username: string, password: string) => {
+    try {
+      const response = await request(
+        {
+          url: '/login',
+          method: 'POST',
+          body: new URLSearchParams([
+            ['username', username],
+            ['password', password],
+          ]).toString(),
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        },
+        {
+          skipSessionCheck: true,
+        },
+      );
 
-    if (
-      !window.clientConfig?.canLogout ||
-      window.clientConfig?.isLoginDelegated
-    ) {
-      this.#handleThirdPartySessionExpiration();
+      if (response.ok) {
+        this.activateSession();
+        await reactQueryClient.ensureQueryData(currentUserQueryOptions);
 
-      return;
+        return;
+      }
+
+      return response;
+    } catch (error) {
+      return error;
     }
-
-    this.setStatus('logged-out');
   };
 
-  expireSession = () => {
-    this.resetUser();
-
-    if (
-      !window.clientConfig?.canLogout ||
-      window.clientConfig?.isLoginDelegated
-    ) {
-      this.#handleThirdPartySessionExpiration();
-
-      return;
-    }
-
-    if (this.state.status === 'user-information-fetched') {
-      this.setStatus('session-expired');
-
-      return;
-    }
-
-    this.setStatus('invalid-initial-session');
+  setStatus = (status: Status) => {
+    this.status = status;
   };
 
   #handleThirdPartySessionExpiration = () => {
-    const wasReloaded = getStateLocally()?.wasReloaded;
+    const wasReloaded = getStateLocally().wasReloaded;
 
     this.setStatus('invalid-third-party-session');
 
@@ -107,127 +78,75 @@ class Authentication {
       return;
     }
 
-    storeStateLocally({
-      wasReloaded: true,
-    });
+    storeStateLocally({wasReloaded: true});
 
     window.location.reload();
   };
 
-  handleLogin = async (credentials: Credentials): Promise<Error | void> => {
-    const response = await login(credentials);
-
-    if (!response.isSuccess) {
-      return new NetworkError(
-        'Could not login credentials',
-        response.statusCode,
-      );
-    }
-
-    this.endLogin();
-
-    return;
-  };
-
-  endLogin = () => {
-    this.state.status = 'logged-in';
-  };
-
-  authenticate = async (): Promise<void | Error> => {
-    this.startLoadingUser();
-
-    const response = await getMe({
-      onFailure: () => {
-        this.expireSession();
-      },
-      onException: () => {
-        this.disableSession();
-      },
-    });
-
-    if (!response.isSuccess) {
-      return new Error('Could not fetch user information');
-    }
-
-    this.setUser(response.data);
-  };
-
-  startLoadingUser = () => {
-    this.state.status = 'fetching-user-information';
-  };
-
-  setUser = ({
-    displayName,
-    canLogout,
-    userId,
-    salesPlanType,
-    roles,
-    c8Links,
-    tenants,
-    authorizedApplications,
-  }: MeDto) => {
-    storeStateLocally({
-      wasReloaded: false,
-    });
-
-    this.state.status = 'user-information-fetched';
-    this.state.displayName = displayName;
-    this.state.canLogout = canLogout;
-    this.state.userId = userId;
-    this.state.salesPlanType = salesPlanType;
-    this.state.roles = roles ?? [];
-    this.state.c8Links = c8Links;
-    this.state.tenants = tenants;
-    this.state.authorizedApplications = authorizedApplications;
-  };
-
   handleLogout = async () => {
-    const response = await logout();
+    try {
+      const response = await request(
+        {
+          url: '/logout',
+          method: 'POST',
+        },
+        {
+          skipSessionCheck: true,
+        },
+      );
 
-    if (!response.isSuccess) {
-      return new Error('Could not logout');
+      if (!response.ok) {
+        return new Error('Failed to logout');
+      }
+
+      reactQueryClient.clear();
+
+      if (
+        !window?.clientConfig?.canLogout ||
+        window?.clientConfig?.isLoginDelegated
+      ) {
+        this.#handleThirdPartySessionExpiration();
+        return;
+      }
+
+      this.setStatus('logged-out');
+      return;
+    } catch (error) {
+      return error;
+    }
+  };
+
+  activateSession = () => {
+    this.setStatus('logged-in');
+    storeStateLocally({wasReloaded: false});
+  };
+
+  disableSession = () => {
+    if (
+      !window?.clientConfig?.canLogout ||
+      window?.clientConfig?.isLoginDelegated
+    ) {
+      this.#handleThirdPartySessionExpiration();
+
+      return;
     }
 
-    this.disableSession();
-  };
-
-  handleThirdPartySessionSuccess = () => {
-    if (this.state.status === 'invalid-third-party-session') {
-      this.authenticate();
+    if (['session-invalid', 'session-expired'].includes(this.status)) {
+      return;
     }
-  };
 
-  setStatus = (status: State['status']) => {
-    this.state.status = status;
-  };
-
-  get tenantsById() {
-    return this.state.tenants?.reduce<{[key: string]: string}>(
-      (tenantsById, {tenantId, name}) => ({
-        ...tenantsById,
-        [tenantId]: name,
-      }),
-      {},
-    );
-  }
-
-  resetUser = () => {
-    this.state.displayName = DEFAULT_STATE.displayName;
-    this.state.canLogout = DEFAULT_STATE.canLogout;
-    this.state.authorizedApplications = DEFAULT_STATE.authorizedApplications;
+    if (this.status === 'initial') {
+      this.setStatus('session-invalid');
+    } else {
+      this.setStatus('session-expired');
+    }
   };
 
   reset = () => {
-    this.state = {...DEFAULT_STATE};
-  };
-
-  isForbidden = () => {
-    return (
-      Array.isArray(this.state.authorizedApplications) &&
-      !this.state.authorizedApplications.includes('operate') &&
-      !this.state.authorizedApplications.includes('*')
-    );
+    this.status = DEFAULT_STATUS;
   };
 }
 
-export const authenticationStore = new Authentication();
+const authenticationStore = new Authentication();
+
+export {authenticationStore};

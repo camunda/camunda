@@ -20,6 +20,7 @@ import {
   mockProcessXML,
   mockProcessInstances,
   mockProcessInstancesWithOperation,
+  createUser,
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
@@ -35,6 +36,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -79,6 +81,7 @@ describe('Instances', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchBatchOperations().withSuccess([]);
+    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
   });
 
   it('should render title and document title', async () => {
@@ -228,11 +231,11 @@ describe('Instances', () => {
     mockFetchGroupedProcesses().withDelay(groupedProcessesMock);
 
     await user.click(
-      within(
+      await within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
         }),
-      ).getByRole('link', {
+      ).findByRole('link', {
         name: /processes/i,
       }),
     );
