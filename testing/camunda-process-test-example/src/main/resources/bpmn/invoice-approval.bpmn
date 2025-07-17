@@ -92,7 +92,7 @@
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_12n68lk" sourceRef="ErrorEvent_Archive" targetRef="UserTask_ManuallyArchiveInvoice" />
     <bpmn:sequenceFlow id="Flow_0ins96q" sourceRef="UserTask_ManuallyArchiveInvoice" targetRef="ServiceTask_AddInvoiceAccounting" />
-    <bpmn:userTask id="UserTask_ManuallyArchiveInvoice" name="Manually archive invoide">
+    <bpmn:userTask id="UserTask_ManuallyArchiveInvoice" name="Manually archive invoice">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:assignmentDefinition candidateGroups="archive-team" />
