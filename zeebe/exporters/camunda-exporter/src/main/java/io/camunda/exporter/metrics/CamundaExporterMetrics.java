@@ -181,6 +181,10 @@ public class CamundaExporterMetrics {
     batchOperationsArchiving.increment(count);
   }
 
+  public void recordFlushFailureType(final String failureType) {
+    meterRegistry.counter(meterName("flush.failure.type"), "failure_type", failureType).increment();
+  }
+
   /**
    * For each record write timestamp, observes the export latency by subtracting the timestamp from
    * the current stream clock.
