@@ -245,6 +245,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public UserEntity getUser(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
     return SearchQueryResult.empty();
   }

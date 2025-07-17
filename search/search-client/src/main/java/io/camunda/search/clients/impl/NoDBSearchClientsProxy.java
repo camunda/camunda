@@ -243,6 +243,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public UserEntity getUser(final String id) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
     throw new NoSecondaryStorageException();
   }

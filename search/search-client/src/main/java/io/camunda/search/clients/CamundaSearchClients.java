@@ -304,6 +304,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public UserEntity getUser(final String id) {
+    return doGetWithReader(readers.userReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("User", id));
+  }
+
+  @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
     return doSearchWithReader(readers.userReader(), query);
   }

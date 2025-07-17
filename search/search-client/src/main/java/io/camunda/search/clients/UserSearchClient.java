@@ -14,6 +14,8 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface UserSearchClient {
 
+  UserEntity getUser(final String id);
+
   SearchQueryResult<UserEntity> searchUsers(UserQuery userQuery);
 
   UserSearchClient withSecurityContext(SecurityContext securityContext);

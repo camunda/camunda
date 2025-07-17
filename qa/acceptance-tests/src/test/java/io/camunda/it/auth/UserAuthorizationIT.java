@@ -76,7 +76,7 @@ class UserAuthorizationIT {
 
   private static CamundaClient camundaClient;
 
-  private List<String> createdUsers = new ArrayList<>();
+  private final List<String> createdUsers = new ArrayList<>();
 
   @AfterEach
   void awaitExpectedUsers() {
@@ -197,7 +197,7 @@ class UserAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     assertThatThrownBy(() -> camundaClient.newUserGetRequest(USER_1.username()).send().join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("404: 'Not Found'");
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @Test
