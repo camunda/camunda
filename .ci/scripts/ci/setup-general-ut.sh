@@ -8,6 +8,9 @@
 # except in compliance with the Camunda License 1.0.
 #
 
+#### Outputs a list of optimize, operate, tasklist, and zeebe modules that should be skipped in the general unit tests
+#### The skipped modules are run elsewhere. This script ensures that any new modules that are added will be run by general unit test
+
 ### Get list of all modules in monorepo
 # shellcheck disable=SC2016,SC2005,SC2006,SC2046
 rawModuleList=$(echo $(./mvnw -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_GAV### ${project.artifactId}' | grep '###MODULE_GAV### ' | cut -f2 -d' '))
