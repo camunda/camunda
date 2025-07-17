@@ -69,7 +69,7 @@ public class ElementInstanceTenancyIT {
 
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
-    waitForProcessBeingExported(adminClient);
+    waitForElementInstancesExported(adminClient);
   }
 
   @Test
@@ -170,7 +170,7 @@ public class ElementInstanceTenancyIT {
         .join();
   }
 
-  private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
+  private static void waitForElementInstancesExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -178,12 +178,12 @@ public class ElementInstanceTenancyIT {
             () -> {
               assertThat(
                       camundaClient
-                          .newProcessInstanceSearchRequest()
-                          .filter(filter -> filter.processDefinitionId(fn -> fn.in(PROCESS_ID)))
+                          .newElementInstanceSearchRequest()
+                          .filter(filter -> filter.processDefinitionId(PROCESS_ID))
                           .send()
                           .join()
                           .items())
-                  .hasSize(2);
+                  .hasSize(4);
             });
   }
 
