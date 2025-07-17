@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskStateFilterProperty;
 import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperatioItemStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationStateFilterPropertyDeserializer;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.JobStateFilterPropertyDeserial
 import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionTypePropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
 import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -73,6 +75,8 @@ public class JacksonConfig {
     module.addDeserializer(
         MessageSubscriptionTypeFilterProperty.class,
         new MessageSubscriptionTypePropertyDeserializer());
+    module.addDeserializer(
+        UserTaskStateFilterProperty.class, new UserTaskStateFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
