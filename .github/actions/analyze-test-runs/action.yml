@@ -70,34 +70,50 @@ runs:
       github-token: ${{ github.token }}
       script: |
         const flakyTests = `${{ steps.find-flakes.outputs.FLAKY_TESTS }}`;
-        const commitId = context.payload.pull_request.head.sha;
-        const pullNumber = context.issue.number;
+        const prNumber = context.issue.number;
         const owner = context.repo.owner;
         const repo = context.repo.repo;
-
-        // Debugging output
-        console.log("Flaky Tests:\n", flakyTests);
-        console.log("PR number:", pullNumber);
-        console.log("Repo:", owner + "/" + repo);
-        console.log("Commit SHA:", commitId);
-
         const body = `
-          **Oh! We’ve got ourselves a flaky one:**
+          ### Oh! We’ve got ourselves flaky ones!
           \`\`\`
           ${flakyTests}
           \`\`\`
           Related to your code? Maybe.
           Fixable now? Maybe not.
-          Mind giving it a look? Or don't, but I will remember. And ![I'll be back](https://media.tenor.com/p2Ie017Zwu8AAAAM/exterminador-do.gif)
+          Mind giving it a look? Or don't, but I will remember, and
+          ![I'll be back](https://media.tenor.com/p2Ie017Zwu8AAAAM/exterminador-do.gif)
         `;
 
-        await github.rest.issues.createComment({
+        // Find existing comments
+        const comments = await github.rest.issues.listComments({
           owner,
           repo,
-          issue_number: pullNumber,
-          body
+          issue_number: prNumber,
         });
 
+        // Get comments about flakyness
+        const marker = `${flakyTests}`;
+        const botComment = comments.data.find(comment =>
+          comment.user.type === "Bot" && comment.body.includes(marker)
+        );
+
+        if (botComment) {
+          await github.rest.issues.updateComment({
+            owner,
+            repo,
+            comment_id: botComment.id,
+            body: body
+          });
+          console.log("✅ Updated existing flaky test comment");
+        } else {
+          await github.rest.issues.createComment({
+            owner,
+            repo,
+            issue_number: prNumber,
+            body: body
+          });
+          console.log("✅ Created new flaky test comment");
+        }
 
   - name: Unfinished tests
     if: failure() || cancelled()
