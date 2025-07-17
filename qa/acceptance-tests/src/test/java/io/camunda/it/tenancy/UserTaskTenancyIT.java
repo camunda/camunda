@@ -66,7 +66,7 @@ public class UserTaskTenancyIT {
 
     deployResource(adminClient, "process/bpm_variable_test.bpmn", TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
-    waitForProcessBeingExported(adminClient);
+    waitForUserTasksBeingExported(adminClient);
   }
 
   @Test
@@ -129,7 +129,7 @@ public class UserTaskTenancyIT {
         .join();
   }
 
-  private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
+  private static void waitForUserTasksBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -137,12 +137,12 @@ public class UserTaskTenancyIT {
             () -> {
               assertThat(
                       camundaClient
-                          .newProcessInstanceSearchRequest()
-                          .filter(filter -> filter.processDefinitionId(fn -> fn.in(PROCESS_ID)))
+                          .newUserTaskSearchRequest()
+                          .filter(filter -> filter.bpmnProcessId(PROCESS_ID))
                           .send()
                           .join()
                           .items())
-                  .hasSize(2);
+                  .hasSize(4);
             });
   }
 }
