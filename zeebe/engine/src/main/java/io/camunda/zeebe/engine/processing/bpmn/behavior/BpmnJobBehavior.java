@@ -296,7 +296,7 @@ public final class BpmnJobBehavior {
         jobProperties,
         JobKind.EXECUTION_LISTENER,
         jobListenerEventType,
-        Collections.emptyMap());
+        executionListener.getJobWorkerProperties().getTaskHeaders());
   }
 
   public void createNewTaskListenerJob(
