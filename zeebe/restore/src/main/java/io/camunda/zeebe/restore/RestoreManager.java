@@ -70,13 +70,13 @@ public class RestoreManager {
       throw new DirectoryNotEmptyException(dataDirectory.toString());
     }
 
-    final var partitionToRestore = collectPartitions();
+    final var partitionsToRestore = collectPartitions();
 
     try (final var executor =
         Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("zeebe-restore-", 0).factory())) {
-      final var tasks = new ArrayList<Callable<Void>>(partitionToRestore.size());
-      for (final var partition : partitionToRestore) {
+      final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
+      for (final var partition : partitionsToRestore) {
         tasks.add(
             () -> {
               restorePartition(partition, backupId, validateConfig);
