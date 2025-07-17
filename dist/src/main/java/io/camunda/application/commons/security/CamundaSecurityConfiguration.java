@@ -45,7 +45,7 @@ public class CamundaSecurityConfiguration {
 
   @PostConstruct
   public void validate() {
-    final var multiTenancyEnabled = camundaSecurityProperties.getMultiTenancy().isEnabled();
+    final var multiTenancyEnabled = camundaSecurityProperties.getMultiTenancy().isChecksEnabled();
     final var apiUnprotected = camundaSecurityProperties.getAuthentication().getUnprotectedApi();
 
     if (multiTenancyEnabled && apiUnprotected) {

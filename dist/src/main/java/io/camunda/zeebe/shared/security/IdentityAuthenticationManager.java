@@ -58,7 +58,7 @@ public final class IdentityAuthenticationManager implements AuthenticationManage
   }
 
   private List<String> getTenants(final String token) {
-    if (!multiTenancy.isEnabled()) {
+    if (!multiTenancy.isChecksEnabled()) {
       return Collections.singletonList(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
 

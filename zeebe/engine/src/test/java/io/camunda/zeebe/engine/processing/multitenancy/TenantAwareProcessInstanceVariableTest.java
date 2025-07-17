@@ -41,7 +41,7 @@ public class TenantAwareProcessInstanceVariableTest {
   public static final EngineRule ENGINE_RULE =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
+          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true))
           .withSecurityConfig(config -> config.getInitialization().setUsers(List.of(DEFAULT_USER)));
 
   public static final String PROCESS_ID = "process";

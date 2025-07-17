@@ -131,7 +131,7 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void shouldDeployResourceWithMultitenancyDisabled() {
     // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
     final var filename = "process.bpmn";
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
     final var content = new byte[] {1, 2, 3};
@@ -196,7 +196,7 @@ public class ResourceControllerTest extends RestControllerTest {
     // given
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     final var filename = "process.bpmn";
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
     final var content = new byte[] {1, 2, 3};

@@ -65,7 +65,7 @@ public class ProcessInstanceController {
   @CamundaPostMapping
   public CompletableFuture<ResponseEntity<Object>> createProcessInstance(
       @RequestBody final ProcessInstanceCreationInstruction request) {
-    return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isEnabled())
+    return RequestMapper.toCreateProcessInstance(request, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createProcessInstance);
   }
 

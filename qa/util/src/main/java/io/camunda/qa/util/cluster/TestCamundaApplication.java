@@ -178,8 +178,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   public TestCamundaApplication withMultiTenancyEnabled() {
     withAuthenticatedAccess();
-    withProperty("camunda.security.multiTenancy.enabled", true);
-    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setEnabled(true));
+    withProperty("camunda.security.multiTenancy.checksEnabled", true);
+    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
   }
 
   @Override
