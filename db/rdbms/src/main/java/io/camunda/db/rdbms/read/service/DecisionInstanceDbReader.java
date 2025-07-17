@@ -40,20 +40,10 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
     this.decisionInstanceMapper = decisionInstanceMapper;
   }
 
-  public Optional<DecisionInstanceEntity> findOne(final String decisionInstanceId) {
-    LOG.trace("[RDBMS DB] Search for decision instance with key {}", decisionInstanceId);
-    final var result =
-        search(
-            DecisionInstanceQuery.of(
-                b ->
-                    b.filter(f -> f.decisionInstanceIds(decisionInstanceId))
-                        .resultConfig(
-                            r -> r.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))));
-    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
-  }
-
-  public SearchQueryResult<DecisionInstanceEntity> search(final DecisionInstanceQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public DecisionInstanceEntity getById(final String id,
+      final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(id).orElse(null);
   }
 
   @Override
@@ -70,6 +60,22 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
 
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<DecisionInstanceEntity> findOne(final String decisionInstanceId) {
+    LOG.trace("[RDBMS DB] Search for decision instance with key {}", decisionInstanceId);
+    final var result =
+        search(
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.decisionInstanceIds(decisionInstanceId))
+                        .resultConfig(
+                            r -> r.includeEvaluatedInputs(true).includeEvaluatedOutputs(true))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
+  }
+
+  public SearchQueryResult<DecisionInstanceEntity> search(final DecisionInstanceQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 
   /**

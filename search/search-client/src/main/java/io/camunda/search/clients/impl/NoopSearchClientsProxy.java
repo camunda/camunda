@@ -104,6 +104,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionInstanceEntity getDecisionInstance(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery filter) {
     return SearchQueryResult.empty();

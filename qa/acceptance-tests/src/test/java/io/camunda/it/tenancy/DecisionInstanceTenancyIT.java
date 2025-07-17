@@ -12,7 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.response.Decision;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
+import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -30,7 +31,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class DecisionDefinitionTenancyIT {
+public class DecisionInstanceTenancyIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -65,36 +66,42 @@ public class DecisionDefinitionTenancyIT {
     deployResource(adminClient, "decisions/decision_model.dmn", TENANT_A);
     deployResource(adminClient, "decisions/decision_model_1.dmn", TENANT_B);
 
-    waitForDecisionDefinitionsToBeDeployed(adminClient, 2);
+    evaluateDecision(adminClient, "decision_1", TENANT_A);
+    evaluateDecision(adminClient, "test_qa", TENANT_B);
+
+    waitForDecisionsToBeEvaluated(adminClient, 2);
   }
 
   @Test
-  public void shouldReturnAllDecisionDefinitionsWithTenantAccess(
+  public void shouldReturnAllDecisionInstancesWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(2);
-    assertThat(result.items().stream().map(Decision::getTenantId).collect(Collectors.toSet()))
+    // at the moment no tenant ids are returned with the response
+    assertThat(
+            result.items().stream().map(DecisionInstance::getTenantId).collect(Collectors.toSet()))
         .containsExactlyInAnyOrder(TENANT_A, TENANT_B);
   }
 
   @Test
-  public void shouldReturnOnlyTenantADecisionDefinition(
+  public void shouldReturnOnlyTenantADecisionInstance(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(1);
-    assertThat(result.items().stream().map(Decision::getTenantId).collect(Collectors.toSet()))
+    assertThat(
+            result.items().stream().map(DecisionInstance::getTenantId).collect(Collectors.toSet()))
         .containsExactlyInAnyOrder(TENANT_A);
   }
 
   @Test
-  public void shouldNotReturnAnyDecisionDefinition(
+  public void shouldNotReturnAnyDecisionInstance(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -104,9 +111,9 @@ public class DecisionDefinitionTenancyIT {
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
-    final var decisionDefinition =
+    final var decisionInstance =
         adminClient
-            .newDecisionDefinitionSearchRequest()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.tenantId(TENANT_A))
             .page(p -> p.limit(1))
             .send()
@@ -117,13 +124,13 @@ public class DecisionDefinitionTenancyIT {
     // when
     final var result =
         camundaClient
-            .newDecisionDefinitionGetRequest(decisionDefinition.getDecisionKey())
+            .newDecisionInstanceGetRequest(decisionInstance.getDecisionInstanceId())
             .send()
             .join();
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getDecisionKey()).isEqualTo(decisionDefinition.getDecisionKey());
+    assertThat(result.getDecisionInstanceId()).isEqualTo(decisionInstance.getDecisionInstanceId());
     assertThat(result.getTenantId()).isEqualTo(TENANT_A);
   }
 
@@ -132,9 +139,9 @@ public class DecisionDefinitionTenancyIT {
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // given
-    final var decisionDefinition =
+    final var decisionInstance =
         adminClient
-            .newDecisionDefinitionSearchRequest()
+            .newDecisionInstanceSearchRequest()
             .filter(f -> f.tenantId(TENANT_A))
             .page(p -> p.limit(1))
             .send()
@@ -148,7 +155,7 @@ public class DecisionDefinitionTenancyIT {
             ProblemException.class,
             () ->
                 camundaClient
-                    .newDecisionDefinitionGetRequest(decisionDefinition.getDecisionKey())
+                    .newDecisionInstanceGetRequest(decisionInstance.getDecisionInstanceId())
                     .send()
                     .join());
 
@@ -159,8 +166,8 @@ public class DecisionDefinitionTenancyIT {
     assertThat(exception.details().getStatus()).isEqualTo(404);
     assertThat(exception.details().getDetail())
         .contains(
-            "Decision Definition with key '%s' not found"
-                .formatted(decisionDefinition.getDecisionKey()));
+            "Decision Instance with id '%s' not found"
+                .formatted(decisionInstance.getDecisionInstanceId()));
   }
 
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
@@ -182,14 +189,25 @@ public class DecisionDefinitionTenancyIT {
         .join();
   }
 
-  private static void waitForDecisionDefinitionsToBeDeployed(
+  private static EvaluateDecisionResponse evaluateDecision(
+      final CamundaClient camundaClient, final String decisionId, final String tenantId) {
+    return camundaClient
+        .newEvaluateDecisionCommand()
+        .decisionId(decisionId)
+        .tenantId(tenantId)
+        .variables("{\"input1\": \"A\"}")
+        .send()
+        .join();
+  }
+
+  private static void waitForDecisionsToBeEvaluated(
       final CamundaClient camundaClient, final int expectedCount) {
-    Awaitility.await("should deploy decision definitions")
+    Awaitility.await("should evaluate decision definitions")
         .atMost(Duration.ofSeconds(15))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+              final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }
