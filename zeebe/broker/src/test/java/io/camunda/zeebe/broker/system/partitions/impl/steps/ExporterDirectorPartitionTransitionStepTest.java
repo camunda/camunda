@@ -156,6 +156,33 @@ class ExporterDirectorPartitionTransitionStepTest {
   }
 
   @Test
+  void shouldCreateDescriptorsForConfigNotFoundExporters() {
+    // given
+    final String enabledExporterId = "expA";
+    final String configNotFoundExporterId = "expB";
+    final var exporterConfig =
+        getExporterConfig(
+            enabledExporterId, State.ENABLED, configNotFoundExporterId, State.CONFIG_NOT_FOUND);
+
+    final Map<String, ExporterDescriptor> exporters =
+        Map.of(enabledExporterId, new ExporterDescriptor(enabledExporterId));
+    when(exporterRepository.getExporters()).thenReturn(exporters);
+    transitionContext.setDynamicPartitionConfig(exporterConfig);
+
+    final AtomicReference<ExporterDirectorContext> capturedContext = new AtomicReference<>();
+    final var exporterDirectorStep = getExporterDirectorPartitionTransitionStep(capturedContext);
+
+    // when
+    exporterDirectorStep.prepareTransition(transitionContext, 1, Role.LEADER).join();
+    exporterDirectorStep.transitionTo(transitionContext, 1, Role.LEADER).join();
+
+    // then
+    assertThat(
+            capturedContext.get().getDescriptors().keySet().stream().map(ExporterDescriptor::getId))
+        .containsExactlyInAnyOrder(enabledExporterId, configNotFoundExporterId);
+  }
+
+  @Test
   void shouldDisableExporterIfConfigChangedConcurrently() {
     // given
     final String enabledExporterId = "expA";
