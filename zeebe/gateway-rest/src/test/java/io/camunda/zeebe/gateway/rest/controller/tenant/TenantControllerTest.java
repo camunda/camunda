@@ -620,7 +620,7 @@ public class TenantControllerTest {
     private static Stream<Arguments> provideAddMemberByIdTestCases() {
       return Stream.of(
           Arguments.of(EntityType.USER, "users", "username"),
-          Arguments.of(EntityType.MAPPING, "mapping-rules", "mappingId"),
+          Arguments.of(EntityType.MAPPING, "mapping-rules", "mappingRuleId"),
           Arguments.of(EntityType.GROUP, "groups", "groupId"),
           Arguments.of(EntityType.ROLE, "roles", "roleId"),
           Arguments.of(EntityType.CLIENT, "clients", "clientId"));
@@ -629,7 +629,7 @@ public class TenantControllerTest {
     private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
       return Stream.of(
           Arguments.of(EntityType.USER, "users", "username"),
-          Arguments.of(EntityType.MAPPING, "mapping-rules", "mappingId"),
+          Arguments.of(EntityType.MAPPING, "mapping-rules", "mappingRuleId"),
           Arguments.of(EntityType.GROUP, "groups", "groupId"),
           Arguments.of(EntityType.ROLE, "roles", "roleId"),
           Arguments.of(EntityType.CLIENT, "clients", "clientId"));
@@ -705,10 +705,13 @@ public class TenantControllerTest {
                   webClient ->
                       webClient.put().uri("/v2/tenants/tenantId/clients/clientId").exchange()),
           Arguments.of(
-              "/v2/tenants/tenantId/mappings/mappingId",
+              "/v2/tenants/tenantId/mapping-rules/mappingRuleId",
               (Function<WebTestClient, ResponseSpec>)
                   webClient ->
-                      webClient.put().uri("/v2/tenants/tenantId/mappings/mappingId").exchange()),
+                      webClient
+                          .put()
+                          .uri("/v2/tenants/tenantId/mapping-rules/mappingRuleId")
+                          .exchange()),
           Arguments.of(
               "/v2/tenants/tenantId/groups/groupId",
               (Function<WebTestClient, ResponseSpec>)
@@ -733,15 +736,18 @@ public class TenantControllerTest {
                   webClient ->
                       webClient.delete().uri("/v2/tenants/tenantId/clients/clientId").exchange()),
           Arguments.of(
-              "/v2/tenants/tenantId/mappings/search",
+              "/v2/tenants/tenantId/mapping-rules/search",
               (Function<WebTestClient, ResponseSpec>)
                   webClient ->
-                      webClient.post().uri("/v2/tenants/tenantId/mappings/search").exchange()),
+                      webClient.post().uri("/v2/tenants/tenantId/mapping-rules/search").exchange()),
           Arguments.of(
-              "/v2/tenants/tenantId/mappings/mappingId",
+              "/v2/tenants/tenantId/mapping-rules/mappingRuleId",
               (Function<WebTestClient, ResponseSpec>)
                   webClient ->
-                      webClient.delete().uri("/v2/tenants/tenantId/mappings/mappingId").exchange()),
+                      webClient
+                          .delete()
+                          .uri("/v2/tenants/tenantId/mapping-rules/mappingRuleId")
+                          .exchange()),
           Arguments.of(
               "/v2/tenants/tenantId/groups/groupId",
               (Function<WebTestClient, ResponseSpec>)

@@ -21,7 +21,7 @@ import io.camunda.migration.identity.config.cluster.ClusterProperties;
 import io.camunda.migration.identity.config.cluster.MembershipConfig;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.GroupSearchClient;
-import io.camunda.search.clients.MappingSearchClient;
+import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.clients.TenantSearchClient;
@@ -94,8 +94,9 @@ public class IdentityMigrationModuleConfiguration {
   public MappingServices mappingServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final MappingSearchClient mappingSearchClient) {
-    return new MappingServices(brokerClient, securityContextProvider, mappingSearchClient, null);
+      final MappingRuleSearchClient mappingRuleSearchClient) {
+    return new MappingServices(
+        brokerClient, securityContextProvider, mappingRuleSearchClient, null);
   }
 
   @Bean

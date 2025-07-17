@@ -7,37 +7,37 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.write.domain.MappingDbModel;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class MappingWriter {
+public class MappingRuleWriter {
 
   private final ExecutionQueue executionQueue;
 
-  public MappingWriter(final ExecutionQueue executionQueue) {
+  public MappingRuleWriter(final ExecutionQueue executionQueue) {
     this.executionQueue = executionQueue;
   }
 
-  public void create(final MappingDbModel mapping) {
+  public void create(final MappingRuleDbModel mappingRule) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.MAPPING,
+            ContextType.MAPPING_RULE,
             WriteStatementType.INSERT,
-            mapping.mappingId(),
-            "io.camunda.db.rdbms.sql.MappingMapper.insert",
-            mapping));
+            mappingRule.mappingRuleId(),
+            "io.camunda.db.rdbms.sql.MappingRuleMapper.insert",
+            mappingRule));
   }
 
-  public void delete(final String mappingId) {
+  public void delete(final String mappingRuleId) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.MAPPING,
+            ContextType.MAPPING_RULE,
             WriteStatementType.DELETE,
-            mappingId,
-            "io.camunda.db.rdbms.sql.MappingMapper.delete",
-            mappingId));
+            mappingRuleId,
+            "io.camunda.db.rdbms.sql.MappingRuleMapper.delete",
+            mappingRuleId));
   }
 }

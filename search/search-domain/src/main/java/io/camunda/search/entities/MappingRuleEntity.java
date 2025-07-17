@@ -11,6 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.security.auth.MappingRuleMatcher;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record MappingEntity(
-    String mappingId, Long mappingKey, String claimName, String claimValue, String name)
+public record MappingRuleEntity(
+    String mappingRuleId, Long mappingRuleKey, String claimName, String claimValue, String name)
     implements MappingRuleMatcher.MappingRule {}

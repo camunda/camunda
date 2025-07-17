@@ -82,7 +82,7 @@ public class TenantAppliersTest {
   @Test
   void shouldAddEntityToTenantWithTypeMapping() {
     // given
-    final var mappingId = "mappingId";
+    final var mappingId = "mappingRuleId";
     mappingState.create(
         new MappingRecord()
             .setMappingId(mappingId)
@@ -184,7 +184,7 @@ public class TenantAppliersTest {
   @Test
   void shouldRemoveEntityFromTenantWithTypeMapping() {
     // given
-    final var mappingId = "mappingId";
+    final var mappingId = "mappingRuleId";
     mappingState.create(
         new MappingRecord()
             .setMappingId(mappingId)

@@ -9,17 +9,23 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
+import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import java.util.List;
+import java.util.Set;
 
-public class MappingDeletedHandler implements ExportHandler<MappingEntity, MappingRecordValue> {
+public class MappingRuleCreatedUpdatedHandler
+    implements ExportHandler<MappingRuleEntity, MappingRecordValue> {
+  private static final Set<Intent> SUPPORTED_INTENTS =
+      Set.of(MappingIntent.CREATED, MappingIntent.UPDATED);
+
   private final String indexName;
 
-  public MappingDeletedHandler(final String indexName) {
+  public MappingRuleCreatedUpdatedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -29,40 +35,42 @@ public class MappingDeletedHandler implements ExportHandler<MappingEntity, Mappi
   }
 
   @Override
-  public Class<MappingEntity> getEntityType() {
-    return MappingEntity.class;
+  public Class<MappingRuleEntity> getEntityType() {
+    return MappingRuleEntity.class;
   }
 
   @Override
   public boolean handlesRecord(final Record<MappingRecordValue> record) {
     return getHandledValueType().equals(record.getValueType())
-        && MappingIntent.DELETED.equals(record.getIntent());
+        && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
   public List<String> generateIds(final Record<MappingRecordValue> record) {
-    return List.of(String.valueOf(record.getValue().getMappingId()));
+    return List.of(record.getValue().getMappingId());
   }
 
   @Override
-  public MappingEntity createNewEntity(final String id) {
-    return new MappingEntity().setId(id);
+  public MappingRuleEntity createNewEntity(final String id) {
+    return new MappingRuleEntity().setId(id);
   }
 
   @Override
-  public void updateEntity(final Record<MappingRecordValue> record, final MappingEntity entity) {
+  public void updateEntity(
+      final Record<MappingRecordValue> record, final MappingRuleEntity entity) {
     final MappingRecordValue value = record.getValue();
     entity
         .setKey(value.getMappingKey())
-        .setMappingId(value.getMappingId())
+        .setMappingRuleId(value.getMappingId())
         .setClaimName(value.getClaimName())
-        .setClaimValue(value.getClaimValue());
+        .setClaimValue(value.getClaimValue())
+        .setName(value.getName());
   }
 
   @Override
-  public void flush(final MappingEntity entity, final BatchRequest batchRequest)
+  public void flush(final MappingRuleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.add(indexName, entity);
   }
 
   @Override

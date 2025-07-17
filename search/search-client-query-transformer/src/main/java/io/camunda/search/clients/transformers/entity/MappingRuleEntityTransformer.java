@@ -8,17 +8,17 @@
 package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 
-public class MappingEntityTransformer
+public class MappingRuleEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.usermanagement.MappingEntity, MappingEntity> {
+        io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity, MappingRuleEntity> {
 
   @Override
-  public MappingEntity apply(
-      final io.camunda.webapps.schema.entities.usermanagement.MappingEntity value) {
-    return new MappingEntity(
-        value.getMappingId(),
+  public MappingRuleEntity apply(
+      final io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity value) {
+    return new MappingRuleEntity(
+        value.getMappingRuleId(),
         value.getKey(),
         value.getClaimName(),
         value.getClaimValue(),

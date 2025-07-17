@@ -11,17 +11,17 @@ import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 
-public class MappingIndex extends AbstractIndexDescriptor implements Prio5Backup {
-  public static final String INDEX_NAME = "mapping";
+public class MappingRuleIndex extends AbstractIndexDescriptor implements Prio5Backup {
+  public static final String INDEX_NAME = "mapping-rule";
   public static final String INDEX_VERSION = "8.8.0";
 
-  public static final String MAPPING_KEY = "mappingKey";
-  public static final String MAPPING_ID = "mappingId";
+  public static final String MAPPING_RULE_KEY = "mappingRuleKey";
+  public static final String MAPPING_RULE_ID = "mappingRuleId";
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "name";
 
-  public MappingIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public MappingRuleIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 

@@ -82,7 +82,7 @@ public record Authorization(
       return resourceType(DECISION_REQUIREMENTS_DEFINITION);
     }
 
-    public Builder mapping() {
+    public Builder mappingRule() {
       return resourceType(MAPPING_RULE);
     }
 

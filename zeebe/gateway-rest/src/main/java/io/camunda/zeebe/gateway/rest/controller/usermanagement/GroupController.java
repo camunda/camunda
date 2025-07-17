@@ -12,7 +12,7 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
 import io.camunda.authentication.ConditionalOnInternalGroupsEnabled;
 import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
@@ -273,9 +273,9 @@ public class GroupController {
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInGroup(
-      final String groupId, final MappingQuery mappingQuery) {
+      final String groupId, final MappingRuleQuery mappingRuleQuery) {
     try {
-      final var composedMappingQuery = buildMappingQuery(groupId, mappingQuery);
+      final var composedMappingQuery = buildMappingQuery(groupId, mappingRuleQuery);
       final var result =
           mappingServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -308,9 +308,10 @@ public class GroupController {
         .build();
   }
 
-  private MappingQuery buildMappingQuery(final String groupId, final MappingQuery mappingQuery) {
-    return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().groupId(groupId).build())
+  private MappingRuleQuery buildMappingQuery(
+      final String groupId, final MappingRuleQuery mappingRuleQuery) {
+    return mappingRuleQuery.toBuilder()
+        .filter(mappingRuleQuery.filter().toBuilder().groupId(groupId).build())
         .build();
   }
 

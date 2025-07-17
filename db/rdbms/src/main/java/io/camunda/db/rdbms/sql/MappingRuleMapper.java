@@ -7,18 +7,18 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.read.domain.MappingDbQuery;
-import io.camunda.db.rdbms.write.domain.MappingDbModel;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.db.rdbms.read.domain.MappingRuleDbQuery;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.search.entities.MappingRuleEntity;
 import java.util.List;
 
-public interface MappingMapper {
+public interface MappingRuleMapper {
 
-  void insert(MappingDbModel form);
+  void insert(MappingRuleDbModel form);
 
-  Long count(MappingDbQuery filter);
+  Long count(MappingRuleDbQuery filter);
 
-  List<MappingEntity> search(MappingDbQuery filter);
+  List<MappingRuleEntity> search(MappingRuleDbQuery filter);
 
-  void delete(String mappingId);
+  void delete(String mappingRuleId);
 }

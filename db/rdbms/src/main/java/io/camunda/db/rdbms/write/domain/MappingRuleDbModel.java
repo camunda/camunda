@@ -10,37 +10,37 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public record MappingDbModel(
-    String mappingId, Long mappingKey, String claimName, String claimValue, String name)
-    implements DbModel<MappingDbModel> {
+public record MappingRuleDbModel(
+    String mappingRuleId, Long mappingRuleKey, String claimName, String claimValue, String name)
+    implements DbModel<MappingRuleDbModel> {
 
   @Override
-  public MappingDbModel copy(
-      final Function<ObjectBuilder<MappingDbModel>, ObjectBuilder<MappingDbModel>>
+  public MappingRuleDbModel copy(
+      final Function<ObjectBuilder<MappingRuleDbModel>, ObjectBuilder<MappingRuleDbModel>>
           builderFunction) {
     return builderFunction
         .apply(
             new MappingDbModelBuilder()
-                .mappingKey(mappingKey)
+                .mappingRuleKey(mappingRuleKey)
                 .claimName(claimName)
                 .claimValue(claimValue)
                 .name(name)
-                .mappingId(mappingId))
+                .mappingRuleId(mappingRuleId))
         .build();
   }
 
-  public static class MappingDbModelBuilder implements ObjectBuilder<MappingDbModel> {
+  public static class MappingDbModelBuilder implements ObjectBuilder<MappingRuleDbModel> {
 
-    private Long mappingKey;
+    private Long mappingRuleKey;
     private String claimName;
     private String claimValue;
     private String name;
-    private String mappingId;
+    private String mappingRuleId;
 
     public MappingDbModelBuilder() {}
 
-    public MappingDbModelBuilder mappingKey(final Long mappingKey) {
-      this.mappingKey = mappingKey;
+    public MappingDbModelBuilder mappingRuleKey(final Long mappingRuleKey) {
+      this.mappingRuleKey = mappingRuleKey;
       return this;
     }
 
@@ -59,14 +59,14 @@ public record MappingDbModel(
       return this;
     }
 
-    public MappingDbModelBuilder mappingId(final String mappingId) {
-      this.mappingId = mappingId;
+    public MappingDbModelBuilder mappingRuleId(final String mappingRuleId) {
+      this.mappingRuleId = mappingRuleId;
       return this;
     }
 
     @Override
-    public MappingDbModel build() {
-      return new MappingDbModel(mappingId, mappingKey, claimName, claimValue, name);
+    public MappingRuleDbModel build() {
+      return new MappingRuleDbModel(mappingRuleId, mappingRuleKey, claimName, claimValue, name);
     }
   }
 }

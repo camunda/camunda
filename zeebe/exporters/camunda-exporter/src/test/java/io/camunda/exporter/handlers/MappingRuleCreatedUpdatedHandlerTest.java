@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
+import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
@@ -26,11 +26,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
-public class MappingCreatedUpdatedHandlerTest {
+public class MappingRuleCreatedUpdatedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-mapping";
-  private final MappingCreatedUpdatedHandler underTest =
-      new MappingCreatedUpdatedHandler(indexName);
+  private final MappingRuleCreatedUpdatedHandler underTest =
+      new MappingRuleCreatedUpdatedHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -39,7 +39,7 @@ public class MappingCreatedUpdatedHandlerTest {
 
   @Test
   void testGetEntityType() {
-    assertThat(underTest.getEntityType()).isEqualTo(MappingEntity.class);
+    assertThat(underTest.getEntityType()).isEqualTo(MappingRuleEntity.class);
   }
 
   @ParameterizedTest
@@ -101,8 +101,8 @@ public class MappingCreatedUpdatedHandlerTest {
             r -> r.withIntent(MappingIntent.UPDATED).withValue(mappingRecordValue));
 
     // when
-    final MappingEntity mappingEntity =
-        new MappingEntity()
+    final MappingRuleEntity mappingEntity =
+        new MappingRuleEntity()
             .setClaimName("old-claim")
             .setClaimValue("old-value")
             .setName("old-name")
@@ -113,13 +113,13 @@ public class MappingCreatedUpdatedHandlerTest {
     assertThat(mappingEntity.getClaimName()).isEqualTo("updated-claim");
     assertThat(mappingEntity.getClaimValue()).isEqualTo("updated-value");
     assertThat(mappingEntity.getName()).isEqualTo("updated-name");
-    assertThat(mappingEntity.getMappingId()).isEqualTo("updated-id");
+    assertThat(mappingEntity.getMappingRuleId()).isEqualTo("updated-id");
   }
 
   @Test
   void shouldAddEntityOnFlush() throws PersistenceException {
     // given
-    final MappingEntity inputEntity = new MappingEntity().setId("111");
+    final MappingRuleEntity inputEntity = new MappingRuleEntity().setId("111");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

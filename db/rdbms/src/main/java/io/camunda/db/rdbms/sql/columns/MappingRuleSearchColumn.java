@@ -7,18 +7,18 @@
  */
 package io.camunda.db.rdbms.sql.columns;
 
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 
-public enum MappingSearchColumn implements SearchColumn<MappingEntity> {
-  MAPPING_ID("mappingId"),
-  MAPPING_KEY("mappingKey"),
+public enum MappingRuleSearchColumn implements SearchColumn<MappingRuleEntity> {
+  MAPPING_RULE_ID("mappingRuleId"),
+  MAPPING_KEY("mappingRuleKey"),
   CLAIM_NAME("claimName"),
   CLAIM_VALUE("claimValue"),
   NAME("name");
 
   private final String property;
 
-  MappingSearchColumn(final String property) {
+  MappingRuleSearchColumn(final String property) {
     this.property = property;
   }
 
@@ -28,7 +28,7 @@ public enum MappingSearchColumn implements SearchColumn<MappingEntity> {
   }
 
   @Override
-  public Class<MappingEntity> getEntityClass() {
-    return MappingEntity.class;
+  public Class<MappingRuleEntity> getEntityClass() {
+    return MappingRuleEntity.class;
   }
 }

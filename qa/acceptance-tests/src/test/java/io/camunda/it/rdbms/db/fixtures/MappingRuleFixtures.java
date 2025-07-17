@@ -8,27 +8,27 @@
 package io.camunda.it.rdbms.db.fixtures;
 
 import io.camunda.db.rdbms.write.RdbmsWriter;
-import io.camunda.db.rdbms.write.domain.MappingDbModel;
-import io.camunda.db.rdbms.write.domain.MappingDbModel.MappingDbModelBuilder;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.db.rdbms.write.domain.MappingRuleDbModel.MappingDbModelBuilder;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 
-public final class MappingFixtures extends CommonFixtures {
+public final class MappingRuleFixtures extends CommonFixtures {
 
-  private MappingFixtures() {}
+  private MappingRuleFixtures() {}
 
-  public static MappingDbModel createRandomized() {
+  public static MappingRuleDbModel createRandomized() {
     return createRandomized(b -> b);
   }
 
-  public static MappingDbModel createRandomized(
+  public static MappingRuleDbModel createRandomized(
       final Function<MappingDbModelBuilder, MappingDbModelBuilder> builderFunction) {
     final var id = nextKey();
     final var builder =
         new MappingDbModelBuilder()
-            .mappingId(String.valueOf(id))
-            .mappingKey(id)
+            .mappingRuleId(String.valueOf(id))
+            .mappingRuleKey(id)
             .claimName("claimName-" + UUID.randomUUID())
             .claimValue("claimValue-" + UUID.randomUUID())
             .name("name" + UUID.randomUUID());
@@ -40,20 +40,22 @@ public final class MappingFixtures extends CommonFixtures {
       final RdbmsWriter rdbmsWriter,
       final Function<MappingDbModelBuilder, MappingDbModelBuilder> builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getMappingWriter().create(MappingFixtures.createRandomized(builderFunction));
+      rdbmsWriter
+          .getMappingRuleWriter()
+          .create(MappingRuleFixtures.createRandomized(builderFunction));
     }
     rdbmsWriter.flush();
   }
 
   public static void createAndSaveMapping(
-      final RdbmsWriter rdbmsWriter, final MappingDbModel mapping) {
-    createAndSaveMappings(rdbmsWriter, List.of(mapping));
+      final RdbmsWriter rdbmsWriter, final MappingRuleDbModel mappingRule) {
+    createAndSaveMappings(rdbmsWriter, List.of(mappingRule));
   }
 
   public static void createAndSaveMappings(
-      final RdbmsWriter rdbmsWriter, final List<MappingDbModel> mappingList) {
-    for (final MappingDbModel mapping : mappingList) {
-      rdbmsWriter.getMappingWriter().create(mapping);
+      final RdbmsWriter rdbmsWriter, final List<MappingRuleDbModel> mappingRuleList) {
+    for (final MappingRuleDbModel mapping : mappingRuleList) {
+      rdbmsWriter.getMappingRuleWriter().create(mapping);
     }
     rdbmsWriter.flush();
   }

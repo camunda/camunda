@@ -77,7 +77,7 @@ public final class MappingRuleMatcher {
   }
 
   public interface MappingRule {
-    String mappingId();
+    String mappingRuleId();
 
     String claimName();
 

@@ -10,63 +10,63 @@
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="io.camunda.db.rdbms.sql.MappingMapper">
+<mapper namespace="io.camunda.db.rdbms.sql.MappingRuleMapper">
 
-  <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingEntity">
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingRuleEntity">
     <constructor>
-      <idArg column="MAPPING_ID" javaType="string"/>
-      <arg column="MAPPING_KEY" javaType="long"/>
+      <idArg column="MAPPING_RULE_ID" javaType="string"/>
+      <arg column="MAPPING_RULE_KEY" javaType="long"/>
       <arg column="CLAIM_NAME" javaType="string"/>
       <arg column="CLAIM_VALUE" javaType="string"/>
       <arg column="NAME" javaType="string"/>
     </constructor>
   </resultMap>
 
-  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingDbModel">
-    INSERT INTO ${prefix}MAPPINGS (MAPPING_ID, MAPPING_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
-    VALUES (#{mappingId}, #{mappingKey}, #{claimName}, #{claimValue}, #{name})
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingRuleDbModel">
+    INSERT INTO ${prefix}MAPPING_RULES (MAPPING_RULE_ID, MAPPING_RULE_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
+    VALUES (#{mappingRuleId}, #{mappingRuleKey}, #{claimName}, #{claimValue}, #{name})
   </insert>
 
   <delete id="delete" parameterType="string">
     DELETE
-    FROM ${prefix}MAPPINGS
-    WHERE MAPPING_ID = #{mappingId}
+    FROM ${prefix}MAPPING_RULES
+    WHERE MAPPING_RULE_ID = #{mappingRuleId}
   </delete>
 
-  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"
     resultType="long">
     SELECT COUNT(*)
-    FROM ${prefix}MAPPINGS m
+    FROM ${prefix}MAPPING_RULES m
     <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
       AND gm.ENTITY_TYPE = 'MAPPING'
     </if>
     <if test="filter.roleId != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_ID = rm.ENTITY_ID
+      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
       AND rm.ENTITY_TYPE = 'MAPPING'
     </if>
-    <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
   </select>
 
-  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.MappingDbQuery"
-    resultMap="io.camunda.db.rdbms.sql.MappingMapper.searchResultMap">
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.MappingRuleMapper.searchResultMap">
     SELECT * FROM (
     SELECT
-    MAPPING_ID,
-    MAPPING_KEY,
+    MAPPING_RULE_ID,
+    MAPPING_RULE_KEY,
     CLAIM_NAME,
     CLAIM_VALUE,
     NAME
-    FROM ${prefix}MAPPINGS m
+    FROM ${prefix}MAPPING_RULES m
     <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_ID = gm.ENTITY_ID
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
       AND gm.ENTITY_TYPE = 'MAPPING'
     </if>
     <if test="filter.roleId != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_ID = rm.ENTITY_ID
+      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
       AND rm.ENTITY_TYPE = 'MAPPING'
     </if>
-    <include refid="io.camunda.db.rdbms.sql.MappingMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -75,11 +75,11 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <if test="filter.mappingId != null">
-      AND MAPPING_ID = #{filter.mappingId}
+    <if test="filter.mappingRuleId != null">
+      AND MAPPING_RULE_ID = #{filter.mappingRuleId}
     </if>
-    <if test="filter.mappingKey != null">
-      AND MAPPING_KEY = #{filter.mappingKey}
+    <if test="filter.mappingRuleKey != null">
+      AND MAPPING_RULE_KEY = #{filter.mappingRuleKey}
     </if>
     <if test="filter.claimName != null">
       AND CLAIM_NAME = #{filter.claimName}

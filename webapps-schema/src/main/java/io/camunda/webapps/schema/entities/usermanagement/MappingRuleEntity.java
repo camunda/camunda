@@ -9,32 +9,32 @@ package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 
-public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
+public class MappingRuleEntity extends AbstractExporterEntity<MappingRuleEntity> {
 
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private Long key;
-  private String mappingId;
+  private String mappingRuleId;
   private String claimName;
   private String claimValue;
   private String name;
 
-  public MappingEntity() {}
+  public MappingRuleEntity() {}
 
   public Long getKey() {
     return key;
   }
 
-  public MappingEntity setKey(final Long mappingKey) {
+  public MappingRuleEntity setKey(final Long mappingKey) {
     key = mappingKey;
     return this;
   }
 
-  public String getMappingId() {
-    return mappingId;
+  public String getMappingRuleId() {
+    return mappingRuleId;
   }
 
-  public MappingEntity setMappingId(final String mappingId) {
-    this.mappingId = mappingId;
+  public MappingRuleEntity setMappingRuleId(final String mappingRuleId) {
+    this.mappingRuleId = mappingRuleId;
     return this;
   }
 
@@ -42,7 +42,7 @@ public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
     return claimName;
   }
 
-  public MappingEntity setClaimName(final String claimName) {
+  public MappingRuleEntity setClaimName(final String claimName) {
     this.claimName = claimName;
     return this;
   }
@@ -51,7 +51,7 @@ public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
     return claimValue;
   }
 
-  public MappingEntity setClaimValue(final String claimValue) {
+  public MappingRuleEntity setClaimValue(final String claimValue) {
     this.claimValue = claimValue;
     return this;
   }
@@ -60,7 +60,7 @@ public class MappingEntity extends AbstractExporterEntity<MappingEntity> {
     return name;
   }
 
-  public MappingEntity setName(final String name) {
+  public MappingRuleEntity setName(final String name) {
     this.name = name;
     return this;
   }
