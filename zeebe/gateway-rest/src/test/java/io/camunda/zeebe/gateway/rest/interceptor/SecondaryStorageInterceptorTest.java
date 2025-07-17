@@ -8,17 +8,17 @@
 package io.camunda.zeebe.gateway.rest.interceptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.connect.configuration.DatabaseConfig;
+import io.camunda.service.exception.SecondaryStorageUnavailableException;
+import io.camunda.service.validation.SecondaryStorageValidator;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor.DatabaseProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.Method;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,51 +32,45 @@ public class SecondaryStorageInterceptorTest {
   @Mock private HttpServletRequest request;
   @Mock private HttpServletResponse response;
   @Mock private HandlerMethod handlerMethod;
+  @Mock private SecondaryStorageValidator validator;
 
   private SecondaryStorageInterceptor interceptor;
-  private DatabaseProperties databaseProperties;
-  private StringWriter responseWriter;
 
   @BeforeEach
-  void setUp() throws Exception {
-    databaseProperties = new DatabaseProperties();
-    interceptor = new SecondaryStorageInterceptor(databaseProperties);
-    responseWriter = new StringWriter();
-    when(response.getWriter()).thenReturn(new PrintWriter(responseWriter));
+  void setUp() {
+    interceptor = new SecondaryStorageInterceptor(validator);
   }
 
   @Test
   void shouldAllowRequestWhenSecondaryStorageIsEnabled() throws Exception {
     // given
-    databaseProperties.setType(DatabaseConfig.ELASTICSEARCH);
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
+    when(handlerMethod.getBeanType()).thenReturn(Object.class);
+    // validator doesn't throw exception when secondary storage is enabled
 
     // when
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
 
     // then
     assertThat(result).isTrue();
+    verify(validator).validateSecondaryStorageEnabled();
   }
 
   @Test
-  void shouldBlockRequestWhenSecondaryStorageIsDisabledAndAnnotationPresent() throws Exception {
+  void shouldThrowExceptionWhenSecondaryStorageIsDisabled() throws Exception {
     // given
-    databaseProperties.setType(DatabaseConfig.NONE);
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(true);
+    when(handlerMethod.getBeanType()).thenReturn(Object.class);
+    doThrow(new SecondaryStorageUnavailableException()).when(validator).validateSecondaryStorageEnabled();
 
-    // when
-    final boolean result = interceptor.preHandle(request, response, handlerMethod);
-
-    // then
-    assertThat(result).isFalse();
-    assertThat(responseWriter.toString()).contains("Secondary Storage Required");
-    assertThat(responseWriter.toString()).contains("headless mode");
+    // when/then
+    assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
+        .isInstanceOf(SecondaryStorageUnavailableException.class);
   }
 
   @Test
-  void shouldAllowRequestWhenSecondaryStorageIsDisabledButAnnotationNotPresent() throws Exception {
+  void shouldAllowRequestWhenAnnotationNotPresent() throws Exception {
     // given
-    databaseProperties.setType(DatabaseConfig.NONE);
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(false);
     when(handlerMethod.getBeanType()).thenReturn(Object.class);
 
@@ -85,38 +79,38 @@ public class SecondaryStorageInterceptorTest {
 
     // then
     assertThat(result).isTrue();
+    verify(validator, never()).validateSecondaryStorageEnabled();
   }
 
   @Test
-  void shouldBlockRequestWhenSecondaryStorageIsDisabledAndClassAnnotationPresent() throws Exception {
+  void shouldCheckControllerLevelAnnotation() throws Exception {
     // given
-    databaseProperties.setType(DatabaseConfig.NONE);
     when(handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)).thenReturn(false);
-    when(handlerMethod.getBeanType()).thenReturn(AnnotatedTestController.class);
+    when(handlerMethod.getBeanType()).thenReturn(AnnotatedController.class);
 
     // when
     final boolean result = interceptor.preHandle(request, response, handlerMethod);
 
     // then
-    assertThat(result).isFalse();
-    assertThat(responseWriter.toString()).contains("Secondary Storage Required");
+    assertThat(result).isTrue();
+    verify(validator).validateSecondaryStorageEnabled();
   }
 
   @Test
   void shouldAllowRequestWhenHandlerIsNotHandlerMethod() throws Exception {
     // given
-    databaseProperties.setType(DatabaseConfig.NONE);
-    final Object nonHandlerMethod = new Object();
+    final Object notHandlerMethod = new Object();
 
     // when
-    final boolean result = interceptor.preHandle(request, response, nonHandlerMethod);
+    final boolean result = interceptor.preHandle(request, response, notHandlerMethod);
 
     // then
     assertThat(result).isTrue();
+    verify(validator, never()).validateSecondaryStorageEnabled();
   }
 
   @RequiresSecondaryStorage
-  static class AnnotatedTestController {
-    public void testMethod() {}
+  private static class AnnotatedController {
+    // Test class with annotation
   }
 }
