@@ -70,7 +70,6 @@ public interface Intent {
           MappingIntent.class,
           IdentitySetupIntent.class,
           BatchOperationIntent.class,
-          BatchOperationChunkIntent.class,
           BatchOperationExecutionIntent.class,
           AdHocSubProcessActivityActivationIntent.class,
           AsyncRequestIntent.class,
@@ -187,7 +186,7 @@ public interface Intent {
       case BATCH_OPERATION_EXECUTION:
         return BatchOperationExecutionIntent.from(intent);
       case BATCH_OPERATION_CHUNK:
-        return BatchOperationChunkIntent.from(intent);
+        return BatchOperationIntent.from(intent);
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
         return BatchOperationIntent.from(intent);
       case BATCH_OPERATION_PARTITION_LIFECYCLE:
@@ -300,7 +299,7 @@ public interface Intent {
       case BATCH_OPERATION_EXECUTION:
         return BatchOperationExecutionIntent.valueOf(intent);
       case BATCH_OPERATION_CHUNK:
-        return BatchOperationChunkIntent.valueOf(intent);
+        return BatchOperationIntent.valueOf(intent);
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
         return BatchOperationIntent.valueOf(intent);
       case BATCH_OPERATION_PARTITION_LIFECYCLE:

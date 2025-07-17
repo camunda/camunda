@@ -7,21 +7,16 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import static io.camunda.zeebe.engine.processing.batchoperation.PartitionUtil.isOnLeadPartition;
+
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
 /**
- * This applier can do two things:
- *
- * <ul>
- *   <li>If the applier is running on the lead partition of the batch operation, it will mark the
- *       <code>sourcePartitionId</code> as finished
- *   <li>If the applier is running on a non-lead partition, it will mark the batch operation locally
- *       as completed
- * </ul>
+ * This applier only runs on the lead partition of a batch operation. It marks the <code>
+ * sourcePartitionId</code> as finished for the batch operation.
  */
 public class BatchOperationPartitionCompletedApplier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationPartitionLifecycleRecord> {
@@ -37,23 +32,10 @@ public class BatchOperationPartitionCompletedApplier
 
   @Override
   public void applyState(final long recordKey, final BatchOperationPartitionLifecycleRecord value) {
-    if (isOnLeadPartition(value.getBatchOperationKey())) {
+    if (isOnLeadPartition(value, partitionId)) {
       // mark the source partition as finished
       batchOperationState.finishPartition(
           value.getBatchOperationKey(), value.getSourcePartitionId());
-    } else {
-      // mark the batch operation as completed locally => delete it from rocksDb
-      batchOperationState.complete(value.getBatchOperationKey());
     }
-  }
-
-  /**
-   * Check, if this applier is running on the lead partition of the batch operation.
-   *
-   * @param batchOperationKey the key of the batch operation
-   * @return true if this applier is running on the lead partition, false otherwise
-   */
-  private boolean isOnLeadPartition(final long batchOperationKey) {
-    return Protocol.decodePartitionId(batchOperationKey) == partitionId;
   }
 }

@@ -13,7 +13,7 @@ import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import java.util.Collection;
@@ -32,7 +32,7 @@ public class BatchOperationChunkExportHandler
   @Override
   public boolean canExport(final Record<BatchOperationChunkRecordValue> record) {
     return record.getValueType() == ValueType.BATCH_OPERATION_CHUNK
-        && record.getIntent().equals(BatchOperationChunkIntent.CREATE);
+        && record.getIntent().equals(BatchOperationIntent.CREATE_CHUNK);
   }
 
   @Override
