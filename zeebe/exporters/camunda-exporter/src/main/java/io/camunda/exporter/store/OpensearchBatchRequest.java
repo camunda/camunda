@@ -305,7 +305,9 @@ public class OpensearchBatchRequest implements BatchRequest {
                   "%s failed for type [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
 
-          metrics.recordFlushFailureType(item.error().type());
+          if (metrics != null) {
+            metrics.recordFlushFailureType(item.error().type());
+          }
           if (errorHandlers != null) {
             final Error error = new Error(message, item.error().type(), item.status());
             errorHandlers.accept(item.index(), error);

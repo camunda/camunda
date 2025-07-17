@@ -307,7 +307,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
                   "%s failed on index [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
 
-          metrics.recordFlushFailureType(item.error().type());
+          if (metrics != null) {
+            metrics.recordFlushFailureType(item.error().type());
+          }
           if (customErrorHandlers != null) {
             final Error error = new Error(message, item.error().type(), item.status());
             customErrorHandlers.accept(item.index(), error);
