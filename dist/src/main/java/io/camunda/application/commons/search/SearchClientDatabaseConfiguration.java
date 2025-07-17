@@ -11,6 +11,7 @@ import io.camunda.application.commons.condition.ConditionalOnDatabaseNone;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
+import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
@@ -66,7 +67,7 @@ public class SearchClientDatabaseConfiguration {
 
   @Bean
   @ConditionalOnBean(DocumentBasedSearchClient.class)
-  public DocumentBasedSearchClients documentBasedSearchClients(
+  public SearchClientBasedQueryExecutor searchClientBasedQueryExecutor(
       final DocumentBasedSearchClient searchClient,
       final ConnectConfiguration connectConfiguration) {
     final var descriptors =
@@ -74,7 +75,14 @@ public class SearchClientDatabaseConfiguration {
             connectConfiguration.getIndexPrefix(),
             connectConfiguration.getTypeEnum().isElasticSearch());
     final var transformers = ServiceTransformers.newInstance(descriptors);
-    return new DocumentBasedSearchClients(searchClient, transformers);
+    return new SearchClientBasedQueryExecutor(searchClient, transformers);
+  }
+
+  @Bean
+  @ConditionalOnBean(DocumentBasedSearchClient.class)
+  public DocumentBasedSearchClients documentBasedSearchClients(
+      final SearchClientBasedQueryExecutor executor) {
+    return new DocumentBasedSearchClients(executor);
   }
 
   @Bean
