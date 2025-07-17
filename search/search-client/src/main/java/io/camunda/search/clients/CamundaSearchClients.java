@@ -256,6 +256,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public RoleEntity getRole(final String id) {
+    return doGetWithReader(readers.roleReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Role", id));
+  }
+
+  @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
     return doSearchWithReader(readers.roleReader(), query);
   }

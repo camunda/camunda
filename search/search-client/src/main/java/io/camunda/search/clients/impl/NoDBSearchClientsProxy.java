@@ -213,6 +213,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public RoleEntity getRole(final String id) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
     throw new NoSecondaryStorageException();
   }

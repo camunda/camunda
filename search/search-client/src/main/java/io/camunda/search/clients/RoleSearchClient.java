@@ -15,6 +15,8 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface RoleSearchClient {
 
+  RoleEntity getRole(final String id);
+
   SearchQueryResult<RoleEntity> searchRoles(RoleQuery filter);
 
   SearchQueryResult<RoleMemberEntity> searchRoleMembers(RoleQuery filter);

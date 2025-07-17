@@ -20,6 +20,7 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
 
 public abstract class Authorizations {
@@ -65,4 +66,7 @@ public abstract class Authorizations {
 
   public static final Authorization<ProcessInstanceEntity> PROCESS_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
+
+  public static final Authorization<RoleEntity> ROLE_READ_AUTHORIZATION =
+      Authorization.of(a -> a.role().read());
 }

@@ -215,6 +215,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public RoleEntity getRole(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
     return SearchQueryResult.empty();
   }
