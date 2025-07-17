@@ -10,19 +10,12 @@ import { ApiDefinition } from "../request";
 import useApi, { UseApiOptions } from "./useApi";
 import usePagination, { PageResult } from "./usePagination";
 
-const DEFAULT_PAGINATION_CONFIG = {
-  page: 1,
-  pageSize: 1, // TODO(@Marstamm): Make it 15
-};
-
 const usePaginatedApi = <R extends { page?: PageResult }, P>(
   apiDefinition: ApiDefinition<R, P>,
   params: P = {} as P,
   Options?: UseApiOptions,
 ) => {
-  const { pageParams, page, setPage, setPageSize } = usePagination(
-    DEFAULT_PAGINATION_CONFIG,
-  );
+  const { pageParams, page, setPage, setPageSize } = usePagination();
 
   const result = useApi(
     apiDefinition,

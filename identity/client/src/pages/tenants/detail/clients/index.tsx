@@ -10,7 +10,7 @@ import { FC } from "react";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
+import { useApi, usePaginatedApi } from "src/utility/api/hooks";
 import { getClientsByTenantId, Tenant } from "src/utility/api/tenants";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
@@ -29,7 +29,8 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
     loading,
     success,
     reload,
-  } = useApi(getClientsByTenantId, {
+    ...paginationProps
+  } = usePaginatedApi(getClientsByTenantId, {
     tenantId,
   });
 
@@ -93,6 +94,7 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
             onClick: unassignClient,
           },
         ]}
+        {...paginationProps}
       />
       {assignClientModal}
       {unassignClientModal}

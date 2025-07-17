@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useApi from "./useApi";
 
 export type PageSearchParams = {
@@ -25,32 +25,25 @@ export type PageResult = {
   hasMoreTotalItems: boolean;
 };
 
-type UsePaginationConfig = {
-  page?: number;
-  pageSize?: number;
-};
-
 type Page = {
   page: number;
   pageSize: number;
 };
 
-const usePagination = (
-  config: UsePaginationConfig = { page: 1, pageSize: 15 },
-) => {
-  const { page = 1, pageSize = 15 } = config;
+export const DEFAULT_PAGINATION_CONFIG = {
+  page: 1,
+  pageSize: 15,
+};
 
-  const [pageState, setPageState] = useState<Page>({
-    page: page,
-    pageSize: pageSize,
-  });
+const usePagination = (config: Page = DEFAULT_PAGINATION_CONFIG) => {
+  const [pageState, setPageState] = useState<Page>(() => config);
 
-  const setPage = (newPage: number) => {
+  const setPage = useCallback((newPage: number) => {
     setPageState((prevState) => ({
       ...prevState,
       page: newPage,
     }));
-  };
+  }, []);
 
   const setPageSize = (newPageSize: number) => {
     setPageState((prevState) => ({
@@ -59,12 +52,15 @@ const usePagination = (
     }));
   };
 
-  const pageParams = {
-    page: {
-      from: (pageState.page - 1) * pageState.pageSize,
-      limit: pageState.pageSize,
-    },
-  };
+  const pageParams = useMemo(
+    () => ({
+      page: {
+        from: (pageState.page - 1) * pageState.pageSize,
+        limit: pageState.pageSize,
+      },
+    }),
+    [pageState],
+  );
 
   return { pageParams, page: pageState, setPage, setPageSize };
 };

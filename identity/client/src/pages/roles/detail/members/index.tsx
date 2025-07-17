@@ -26,7 +26,7 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ roleId }) => {
   const { t } = useTranslate("roles");
-  const { users, loading, success, reload } = useEnrichedUsers(
+  const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     getMembersByRole,
     {
       roleId,
@@ -107,6 +107,7 @@ const Members: FC<MembersProps> = ({ roleId }) => {
             onClick: unassignMember,
           },
         ]}
+        {...paginationProps}
       />
       {assignUsersModal}
       {unassignMemberModal}

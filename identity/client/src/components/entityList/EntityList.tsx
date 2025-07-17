@@ -142,8 +142,6 @@ const EntityList = <D extends EntityData>({
   const debounce = useDebounce(300);
   const { t } = useTranslate("components");
 
-  console.log(pageData);
-
   const hasMenu = menuItems && menuItems.length > 0;
 
   const [index, tableData] = useMemo(() => {
@@ -212,7 +210,6 @@ const EntityList = <D extends EntityData>({
         ),
       };
 
-  console.log(tableData);
   return (
     <DataTable rows={tableData} headers={headers} isSortable>
       {({

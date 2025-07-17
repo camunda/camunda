@@ -85,7 +85,8 @@ type GetRoleGroupsParams = {
 export const getGroupsByRoleId: ApiDefinition<
   SearchResponse<Group>,
   GetRoleGroupsParams
-> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/groups/search`);
+> = ({ roleId, ...body }) =>
+  apiPost(`${ROLES_ENDPOINT}/${roleId}/groups/search`, body);
 
 type AssignRoleGroupParams = GetRoleGroupsParams & Pick<Group, "groupId">;
 export const assignRoleGroup: ApiDefinition<

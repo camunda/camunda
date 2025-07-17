@@ -9,7 +9,7 @@
 import { FC, useState } from "react";
 import { TabsVertical, Tab, TabPanels } from "@carbon/react";
 import useTranslate from "src/utility/localization";
-import { useApi, usePaginatedApi } from "src/utility/api/hooks";
+import { usePaginatedApi } from "src/utility/api/hooks";
 import Page, { PageHeader } from "src/components/layout/Page";
 import {
   ResourceType,

@@ -26,7 +26,7 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
-  const { users, loading, success, reload } = useEnrichedUsers(
+  const { users, loading, success, reload, paginationProps } = useEnrichedUsers(
     searchMembersByGroup,
     {
       groupId,
@@ -106,6 +106,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
             onClick: unassignMember,
           },
         ]}
+        {...paginationProps}
       />
       {assignUsersModal}
       {unassignMemberModal}

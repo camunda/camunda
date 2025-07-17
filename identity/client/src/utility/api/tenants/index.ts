@@ -76,7 +76,8 @@ export type GetTenantGroupsParams = {
 export const getGroupsByTenantId: ApiDefinition<
   SearchResponse<Group>,
   GetTenantGroupsParams
-> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/groups/search`);
+> = ({ tenantId, ...body }) =>
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/groups/search`, body);
 
 type AssignTenantGroupParams = GetTenantGroupsParams & { groupId: string };
 export const assignTenantGroup: ApiDefinition<
@@ -101,7 +102,8 @@ export type GetTenantRolesParams = {
 export const getRolesByTenantId: ApiDefinition<
   SearchResponse<Role>,
   GetTenantRolesParams
-> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/roles/search`);
+> = ({ tenantId, ...body }) =>
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/roles/search`, body);
 
 type AssignTenantRoleParams = GetTenantRolesParams & { roleId: string };
 export const assignTenantRole: ApiDefinition<
@@ -159,14 +161,15 @@ export type Client = {
 export const getClientsByTenantId: ApiDefinition<
   SearchResponse<Client>,
   GetTenantClientsParams
-> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/clients/search`);
+> = ({ tenantId, ...body }) =>
+  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/clients/search`, body);
 
 type AssignTenantClientParams = GetTenantClientsParams & Client;
 export const assignTenantClient: ApiDefinition<
   undefined,
   AssignTenantClientParams
-> = ({ tenantId, clientId }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/clients/${clientId}`);
+> = ({ tenantId, clientId, ...body }) => {
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/clients/${clientId}`, body);
 };
 
 type UnassignTenantClientParams = AssignTenantClientParams;
