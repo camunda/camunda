@@ -105,6 +105,19 @@ class AuthorizationSearchIT {
   }
 
   @Test
+  void getAuthorizationByShouldReturn403IfNotAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    // given
+    final var authorization = getAuthorization(adminClient).getAuthorizationKey();
+    final var authorizationKey = Long.valueOf(authorization);
+    assertThatThrownBy(
+            () -> camundaClient.newAuthorizationGetRequest(authorizationKey).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
   void searchShouldReturnAuthorizationsIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
     final var response =
@@ -213,5 +226,15 @@ class AuthorizationSearchIT {
                             .join()
                             .items())
                     .isEmpty());
+  }
+
+  private Authorization getAuthorization(final CamundaClient client) {
+    return client
+        .newAuthorizationSearchRequest()
+        .page(p -> p.limit(1))
+        .send()
+        .join()
+        .items()
+        .getFirst();
   }
 }

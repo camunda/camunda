@@ -45,6 +45,16 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
   }
 
   @Override
+  public AuthorizationEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return search(
+            AuthorizationQuery.of(q -> q.filter(f -> f.authorizationKey(key)).singleResult()),
+            resourceAccessChecks)
+        .items()
+        .getFirst();
+  }
+
+  @Override
   public SearchQueryResult<AuthorizationEntity> search(
       final AuthorizationQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort =

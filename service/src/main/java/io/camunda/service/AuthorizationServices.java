@@ -7,12 +7,14 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.AUTHORIZATION_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
@@ -66,7 +68,7 @@ public class AuthorizationServices
             authorizationSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.authorization().read())))
+                        authentication, AUTHORIZATION_READ_AUTHORIZATION))
                 .searchAuthorizations(query));
   }
 
@@ -95,10 +97,7 @@ public class AuthorizationServices
                         .page(p -> p.size(1))))
         .items()
         .stream()
-        .map(
-            authorizationEntity -> {
-              return authorizationEntity.resourceId();
-            })
+        .map(AuthorizationEntity::resourceId)
         .collect(Collectors.toList());
   }
 
@@ -115,13 +114,15 @@ public class AuthorizationServices
   }
 
   public AuthorizationEntity getAuthorization(final long authorizationKey) {
-    return search(
-            SearchQueryBuilders.authorizationSearchQuery()
-                .filter(f -> f.authorizationKey(authorizationKey))
-                .singleResult()
-                .build())
-        .items()
-        .getFirst();
+    return executeSearchRequest(
+        () ->
+            authorizationSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withAuthorization(
+                            AUTHORIZATION_READ_AUTHORIZATION, String.valueOf(authorizationKey))))
+                .getAuthorization(authorizationKey));
   }
 
   public CompletableFuture<AuthorizationRecord> deleteAuthorization(final long authorizationKey) {

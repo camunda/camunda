@@ -20,7 +20,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -113,8 +112,7 @@ public class AuthorizationServiceTest {
   public void shouldReturnSingleAuthorizationForGet() {
     // given
     final var entity = mock(AuthorizationEntity.class);
-    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchAuthorizations(any())).thenReturn(result);
+    when(client.getAuthorization(any(Long.class))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getAuthorization(entity.authorizationKey());
