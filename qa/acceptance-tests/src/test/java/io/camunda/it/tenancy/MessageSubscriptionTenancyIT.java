@@ -84,7 +84,7 @@ public class MessageSubscriptionTenancyIT {
   }
 
   @Test
-  public void shouldReturnOnlyTenantAProcessInstances(
+  public void shouldReturnOnlyTenantAMessageSubscriptions(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
     final var result = camundaClient.newMessageSubscriptionSearchRequest().send().join();
@@ -98,7 +98,7 @@ public class MessageSubscriptionTenancyIT {
   }
 
   @Test
-  public void shouldNotReturnAnyProcessInstances(
+  public void shouldNotReturnAnyMessageSubscriptions(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
     final var result = camundaClient.newMessageSubscriptionSearchRequest().send().join();
