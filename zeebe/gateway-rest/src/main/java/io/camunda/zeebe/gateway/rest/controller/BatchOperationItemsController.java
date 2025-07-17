@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
@@ -21,23 +22,29 @@ import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+
 @CamundaRestController
 @RequiresSecondaryStorage
 @RequestMapping("/v2/batch-operation-items")
 public class BatchOperationItemsController {
+
   private final BatchOperationServices batchOperationServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+
   public BatchOperationItemsController(
       final BatchOperationServices batchOperationServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.batchOperationServices = batchOperationServices;
     this.authenticationProvider = authenticationProvider;
   }
+
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<BatchOperationItemSearchQueryResult> searchBatchOperationItems(
       @RequestBody(required = false) final BatchOperationItemSearchQuery query) {
     return SearchQueryRequestMapper.toBatchOperationItemQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
   private ResponseEntity<BatchOperationItemSearchQueryResult> search(
       final BatchOperationItemQuery query) {
     try {
@@ -50,4 +57,5 @@ public class BatchOperationItemsController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
 }

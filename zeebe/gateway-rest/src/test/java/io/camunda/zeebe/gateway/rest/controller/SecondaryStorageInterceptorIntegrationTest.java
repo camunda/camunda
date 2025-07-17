@@ -105,3 +105,4 @@ public class SecondaryStorageInterceptorIntegrationTest {
   // This test would require a mock for those controllers, which would be
   // in separate test classes focused on those specific controllers
 }
+}

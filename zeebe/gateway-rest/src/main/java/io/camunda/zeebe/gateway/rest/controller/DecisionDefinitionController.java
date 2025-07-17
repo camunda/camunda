@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -32,13 +33,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+
 @CamundaRestController
 @RequiresSecondaryStorage
 @RequestMapping("/v2/decision-definitions")
 public class DecisionDefinitionController {
+
   private final DecisionDefinitionServices decisionDefinitionServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+
   public DecisionDefinitionController(
       final DecisionDefinitionServices decisionServices,
       final MultiTenancyConfiguration multiTenancyCfg,
@@ -47,17 +51,22 @@ public class DecisionDefinitionController {
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
+
   @CamundaPostMapping(path = "/evaluation")
   public CompletableFuture<ResponseEntity<Object>> evaluateDecision(
       @RequestBody final DecisionEvaluationInstruction evaluateDecisionRequest) {
     return RequestMapper.toEvaluateDecisionRequest(
             evaluateDecisionRequest, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateDecision);
+  }
+
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionDefinitionSearchQueryResult> searchDecisionDefinitions(
       @RequestBody(required = false) final DecisionDefinitionSearchQuery query) {
     return SearchQueryRequestMapper.toDecisionDefinitionQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
   @CamundaGetMapping(path = "/{decisionDefinitionKey}")
   public ResponseEntity<DecisionDefinitionResult> getDecisionDefinitionByKey(
       @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
@@ -70,21 +79,39 @@ public class DecisionDefinitionController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
   @CamundaGetMapping(
       path = "/{decisionDefinitionKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<String> getDecisionDefinitionXml(
+      @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
+    try {
       return ResponseEntity.ok()
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
+              decisionDefinitionServices
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .getDecisionDefinitionXml(decisionDefinitionKey));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private ResponseEntity<DecisionDefinitionSearchQueryResult> search(
       final DecisionDefinitionQuery query) {
+    try {
       final var result =
           decisionDefinitionServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
+      return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private CompletableFuture<ResponseEntity<Object>> evaluateDecision(
       final DecisionEvaluationRequest request) {
     return RequestMapper.executeServiceMethod(
@@ -97,4 +124,5 @@ public class DecisionDefinitionController {
                     request.variables(),
                     request.tenantId()),
         ResponseMapper::toEvaluateDecisionResponse);
+  }
 }

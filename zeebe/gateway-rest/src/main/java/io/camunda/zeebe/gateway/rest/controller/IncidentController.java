@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
@@ -20,8 +21,8 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
-import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.validation.ValidationException;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -29,18 +30,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+
 @CamundaRestController
 @RequiresSecondaryStorage
 @RequestMapping("v2/incidents")
 public class IncidentController {
+
   private final IncidentServices incidentServices;
   private final CamundaAuthenticationProvider authenticationProvider;
+
   public IncidentController(
       final IncidentServices incidentServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.incidentServices = incidentServices;
     this.authenticationProvider = authenticationProvider;
   }
+
   @CamundaPostMapping(path = "/{incidentKey}/resolution")
   public CompletableFuture<ResponseEntity<Object>> incidentResolution(
       @PathVariable final long incidentKey,
@@ -54,11 +59,15 @@ public class IncidentController {
             incidentServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .resolveIncident(incidentKey, operationReference));
+  }
+
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
       @RequestBody(required = false) final IncidentSearchQuery query) {
     return SearchQueryRequestMapper.toIncidentQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
   @CamundaGetMapping(path = "/{incidentKey}")
   public ResponseEntity<IncidentResult> getByKey(
       @PathVariable("incidentKey") final Long incidentKey) {
@@ -72,7 +81,10 @@ public class IncidentController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
   private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
+    try {
       final var result =
           incidentServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -85,4 +97,8 @@ public class IncidentController {
               e.getMessage(),
               "Validation failed for Incident Search Query");
       return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
 }
