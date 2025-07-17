@@ -238,6 +238,11 @@ describe('MetadataPopover', () => {
   it('should render meta data modal', async () => {
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+    mockFetchElementInstance('2251799813699889').withSuccess({
+      ...mockElementInstance,
+      startDate: '2018-12-12 00:00:00',
+      endDate: '2018-12-12 00:00:00',
+    });
     flowNodeMetaDataStore.setMetaData(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -303,7 +308,7 @@ describe('MetadataPopover', () => {
     await user.click(screen.getByRole('button', {name: /close/i}));
     expect(
       screen.queryByText(
-        /Flow Node "Activity_0zqism7" 2251799813699889 Metadata/,
+        /Element "Activity_0zqism7" 2251799813699889 Metadata/,
       ),
     ).not.toBeInTheDocument();
   });

@@ -39,7 +39,7 @@ type V2InstanceMetadata = {
   jobType?: string | null;
   jobWorker?: string | null;
   jobDeadline?: string | null;
-  jobCustomHeaders?: string | null;
+  jobCustomHeaders: {[key: string]: string} | null;
   jobId?: string | null;
 } & Partial<UserTask>;
 
@@ -94,6 +94,11 @@ function createV2InstanceMetadata(
     calledDecisionDefinitionName:
       oldMetadata?.calledDecisionDefinitionName ?? null,
     jobRetries: oldMetadata?.jobRetries ?? null,
+    jobDeadline: oldMetadata?.jobDeadline ?? null,
+    jobId: oldMetadata?.jobId ?? null,
+    jobType: oldMetadata?.jobType ?? null,
+    jobWorker: oldMetadata?.jobWorker ?? null,
+    jobCustomHeaders: oldMetadata?.jobCustomHeaders ?? null,
     elementInstanceKey: elementInstance.elementInstanceKey,
     elementId: elementInstance.elementId,
     elementName: elementInstance.elementName,
@@ -110,7 +115,7 @@ function createV2InstanceMetadata(
     tenantId: elementInstance.tenantId,
     flowNodeInstanceId: elementInstance.elementInstanceKey,
     flowNodeId: elementInstance.elementId,
-    flowNodeType: elementInstance.type,
+    flowNodeType: oldMetadata?.flowNodeType,
 
     creationDate,
     completionDate,
