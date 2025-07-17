@@ -31,7 +31,8 @@ import java.util.function.Consumer;
  */
 public abstract class AbstractThrowEventBuilder<
         B extends AbstractThrowEventBuilder<B, E>, E extends ThrowEvent>
-    extends AbstractEventBuilder<B, E> implements ZeebeJobWorkerElementBuilder<B> {
+    extends AbstractEventBuilder<B, E>
+    implements ZeebeJobWorkerElementBuilder<B>, BuilderWithTaskHeaders<B> {
 
   private final ZeebeJobWorkerPropertiesBuilder<B> jobWorkerPropertiesBuilder;
   private final ZeebeVariablesMappingBuilder<B> variablesMappingBuilder;
