@@ -25,7 +25,8 @@ public record ProcessInstanceEntity(
     ProcessInstanceState state,
     Boolean hasIncident,
     String tenantId,
-    String treePath) {
+    String treePath)
+    implements TenantOwnedEntity {
 
   public enum ProcessInstanceState {
     ACTIVE,

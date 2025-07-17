@@ -10,6 +10,7 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -22,6 +23,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -130,9 +132,7 @@ public final class ProcessInstanceServiceTest {
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.processInstanceKey()).thenReturn(key);
     when(entity.processDefinitionId()).thenReturn("processId");
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult(1, false, List.of(entity), null, null));
-    authorizeProcessReadInstance(true, "processId");
+    when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getByKey(key);
@@ -146,9 +146,10 @@ public final class ProcessInstanceServiceTest {
     // given
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.processDefinitionId()).thenReturn("processId");
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
-    authorizeProcessReadInstance(false, "processId");
+    when(processInstanceSearchClient.getProcessInstance(any(Long.class)))
+        .thenThrow(
+            new ResourceAccessDeniedException(
+                Authorization.of(a -> a.processDefinition().readProcessInstance())));
     // when
     final Executable executeGetByKey = () -> services.getByKey(1L);
     // then
@@ -198,13 +199,12 @@ public final class ProcessInstanceServiceTest {
     when(childProcess.processInstanceKey()).thenReturn(789L);
     when(childProcess.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
     when(childProcess.processDefinitionId()).thenReturn("child_process_id");
-    authorizeProcessReadInstance(true, "child_process_id");
 
     final var parentProcess = mock(ProcessInstanceEntity.class);
     when(parentProcess.processInstanceKey()).thenReturn(123L);
     when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
-    authorizeProcessReadInstance(true, "parent_process_id");
 
+    when(processInstanceSearchClient.getProcessInstance(eq(789L))).thenReturn(childProcess);
     when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(
             new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
@@ -227,8 +227,7 @@ public final class ProcessInstanceServiceTest {
     authorizeProcessReadInstance(true, "root_process_id");
     when(rootInstance.treePath()).thenReturn(null); // No treePath
 
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(rootInstance), null, null));
+    when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
 
     // when
     final var result = services.callHierarchy(123L);
@@ -246,8 +245,7 @@ public final class ProcessInstanceServiceTest {
     authorizeProcessReadInstance(true, "root_process_id");
     when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
 
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(rootInstance), null, null));
+    when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
 
     // when
     final var result = services.callHierarchy(123L);
@@ -407,9 +405,8 @@ public final class ProcessInstanceServiceTest {
     when(processInstance.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
     when(processInstance.processInstanceKey()).thenReturn(processInstanceKey);
     when(processInstance.processDefinitionId()).thenReturn("processId");
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(processInstance), null, null));
-    authorizeProcessReadInstance(true, processInstance.processDefinitionId());
+    when(processInstanceSearchClient.getProcessInstance(eq(processInstanceKey)))
+        .thenReturn(processInstance);
 
     when(incidentSearchClient.searchIncidents(any())).thenReturn(queryResult);
 
@@ -440,9 +437,10 @@ public final class ProcessInstanceServiceTest {
 
     final var processInstance = mock(ProcessInstanceEntity.class);
     when(processInstance.processDefinitionId()).thenReturn("processId");
-    when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(processInstance), null, null));
-    authorizeProcessReadInstance(false, processInstance.processDefinitionId());
+    when(processInstanceSearchClient.getProcessInstance(eq(processInstanceKey)))
+        .thenThrow(
+            new ResourceAccessDeniedException(
+                Authorization.of(a -> a.processDefinition().readProcessInstance())));
 
     final var query = new IncidentQuery.Builder().build();
 

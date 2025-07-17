@@ -103,6 +103,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withProperty(
         AuthenticationProperties.API_UNPROTECTED,
         securityConfig.getAuthentication().getUnprotectedApi());
+    withProperty(
+        "camunda.security.authorizations.enabled", securityConfig.getAuthorizations().isEnabled());
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);
@@ -138,6 +140,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withAuthorizationsEnabled() {
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
+    withProperty("camunda.security.authorizations.enabled", true);
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 

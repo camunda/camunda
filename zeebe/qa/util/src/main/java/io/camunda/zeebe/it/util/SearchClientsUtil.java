@@ -23,6 +23,11 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.GroupIndex;
+import io.camunda.webapps.schema.descriptors.index.RoleIndex;
+import io.camunda.webapps.schema.descriptors.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.UserIndex;
 
 public class SearchClientsUtil {
 
@@ -39,11 +44,18 @@ public class SearchClientsUtil {
     final var executor =
         new SearchClientBasedQueryExecutor(
             client, ServiceTransformers.newInstance(indexDescriptors));
-    final var roleMemberReader = new RoleMemberDocumentReader(executor);
-    final var tenantMemberReader = new TenantMemberDocumentReader(executor);
-    final var groupMemberReader = new GroupMemberDocumentReader(executor);
+    final var roleMemberReader =
+        new RoleMemberDocumentReader(executor, indexDescriptors.get(RoleIndex.class));
+    final var tenantMemberReader =
+        new TenantMemberDocumentReader(executor, indexDescriptors.get(TenantIndex.class));
+    final var groupMemberReader =
+        new GroupMemberDocumentReader(executor, indexDescriptors.get(GroupIndex.class));
     return new UserDocumentReader(
-        executor, roleMemberReader, tenantMemberReader, groupMemberReader);
+        executor,
+        indexDescriptors.get(UserIndex.class),
+        roleMemberReader,
+        tenantMemberReader,
+        groupMemberReader);
   }
 
   public static AuthorizationReader createAuthorizationReader(
@@ -51,7 +63,8 @@ public class SearchClientsUtil {
     final var indexDescriptors = new IndexDescriptors("", true);
     return new AuthorizationDocumentReader(
         new SearchClientBasedQueryExecutor(
-            client, ServiceTransformers.newInstance(indexDescriptors)));
+            client, ServiceTransformers.newInstance(indexDescriptors)),
+        indexDescriptors.get(AuthorizationIndex.class));
   }
 
   public static OpensearchSearchClient createLowLevelOpensearchSearchClient(
