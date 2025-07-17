@@ -35,6 +35,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
@@ -63,7 +64,10 @@ import org.springframework.security.oauth2.client.oidc.authentication.OidcIdToke
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest.Builder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
@@ -640,7 +644,12 @@ public class WebSecurityConfig {
                         .clientRegistrationRepository(clientRegistrationRepository)
                         .redirectionEndpoint(
                             redirectionEndpointConfig ->
-                                redirectionEndpointConfig.baseUri("/sso-callback"));
+                                redirectionEndpointConfig.baseUri("/sso-callback"))
+                        .authorizationEndpoint(
+                            authorization ->
+                                authorization.authorizationRequestResolver(
+                                    authorizationRequestResolver(
+                                        clientRegistrationRepository, securityConfiguration)));
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
@@ -656,6 +665,34 @@ public class WebSecurityConfig {
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+
+    private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final SecurityConfiguration securityConfiguration) {
+
+      final var authorizationRequestResolver =
+          new DefaultOAuth2AuthorizationRequestResolver(
+              clientRegistrationRepository, "/oauth2/authorization");
+      authorizationRequestResolver.setAuthorizationRequestCustomizer(
+          authorizationRequestCustomizer(securityConfiguration));
+
+      return authorizationRequestResolver;
+    }
+
+    private Consumer<Builder> authorizationRequestCustomizer(
+        final SecurityConfiguration securityConfiguration) {
+      return customizer -> {
+        final var additionalAuthenticationParameters =
+            securityConfiguration
+                .getAuthentication()
+                .getOidc()
+                .getAdditionalAuthenticationParameters();
+
+        if (!additionalAuthenticationParameters.isEmpty()) {
+          customizer.additionalParameters(additionalAuthenticationParameters);
+        }
+      };
     }
   }
 }
