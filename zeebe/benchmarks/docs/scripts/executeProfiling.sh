@@ -16,7 +16,6 @@ tar -xzvf profiler.tar.gz
 
 # Copy async profiler to pod
 kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":/usr/local/camunda/data/asprof
-kubectl exec "$node" -- mkdir -p /usr/local/camunda/data/lib
 kubectl cp async-profiler-4.0-linux-x64/lib/libasyncProfiler.so "$node":/usr/local/camunda/data/libasyncProfiler.so
 kubectl exec "$node" -- chmod +x /usr/local/camunda/data/asprof
 
