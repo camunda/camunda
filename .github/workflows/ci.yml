@@ -1203,14 +1203,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      # renovate: datasource=github-releases depName=daveshanley/vacuum
+      VACUUM_VERSION: 'v0.17.5'
     steps:
       - uses: actions/checkout@v4
-      - name: Install Vacuum
-        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh
+      - name: Install vacuum
+        run: |
+          STRIPPED_VACUUM_VERSION="${VACUUM_VERSION#v}"
+          curl -s -L "https://github.com/daveshanley/vacuum/releases/download/${VACUUM_VERSION}/vacuum_${STRIPPED_VACUUM_VERSION}_Linux_x86_64.tar.gz" | tar xvz vacuum
         shell: bash
       - name: Run OpenAPI Linter
         run: >
-          vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml
+          ./vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml
           --ruleset zeebe/gateway-protocol/vacuum-ruleset.yaml
           --ignore-file zeebe/gateway-protocol/vacuum-ignores.yaml
           --functions zeebe/gateway-protocol/vacuum-rules
