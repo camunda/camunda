@@ -88,7 +88,7 @@ public final class IdentitySetupClient {
     }
 
     public IdentitySetupInitializeClient withMapping(final MappingRuleRecord mapping) {
-      record.addMapping(mapping);
+      record.addMappingRule(mapping);
       return this;
     }
 

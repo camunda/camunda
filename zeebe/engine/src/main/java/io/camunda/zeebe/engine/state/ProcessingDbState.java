@@ -14,7 +14,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
-import io.camunda.zeebe.engine.state.authorization.DbMappingState;
+import io.camunda.zeebe.engine.state.authorization.DbMappingRuleState;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
 import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
@@ -180,7 +180,7 @@ public class ProcessingDbState implements MutableProcessingState {
     roleState = new DbRoleState(zeebeDb, transactionContext);
     groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
-    mappingState = new DbMappingState(zeebeDb, transactionContext);
+    mappingState = new DbMappingRuleState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
     usageMetricState =
@@ -343,7 +343,7 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public MutableMappingRuleState getMappingState() {
+  public MutableMappingRuleState getMappingRuleState() {
     return mappingState;
   }
 

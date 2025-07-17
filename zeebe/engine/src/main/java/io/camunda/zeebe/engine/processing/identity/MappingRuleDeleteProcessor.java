@@ -66,7 +66,7 @@ public class MappingRuleDeleteProcessor
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    mappingRuleState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     tenantState = processingState.getTenantState();
     roleState = processingState.getRoleState();
     groupState = processingState.getGroupState();

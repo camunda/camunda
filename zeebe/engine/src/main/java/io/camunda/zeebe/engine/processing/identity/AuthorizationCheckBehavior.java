@@ -59,7 +59,7 @@ public final class AuthorizationCheckBehavior {
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
     authorizationState = processingState.getAuthorizationState();
-    mappingRuleState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
@@ -121,7 +121,7 @@ public final class AuthorizationCheckBehavior {
         isEntityAuthorized(
             request,
             EntityType.MAPPING_RULE,
-            getPersistedMappings(request)
+            getPersistedMappingRules(request)
                 .map(PersistedMappingRule::getMappingRuleId)
                 .collect(Collectors.toSet()));
     if (mappingAuthorized.isRight()) {
@@ -333,7 +333,7 @@ public final class AuthorizationCheckBehavior {
     }
 
     // mappings can layer on top of username/client id
-    getPersistedMappings(request)
+    getPersistedMappingRules(request)
         .flatMap(
             mapping ->
                 getAuthorizedResourceIdentifiers(
@@ -465,7 +465,7 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var tenantsOfMapping =
-        getPersistedMappings(command)
+        getPersistedMappingRules(command)
             .flatMap(
                 mapping ->
                     getAuthorizedTenantIds(
@@ -474,11 +474,12 @@ public final class AuthorizationCheckBehavior {
     return new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
-  private Stream<PersistedMappingRule> getPersistedMappings(final AuthorizationRequest request) {
-    return getPersistedMappings(request.getCommand());
+  private Stream<PersistedMappingRule> getPersistedMappingRules(
+      final AuthorizationRequest request) {
+    return getPersistedMappingRules(request.getCommand());
   }
 
-  private Stream<PersistedMappingRule> getPersistedMappings(final TypedRecord<?> command) {
+  private Stream<PersistedMappingRule> getPersistedMappingRules(final TypedRecord<?> command) {
     final var claims =
         (Map<String, Object>)
             command.getAuthorizations().getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());

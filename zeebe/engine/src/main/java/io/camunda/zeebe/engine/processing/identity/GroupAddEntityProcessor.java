@@ -54,7 +54,7 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
     this.authCheckBehavior = authCheckBehavior;
     groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
-    mappingRuleState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();

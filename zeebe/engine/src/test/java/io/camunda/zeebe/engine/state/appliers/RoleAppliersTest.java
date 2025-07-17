@@ -49,7 +49,7 @@ public class RoleAppliersTest {
     roleState = processingState.getRoleState();
     userState = processingState.getUserState();
     authorizationState = processingState.getAuthorizationState();
-    mappingState = processingState.getMappingState();
+    mappingState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
     roleDeletedApplier = new RoleDeletedApplier(processingState.getRoleState());
     roleEntityAddedApplier = new RoleEntityAddedApplier(processingState);

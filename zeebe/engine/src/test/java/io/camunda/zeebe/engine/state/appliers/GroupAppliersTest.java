@@ -46,7 +46,7 @@ public class GroupAppliersTest {
   public void setup() {
     groupState = processingState.getGroupState();
     userState = processingState.getUserState();
-    mappingState = processingState.getMappingState();
+    mappingState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
 
     groupCreatedApplier = new GroupCreatedApplier(groupState);

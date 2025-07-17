@@ -40,7 +40,7 @@ public class PermissionsBehavior {
   public PermissionsBehavior(
       final ProcessingState processingState, final AuthorizationCheckBehavior authCheckBehavior) {
     authorizationState = processingState.getAuthorizationState();
-    mappingRuleState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     this.authCheckBehavior = authCheckBehavior;
   }
 

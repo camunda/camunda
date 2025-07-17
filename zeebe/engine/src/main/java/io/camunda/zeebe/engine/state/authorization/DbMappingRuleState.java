@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Optional;
 
-public class DbMappingState implements MutableMappingRuleState {
+public class DbMappingRuleState implements MutableMappingRuleState {
 
   private final DbString claimName;
   private final DbString claimValue;
@@ -31,11 +31,11 @@ public class DbMappingState implements MutableMappingRuleState {
 
   private final DbForeignKey<DbCompositeKey<DbString, DbString>> fkClaim;
 
-  private final DbString mappingId;
+  private final DbString mappingRuleId;
   private final ColumnFamily<DbString, DbForeignKey<DbCompositeKey<DbString, DbString>>>
       claimByIdColumnFamily;
 
-  public DbMappingState(
+  public DbMappingRuleState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     claimName = new DbString();
     claimValue = new DbString();
@@ -43,39 +43,39 @@ public class DbMappingState implements MutableMappingRuleState {
     final PersistedMappingRule persistedMappingRule = new PersistedMappingRule();
     mappingColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MAPPINGS, transactionContext, claim, persistedMappingRule);
+            ZbColumnFamilies.MAPPING_RULES, transactionContext, claim, persistedMappingRule);
 
-    fkClaim = new DbForeignKey<>(claim, ZbColumnFamilies.MAPPINGS);
+    fkClaim = new DbForeignKey<>(claim, ZbColumnFamilies.MAPPING_RULES);
 
-    mappingId = new DbString();
+    mappingRuleId = new DbString();
     claimByIdColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.CLAIM_BY_ID, transactionContext, mappingId, fkClaim);
+            ZbColumnFamilies.CLAIM_BY_ID, transactionContext, mappingRuleId, fkClaim);
   }
 
   @Override
   public void create(final MappingRuleRecord mappingRecord) {
-    final var mappingId = mappingRecord.getMappingRuleId();
+    final var mappingRuleId = mappingRecord.getMappingRuleId();
     final var name = mappingRecord.getName();
     final var claimName = mappingRecord.getClaimName();
     final var value = mappingRecord.getClaimValue();
 
-    this.mappingId.wrapString(mappingId);
+    this.mappingRuleId.wrapString(mappingRuleId);
     this.claimName.wrapString(claimName);
     claimValue.wrapString(value);
     persistedMappingRule.setClaimName(claimName);
     persistedMappingRule.setClaimValue(value);
     persistedMappingRule.setName(name);
     persistedMappingRule.setMappingRuleKey(mappingRecord.getMappingRuleKey());
-    persistedMappingRule.setMappingRuleId(mappingId);
+    persistedMappingRule.setMappingRuleId(mappingRuleId);
 
     mappingColumnFamily.insert(claim, persistedMappingRule);
-    claimByIdColumnFamily.insert(this.mappingId, fkClaim);
+    claimByIdColumnFamily.insert(this.mappingRuleId, fkClaim);
   }
 
   @Override
   public void update(final MappingRuleRecord mappingRecord) {
-    mappingId.wrapString(mappingRecord.getMappingRuleId());
+    mappingRuleId.wrapString(mappingRecord.getMappingRuleId());
     get(mappingRecord.getMappingRuleId())
         .ifPresentOrElse(
             persistedMapping -> {
@@ -91,7 +91,7 @@ public class DbMappingState implements MutableMappingRuleState {
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
               mappingColumnFamily.insert(claim, persistedMapping);
-              claimByIdColumnFamily.update(mappingId, fkClaim);
+              claimByIdColumnFamily.update(mappingRuleId, fkClaim);
             },
             () -> {
               throw new IllegalStateException(
@@ -106,11 +106,11 @@ public class DbMappingState implements MutableMappingRuleState {
     get(id)
         .ifPresentOrElse(
             persistedMapping -> {
-              mappingId.wrapString(persistedMapping.getMappingRuleId());
+              mappingRuleId.wrapString(persistedMapping.getMappingRuleId());
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
               mappingColumnFamily.deleteExisting(claim);
-              claimByIdColumnFamily.deleteExisting(mappingId);
+              claimByIdColumnFamily.deleteExisting(mappingRuleId);
             },
             () -> {
               throw new IllegalStateException(
@@ -122,8 +122,8 @@ public class DbMappingState implements MutableMappingRuleState {
 
   @Override
   public Optional<PersistedMappingRule> get(final String id) {
-    mappingId.wrapString(id);
-    final var fk = claimByIdColumnFamily.get(mappingId);
+    mappingRuleId.wrapString(id);
+    final var fk = claimByIdColumnFamily.get(mappingRuleId);
     if (fk != null) {
       return Optional.of(mappingColumnFamily.get(fk.inner()));
     }
@@ -145,8 +145,8 @@ public class DbMappingState implements MutableMappingRuleState {
 
   @Override
   public Collection<PersistedMappingRule> getAll() {
-    final var mappings = new LinkedList<PersistedMappingRule>();
-    mappingColumnFamily.forEach(mapping -> mappings.add(mapping.copy()));
-    return mappings;
+    final var mappingRules = new LinkedList<PersistedMappingRule>();
+    mappingColumnFamily.forEach(mappingRule -> mappingRules.add(mappingRule.copy()));
+    return mappingRules;
   }
 }

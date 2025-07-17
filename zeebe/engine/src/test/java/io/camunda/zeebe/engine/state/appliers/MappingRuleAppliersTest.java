@@ -51,14 +51,14 @@ public class MappingRuleAppliersTest {
 
   @BeforeEach
   public void setup() {
-    mappingRuleState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     roleState = processingState.getRoleState();
     tenantState = processingState.getTenantState();
     authorizationState = processingState.getAuthorizationState();
     groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
-    mappingRuleDeletedApplier = new MappingRuleDeletedApplier(processingState.getMappingState());
-    mappingRuleUpdatedApplier = new MappingRuleUpdatedApplier(processingState.getMappingState());
+    mappingRuleDeletedApplier = new MappingRuleDeletedApplier(processingState.getMappingRuleState());
+    mappingRuleUpdatedApplier = new MappingRuleUpdatedApplier(processingState.getMappingRuleState());
   }
 
   @Test

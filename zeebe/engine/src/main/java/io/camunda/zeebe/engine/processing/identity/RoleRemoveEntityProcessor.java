@@ -58,7 +58,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
-    mappingRuleState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;

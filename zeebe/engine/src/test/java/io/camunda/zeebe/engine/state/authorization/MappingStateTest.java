@@ -25,7 +25,7 @@ public class MappingStateTest {
 
   @BeforeEach
   public void setup() {
-    mappingState = processingState.getMappingState();
+    mappingState = processingState.getMappingRuleState();
   }
 
   @Test

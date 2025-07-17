@@ -3079,10 +3079,10 @@ final class JsonSerializableToJsonTest {
                     .setName("name"),
         """
       {
-        "mappingKey": 1,
+        "mappingRuleKey": 1,
         "claimName": "claimName",
         "claimValue": "claimValue",
-        "mappingId": "id1",
+        "mappingRuleId": "id1",
         "name": "name"
       }
       """
@@ -3092,11 +3092,12 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty MappingRecord",
-        (Supplier<MappingRuleRecord>) () -> new MappingRuleRecord().setMappingRuleId("mappingId"),
+        (Supplier<MappingRuleRecord>)
+            () -> new MappingRuleRecord().setMappingRuleId("mappingRuleId"),
         """
       {
-        "mappingKey": -1,
-        "mappingId": "mappingId",
+        "mappingRuleKey": -1,
+        "mappingRuleId": "mappingRuleId",
         "claimName": "",
         "claimValue": "",
         "name": ""
@@ -3145,14 +3146,14 @@ final class JsonSerializableToJsonTest {
                             .setTenantId("id")
                             .setEntityType(EntityType.ROLE)
                             .setEntityId("id"))
-                    .addMapping(
+                    .addMappingRule(
                         new MappingRuleRecord()
                             .setMappingRuleKey(6)
                             .setMappingRuleId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
-                    .addMapping(
+                    .addMappingRule(
                         new MappingRuleRecord()
                             .setMappingRuleKey(7)
                             .setMappingRuleId("id2")
@@ -3222,17 +3223,17 @@ final class JsonSerializableToJsonTest {
             "entityType": "ROLE"
           }
         ],
-        "mappings": [
+        "mappingRules": [
           {
-            "mappingKey": 6,
-            "mappingId": "id1",
+            "mappingRuleKey": 6,
+            "mappingRuleId": "id1",
             "claimName": "claim1",
             "claimValue": "value1",
             "name": "Claim 1"
           },
           {
-            "mappingKey": 7,
-            "mappingId": "id2",
+            "mappingRuleKey": 7,
+            "mappingRuleId": "id2",
             "claimName": "claim2",
             "claimValue": "value2",
             "name": "Claim 2"
@@ -3242,7 +3243,7 @@ final class JsonSerializableToJsonTest {
           {
             "authorizationKey": -1,
             "ownerId": "id2",
-            "ownerType": "MAPPING",
+            "ownerType": "MAPPING_RULE",
             "resourceId": "resource-id",
             "resourceType": "RESOURCE",
             "permissionTypes": ["CREATE"]
@@ -3272,7 +3273,7 @@ final class JsonSerializableToJsonTest {
               "entityId": "",
               "entityType": "UNSPECIFIED"
           },
-          "mappings": [],
+          "mappingRules": [],
           "roleMembers": [],
           "tenantMembers": [],
           "authorizations": []

@@ -32,8 +32,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
       new ObjectProperty<>("defaultTenant", new TenantRecord());
   private final ArrayProperty<TenantRecord> tenantMembersProp =
       new ArrayProperty<>("tenantMembers", TenantRecord::new);
-  private final ArrayProperty<MappingRuleRecord> mappingsProp =
-      new ArrayProperty<>("mappings", MappingRuleRecord::new);
+  private final ArrayProperty<MappingRuleRecord> mappingRulesProp =
+      new ArrayProperty<>("mappingRules", MappingRuleRecord::new);
   private final ArrayProperty<AuthorizationRecord> authorizationsProp =
       new ArrayProperty<>("authorizations", AuthorizationRecord::new);
 
@@ -44,7 +44,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
         .declareProperty(usersProp)
         .declareProperty(defaultTenantProp)
         .declareProperty(tenantMembersProp)
-        .declareProperty(mappingsProp)
+        .declareProperty(mappingRulesProp)
         .declareProperty(authorizationsProp);
   }
 
@@ -76,8 +76,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   @Override
-  public List<MappingRecordValue> getMappings() {
-    return mappingsProp.stream().map(MappingRecordValue.class::cast).toList();
+  public List<MappingRecordValue> getMappingRules() {
+    return mappingRulesProp.stream().map(MappingRecordValue.class::cast).toList();
   }
 
   @Override
@@ -112,8 +112,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
     return this;
   }
 
-  public IdentitySetupRecord addMapping(final MappingRuleRecord mapping) {
-    mappingsProp.add().copyFrom(mapping);
+  public IdentitySetupRecord addMappingRule(final MappingRuleRecord mappingRule) {
+    mappingRulesProp.add().copyFrom(mappingRule);
     return this;
   }
 

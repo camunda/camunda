@@ -51,7 +51,7 @@ public final class IdentitySetupInitializeProcessor
     createRoles(initializationKey, setupRecord.getRoles());
     createDefaultTenant(initializationKey, setupRecord.getDefaultTenant());
     createUsers(initializationKey, setupRecord.getUsers());
-    createMappings(initializationKey, setupRecord.getMappings());
+    createMappings(initializationKey, setupRecord.getMappingRules());
     createRoleMembers(initializationKey, setupRecord.getRoleMembers());
     createTenantMembers(initializationKey, setupRecord.getTenantMembers());
     createAuthorizations(initializationKey, setupRecord.getAuthorizations());

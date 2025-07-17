@@ -58,7 +58,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
-    mappingRuleState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
     groupState = processingState.getGroupState();
     this.authCheckBehavior = authCheckBehavior;
