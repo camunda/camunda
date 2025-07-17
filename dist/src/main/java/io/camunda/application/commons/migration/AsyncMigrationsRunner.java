@@ -89,11 +89,6 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
       this.migrationsException = migrationsException;
     }
 
-    @Override
-    public String toString() {
-      return "Migration task completed";
-    }
-
     public Throwable getMigrationsException() {
       return migrationsException;
     }
