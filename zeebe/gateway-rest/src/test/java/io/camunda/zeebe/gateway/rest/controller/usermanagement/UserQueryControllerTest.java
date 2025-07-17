@@ -37,6 +37,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = UserController.class)
 public class UserQueryControllerTest extends RestControllerTest {
@@ -54,7 +55,8 @@ public class UserQueryControllerTest extends RestControllerTest {
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }""";
   private static final String USERS_SEARCH_URL = "/v2/users/search";
@@ -156,7 +158,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices).search(new UserQuery.Builder().build());
   }
@@ -179,7 +181,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices).search(new UserQuery.Builder().build());
   }
@@ -211,7 +213,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices)
         .search(new UserQuery.Builder().sort(new UserSort.Builder().name().desc().build()).build());
@@ -234,7 +236,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userServices, never()).search(any(UserQuery.class));
   }

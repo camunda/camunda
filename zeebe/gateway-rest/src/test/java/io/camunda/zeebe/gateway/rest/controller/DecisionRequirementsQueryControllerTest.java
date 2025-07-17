@@ -38,6 +38,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = DecisionRequirementsController.class)
 public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
@@ -58,7 +59,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }""";
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
@@ -125,7 +127,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
   }
@@ -149,7 +151,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
   }
@@ -185,7 +187,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices)
         .search(
@@ -246,7 +248,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices)
         .search(
@@ -304,7 +306,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, never()).search(any(DecisionRequirementsQuery.class));
   }
@@ -319,7 +321,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(DECISION_REQUIREMENTS_ITEM_JSON);
+        .json(DECISION_REQUIREMENTS_ITEM_JSON, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, times(1)).getByKey(VALID_DECISION_REQUIREMENTS_KEY);
   }
@@ -471,7 +473,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -501,7 +503,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -528,6 +530,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 }

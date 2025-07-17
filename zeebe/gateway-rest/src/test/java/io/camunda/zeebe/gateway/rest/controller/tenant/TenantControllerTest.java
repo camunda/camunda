@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
@@ -667,7 +668,7 @@ public class TenantControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     private static Stream<Arguments> tenantControllerRequests() {
