@@ -9,10 +9,8 @@ package io.camunda.configuration.beanoverrides;
 
 import io.camunda.operate.property.OperateProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.PropertySource;
 
 @ConfigurationProperties(OperateProperties.PREFIX)
 @PropertySource("classpath:operate-version.properties")
-@DependsOn("databaseInfo")
 public class LegacyOperateProperties extends OperateProperties {}

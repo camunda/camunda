@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.property;
 
-import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
@@ -89,6 +88,24 @@ public class OperateProperties {
 
   @NestedConfigurationProperty
   private WebSecurityProperties webSecurity = new WebSecurityProperties();
+
+  private DatabaseType database = DatabaseType.Elasticsearch;
+
+  public DatabaseType getDatabase() {
+    return database;
+  }
+
+  public void setDatabase(final DatabaseType database) {
+    this.database = database;
+  }
+
+  public boolean isElasticsearchDB() {
+    return DatabaseType.Elasticsearch.equals(database);
+  }
+
+  public boolean isOpensearchDB() {
+    return DatabaseType.Opensearch.equals(database);
+  }
 
   public boolean isImporterEnabled() {
     return importerEnabled;
@@ -340,6 +357,6 @@ public class OperateProperties {
   }
 
   public String getIndexPrefix() {
-    return getIndexPrefix(DatabaseInfo.getCurrent());
+    return getIndexPrefix(database);
   }
 }
