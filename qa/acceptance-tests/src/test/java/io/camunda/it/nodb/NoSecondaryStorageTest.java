@@ -156,6 +156,10 @@ public class NoSecondaryStorageTest {
     assertThatThrownBy(() -> camundaClient.newUsersSearchRequest().send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("The search client requires a secondary storage, but none is set")
+        .hasMessageContaining(
+            String.format(
+                "Secondary storage can be configured using the '%s' property",
+                PROPERTY_CAMUNDA_DATABASE_TYPE))
         .hasMessageContaining("FORBIDDEN")
         .hasMessageContaining("status: 403");
   }
