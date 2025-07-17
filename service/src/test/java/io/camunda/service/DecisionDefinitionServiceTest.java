@@ -44,7 +44,6 @@ public final class DecisionDefinitionServiceTest {
     client = mock(DecisionDefinitionSearchClient.class);
     decisionRequirementServices = mock(DecisionRequirementsServices.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-q
     when(decisionRequirementServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(decisionRequirementServices);
     services =
