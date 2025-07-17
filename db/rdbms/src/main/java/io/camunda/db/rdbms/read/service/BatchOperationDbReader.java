@@ -42,8 +42,8 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
   }
 
   @Override
-  public BatchOperationEntity getById(final String id,
-      final ResourceAccessChecks resourceAccessChecks) {
+  public BatchOperationEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(id).orElse(null);
   }
 

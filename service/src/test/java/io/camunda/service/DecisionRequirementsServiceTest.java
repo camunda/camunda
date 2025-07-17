@@ -10,21 +10,22 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -67,14 +68,7 @@ public final class DecisionRequirementsServiceTest {
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
     when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
-    when(client.searchDecisionRequirements(any()))
-        .thenReturn(
-            new SearchQueryResult<>(1, false, List.of(decisionRequirementEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decReqId",
-            authentication,
-            Authorization.of(a -> a.decisionRequirementsDefinition().read())))
-        .thenReturn(true);
+    when(client.getDecisionRequirements(eq(124L), eq(false))).thenReturn(decisionRequirementEntity);
 
     // when
     final var searchQueryResult = services.getByKey(124L);
@@ -91,15 +85,7 @@ public final class DecisionRequirementsServiceTest {
     when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
     when(decisionRequirementEntity.xml()).thenReturn("<xml/>");
-    final var decisionRequirementResult = mock(SearchQueryResult.class);
-    when(decisionRequirementResult.items()).thenReturn(List.of(decisionRequirementEntity));
-    when(decisionRequirementResult.total()).thenReturn(1L);
-    when(client.searchDecisionRequirements(any())).thenReturn(decisionRequirementResult);
-    when(securityContextProvider.isAuthorized(
-            "decReqId",
-            authentication,
-            Authorization.of(a -> a.decisionRequirementsDefinition().read())))
-        .thenReturn(true);
+    when(client.getDecisionRequirements(eq(124L), eq(true))).thenReturn(decisionRequirementEntity);
 
     // when
     final String expectedXml = "<xml/>";
@@ -115,15 +101,10 @@ public final class DecisionRequirementsServiceTest {
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
     when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
-    final var decisionRequirementResult = mock(SearchQueryResult.class);
-    when(decisionRequirementResult.items()).thenReturn(List.of(decisionRequirementEntity));
-    when(decisionRequirementResult.total()).thenReturn(1L);
-    when(client.searchDecisionRequirements(any())).thenReturn(decisionRequirementResult);
-    when(securityContextProvider.isAuthorized(
-            "decReqId",
-            authentication,
-            Authorization.of(a -> a.decisionRequirementsDefinition().read())))
-        .thenReturn(false);
+    when(client.getDecisionRequirements(eq(124L), eq(false)))
+        .thenThrow(
+            new ResourceAccessDeniedException(
+                Authorizations.DECISION_REQUIREMENTS_READ_AUTHORIZATION));
 
     // then
     final var exception = assertThrows(ServiceException.class, () -> services.getByKey(124L));
@@ -138,15 +119,10 @@ public final class DecisionRequirementsServiceTest {
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
     when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
-    final var decisionRequirementResult = mock(SearchQueryResult.class);
-    when(decisionRequirementResult.items()).thenReturn(List.of(decisionRequirementEntity));
-    when(decisionRequirementResult.total()).thenReturn(1L);
-    when(client.searchDecisionRequirements(any())).thenReturn(decisionRequirementResult);
-    when(securityContextProvider.isAuthorized(
-            "decReqId",
-            authentication,
-            Authorization.of(a -> a.decisionRequirementsDefinition().read())))
-        .thenReturn(false);
+    when(client.getDecisionRequirements(eq(124L), eq(true)))
+        .thenThrow(
+            new ResourceAccessDeniedException(
+                Authorizations.DECISION_REQUIREMENTS_READ_AUTHORIZATION));
 
     // then
     final var exception =
