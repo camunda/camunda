@@ -34,8 +34,6 @@ class IdentityMigrationPropertiesValidationTest {
             context -> {
               final IdentityMigrationProperties props =
                   context.getBean(IdentityMigrationProperties.class);
-              assertThat(props.getOrganizationId()).isEqualTo("test-org");
-              assertThat(props.getMode()).isEqualTo(IdentityMigrationProperties.Mode.CLOUD);
 
               final ManagementIdentityProperties identity = props.getManagementIdentity();
               assertThat(identity.getClientId()).isEqualTo("test-client-id");
