@@ -25,7 +25,7 @@ public record UserTaskFilter(
     List<String> bpmnProcessIds,
     List<Operation<String>> assigneeOperations,
     List<Operation<Integer>> priorityOperations,
-    List<String> states,
+    List<Operation<String>> stateOperations,
     List<Long> processInstanceKeys,
     List<Long> processDefinitionKeys,
     List<Operation<String>> candidateUserOperations,
@@ -49,7 +49,7 @@ public record UserTaskFilter(
     private List<String> bpmnProcessIds;
     private List<Operation<String>> assigneeOperations;
     private List<Operation<Integer>> priorityOperations;
-    private List<String> states;
+    private List<Operation<String>> stateOperations;
     private List<Long> processInstanceKeys;
     private List<Long> processDefinitionKeys;
     private List<Operation<String>> candidateUserOperations;
@@ -130,13 +130,23 @@ public record UserTaskFilter(
       return priorityOperations(collectValues(operation, operations));
     }
 
-    public Builder states(final String... values) {
-      return states(collectValuesAsList(values));
+    public Builder stateOperations(final List<Operation<String>> operations) {
+      stateOperations = addValuesToList(stateOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder stateOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return stateOperations(collectValues(operation, operations));
+    }
+
+    public Builder states(final String value, final String... values) {
+      return states(collectValues(value, values));
     }
 
     public Builder states(final List<String> values) {
-      states = addValuesToList(states, values);
-      return this;
+      return stateOperations(FilterUtil.mapDefaultToOperation(values));
     }
 
     public Builder processInstanceKeys(final Long... values) {
@@ -273,7 +283,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assigneeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(states, Collections.emptyList()),
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(candidateUserOperations, Collections.emptyList()),
