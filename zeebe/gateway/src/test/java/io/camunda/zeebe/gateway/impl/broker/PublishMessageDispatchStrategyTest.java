@@ -57,7 +57,12 @@ final class PublishMessageDispatchStrategyTest {
         new RoutingState(1, new AllPartitions(3), new HashMod(messagePartitionCount));
     final var clusterConfiguration =
         new ClusterConfiguration(
-            1, Map.of(), Optional.empty(), Optional.empty(), Optional.of(routingState));
+            1,
+            Map.of(),
+            Optional.empty(),
+            Optional.empty(),
+            Optional.of(routingState),
+            Optional.empty());
     final var topologyManager =
         new TestTopologyManager(new TestBrokerClusterState(partitionCount), clusterConfiguration);
 

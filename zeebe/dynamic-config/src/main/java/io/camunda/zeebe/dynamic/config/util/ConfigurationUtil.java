@@ -56,7 +56,8 @@ public final class ConfigurationUtil {
         Map.copyOf(memberStates),
         Optional.empty(),
         Optional.empty(),
-        routingState);
+        routingState,
+        Optional.empty());
   }
 
   public static Set<PartitionMetadata> getPartitionDistributionFrom(
