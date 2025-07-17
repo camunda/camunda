@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,7 +28,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {
       IdentityConfigurer.class,
       DatabaseInfo.class,
-      OperateProperties.class,
+      TestOperatePropertiesOverride.class,
       SecurityContextWrapper.class
     },
     properties = {

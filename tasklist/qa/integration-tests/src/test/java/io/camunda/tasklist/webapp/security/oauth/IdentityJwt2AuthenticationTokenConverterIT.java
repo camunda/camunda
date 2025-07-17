@@ -26,7 +26,6 @@ import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.tenant.TenantAwareAuthentication;
@@ -50,15 +49,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
-    classes = {
-      TestApplicationWithNoBeans.class,
-      IdentityJwt2AuthenticationTokenConverter.class,
-      TasklistProperties.class
-    },
-    properties = {
-      TasklistProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url",
-      "management.endpoint.health.group.readiness.include=readinessState"
-    })
+    classes = {TestApplicationWithNoBeans.class, IdentityJwt2AuthenticationTokenConverter.class},
+    properties = {"management.endpoint.health.group.readiness.include=readinessState"})
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class IdentityJwt2AuthenticationTokenConverterIT {
 
@@ -70,8 +62,6 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
   @MockBean private Tenants tenants;
 
   @SpyBean private SecurityConfiguration securityConfiguration;
-
-  @SpyBean private TasklistProperties tasklistProperties;
 
   @Autowired private ApplicationContext applicationContext;
 

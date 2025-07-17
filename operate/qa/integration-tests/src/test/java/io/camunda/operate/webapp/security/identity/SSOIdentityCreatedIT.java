@@ -13,6 +13,7 @@ import io.camunda.application.commons.security.CamundaSecurityConfiguration.Camu
 import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
@@ -32,7 +33,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {
       IdentityConfigurer.class,
       DatabaseInfo.class,
-      OperateProperties.class,
+      TestOperatePropertiesOverride.class,
       CamundaSecurityProperties.class,
       TenantService.class,
       PermissionsService.class,

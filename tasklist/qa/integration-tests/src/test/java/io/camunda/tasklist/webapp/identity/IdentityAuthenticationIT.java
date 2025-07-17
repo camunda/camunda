@@ -24,8 +24,8 @@ import io.camunda.identity.sdk.tenants.Tenants;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
+import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
@@ -51,7 +51,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     classes = {
       TestApplicationWithNoBeans.class,
       IdentityAuthentication.class,
-      TasklistProperties.class
+      TestTasklistPropertiesOverride.class
     },
     properties = {
       "camunda.tasklist.identity.issuerUrl=http://localhost:18080/auth/realms/camunda-platform",

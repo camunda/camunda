@@ -16,6 +16,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.util.CertificateUtil;
+import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.zeebe.ZeebeConnector;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.File;
@@ -34,7 +35,7 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @SpringBootTest(
-    classes = {ZeebeConnector.class, TasklistProperties.class},
+    classes = {ZeebeConnector.class, TestTasklistPropertiesOverride.class},
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
