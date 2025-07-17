@@ -14,6 +14,8 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface UserTaskSearchClient {
 
+  UserTaskEntity getUserTask(final long key);
+
   SearchQueryResult<UserTaskEntity> searchUserTasks(UserTaskQuery filter);
 
   UserTaskSearchClient withSecurityContext(SecurityContext securityContext);
