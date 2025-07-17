@@ -33,7 +33,8 @@ public class UnifiedConfigurationHelper {
               "zeebe.broker.exporters.camundaExporter.args.connect.url")); // check with Deepthi
 
   private static final String LEGACY_PROPERTIES_DIFFERENT_VALUES_ERROR =
-      "Invalid configuration. The legacy configuration properties must have the same value. \n"
+      "Invalid configuration. "
+          + "The legacy configuration properties must have the same value. \n"
           + "Legacy properties: %s\n"
           + "Values: %s";
 
@@ -120,6 +121,12 @@ public class UnifiedConfigurationHelper {
     }
 
     T legacyValue = legacyValues.iterator().next();
+
+    if (isSet(legacyValue) && isUnset(newValue)) {
+      logDeprecationMessage(legacyProperties, newProperty);
+      return legacyValue;
+    }
+
     if (onlyIfValuesMatch && !Objects.equals(legacyValue, newValue)) {
       String errorMessage =
           String.format(
@@ -127,11 +134,6 @@ public class UnifiedConfigurationHelper {
               String.join(", ", legacyProperties),
               newProperty);
       throw new RuntimeException(errorMessage);
-    }
-
-    if (isSet(legacyValue) && isUnset(newValue)) {
-      logDeprecationMessage(legacyProperties, newProperty);
-      return legacyValue;
     }
 
     return newValue;
