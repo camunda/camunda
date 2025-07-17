@@ -17,7 +17,6 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
-import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
@@ -1167,8 +1166,8 @@ public final class SearchQueryRequestMapper {
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::userTaskKeys);
       Optional.ofNullable(filter.getState())
-          .map(s -> String.valueOf(UserTaskState.valueOf(s.getValue())))
-          .ifPresent(builder::states);
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
       Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
       Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);
       Optional.ofNullable(filter.getName()).ifPresent(builder::names);
