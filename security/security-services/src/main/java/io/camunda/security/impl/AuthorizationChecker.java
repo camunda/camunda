@@ -34,8 +34,7 @@ public class AuthorizationChecker {
   private final AuthorizationSearchClient authorizationSearchClient;
 
   public AuthorizationChecker(final AuthorizationSearchClient authorizationSearchClient) {
-    this.authorizationSearchClient =
-        authorizationSearchClient.withSecurityContext(SecurityContext.withoutAuthentication());
+    this.authorizationSearchClient = authorizationSearchClient;
   }
 
   /**
@@ -51,15 +50,17 @@ public class AuthorizationChecker {
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     final var authorizationEntities =
-        authorizationSearchClient.searchAuthorizations(
-            AuthorizationQuery.of(
-                q ->
-                    q.filter(
-                            f ->
-                                f.ownerTypeToOwnerIds(ownerIds)
-                                    .resourceType(resourceType.name())
-                                    .permissionTypes(permissionType))
-                        .unlimited()));
+        authorizationSearchClient
+            .withSecurityContext(SecurityContext.withoutAuthentication())
+            .searchAuthorizations(
+                AuthorizationQuery.of(
+                    q ->
+                        q.filter(
+                                f ->
+                                    f.ownerTypeToOwnerIds(ownerIds)
+                                        .resourceType(resourceType.name())
+                                        .permissionTypes(permissionType))
+                            .unlimited()));
     return authorizationEntities.items().stream()
         .filter(e -> e.permissionTypes().contains(permissionType))
         .map(AuthorizationEntity::resourceId)
@@ -80,6 +81,7 @@ public class AuthorizationChecker {
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     return authorizationSearchClient
+            .withSecurityContext(SecurityContext.withoutAuthentication())
             .searchAuthorizations(
                 AuthorizationQuery.of(
                     q ->
@@ -110,6 +112,7 @@ public class AuthorizationChecker {
     final var ownerIds = collectOwnerTypeToOwnerIds(authentication);
     final var authorizationEntities =
         authorizationSearchClient
+            .withSecurityContext(SecurityContext.withoutAuthentication())
             .searchAuthorizations(
                 AuthorizationQuery.of(
                     q ->

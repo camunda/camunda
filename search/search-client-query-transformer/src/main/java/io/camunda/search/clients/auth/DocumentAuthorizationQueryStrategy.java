@@ -7,15 +7,9 @@
  */
 package io.camunda.search.clients.auth;
 
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.security.auth.Authorization.WILDCARD;
+import static io.camunda.security.auth.Authorization.withResourceIds;
 
-import io.camunda.search.clients.AuthorizationSearchClient;
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.auth.AuthorizationQueryTransformers;
-import io.camunda.search.query.SearchQueryBase;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
 
@@ -28,39 +22,23 @@ public class DocumentAuthorizationQueryStrategy implements AuthorizationQueryStr
 
   private final AuthorizationChecker authorizationChecker;
 
-  public DocumentAuthorizationQueryStrategy(
-      final AuthorizationSearchClient authorizationSearchClient) {
-    authorizationChecker = new AuthorizationChecker(authorizationSearchClient);
+  public DocumentAuthorizationQueryStrategy(final AuthorizationChecker authorizationChecker) {
+    this.authorizationChecker = authorizationChecker;
   }
 
   @Override
-  public SearchQueryRequest applyAuthorizationToQuery(
-      final SearchQueryRequest searchQueryRequest,
-      final SecurityContext securityContext,
-      final Class<? extends SearchQueryBase> queryClass) {
+  public AuthorizationCheck resolveAuthorizationCheck(final SecurityContext securityContext) {
     if (!securityContext.requiresAuthorizationChecks()) {
-      return searchQueryRequest;
+      return AuthorizationCheck.disabled();
     }
     // fetch the authorization entities for the authenticated user
-    final var resourceKeys = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+    final var resourceIds = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
 
-    if (resourceKeys.contains(WILDCARD)) {
-      return searchQueryRequest;
+    if (resourceIds.contains(WILDCARD)) {
+      return AuthorizationCheck.disabled();
     }
 
-    // create a new search query request with the authorization applied
-    final SearchQuery authorizedQuery;
-    if (resourceKeys.isEmpty()) {
-      authorizedQuery = matchNone();
-    } else {
-      final var resourceType = securityContext.authorization().resourceType();
-      final var permissionType = securityContext.authorization().permissionType();
-      authorizedQuery =
-          and(
-              searchQueryRequest.query(),
-              AuthorizationQueryTransformers.getTransformer(queryClass)
-                  .toSearchQuery(resourceType, permissionType, resourceKeys));
-    }
-    return searchQueryRequest.toBuilder().query(authorizedQuery).build();
+    return AuthorizationCheck.enabled(
+        withResourceIds(securityContext.authorization(), resourceIds));
   }
 }

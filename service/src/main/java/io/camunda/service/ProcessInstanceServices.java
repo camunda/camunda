@@ -25,6 +25,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -138,13 +139,15 @@ public final class ProcessInstanceServices
     final var resultsByKey =
         executeSearchRequest(
                 () ->
-                    processInstanceSearchClient.searchProcessInstances(
-                        processInstanceSearchQuery(
-                            q ->
-                                q.filter(
-                                    f ->
-                                        f.processInstanceKeyOperations(
-                                            Operation.in(orderedKeys))))))
+                    processInstanceSearchClient
+                        .withSecurityContext(SecurityContext.withoutAuthentication())
+                        .searchProcessInstances(
+                            processInstanceSearchQuery(
+                                q ->
+                                    q.filter(
+                                        f ->
+                                            f.processInstanceKeyOperations(
+                                                Operation.in(orderedKeys))))))
             .items()
             .stream()
             .collect(

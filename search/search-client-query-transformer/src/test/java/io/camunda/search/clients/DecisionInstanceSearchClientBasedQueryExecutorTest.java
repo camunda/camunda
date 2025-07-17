@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.auth.AuthorizationCheck;
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -87,10 +88,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
   void setUp() {
     queryExecutor =
         new SearchClientBasedQueryExecutor(
-            searchClient,
-            serviceTransformers,
-            authorizationQueryStrategy,
-            SecurityContext.withoutAuthentication());
+            searchClient, authorizationQueryStrategy, serviceTransformers);
   }
 
   @Test
@@ -105,14 +103,15 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
             any(SearchQueryRequest.class),
             eq(io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class)))
         .thenReturn(decisionInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
+    when(authorizationQueryStrategy.resolveAuthorizationCheck(any(SecurityContext.class)))
+        .thenReturn(AuthorizationCheck.disabled());
 
     // When we search
     final SearchQueryResult<DecisionInstanceEntity> searchResult =
         queryExecutor.search(
-            searchAllQuery, io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
+            searchAllQuery,
+            io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class,
+            SecurityContext.withoutAuthentication());
 
     assertThat(searchResult.total()).isEqualTo(1);
     final List<DecisionInstanceEntity> items = searchResult.items();
@@ -141,14 +140,15 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
             any(SearchQueryRequest.class),
             eq(io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class)))
         .thenReturn(decisionInstanceEntityResponse);
-    when(authorizationQueryStrategy.applyAuthorizationToQuery(
-            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
-        .thenAnswer(i -> i.getArgument(0));
+    when(authorizationQueryStrategy.resolveAuthorizationCheck(any(SecurityContext.class)))
+        .thenReturn(AuthorizationCheck.disabled());
 
     // When we search
     final SearchQueryResult<DecisionInstanceEntity> searchResult =
         queryExecutor.search(
-            searchAllQuery, io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
+            searchAllQuery,
+            io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class,
+            SecurityContext.withoutAuthentication());
 
     assertThat(searchResult.items()).hasSize(1);
     assertThat(searchResult.items().getFirst()).isEqualTo(domainEntity);

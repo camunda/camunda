@@ -21,6 +21,7 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionIndex.VERSION;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionDefinitionFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public final class DecisionDefinitionFilterTransformer
@@ -28,6 +29,11 @@ public final class DecisionDefinitionFilterTransformer
 
   public DecisionDefinitionFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(DECISION_ID, authorization.resourceIds());
   }
 
   @Override

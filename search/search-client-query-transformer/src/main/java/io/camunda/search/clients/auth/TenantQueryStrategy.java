@@ -9,16 +9,9 @@ package io.camunda.search.clients.auth;
 
 import io.camunda.security.auth.SecurityContext;
 
-/** Strategy to apply authorization to a search query. */
-public interface AuthorizationQueryStrategy {
+public interface TenantQueryStrategy {
 
-  AuthorizationQueryStrategy NONE = (securityContext) -> AuthorizationCheck.disabled();
+  TenantQueryStrategy NONE = (securityContext) -> null;
 
-  /**
-   * Apply authorization to a search query.
-   *
-   * @param securityContext
-   * @return the search query request with authorization applied
-   */
-  AuthorizationCheck resolveAuthorizationCheck(SecurityContext securityContext);
+  TenantCheck resolveTenantCheck(SecurityContext securityContext);
 }

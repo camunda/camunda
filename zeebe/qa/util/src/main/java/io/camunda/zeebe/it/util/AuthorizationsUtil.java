@@ -21,6 +21,7 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
@@ -152,12 +153,20 @@ public class AuthorizationsUtil implements CloseableSilently {
 
   private void awaitTenantExistsInElasticsearch(final String tenantId) {
     final var tenantQuery = TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId)));
-    awaitEntityExistsInElasticsearch(() -> documentBasedSearchClients.searchTenants(tenantQuery));
+    awaitEntityExistsInElasticsearch(
+        () ->
+            documentBasedSearchClients
+                .withSecurityContext(SecurityContext.withoutAuthentication())
+                .searchTenants(tenantQuery));
   }
 
   public void awaitUserExistsInElasticsearch(final String username) {
     final var userQuery = UserQuery.of(b -> b.filter(f -> f.usernames(username)));
-    awaitEntityExistsInElasticsearch(() -> documentBasedSearchClients.searchUsers(userQuery));
+    awaitEntityExistsInElasticsearch(
+        () ->
+            documentBasedSearchClients
+                .withSecurityContext(SecurityContext.withoutAuthentication())
+                .searchUsers(userQuery));
   }
 
   private void awaitPermissionExistsInElasticsearch(
@@ -181,7 +190,10 @@ public class AuthorizationsUtil implements CloseableSilently {
                               .resourceIds(resourceId)));
 
       awaitEntityExistsInElasticsearch(
-          () -> documentBasedSearchClients.searchAuthorizations(permissionQuery));
+          () ->
+              documentBasedSearchClients
+                  .withSecurityContext(SecurityContext.withoutAuthentication())
+                  .searchAuthorizations(permissionQuery));
     }
   }
 

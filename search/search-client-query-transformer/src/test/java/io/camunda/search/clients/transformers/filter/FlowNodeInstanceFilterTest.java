@@ -9,14 +9,22 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.clients.auth.AuthorizationCheck;
+import io.camunda.search.clients.auth.ResourceAccessChecks;
+import io.camunda.search.clients.auth.TenantCheck;
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.Operation;
+import io.camunda.security.auth.Authorization;
+import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -256,5 +264,125 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
               assertThat(searchRangeQuery.lt()).isEqualTo("2024-07-15T10:30:15.000+0000");
               assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
             });
+  }
+
+  @Test
+  public void shouldApplyAuthorizationCheck() {
+    // given
+    final var authorization =
+        Authorization.of(
+            a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.flowNodeInstance(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo(FlowNodeInstanceTemplate.BPMN_PROCESS_ID);
+              assertThat(t.values()).hasSize(2);
+              assertThat(t.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder("1", "2");
+            });
+  }
+
+  @Test
+  public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
+    // given
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.flowNodeInstance(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckWhenDisabled() {
+    // given
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.flowNodeInstance(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
+  }
+
+  @Test
+  public void shouldApplyTenantCheck() {
+    // given
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.flowNodeInstance(b -> b), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo(FlowNodeInstanceTemplate.TENANT_ID);
+              assertThat(t.values()).hasSize(2);
+              assertThat(t.values().stream().map(TypedValue::stringValue).toList())
+                  .containsExactlyInAnyOrder("a", "b");
+            });
+  }
+
+  @Test
+  public void shouldIgnoreTenantCheckWhenDisabled() {
+    // given
+    final var tenantCheck = TenantCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.flowNodeInstance(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
+  }
+
+  @Test
+  public void shouldApplyFilterAndChecks() {
+    // given
+    final var authorization =
+        Authorization.of(
+            a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
+
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(
+            FilterBuilders.flowNodeInstance(b -> b.flowNodeNames("abc")), resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
   }
 }
