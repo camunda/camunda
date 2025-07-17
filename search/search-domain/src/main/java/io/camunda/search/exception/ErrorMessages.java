@@ -23,6 +23,8 @@ public class ErrorMessages {
       "A single result was expected, but multiple results were found matching %s";
   public static final String ERROR_SINGLE_RESULT_NOT_FOUND =
       "A single result was expected, but none was found matching %s";
+  public static final String ERROR_GET_BY_QUERY_NOT_UNIQUE =
+      "Failed to get entity by a search request, the search query returned more than one result";
 
   public static final String ERROR_RESOURCE_ACCESS_CONTROLLER_NO_MATCHING_FOUND =
       "Failed to find a matching ResourceAccessController, make sure to set a security context using #withSecurityContext()";
