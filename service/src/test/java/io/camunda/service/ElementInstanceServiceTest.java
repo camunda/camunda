@@ -16,17 +16,19 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
+import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.service.cache.ProcessCacheResult;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.Map;
 import java.util.Set;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,22 +41,18 @@ public final class ElementInstanceServiceTest {
   private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
   private ProcessCache processCache;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(FlowNodeInstanceSearchClient.class);
     processCache = mock(ProcessCache.class);
-    securityContextProvider = mock(SecurityContextProvider.class);
-    authentication = mock(CamundaAuthentication.class);
     services =
         new ElementInstanceServices(
             mock(BrokerClient.class),
-            securityContextProvider,
+            mock(SecurityContextProvider.class),
             client,
             processCache,
-            authentication);
+            null);
 
     when(client.withSecurityContext(any())).thenReturn(client);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
@@ -116,12 +114,7 @@ public final class ElementInstanceServiceTest {
     public void shouldReturnFlowNodeInstanceByKey() {
       // given
       final var entity = Instancio.create(FlowNodeInstanceEntity.class);
-      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(securityContextProvider.isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readProcessInstance())))
-          .thenReturn(true);
+      when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
 
       // when
       final var searchQueryResult = services.getByKey(entity.flowNodeInstanceKey());
@@ -134,12 +127,10 @@ public final class ElementInstanceServiceTest {
     public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
       // given
       final var entity = Instancio.create(FlowNodeInstanceEntity.class);
-      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(securityContextProvider.isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readProcessInstance())))
-          .thenReturn(false);
+      when(client.getFlowNodeInstance(any(Long.class)))
+          .thenThrow(
+              new ResourceAccessDeniedException(
+                  Authorizations.ELEMENT_INSTANCE_READ_AUTHORIZATION));
 
       // when
       final Executable executeGetByKey = () -> services.getByKey(entity.flowNodeInstanceKey());
@@ -159,16 +150,9 @@ public final class ElementInstanceServiceTest {
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
               .create();
 
-      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(securityContextProvider.isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readProcessInstance())))
-          .thenReturn(true);
-      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
-          .thenReturn(
-              ProcessCacheResult.of(
-                  entity.processDefinitionKey(), entity.flowNodeId(), "cached name"));
+      when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
+      when(processCache.getCacheItem(entity.processDefinitionKey()))
+          .thenReturn(new ProcessCacheItem(Map.of(entity.flowNodeId(), "cached name")));
 
       // when
       final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
@@ -185,12 +169,9 @@ public final class ElementInstanceServiceTest {
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
               .create();
 
-      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
-      when(securityContextProvider.isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readProcessInstance())))
-          .thenReturn(true);
+      when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
+      when(processCache.getCacheItem(entity.processDefinitionKey()))
+          .thenReturn(new ProcessCacheItem(Map.of("unknown-id", "cached name")));
 
       // when
       final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());

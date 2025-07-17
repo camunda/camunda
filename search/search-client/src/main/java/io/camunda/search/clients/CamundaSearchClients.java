@@ -170,6 +170,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public FlowNodeInstanceEntity getFlowNodeInstance(final long key) {
+    return doGetWithReader(readers.flowNodeInstanceReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Element Instance", key));
+  }
+
+  @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery query) {
     return doSearchWithReader(readers.flowNodeInstanceReader(), query);

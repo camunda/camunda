@@ -127,6 +127,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public FlowNodeInstanceEntity getFlowNodeInstance(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
     throw new NoSecondaryStorageException();

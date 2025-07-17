@@ -129,6 +129,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public FlowNodeInstanceEntity getFlowNodeInstance(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery filter) {
     return SearchQueryResult.empty();
