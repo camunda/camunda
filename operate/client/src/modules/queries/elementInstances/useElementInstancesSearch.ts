@@ -13,23 +13,27 @@ import type {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-sche
 const ELEMENT_INSTANCES_SEARCH_QUERY_KEY = 'elementInstancesSearch';
 
 const useElementInstancesSearch = (
-  elementId: string | undefined,
-  processInstanceKey: string | undefined,
-  isMultiInstance: boolean | undefined,
+  elementId: string,
+  processInstanceKey: string,
+  isMultiInstance: boolean,
   options: {enabled: boolean} = {enabled: true},
 ) => {
-  const payload: QueryElementInstancesRequestBody = {
-    filter: {
-      elementId,
-      processInstanceKey: processInstanceKey ?? '',
-      type: isMultiInstance ? 'MULTI_INSTANCE_BODY' : undefined,
-    },
-    page: {limit: 1},
-  };
-
   return useQuery({
-    queryKey: [ELEMENT_INSTANCES_SEARCH_QUERY_KEY, payload],
+    queryKey: [
+      ELEMENT_INSTANCES_SEARCH_QUERY_KEY,
+      elementId,
+      processInstanceKey,
+      isMultiInstance,
+    ],
     queryFn: async () => {
+      const payload: QueryElementInstancesRequestBody = {
+        filter: {
+          elementId,
+          processInstanceKey,
+          type: isMultiInstance ? 'MULTI_INSTANCE_BODY' : undefined,
+        },
+        page: {limit: 1},
+      };
       const {response, error} = await searchElementInstances(payload);
       if (response !== null) {
         return response;
