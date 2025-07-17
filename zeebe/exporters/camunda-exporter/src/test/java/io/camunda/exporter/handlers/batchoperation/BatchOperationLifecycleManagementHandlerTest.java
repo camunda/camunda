@@ -13,6 +13,7 @@ import static org.mockito.Mockito.*;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -160,17 +161,22 @@ class BatchOperationLifecycleManagementHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityForCompletedIntent() {
+  void shouldUpdateEntityForCompletedIntentOnLeadPartition() {
     // given
+    final var value =
+        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+            .from(factory.generateObject(BatchOperationLifecycleManagementRecordValue.class))
+            .withErrors(List.of())
+            .build();
+    final long batchOperationKey = value.getBatchOperationKey();
+    final int partitionId = Protocol.decodePartitionId(batchOperationKey);
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             r ->
                 r.withIntent(BatchOperationIntent.COMPLETED)
-                    .withValue(
-                        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-                            .withErrors(List.of())
-                            .build()));
+                    .withValue(value)
+                    .withPartitionId(partitionId));
 
     final var entity = new BatchOperationEntity();
 
@@ -183,22 +189,60 @@ class BatchOperationLifecycleManagementHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityForCompletedIntentWithErrors() {
+  void shouldNotUpdateEntityForCompletedIntentOnFollowerPartition() {
     // given
-    final var errorRecord = new BatchOperationError();
-    errorRecord.setMessage("error message");
-    errorRecord.setType(BatchOperationErrorType.QUERY_FAILED);
-    errorRecord.setPartitionId(1);
+    final var value =
+        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+            .from(factory.generateObject(BatchOperationLifecycleManagementRecordValue.class))
+            .withErrors(List.of())
+            .build();
+    final long batchOperationKey = value.getBatchOperationKey();
+    final int otherPartitionId =
+        Protocol.decodePartitionId(batchOperationKey) + 1; // Simulate a different partition
 
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             r ->
                 r.withIntent(BatchOperationIntent.COMPLETED)
-                    .withValue(
-                        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
-                            .withErrors(List.of(errorRecord))
-                            .build()));
+                    .withValue(value)
+                    .withPartitionId(otherPartitionId));
+
+    final var entity = new BatchOperationEntity();
+    entity.setState(BatchOperationState.ACTIVE); // Set initial state to ACTIVE
+    entity.setEndDate(
+        DateUtil.toOffsetDateTime(Instant.now().toEpochMilli())); // Set initial end date
+
+    // when
+    handler.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getState()).isEqualTo(BatchOperationState.ACTIVE);
+    assertThat(entity.getEndDate()).isNotNull();
+  }
+
+  @Test
+  void shouldUpdateEntityForCompletedIntentWithErrorsOnLeadPartition() {
+    // given
+    final var errorRecord = new BatchOperationError();
+    errorRecord.setMessage("error message");
+    errorRecord.setType(BatchOperationErrorType.QUERY_FAILED);
+    errorRecord.setPartitionId(1);
+
+    final var value =
+        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+            .from(factory.generateObject(BatchOperationLifecycleManagementRecordValue.class))
+            .withErrors(List.of(errorRecord))
+            .build();
+    final long batchOperationKey = value.getBatchOperationKey();
+    final int partitionId = Protocol.decodePartitionId(batchOperationKey);
+    final Record<BatchOperationLifecycleManagementRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            r ->
+                r.withIntent(BatchOperationIntent.COMPLETED)
+                    .withValue(value)
+                    .withPartitionId(partitionId));
 
     final var entity = new BatchOperationEntity();
 

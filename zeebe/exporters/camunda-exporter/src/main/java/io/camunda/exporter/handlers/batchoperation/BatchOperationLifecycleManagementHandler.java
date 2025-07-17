@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -77,17 +78,19 @@ public class BatchOperationLifecycleManagementHandler
   public void updateEntity(
       final Record<BatchOperationLifecycleManagementRecordValue> record,
       final BatchOperationEntity entity) {
-    if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
+    final Intent intent = record.getIntent();
+    final var value = record.getValue();
+    if (BatchOperationIntent.CANCELED.equals(intent)) {
       // set the endDate because the BatchOperationUpdateTask does not need to run here
       entity
           .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
           .setState(BatchOperationState.CANCELED);
-    } else if (record.getIntent().equals(BatchOperationIntent.SUSPENDED)) {
+    } else if (BatchOperationIntent.SUSPENDED.equals(intent)) {
       entity.setEndDate(null).setState(BatchOperationState.SUSPENDED);
-    } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
+    } else if (BatchOperationIntent.RESUMED.equals(intent)) {
       entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
-    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
-      final var value = record.getValue();
+    } else if (BatchOperationIntent.COMPLETED.equals(intent) && isLeadPartition(record)) {
+      // only update the entity if this is the lead partition
       // set the endDate to null so that the BatchOperationUpdateTask does run again
       entity.setEndDate(null);
       if (value.getErrors().isEmpty()) {
@@ -114,6 +117,12 @@ public class BatchOperationLifecycleManagementHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private static boolean isLeadPartition(
+      final Record<BatchOperationLifecycleManagementRecordValue> record) {
+    final var value = record.getValue();
+    return Protocol.decodePartitionId(value.getBatchOperationKey()) == record.getPartitionId();
   }
 
   private List<BatchOperationErrorEntity> mapErrors(final List<BatchOperationErrorValue> errors) {
