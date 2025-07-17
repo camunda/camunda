@@ -388,7 +388,7 @@ processing records from previous version
 
     try (final var ignored = metrics.measureFlushDuration()) {
       metrics.recordBulkSize(writer.getBatchSize());
-      final BatchRequest batchRequest = clientAdapter.createBatchRequest();
+      final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
       writer.flush(batchRequest);
       metrics.stopFlushLatencyMeasurement();
     } catch (final PersistenceException ex) {

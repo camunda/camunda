@@ -9,6 +9,7 @@ package io.camunda.exporter.store;
 
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
@@ -35,6 +36,7 @@ public class OpensearchBatchRequest implements BatchRequest {
   private final OpenSearchClient osClient;
   private final BulkRequest.Builder bulkRequestBuilder;
   private final OpensearchScriptBuilder scriptBuilder;
+  private CamundaExporterMetrics metrics;
 
   public OpensearchBatchRequest(
       final OpenSearchClient osClient,
@@ -43,6 +45,12 @@ public class OpensearchBatchRequest implements BatchRequest {
     this.osClient = osClient;
     this.bulkRequestBuilder = bulkRequestBuilder;
     this.scriptBuilder = scriptBuilder;
+  }
+
+  @Override
+  public BatchRequest withMetrics(final CamundaExporterMetrics metrics) {
+    this.metrics = metrics;
+    return this;
   }
 
   @Override
@@ -296,6 +304,8 @@ public class OpensearchBatchRequest implements BatchRequest {
               String.format(
                   "%s failed for type [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
+
+          metrics.recordFlushFailureType(item.error().type());
           if (errorHandlers != null) {
             final Error error = new Error(message, item.error().type(), item.status());
             errorHandlers.accept(item.index(), error);

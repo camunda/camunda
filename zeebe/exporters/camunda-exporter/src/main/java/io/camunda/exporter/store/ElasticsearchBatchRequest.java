@@ -16,6 +16,7 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
@@ -35,6 +36,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   private final ElasticsearchClient esClient;
   private final BulkRequest.Builder bulkRequestBuilder;
   private final ElasticsearchScriptBuilder scriptBuilder;
+  private CamundaExporterMetrics metrics;
 
   public ElasticsearchBatchRequest(
       final ElasticsearchClient esClient,
@@ -43,6 +45,12 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     this.esClient = esClient;
     this.bulkRequestBuilder = bulkRequestBuilder;
     this.scriptBuilder = scriptBuilder;
+  }
+
+  @Override
+  public BatchRequest withMetrics(final CamundaExporterMetrics metrics) {
+    this.metrics = metrics;
+    return this;
   }
 
   @Override
@@ -298,6 +306,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
               String.format(
                   "%s failed on index [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
+
+          metrics.recordFlushFailureType(item.error().type());
           if (customErrorHandlers != null) {
             final Error error = new Error(message, item.error().type(), item.status());
             customErrorHandlers.accept(item.index(), error);
