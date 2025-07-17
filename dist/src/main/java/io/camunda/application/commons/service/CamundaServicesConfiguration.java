@@ -100,12 +100,12 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementsServices decisionRequirementsServices) {
     return new DecisionDefinitionServices(
         brokerClient,
         securityContextProvider,
         decisionDefinitionSearchClient,
-        decisionRequirementSearchClient,
+        decisionRequirementsServices,
         null);
   }
 

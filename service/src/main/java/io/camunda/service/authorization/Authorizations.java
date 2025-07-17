@@ -11,6 +11,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
+import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.security.auth.Authorization;
 
@@ -28,6 +29,10 @@ public abstract class Authorizations {
 
   public static final Authorization<DecisionInstanceEntity> DECISION_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.decisionDefinition().readDecisionInstance());
+
+  public static final Authorization<DecisionRequirementsEntity>
+      DECISION_REQUIREMENTS_READ_AUTHORIZATION =
+          Authorization.of(a -> a.decisionRequirementsDefinition().read());
 
   public static final Authorization<ProcessInstanceEntity> PROCESS_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());

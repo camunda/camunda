@@ -17,15 +17,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
-import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
-import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionDefinitionQuery;
-import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
@@ -41,25 +37,23 @@ public final class DecisionDefinitionServiceTest {
 
   private DecisionDefinitionServices services;
   private DecisionDefinitionSearchClient client;
-  private DecisionRequirementSearchClient decisionRequirementSearchClient;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
+  private DecisionRequirementsServices decisionRequirementServices;
 
   @BeforeEach
   public void before() {
     client = mock(DecisionDefinitionSearchClient.class);
-    decisionRequirementSearchClient = mock(DecisionRequirementSearchClient.class);
-    securityContextProvider = mock(SecurityContextProvider.class);
+    decisionRequirementServices = mock(DecisionRequirementsServices.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    when(decisionRequirementSearchClient.withSecurityContext(any()))
-        .thenReturn(decisionRequirementSearchClient);
+q
+    when(decisionRequirementServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(decisionRequirementServices);
     services =
         new DecisionDefinitionServices(
             mock(BrokerClient.class),
-            securityContextProvider,
+            mock(SecurityContextProvider.class),
             client,
-            decisionRequirementSearchClient,
-            authentication);
+            decisionRequirementServices,
+            null);
   }
 
   @Test
@@ -86,16 +80,8 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.decisionRequirementsKey()).thenReturn(42L);
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     when(client.getDecisionDefinition(eq(42L))).thenReturn(definitionEntity);
-
-    final var requirementEntity = mock(DecisionRequirementsEntity.class);
-    when(requirementEntity.xml()).thenReturn("<foo>bar</foo>");
-    when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(requirementEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(true);
+    when(decisionRequirementServices.getDecisionRequirementsXml(any(Long.class)))
+        .thenReturn("<foo>bar</foo>");
 
     // when
     final var xml = services.getDecisionDefinitionXml(42L);
@@ -164,7 +150,6 @@ public final class DecisionDefinitionServiceTest {
         .isEqualTo(
             "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
-    verify(decisionRequirementSearchClient, never())
-        .searchDecisionRequirements(any(DecisionRequirementsQuery.class));
+    verify(decisionRequirementServices, never()).getDecisionRequirementsXml(any(Long.class));
   }
 }
