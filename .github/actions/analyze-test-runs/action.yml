@@ -81,16 +81,21 @@ runs:
         console.log("Repo:", owner + "/" + repo);
         console.log("Commit SHA:", commitId);
 
-        const body = `⚠️ Found flaky tests:\n\n\`\`\`\n${flakyTests}\n\`\`\``;
+        const body = `
+          **Oh! We’ve got ourselves a flaky one:**
+          \`\`\`
+          ${flakyTests}
+          \`\`\`
+          Related to your code? Maybe.
+          Fixable now? Maybe not.
+          Mind giving it a look? Or don't, but I will remember. And ![I'll be back](https://media.tenor.com/p2Ie017Zwu8AAAAM/exterminador-do.gif)
+        `;
 
-        await github.rest.pulls.createReviewComment({
+        await github.rest.issues.createComment({
           owner,
           repo,
-          pull_number: pullNumber,
-          body,
-          commit_id: commitId,
-          path: "io/camunda/zeebe/engine/metrics/JobProcessingMetricsTest.java",
-          line: 1,
+          issue_number: pullNumber,
+          body
         });
 
 
