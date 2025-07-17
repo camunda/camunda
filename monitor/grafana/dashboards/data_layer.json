@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 20,
+  "id": 28,
   "links": [],
   "panels": [
     {
@@ -939,7 +939,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "sum(increase(zeebe_camunda_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+          "expr": "sum(increase(zeebe_camunda_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporterId=~\"$exporterId\"}[$__rate_interval])) by (le)",
           "format": "heatmap",
           "interval": "30s",
           "intervalFactor": 1,
@@ -3023,5 +3023,5 @@
   "timezone": "browser",
   "title": "Data Layer",
   "uid": "728720fd-6b20-430a-b931-bbfdc71531dd",
-  "version": 4
+  "version": 6
 }
