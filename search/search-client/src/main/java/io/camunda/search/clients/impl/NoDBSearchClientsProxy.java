@@ -93,6 +93,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionDefinitionEntity getDecisionDefinition(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter) {
     throw new NoSecondaryStorageException();

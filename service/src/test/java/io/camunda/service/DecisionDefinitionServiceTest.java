@@ -10,6 +10,7 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -19,12 +20,12 @@ import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
@@ -39,24 +40,21 @@ public final class DecisionDefinitionServiceTest {
   private DecisionDefinitionServices services;
   private DecisionDefinitionSearchClient client;
   private DecisionRequirementSearchClient decisionRequirementSearchClient;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(DecisionDefinitionSearchClient.class);
     decisionRequirementSearchClient = mock(DecisionRequirementSearchClient.class);
-    securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(decisionRequirementSearchClient.withSecurityContext(any()))
         .thenReturn(decisionRequirementSearchClient);
     services =
         new DecisionDefinitionServices(
             mock(BrokerClient.class),
-            securityContextProvider,
+            mock(SecurityContextProvider.class),
             client,
             decisionRequirementSearchClient,
-            authentication);
+            null);
   }
 
   @Test
@@ -82,18 +80,12 @@ public final class DecisionDefinitionServiceTest {
     final var definitionEntity = mock(DecisionDefinitionEntity.class);
     when(definitionEntity.decisionRequirementsKey()).thenReturn(42L);
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(definitionEntity), null, null));
+    when(client.getDecisionDefinition(eq(42L))).thenReturn(definitionEntity);
 
     final var requirementEntity = mock(DecisionRequirementsEntity.class);
     when(requirementEntity.xml()).thenReturn("<foo>bar</foo>");
     when(decisionRequirementSearchClient.searchDecisionRequirements(any()))
         .thenReturn(new SearchQueryResult<>(1, false, List.of(requirementEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(true);
 
     // when
     final var xml = services.getDecisionDefinitionXml(42L);
@@ -110,13 +102,7 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, false, List.of(definitionEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(true);
+    when(client.getDecisionDefinition(eq(42L))).thenReturn(definitionEntity);
 
     // when
     final DecisionDefinitionEntity decisionDefinition = services.getByKey(42L);
@@ -132,13 +118,10 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, false, List.of(definitionEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(false);
+    when(client.getDecisionDefinition(any(Long.class)))
+        .thenThrow(
+            new ResourceAccessDeniedException(
+                Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
     final Executable executable = () -> services.getByKey(1L);
@@ -157,13 +140,10 @@ public final class DecisionDefinitionServiceTest {
     when(definitionEntity.decisionDefinitionId()).thenReturn("decId");
     final var definitionResult = mock(SearchQueryResult.class);
     when(definitionResult.items()).thenReturn(List.of(definitionEntity));
-    when(client.searchDecisionDefinitions(any()))
-        .thenReturn(new SearchQueryResult(1, false, List.of(definitionEntity), null, null));
-    when(securityContextProvider.isAuthorized(
-            "decId",
-            authentication,
-            Authorization.of(a -> a.decisionDefinition().readDecisionDefinition())))
-        .thenReturn(false);
+    when(client.getDecisionDefinition(any(Long.class)))
+        .thenThrow(
+            new ResourceAccessDeniedException(
+                Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
     final Executable executable = () -> services.getDecisionDefinitionXml(1L);

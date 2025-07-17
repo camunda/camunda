@@ -179,7 +179,7 @@ class DecisionSearchTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .contains("A single result was expected, but none was found matching");
+        .contains("Decision Definition with key '%d' not found".formatted(decisionKey));
   }
 
   @Test
@@ -203,7 +203,7 @@ class DecisionSearchTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .contains("A single result was expected, but none was found matching");
+        .contains("Decision Definition with key '%d' not found".formatted(decisionKey));
   }
 
   @Test
