@@ -8,12 +8,10 @@
 package io.camunda.search.clients.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -113,7 +111,7 @@ class DocumentResourceAccessControllerTest {
   }
 
   @Test
-  void shouldThrowResourceAccessDeniedException() {
+  void shouldEnableResourceAccessCheckEvenWhenNoResourceIdsProvided() {
     // given
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
@@ -124,12 +122,25 @@ class DocumentResourceAccessControllerTest {
     // required authorization
     final var requiredAuthorization =
         Authorization.of(a -> a.processDefinition().readProcessDefinition());
+
     when(resourceAccessProvider.resolveResourceAccess(eq(authentication), eq(authorization)))
         .thenReturn(ResourceAccess.denied(requiredAuthorization));
+    when(tenantAccessProvider.resolveTenantAccess(any())).thenReturn(TenantAccess.wildcard(null));
 
-    // when / then
-    assertThatThrownBy(() -> controller.doSearch(securityContext, a -> null))
-        .isInstanceOf(ResourceAccessDeniedException.class);
+    final var reference = new AtomicReference<ResourceAccessChecks>();
+
+    // when
+    controller.doSearch(
+        securityContext,
+        a -> {
+          reference.set(a);
+          return null;
+        });
+
+    // then
+    final var result = reference.get();
+    assertThat(result.authorizationCheck().enabled()).isTrue();
+    assertThat(result.authorizationCheck().authorization()).isEqualTo(requiredAuthorization);
   }
 
   @Test

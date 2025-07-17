@@ -38,7 +38,6 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
-import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
@@ -285,7 +284,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> withResultTypeCheck(
       final SearchEntityReader<T, Q> reader, final Q query) {
-    return ensureSingeResultIfNecessary(() -> doSearch(reader, query), query);
+    return ensureSingeResultIfNecessary(
+        () -> doReadWithResourceAccessController(a -> reader.search(query, a)), query);
   }
 
   protected <T> SearchQueryResult<T> ensureSingeResultIfNecessary(
@@ -303,21 +303,6 @@ public class CamundaSearchClients implements SearchClientsProxy {
       }
     }
     return result;
-  }
-
-  protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearch(
-      final SearchEntityReader<T, Q> reader, final Q query) {
-    try {
-      return doReadWithResourceAccessController(a -> reader.search(query, a));
-    } catch (final ResourceAccessDeniedException denied) {
-      final var missingAuthorization = denied.getMissingAuthorization();
-      LOG.trace(
-          "Unauthorized to perform a Search Query with permission '{}' on resource '{}', returning an empty search query result",
-          missingAuthorization.permissionType(),
-          missingAuthorization.resourceType(),
-          denied);
-      return SearchQueryResult.empty();
-    }
   }
 
   protected <T> T doReadWithResourceAccessController(

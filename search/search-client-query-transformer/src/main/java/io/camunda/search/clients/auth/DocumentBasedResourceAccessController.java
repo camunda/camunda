@@ -7,7 +7,9 @@
  */
 package io.camunda.search.clients.auth;
 
-import io.camunda.search.exception.ResourceAccessDeniedException;
+import static io.camunda.search.exception.ErrorMessages.ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION;
+
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -64,7 +66,7 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
   protected AuthorizationCheck determineAuthorizationCheck(
       final CamundaAuthentication authentication, final Authorization authorization) {
     final var resourceAccess = resolveResourcesAccess(authentication, authorization);
-    return createAuthorizationCheckIfAccessAllowed(resourceAccess);
+    return createAuthorizationCheck(resourceAccess);
   }
 
   protected ResourceAccess resolveResourcesAccess(
@@ -72,18 +74,19 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
     return resourceAccessProvider.resolveResourceAccess(authentication, authorization);
   }
 
-  protected AuthorizationCheck createAuthorizationCheckIfAccessAllowed(
-      final ResourceAccess resourceAccess) {
+  protected AuthorizationCheck createAuthorizationCheck(final ResourceAccess resourceAccess) {
     return Optional.of(resourceAccess)
-        .filter(ResourceAccess::allowed)
+        .filter(f -> !f.wildcard())
         .map(
-            a ->
-                Optional.of(a)
-                    .filter(f -> !f.wildcard())
-                    .map(ResourceAccess::authorization)
+            r ->
+                Optional.ofNullable(r.authorization())
                     .map(AuthorizationCheck::enabled)
-                    .orElseGet(AuthorizationCheck::disabled))
-        .orElseThrow(() -> new ResourceAccessDeniedException(resourceAccess.authorization()));
+                    .orElseThrow(
+                        () ->
+                            new CamundaSearchException(
+                                ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION.formatted(
+                                    resourceAccess))))
+        .orElseGet(AuthorizationCheck::disabled);
   }
 
   protected TenantCheck determineTenantCheck(final CamundaAuthentication authentication) {
