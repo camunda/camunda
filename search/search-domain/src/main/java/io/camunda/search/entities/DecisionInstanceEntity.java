@@ -29,7 +29,8 @@ public record DecisionInstanceEntity(
     DecisionDefinitionType decisionDefinitionType,
     String result,
     List<DecisionInstanceInputEntity> evaluatedInputs,
-    List<DecisionInstanceOutputEntity> evaluatedOutputs) {
+    List<DecisionInstanceOutputEntity> evaluatedOutputs)
+    implements TenantOwnedEntity {
 
   public Builder toBuilder() {
     return new Builder()

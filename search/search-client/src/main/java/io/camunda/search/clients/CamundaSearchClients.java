@@ -145,6 +145,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionInstanceEntity getDecisionInstance(final String id) {
+    return doGetWithReader(readers.decisionInstanceReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Decision Instance", id));
+  }
+
+  @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery query) {
     return doSearchWithReader(readers.decisionInstanceReader(), query);
