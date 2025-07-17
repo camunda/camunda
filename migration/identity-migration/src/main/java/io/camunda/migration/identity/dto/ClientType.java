@@ -7,8 +7,12 @@
  */
 package io.camunda.migration.identity.dto;
 
-public record Client(String id, String clientId, ClientType type) {
-  public Client(final String id, final String clientId) {
-    this(id, clientId, ClientType.M2M);
-  }
+import com.fasterxml.jackson.annotation.JsonEnumDefaultValue;
+
+public enum ClientType {
+  CONFIDENTIAL,
+  M2M,
+  PUBLIC,
+  @JsonEnumDefaultValue
+  UNKNOWN
 }
