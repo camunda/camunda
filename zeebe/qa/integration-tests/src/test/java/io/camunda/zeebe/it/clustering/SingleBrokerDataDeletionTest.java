@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.util.unit.DataSize;
@@ -168,6 +169,7 @@ public class SingleBrokerDataDeletionTest {
     awaitUntilCompaction(reader, firstPositionPreCompaction);
   }
 
+  @Ignore("until https://github.com/camunda/camunda/issues/35321")
   @Test
   public void shouldCompactWhenExporterHasBeenRemoved() {
     // given - an exporter which updates its position and accepts all records
@@ -205,6 +207,45 @@ public class SingleBrokerDataDeletionTest {
     assertThat(newFirstPositionPreCompaction).isGreaterThan(firstPositionPreCompaction);
     awaitUntilCompaction(reader, newFirstPositionPreCompaction);
     assertDoesNotContainDeploymentCommand(reader);
+  }
+
+  @Test
+  public void shouldNotCompactWhenExporterHasBeenRemovedFromConfig() {
+    // given - an exporter which updates its position and accepts all records
+    final int nodeId = 0;
+    LogStreamReader reader = clusteringRule.getLogStream(1).newLogStreamReader();
+    final Broker broker = clusteringRule.getBroker(nodeId);
+    ControllableExporter.updatePosition(true);
+
+    // when - filling the log with messages
+    publishEnoughMessagesForCompaction();
+    deployDummyProcess();
+
+    // then - force compaction and ensure we compacted only things before our sentinel command
+    reader.seekToFirstEvent();
+    final long firstPositionPreCompaction = reader.getPosition();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
+    awaitUntilCompaction(reader, firstPositionPreCompaction);
+    assertContainsDeploymentCommand(reader);
+
+    // when - restarting without the exporter
+    final var brokerCfg = clusteringRule.getBrokerCfg(nodeId);
+    brokerCfg.setExporters(Collections.emptyMap());
+    clusteringRule.stopBroker(nodeId);
+    clusteringRule.startBroker(nodeId);
+    publishEnoughMessagesForCompaction();
+
+    // then - force compaction
+    reader = clusteringRule.getLogStream(1).newLogStreamReader();
+    final long newFirstPositionPreSnapshot = reader.getPosition();
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    clusteringRule.waitForNewSnapshotAtBroker(clusteringRule.getBroker(0), firstSnapshot);
+    reader = clusteringRule.getLogStream(1).newLogStreamReader();
+    final long newFirstPositionPostSnapshot = reader.getPosition();
+    assertThat(newFirstPositionPostSnapshot)
+        .describedAs("Not compacted")
+        .isEqualTo(newFirstPositionPreSnapshot);
   }
 
   private void awaitUntilCompaction(
