@@ -20,7 +20,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -34,22 +34,22 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 public class MappingRuleQueryControllerTest extends RestControllerTest {
   private static final String MAPPING_BASE_URL = "/v2/mapping-rules";
 
-  @MockitoBean private MappingServices mappingServices;
+  @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
-    when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(mappingServices);
+    when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingRuleServices);
   }
 
   @Test
   void getMappingShouldReturnOk() {
     // given
     final var mapping = new MappingRuleEntity("id", 100L, "Claim Name", "Claim Value", "Map Name");
-    when(mappingServices.getMapping(mapping.mappingRuleId())).thenReturn(mapping);
+    when(mappingRuleServices.getMappingRule(mapping.mappingRuleId())).thenReturn(mapping);
 
     // when
     webClient
@@ -69,7 +69,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                           }""");
 
     // then
-    verify(mappingServices, times(1)).getMapping(mapping.mappingRuleId());
+    verify(mappingRuleServices, times(1)).getMappingRule(mapping.mappingRuleId());
   }
 
   @Test
@@ -77,7 +77,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
     // given
     final var mappingId = "id";
     final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingId);
-    when(mappingServices.getMapping(mappingId))
+    when(mappingRuleServices.getMappingRule(mappingId))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -104,13 +104,13 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                 .formatted(path));
 
     // then
-    verify(mappingServices, times(1)).getMapping(mappingId);
+    verify(mappingRuleServices, times(1)).getMappingRule(mappingId);
   }
 
   @Test
   void shouldSearchMappingsWithEmptyQuery() {
     // given
-    when(mappingServices.search(any(MappingRuleQuery.class)))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
@@ -166,13 +166,13 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
              }
            }""");
 
-    verify(mappingServices).search(new MappingRuleQuery.Builder().build());
+    verify(mappingRuleServices).search(new MappingRuleQuery.Builder().build());
   }
 
   @Test
   void shouldSortAndPaginateSearchResult() {
     // given
-    when(mappingServices.search(any(MappingRuleQuery.class)))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
@@ -203,7 +203,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(mappingServices)
+    verify(mappingRuleServices)
         .search(
             new MappingRuleQuery.Builder()
                 .sort(MappingRuleSort.of(builder -> builder.claimName().asc()))
@@ -214,7 +214,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSortAndPaginateSearchResultByName() {
     // given
-    when(mappingServices.search(any(MappingRuleQuery.class)))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
@@ -245,7 +245,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk();
 
-    verify(mappingServices)
+    verify(mappingRuleServices)
         .search(
             new MappingRuleQuery.Builder()
                 .sort(MappingRuleSort.of(builder -> builder.name().asc()))

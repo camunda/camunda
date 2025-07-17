@@ -60,13 +60,13 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
   private final String groupsClaim;
 
   public CamundaOAuthPrincipalServiceImpl(
-      final MappingRuleServices mappingServices,
+      final MappingRuleServices mappingRuleServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
       final AuthorizationServices authorizationServices,
       final SecurityConfiguration securityConfiguration) {
-    this.mappingServices = mappingServices;
+    mappingServices = mappingRuleServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;

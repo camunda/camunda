@@ -92,7 +92,7 @@ public final class TenantRequestValidator {
       case GROUP:
         validateId(entityId, "groupId", violations);
         break;
-      case MAPPING:
+      case MAPPING_RULE:
         validateId(entityId, "mappingRuleId", violations);
         break;
       case ROLE:

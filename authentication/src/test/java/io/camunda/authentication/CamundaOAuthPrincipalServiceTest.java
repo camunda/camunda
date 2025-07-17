@@ -228,8 +228,8 @@ public class CamundaOAuthPrincipalServiceTest {
       when(mappingServices.getMatchingMappingRules(claims))
           .thenReturn(
               Stream.of(
-                  new MappingEntity("test-id", 5L, "role", "R1", "role-r1"),
-                  new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
+                  new MappingRuleEntity("test-id", 5L, "role", "R1", "role-r1"),
+                  new MappingRuleEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
       final var groupRole = new RoleEntity(3L, "roleGroup", "Role Group", "description");
       when(groupServices.getGroupsByMemberTypeAndMemberIds(
@@ -421,15 +421,11 @@ public class CamundaOAuthPrincipalServiceTest {
                   Map.of("name", GROUP2_NAME, "id", "idp-g2-id")),
               "sub",
               "user1");
-      final var mapping1 = new MappingEntity("map-1", 1L, "role", "R1", "role-r1");
-      final var mapping2 = new MappingEntity("map-2", 2L, "group", "G1", "group-g1");
+      final var mappingRule1 = new MappingRuleEntity("map-1", 1L, "role", "R1", "role-r1");
+      final var mappingRule2 = new MappingRuleEntity("map-2", 2L, "group", "G1", "group-g1");
       when(mappingServices.getMatchingMappingRules(claims))
-          .thenReturn(Stream.of(mapping1, mapping2));
+          .thenReturn(Stream.of(mappingRule1, mappingRule2));
       when(groupServices.getGroupsByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING_RULE))
-      final var mapping1 = new MappingRuleEntity("map-1", 1L, "role", "R1", "role-r1");
-      final var mapping2 = new MappingRuleEntity("map-2", 2L, "group", "G1", "group-g1");
-      when(mappingServices.getMatchingMappings(claims)).thenReturn(Stream.of(mapping1, mapping2));
-      when(groupServices.getGroupsByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING))
           .thenReturn(List.of(new GroupEntity(1L, "local-g1", "G1", "Group G1")));
 
       // when

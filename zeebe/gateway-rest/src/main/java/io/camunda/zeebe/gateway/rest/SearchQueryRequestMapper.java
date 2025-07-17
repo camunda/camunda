@@ -520,7 +520,7 @@ public final class SearchQueryRequestMapper {
   public static Either<ProblemDetail, MappingRuleQuery> toMappingQuery(
       final MappingRuleSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.mappingSearchQuery().build());
+      return Either.right(SearchQueryBuilders.mappingRuleSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
@@ -529,7 +529,7 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::mapping,
             SearchQueryRequestMapper::applyMappingSortField);
     final var filter = toMappingFilter(request.getFilter());
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingSearchQuery);
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingRuleSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(

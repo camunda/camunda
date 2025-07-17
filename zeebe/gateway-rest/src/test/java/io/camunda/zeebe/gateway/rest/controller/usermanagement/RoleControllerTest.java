@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
@@ -49,7 +49,7 @@ public class RoleControllerTest extends RestControllerTest {
 
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private UserServices userServices;
-  @MockitoBean private MappingServices mappingServices;
+  @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
@@ -61,8 +61,8 @@ public class RoleControllerTest extends RestControllerTest {
         .thenReturn(roleServices);
     when(userServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userServices);
-    when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(mappingServices);
+    when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingRuleServices);
     when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(groupServices);
   }
@@ -439,7 +439,7 @@ public class RoleControllerTest extends RestControllerTest {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
-    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
     when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -461,7 +461,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
-    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -491,7 +491,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
-    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -578,7 +578,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
 
-    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
     when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -600,7 +600,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
-    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -630,7 +630,7 @@ public class RoleControllerTest extends RestControllerTest {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
-    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE);
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
