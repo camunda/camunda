@@ -6,10 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {mockGetRequest} from '../mockRequest';
+import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas';
 
-const mockMe = ({contextPath}: {contextPath?: string} = {}) =>
-  mockGetRequest<CurrentUser>(`${contextPath ?? ''}/v2/authentication/me`);
+function isForbidden(user: CurrentUser | undefined) {
+  return (
+    Array.isArray(user?.authorizedApplications) &&
+    !user.authorizedApplications.includes('operate') &&
+    !user.authorizedApplications.includes('*')
+  );
+}
 
-export {mockMe};
+export {isForbidden};

@@ -28,6 +28,8 @@ import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {createUser} from 'modules/testUtils';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 const handleRefetchSpy = vi.spyOn(groupedDecisionsStore, 'handleRefetch');
 
@@ -67,6 +69,7 @@ describe('<Decisions />', () => {
     mockFetchBatchOperations().withSuccess([]);
     mockFetchGroupedDecisions().withSuccess([]);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
+    mockMe().withSuccess(createUser());
 
     render(<Decisions />, {wrapper: createWrapper()});
 

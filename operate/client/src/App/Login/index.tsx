@@ -24,7 +24,6 @@ import {
   Button,
 } from './styled';
 import {authenticationStore} from 'modules/stores/authentication';
-import {NetworkError} from 'modules/networkError';
 import {
   Column,
   Grid,
@@ -62,7 +61,11 @@ const Login: React.FC = () => {
       <Form<FormValues>
         onSubmit={async (values) => {
           try {
-            const response = await authenticationStore.handleLogin(values);
+            const {username, password} = values;
+            const response = await authenticationStore.handleLogin(
+              username,
+              password,
+            );
 
             if (response === undefined) {
               return navigate(
@@ -76,7 +79,7 @@ const Login: React.FC = () => {
               );
             }
 
-            if (response instanceof NetworkError && response.status === 401) {
+            if (response instanceof Response && response.status === 401) {
               return {
                 [FORM_ERROR]: LOGIN_ERROR,
               };

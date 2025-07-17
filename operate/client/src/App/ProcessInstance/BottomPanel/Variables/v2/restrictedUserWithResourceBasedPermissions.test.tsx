@@ -12,51 +12,38 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {getWrapper, mockProcessInstance} from './mocks';
 import {
   createInstance,
+  createUser,
   createVariable,
   createVariableV2,
 } from 'modules/testUtils';
-import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {VariablePanel} from '../../VariablePanel/v2';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 
 const instanceMock = createInstance({id: '1'});
 
 describe('Restricted user with resource based permissions', () => {
   beforeEach(() => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
-    };
-
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(instanceMock);
-    mockFetchProcessInstanceDeprecated().withSuccess(instanceMock);
-    mockFetchProcessDefinitionXml().withSuccess('');
-    mockFetchProcessDefinitionXml().withSuccess('');
-  });
-
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
-
-  beforeAll(() => {
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
     });
-  });
 
-  afterAll(() => {
-    authenticationStore.reset();
+    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(instanceMock);
+    mockFetchProcessInstanceDeprecated().withSuccess(instanceMock);
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessInstanceListeners().withSuccess({
+      listeners: [],
+      totalCount: 0,
+    });
   });
 
   it('should display add/edit variable buttons when update process instance permission is available', async () => {

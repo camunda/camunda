@@ -19,7 +19,6 @@ import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
 import {Skeleton} from 'modules/components/InstanceHeader/Skeleton';
 import {notificationsStore} from 'modules/stores/notifications';
-import {authenticationStore} from 'modules/stores/authentication';
 import {VersionTag} from '../styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -34,6 +33,7 @@ import {useProcessInstanceOperations} from 'modules/hooks/useProcessInstanceOper
 import {ProcessInstanceOperationsContext} from './processInstanceOperationsContext';
 import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
 import {useHasActiveBatchOperationMutation} from 'modules/mutations/processInstance/useHasActiveBatchOperationMutation';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const headerColumns = [
   'Process Name',
@@ -92,6 +92,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const hasActiveBatchOperationMutation = useHasActiveBatchOperationMutation(
     processInstance.processInstanceKey,
   );
+  const {data: currentUser} = useCurrentUser();
 
   const navigate = useNavigate();
 
@@ -120,7 +121,15 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     processDefinitionId,
   } = processInstance;
 
-  const tenantName = authenticationStore.tenantsById?.[tenantId] ?? tenantId;
+  const tenantsById: Record<string, string> =
+    currentUser?.tenants.reduce(
+      (acc, tenant) => ({
+        [tenant.tenantId]: tenant.name,
+        ...acc,
+      }),
+      {},
+    ) ?? {};
+  const tenantName = tenantsById[tenantId] ?? tenantId;
   const versionColumnTitle = `View process "${getProcessDefinitionName(
     processInstance,
   )} version ${processDefinitionVersion}" instances${

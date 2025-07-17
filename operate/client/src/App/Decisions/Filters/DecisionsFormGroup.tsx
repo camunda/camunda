@@ -12,7 +12,7 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {Title} from 'modules/components/FiltersPanel/styled';
 import {ComboBox} from 'modules/components/ComboBox';
 import {Dropdown, Stack} from '@carbon/react';
-import {authenticationStore} from 'modules/stores/authentication';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const DecisionsFormGroup: React.FC = observer(() => {
   const {getVersions, getDefaultVersion, decisions} = groupedDecisionsStore;
@@ -26,6 +26,15 @@ const DecisionsFormGroup: React.FC = observer(() => {
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
   const isSpecificTenantSelected =
     selectedTenant !== '' && selectedTenant !== 'all';
+  const {data: currentUser} = useCurrentUser();
+  const tenantsById: Record<string, string> =
+    currentUser?.tenants.reduce(
+      (acc, tenant) => ({
+        [tenant.tenantId]: tenant.name,
+        ...acc,
+      }),
+      {},
+    ) ?? {};
 
   return (
     <div>
@@ -40,7 +49,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
                 items={decisions.map(({id, label, tenantId}) => ({
                   label:
                     isMultiTenancyEnabled && !isSpecificTenantSelected
-                      ? `${label} - ${authenticationStore.tenantsById?.[tenantId]}`
+                      ? `${label} - ${tenantsById[tenantId]}`
                       : label,
                   id,
                 }))}

@@ -20,17 +20,28 @@ import {LinkWrapper, ErrorMessage} from '../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {EmptyState} from 'modules/components/EmptyState';
 import EmptyStateProcessInstancesByName from 'modules/components/Icon/empty-state-process-instances-by-name.svg?react';
-import {authenticationStore} from 'modules/stores/authentication';
 import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
     state: {processInstances, status},
     hasNoInstances,
   } = processInstancesByNameStore;
+  const {data: currentUser} = useCurrentUser();
 
-  const modelerLink = authenticationStore.state.c8Links.modeler;
+  const modelerLink = Array.isArray(currentUser?.c8Links)
+    ? currentUser?.c8Links.find((link) => link.name === 'modeler')?.link
+    : undefined;
+  const tenantsById: Record<string, string> =
+    currentUser?.tenants.reduce(
+      (acc, tenant) => ({
+        [tenant.tenantId]: tenant.name,
+        ...acc,
+      }),
+      {},
+    ) ?? {};
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
   if (['initial', 'first-fetch'].includes(status)) {
@@ -92,8 +103,7 @@ const InstancesByProcess: React.FC = observer(() => {
         const version = processes.length === 1 ? processes[0]!.version : 'all';
         const totalInstancesCount =
           instancesWithActiveIncidentsCount + activeInstancesCount;
-        const tenantName =
-          authenticationStore.tenantsById?.[item.tenantId] ?? item.tenantId;
+        const tenantName = tenantsById[item.tenantId] ?? item.tenantId;
 
         return {
           id: generateProcessKey(bpmnProcessId, tenantId),

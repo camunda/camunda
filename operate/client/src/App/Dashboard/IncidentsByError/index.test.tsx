@@ -24,17 +24,23 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
 import {Paths} from 'modules/Routes';
 import {incidentsByErrorStore} from 'modules/stores/incidentsByError';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {createUser} from 'modules/testUtils';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path={Paths.processes()} element={<div>Processes</div>} />
-          <Route path={Paths.dashboard()} element={children} />
-        </Routes>
-        <LocationLog />
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path={Paths.processes()} element={<div>Processes</div>} />
+            <Route path={Paths.dashboard()} element={children} />
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -42,6 +48,10 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
 }
 
 describe('IncidentsByError', () => {
+  beforeEach(() => {
+    mockMe().withSuccess(createUser());
+  });
+
   it('should display skeleton when loading', async () => {
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
