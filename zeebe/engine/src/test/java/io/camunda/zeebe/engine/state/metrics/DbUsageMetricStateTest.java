@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.metrics;
 
-import static io.camunda.zeebe.engine.utils.HashUtils.getStringHashValue;
+import static io.camunda.zeebe.util.HashUtils.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

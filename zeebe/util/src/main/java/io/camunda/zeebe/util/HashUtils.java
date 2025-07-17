@@ -5,12 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.utils;
+package io.camunda.zeebe.util;
 
 import com.google.common.hash.Hashing;
 import java.nio.charset.StandardCharsets;
 
 public class HashUtils {
+
+  private HashUtils() {
+    throw new IllegalStateException("Utility class");
+  }
 
   public static long getStringHashValue(final String stringValue) {
     return Hashing.murmur3_128().hashString(stringValue, StandardCharsets.UTF_8).asLong();

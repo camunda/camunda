@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.metrics;
 
-import static io.camunda.zeebe.engine.utils.HashUtils.getStringHashValue;
+import static io.camunda.zeebe.util.HashUtils.getStringHashValue;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
