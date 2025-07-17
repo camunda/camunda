@@ -192,7 +192,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 variableName,
                 jsonMappedClass,
                 requirement,
-                () -> findLocalVariables(processInstanceKey, instance.getElementInstanceKey())));
+                () ->
+                    getLocalProcessInstanceVariables(
+                        processInstanceKey, instance.getElementInstanceKey())));
   }
 
   public <T> void hasVariableSatisfies(
