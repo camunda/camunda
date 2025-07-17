@@ -1297,6 +1297,44 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  summary-report:
+    name: Final CI Flakiness Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+    needs: [ detect-changes, java-unit-tests, consolidated-unit-tests, elasticsearch-integration-tests, opensearch-integration-tests, rdbms-h2-integration-tests, rdbms-integration-tests, integration-tests ]  # adjust to your actual job names
+    steps:
+      - name: Print flaky test summary
+        run: |
+          {
+            echo "## 🧪 Unit Test Summary"
+            echo "### 🔹 [UT] General Unit Tests"
+            echo "**7730 passed**, **1 failed**, 5 skipped"
+            echo ""
+            echo "<details><summary>Test Failure</summary>"
+            echo ""
+            echo '```java'
+            echo 'Expected: is "email1"'
+            echo 'but: was "email2"'
+            echo 'at AuthorizationMigrationHandlerTest.shouldMigrateAuthorizations()'
+            echo '```'
+            echo "</details>"
+            echo ""
+            echo "### 🔹 [UT] Zeebe Big Unit Tests"
+            echo "**6205 passed**, **3 failed**, 22 skipped"
+            echo "- Flaky: \`ReplayStateTest.shouldRestoreState[...]\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -1469,42 +1507,3 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  summary-report:
-      name: Final CI Flakiness Summary
-      runs-on: ubuntu-latest
-      timeout-minutes: 3
-      permissions:
-        contents: read
-      needs: [ check-results, detect-changes, java-unit-tests, consolidated-unit-tests, elasticsearch-integration-tests, opensearch-integration-tests, rdbms-h2-integration-tests, rdbms-integration-tests, integration-tests ]  # adjust to your actual job names
-      if: always() && needs.check-results.result == 'failure'
-      steps:
-        - name: Print flaky test summary
-          run: |
-            {
-              echo "## 🧪 Unit Test Summary"
-              echo "### 🔹 [UT] General Unit Tests"
-              echo "**7730 passed**, **1 failed**, 5 skipped"
-              echo ""
-              echo "<details><summary>Test Failure</summary>"
-              echo ""
-              echo '```java'
-              echo 'Expected: is "email1"'
-              echo 'but: was "email2"'
-              echo 'at AuthorizationMigrationHandlerTest.shouldMigrateAuthorizations()'
-              echo '```'
-              echo "</details>"
-              echo ""
-              echo "### 🔹 [UT] Zeebe Big Unit Tests"
-              echo "**6205 passed**, **3 failed**, 22 skipped"
-              echo "- Flaky: \`ReplayStateTest.shouldRestoreState[...]\`"
-            } >> "$GITHUB_STEP_SUMMARY"
-        - name: Observe build status
-          if: always()
-          continue-on-error: true
-          uses: ./.github/actions/observe-build-status
-          with:
-            build_status: ${{ job.status }}
-            secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-            secret_vault_address: ${{ secrets.VAULT_ADDR }}
-            secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
