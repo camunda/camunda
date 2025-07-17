@@ -21,8 +21,7 @@ import org.springframework.core.env.Environment;
 @ComponentScan("io.camunda.configuration")
 public class UnifiedConfigurationHelper {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
-  private static final Map<String, Set<String>> LEGACY_PROPERTIES =
+  public static final Map<String, Set<String>> LEGACY_PROPERTIES =
       Map.of(
           "camunda.data.secondary-storage.elasticsearch.url",
           Set.of(
@@ -35,40 +34,47 @@ public class UnifiedConfigurationHelper {
 
   private static final String LEGACY_PROPERTIES_DIFFERENT_VALUES_ERROR =
       "Invalid configuration. The legacy configuration properties must have the same value. \n"
-          + "Legacy properties: {}\n"
-          + "Values: {}";
+          + "Legacy properties: %s\n"
+          + "Values: %s";
 
   private static final String LEGACY_MODERN_PROPERTIES_DIFFERENT_VALUES_ERROR =
       "Invalid configuration. "
-          + "The following legacy properties must be removed in favor of '{}':\n"
-          + "Legacy properties: {}";
+          + "The following legacy properties must be removed in favor of '%s':\n"
+          + "Legacy properties: %s";
 
   private static final String LEGACY_MODERN_PROPERTIES_DIFFERENT_VALUES_WARNING =
       "Invalid configuration. "
-          + "The following legacy properties should be removed in favor of '{}':\n"
-          + "Legacy properties: {}";
+          + "The following legacy properties should be removed in favor of '%s':\n"
+          + "Legacy properties: %s";
 
   private static final String LEGACY_PROPERTIES_NOT_ALLOWED_ERROR =
       "Invalid configuration. "
-          + "The following legacy properties are no longer supported and must be removed: \n"
-          + "Legacy properties: {}";
+          + "The following legacy properties are no longer supported and must be removed:\n"
+          + "Legacy properties: %s";
 
-  private static final String WRONG_INPUT_ERROR =
+  public static final String WRONG_INPUT_ERROR =
       "onlyIfValuesMatch cannot be true without legacyConfigAllowed.";
 
   private static final String WRONG_MODERN_PROPERTY_ERROR =
-      "Property {} does not need legacy configuration validation.";
+      "Property %s does not need legacy configuration validation.";
 
-  private static Environment environment;
-  private static UnifiedConfiguration unifiedConfiguration;
+  private Environment environment;
+  private Map<String, Set<String>> legacyProperties;
+  private static UnifiedConfigurationHelper fallbackInstance;
 
-  public UnifiedConfigurationHelper(
-      @Autowired Environment environment, @Autowired UnifiedConfiguration unifiedConfiguration) {
-    UnifiedConfigurationHelper.environment = environment;
-    UnifiedConfigurationHelper.unifiedConfiguration = unifiedConfiguration;
+  private final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
+
+  public UnifiedConfigurationHelper(@Autowired Environment environment) {
+    fallbackInstance = this;
+    fallbackInstance.environment = environment;
+    fallbackInstance.legacyProperties = LEGACY_PROPERTIES;
   }
 
-  public static <T> T validateLegacyConfiguration(
+  public static UnifiedConfigurationHelper getInstance() {
+    return fallbackInstance;
+  }
+
+  public <T> T validateLegacyConfiguration(
       final String newProperty,
       final T newValue,
       final Class<T> expectedType,
@@ -79,16 +85,16 @@ public class UnifiedConfigurationHelper {
       throw new IllegalArgumentException(WRONG_INPUT_ERROR);
     }
 
-    Set<String> legacyProperties = LEGACY_PROPERTIES.get(newProperty);
+    final Set<String> legacyProperties = getLegacyProperties(newProperty);
     if (legacyProperties == null) {
       throw new IllegalArgumentException(String.format(WRONG_MODERN_PROPERTY_ERROR, newProperty));
     }
 
-    Set<String> legacyValues = new HashSet<>();
+    Set<T> legacyValues = new HashSet<>();
     for (String legacyProperty : legacyProperties) {
-      final String value = environment.getProperty(legacyProperty);
+      final String value = getEnvironment().getProperty(legacyProperty);
       if (isSet(value)) {
-        legacyValues.add(value);
+        legacyValues.add(parseLegacyValue(value, expectedType));
       }
     }
 
@@ -109,12 +115,11 @@ public class UnifiedConfigurationHelper {
           String.format(
               LEGACY_PROPERTIES_DIFFERENT_VALUES_ERROR,
               String.join(", ", legacyProperties),
-              String.join(", ", legacyValues));
+              String.join(", ", legacyValues.stream().map(Object::toString).toList()));
       throw new RuntimeException(errorMessage);
     }
 
-    String strLegacyValue = legacyValues.iterator().next();
-    T legacyValue = parseLegacyValue(strLegacyValue, expectedType);
+    T legacyValue = legacyValues.iterator().next();
     if (onlyIfValuesMatch && !Objects.equals(legacyValue, newValue)) {
       String errorMessage =
           String.format(
@@ -132,7 +137,7 @@ public class UnifiedConfigurationHelper {
     return newValue;
   }
 
-  private static void logDeprecationMessage(
+  private void logDeprecationMessage(
       final Set<String> legacyProperties, final String newProperty) {
     // TODO-?: Maybe we could print this deprecation message only once, instead of printing it every
     //  time the property is accessed through its .get().
@@ -146,7 +151,7 @@ public class UnifiedConfigurationHelper {
   }
 
   @SuppressWarnings("unchecked")
-  private static <T> T parseLegacyValue(final String strValue, final Class<T> type) {
+  private <T> T parseLegacyValue(final String strValue, final Class<T> type) {
     if (strValue == null) return null;
 
     return switch(type.getSimpleName()) {
@@ -158,13 +163,25 @@ public class UnifiedConfigurationHelper {
     };
   }
 
-  private static boolean isUnset(Object value) {
+  private boolean isUnset(Object value) {
     if (value == null) return true;
     if (value instanceof String) return ((String) value).trim().isEmpty();
     return false;
   }
 
-  private static boolean isSet(Object value) {
+  private boolean isSet(Object value) {
     return !isUnset(value);
+  }
+
+  public Set<String> getLegacyProperties(String newProperty) {
+    return legacyProperties.get(newProperty);
+  }
+
+  public void setCustomLegacyProperties(final Map<String, Set<String>> legacyProperties) {
+    this.legacyProperties = legacyProperties;
+  }
+
+  public Environment getEnvironment() {
+    return environment;
   }
 }
