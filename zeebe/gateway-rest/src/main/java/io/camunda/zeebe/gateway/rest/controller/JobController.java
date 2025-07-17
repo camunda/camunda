@@ -61,7 +61,8 @@ public class JobController {
   @CamundaPostMapping(path = "/activation")
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @RequestBody final JobActivationRequest activationRequest) {
-    return RequestMapper.toJobsActivationRequest(activationRequest, multiTenancyCfg.isEnabled())
+    return RequestMapper.toJobsActivationRequest(
+            activationRequest, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateJobs);
   }
 

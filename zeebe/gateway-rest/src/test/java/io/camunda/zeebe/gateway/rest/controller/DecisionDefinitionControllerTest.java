@@ -69,7 +69,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   @Test
   void shouldEvaluateDecisionWithDecisionKey() {
     // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
@@ -105,7 +105,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   @Test
   void shouldEvaluateDecisionWithMultitenancyDisabled() {
     // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
         .thenReturn((buildResponse(TenantOwned.DEFAULT_TENANT_IDENTIFIER)));
 
@@ -137,7 +137,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   @Test
   void shouldEvaluateDecisionWithDecisionId() {
     // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))

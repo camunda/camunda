@@ -50,7 +50,7 @@ public class DeleteTenantAuthorizationTest {
                 cfg.getInitialization()
                     .getDefaultRoles()
                     .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
-                cfg.getMultiTenancy().setEnabled(true);
+                cfg.getMultiTenancy().setChecksEnabled(true);
               });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();

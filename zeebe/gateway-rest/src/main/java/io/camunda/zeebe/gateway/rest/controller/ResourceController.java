@@ -52,7 +52,8 @@ public class ResourceController {
       @RequestPart("resources") final List<MultipartFile> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId) {
 
-    return RequestMapper.toDeployResourceRequest(resources, tenantId, multiTenancyCfg.isEnabled())
+    return RequestMapper.toDeployResourceRequest(
+            resources, tenantId, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deployResources);
   }
 

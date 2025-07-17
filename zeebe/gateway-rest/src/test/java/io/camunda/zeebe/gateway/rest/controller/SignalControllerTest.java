@@ -60,7 +60,7 @@ public class SignalControllerTest extends RestControllerTest {
     // given
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(signalServices.broadcastSignal(anyString(), anyMap(), anyString()))
         .thenReturn(buildSignalResponse("tenantId"));
 
@@ -94,7 +94,7 @@ public class SignalControllerTest extends RestControllerTest {
   @Test
   void shouldBroadcastSignalWithMultitenancyDisabled() {
     // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
     when(signalServices.broadcastSignal(anyString(), anyMap(), anyString()))
         .thenReturn(buildSignalResponse(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
@@ -129,7 +129,7 @@ public class SignalControllerTest extends RestControllerTest {
     // given
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     when(signalServices.broadcastSignal(anyString(), anyMap(), anyString()))
         .thenReturn(buildSignalResponse("tenantId"));
 
