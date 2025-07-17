@@ -63,6 +63,36 @@ runs:
 
         echo "::warning::Found flaky tests!\n ${flakyTests}"
       fi
+  - name: Comment flaky tests on PR
+    if: steps.find-flakes.outputs.FLAKY_TESTS != ''
+    uses: actions/github-script@v7
+    with:
+      github-token: ${{ github.token }}
+      script: |
+        const flakyTests = `${{ steps.find-flakes.outputs.FLAKY_TESTS }}`;
+        const commitId = context.payload.pull_request.head.sha;
+        const pullNumber = context.issue.number;
+        const owner = context.repo.owner;
+        const repo = context.repo.repo;
+
+        // Debugging output
+        console.log("Flaky Tests:\n", flakyTests);
+        console.log("PR number:", pullNumber);
+        console.log("Repo:", owner + "/" + repo);
+        console.log("Commit SHA:", commitId);
+
+        const body = `⚠️ Found flaky tests:\n\n\`\`\`\n${flakyTests}\n\`\`\``;
+
+        await github.rest.pulls.createReviewComment({
+          owner,
+          repo,
+          pull_number: pullNumber,
+          body,
+          commit_id: commitId,
+          path: "io/camunda/zeebe/engine/metrics/JobProcessingMetricsTest.java",
+          line: 1,
+        });
+
 
   - name: Unfinished tests
     if: failure() || cancelled()
