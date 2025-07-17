@@ -479,6 +479,7 @@ public final class CompleteJobTest extends ClientTest {
                 JobResult.newBuilder()
                     .setType(USER_TASK_DISCRIMINATOR)
                     .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .clearAssignee()
