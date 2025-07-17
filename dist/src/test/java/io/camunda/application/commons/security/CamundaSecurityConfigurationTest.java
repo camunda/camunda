@@ -24,7 +24,7 @@ public class CamundaSecurityConfigurationTest {
             .sources(CommonsModuleConfiguration.class)
             .build();
 
-    final var mtProperty = "camunda.security.multi-tenancy.enabled";
+    final var mtProperty = "camunda.security.multiTenancy.checksEnabled";
     final var apiProperty = "camunda.security.authentication.unprotected-api";
     application.setDefaultProperties(
         Map.of(
