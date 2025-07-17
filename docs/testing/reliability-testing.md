@@ -6,7 +6,7 @@ The aim of such testing practices is to ensure that [2]
 
 * Issues are identified before customers see them (proactively finding bugs)
 * The system can run fault-free / reliably over a longer / specific period of time for its intended purpose and specific environment
-    * to ensure that the system will be able to meet the needs of its users over the long term
+  * to ensure that the system will be able to meet the needs of its users over the long term
 * Failures are handled gracefully, validating reliability even after error cases
 * Performance stays within its bounds, even over long periods of time.
 
@@ -32,10 +32,10 @@ With our load test, we pursue the following goals
 
 * Build up confidence in the system's reliability
 * Discover failures when running over longer periods of time
-    * Memory leaks
-    * Performance degradation
-    * Business logic errors
-    * Distributed system failures
+  * Memory leaks
+  * Performance degradation
+  * Business logic errors
+  * Distributed system failures
 * Discover configuration/set up issues in different environments, SM/SaaS
 
 ### Setup
@@ -43,7 +43,6 @@ With our load test, we pursue the following goals
 ![setup](assets/setup.png)
 
 The setup for all of our load tests is equal for better comparability. We use a custom helm chart ([zeebe-benchmark](https://github.com/camunda/zeebe-benchmark-helm)) based on our official [Camunda Platform Helm chart](https://github.com/camunda/camunda-platform-helm).
-
 
 We always ran load tests with a three-node cluster, configured with three partitions and a replication factor of three. Depending on the version of Camunda/Zeebe (pre 8.8), we might only deploy Zeebe Brokers and the Zeebe (standalone) gateway (with two replicas) or the single Camunda application (with an embedded gateway). To validate that our data flow pipeline is working, we are running an Elasticsearch cluster with three nodes for any Camunda test cluster.
 
@@ -58,6 +57,7 @@ All of this is deployed in a Zeebe-maintained (as of now; 16 Jun 2025) Google Ku
 We run our load tests in different variants to cover different goals.
 
 #### Normal (artificial) load
+
 A load test where we run some artificial load, ensuring that the system behaves reliably.
 
 ![normal](assets/normal.png)
