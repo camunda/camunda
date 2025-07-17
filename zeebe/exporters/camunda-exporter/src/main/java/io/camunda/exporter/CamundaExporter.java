@@ -158,7 +158,6 @@ public class CamundaExporter implements Exporter {
     if (writer != null) {
       try {
         flush();
-        updateLastExportedPosition(lastPosition);
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
@@ -227,16 +226,7 @@ public class CamundaExporter implements Exporter {
     lastPosition = record.getPosition();
 
     if (shouldFlush()) {
-      try (final var ignored = metrics.measureFlushDuration()) {
-        flush();
-        metrics.stopFlushLatencyMeasurement();
-      } catch (final ExporterException e) {
-        metrics.recordFailedFlush();
-        throw e;
-      }
-      // Update the record counters only after the flush was successful. If the synchronous flush
-      // fails then the exporter will be invoked with the same record again.
-      updateLastExportedPosition(lastPosition);
+      flush();
     }
   }
 
@@ -294,7 +284,7 @@ public class CamundaExporter implements Exporter {
 
     if (writer.getBatchSize() == configuration.getBulk().getSize()) {
       LOG.info(
-          """
+"""
 Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
 processing records from previous version
 """,
@@ -392,13 +382,23 @@ processing records from previous version
   }
 
   private void flush() {
-    try {
+    if (writer.getBatchSize() == 0) {
+      return;
+    }
+
+    try (final var ignored = metrics.measureFlushDuration()) {
       metrics.recordBulkSize(writer.getBatchSize());
       final BatchRequest batchRequest = clientAdapter.createBatchRequest();
       writer.flush(batchRequest);
+      metrics.stopFlushLatencyMeasurement();
     } catch (final PersistenceException ex) {
+      metrics.recordFailedFlush();
       throw new ExporterException(ex.getMessage(), ex);
     }
+
+    // Update the record counters only after the flush was successful. If the synchronous flush
+    // fails then the exporter will be invoked with the same record again.
+    updateLastExportedPosition(lastPosition);
   }
 
   private void updateLastExportedPosition(final long lastPosition) {
