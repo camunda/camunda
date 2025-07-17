@@ -10,11 +10,13 @@ package io.camunda.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -22,6 +24,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
+import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
@@ -34,7 +37,6 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -82,21 +84,7 @@ public class TenantServiceTest {
   @Test
   public void shouldReturnSingleTenant() {
     // given
-    final var result = new SearchQueryResult<>(1, false, List.of(tenantEntity), null, null);
-    when(client.searchTenants(any())).thenReturn(result);
-
-    // when
-    final var searchQueryResult = services.getById("tenant-id");
-
-    // then
-    assertThat(searchQueryResult).isEqualTo(tenantEntity);
-  }
-
-  @Test
-  public void shouldReturnSingleVariableForGet() {
-    // given
-    final var result = new SearchQueryResult<>(1, false, List.of(tenantEntity), null, null);
-    when(client.searchTenants(any())).thenReturn(result);
+    when(client.getTenant(eq("tenant-id"))).thenReturn(tenantEntity);
 
     // when
     final var searchQueryResult = services.getById("tenant-id");
@@ -222,18 +210,11 @@ public class TenantServiceTest {
 
   @Test
   public void shouldThrowForbiddenIfNotAuthorized() {
-    final CamundaAuthentication auth =
-        CamundaAuthentication.of(builder -> builder.user("unauthorizedUser"));
-    final var contextProvider = mock(SecurityContextProvider.class);
-    when(contextProvider.isAuthorized(any(), any(), any())).thenReturn(false);
-
-    final var service = new TenantServices(stubbedBrokerClient, contextProvider, client, auth);
-    when(client.withSecurityContext(any())).thenReturn(client);
-    when(client.searchTenants(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(tenantEntity), null, null));
+    when(client.getTenant(eq("tenant-id")))
+        .thenThrow(new ResourceAccessDeniedException(Authorizations.TENANT_READER_AUTHORIZATION));
 
     assertThat(
-            assertThrowsExactly(ServiceException.class, () -> service.getById("tenant-id"))
+            assertThrowsExactly(ServiceException.class, () -> services.getById("tenant-id"))
                 .getStatus())
         .isEqualTo(Status.FORBIDDEN);
   }

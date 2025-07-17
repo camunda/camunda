@@ -230,6 +230,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public TenantEntity getTenant(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
     return SearchQueryResult.empty();
   }

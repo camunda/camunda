@@ -272,6 +272,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public TenantEntity getTenant(final String id) {
+    return doGetWithReader(readers.tenantReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Tenant", id));
+  }
+
+  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
     return doSearchWithReader(readers.tenantReader(), query);
   }

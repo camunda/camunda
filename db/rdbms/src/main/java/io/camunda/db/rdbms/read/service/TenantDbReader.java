@@ -31,17 +31,9 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
     this.tenantMapper = tenantMapper;
   }
 
-  public Optional<TenantEntity> findOne(final String tenantId) {
-    final var result = search(TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId))));
-    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
-  }
-
-  public SearchQueryResult<TenantEntity> search(final TenantQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
-  }
-
-  private TenantEntity map(final TenantDbModel model) {
-    return new TenantEntity(model.tenantKey(), model.tenantId(), model.name(), model.description());
+  @Override
+  public TenantEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(id).orElse(null);
   }
 
   @Override
@@ -57,5 +49,18 @@ public class TenantDbReader extends AbstractEntityReader<TenantEntity> implement
     final var hits = tenantMapper.search(dbQuery).stream().map(this::map).toList();
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<TenantEntity> findOne(final String tenantId) {
+    final var result = search(TenantQuery.of(b -> b.filter(f -> f.tenantId(tenantId))));
+    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
+  }
+
+  public SearchQueryResult<TenantEntity> search(final TenantQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
+  }
+
+  private TenantEntity map(final TenantDbModel model) {
+    return new TenantEntity(model.tenantKey(), model.tenantId(), model.name(), model.description());
   }
 }

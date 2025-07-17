@@ -228,6 +228,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public TenantEntity getTenant(final String id) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
     throw new NoSecondaryStorageException();
   }
