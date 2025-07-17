@@ -212,7 +212,7 @@ public class GroupControllerTest {
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private UserServices userServices;
     @MockitoBean private RoleServices roleServices;
-    @MockitoBean private MappingRuleServices mappingServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
     @BeforeEach

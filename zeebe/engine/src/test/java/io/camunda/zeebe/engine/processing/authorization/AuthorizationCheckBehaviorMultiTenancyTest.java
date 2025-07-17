@@ -86,7 +86,8 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
-    mappingRuleCreatedApplier = new MappingRuleCreatedApplier(processingState.getMappingState());
+    mappingRuleCreatedApplier =
+        new MappingRuleCreatedApplier(processingState.getMappingRuleState());
     authorizationCreatedApplier =
         new AuthorizationCreatedApplier(processingState.getAuthorizationState());
     groupCreatedApplier = new GroupCreatedApplier(processingState.getGroupState());

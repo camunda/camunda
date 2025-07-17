@@ -39,7 +39,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-public class MappingServicesTest {
+public class MappingRuleServicesTest {
 
   ArgumentCaptor<BrokerMappingRuleDeleteRequest> mappingDeleteRequestArgumentCaptor;
   ArgumentCaptor<BrokerMappingRuleUpdateRequest> mappingUpdateRequestArgumentCaptor;
@@ -69,20 +69,20 @@ public class MappingServicesTest {
   @Test
   public void shouldCreateMappingRule() {
     // given
-    final var mappingDTO =
+    final var mappingRuleDTO =
         new MappingRuleDTO("newClaimName", "newClaimValue", "mappingRuleName", "mappingRuleId");
 
     // when
-    services.createMappingRule(mappingDTO);
+    services.createMappingRule(mappingRuleDTO);
 
     // then
     final BrokerMappingRuleCreateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(MappingRuleIntent.CREATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.MAPPING_RULE);
     final MappingRuleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getClaimName()).isEqualTo(mappingDTO.claimName());
-    assertThat(brokerRequestValue.getClaimValue()).isEqualTo(mappingDTO.claimValue());
-    assertThat(brokerRequestValue.getName()).isEqualTo(mappingDTO.name());
+    assertThat(brokerRequestValue.getClaimName()).isEqualTo(mappingRuleDTO.claimName());
+    assertThat(brokerRequestValue.getClaimValue()).isEqualTo(mappingRuleDTO.claimValue());
+    assertThat(brokerRequestValue.getName()).isEqualTo(mappingRuleDTO.name());
   }
 
   @Test
@@ -162,7 +162,7 @@ public class MappingServicesTest {
     when(mockBrokerClient.sendRequest(any()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mappingRecord)));
 
-    final var mappingDTO =
+    final var mappingRuleDTO =
         new MappingRuleDTO(
             "newClaimName",
             "newClaimValue",
@@ -170,15 +170,16 @@ public class MappingServicesTest {
             mappingRecord.getMappingRuleId());
 
     //  when
-    testMappingRuleServices.updateMappingRule(mappingDTO);
+    testMappingRuleServices.updateMappingRule(mappingRuleDTO);
 
     // then
     verify(mockBrokerClient).sendRequest(mappingUpdateRequestArgumentCaptor.capture());
     final var request = mappingUpdateRequestArgumentCaptor.getValue();
-    assertThat(request.getRequestWriter().getMappingRuleId()).isEqualTo(mappingDTO.mappingRuleId());
-    assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingDTO.claimName());
-    assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingDTO.claimValue());
-    assertThat(request.getRequestWriter().getName()).isEqualTo(mappingDTO.name());
+    assertThat(request.getRequestWriter().getMappingRuleId())
+        .isEqualTo(mappingRuleDTO.mappingRuleId());
+    assertThat(request.getRequestWriter().getClaimName()).isEqualTo(mappingRuleDTO.claimName());
+    assertThat(request.getRequestWriter().getClaimValue()).isEqualTo(mappingRuleDTO.claimValue());
+    assertThat(request.getRequestWriter().getName()).isEqualTo(mappingRuleDTO.name());
   }
 
   @Test

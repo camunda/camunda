@@ -49,7 +49,7 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     groupState = processingState.getGroupState();
-    mappingRuleState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;

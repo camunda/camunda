@@ -607,9 +607,9 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerMappingAppliers(final MutableProcessingState state) {
-    register(MappingRuleIntent.CREATED, new MappingRuleCreatedApplier(state.getMappingState()));
-    register(MappingRuleIntent.DELETED, new MappingRuleDeletedApplier(state.getMappingState()));
-    register(MappingRuleIntent.UPDATED, new MappingRuleUpdatedApplier(state.getMappingState()));
+    register(MappingRuleIntent.CREATED, new MappingRuleCreatedApplier(state.getMappingRuleState()));
+    register(MappingRuleIntent.DELETED, new MappingRuleDeletedApplier(state.getMappingRuleState()));
+    register(MappingRuleIntent.UPDATED, new MappingRuleUpdatedApplier(state.getMappingRuleState()));
   }
 
   private void registerBatchOperationAppliers(final MutableProcessingState state) {

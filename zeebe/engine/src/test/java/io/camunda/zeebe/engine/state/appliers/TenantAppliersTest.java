@@ -49,7 +49,7 @@ public class TenantAppliersTest {
 
   @BeforeEach
   public void setup() {
-    mappingState = processingState.getMappingState();
+    mappingState = processingState.getMappingRuleState();
     tenantState = processingState.getTenantState();
     userState = processingState.getUserState();
     groupState = processingState.getGroupState();

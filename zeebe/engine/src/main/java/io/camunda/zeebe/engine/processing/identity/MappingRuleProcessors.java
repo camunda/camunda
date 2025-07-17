@@ -27,7 +27,7 @@ public class MappingRuleProcessors {
         ValueType.MAPPING_RULE,
         MappingRuleIntent.CREATE,
         new MappingRuleCreateProcessor(
-            processingState.getMappingState(),
+            processingState.getMappingRuleState(),
             authCheckBehavior,
             keyGenerator,
             writers,
@@ -45,7 +45,7 @@ public class MappingRuleProcessors {
         ValueType.MAPPING_RULE,
         MappingRuleIntent.UPDATE,
         new MappingRuleUpdateProcessor(
-            processingState.getMappingState(),
+            processingState.getMappingRuleState(),
             authCheckBehavior,
             keyGenerator,
             writers,

@@ -60,7 +60,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
-    mappingRuleState = state.getMappingState();
+    mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();
     roleState = state.getRoleState();
     membershipState = state.getMembershipState();

@@ -81,7 +81,7 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   TenantState getTenantState();
 
-  MappingRuleState getMappingState();
+  MappingRuleState getMappingRuleState();
 
   BatchOperationState getBatchOperationState();
 

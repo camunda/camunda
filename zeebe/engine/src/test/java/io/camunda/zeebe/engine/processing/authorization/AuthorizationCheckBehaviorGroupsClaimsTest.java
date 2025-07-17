@@ -74,7 +74,8 @@ final class AuthorizationCheckBehaviorGroupsClaimsTest {
     authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
-    mappingRuleCreatedApplier = new MappingRuleCreatedApplier(processingState.getMappingState());
+    mappingRuleCreatedApplier =
+        new MappingRuleCreatedApplier(processingState.getMappingRuleState());
     authorizationCreatedApplier =
         new AuthorizationCreatedApplier(processingState.getAuthorizationState());
     roleCreatedApplier = new RoleCreatedApplier(processingState.getRoleState());

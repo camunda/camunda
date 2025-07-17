@@ -54,7 +54,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
-    mappingRuleState = state.getMappingState();
+    mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();
     membershipState = state.getMembershipState();
     this.authCheckBehavior = authCheckBehavior;
