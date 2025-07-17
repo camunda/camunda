@@ -52,6 +52,13 @@ jobs:
       job_to_run: 'snapshot-tag'
 
   build:
+    # Execute build even if utils-get-snapshot-docker-tag-and-concurrency-group is skipped
+    if: >
+      always() && 
+      contains(
+        fromJson('["success", "skipped"]'),
+        needs.utils-get-snapshot-docker-tag-and-concurrency-group.result
+      )
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -132,7 +139,9 @@ jobs:
       #########################################################################
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
-        if: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
+        if: >
+          env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' &&
+          needs.utils-get-snapshot-docker-tag-and-concurrency-group.result != 'skipped'
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/operate
