@@ -14,6 +14,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class UserDocumentReader extends DocumentBasedReader implements UserReader {
 
@@ -23,13 +24,23 @@ public class UserDocumentReader extends DocumentBasedReader implements UserReade
 
   public UserDocumentReader(
       final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptor indexDescriptor,
       final RoleMemberDocumentReader roleMemberReader,
       final TenantMemberDocumentReader tenantMemberReader,
       final GroupMemberDocumentReader groupMemberReader) {
-    super(executor);
+    super(executor, indexDescriptor);
     this.roleMemberReader = roleMemberReader;
     this.tenantMemberReader = tenantMemberReader;
     this.groupMemberReader = groupMemberReader;
+  }
+
+  @Override
+  public UserEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getById(
+            id,
+            io.camunda.webapps.schema.entities.usermanagement.UserEntity.class,
+            indexDescriptor.getFullQualifiedName());
   }
 
   @Override

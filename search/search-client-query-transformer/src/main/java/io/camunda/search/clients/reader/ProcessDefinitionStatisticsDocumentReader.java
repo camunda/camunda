@@ -13,6 +13,7 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
 public class ProcessDefinitionStatisticsDocumentReader extends DocumentBasedReader
@@ -21,8 +22,10 @@ public class ProcessDefinitionStatisticsDocumentReader extends DocumentBasedRead
   private final IncidentDocumentReader incidentReader;
 
   public ProcessDefinitionStatisticsDocumentReader(
-      final SearchClientBasedQueryExecutor executor, final IncidentDocumentReader incidentReader) {
-    super(executor);
+      final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptor indexDescriptor,
+      final IncidentDocumentReader incidentReader) {
+    super(executor, indexDescriptor);
     this.incidentReader = incidentReader;
   }
 

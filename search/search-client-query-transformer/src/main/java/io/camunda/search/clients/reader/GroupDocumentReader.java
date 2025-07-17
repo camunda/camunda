@@ -14,6 +14,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class GroupDocumentReader extends DocumentBasedReader implements GroupReader {
 
@@ -22,11 +23,20 @@ public class GroupDocumentReader extends DocumentBasedReader implements GroupRea
 
   public GroupDocumentReader(
       final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptor indexDescriptor,
       final TenantMemberDocumentReader tenantMemberReader,
       final RoleMemberDocumentReader roleMemberReader) {
-    super(executor);
+    super(executor, indexDescriptor);
     this.tenantMemberReader = tenantMemberReader;
     this.roleMemberReader = roleMemberReader;
+  }
+
+  @Override
+  public GroupEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            GroupQuery.of(b -> b.filter(f -> f.groupIds(id)).singleResult()),
+            io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
   }
 
   @Override

@@ -12,11 +12,21 @@ import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class TenantDocumentReader extends DocumentBasedReader implements TenantReader {
 
-  public TenantDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public TenantDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public TenantEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            TenantQuery.of(b -> b.filter(f -> f.tenantId(id)).singleResult()),
+            io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class);
   }
 
   @Override

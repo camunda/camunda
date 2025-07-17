@@ -12,12 +12,24 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class FlowNodeInstanceDocumentReader extends DocumentBasedReader
     implements FlowNodeInstanceReader {
 
-  public FlowNodeInstanceDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public FlowNodeInstanceDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public FlowNodeInstanceEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            FlowNodeInstanceQuery.of(
+                b -> b.filter(f -> f.flowNodeInstanceKeys(key)).singleResult()),
+            io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity.class);
   }
 
   @Override

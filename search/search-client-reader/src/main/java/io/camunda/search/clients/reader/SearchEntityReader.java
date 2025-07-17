@@ -14,5 +14,13 @@ import io.camunda.security.reader.ResourceAccessChecks;
 public interface SearchEntityReader<T, Q extends TypedSearchQuery<?, ?>>
     extends SearchClientReader {
 
+  default T getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    throw new UnsupportedOperationException("SearchClientReader#getById() not supported");
+  }
+
+  default T getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    throw new UnsupportedOperationException("SearchClientReader#getByKey() not supported");
+  }
+
   SearchQueryResult<T> search(final Q query, final ResourceAccessChecks resourceAccessChecks);
 }

@@ -12,13 +12,15 @@ import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
 public class ProcessInstanceStatisticsDocumentReader extends DocumentBasedReader
     implements ProcessInstanceStatisticsReader {
 
-  public ProcessInstanceStatisticsDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public ProcessInstanceStatisticsDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override

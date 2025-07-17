@@ -65,4 +65,10 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
+
+  @Override
+  public DecisionRequirementsEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks, final boolean includeXml) {
+    return findOne(key).orElse(null);
+  }
 }
