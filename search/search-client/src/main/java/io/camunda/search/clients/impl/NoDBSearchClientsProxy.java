@@ -143,6 +143,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public GroupEntity getGroup(final String id) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
     throw new NoSecondaryStorageException();
   }

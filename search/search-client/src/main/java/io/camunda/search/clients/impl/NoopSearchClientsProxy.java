@@ -145,6 +145,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public GroupEntity getGroup(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
     return SearchQueryResult.empty();
   }

@@ -7,12 +7,14 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.GROUP_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -59,7 +61,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             groupSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.group().read())))
+                        authentication, GROUP_READ_AUTHORIZATION))
                 .searchGroups(query));
   }
 
@@ -78,9 +80,13 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public GroupEntity getGroup(final String groupId) {
-    return search(GroupQuery.of(b -> b.filter(f -> f.groupIds(groupId)).singleResult()))
-        .items()
-        .getFirst();
+    return executeSearchRequest(
+        () ->
+            groupSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, withAuthorization(GROUP_READ_AUTHORIZATION, groupId)))
+                .getGroup(groupId));
   }
 
   public GroupEntity getGroupByName(final String name) {
@@ -134,7 +140,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             groupSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.group().read())))
+                        authentication, GROUP_READ_AUTHORIZATION))
                 .searchGroupMembers(query));
   }
 

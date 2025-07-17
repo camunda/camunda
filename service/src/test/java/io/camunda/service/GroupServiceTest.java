@@ -106,9 +106,7 @@ public class GroupServiceTest {
   public void shouldReturnSingleGroupForGet() {
     // given
     final var entity = mock(GroupEntity.class);
-    final var result =
-        new SearchQueryResult.Builder<GroupEntity>().total(1).items(List.of(entity)).build();
-    when(client.searchGroups(any())).thenReturn(result);
+    when(client.getGroup(any())).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getGroup("groupId");

@@ -258,6 +258,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public GroupEntity getGroup(final String id) {
+    return doGetWithReader(readers.groupReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Group", id));
+  }
+
+  @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
     return doSearchWithReader(readers.groupReader(), query);
   }
