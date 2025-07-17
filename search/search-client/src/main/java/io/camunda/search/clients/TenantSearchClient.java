@@ -14,6 +14,9 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.SecurityContext;
 
 public interface TenantSearchClient {
+
+  TenantEntity getTenant(final String id);
+
   SearchQueryResult<TenantEntity> searchTenants(TenantQuery filter);
 
   SearchQueryResult<TenantMemberEntity> searchTenantMembers(TenantQuery filter);
