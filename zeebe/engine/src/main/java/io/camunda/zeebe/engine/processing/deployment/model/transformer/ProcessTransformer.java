@@ -50,6 +50,6 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
         .ifPresent(
             listeners ->
                 executionListenerTransformer.transform(
-                    flowNode, listeners.getExecutionListeners(), expressionLanguage));
+                    element, flowNode, listeners.getExecutionListeners(), expressionLanguage));
   }
 }
