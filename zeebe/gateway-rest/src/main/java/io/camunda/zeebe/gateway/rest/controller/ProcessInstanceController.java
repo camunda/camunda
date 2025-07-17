@@ -47,7 +47,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/process-instances")
 public class ProcessInstanceController {
 
@@ -95,6 +94,7 @@ public class ProcessInstanceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::modifyProcessInstance);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ProcessInstanceSearchQueryResult> searchProcessInstances(
       @RequestBody(required = false) final ProcessInstanceSearchQuery query) {
@@ -102,6 +102,7 @@ public class ProcessInstanceController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}")
   public ResponseEntity<Object> getByKey(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
@@ -118,6 +119,7 @@ public class ProcessInstanceController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}/call-hierarchy")
   public ResponseEntity<Object> getCallHierarchy(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
@@ -134,6 +136,7 @@ public class ProcessInstanceController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}/statistics/element-instances")
   public ResponseEntity<Object> elementStatistics(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
@@ -149,6 +152,7 @@ public class ProcessInstanceController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{processInstanceKey}/sequence-flows")
   public ResponseEntity<Object> sequenceFlows(
       @PathVariable("processInstanceKey") final Long processInstanceKey) {
@@ -164,6 +168,7 @@ public class ProcessInstanceController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/cancellation")
   public CompletableFuture<ResponseEntity<Object>> cancelProcessInstancesBatchOperation(
       @RequestBody(required = false) final ProcessInstanceFilter filter) {
@@ -176,6 +181,7 @@ public class ProcessInstanceController {
             this::batchOperationCancellation);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/incident-resolution")
   public CompletableFuture<ResponseEntity<Object>> resolveIncidentsBatchOperation(
       @RequestBody(required = false) final ProcessInstanceFilter filter) {
@@ -188,6 +194,7 @@ public class ProcessInstanceController {
             this::batchOperationResolveIncidents);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/migration")
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstancesBatchOperation(
       @RequestBody final ProcessInstanceMigrationBatchOperationRequest request) {
@@ -195,6 +202,7 @@ public class ProcessInstanceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/modification")
   public CompletableFuture<ResponseEntity<Object>> modifyProcessInstancesBatchOperation(
       @RequestBody final ProcessInstanceModificationBatchOperationRequest request) {
@@ -202,6 +210,7 @@ public class ProcessInstanceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{processInstanceKey}/incidents/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
       @PathVariable("processInstanceKey") final long processInstanceKey,

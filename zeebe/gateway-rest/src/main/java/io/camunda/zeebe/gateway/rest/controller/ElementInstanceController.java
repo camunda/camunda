@@ -34,7 +34,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/element-instances")
 public class ElementInstanceController {
 
@@ -67,6 +66,7 @@ public class ElementInstanceController {
                 .setVariables(variablesRequest));
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ElementInstanceSearchQueryResult> searchElementInstances(
       @RequestBody(required = false) final ElementInstanceSearchQuery query) {
@@ -74,6 +74,7 @@ public class ElementInstanceController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{elementInstanceKey}")
   public ResponseEntity<ElementInstanceResult> getByKey(
       @PathVariable("elementInstanceKey") final Long elementInstanceKey) {

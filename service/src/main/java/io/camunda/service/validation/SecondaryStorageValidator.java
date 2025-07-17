@@ -13,21 +13,21 @@ import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-/**
- * Validates that secondary storage is available for operations that require it.
- */
+/** Validates that secondary storage is available for operations that require it. */
 @Component
 public class SecondaryStorageValidator {
 
   private final String databaseType;
 
-  public SecondaryStorageValidator(@Value("${camunda.database.type:" + DatabaseConfig.ELASTICSEARCH + "}") final String databaseType) {
+  public SecondaryStorageValidator(
+      @Value("${camunda.database.type:" + DatabaseConfig.ELASTICSEARCH + "}")
+          final String databaseType) {
     this.databaseType = databaseType;
   }
 
   /**
    * Validates that secondary storage is enabled for the current deployment.
-   * 
+   *
    * @throws SecondaryStorageUnavailableException if secondary storage is not available
    */
   public void validateSecondaryStorageEnabled() {

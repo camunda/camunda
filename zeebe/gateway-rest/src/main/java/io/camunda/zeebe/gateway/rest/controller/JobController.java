@@ -40,7 +40,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/jobs")
 public class JobController {
 
@@ -95,6 +94,7 @@ public class JobController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateJob);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<JobSearchQueryResult> searchJobs(
       @RequestBody(required = false) final JobSearchQuery request) {

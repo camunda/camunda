@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/message-subscriptions")
 public class MessageSubscriptionController {
 
@@ -38,6 +37,7 @@ public class MessageSubscriptionController {
     this.messageSubscriptionServices = messageSubscriptionServices;
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<MessageSubscriptionSearchQueryResult> searchMessageSubscriptions(
       @RequestBody(required = false) final MessageSubscriptionSearchQuery searchRequest) {

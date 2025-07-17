@@ -19,7 +19,6 @@ import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -32,7 +31,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2")
 public class ResourceController {
 

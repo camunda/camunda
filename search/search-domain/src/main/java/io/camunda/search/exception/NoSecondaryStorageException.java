@@ -9,12 +9,12 @@ package io.camunda.search.exception;
 
 public class NoSecondaryStorageException extends CamundaSearchException {
 
+  public static final String NO_SECONDARY_STORAGE_MESSAGE =
+      "This endpoint requires a secondary storage, but none is set. Secondary storage can be configured using the 'camunda.database.type' property.";
   private static final long serialVersionUID = 1L;
 
   public NoSecondaryStorageException() {
-    super(
-        "The search client requires a secondary storage, but none is set",
-        Reason.SECONDARY_STORAGE_NOT_SET);
+    super(NO_SECONDARY_STORAGE_MESSAGE, Reason.SECONDARY_STORAGE_NOT_SET);
   }
 
   public NoSecondaryStorageException(final String message) {
