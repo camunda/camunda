@@ -76,7 +76,7 @@ to make use of [ephemeral containers](https://kubernetes.io/docs/concepts/worklo
 
 To get a shell with a jdk on a node you can use the following command:
 
-> ![Note]
+> [!Note]
 >
 > You need to replace `<broker-0>` with the pod name you want to profile below.
 
