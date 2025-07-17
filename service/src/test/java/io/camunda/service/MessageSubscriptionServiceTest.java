@@ -30,11 +30,9 @@ public class MessageSubscriptionServiceTest {
   public void before() {
     client = mock(MessageSubscriptionSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
-    final CamundaAuthentication authentication = mock(CamundaAuthentication.class);
     services =
         new MessageSubscriptionServices(
-            mock(BrokerClient.class), securityContextProvider, client, authentication);
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test

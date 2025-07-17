@@ -78,10 +78,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-services</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>org.agrona</groupId>

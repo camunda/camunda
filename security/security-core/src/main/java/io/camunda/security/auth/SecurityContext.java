@@ -24,16 +24,8 @@ public record SecurityContext(
     @JsonProperty("authentication") CamundaAuthentication authentication,
     @JsonProperty("authorization") Authorization<?> authorization) {
 
-  public boolean requiresAuthorizationChecks() {
-    return authentication != null && authorization != null;
-  }
-
   public static SecurityContext of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
-  }
-
-  public static SecurityContext withoutAuthentication() {
-    return new Builder().build();
   }
 
   public static class Builder {

@@ -11,43 +11,18 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.SecurityContext.Builder;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.impl.AuthorizationChecker;
 
 public class SecurityContextProvider {
 
-  private final SecurityConfiguration securityConfiguration;
-  private final AuthorizationChecker authorizationChecker;
-
-  public SecurityContextProvider(
-      final SecurityConfiguration securityConfiguration,
-      final AuthorizationChecker authorizationChecker) {
-    this.securityConfiguration = securityConfiguration;
-    this.authorizationChecker = authorizationChecker;
-  }
-
   public SecurityContext provideSecurityContext(
       final CamundaAuthentication authentication, final Authorization authorization) {
-    final SecurityContext.Builder securityContextbuilder =
-        new Builder().withAuthentication(authentication);
-    if (securityConfiguration.getAuthorizations().isEnabled()) {
-      securityContextbuilder.withAuthorization(authorization);
-    }
-    return securityContextbuilder.build();
+    return new Builder()
+        .withAuthentication(authentication)
+        .withAuthorization(authorization)
+        .build();
   }
 
   public SecurityContext provideSecurityContext(final CamundaAuthentication authentication) {
     return provideSecurityContext(authentication, null);
-  }
-
-  public boolean isAuthorized(
-      final String resourceKey,
-      final CamundaAuthentication authentication,
-      final Authorization authorization) {
-    final var securityContext = provideSecurityContext(authentication, authorization);
-    if (securityContext.requiresAuthorizationChecks()) {
-      return authorizationChecker.isAuthorized(resourceKey, securityContext);
-    }
-    return true;
   }
 }

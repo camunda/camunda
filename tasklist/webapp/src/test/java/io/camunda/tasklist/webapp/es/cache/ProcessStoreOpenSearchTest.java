@@ -21,12 +21,13 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.impl.AuthorizationChecker;
-import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.security.reader.ResourceAccess;
+import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -75,8 +76,7 @@ class ProcessStoreOpenSearchTest {
   @Mock private SecurityConfiguration securityConfiguration;
   @Mock private TasklistProperties tasklistProperties;
   @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
-  @Mock private SecurityContextProvider securityContextProvider;
-  @Mock private AuthorizationChecker authorizationChecker;
+  @Mock private ResourceAccessProvider resourceAccessProvider;
   @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private TasklistPermissionServices permissionServices;
 
@@ -270,13 +270,12 @@ class ProcessStoreOpenSearchTest {
     SecurityContextHolder.getContext().setAuthentication(auth);
     when(securityContext.getAuthentication()).thenReturn(auth);
 
-    when(securityContextProvider.provideSecurityContext(any()))
-        .thenReturn(mock(io.camunda.security.auth.SecurityContext.class));
-
     if (isAuthorizated) {
-      when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of("*"));
+      when(resourceAccessProvider.resolveResourceAccess(any(), any()))
+          .thenReturn(ResourceAccess.wildcard(Authorization.of(b -> b.resourceIds(List.of("*")))));
     } else {
-      when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of());
+      when(resourceAccessProvider.resolveResourceAccess(any(), any()))
+          .thenReturn(ResourceAccess.wildcard(Authorization.of(b -> b.resourceIds(List.of()))));
     }
   }
 

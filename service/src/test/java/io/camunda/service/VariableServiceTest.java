@@ -20,7 +20,6 @@ import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -35,18 +34,14 @@ public class VariableServiceTest {
 
   private VariableServices services;
   private VariableSearchClient client;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(VariableSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    securityContextProvider = mock(SecurityContextProvider.class);
-    authentication = mock(CamundaAuthentication.class);
     services =
         new VariableServices(
-            mock(BrokerClient.class), securityContextProvider, client, authentication);
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test

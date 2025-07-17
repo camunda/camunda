@@ -176,6 +176,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   public TestCamundaApplication withAuthorizationsEnabled() {
     // when using authorizations, api authentication needs to be enforced too
     withAuthenticatedAccess();
+    withProperty("camunda.security.authorizations.enabled", true);
     return withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 

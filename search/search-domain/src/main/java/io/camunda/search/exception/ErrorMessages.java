@@ -35,4 +35,10 @@ public class ErrorMessages {
       "Resource Access %s does not include an authorization";
   public static final String ERROR_RESOURCE_ACCESS_CONTROLLER_NO_TENANT_ACCESS =
       "Tenant access was denied";
+
+  public static final String ERROR_INDEX_FILTER_TRANSFORMER_AUTH_CHECK_MISSING =
+      "Transformer '%s' requires an authorization check to be applied to the search query.";
+
+  public static final String ERROR_INDEX_FILTER_TRANSFORMER_TENANT_CHECK_MISSING =
+      "Transformer '%s' requires a tenant check to be applied to the search query.";
 }

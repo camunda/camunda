@@ -30,12 +30,6 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   @Override
   public <T> ResourceAccess resolveResourceAccess(
       final CamundaAuthentication authentication, final Authorization<T> requiredAuthorization) {
-    // right now, not all Services provide an authorization with #withSecurityContext()
-    // typically, the authorization check happens afterward in the respective Service
-    if (requiredAuthorization == null) {
-      return ResourceAccess.wildcard(null);
-    }
-
     final var resultingAuthorization =
         new Authorization.Builder<>()
             .resourceType(requiredAuthorization.resourceType())
@@ -43,7 +37,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
     // fetch the authorization entities for the authenticated user
     final var securityContext = createSecurityContext(authentication, requiredAuthorization);
-    final var resourceIds = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+    final var resourceIds = authorizationChecker.retrieveAuthorizedResourceIds(securityContext);
 
     if (resourceIds.contains(WILDCARD)) {
       // no authorization check required, user can access

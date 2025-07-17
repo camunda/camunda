@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 
 /**
  * The AuthorizationChecker class provides methods for checking resource authorization by
- * interacting with the AuthorizationSearchClient. It retrieves authorized resource keys or checks
- * if a specific resource key is authorized, based on the provided SecurityContext.
+ * interacting with the AuthorizationSearchClient. It retrieves authorized resource ids or checks if
+ * a specific resource id is authorized, based on the provided SecurityContext.
  */
 public class AuthorizationChecker {
 
@@ -39,14 +39,14 @@ public class AuthorizationChecker {
   }
 
   /**
-   * Retrieves a list of authorized resource keys for the given SecurityContext. The resource keys
+   * Retrieves a list of authorized resource ids for the given SecurityContext. The resource ids
    * represent resources that the user or one of their groups or roles, as specified in the
    * SecurityContext, has access to based on the defined resource type and permission type.
    *
    * @param securityContext the context containing authorization and authentication information
-   * @return a list of authorized resource keys for the user or group in the SecurityContext
+   * @return a list of authorized resource ids for the user or group in the SecurityContext
    */
-  public List<String> retrieveAuthorizedResourceKeys(final SecurityContext securityContext) {
+  public List<String> retrieveAuthorizedResourceIds(final SecurityContext securityContext) {
     final var ownerIds = collectOwnerTypeToOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
@@ -68,13 +68,13 @@ public class AuthorizationChecker {
   }
 
   /**
-   * Checks if a specific resource key is authorized for the user or one of their groups or roles
+   * Checks if a specific resource id is authorized for the user or one of their groups or roles
    * defined in the provided SecurityContext. The authorization check is based on the resource type
    * and permission type in the SecurityContext.
    *
    * @param resourceId the resource id to check authorization for
    * @param securityContext the context containing authorization and authentication information
-   * @return true if the resource key is authorized, false otherwise
+   * @return true if the resource id is authorized, false otherwise
    */
   public boolean isAuthorized(final String resourceId, final SecurityContext securityContext) {
     final var ownerIds = collectOwnerTypeToOwnerIds(securityContext.authentication());

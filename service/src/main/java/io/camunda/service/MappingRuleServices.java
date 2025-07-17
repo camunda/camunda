@@ -13,6 +13,7 @@ import static io.camunda.service.authorization.Authorizations.MAPPING_RULE_READ_
 import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.query.SearchQueryBase.AbstractQueryBuilder;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.MappingRuleMatcher;
@@ -93,7 +94,7 @@ public class MappingRuleServices
 
   public Stream<MappingRuleEntity> getMatchingMappingRules(final Map<String, Object> claims) {
     return MappingRuleMatcher.matchingRules(
-        search(MappingRuleQuery.of(q -> q.unlimited())).items().stream(), claims);
+        search(MappingRuleQuery.of(AbstractQueryBuilder::unlimited)).items().stream(), claims);
   }
 
   public record MappingRuleDTO(
