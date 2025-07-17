@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,7 +25,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,8 +95,8 @@ public class UserServiceTest {
   public void shouldReturnUserForGet() {
     // given
     final var entity = mock(UserEntity.class);
-    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchUsers(any())).thenReturn(result);
+    when(entity.username()).thenReturn("test");
+    when(client.getUser(eq("test"))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getUser(entity.username());
