@@ -264,7 +264,11 @@ final class Segment implements AutoCloseable, FlushableSegment {
 
   @Override
   public String toString() {
-    return toStringHelper(this).add("id", id()).add("index", index()).toString();
+    return toStringHelper(this)
+        .add("id", id())
+        .add("index", index())
+        .add("lastIndex", lastIndex())
+        .toString();
   }
 
   private void markForDeletion() {
