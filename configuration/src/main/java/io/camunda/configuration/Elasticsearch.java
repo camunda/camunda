@@ -18,8 +18,8 @@ public class Elasticsearch {
       throw new RuntimeException(PREFIX + ".url cannot be empty or null.");
     }
 
-    Object value =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(PREFIX + ".url", url, true, true);
+    String value = UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".url", url, String.class, true, true);
 
     return (String) value;
   }

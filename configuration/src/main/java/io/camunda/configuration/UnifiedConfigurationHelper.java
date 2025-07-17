@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.joda.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,9 +68,10 @@ public class UnifiedConfigurationHelper {
     UnifiedConfigurationHelper.unifiedConfiguration = unifiedConfiguration;
   }
 
-  public static Object validateLegacyConfiguration(
+  public static <T> T validateLegacyConfiguration(
       final String newProperty,
-      final Object newValue,
+      final T newValue,
+      final Class<T> expectedType,
       final boolean legacyConfigAllowed,
       final boolean onlyIfValuesMatch) {
 
@@ -85,7 +87,7 @@ public class UnifiedConfigurationHelper {
     Set<String> legacyValues = new HashSet<>();
     for (String legacyProperty : legacyProperties) {
       final String value = environment.getProperty(legacyProperty);
-      if (value != null) {
+      if (isSet(value)) {
         legacyValues.add(value);
       }
     }
@@ -95,8 +97,7 @@ public class UnifiedConfigurationHelper {
       return newValue;
     }
 
-    // |legacyValues| > 0 covered
-    if (!legacyConfigAllowed && legacyValues.size() > 0) {
+    if (!legacyConfigAllowed) {
       final String errorMessage =
           String.format(LEGACY_PROPERTIES_NOT_ALLOWED_ERROR, String.join(", ", legacyProperties));
       throw new RuntimeException(errorMessage);
@@ -112,7 +113,8 @@ public class UnifiedConfigurationHelper {
       throw new RuntimeException(errorMessage);
     }
 
-    String legacyValue = legacyValues.iterator().next();
+    String strLegacyValue = legacyValues.iterator().next();
+    T legacyValue = parseLegacyValue(strLegacyValue, expectedType);
     if (onlyIfValuesMatch && !Objects.equals(legacyValue, newValue)) {
       String errorMessage =
           String.format(
@@ -122,7 +124,7 @@ public class UnifiedConfigurationHelper {
       throw new RuntimeException(errorMessage);
     }
 
-    if (legacyValue != null && newValue == null) {
+    if (isSet(legacyValue) && isUnset(newValue)) {
       logDeprecationMessage(legacyProperties, newProperty);
       return legacyValue;
     }
@@ -141,5 +143,28 @@ public class UnifiedConfigurationHelper {
             String.join(", ", legacyProperties),
             newProperty);
     LOGGER.warn(deprecationMessage);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> T parseLegacyValue(final String strValue, final Class<T> type) {
+    if (strValue == null) return null;
+
+    return switch(type.getSimpleName()) {
+      case "String" -> (T) strValue;
+      case "Integer" -> (T) Integer.valueOf(strValue);
+      case "Boolean" -> (T) Boolean.valueOf(strValue);
+      case "Duration" -> (T) Duration.parse(strValue);
+      default -> throw new IllegalArgumentException("Unsupported type: " + type);
+    };
+  }
+
+  private static boolean isUnset(Object value) {
+    if (value == null) return true;
+    if (value instanceof String) return ((String) value).trim().isEmpty();
+    return false;
+  }
+
+  private static boolean isSet(Object value) {
+    return !isUnset(value);
   }
 }
