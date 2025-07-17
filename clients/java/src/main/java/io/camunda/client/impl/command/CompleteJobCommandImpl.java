@@ -22,7 +22,6 @@ import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.command.CompleteJobResult;
-import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
@@ -105,8 +104,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   public CompleteJobCommandStep1 withResult(
       final Function<CompleteJobCommandJobResultStep, CompleteJobResult> function) {
     final CompleteJobResult result = function.apply(this);
-    if (result instanceof CompleteUserTaskJobResult) {
-      setJobResult((CompleteUserTaskJobResult) result);
+    if (result instanceof CompleteUserTaskJobResultImpl) {
+      setJobResult((CompleteUserTaskJobResultImpl) result);
     } else if (result instanceof CompleteAdHocSubProcessResultStep1) {
       setJobResult(((CompleteAdHocSubProcessJobResultImpl) result));
     } else {
@@ -117,8 +116,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   @Override
-  public CompleteUserTaskJobResult forUserTask() {
-    return new CompleteUserTaskJobResult();
+  public CompleteUserTaskJobResultImpl forUserTask() {
+    return new CompleteUserTaskJobResultImpl();
   }
 
   @Override
@@ -126,7 +125,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     return new CompleteAdHocSubProcessJobResultImpl(objectMapper);
   }
 
-  private void setJobResult(final CompleteUserTaskJobResult jobResult) {
+  private void setJobResult(final CompleteUserTaskJobResultImpl jobResult) {
     if (useRest) {
       setRestJobResult(jobResult);
     } else {
@@ -134,7 +133,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     }
   }
 
-  private void setRestJobResult(final CompleteUserTaskJobResult jobResult) {
+  private void setRestJobResult(final CompleteUserTaskJobResultImpl jobResult) {
     final JobResultUserTask resultRest = new JobResultUserTask();
     final JobResultCorrections correctionsRest = new JobResultCorrections();
     correctionsRest
@@ -152,7 +151,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     httpRequestObject.setResult(resultRest);
   }
 
-  private void setGrpcJobResult(final CompleteUserTaskJobResult jobResult) {
+  private void setGrpcJobResult(final CompleteUserTaskJobResultImpl jobResult) {
     final JobResult.Builder resultGrpc = JobResult.newBuilder();
     final GatewayOuterClass.JobResultCorrections.Builder correctionsGrpc =
         GatewayOuterClass.JobResultCorrections.newBuilder();

@@ -105,7 +105,7 @@ public interface CompleteJobCommandStep1
      *
      * @return the builder for this command.
      */
-    CompleteUserTaskJobResult forUserTask();
+    CompleteUserTaskJobResultStep1 forUserTask();
 
     /**
      * Initialized the job result to allow activation of elements in an ad-hoc sub process.
