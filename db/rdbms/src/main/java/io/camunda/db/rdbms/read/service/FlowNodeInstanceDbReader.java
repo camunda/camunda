@@ -32,8 +32,8 @@ public class FlowNodeInstanceDbReader extends AbstractEntityReader<FlowNodeInsta
   }
 
   @Override
-  public FlowNodeInstanceEntity getByKey(final long key,
-      final ResourceAccessChecks resourceAccessChecks) {
+  public FlowNodeInstanceEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key).orElse(null);
   }
 
