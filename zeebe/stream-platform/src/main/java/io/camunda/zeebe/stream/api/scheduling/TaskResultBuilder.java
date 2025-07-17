@@ -10,6 +10,7 @@ package io.camunda.zeebe.stream.api.scheduling;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
+import java.util.List;
 
 /** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface TaskResultBuilder {
@@ -44,6 +45,18 @@ public interface TaskResultBuilder {
       final long key,
       final Intent intent,
       final UnifiedRecordValue value,
+      final FollowUpCommandMetadata metadata);
+
+  /**
+   * Appends a list of records to the result. Used to transactional append a list of records. As
+   * soon as one record does not fit into the result, none of the given records are appended.
+   *
+   * @return returns true if the record still fits into the result, false otherwise
+   */
+  boolean canAppendCommandRecords(
+      final long key,
+      final Intent intent,
+      final List<? extends UnifiedRecordValue> value,
       final FollowUpCommandMetadata metadata);
 
   TaskResult build();

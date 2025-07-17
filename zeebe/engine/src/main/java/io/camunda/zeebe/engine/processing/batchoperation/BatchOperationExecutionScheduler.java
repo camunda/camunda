@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
-import io.camunda.search.filter.Operation;
-import io.camunda.search.filter.ProcessInstanceFilter;
+import com.google.common.collect.Lists;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
+import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
@@ -33,11 +34,12 @@ import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,10 +56,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
   private final Duration pollingInterval;
   private final int chunkSize;
+  private final int queryPageSize;
 
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
-  private final BatchOperationItemProvider entityKeyProvider;
+  private final ItemProviderFactory itemProviderFactory;
   private final BatchOperationMetrics metrics;
   private final int partitionId;
 
@@ -66,14 +69,15 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
   public BatchOperationExecutionScheduler(
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
-      final BatchOperationItemProvider entityKeyProvider,
+      final ItemProviderFactory itemProviderFactory,
       final EngineConfiguration engineConfiguration,
       final int partitionId,
       final BatchOperationMetrics metrics) {
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
-    this.entityKeyProvider = entityKeyProvider;
+    this.itemProviderFactory = itemProviderFactory;
     pollingInterval = engineConfiguration.getBatchOperationSchedulerInterval();
     chunkSize = engineConfiguration.getBatchOperationChunkSize();
+    queryPageSize = engineConfiguration.getBatchOperationQueryPageSize();
     this.metrics = metrics;
     this.partitionId = partitionId;
   }
@@ -131,27 +135,44 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     // First fire a start event to indicate the beginning of the INIT phase
     appendStartedCommand(taskResultBuilder, batchOperation);
 
-    final Set<Item> keys;
-    try {
-      // Then query all relevant itemKeys for the batch operation and this local partition
-      keys = queryAllKeys(batchOperation);
-    } catch (final Exception e) {
-      LOG.error(
-          "Failed to query keys for batch operation with key {}. It will be removed from queue",
-          batchOperation.getKey(),
-          e);
-      appendQueryFailedCommand(taskResultBuilder, batchOperation, e);
-      return;
+    final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
+
+    String lastSearchResultCursor = batchOperation.getInitializationSearchCursor();
+    if (lastSearchResultCursor != null && lastSearchResultCursor.isEmpty()) {
+      // If the cursor is empty, we need to initialize it with the first page
+      lastSearchResultCursor = null;
+    }
+    while (true) {
+      final ItemPage page;
+      try {
+        page = itemProvider.fetchItemPage(lastSearchResultCursor, queryPageSize);
+      } catch (final Exception e) {
+        LOG.error(
+            "Failed to query keys for batch operation with key {}. It will be removed from queue",
+            batchOperation.getKey(),
+            e);
+        appendQueryFailedCommand(taskResultBuilder, batchOperation, e);
+        return;
+      }
+
+      // Then append the chunks
+      final boolean appendedChunks = appendChunks(batchOperation, taskResultBuilder, page.items());
+      if (!appendedChunks) {
+        appendInitializeCommand(taskResultBuilder, batchOperation.getKey(), lastSearchResultCursor);
+        break;
+      } else {
+        lastSearchResultCursor = page.endCursor();
+        if (page.isLastPage()) {
+          appendExecution(batchOperation.getKey(), taskResultBuilder);
+          break;
+        }
+      }
     }
 
-    // Then append the chunks
-    appendChunks(batchOperation, taskResultBuilder, keys);
-
-    metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
+    // TODO    metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
 
     // we always append the EXECUTE command at the end, even if no items were found, so we can
     // leave the completion logic in that processor.
-    appendExecution(batchOperation.getKey(), taskResultBuilder);
 
     metrics.startStartExecuteLatencyMeasure(
         batchOperation.getKey(), batchOperation.getBatchOperationType());
@@ -159,30 +180,52 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperation.getKey(), batchOperation.getBatchOperationType());
   }
 
-  private void appendChunks(
+  private boolean appendChunks(
       final PersistedBatchOperation batchOperation,
       final TaskResultBuilder taskResultBuilder,
-      final Set<Item> keys) {
-    if (!keys.isEmpty()) {
-      LOG.debug(
-          "Found {} items for batch operation with key {} on partition {}.",
-          keys.size(),
-          batchOperation.getKey(),
-          partitionId);
-      for (int i = 0; i < keys.size(); i += chunkSize) {
-        // split the keys into smaller chunks of size chunkSize to overcome the size limit of a
-        // single record
-        final Set<Item> chunkKeys =
-            keys.stream().skip(i).limit(chunkSize).collect(Collectors.toSet());
-        appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
-        metrics.recordChunkCreated(batchOperation.getBatchOperationType());
-      }
+      final List<Item> items) {
+
+    final var chunkRecords =
+        Lists.partition(items, chunkSize).stream()
+            .map(chunkItems -> createChunkRecord(batchOperation, chunkItems))
+            .toList();
+
+    final FollowUpCommandMetadata metadata =
+        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey()));
+    final var canAppend =
+        taskResultBuilder.canAppendCommandRecords(
+            batchOperation.getKey(), BatchOperationChunkIntent.CREATE, chunkRecords, metadata);
+
+    if (canAppend) {
+      chunkRecords.forEach(
+          command -> {
+            LOG.debug(
+                "Appending batch operation {} chunk with {} items.",
+                batchOperation.getKey(),
+                command.getItems().size());
+            taskResultBuilder.appendCommandRecord(
+                batchOperation.getKey(), BatchOperationChunkIntent.CREATE, command, metadata);
+            metrics.recordChunkCreated(batchOperation.getBatchOperationType());
+          });
+      return true;
     } else {
-      LOG.debug(
-          "No items found for batch operation with key {} on partition {}.",
-          batchOperation.getKey(),
-          partitionId);
+      return false;
     }
+  }
+
+  private static @NotNull BatchOperationChunkRecord createChunkRecord(
+      final PersistedBatchOperation batchOperation, final List<Item> chunkItems) {
+    final var command = new BatchOperationChunkRecord();
+    command.setBatchOperationKey(batchOperation.getKey());
+    command.setItems(
+        chunkItems.stream().map(BatchOperationExecutionScheduler::map).collect(Collectors.toSet()));
+    return command;
+  }
+
+  private static @NotNull BatchOperationItem map(final Item i) {
+    return new BatchOperationItem()
+        .setItemKey(i.itemKey())
+        .setProcessInstanceKey(i.processInstanceKey());
   }
 
   private void appendStartedCommand(
@@ -195,6 +238,23 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     taskResultBuilder.appendCommandRecord(
         batchOperationKey,
         BatchOperationIntent.START,
+        command,
+        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+  }
+
+  private void appendInitializeCommand(
+      final TaskResultBuilder taskResultBuilder,
+      final long batchOperationKey,
+      final String cursor) {
+    final var command =
+        new BatchOperationInitializationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setSearchResultCursor(cursor);
+    LOG.debug("Appending batch operation {} initializing command", batchOperationKey);
+
+    taskResultBuilder.appendCommandRecord(
+        batchOperationKey,
+        BatchOperationIntent.INITIALIZE,
         command,
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
@@ -221,29 +281,6 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
-  private void appendChunk(
-      final Long batchOperationKey,
-      final TaskResultBuilder taskResultBuilder,
-      final Set<Item> items) {
-    final var command = new BatchOperationChunkRecord();
-    command.setBatchOperationKey(batchOperationKey);
-    command.setItems(
-        items.stream()
-            .map(
-                i ->
-                    new BatchOperationItem()
-                        .setItemKey(i.itemKey())
-                        .setProcessInstanceKey(i.processInstanceKey()))
-            .collect(Collectors.toSet()));
-
-    LOG.debug("Appending batch operation {} chunk with {} items.", batchOperationKey, items.size());
-    taskResultBuilder.appendCommandRecord(
-        batchOperationKey,
-        BatchOperationChunkIntent.CREATE,
-        command,
-        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
-  }
-
   private void appendExecution(
       final Long batchOperationKey, final TaskResultBuilder taskResultBuilder) {
     final var command = new BatchOperationExecutionRecord();
@@ -255,61 +292,5 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         BatchOperationExecutionIntent.EXECUTE,
         command,
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
-  }
-
-  /**
-   * Queries all itemKeys for the given batch operation from the secondary database. Before the
-   * query is sent, the filter is enhanced by the local partitionId to just fetch the items that are
-   * relevant for this partition.
-   *
-   * @param batchOperation the batch operation
-   * @return a set of itemKeys that match the filter of the batch operation
-   */
-  private Set<Item> queryAllKeys(final PersistedBatchOperation batchOperation) {
-    final Supplier<Boolean> abortCondition =
-        () -> !batchOperationState.exists(batchOperation.getKey());
-
-    try (final var ignored =
-        metrics.startTotalQueryLatencyMeasure(
-            batchOperation.getKey(), batchOperation.getBatchOperationType())) {
-      return switch (batchOperation.getBatchOperationType()) {
-        case CANCEL_PROCESS_INSTANCE ->
-            /*
-             * For canceling a process instance, we only want to fetch active root processes.
-             * Eventual subprocesses are canceled by the root process instance.
-             */
-            entityKeyProvider.fetchProcessInstanceItems(
-                partitionId,
-                batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
-                    .states(ProcessInstanceState.ACTIVE.name())
-                    .parentProcessInstanceKeyOperations(Operation.exists(false))
-                    .build(),
-                batchOperation.getAuthentication(),
-                abortCondition);
-        case MIGRATE_PROCESS_INSTANCE, MODIFY_PROCESS_INSTANCE ->
-            // For migrating or modifying a process instance, we want to fetch all active process
-            entityKeyProvider.fetchProcessInstanceItems(
-                partitionId,
-                batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
-                    .states(ProcessInstanceState.ACTIVE.name())
-                    .build(),
-                batchOperation.getAuthentication(),
-                abortCondition);
-        case RESOLVE_INCIDENT ->
-            // For resolving an incident, we want to fetch incidents from active process instances
-            entityKeyProvider.fetchIncidentItems(
-                partitionId,
-                batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
-                    .states(ProcessInstanceState.ACTIVE.name())
-                    .build(),
-                batchOperation.getAuthentication(),
-                abortCondition);
-        default ->
-            throw new IllegalArgumentException(
-                "Unexpected batch operation type: " + batchOperation.getBatchOperationType());
-      };
-    } finally {
-      metrics.stopQueryLatencyMeasure(batchOperation.getKey());
-    }
   }
 }
