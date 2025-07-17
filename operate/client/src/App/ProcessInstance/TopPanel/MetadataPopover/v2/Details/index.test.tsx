@@ -138,4 +138,139 @@ describe('MetadataPopover <Details />', () => {
     expect(screen.getByText('Execution Duration')).toBeInTheDocument();
     expect(screen.getByText(calculatedExecutionDuration)).toBeInTheDocument();
   });
+
+  it('should display user task metadata in modal when available', async () => {
+    const userTaskMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        type: 'USER_TASK',
+        assignee: 'john.doe',
+        dueDate: '2023-12-31T23:59:59.000Z',
+        followUpDate: '2023-12-30T12:00:00.000Z',
+        formKey: 'user-form-key',
+        userTaskKey: 'ut-123456',
+        candidateGroups: ['managers', 'admins'],
+        candidateUsers: ['user1', 'user2'],
+        externalFormReference: 'external-form-ref-123',
+        creationDate: '2023-12-01T09:00:00.000Z',
+        completionDate: '2023-12-31T18:00:00.000Z',
+        customHeaders: {custom1: 'value1', custom2: 2},
+        priority: 10,
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={userTaskMetaData} elementId="UserTask_1" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(
+      screen.getByText(/Element "UserTask_1" 123456789 Metadata/),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText(/"assignee": "john.doe"/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"dueDate": "2023-12-31T23:59:59.000Z"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"followUpDate": "2023-12-30T12:00:00.000Z"/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"formKey": "user-form-key"/)).toBeInTheDocument();
+    expect(screen.getByText(/"userTaskKey": "ut-123456"/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (content) =>
+          content.includes('"candidateGroups":') &&
+          content.includes('"managers"') &&
+          content.includes('"admins"'),
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        (content) =>
+          content.includes('"candidateUsers":') &&
+          content.includes('"user1"') &&
+          content.includes('"user2"'),
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"externalFormReference": "external-form-ref-123"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"creationDate": "2023-12-01T09:00:00.000Z"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"completionDate": "2023-12-31T18:00:00.000Z"/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"priority": 10/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        (content) =>
+          content.includes('"customHeaders":') &&
+          content.includes('"custom1": "value1"') &&
+          content.includes('"custom2": 2'),
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should display partial user task metadata when some fields are missing', async () => {
+    const partialUserTaskMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        type: 'USER_TASK',
+        assignee: 'jane.smith',
+        formKey: 'simple-form',
+        userTaskKey: 'ut-789',
+        dueDate: undefined,
+        followUpDate: undefined,
+        candidateGroups: undefined,
+        candidateUsers: undefined,
+        externalFormReference: undefined,
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={partialUserTaskMetaData} elementId="UserTask_2" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(screen.getByText(/"assignee": "jane.smith"/)).toBeInTheDocument();
+    expect(screen.getByText(/"formKey": "simple-form"/)).toBeInTheDocument();
+    expect(screen.getByText(/"userTaskKey": "ut-789"/)).toBeInTheDocument();
+  });
+
+  it('should not display user task fields for non-user task types', async () => {
+    const serviceTaskMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        type: 'SERVICE_TASK',
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={serviceTaskMetaData} elementId="ServiceTask_1" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(screen.queryByText(/"assignee"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"dueDate"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"followUpDate"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"formKey"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"userTaskKey"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"candidateGroups"/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/"candidateUsers"/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/"externalFormReference"/),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -8,28 +8,26 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchUserTasks} from 'modules/api/v2/userTasks/searchUserTasks';
+import type {QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
-const USER_TASKS_SEARCH_QUERY_KEY = 'userTasksSearch';
+const USER_TASKS_BY_ELEMENT_INSTANCE_QUERY_KEY =
+  'useGetUserTaskByElementInstance';
 
-type UseUserTasksSearchParams = {
-  elementInstanceKey: string;
-  limit?: number;
-};
-
-const useUserTasksSearch = (
-  {elementInstanceKey, limit = 1}: UseUserTasksSearchParams,
-  options?: {enabled?: boolean},
+const useGetUserTaskByElementInstance = (
+  elementInstanceKey: string,
+  options: {enabled: boolean} = {enabled: true},
 ) => {
   return useQuery({
-    queryKey: [USER_TASKS_SEARCH_QUERY_KEY, elementInstanceKey, limit],
+    queryKey: [USER_TASKS_BY_ELEMENT_INSTANCE_QUERY_KEY, elementInstanceKey],
     queryFn: async () => {
-      const {response, error} = await searchUserTasks({
+      const payload: QueryUserTasksRequestBody = {
         filter: {elementInstanceKey},
-        page: {limit},
-      });
+        page: {limit: 1},
+      };
 
+      const {response, error} = await searchUserTasks(payload);
       if (response !== null) {
-        return response;
+        return response.items?.[0];
       }
 
       throw error;
@@ -38,4 +36,4 @@ const useUserTasksSearch = (
   });
 };
 
-export {useUserTasksSearch};
+export {useGetUserTaskByElementInstance};

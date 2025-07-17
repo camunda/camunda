@@ -42,7 +42,7 @@ const baseMetaData: V2MetaDataDto = {
     jobType: 'httpService',
     jobWorker: 'worker-1',
     jobDeadline: '2023-01-15T10:10:00.000Z',
-    jobCustomHeaders: '{"timeout": "30s"}',
+    jobCustomHeaders: {timeout: '30s'},
     jobId: '555666777',
   },
   incident: null,
