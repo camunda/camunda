@@ -17,6 +17,8 @@ import java.util.List;
 
 public interface ProcessDefinitionSearchClient {
 
+  ProcessDefinitionEntity getProcessDefinition(final long key);
+
   SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       ProcessDefinitionQuery filter);
 
