@@ -11,13 +11,33 @@ import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class DecisionRequirementsDocumentReader extends DocumentBasedReader
     implements DecisionRequirementsReader {
 
-  public DecisionRequirementsDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public DecisionRequirementsDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public DecisionRequirementsEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks, final boolean includeXml) {
+    return getSearchExecutor()
+        .getById(
+            String.valueOf(key),
+            io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity.class,
+            indexDescriptor.getFullQualifiedName(),
+            DecisionRequirementsQueryResultConfig.of(b -> b.includeXml(includeXml)));
+  }
+
+  @Override
+  public DecisionRequirementsEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getByKey(key, resourceAccessChecks, false);
   }
 
   @Override

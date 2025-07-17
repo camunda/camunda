@@ -14,12 +14,22 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 
 public class IncidentDocumentReader extends DocumentBasedReader implements IncidentReader {
 
-  public IncidentDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public IncidentDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public IncidentEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            IncidentQuery.of(b -> b.filter(f -> f.incidentKeys(key)).singleResult()),
+            io.camunda.webapps.schema.entities.incident.IncidentEntity.class);
   }
 
   @Override

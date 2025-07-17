@@ -12,12 +12,24 @@ import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class BatchOperationDocumentReader extends DocumentBasedReader
     implements BatchOperationReader {
 
-  public BatchOperationDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public BatchOperationDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public BatchOperationEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            BatchOperationQuery.of(
+                b -> b.filter(f -> f.batchOperationKeys(String.valueOf(key))).singleResult()),
+            io.camunda.webapps.schema.entities.operation.BatchOperationEntity.class);
   }
 
   @Override

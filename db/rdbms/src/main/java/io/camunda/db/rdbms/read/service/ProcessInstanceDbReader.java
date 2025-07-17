@@ -38,13 +38,10 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
     return Optional.ofNullable(processInstanceMapper.findOne(processInstanceKey));
   }
 
-  public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
-  }
-
-  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(final long processInstanceKey) {
-    LOG.trace("[RDBMS DB] Query process instance flow node statistics with {}", processInstanceKey);
-    return processInstanceMapper.flowNodeStatistics(processInstanceKey);
+  @Override
+  public ProcessInstanceEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
   }
 
   @Override
@@ -60,5 +57,14 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
     final var hits = processInstanceMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
+  }
+
+  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(final long processInstanceKey) {
+    LOG.trace("[RDBMS DB] Query process instance flow node statistics with {}", processInstanceKey);
+    return processInstanceMapper.flowNodeStatistics(processInstanceKey);
   }
 }

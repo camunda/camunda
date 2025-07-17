@@ -12,14 +12,16 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class RoleMemberDocumentReader extends DocumentBasedReader implements RoleMemberReader {
 
-  public RoleMemberDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public RoleMemberDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override

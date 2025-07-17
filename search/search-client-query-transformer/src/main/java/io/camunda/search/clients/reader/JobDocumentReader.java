@@ -12,11 +12,21 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class JobDocumentReader extends DocumentBasedReader implements JobReader {
 
-  public JobDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public JobDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public JobEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            JobQuery.of(b -> b.filter(f -> f.jobKeys(key)).singleResult()),
+            io.camunda.webapps.schema.entities.JobEntity.class);
   }
 
   @Override
