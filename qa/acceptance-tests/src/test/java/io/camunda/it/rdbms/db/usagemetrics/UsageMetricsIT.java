@@ -10,9 +10,9 @@ package io.camunda.it.rdbms.db.usagemetrics;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.ATU;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.EDI;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.RPI;
-import static io.camunda.zeebe.engine.utils.HashUtils.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.hash.Hashing;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UsageMetricReader;
 import io.camunda.db.rdbms.read.service.UsageMetricTUReader;
@@ -31,6 +31,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UsageMetricsFilter.Builder;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -43,9 +44,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class UsageMetricsIT {
 
-  private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
-  private static final long ASSIGNEE_HASH_2 = getStringHashValue("assignee2");
-  private static final long ASSIGNEE_HASH_3 = getStringHashValue("assignee3");
+  private static final long ASSIGNEE_HASH_1 =
+      Hashing.murmur3_128().hashString("assignee1", StandardCharsets.UTF_8).asLong();
+  private static final long ASSIGNEE_HASH_2 =
+      Hashing.murmur3_128().hashString("assignee2", StandardCharsets.UTF_8).asLong();
+  private static final long ASSIGNEE_HASH_3 =
+      Hashing.murmur3_128().hashString("assignee3", StandardCharsets.UTF_8).asLong();
   private static final Long PARTITION_ID = 0L;
   private static final OffsetDateTime NOW = OffsetDateTime.now();
   private static final OffsetDateTime NOW_MINUS_5M = NOW.minusMinutes(5);
