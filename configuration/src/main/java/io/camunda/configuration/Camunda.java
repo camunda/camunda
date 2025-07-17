@@ -7,8 +7,24 @@
  */
 package io.camunda.configuration;
 
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
 /**
  * Section of the new Unified Configuration system that wraps all the config keys that belong to the
  * proprietary, configurable Camunda components.
  */
-public class Camunda {}
+@ConfigurationProperties(prefix = Camunda.PREFIX)
+public class Camunda {
+
+  public static final String PREFIX = "camunda";
+
+  private Data data = new Data();
+
+  public Data getData() {
+    return data;
+  }
+
+  public void setData(Data data) {
+    this.data = data;
+  }
+}
