@@ -44,6 +44,7 @@ import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
@@ -112,7 +113,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }
           """;
@@ -164,7 +166,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
@@ -188,7 +190,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
@@ -232,7 +234,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -275,7 +277,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -312,7 +314,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .search(
@@ -364,7 +366,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -406,7 +408,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -447,7 +449,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -487,7 +489,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -508,7 +510,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(PROCESS_INSTANCE_ENTITY_JSON);
+        .json(PROCESS_INSTANCE_ENTITY_JSON, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the valid key
     verify(processInstanceServices).getByKey(validProcesInstanceKey);
@@ -644,7 +646,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
@@ -680,7 +682,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     // then
     verify(processInstanceServices)
@@ -732,7 +734,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build());
@@ -755,7 +757,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_CALL_HIERARCHY);
+        .json(EXPECTED_CALL_HIERARCHY, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the valid key
     verify(processInstanceServices).callHierarchy(processInstanceKey);

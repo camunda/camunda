@@ -44,6 +44,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = TenantController.class)
 public class TenantQueryControllerTest extends RestControllerTest {
@@ -97,7 +98,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          "page": {
            "totalItems": %s,
            "startCursor": "f",
-           "endCursor": "v"
+           "endCursor": "v",
+           "hasMoreTotalItems": false
          }
        }
       """;
@@ -137,7 +139,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          "page": {
            "totalItems": %s,
            "startCursor": "f",
-           "endCursor": "v"
+           "endCursor": "v",
+           "hasMoreTotalItems": false
          }
        }
       """;
@@ -168,7 +171,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          "page": {
            "totalItems": %s,
            "startCursor": "f",
-           "endCursor": "v"
+           "endCursor": "v",
+           "hasMoreTotalItems": false
          }
        }
       """;
@@ -201,7 +205,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          "page": {
            "totalItems": %s,
            "startCursor": "f",
-           "endCursor": "v"
+           "endCursor": "v",
+           "hasMoreTotalItems": false
          }
        }
       """;
@@ -332,7 +337,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_RESPONSE);
+        .json(EXPECTED_RESPONSE, JsonCompareMode.STRICT);
 
     verify(tenantServices).search(new TenantQuery.Builder().build());
   }
@@ -367,7 +372,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_RESPONSE);
+        .json(EXPECTED_RESPONSE, JsonCompareMode.STRICT);
 
     verify(tenantServices)
         .search(
@@ -406,7 +411,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_MAPPING_RESPONSE);
+        .json(EXPECTED_MAPPING_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -438,7 +443,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_MAPPING_RESPONSE);
+        .json(EXPECTED_MAPPING_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -471,7 +476,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_ROLE_RESPONSE);
+        .json(EXPECTED_ROLE_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -503,7 +508,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_ROLE_RESPONSE);
+        .json(EXPECTED_ROLE_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @ParameterizedTest
@@ -523,7 +528,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(tenantServices, never()).search(any(TenantQuery.class));
   }

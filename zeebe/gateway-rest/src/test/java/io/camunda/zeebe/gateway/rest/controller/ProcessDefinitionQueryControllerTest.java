@@ -40,6 +40,7 @@ import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = ProcessDefinitionController.class)
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
@@ -85,7 +86,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "page": {
               "totalItems": 1,
               "startCursor": "f",
-              "endCursor": "v"
+              "endCursor": "v",
+              "hasMoreTotalItems": false
           }
       }""";
   static final SearchQueryResult<ProcessDefinitionEntity> SEARCH_QUERY_RESULT =
@@ -148,7 +150,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices).search(new ProcessDefinitionQuery.Builder().build());
   }
@@ -199,7 +201,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(PROCESS_DEFINITION_ENTITY_JSON);
+        .json(PROCESS_DEFINITION_ENTITY_JSON, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the valid key
     verify(processDefinitionServices).getByKey(23L);
@@ -286,7 +288,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(response);
+        .json(response, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices)
         .elementStatistics(
@@ -337,7 +339,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(response);
+        .json(response, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices)
         .elementStatistics(
@@ -406,7 +408,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(FORM_ITEM_JSON);
+        .json(FORM_ITEM_JSON, JsonCompareMode.STRICT);
 
     verify(processDefinitionServices, times(1)).getByKey(1L);
     verify(formServices, times(1)).getLatestVersionByFormId("formId");

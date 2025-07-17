@@ -49,6 +49,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(value = ProcessInstanceController.class)
@@ -61,7 +62,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
              "processDefinitionId":"bpmnProcessId",
              "processDefinitionVersion":-1,
              "processInstanceKey":"123",
-             "tenantId":"tenantId"
+             "tenantId":"tenantId",
+             "variables":{}
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
@@ -123,7 +125,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_START_RESPONSE);
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -156,7 +158,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "processDefinitionId":"bpmnProcessId",
               "processDefinitionVersion":-1,
               "processInstanceKey":"123",
-              "tenantId":"<default>"
+              "tenantId":"<default>",
+              "variables":{}
             }""";
 
     // when / then
@@ -172,7 +175,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -220,7 +223,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_START_RESPONSE);
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -267,7 +270,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_START_RESPONSE);
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -316,7 +319,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_START_RESPONSE);
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -366,7 +369,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_START_RESPONSE);
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -415,7 +418,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_START_RESPONSE);
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
     final var capturedRequest = createRequestCaptor.getValue();
@@ -456,7 +459,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -493,7 +496,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -529,7 +532,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -642,7 +645,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -730,7 +733,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -766,7 +769,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -803,7 +806,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -848,7 +851,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -894,7 +897,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1138,7 +1141,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1196,7 +1199,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1247,7 +1250,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1307,7 +1310,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1429,7 +1432,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(response);
+        .json(response, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).elementStatistics(processInstanceKey);
   }
@@ -1554,7 +1557,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(response);
+        .json(response, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).sequenceFlows(processInstanceKey);
   }
@@ -1609,7 +1612,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         "page": {
             "totalItems": 1,
             "startCursor": "<cursor before>",
-            "endCursor": "<cursor after>"
+            "endCursor": "<cursor after>",
+            "hasMoreTotalItems": false
         }
     }""";
 
@@ -1624,7 +1628,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).searchIncidents(processInstanceKey, query);
   }

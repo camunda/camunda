@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 public class GroupControllerTest {
 
@@ -85,7 +86,8 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL));
+          .json(
+              FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -107,7 +109,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -124,7 +126,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -143,7 +145,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -161,7 +163,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -179,7 +181,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -199,7 +201,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
   }
 

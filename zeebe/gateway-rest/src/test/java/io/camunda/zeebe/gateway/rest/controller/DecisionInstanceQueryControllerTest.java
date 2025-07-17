@@ -42,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = DecisionInstanceController.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
@@ -69,7 +70,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                "page": {
                    "totalItems": 1,
                    "startCursor": "f",
-                   "endCursor": "v"
+                   "endCursor": "v",
+                   "hasMoreTotalItems": false
                }
            }""";
 
@@ -185,7 +187,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -202,7 +204,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -424,7 +426,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices)
         .search(new DecisionInstanceQuery.Builder().filter(filter).build());
@@ -457,7 +459,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
   }
@@ -489,7 +491,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
   }

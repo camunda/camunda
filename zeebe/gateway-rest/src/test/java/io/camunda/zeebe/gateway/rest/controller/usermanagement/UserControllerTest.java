@@ -37,6 +37,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(UserController.class)
 public class UserControllerTest extends RestControllerTest {
@@ -382,6 +383,6 @@ public class UserControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest()
         .expectBody()
-        .json(expectedError);
+        .json(expectedError, JsonCompareMode.STRICT);
   }
 }

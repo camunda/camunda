@@ -29,6 +29,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(DecisionDefinitionController.class)
@@ -96,7 +97,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
+    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(decisionServices)
         .evaluateDecision("", 123456L, Map.of("key", "value"), "tenantId");
   }
@@ -164,7 +165,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
+    response.expectBody().json(EXPECTED_EVALUATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(decisionServices)
         .evaluateDecision("decisionId", -1L, Map.of("key", "value"), "tenantId");
   }
@@ -203,7 +204,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest()
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -238,7 +239,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest()
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   private CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> buildResponse(

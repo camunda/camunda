@@ -44,6 +44,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
@@ -71,7 +72,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":3,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -101,7 +103,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":3,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -129,7 +132,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":3,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -163,7 +167,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":3,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -213,7 +218,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":2,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -519,7 +525,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE.formatted(groupId1, groupId2, groupId3));
+        .json(
+            EXPECTED_SEARCH_RESPONSE.formatted(groupId1, groupId2, groupId3),
+            JsonCompareMode.STRICT);
 
     verify(groupServices)
         .search(
@@ -559,7 +567,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_USER_RESPONSE);
+        .json(EXPECTED_USER_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -591,7 +599,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_USER_RESPONSE);
+        .json(EXPECTED_USER_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -624,7 +632,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_MAPPING_RESPONSE);
+        .json(EXPECTED_MAPPING_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -656,7 +664,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_MAPPING_RESPONSE);
+        .json(EXPECTED_MAPPING_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -689,7 +697,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_ROLE_RESPONSE);
+        .json(EXPECTED_ROLE_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -721,7 +729,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_ROLE_RESPONSE);
+        .json(EXPECTED_ROLE_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -754,7 +762,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_CLIENT_RESPONSE);
+        .json(EXPECTED_CLIENT_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -786,7 +794,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_CLIENT_RESPONSE);
+        .json(EXPECTED_CLIENT_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @ParameterizedTest
@@ -806,7 +814,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(groupServices, never()).search(any(GroupQuery.class));
   }

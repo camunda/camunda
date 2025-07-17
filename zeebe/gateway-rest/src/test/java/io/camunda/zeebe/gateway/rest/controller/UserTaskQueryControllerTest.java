@@ -46,6 +46,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = UserTaskController.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
@@ -84,7 +85,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }""";
 
@@ -114,7 +116,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         "page": {
           "totalItems": 2,
           "startCursor": "0",
-          "endCursor": "1"
+          "endCursor": "1",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -261,7 +264,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
   }
@@ -284,7 +287,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
   }
@@ -320,7 +323,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices)
         .search(
@@ -369,7 +372,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -412,7 +415,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -456,7 +459,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -499,7 +502,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -541,7 +544,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -583,7 +586,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -624,7 +627,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -664,7 +667,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -680,7 +683,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(USER_TASK_ITEM_JSON);
+        .json(USER_TASK_ITEM_JSON, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(VALID_USER_TASK_KEY);
@@ -724,7 +727,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(FORM_ITEM_JSON);
+        .json(FORM_ITEM_JSON, JsonCompareMode.STRICT);
 
     verify(userTaskServices).getUserTaskForm(VALID_FORM_KEY);
   }
@@ -807,7 +810,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_VARIABLE_RESULT_JSON);
+        .json(EXPECTED_VARIABLE_RESULT_JSON, JsonCompareMode.STRICT);
 
     verify(userTaskServices)
         .searchUserTaskVariables(
@@ -864,7 +867,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
   }
