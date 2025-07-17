@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -26,11 +27,10 @@ import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 @CamundaRestController
+@RequiresSecondaryStorage
 @RequestMapping("/v2/setup")
 public class SetupController {
-
   public static final String WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE =
       "The initial admin user can only be created with basic authentication.";
   public static final String ADMIN_EXISTS_ERROR_MESSAGE =
@@ -40,7 +40,6 @@ public class SetupController {
   private final RoleServices roleServices;
   private final SecurityConfiguration securityConfiguration;
   private final CamundaAuthenticationProvider authenticationProvider;
-
   public SetupController(
       final UserServices userServices,
       final RoleServices roleServices,
@@ -51,7 +50,6 @@ public class SetupController {
     this.securityConfiguration = securityConfiguration;
     this.authenticationProvider = authenticationProvider;
   }
-
   @CamundaPostMapping(path = "/user")
   public CompletableFuture<ResponseEntity<Object>> createAdminUser(
       @RequestBody final UserRequest request) {
@@ -61,15 +59,10 @@ public class SetupController {
       return RestErrorMapper.mapProblemToCompletedResponse(
           RestErrorMapper.mapErrorToProblem(exception));
     }
-
     if (roleServices
         .withAuthentication(authenticationProvider.getAnonymousCamundaAuthentication())
         .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
       final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
-      return RestErrorMapper.mapProblemToCompletedResponse(
-          RestErrorMapper.mapErrorToProblem(exception));
-    }
-
     return RequestMapper.toUserDTO(request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,
@@ -81,5 +74,4 @@ public class SetupController {
                                 authenticationProvider.getAnonymousCamundaAuthentication())
                             .createInitialAdminUser(dto),
                     ResponseMapper::toUserCreateResponse));
-  }
 }

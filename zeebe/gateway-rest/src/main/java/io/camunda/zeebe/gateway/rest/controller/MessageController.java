@@ -18,19 +18,18 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 @CamundaRestController
+@RequiresSecondaryStorage
 @RequestMapping("/v2/messages")
 public class MessageController {
-
   private final MessageServices messageServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
-
   public MessageController(
       final MessageServices messageServices,
       final MultiTenancyConfiguration multiTenancyCfg,
@@ -39,23 +38,18 @@ public class MessageController {
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
   }
-
   @CamundaPostMapping(path = "/publication")
   public CompletableFuture<ResponseEntity<Object>> publishMessage(
       @RequestBody final MessagePublicationRequest publicationRequest) {
     return RequestMapper.toMessagePublicationRequest(
             publicationRequest, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::publishMessage);
-  }
-
   @CamundaPostMapping(path = "/correlation")
   public CompletableFuture<ResponseEntity<Object>> correlateMessage(
       @RequestBody final MessageCorrelationRequest correlationRequest) {
     return RequestMapper.toMessageCorrelationRequest(
             correlationRequest, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::correlateMessage);
-  }
-
   private CompletableFuture<ResponseEntity<Object>> correlateMessage(
       final CorrelateMessageRequest correlationRequest) {
     return RequestMapper.executeServiceMethod(
@@ -64,15 +58,8 @@ public class MessageController {
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .correlateMessage(correlationRequest),
         ResponseMapper::toMessageCorrelationResponse);
-  }
-
   private CompletableFuture<ResponseEntity<Object>> publishMessage(
       final PublicationMessageRequest request) {
-    return RequestMapper.executeServiceMethod(
-        () ->
-            messageServices
-                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .publishMessage(request),
         ResponseMapper::toMessagePublicationResponse);
-  }
 }

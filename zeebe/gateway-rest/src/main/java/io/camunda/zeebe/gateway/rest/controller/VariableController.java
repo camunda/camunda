@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
-
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
@@ -17,33 +16,29 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-
 @CamundaRestController
+@RequiresSecondaryStorage
 @RequestMapping("/v2/variables")
 public class VariableController {
-
   private final VariableServices variableServices;
   private final CamundaAuthenticationProvider authenticationProvider;
-
   public VariableController(
       final VariableServices variableServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.variableServices = variableServices;
     this.authenticationProvider = authenticationProvider;
   }
-
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<Object> searchVariables(
       @RequestBody(required = false) final VariableSearchQuery query) {
     return SearchQueryRequestMapper.toVariableQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
-  }
-
   private ResponseEntity<Object> search(final VariableQuery query) {
     try {
       final var result =
@@ -54,11 +49,8 @@ public class VariableController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
-  }
-
   @CamundaGetMapping(path = "/{variableKey}")
   public ResponseEntity<Object> getByKey(@PathVariable("variableKey") final Long variableKey) {
-    try {
       // Success case: Return the left side with the VariableItem wrapped in ResponseEntity
       return ResponseEntity.ok()
           .body(
@@ -66,8 +58,4 @@ public class VariableController {
                   variableServices
                       .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getByKey(variableKey)));
-    } catch (final Exception e) {
-      return mapErrorToResponse(e);
-    }
-  }
 }
