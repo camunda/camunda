@@ -85,11 +85,27 @@ class ProcessInstanceAuthorizationIT {
   @Test
   public void searchShouldReturnAuthorizedProcessInstances(
       @Authenticated(USER1) final CamundaClient camundaClient) {
+
     // when
     final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
+  }
+
+  @Test
+  public void searchShouldNotReturnNotauthorizedProcessInstances(
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // when
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.processDefinitionId(PROCESS_ID_2))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).hasSize(0);
   }
 
   @Test
