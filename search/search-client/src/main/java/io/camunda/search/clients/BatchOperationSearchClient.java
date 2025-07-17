@@ -16,6 +16,8 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface BatchOperationSearchClient {
 
+  BatchOperationEntity getBatchOperation(final String id);
+
   SearchQueryResult<BatchOperationEntity> searchBatchOperations(BatchOperationQuery query);
 
   SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(

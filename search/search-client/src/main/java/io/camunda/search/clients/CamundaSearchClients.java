@@ -100,7 +100,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public AuthorizationEntity getAuthorization(final long key) {
     return doGetWithReader(readers.authorizationReader(), key)
-        .orElseThrow(() -> entityNotFoundException("Authorization", key));
+        .orElseThrow(() -> entityByKeyNotFoundException("Authorization", key));
   }
 
   @Override
@@ -183,7 +183,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
     return doGetWithReader(readers.processInstanceReader(), processInstanceKey)
-        .orElseThrow(() -> entityNotFoundException("Process Instance", processInstanceKey));
+        .orElseThrow(() -> entityByKeyNotFoundException("Process Instance", processInstanceKey));
   }
 
   @Override
@@ -290,6 +290,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public BatchOperationEntity getBatchOperation(final String id) {
+    return doGetWithReader(readers.batchOperationReader(), id)
+        .orElseThrow(() -> entityByIdNotFoundException("Batch Operation", id));
+  }
+
+  @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
     return doSearchWithReader(readers.batchOperationReader(), query);
@@ -304,6 +310,11 @@ public class CamundaSearchClients implements SearchClientsProxy {
   protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGetWithReader(
       final SearchEntityReader<T, Q> reader, final long key) {
     return doGet(a -> reader.getByKey(key, a));
+  }
+
+  protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGetWithReader(
+      final SearchEntityReader<T, Q> reader, final String id) {
+    return doGet(a -> reader.getById(id, a));
   }
 
   protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearchWithReader(
@@ -354,9 +365,15 @@ public class CamundaSearchClients implements SearchClientsProxy {
     return resourceAccessController.doGet(securityContext, applier);
   }
 
-  protected CamundaSearchException entityNotFoundException(
+  protected CamundaSearchException entityByKeyNotFoundException(
       final String entityType, final long key) {
     return new CamundaSearchException(
         ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted(entityType, key), Reason.NOT_FOUND);
+  }
+
+  protected CamundaSearchException entityByIdNotFoundException(
+      final String entityType, final String id) {
+    return new CamundaSearchException(
+        ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(entityType, id), Reason.NOT_FOUND);
   }
 }
