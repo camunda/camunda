@@ -7,7 +7,7 @@ node=$1
 
 # Download and extract latest async profiler
 curl -L https://github.com/jvm-profiling-tools/async-profiler/releases/download/v4.0/async-profiler-4.0-linux-x64.tar.gz -o profiler.tar.gz
-cat profiler.tar.gz | tar xzv 
+tar -xzvf profiler.tar.gz
 
 # Copy async profiler to pod
 kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":/usr/local/camunda/data/asprof
