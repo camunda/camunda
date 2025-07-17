@@ -8,11 +8,10 @@
 package io.camunda.it.tenancy;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -30,7 +29,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class ProcessDefinitionTenancyIT {
+public class SequenceFlowTenancyIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -43,7 +42,6 @@ public class ProcessDefinitionTenancyIT {
   private static final String USER1 = "user1";
   private static final String USER2 = "user2";
   private static final String TENANT_A = "tenantA";
-  private static final String TENANT_B = "tenantB";
   private static final String PROCESS_ID = "service_tasks_v1";
 
   @UserDefinition
@@ -58,83 +56,44 @@ public class ProcessDefinitionTenancyIT {
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_B);
     assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_B);
     assignUserToTenant(adminClient, USER1, TENANT_A);
 
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
-    deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
-    waitForProcessBeingExported(adminClient);
+    final var processInstance1 = startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+
+    waitForSequenceFlowsExported(adminClient, processInstance1.getProcessInstanceKey());
   }
 
   @Test
-  public void shouldReturnAllProcessDefinitionsWithTenantAccess(
-      @Authenticated(ADMIN) final CamundaClient camundaClient) {
-    // when
-    final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
-    // then
-    assertThat(result.items()).hasSize(2);
-    assertThat(
-            result.items().stream().map(ProcessDefinition::getTenantId).collect(Collectors.toSet()))
-        .containsExactlyInAnyOrder(TENANT_A, TENANT_B);
-  }
-
-  @Test
-  public void shouldReturnOnlyTenantAProcessDefinitions(
-      @Authenticated(USER1) final CamundaClient camundaClient) {
-    // when
-    final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
-    // then
-    assertThat(result.items()).hasSize(1);
-    assertThat(
-            result.items().stream().map(ProcessDefinition::getTenantId).collect(Collectors.toSet()))
-        .containsExactlyInAnyOrder(TENANT_A);
-  }
-
-  @Test
-  public void shouldNotReturnAnyProcessDefinitions(
-      @Authenticated(USER2) final CamundaClient camundaClient) {
-    // when
-    final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
-    // then
-    assertThat(result.items()).hasSize(0);
-  }
-
-  @Test
-  void getByKeyShouldReturnTenantOwnedProcessDefinition(
+  void shouldReturnTenantOwnedSequenceFlows(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // given
-    final var processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID, TENANT_A);
+    final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID, TENANT_A);
     // when
     final var result =
-        camundaClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
     // then
-    assertThat(result).isNotNull();
-    assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(result.getTenantId()).isEqualTo(TENANT_A);
+    assertThat(result).hasSize(1);
+    assertThat(
+            result.stream()
+                .map(ProcessInstanceSequenceFlow::getTenantId)
+                .collect(Collectors.toSet()))
+        .containsExactly(TENANT_A);
   }
 
   @Test
-  void getByKeyShouldThrowNotFoundException(
+  void shouldReturnNoSequenceFlows(
       @Authenticated(ADMIN) final CamundaClient adminClient,
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // given
-    final var processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID, TENANT_A);
-
+    final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID, TENANT_A);
     // when
-    final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () -> camundaClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join());
+    final var result =
+        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
     // then
-    assertThat(exception.getMessage()).startsWith("Failed with code 404");
-    assertThat(exception.details()).isNotNull();
-    assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
-    assertThat(exception.details().getStatus()).isEqualTo(404);
-    assertThat(exception.details().getDetail())
-        .contains("Process Definition with key '%s' not found".formatted(processDefinitionKey));
+    assertThat(result).hasSize(0);
   }
 
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
@@ -156,9 +115,9 @@ public class ProcessDefinitionTenancyIT {
         .join();
   }
 
-  private static void startProcessInstance(
+  private static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String processId, final String tenant) {
-    camundaClient
+    return camundaClient
         .newCreateInstanceCommand()
         .bpmnProcessId(processId)
         .latestVersion()
@@ -167,7 +126,8 @@ public class ProcessDefinitionTenancyIT {
         .join();
   }
 
-  private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
+  private static void waitForSequenceFlowsExported(
+      final CamundaClient camundaClient, final long processInstanceKey) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -175,24 +135,30 @@ public class ProcessDefinitionTenancyIT {
             () -> {
               assertThat(
                       camundaClient
-                          .newProcessDefinitionSearchRequest()
-                          .filter(filter -> filter.processDefinitionId(PROCESS_ID))
+                          .newProcessInstanceSearchRequest()
+                          .filter(f -> f.processInstanceKey(processInstanceKey))
                           .send()
                           .join()
                           .items())
-                  .hasSize(2);
+                  .hasSize(1);
+              assertThat(
+                      camundaClient
+                          .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+                          .send()
+                          .join())
+                  .hasSize(1);
             });
   }
 
-  private long getProcessDefinitionKey(
+  private long getProcessInstanceKey(
       final CamundaClient camundaClient, final String processId, final String tenantId) {
     return camundaClient
-        .newProcessDefinitionSearchRequest()
+        .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId).tenantId(tenantId))
         .send()
         .join()
         .items()
         .getFirst()
-        .getProcessDefinitionKey();
+        .getProcessInstanceKey();
   }
 }
