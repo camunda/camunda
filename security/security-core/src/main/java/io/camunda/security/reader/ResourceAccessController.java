@@ -13,13 +13,46 @@ import io.camunda.zeebe.auth.Authorization;
 import java.util.Optional;
 import java.util.function.Function;
 
+/**
+ * A {@link ResourceAccessController} enhances any get and search with additional {@link
+ * ResourceAccessChecks} to be applied executing them. However, any implementation of the {@link
+ * ResourceAccessController} may decide to deny access immediately, and by that, to not execute the
+ * read (i.e., get or search) at all and throw an exception instead.
+ */
 public interface ResourceAccessController {
 
+  /**
+   * Called before doing a get to retrieve a single resource.
+   *
+   * @param securityContext contains the {@link CamundaAuthentication} and the required {@link
+   *     io.camunda.security.auth.Authorization authorization} to be checked.
+   * @param resourceChecksApplier will be used to pass required @{@link ResourceAccessChecks} to the
+   *     actual reader
+   */
+  <T> T doGet(
+      SecurityContext securityContext, Function<ResourceAccessChecks, T> resourceChecksApplier);
+
+  /**
+   * Called before doing a search by query.
+   *
+   * @param securityContext contains the {@link CamundaAuthentication} and the required {@link
+   *     io.camunda.security.auth.Authorization authorization} to be checked.
+   * @param resourceChecksApplier will be used to pass required @{@link ResourceAccessChecks} to the
+   *     actual reader
+   */
   <T> T doSearch(
       SecurityContext securityContext, Function<ResourceAccessChecks, T> resourceChecksApplier);
 
+  /**
+   * Returns true if the given {@link io.camunda.security.auth.SecurityContext securityContext} is
+   * supported by this {@link io.camunda.security.reader.ResourceAccessController} *
+   */
   boolean supports(SecurityContext securityContext);
 
+  /**
+   * Returns true if the given {@link io.camunda.security.auth.CamundaAuthentication authentication}
+   * is anonymously. *
+   */
   default boolean isAnonymousAuthentication(final CamundaAuthentication authentication) {
     final var claims =
         Optional.ofNullable(authentication).map(CamundaAuthentication::claims).orElse(null);

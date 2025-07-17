@@ -8,11 +8,15 @@
 package io.camunda.search.clients.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,4 +94,179 @@ class DefaultResourceAccessProviderTest {
     assertThat(result.wildcard()).isFalse();
     assertThat(result.authorization()).isEqualTo(authorization);
   }
+
+  @Test
+  void shouldAllowAccessToResource() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readProcessDefinition().resourceId("invoice"));
+
+    when(authorizationChecker.isAuthorized(eq("invoice"), any(SecurityContext.class)))
+        .thenReturn(true);
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccess(
+            authentication, authorization, new TestResource("invoice", "order"));
+
+    // then
+    assertThat(result.denied()).isFalse();
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization()).isEqualTo(authorization);
+  }
+
+  @Test
+  void shouldDenyAccessToResource() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readProcessDefinition().resourceId("invoice"));
+
+    when(authorizationChecker.isAuthorized(eq("invoice"), any(SecurityContext.class)))
+        .thenReturn(false);
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccess(
+            authentication, authorization, new TestResource("invoice", "order"));
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization()).isEqualTo(authorization);
+  }
+
+  @Test
+  void shouldAllowAccessToResourceByResourceIdSupplier() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            (Authorization.Builder<TestResource> a) ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .resourceIdSupplier(TestResource::anotherValue));
+
+    when(authorizationChecker.isAuthorized(eq("order"), any(SecurityContext.class)))
+        .thenReturn(true);
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccess(
+            authentication, authorization, new TestResource("invoice", "order"));
+
+    // then
+    assertThat(result.denied()).isFalse();
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourceIds()).containsExactlyInAnyOrder("order");
+  }
+
+  @Test
+  void shouldDenyAccessToResourceByResourceIdSupplier() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            (Authorization.Builder<TestResource> a) ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .resourceIdSupplier(TestResource::anotherValue));
+
+    when(authorizationChecker.isAuthorized(eq("order"), any(SecurityContext.class)))
+        .thenReturn(false);
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccess(
+            authentication, authorization, new TestResource("invoice", "order"));
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourceIds()).containsExactlyInAnyOrder("order");
+  }
+
+  @Test
+  void shouldThrowExceptionIfMultipleResourceIdsAreProvided() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(
+            a ->
+                a.processDefinition()
+                    .readProcessDefinition()
+                    .resourceIds(List.of("invoice", "order")));
+
+    // when
+    assertThatThrownBy(
+            () ->
+                resourceAccessProvider.hasResourceAccess(
+                    authentication, authorization, new TestResource("invoice", "order")))
+        .isInstanceOf(CamundaSearchException.class);
+  }
+
+  @Test
+  void shouldThrowExceptionIfNoResourceIdsProvided() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
+
+    // when
+    assertThatThrownBy(
+            () ->
+                resourceAccessProvider.hasResourceAccess(
+                    authentication, authorization, new TestResource("invoice", "order")))
+        .isInstanceOf(CamundaSearchException.class);
+  }
+
+  @Test
+  void shouldAllowAccessToResourceByResourceId() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readProcessDefinition().resourceId("invoice"));
+
+    when(authorizationChecker.isAuthorized(eq("invoice"), any(SecurityContext.class)))
+        .thenReturn(true);
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccessByResourceId(
+            authentication, authorization, "invoice");
+
+    // then
+    assertThat(result.denied()).isFalse();
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization()).isEqualTo(authorization);
+  }
+
+  @Test
+  void shouldDenyAccessToResourceByResourceId() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization =
+        Authorization.of(a -> a.processDefinition().readProcessDefinition().resourceId("invoice"));
+
+    when(authorizationChecker.isAuthorized(eq("invoice"), any(SecurityContext.class)))
+        .thenReturn(false);
+
+    // when
+    final var result =
+        resourceAccessProvider.hasResourceAccessByResourceId(
+            authentication, authorization, "invoice");
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization()).isEqualTo(authorization);
+  }
+
+  record TestResource(String id, String anotherValue) {}
 }

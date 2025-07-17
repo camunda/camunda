@@ -8,11 +8,22 @@
 package io.camunda.security.reader;
 
 import io.camunda.security.auth.CamundaAuthentication;
-import java.util.List;
 
 public interface TenantAccessProvider {
 
-  TenantAccessProvider NONE = (authentication) -> TenantAccess.allowed(List.of());
-
+  /**
+   * Resolves the given {@link CamundaAuthentication authentication} into a {@link TenantAccess}.
+   * The resulting {@link TenantAccess#tenantIds()} contains the tenant ids the principal is granted
+   * to access if access is not denied.
+   */
   TenantAccess resolveTenantAccess(final CamundaAuthentication authentication);
+
+  /**
+   * Returns a {@link TenantAccess} allowing or denying access to the given resource based on the
+   * tenant.
+   */
+  <T> TenantAccess hasTenantAccess(CamundaAuthentication authentication, T resource);
+
+  /** Returns a {@link TenantAccess} allowing or denying access to the given tenant id. */
+  TenantAccess hasTenantAccessByTenantId(CamundaAuthentication authentication, String tenantId);
 }

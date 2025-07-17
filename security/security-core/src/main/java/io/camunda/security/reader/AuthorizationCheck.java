@@ -9,9 +9,13 @@ package io.camunda.security.reader;
 
 import io.camunda.security.auth.Authorization;
 
-public record AuthorizationCheck(boolean enabled, Authorization authorization) {
+/**
+ * Enables or disables a {@link AuthorizationCheck}. If enabled, then the authorization to be
+ * checked must be provided.
+ */
+public record AuthorizationCheck(boolean enabled, Authorization<?> authorization) {
 
-  public static AuthorizationCheck enabled(final Authorization authorization) {
+  public static AuthorizationCheck enabled(final Authorization<?> authorization) {
     return new AuthorizationCheck(true, authorization);
   }
 

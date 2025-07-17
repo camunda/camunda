@@ -52,7 +52,7 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return stringTerms(MAPPING_RULE_ID, authorization.resourceIds());
   }
 }

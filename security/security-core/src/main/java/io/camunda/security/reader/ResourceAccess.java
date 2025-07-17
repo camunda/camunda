@@ -9,7 +9,7 @@ package io.camunda.security.reader;
 
 import io.camunda.security.auth.Authorization;
 
-public record ResourceAccess(boolean allowed, boolean wildcard, Authorization authorization) {
+public record ResourceAccess(boolean allowed, boolean wildcard, Authorization<?> authorization) {
 
   /** Returns true if access to the resource is denied. */
   public boolean denied() {
@@ -20,7 +20,7 @@ public record ResourceAccess(boolean allowed, boolean wildcard, Authorization au
    * Creates a {@link ResourceAccess} that allows access to a specific resource. The resource and
    * the granted permissions are specified by the passed {@link Authorization authorization}.
    */
-  public static ResourceAccess allowed(final Authorization authorization) {
+  public static ResourceAccess allowed(final Authorization<?> authorization) {
     return new ResourceAccess(true, false, authorization);
   }
 
@@ -28,7 +28,7 @@ public record ResourceAccess(boolean allowed, boolean wildcard, Authorization au
    * Creates a {@link ResourceAccess} that denies access to a specific resource. The denied access
    * is specified by the passed {@link Authorization authorization}.
    */
-  public static ResourceAccess denied(final Authorization authorization) {
+  public static ResourceAccess denied(final Authorization<?> authorization) {
     return new ResourceAccess(false, false, authorization);
   }
 
@@ -36,7 +36,7 @@ public record ResourceAccess(boolean allowed, boolean wildcard, Authorization au
    * Creates a {@link ResourceAccess} that allows wildcard access to any specific resource. The
    * passed {@link Authorization authorization} specifies the permissions that are allowed.
    */
-  public static ResourceAccess wildcard(final Authorization authorization) {
+  public static ResourceAccess wildcard(final Authorization<?> authorization) {
     return new ResourceAccess(true, true, authorization);
   }
 }

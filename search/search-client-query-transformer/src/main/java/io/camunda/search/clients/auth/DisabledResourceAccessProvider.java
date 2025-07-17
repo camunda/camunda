@@ -19,4 +19,20 @@ public class DisabledResourceAccessProvider implements ResourceAccessProvider {
       final CamundaAuthentication authentication, final Authorization requiredAuthorization) {
     return ResourceAccess.wildcard(requiredAuthorization);
   }
+
+  @Override
+  public <T> ResourceAccess hasResourceAccess(
+      final CamundaAuthentication authentication,
+      final Authorization<T> requiredAuthorization,
+      final T resource) {
+    return ResourceAccess.wildcard(requiredAuthorization);
+  }
+
+  @Override
+  public <T> ResourceAccess hasResourceAccessByResourceId(
+      final CamundaAuthentication authentication,
+      final Authorization<T> requiredAuthorization,
+      final String resourceId) {
+    return ResourceAccess.wildcard(requiredAuthorization);
+  }
 }

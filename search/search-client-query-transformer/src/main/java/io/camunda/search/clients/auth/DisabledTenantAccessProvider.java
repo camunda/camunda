@@ -17,4 +17,16 @@ public class DisabledTenantAccessProvider implements TenantAccessProvider {
   public TenantAccess resolveTenantAccess(final CamundaAuthentication authentication) {
     return TenantAccess.wildcard(null);
   }
+
+  @Override
+  public <T> TenantAccess hasTenantAccess(
+      final CamundaAuthentication authentication, final T resource) {
+    return TenantAccess.wildcard(null);
+  }
+
+  @Override
+  public TenantAccess hasTenantAccessByTenantId(
+      final CamundaAuthentication authentication, final String tenantId) {
+    return TenantAccess.wildcard(null);
+  }
 }

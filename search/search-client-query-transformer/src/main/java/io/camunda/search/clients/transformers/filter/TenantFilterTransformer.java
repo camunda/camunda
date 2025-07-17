@@ -57,7 +57,7 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return stringTerms(TENANT_ID, authorization.resourceIds());
   }
 

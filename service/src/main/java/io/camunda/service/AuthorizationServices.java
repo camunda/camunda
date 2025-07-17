@@ -95,10 +95,7 @@ public class AuthorizationServices
                         .page(p -> p.size(1))))
         .items()
         .stream()
-        .map(
-            authorizationEntity -> {
-              return authorizationEntity.resourceId();
-            })
+        .map(AuthorizationEntity::resourceId)
         .collect(Collectors.toList());
   }
 

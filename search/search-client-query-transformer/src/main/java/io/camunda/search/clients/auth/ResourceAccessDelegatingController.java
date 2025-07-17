@@ -30,6 +30,13 @@ public class ResourceAccessDelegatingController implements ResourceAccessControl
   }
 
   @Override
+  public <T> T doGet(
+      final SecurityContext securityContext,
+      final Function<ResourceAccessChecks, T> resourceChecksApplier) {
+    return getMatchingController(securityContext).doGet(securityContext, resourceChecksApplier);
+  }
+
+  @Override
   public <T> T doSearch(
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {

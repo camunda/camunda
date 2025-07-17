@@ -10,6 +10,9 @@ package io.camunda.search.clients.auth;
 import static io.camunda.search.exception.ErrorMessages.ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION;
 
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
+import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.exception.TenantAccessDeniedException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -37,6 +40,15 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
   }
 
   @Override
+  public <T> T doGet(
+      final SecurityContext securityContext,
+      final Function<ResourceAccessChecks, T> resourceChecksApplier) {
+    final var authentication = securityContext.authentication();
+    final var authorization = (Authorization<T>) securityContext.authorization();
+    return doPostFiltering(authentication, authorization, resourceChecksApplier);
+  }
+
+  @Override
   public <T> T doSearch(
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {
@@ -53,7 +65,7 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
 
   protected <T> T doPreFiltering(
       final CamundaAuthentication authentication,
-      final Authorization authorization,
+      final Authorization<?> authorization,
       final Function<ResourceAccessChecks, T> applier) {
     final var authorizationCheck = determineAuthorizationCheck(authentication, authorization);
     final var tenantCheck = determineTenantCheck(authentication);
@@ -64,13 +76,13 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
   }
 
   protected AuthorizationCheck determineAuthorizationCheck(
-      final CamundaAuthentication authentication, final Authorization authorization) {
+      final CamundaAuthentication authentication, final Authorization<?> authorization) {
     final var resourceAccess = resolveResourcesAccess(authentication, authorization);
     return createAuthorizationCheck(resourceAccess);
   }
 
   protected ResourceAccess resolveResourcesAccess(
-      final CamundaAuthentication authentication, final Authorization authorization) {
+      final CamundaAuthentication authentication, final Authorization<?> authorization) {
     return resourceAccessProvider.resolveResourceAccess(authentication, authorization);
   }
 
@@ -107,5 +119,43 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
         .filter(t -> !t.wildcard())
         .map(a -> TenantCheck.enabled(tenantAccess.tenantIds()))
         .orElseGet(TenantCheck::disabled);
+  }
+
+  protected <T> T doPostFiltering(
+      final CamundaAuthentication authentication,
+      final Authorization<T> authorization,
+      final Function<ResourceAccessChecks, T> applier) {
+    // read without any resource access check
+    final T resource = applier.apply(ResourceAccessChecks.disabled());
+
+    if (resource == null) {
+      return null;
+    }
+
+    // now ensure access to resource
+    ensureTenantAccessOrThrow(authentication, resource);
+    ensureResourceAccessOrThrow(authentication, authorization, resource);
+
+    return resource;
+  }
+
+  protected <T> void ensureResourceAccessOrThrow(
+      final CamundaAuthentication authentication,
+      final Authorization<T> authorization,
+      final T document) {
+    final var resourceAccess =
+        resourceAccessProvider.hasResourceAccess(authentication, authorization, document);
+    if (resourceAccess.denied()) {
+      throw new ResourceAccessDeniedException(authorization);
+    }
+  }
+
+  protected <T> void ensureTenantAccessOrThrow(
+      final CamundaAuthentication authentication, final T document) {
+    final var tenantAccess = tenantAccessProvider.hasTenantAccess(authentication, document);
+    if (tenantAccess.denied()) {
+      throw new TenantAccessDeniedException(
+          ErrorMessages.ERROR_RESOURCE_ACCESS_CONTROLLER_NO_TENANT_ACCESS);
+    }
   }
 }

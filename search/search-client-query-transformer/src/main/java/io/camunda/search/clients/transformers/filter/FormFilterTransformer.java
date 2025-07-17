@@ -37,7 +37,7 @@ public class FormFilterTransformer extends IndexFilterTransformer<FormFilter> {
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return matchAll();
   }
 }
