@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+import static io.camunda.service.authorization.Authorizations.DECISION_REQUIREMENTS_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionRequirementsEntity;
@@ -15,7 +16,6 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -52,8 +52,7 @@ public final class DecisionRequirementsServices
             decisionRequirementSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.decisionRequirementsDefinition().read())))
+                        authentication, DECISION_REQUIREMENTS_READ_AUTHORIZATION))
                 .searchDecisionRequirements(
                     decisionRequirementsSearchQuery(
                         q -> q.filter(query.filter()).sort(query.sort()).page(query.page()))));
@@ -64,26 +63,16 @@ public final class DecisionRequirementsServices
   }
 
   public DecisionRequirementsEntity getByKey(final Long key, final boolean includeXml) {
-    final var result =
-        executeSearchRequest(
-                () ->
-                    decisionRequirementSearchClient
-                        .withSecurityContext(
-                            securityContextProvider.provideSecurityContext(authentication))
-                        .searchDecisionRequirements(
-                            decisionRequirementsSearchQuery(
-                                q ->
-                                    q.filter(f -> f.decisionRequirementsKeys(key))
-                                        .resultConfig(r -> r.includeXml(includeXml))
-                                        .singleResult())))
-            .items()
-            .getFirst();
-    final var authorization = Authorization.of(a -> a.decisionRequirementsDefinition().read());
-    if (!securityContextProvider.isAuthorized(
-        result.decisionRequirementsId(), authentication, authorization)) {
-      throw ErrorMapper.createForbiddenException(authorization);
-    }
-    return result;
+    return executeSearchRequest(
+        () ->
+            decisionRequirementSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.withAuthorization(
+                            DECISION_REQUIREMENTS_READ_AUTHORIZATION,
+                            DecisionRequirementsEntity::decisionRequirementsId)))
+                .getDecisionRequirements(key, includeXml));
   }
 
   public SearchQueryResult<DecisionRequirementsEntity> search(

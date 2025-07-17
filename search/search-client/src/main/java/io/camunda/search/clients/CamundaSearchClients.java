@@ -157,6 +157,13 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionRequirementsEntity getDecisionRequirements(
+      final long key, final boolean includeXml) {
+    return doGet(a -> readers.decisionRequirementsReader().getByKey(key, a, includeXml))
+        .orElseThrow(() -> entityByKeyNotFoundException("Decision Requirements", key));
+  }
+
+  @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery query) {
     return doSearchWithReader(readers.decisionRequirementsReader(), query);

@@ -115,6 +115,12 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionRequirementsEntity getDecisionRequirements(
+      final long key, final boolean includeXml) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery filter) {
     throw new NoSecondaryStorageException();

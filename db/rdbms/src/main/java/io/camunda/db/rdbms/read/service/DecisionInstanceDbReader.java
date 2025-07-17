@@ -41,8 +41,8 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
   }
 
   @Override
-  public DecisionInstanceEntity getById(final String id,
-      final ResourceAccessChecks resourceAccessChecks) {
+  public DecisionInstanceEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(id).orElse(null);
   }
 

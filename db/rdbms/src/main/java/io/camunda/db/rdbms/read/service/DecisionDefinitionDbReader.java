@@ -32,8 +32,8 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
   }
 
   @Override
-  public DecisionDefinitionEntity getByKey(final long key,
-      final ResourceAccessChecks resourceAccessChecks) {
+  public DecisionDefinitionEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
     return findOne(key).orElse(null);
   }
 
