@@ -12,6 +12,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import io.camunda.authentication.config.controllers.TestApiController;
+import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -20,6 +21,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
@@ -126,6 +129,26 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
 
     // then
     assertThat(testResult).hasStatusOk();
+  }
+
+  @Test
+  public void shouldReturnCsrfTokenOnSuccessfulLogin() {
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .post()
+            .uri("https://localhost/login")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .formField("username", TestUserDetailsService.DEMO_USERNAME)
+            .formField("password", TestUserDetailsService.DEMO_USERNAME)
+            .exchange();
+
+    // then
+    assertThat(testResult)
+        .hasStatus(HttpStatus.NO_CONTENT)
+        .containsHeader("X-CSRF-TOKEN")
+        .cookies()
+        .containsCookie("X-CSRF-TOKEN");
   }
 
   protected static HttpHeaders basicAuthDemo() {

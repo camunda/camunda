@@ -15,7 +15,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 public class TestUserDetailsService implements UserDetailsService {
 
-  private static final String DEMO_USERNAME = "demo";
+  public static final String DEMO_USERNAME = "demo";
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {

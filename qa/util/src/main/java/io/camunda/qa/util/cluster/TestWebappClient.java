@@ -44,14 +44,10 @@ public class TestWebappClient {
                     "username=" + username + "&password=" + password))
             .build();
 
-    sendRequestAndThrowExceptionOnFailure(httpClient, loginRequest);
-
-    final var rootServletResponse =
-        sendRequestAndThrowExceptionOnFailure(
-            httpClient, HttpRequest.newBuilder().uri(endpoint).GET().build());
+    final var loginResponse = sendRequestAndThrowExceptionOnFailure(httpClient, loginRequest);
 
     final var csrfToken =
-        rootServletResponse.headers().firstValue(WebSecurityConfig.X_CSRF_TOKEN).orElse(null);
+        loginResponse.headers().firstValue(WebSecurityConfig.X_CSRF_TOKEN).orElse(null);
 
     return new TestLoggedInWebappClient(httpClient, cookieManager, csrfToken);
   }
