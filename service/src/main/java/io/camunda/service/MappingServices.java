@@ -30,32 +30,32 @@ import java.util.stream.Stream;
 public class MappingServices
     extends SearchQueryService<MappingServices, MappingRuleQuery, MappingRuleEntity> {
 
-  private final MappingRuleSearchClient mappingSearchClient;
+  private final MappingRuleSearchClient mappingRuleSearchClient;
 
   public MappingServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final MappingRuleSearchClient mappingSearchClient,
+      final MappingRuleSearchClient mappingRuleSearchClient,
       final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
-    this.mappingSearchClient = mappingSearchClient;
+    this.mappingRuleSearchClient = mappingRuleSearchClient;
   }
 
   @Override
   public SearchQueryResult<MappingRuleEntity> search(final MappingRuleQuery query) {
     return executeSearchRequest(
         () ->
-            mappingSearchClient
+            mappingRuleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.mapping().read())))
+                        authentication, Authorization.of(a -> a.mappingRule().read())))
                 .searchMappingRules(query));
   }
 
   @Override
   public MappingServices withAuthentication(final CamundaAuthentication authentication) {
     return new MappingServices(
-        brokerClient, securityContextProvider, mappingSearchClient, authentication);
+        brokerClient, securityContextProvider, mappingRuleSearchClient, authentication);
   }
 
   public CompletableFuture<MappingRecord> createMapping(final MappingDTO request) {

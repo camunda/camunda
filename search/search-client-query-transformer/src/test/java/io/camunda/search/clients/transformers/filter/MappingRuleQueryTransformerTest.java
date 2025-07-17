@@ -22,6 +22,7 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MappingRuleFilter.Builder;
 import io.camunda.search.filter.MappingRuleFilter.Claim;
+import io.camunda.security.auth.Authorization;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import java.util.List;
@@ -91,7 +92,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyAuthorizationCheck() {
     // given
     final var authorization =
-        Authorization.of(a -> a.mapping().read().resourceIds(List.of("1", "2")));
+        Authorization.of(a -> a.mappingRule().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -105,7 +106,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchTermsQuery.class,
             t -> {
-              assertThat(t.field()).isEqualTo(MappingIndex.MAPPING_ID);
+              assertThat(t.field()).isEqualTo(MappingRuleIndex.MAPPING_RULE_ID);
               assertThat(t.values()).hasSize(2);
               assertThat(t.values().stream().map(TypedValue::stringValue).toList())
                   .containsExactlyInAnyOrder("1", "2");
@@ -115,7 +116,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
     // given
-    final var authorization = Authorization.of(a -> a.mapping().read());
+    final var authorization = Authorization.of(a -> a.mappingRule().read());
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var resourceAccessChecks =
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
@@ -160,7 +161,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
   public void shouldApplyFilterAndChecks() {
     // given
     final var authorization =
-        Authorization.of(a -> a.mapping().read().resourceIds(List.of("1", "2")));
+        Authorization.of(a -> a.mappingRule().read().resourceIds(List.of("1", "2")));
     final var authorizationCheck = AuthorizationCheck.enabled(authorization);
     final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
     final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
