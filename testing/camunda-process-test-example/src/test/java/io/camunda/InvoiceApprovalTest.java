@@ -97,7 +97,7 @@ public class InvoiceApprovalTest {
                   .join();
             });
 
-    // and now kick of the process instance
+    // and now kick off the process instance
     final var processInstance =
         client
             .newCreateInstanceCommand()
