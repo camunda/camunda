@@ -62,7 +62,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "decisionDefinitionName": "ddn",
                        "decisionDefinitionVersion": 0,
                        "decisionDefinitionType": "DECISION_TABLE",
-                       "result": "result"
+                       "result": "result",
+                       "tenantId": "tenantId"
                    }
                ],
                "page": {
