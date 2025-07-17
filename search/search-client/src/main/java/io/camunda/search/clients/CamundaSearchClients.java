@@ -99,6 +99,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public AuthorizationEntity getAuthorization(final long key) {
+    return doGetWithReader(readers.authorizationReader(), key)
+        .orElseThrow(() -> entityNotFoundException("Authorization", key));
+  }
+
+  @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery query) {
     return doSearchWithReader(readers.authorizationReader(), query);

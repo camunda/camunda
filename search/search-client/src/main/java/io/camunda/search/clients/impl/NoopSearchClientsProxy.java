@@ -67,6 +67,11 @@ import java.util.Map;
 public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
+  public AuthorizationEntity getAuthorization(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery filter) {
     return SearchQueryResult.empty();
