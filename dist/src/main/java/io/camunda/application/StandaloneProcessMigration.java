@@ -8,7 +8,7 @@
 package io.camunda.application;
 
 import io.camunda.application.commons.migration.AsyncMigrationsRunner;
-import io.camunda.application.commons.migration.AsyncMigrationsRunner.MigrationFinishedEvent;
+import io.camunda.application.commons.migration.MigrationFinishedEvent;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
@@ -50,8 +50,7 @@ public class StandaloneProcessMigration implements ApplicationListener<Migration
   @Override
   public void onApplicationEvent(final MigrationFinishedEvent event) throws RuntimeException {
     final int exitCode =
-        SpringApplication.exit(
-            applicationContext, () -> event.getMigrationsException() == null ? 0 : 1);
+        SpringApplication.exit(applicationContext, () -> event.isSuccess() ? 0 : 1);
     System.exit(exitCode);
   }
 }

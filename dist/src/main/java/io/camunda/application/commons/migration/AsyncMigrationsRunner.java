@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Profile;
@@ -59,6 +58,7 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
 
   private void startMigrators(final ApplicationArguments args) throws Exception {
     final Exception migrationsExceptions = new Exception("migration failed");
+    boolean migrationFailed = false;
     try (final var executor =
         Executors.newFixedThreadPool(
             migrators.size(), new CustomizableThreadFactory("migration-"))) {
@@ -67,30 +67,33 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
         try {
           result.get();
         } catch (final ExecutionException e) {
+          migrationFailed = true;
           LOG.error("Migrator failed", e.getCause());
           migrationsExceptions.addSuppressed(e.getCause());
         }
       }
     }
 
+    eventPublisher.publishEvent(new ProcessMigrationFinishedEvent(migrationFailed));
+
     if (migrationsExceptions.getSuppressed().length > 0) {
-      eventPublisher.publishEvent(new MigrationFinishedEvent(migrationsExceptions));
       throw migrationsExceptions;
     }
-    eventPublisher.publishEvent(new MigrationFinishedEvent(null));
     LOG.info("All migration tasks completed");
   }
 
-  public static class MigrationFinishedEvent extends ApplicationEvent {
-    private final Throwable migrationsException;
+  public static class ProcessMigrationFinishedEvent extends MigrationFinishedEvent {
 
-    public MigrationFinishedEvent(final Throwable migrationsException) {
-      super(new Object());
-      this.migrationsException = migrationsException;
+    private final boolean success;
+
+    public ProcessMigrationFinishedEvent(final boolean success) {
+      super(success);
+      this.success = success;
     }
 
-    public Throwable getMigrationsException() {
-      return migrationsException;
+    @Override
+    public boolean isSuccess() {
+      return success;
     }
   }
 }
