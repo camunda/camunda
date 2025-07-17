@@ -44,6 +44,7 @@ class UnifiedConfigurationHelperTest {
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
         helper.validateLegacyConfiguration(
             "modern.prop", "newVal", String.class, false, true));
+
     assertEquals(UnifiedConfigurationHelper.WRONG_INPUT_ERROR, ex.getMessage());
   }
 
@@ -52,6 +53,7 @@ class UnifiedConfigurationHelperTest {
     IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
         helper.validateLegacyConfiguration(
             "unknown.prop", "newVal", String.class, true, false));
+
     assertTrue(ex.getMessage().contains("unknown.prop"));
   }
 
@@ -93,6 +95,7 @@ class UnifiedConfigurationHelperTest {
     RuntimeException ex = assertThrows(RuntimeException.class, () ->
         helper.validateLegacyConfiguration(
             "modern.prop", "newVal", String.class, true, false));
+
     assertTrue(ex.getMessage().contains("legacy.prop1"));
     assertTrue(ex.getMessage().contains("oldVal1"));
     assertTrue(ex.getMessage().contains("oldVal2"));
@@ -107,6 +110,7 @@ class UnifiedConfigurationHelperTest {
     RuntimeException ex = assertThrows(RuntimeException.class, () ->
         helper.validateLegacyConfiguration(
             "modern.prop", "newVal", String.class, true, true));
+
     assertTrue(ex.getMessage().contains("legacy.prop1"));
     assertTrue(ex.getMessage().contains("modern.prop"));
   }
@@ -120,6 +124,7 @@ class UnifiedConfigurationHelperTest {
     // newValue is null => unset
     String result = helper.validateLegacyConfiguration(
         "modern.prop", null, String.class, true, false);
+
     assertEquals("oldVal", result);
     // Ideally check logDeprecationMessage called - requires spying or logging capture
   }
@@ -132,6 +137,89 @@ class UnifiedConfigurationHelperTest {
 
     String result = helper.validateLegacyConfiguration(
         "modern.prop", "newVal", String.class, true, false);
+
+    assertEquals("newVal", result);
+  }
+
+  @Test
+  void returnsNewValueIfLegacyConfigNotAllowedAndNoLegacyPropertiesSet() {
+    // legacy config not allowed but no legacy values set -> returns newValue
+    Map<String, String> values = new HashMap<>();
+    values.put("legacy.prop1", null);
+    values.put("legacy.prop2", null);
+    setLegacyPropertyValues(values);
+
+    String result = helper.validateLegacyConfiguration(
+        "modern.prop", "newVal", String.class, false, false);
+
+    assertEquals("newVal", result);
+  }
+
+  @Test
+  void returnsLegacyValueIfLegacyConfigAllowedAndMultipleLegacyPropertiesHaveSameValue() {
+    // legacy config allowed, multiple legacy properties with same value -> return legacyValue
+    setLegacyPropertyValues(Map.of(
+        "legacy.prop1", "sameVal",
+        "legacy.prop2", "sameVal"
+    ));
+
+    String result = helper.validateLegacyConfiguration(
+        "modern.prop", "", String.class, true, false);
+
+    assertEquals("sameVal", result);
+  }
+
+  @Test
+  void returnsNewValueIfNoLegacyPropertiesSetAndNewValueIsNull() {
+    // no legacy values set, newValue is null => return newValue (null)
+    Map<String, String> values = new HashMap<>();
+    values.put("legacy.prop1", "");
+    values.put("legacy.prop2", "");
+    setLegacyPropertyValues(values);
+
+    String result = helper.validateLegacyConfiguration(
+        "modern.prop", null, String.class, true, false);
+
+    assertNull(result);
+  }
+
+  @Test
+  void returnsNewValueIfLegacyConfigAllowedAndLegacyValueSetAndNewValueSet() {
+    // legacy config allowed, legacy value set and newValue set => return newValue
+    setLegacyPropertyValues(Map.of(
+        "legacy.prop1", "legacyVal"
+    ));
+
+    String result = helper.validateLegacyConfiguration(
+        "modern.prop", "newVal", String.class, true, false);
+
+    assertEquals("newVal", result);
+  }
+
+  @Test
+  void returnsNewValueIfOnlyIfValuesMatchIsFalseAndLegacyValueDiffersFromNewValue() {
+    // onlyIfValuesMatch == false, legacy value differs from newValue => return newValue
+    setLegacyPropertyValues(Map.of(
+        "legacy.prop1", "legacyVal"
+    ));
+
+    String result = helper.validateLegacyConfiguration(
+        "modern.prop", "differentVal", String.class, true, false);
+
+    assertEquals("differentVal", result);
+  }
+
+  @Test
+  void returnsNewValueIfLegacyPropertiesContainNullOrEmptyValues() {
+    // legacy config allowed, legacy properties have null/empty values => ignore and return newValue
+    Map<String, String> values = new HashMap<>();
+    values.put("legacy.prop1", null);
+    values.put("legacy.prop2", "");
+    setLegacyPropertyValues(values);
+
+    String result = helper.validateLegacyConfiguration(
+        "modern.prop", "newVal", String.class, true, false);
+
     assertEquals("newVal", result);
   }
 }
