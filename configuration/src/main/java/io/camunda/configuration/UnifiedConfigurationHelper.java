@@ -21,7 +21,9 @@ import org.springframework.core.env.Environment;
 @ComponentScan("io.camunda.configuration")
 public class UnifiedConfigurationHelper {
 
-  public static final Map<String, Set<String>> LEGACY_PROPERTIES =
+  private static UnifiedConfigurationHelper instance;
+
+  private static final Map<String, Set<String>> LEGACY_PROPERTIES =
       Map.of(
           "camunda.data.secondary-storage.elasticsearch.url",
           Set.of(
@@ -29,8 +31,7 @@ public class UnifiedConfigurationHelper {
               "camunda.operate.elasticsearch.url",
               "camunda.operate.zeebeElasticsearch.url",
               "camunda.tasklist.elasticsearch.url",
-              "camunda.tasklist.zeebeElasticsearch.url",
-              "zeebe.broker.exporters.camundaExporter.args.connect.url")); // check with Deepthi
+              "camunda.tasklist.zeebeElasticsearch.url"));
 
   private static final String LEGACY_PROPERTIES_DIFFERENT_VALUES_ERROR =
       "Invalid configuration. "
@@ -59,23 +60,31 @@ public class UnifiedConfigurationHelper {
   private static final String WRONG_MODERN_PROPERTY_ERROR =
       "Property %s does not need legacy configuration validation.";
 
+  // --- Exposed static interface ---
+
+  public static <T> T validateLegacyConfiguration(
+      final String newProperty,
+      final T newValue,
+      final Class<T> expectedType,
+      final boolean legacyConfigAllowed,
+      final boolean onlyIfValuesMatch) {
+    return instance.instanceValidateLegacyConfiguration(
+        newProperty, newValue, expectedType, legacyConfigAllowed, onlyIfValuesMatch);
+  }
+
+  // --- Instance ---
+
   private Environment environment;
   private Map<String, Set<String>> legacyProperties;
-  private static UnifiedConfigurationHelper fallbackInstance;
-
   private final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
 
   public UnifiedConfigurationHelper(@Autowired Environment environment) {
-    fallbackInstance = this;
-    fallbackInstance.environment = environment;
-    fallbackInstance.legacyProperties = LEGACY_PROPERTIES;
+    this.environment = environment;
+    this.legacyProperties = LEGACY_PROPERTIES;
+    UnifiedConfigurationHelper.instance = this;
   }
 
-  public static UnifiedConfigurationHelper getInstance() {
-    return fallbackInstance;
-  }
-
-  public <T> T validateLegacyConfiguration(
+  private <T> T instanceValidateLegacyConfiguration(
       final String newProperty,
       final T newValue,
       final Class<T> expectedType,
@@ -179,11 +188,12 @@ public class UnifiedConfigurationHelper {
     return legacyProperties.get(newProperty);
   }
 
-  public void setCustomLegacyProperties(final Map<String, Set<String>> legacyProperties) {
-    this.legacyProperties = legacyProperties;
-  }
-
   public Environment getEnvironment() {
     return environment;
+  }
+
+  // Allows tests to inject the mock properties map.
+  public void setCustomLegacyProperties(final Map<String, Set<String>> legacyProperties) {
+    this.legacyProperties = legacyProperties;
   }
 }

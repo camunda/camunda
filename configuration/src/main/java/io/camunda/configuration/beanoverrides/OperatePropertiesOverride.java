@@ -43,7 +43,7 @@ public class OperatePropertiesOverride {
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
     if ("elasticsearch".equals(database.getType())) {
-      override.getElasticsearch().setUrl(database.getElasticsearch().url());
+      override.getElasticsearch().setUrl(database.getElasticsearch().getUrl());
     }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
