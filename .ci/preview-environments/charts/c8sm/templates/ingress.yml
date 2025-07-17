@@ -1,0 +1,77 @@
+# We connot use .Values.global.ingress.annotations to include "infrapreviewenvironmentsingress.annotations" due
+# to the "toYaml" function used before "tpl". A similar custom ingress must be used instead.
+# https://github.com/camunda/camunda-platform-helm/blob/camunda-platform-8.7-12.3.0/charts/camunda-platform-8.7/templates/camunda/ingress.yaml#L9
+---
+{{- $camundaPlatform := deepCopy (index .Subcharts "camunda-platform") -}}
+{{- $_ := set .Values "camundaPlatform" (deepCopy (index .Values "camunda-platform")) -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "camundaPlatform.fullname" $camundaPlatform }}
+  labels:
+    {{- include "commonLabels" $ | nindent 4 }}
+  annotations: 
+    {{- include "commonAnnotations" $ | nindent 4 }}
+    {{- include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 -}}
+    ingress.kubernetes.io/rewrite-target: "/"
+    nginx.ingress.kubernetes.io/app-root: {{ .Values.camundaPlatform.webModeler.contextPath }}
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: {{ include "ingress.domain" $ | quote }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: {{ include "identity.keycloak.service" $camundaPlatform }}
+            port:
+              number: {{ include "identity.keycloak.port" $camundaPlatform }}
+        path: {{ include "identity.keycloak.contextPath" $camundaPlatform }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "identity.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.identity.service.port }}
+        path: {{ .Values.camundaPlatform.identity.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "operate.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.operate.service.port }}
+        path: {{ .Values.camundaPlatform.operate.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "optimize.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.optimize.service.port }}
+        path: {{ .Values.camundaPlatform.optimize.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "tasklist.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.tasklist.service.port }}
+        path: {{ .Values.camundaPlatform.tasklist.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "webModeler.webapp.fullname" $camundaPlatform }}
+            port:
+              number: {{ .Values.camundaPlatform.webModeler.webapp.service.port }}
+        path: {{ .Values.camundaPlatform.webModeler.contextPath }}
+        pathType: Prefix
+      - backend:
+          service:
+            name: {{ template "webModeler.websockets.fullname" $camundaPlatform }}
+            port:
+              number:  {{ .Values.camundaPlatform.webModeler.websockets.service.port }}
+        path: {{ template "webModeler.websocketContextPath" $camundaPlatform }}
+        pathType: Prefix
+  tls:
+  - hosts:
+    - {{ include "ingress.domain" $ | quote }}
+    secretName: camunda-wildcard-certificate-tls
