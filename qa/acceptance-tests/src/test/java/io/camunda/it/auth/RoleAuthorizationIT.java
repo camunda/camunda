@@ -204,7 +204,7 @@ class RoleAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     assertThatThrownBy(() -> camundaClient.newRoleGetRequest(ROLE_ID_1).send().join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("404: 'Not Found'");
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @Test
