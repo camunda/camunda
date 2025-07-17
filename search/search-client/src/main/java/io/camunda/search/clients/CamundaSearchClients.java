@@ -187,6 +187,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public IncidentEntity getIncident(final long key) {
+    return doGetWithReader(readers.incidentReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Incident", key));
+  }
+
+  @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery query) {
     return doSearchWithReader(readers.incidentReader(), query);
   }

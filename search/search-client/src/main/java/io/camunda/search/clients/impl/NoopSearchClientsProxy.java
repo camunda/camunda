@@ -160,6 +160,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public IncidentEntity getIncident(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     return SearchQueryResult.empty();
   }

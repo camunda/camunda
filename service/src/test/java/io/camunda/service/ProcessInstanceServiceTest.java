@@ -16,7 +16,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.IncidentEntity;
@@ -60,7 +59,7 @@ public final class ProcessInstanceServiceTest {
   private ProcessInstanceServices services;
   private ProcessInstanceSearchClient processInstanceSearchClient;
   private SequenceFlowSearchClient sequenceFlowSearchClient;
-  private IncidentSearchClient incidentSearchClient;
+  private IncidentServices incidentServices;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
   private BrokerClient brokerClient;
@@ -70,11 +69,12 @@ public final class ProcessInstanceServiceTest {
     processInstanceSearchClient = mock(ProcessInstanceSearchClient.class);
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
     authentication = CamundaAuthentication.none();
-    incidentSearchClient = mock(IncidentSearchClient.class);
+    incidentServices = mock(IncidentServices.class);
     when(processInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(processInstanceSearchClient);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
-    when(incidentSearchClient.withSecurityContext(any())).thenReturn(incidentSearchClient);
+    when(incidentServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(incidentServices);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
     services =
@@ -83,7 +83,7 @@ public final class ProcessInstanceServiceTest {
             securityContextProvider,
             processInstanceSearchClient,
             sequenceFlowSearchClient,
-            incidentSearchClient,
+            incidentServices,
             authentication);
   }
 
@@ -398,21 +398,16 @@ public final class ProcessInstanceServiceTest {
     when(processInstanceSearchClient.getProcessInstance(eq(processInstanceKey)))
         .thenReturn(processInstance);
 
-    when(incidentSearchClient.searchIncidents(any())).thenReturn(queryResult);
+    when(incidentServices.search(any(IncidentQuery.class))).thenReturn(queryResult);
 
     // when
     final var result = services.searchIncidents(processInstanceKey, query);
 
     // then
     assertThat(result).isEqualTo(queryResult);
-    verify(incidentSearchClient)
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication,
-                Authorization.of(a -> a.processDefinition().readProcessInstance())));
 
     final var incidentQueryCaptor = ArgumentCaptor.forClass(IncidentQuery.class);
-    verify(incidentSearchClient).searchIncidents(incidentQueryCaptor.capture());
+    verify(incidentServices).search(incidentQueryCaptor.capture());
     final var incidentQuery = incidentQueryCaptor.getValue();
     assertThat(incidentQuery.filter().treePathOperations())
         .containsExactly(Operation.like("*" + processInstance.treePath() + "*"));
@@ -443,6 +438,6 @@ public final class ProcessInstanceServiceTest {
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
-    verifyNoInteractions(incidentSearchClient);
+    verifyNoInteractions(incidentServices);
   }
 }
