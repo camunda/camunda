@@ -7,11 +7,12 @@
  */
 package io.camunda.service;
 
+import static io.camunda.service.authorization.Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.MessageSubscriptionSearchClient;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -39,8 +40,7 @@ public class MessageSubscriptionServices
             searchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                        authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
                 .searchMessageSubscriptions(query));
   }
 
