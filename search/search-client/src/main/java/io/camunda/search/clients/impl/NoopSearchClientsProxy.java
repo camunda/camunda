@@ -168,6 +168,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public MappingEntity getMapping(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
     return SearchQueryResult.empty();
   }
