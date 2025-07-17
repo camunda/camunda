@@ -7,17 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
-import io.camunda.search.connect.configuration.DatabaseConfig;
-import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.service.validation.SecondaryStorageValidator;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+
 /**
  * Interceptor that validates secondary storage availability for endpoints requiring it.
  * When secondary storage is not configured (database.type=none), requests to endpoints
@@ -25,49 +23,33 @@ import org.springframework.web.servlet.HandlerInterceptor;
  */
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
-  private final DatabaseProperties databaseProperties;
+
+  private final SecondaryStorageValidator secondaryStorageValidator;
+
   @Autowired
-  public SecondaryStorageInterceptor(final DatabaseProperties databaseProperties) {
-    this.databaseProperties = databaseProperties;
+  public SecondaryStorageInterceptor(final SecondaryStorageValidator secondaryStorageValidator) {
+    this.secondaryStorageValidator = secondaryStorageValidator;
   }
+
   @Override
   public boolean preHandle(
       final HttpServletRequest request,
       final HttpServletResponse response,
       final Object handler)
       throws Exception {
+
     if (handler instanceof HandlerMethod handlerMethod) {
       final boolean requiresSecondaryStorage = 
           handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class) ||
           handlerMethod.getBeanType().isAnnotationPresent(RequiresSecondaryStorage.class);
-      if (requiresSecondaryStorage && !isSecondaryStorageEnabled()) {
-        writeSecondaryStorageUnavailableResponse(response);
-        return false;
+      
+      if (requiresSecondaryStorage) {
+        // This will throw SecondaryStorageUnavailableException if secondary storage is not available
+        // The exception will be caught by the ErrorMapper and converted to HTTP 403
+        secondaryStorageValidator.validateSecondaryStorageEnabled();
       }
     }
+
     return true;
-  private boolean isSecondaryStorageEnabled() {
-    final DatabaseType databaseType = DatabaseType.from(databaseProperties.getType());
-    return !databaseType.isNone();
-  private void writeSecondaryStorageUnavailableResponse(final HttpServletResponse response)
-      throws IOException {
-    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-    response.setContentType("application/problem+json");
-    response.getWriter().write(
-        """
-        {
-          "type": "about:blank",
-          "title": "Secondary Storage Required",
-          "status": 403,
-          "detail": "This endpoint requires secondary storage to be configured. The current deployment is running in headless mode (database.type=none). Please configure a secondary storage system to access this functionality."
-        }
-        """);
-  @ConfigurationProperties("camunda.database")
-  @Component
-  public static class DatabaseProperties {
-    private String type = DatabaseConfig.ELASTICSEARCH;
-    public String getType() {
-      return type;
-    public void setType(final String type) {
-      this.type = type;
+  }
 }
