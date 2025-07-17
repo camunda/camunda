@@ -163,6 +163,7 @@ outputs:
       ${{
         github.event_name == 'push' ||
         github.event_name == 'schedule' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-common.outputs.openapi-change == 'true'
       }}
   stable-branch-changes:

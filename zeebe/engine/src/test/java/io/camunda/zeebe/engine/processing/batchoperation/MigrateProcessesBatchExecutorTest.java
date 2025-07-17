@@ -209,4 +209,66 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
         .hasRejectionType(RejectionType.INVALID_STATE)
         .hasIntent(ProcessInstanceMigrationIntent.MIGRATE);
   }
+
+  @Test
+  public void shouldHandleRejectedMigrateProcessCommandNoProcessInstance() {
+    // given
+    final var user = createUser();
+    addProcessDefinitionPermissionsToUser(user, PermissionType.UPDATE_PROCESS_INSTANCE);
+    final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, user.getUsername());
+
+    // create a process with a user task a
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .exclusiveGateway()
+                .conditionExpression("canBeMigrated")
+                .userTask("userTaskA")
+                .moveToLastExclusiveGateway()
+                .defaultFlow()
+                .userTask("willNotBeMigrated")
+                .done())
+        .deploy();
+
+    // create another process with a user task b
+    final long processDefinitionKey2 =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2").startEvent().userTask("userTaskB").done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    final var processInstanceKey = 42L; // non-existing process instance key
+
+    final var batchOperationKey =
+        createNewMigrateProcessesBatchOperation(
+            List.of(processInstanceKey),
+            processDefinitionKey2,
+            Map.of("userTaskA", "userTaskB"),
+            claims);
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.COMPLETED);
+
+    // and we have a rejected command
+    Assertions.assertThat(
+            RecordingExporter.processInstanceMigrationRecords()
+                .withRecordKey(processInstanceKey)
+                .onlyCommandRejections()
+                .getFirst())
+        .hasKey(processInstanceKey)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATE);
+  }
 }

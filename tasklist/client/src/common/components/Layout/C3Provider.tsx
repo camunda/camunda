@@ -8,7 +8,7 @@
 
 import {C3UserConfigurationProvider} from '@camunda/camunda-composite-components';
 import {C3ThemePersister} from 'common/theme/C3ThemePersister';
-import {api} from 'v1/api';
+import {api} from 'v2/api';
 import {getClientConfig} from 'common/config/getClientConfig';
 import {getStage} from 'common/config/getStage';
 import {useEffect, useState} from 'react';
@@ -45,7 +45,6 @@ const C3Provider: React.FC<Props> = ({children}) => {
     async function init() {
       const {organizationId} = getClientConfig();
 
-      // We'll temporarily use the V1 endpoint even on V2. This should be fixed on #32255
       if (organizationId !== null) {
         setToken(await fetchToken());
       }

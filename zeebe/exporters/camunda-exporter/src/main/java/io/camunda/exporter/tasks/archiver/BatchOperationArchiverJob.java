@@ -58,7 +58,7 @@ public class BatchOperationArchiverJob implements ArchiverJob {
 
   private CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
 
-    if (archiveBatch != null) {
+    if (archiveBatch != null && !(archiveBatch.ids() == null || archiveBatch.ids().isEmpty())) {
       logger.trace("Following batch operations are found for archiving: {}", archiveBatch);
       metrics.recordBatchOperationsArchiving(archiveBatch.ids().size());
 

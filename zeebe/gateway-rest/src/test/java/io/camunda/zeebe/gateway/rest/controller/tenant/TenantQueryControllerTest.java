@@ -31,6 +31,7 @@ import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
@@ -278,8 +279,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
     final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantId);
     when(tenantServices.getById(tenantId))
         .thenThrow(
-            new CamundaSearchException(
-                "tenant not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "tenant not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient

@@ -7,9 +7,12 @@
  */
 package io.camunda.it.nodb;
 
+import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -31,7 +34,7 @@ public class NoSecondaryStorageTest {
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
-          .withProperty("camunda.database.type", "none")
+          .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "none")
           .withProperty("spring.profiles.active", "broker");
 
   @AutoClose private CamundaClient camundaClient;
@@ -146,6 +149,19 @@ public class NoSecondaryStorageTest {
     assertThat(instance1.getProcessInstanceKey()).isNotEqualTo(instance2.getProcessInstanceKey());
     assertThat(instance1.getBpmnProcessId()).isEqualTo(processId);
     assertThat(instance2.getBpmnProcessId()).isEqualTo(processId);
+  }
+
+  @Test
+  public void shouldReturnForbiddenWhenQueryingWithNoSecondaryStorage() {
+    assertThatThrownBy(() -> camundaClient.newUsersSearchRequest().send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("The search client requires a secondary storage, but none is set")
+        .hasMessageContaining(
+            String.format(
+                "Secondary storage can be configured using the '%s' property",
+                PROPERTY_CAMUNDA_DATABASE_TYPE))
+        .hasMessageContaining("FORBIDDEN")
+        .hasMessageContaining("status: 403");
   }
 
   private BpmnModelInstance createSimpleProcess(final String processId) {

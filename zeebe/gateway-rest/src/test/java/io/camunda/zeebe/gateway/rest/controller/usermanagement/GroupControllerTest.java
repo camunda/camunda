@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.GROUPS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -21,7 +22,7 @@ import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
@@ -61,9 +62,10 @@ public class GroupControllerTest {
           "type": "about:blank",
           "status": 403,
           "title": "Access issue",
-          "detail": "Due to security configuration, %s endpoint is not accessible",
-          "instance": "%s"
-        }""";
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
 
     @Test
     void shouldReturnErrorOnCreate() {
@@ -512,7 +514,7 @@ public class GroupControllerTest {
       when(groupServices.updateGroup(groupId, groupName, description))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.UPDATE, 1L, RejectionType.NOT_FOUND, "Group not found"))));
 
@@ -616,7 +618,7 @@ public class GroupControllerTest {
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -646,7 +648,7 @@ public class GroupControllerTest {
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -696,7 +698,7 @@ public class GroupControllerTest {
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -725,7 +727,7 @@ public class GroupControllerTest {
       when(groupServices.assignMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -836,7 +838,7 @@ public class GroupControllerTest {
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -866,7 +868,7 @@ public class GroupControllerTest {
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -916,7 +918,7 @@ public class GroupControllerTest {
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,
@@ -945,7 +947,7 @@ public class GroupControllerTest {
       when(groupServices.removeMember(request))
           .thenReturn(
               CompletableFuture.failedFuture(
-                  new CamundaBrokerException(
+                  ErrorMapper.mapBrokerRejection(
                       new BrokerRejection(
                           GroupIntent.ENTITY_ADDED,
                           1L,

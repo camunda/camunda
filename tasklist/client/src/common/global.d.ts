@@ -36,6 +36,7 @@ export declare global {
       isResourcePermissionsEnabled?: boolean;
       isMultiTenancyEnabled?: boolean;
       maxRequestSize?: number;
+      clientMode?: 'v1' | 'v2';
     };
     Osano?: {
       cm?: {

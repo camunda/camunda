@@ -13,8 +13,9 @@ import static org.mockito.Mockito.*;
 import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.service.exception.CamundaBrokerException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -54,14 +55,12 @@ class ErrorHandlingUtilsTest {
     // Given
     final String reason =
         "Expected to assign user task with key '123L', but it is in state 'ASSIGNING'";
-    final CamundaBrokerException brokerException =
-        new CamundaBrokerException(
-            new BrokerRejectionException(
-                new BrokerRejection(
-                    UserTaskIntent.ASSIGN, 123L, RejectionType.INVALID_STATE, reason)));
+    final ServiceException serviceException =
+        ErrorMapper.mapBrokerRejection(
+            new BrokerRejection(UserTaskIntent.ASSIGN, 123L, RejectionType.INVALID_STATE, reason));
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessageFromBrokerException(brokerException);
+    final String result = ErrorHandlingUtils.getErrorMessageFromServiceException(serviceException);
 
     // Then
     final String expectedMessage =
@@ -70,7 +69,7 @@ class ErrorHandlingUtilsTest {
             "detail": "%s"
           }
           """
-            .formatted(reason);
+            .formatted(serviceException.getMessage());
     assertEquals(expectedMessage, result);
   }
 
@@ -98,10 +97,10 @@ class ErrorHandlingUtilsTest {
   void testGetErrorMessageWithBrokerTimeoutException() {
     // Given
     final TimeoutException timeoutException = new TimeoutException("10 SECONDS");
-    final CamundaBrokerException brokerException = new CamundaBrokerException(timeoutException);
+    final ServiceException serviceException = ErrorMapper.mapError(timeoutException);
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessageFromBrokerException(brokerException);
+    final String result = ErrorHandlingUtils.getErrorMessageFromServiceException(serviceException);
 
     // Then
     final String expectedMessage =
@@ -128,11 +127,11 @@ class ErrorHandlingUtilsTest {
   @Test
   void testGetErrorMessageWithGenericBrokerException() {
     // Given
-    final CamundaBrokerException genericException =
-        new CamundaBrokerException("Generic error occurred");
+    final ServiceException genericException =
+        new ServiceException("Generic error occurred", Status.INTERNAL);
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessageFromBrokerException(genericException);
+    final String result = ErrorHandlingUtils.getErrorMessageFromServiceException(genericException);
 
     // Then
     assertEquals("Generic error occurred", result);

@@ -7,9 +7,8 @@
  */
 package io.camunda.migration.identity.handler;
 
-import io.camunda.service.exception.CamundaBrokerException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import org.apache.commons.lang3.NotImplementedException;
@@ -21,12 +20,10 @@ public abstract class MigrationHandler<T> {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
   protected boolean isConflictError(final Throwable e) {
-    return (e instanceof final BrokerRejectionException rejectionException
-            && rejectionException.getRejection().type() == RejectionType.ALREADY_EXISTS)
-        || (e instanceof final CamundaBrokerException brokerException
-            && isConflictError(brokerException.getCause()))
-        || (e instanceof final CompletionException completionException
-            && isConflictError(completionException.getCause()));
+    return (e instanceof final CompletionException completionException
+            && isConflictError(completionException.getCause()))
+        || (e instanceof final ServiceException serviceException
+            && serviceException.getStatus() == Status.ALREADY_EXISTS);
   }
 
   protected boolean isNotImplementedError(final Throwable e) {

@@ -20,6 +20,7 @@ import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -32,6 +33,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import org.apache.commons.lang3.NotImplementedException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -156,17 +158,40 @@ final class AuthorizationMigrationHandlerTest {
   }
 
   @Test
+  public void shouldContinueMigrationWithUserAuthorizationEndpointUnavailable() {
+    // given
+    final var users =
+        List.of(
+            new User("user1", "username1", "name1", "email1"),
+            new User("user2", "username2", "name2", "email2"));
+    when(managementIdentityClient.fetchUsers(any(Integer.class)))
+        .thenReturn(users)
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchUserAuthorizations(anyString()))
+        .thenThrow(new NotImplementedException("Authorization endpoint unavailable"));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    // the migration to stops after the first failed invocation of fetching user authorizations
+    verify(managementIdentityClient, times(1)).fetchUserAuthorizations(any());
+    verify(authorizationServices, times(0)).createAuthorization(any());
+  }
+
+  @Test
   public void shouldContinueMigrationWithConflicts() {
     // given
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.CREATE,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "authorization already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.CREATE,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "authorization already exists")))));
     final var users1 = List.of(new User("user1", "username1", "name1", "email1"));
     when(managementIdentityClient.fetchUsers(any(Integer.class)))
         .thenReturn(users1)

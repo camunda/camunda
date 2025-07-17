@@ -33,7 +33,8 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheResult;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Set;
@@ -110,7 +111,8 @@ public class UserTaskServiceTest {
           () -> services.searchUserTaskVariables(1L, variableSearchQuery().build());
 
       // then
-      assertThrows(ForbiddenException.class, executable);
+      assertThat(assertThrows(ServiceException.class, executable).getStatus())
+          .isEqualTo(Status.FORBIDDEN);
       verify(client).searchUserTasks(any());
       verify(securityContextProvider)
           .isAuthorized(
@@ -250,7 +252,8 @@ public class UserTaskServiceTest {
 
       final Executable executable = () -> services.getByKey(entity.userTaskKey());
 
-      assertThrows(ForbiddenException.class, executable);
+      assertThat(assertThrows(ServiceException.class, executable).getStatus())
+          .isEqualTo(Status.FORBIDDEN);
       verify(client).searchUserTasks(any());
       verify(securityContextProvider)
           .isAuthorized(

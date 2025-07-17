@@ -46,19 +46,23 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   @Override
   public SearchQueryResult<RoleEntity> search(final RoleQuery query) {
-    return roleSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.role().read())))
-        .searchRoles(query);
+    return executeSearchRequest(
+        () ->
+            roleSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.role().read())))
+                .searchRoles(query));
   }
 
   public SearchQueryResult<RoleMemberEntity> searchMembers(final RoleQuery query) {
-    return roleSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.role().read())))
-        .searchRoleMembers(query);
+    return executeSearchRequest(
+        () ->
+            roleSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.role().read())))
+                .searchRoleMembers(query));
   }
 
   public boolean hasMembersOfType(final String roleId, final EntityType entityType) {

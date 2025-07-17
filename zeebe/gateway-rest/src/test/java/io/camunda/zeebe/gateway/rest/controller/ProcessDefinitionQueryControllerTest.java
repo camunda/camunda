@@ -25,7 +25,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Optional;
@@ -158,9 +158,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     // given
     when(processDefinitionServices.getByKey(17L))
         .thenThrow(
-            new CamundaSearchException(
-                "Process definition with key 17 not found",
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Process definition with key 17 not found",
+                    CamundaSearchException.Reason.NOT_FOUND)));
     // when / then
     webClient
         .get()
@@ -213,7 +214,9 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     final var service = testParameter.getRight();
     final long processDefinitionKey = 17L;
     when(service.apply(processDefinitionServices, processDefinitionKey))
-        .thenThrow(new ForbiddenException(Authorization.of(a -> a.processDefinition().read())));
+        .thenThrow(
+            ErrorMapper.createForbiddenException(
+                Authorization.of(a -> a.processDefinition().read())));
     // when / then
     webClient
         .get()
@@ -227,7 +230,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                     {
                       "type": "about:blank",
                       "status": 403,
-                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "title": "FORBIDDEN",
                       "detail": "Unauthorized to perform operation 'READ' on resource 'PROCESS_DEFINITION'"
                     }
                 """);
@@ -413,9 +416,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForFormInvaliProcessKey() throws Exception {
     when(processDefinitionServices.getByKey(999L))
         .thenThrow(
-            new CamundaSearchException(
-                "Process definition with key 999 not found",
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Process definition with key 999 not found",
+                    CamundaSearchException.Reason.NOT_FOUND)));
     webClient
         .get()
         .uri(PROCESS_DEFINITION_URL + "999/form")

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.metrics;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetricsDoc.BatchOperationAction;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetricsDoc.BatchOperationKeyNames;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetricsDoc.BatchOperationLatency;
+import io.camunda.zeebe.engine.metrics.BatchOperationMetricsDoc.QueryStatus;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
@@ -136,24 +137,25 @@ public class BatchOperationMetrics {
   }
 
   /**
-   * Records a query against the secondary database, which is used for batch operations. This metric
-   * is used to track the number of queries made against the secondary database.
+   * Records a successful query against the secondary database, which is used for batch operations.
+   * This metric is used to track the number of queries made against the secondary database.
    *
    * <p>Since in the scheduler we have no batch operation type, we cannot use the executedActions
    * map
    */
-  public synchronized void recordQueryAgainstSecondaryDatabase() {
-    if (queryCounter == null) {
-      final var meterDoc = BatchOperationMetricsDoc.EXECUTED_QUERIES;
-      queryCounter =
-          Counter.builder(meterDoc.getName())
-              .description(meterDoc.getDescription())
-              .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
-              .tag(BatchOperationKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
-              .register(registry);
-    }
+  public void recordQueryAgainstSecondaryDatabase() {
+    recordQuery(QueryStatus.COMPLETED);
+  }
 
-    queryCounter.increment();
+  /**
+   * Records a failed query against the secondary database, which is used for batch operations. This
+   * metric is used to track the number of failed queries made against the secondary database.
+   *
+   * <p>Since in the scheduler we have no batch operation type, we cannot use the executedActions
+   * map
+   */
+  public void recordFailedQueryAgainstSecondaryDatabase() {
+    recordQuery(QueryStatus.FAILED);
   }
 
   public void recordItemsPerPartition(
@@ -167,6 +169,21 @@ public class BatchOperationMetrics {
         .serviceLevelObjectives(meterDoc.getDistributionSLOs())
         .register(registry)
         .record(itemsAmount);
+  }
+
+  private synchronized void recordQuery(final QueryStatus queryStatus) {
+    if (queryCounter == null) {
+      final var meterDoc = BatchOperationMetricsDoc.EXECUTED_QUERIES;
+      queryCounter =
+          Counter.builder(meterDoc.getName())
+              .description(meterDoc.getDescription())
+              .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
+              .tag(BatchOperationKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
+              .tag(BatchOperationKeyNames.QUERY_STATUS.asString(), queryStatus.getLabel())
+              .register(registry);
+    }
+
+    queryCounter.increment();
   }
 
   private void batchOperationEvent(

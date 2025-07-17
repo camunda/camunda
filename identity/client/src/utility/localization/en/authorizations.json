@@ -41,7 +41,7 @@
   "CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE": "Create batch operation: Modify Process Instance",
   "CREATE_BATCH_OPERATION_DELETE_PROCESS_DEFINITION": "Create batch operation: Delete Process Definition",
   "CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION": "Create batch operation: Delete Decision Definition",
-  "MAPPING": "Mapping",
+  "MAPPING": "Mapping rule",
   "owner": "Owner",
   "ownerType": "Owner type",
   "ownerId": "Owner ID",

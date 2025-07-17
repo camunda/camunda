@@ -13,7 +13,7 @@ import {
   type GetProcessInstanceCallHierarchyResponseBody,
   type GetProcessInstanceSequenceFlowsResponseBody,
   type ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,

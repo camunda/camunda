@@ -14,11 +14,13 @@ import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.authentication.service.OidcCamundaUserService;
+import jakarta.json.Json;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,7 +57,8 @@ public class OidcCamundaUserServiceTest {
     final var auth = new OAuth2AuthenticationToken(principal, List.of(), "oidc");
     SecurityContextHolder.getContext().setAuthentication(auth);
 
-    assertThat(oidcCamundaUserService.getUserToken()).isEqualTo(TOKEN_VALUE);
+    final var expectedToken = Json.createValue(TOKEN_VALUE).toString();
+    assertThat(oidcCamundaUserService.getUserToken()).isEqualTo(expectedToken);
   }
 
   @Test
@@ -83,6 +86,9 @@ public class OidcCamundaUserServiceTest {
             null);
     SecurityContextHolder.getContext().setAuthentication(camundaJwtAuthenticationToken);
 
-    assertThat(oidcCamundaUserService.getUserToken()).isNull();
+    Assertions.assertThatThrownBy(() -> oidcCamundaUserService.getUserToken())
+        .isInstanceOf(UnsupportedOperationException.class)
+        .hasMessageContaining(
+            "Not supported for token class: io.camunda.authentication.entity.CamundaJwtUser");
   }
 }

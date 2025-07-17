@@ -14,7 +14,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -46,19 +46,23 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   @Override
   public SearchQueryResult<TenantEntity> search(final TenantQuery query) {
-    return tenantSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.tenant().read())))
-        .searchTenants(query);
+    return executeSearchRequest(
+        () ->
+            tenantSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.tenant().read())))
+                .searchTenants(query));
   }
 
   public SearchQueryResult<TenantMemberEntity> searchMembers(final TenantQuery query) {
-    return tenantSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.tenant().read())))
-        .searchTenantMembers(query);
+    return executeSearchRequest(
+        () ->
+            tenantSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.tenant().read())))
+                .searchTenantMembers(query));
   }
 
   @Override
@@ -140,15 +144,20 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public TenantEntity getById(final String tenantId) {
     final var result =
-        tenantSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchTenants(TenantQuery.of(q -> q.filter(f -> f.tenantId(tenantId)).singleResult()))
+        executeSearchRequest(
+                () ->
+                    tenantSearchClient
+                        .withSecurityContext(
+                            securityContextProvider.provideSecurityContext(authentication))
+                        .searchTenants(
+                            TenantQuery.of(
+                                q -> q.filter(f -> f.tenantId(tenantId)).singleResult())))
             .items()
             .getFirst();
 
     final var authorization = Authorization.of(a -> a.tenant().read());
     if (!securityContextProvider.isAuthorized(result.tenantId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
+      throw ErrorMapper.createForbiddenException(authorization);
     }
     return result;
   }

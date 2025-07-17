@@ -24,7 +24,7 @@ import {VersionTag} from '../styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
 import {useQueryClient} from '@tanstack/react-query';
@@ -32,6 +32,8 @@ import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInst
 import {useNavigate} from 'react-router-dom';
 import {useProcessInstanceOperations} from 'modules/hooks/useProcessInstanceOperations';
 import {ProcessInstanceOperationsContext} from './processInstanceOperationsContext';
+import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
+import {useHasActiveBatchOperationMutation} from 'modules/mutations/processInstance/useHasActiveBatchOperationMutation';
 
 const headerColumns = [
   'Process Name',
@@ -86,7 +88,11 @@ type Props = {
 const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const queryClient = useQueryClient();
   const {data: permissions} = usePermissions();
-  const {data: hasActiveOperation} = useHasActiveOperations();
+  const {data: hasActiveOperationLegacy} = useHasActiveOperations();
+  const hasActiveBatchOperationMutation = useHasActiveBatchOperationMutation(
+    processInstance.processInstanceKey,
+  );
+
   const navigate = useNavigate();
 
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
@@ -324,7 +330,11 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                   });
                 }
               }}
-              forceSpinner={hasActiveOperation || cancellation.isPending}
+              forceSpinner={
+                cancellation.isPending ||
+                hasActiveOperationLegacy ||
+                (IS_BATCH_OPERATIONS_V2 && hasActiveBatchOperationMutation)
+              }
               isInstanceModificationVisible={
                 !modificationsStore.isModificationModeEnabled
               }

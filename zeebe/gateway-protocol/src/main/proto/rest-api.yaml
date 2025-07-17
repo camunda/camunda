@@ -4103,6 +4103,10 @@ paths:
       responses:
         "200":
           description: The mapping rule was returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingRuleResult"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
@@ -4396,7 +4400,7 @@ paths:
             type: string
         - name: contentHash
           in: query
-          required: false
+          required: true
           schema:
             type: string
           description: >
@@ -4481,7 +4485,7 @@ paths:
             type: string
         - name: contentHash
           in: query
-          required: false
+          required: true
           schema:
             type: string
           description: >
@@ -4978,49 +4982,6 @@ paths:
           description: The variables were updated.
         "400":
           $ref: "#/components/responses/InvalidData"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
-  /element-instances/ad-hoc-activities/search:
-    post:
-      tags:
-        - Ad-hoc sub-process
-      operationId: searchAdHocSubProcessActivities
-      summary: Search activatable activities (alpha)
-      description: |
-        Search for activatable activities within ad-hoc sub-processes based on given criteria.
-
-        Note that this API currently requires filters for both process definition key and ad-hoc
-        sub-process ID and does not support paging or sorting.
-
-        This endpoint is an alpha feature and may be subject to change
-        in future releases.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AdHocSubProcessActivitySearchQuery"
-      responses:
-        "200":
-          description: >
-            The ad-hoc sub-process activities search result.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AdHocSubProcessActivitySearchQueryResult"
-        "400":
-          description: >
-            The ad-hoc sub-process activities search query failed.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "403":
-          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -6743,83 +6704,6 @@ components:
           type: string
         incidentKey:
           description: Incident key associated with this element instance.
-          type: string
-    AdHocSubProcessActivitySearchQuery:
-      description: Ad-hoc sub-process activities search request.
-      type: object
-      required:
-        - filter
-      properties:
-        filter:
-          description: The ad-hoc sub-process activity search filters.
-          allOf:
-            - $ref: "#/components/schemas/AdHocSubProcessActivityFilter"
-    AdHocSubProcessActivityFilter:
-      description: Element instance filter.
-      type: object
-      required:
-        - processDefinitionKey
-        - adHocSubProcessId
-      properties:
-        processDefinitionKey:
-          description: The process definition key.
-          type: string
-        adHocSubProcessId:
-          description: The ad-hoc sub-process element ID.
-          type: string
-    AdHocSubProcessActivitySearchQueryResult:
-      type: object
-      properties:
-        items:
-          description: The matching ad-hoc sub-process activities.
-          type: array
-          items:
-            $ref: "#/components/schemas/AdHocSubProcessActivityResult"
-    AdHocSubProcessActivityResult:
-      type: object
-      properties:
-        processDefinitionKey:
-          description: The process definition key associated to this activity.
-          type: string
-        processDefinitionId:
-          description: The process definition ID associated to this activity.
-          type: string
-        adHocSubProcessId:
-          description: The ad-hoc sub-process element ID.
-          type: string
-        elementId:
-          description: The element ID for this activity.
-          type: string
-        elementName:
-          description: The element name for this activity.
-          type: string
-        type:
-          description: Type of activity with a defined set of values.
-          type: string
-          enum:
-            - UNSPECIFIED
-            - PROCESS
-            - SUB_PROCESS
-            - EVENT_SUB_PROCESS
-            - INTERMEDIATE_CATCH_EVENT
-            - INTERMEDIATE_THROW_EVENT
-            - BOUNDARY_EVENT
-            - SERVICE_TASK
-            - RECEIVE_TASK
-            - USER_TASK
-            - MANUAL_TASK
-            - TASK
-            - MULTI_INSTANCE_BODY
-            - CALL_ACTIVITY
-            - BUSINESS_RULE_TASK
-            - SCRIPT_TASK
-            - SEND_TASK
-            - UNKNOWN
-        documentation:
-          description: The documentation for this activity.
-          type: string
-        tenantId:
-          description: The tenant ID for this activity.
           type: string
     AdHocSubProcessActivateActivitiesInstruction:
       type: object
@@ -8732,27 +8616,43 @@ components:
         result:
           $ref: "#/components/schemas/JobResult"
     JobResult:
-      type: object
-      nullable: true
       description: >
         The result of the completed job as determined by the worker.
-        This functionality is currently supported only by user task listeners.
+      discriminator:
+        propertyName: type
+        mapping:
+          userTask: "#/components/schemas/JobResultUserTask"
+          adHocSubProcess: "#/components/schemas/JobResultAdHocSubProcess"
+      required:
+        - type
       properties:
-        denied:
-          type: boolean
-          description: >
-            Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
-            For example, a user task listener can deny the completion of a task by setting this flag to true.
-            In this example, the completion of a task is represented by a job that the worker can complete as denied.
-            As a result, the completion request is rejected and the task remains active.
-            Defaults to false.
-          nullable: true
-        deniedReason:
+        type:
           type: string
-          description: The reason provided by the user task listener for denying the work.
-          nullable: true
-        corrections:
-          $ref: "#/components/schemas/JobResultCorrections"
+          description: Used to distinguish between different types of job results.
+          enum: [ "userTask", "adHocSubProcess" ]
+          default: "userTask"
+    JobResultUserTask:
+      type: object
+      nullable: true
+      allOf:
+        - $ref: "#/components/schemas/JobResult"
+        - type: object
+          properties:
+            denied:
+              type: boolean
+              description: >
+                Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
+                For example, a user task listener can deny the completion of a task by setting this flag to true.
+                In this example, the completion of a task is represented by a job that the worker can complete as denied.
+                As a result, the completion request is rejected and the task remains active.
+                Defaults to false.
+              nullable: true
+            deniedReason:
+              type: string
+              description: The reason provided by the user task listener for denying the work.
+              nullable: true
+            corrections:
+              $ref: "#/components/schemas/JobResultCorrections"
     JobResultCorrections:
       type: object
       description: |
@@ -8803,6 +8703,31 @@ components:
           description: The priority of the task.
           minimum: 0
           maximum: 100
+          nullable: true
+    JobResultAdHocSubProcess:
+      type: object
+      nullable: true
+      allOf:
+        - $ref: "#/components/schemas/JobResult"
+        - type: object
+          properties:
+            activateElements:
+              type: array
+              description: Indicates which elements need to be activated in the ad-hoc subprocess.
+              items:
+                $ref: "#/components/schemas/JobResultActivateElement"
+    JobResultActivateElement:
+      type: object
+      properties:
+        elementId:
+          description: The ID of the element to activate.
+          type: string
+        variables:
+          description: |
+            JSON document that will create the variables on the scope of the activated element.
+            It must be a JSON object, as variables will be mapped in a key-value fashion.
+          additionalProperties: true
+          type: object
           nullable: true
     JobUpdateRequest:
       type: object
@@ -10677,11 +10602,11 @@ components:
           format: date-time
         operationsTotalCount:
           type: integer
-          description: The total number of items contained in this stacking process.
+          description: The total number of items contained in this batch operation.
           format: int32
         operationsFailedCount:
           type: integer
-          description: The number of items which failed during execution of the batch operation. (e.g. because they are rejected by the machine)
+          description: The number of items which failed during execution of the batch operation. (e.g. because they are rejected by the Zeebe engine).
           format: int32
         operationsCompletedCount:
           type: integer
@@ -10738,7 +10663,7 @@ components:
             - CANCELED
             - FAILED
         processedDate:
-          description: the date this item was processed. This can be either completed, canceled or failed.
+          description: the date this item was processed.
           type: string
           format: date-time
         errorMessage:
@@ -10808,4 +10733,3 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-

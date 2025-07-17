@@ -26,6 +26,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
@@ -519,9 +520,11 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     final var invalidProcesInstanceKey = 100L;
     when(processInstanceServices.getByKey(invalidProcesInstanceKey))
         .thenThrow(
-            new CamundaSearchException(
-                String.format("Process Instance with key %d not found", invalidProcesInstanceKey),
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    String.format(
+                        "Process Instance with key %d not found", invalidProcesInstanceKey),
+                    CamundaSearchException.Reason.NOT_FOUND)));
     // when / then
     webClient
         .get()

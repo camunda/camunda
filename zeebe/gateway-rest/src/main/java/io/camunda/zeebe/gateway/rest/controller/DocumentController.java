@@ -10,8 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DocumentServices;
-import io.camunda.service.DocumentServices.DocumentContentResponse;
-import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.DocumentServices.DocumentLinkParams;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
@@ -24,12 +22,8 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import jakarta.servlet.http.Part;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -104,58 +98,14 @@ public class DocumentController {
       @RequestParam(required = false) final String storeId,
       @RequestParam(required = false) final String contentHash) {
 
-    try {
-      final DocumentContentResponse contentResponse =
-          getDocumentContentResponse(documentId, storeId, contentHash);
-      final MediaType mediaType = resolveMediaType(contentResponse);
-      return ResponseEntity.ok()
-          .contentType(mediaType)
-          .body(
-              bodyStream -> {
-                try (final var contentInputStream = contentResponse.content()) {
-                  contentInputStream.transferTo(bodyStream);
-                }
-              });
-    } catch (final Exception e) {
-      // we can't return a generic Object type when streaming a response due to Spring MVC
-      // limitations
-      // exception handling is done in the exception handler below
-      if (e instanceof final CompletionException ce) {
-        throw new DocumentContentFetchException("Failed to get document content", ce.getCause());
-      }
-      throw new DocumentContentFetchException("Failed to get document content", e);
-    }
-  }
-
-  private MediaType resolveMediaType(final DocumentContentResponse contentResponse) {
-    try {
-      final var contentType = contentResponse.contentType();
-      if (contentType == null) {
-        return MediaType.APPLICATION_OCTET_STREAM;
-      }
-      return MediaType.parseMediaType(contentResponse.contentType());
-    } catch (final InvalidMediaTypeException e) {
-      return MediaType.APPLICATION_OCTET_STREAM;
-    }
-  }
-
-  @ExceptionHandler(DocumentContentFetchException.class)
-  public ResponseEntity<Object> handleDocumentContentException(
-      final DocumentContentFetchException e) {
-    if (e.getCause() instanceof final DocumentException de) {
-      return RestErrorMapper.mapDocumentHandlingExceptionToResponse(de);
-    } else {
-      return RestErrorMapper.mapProblemToResponse(
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e.getClass().getName()));
-    }
-  }
-
-  private DocumentContentResponse getDocumentContentResponse(
-      final String documentId, final String storeId, final String contentHash) {
+    // handle the future explicitly here because a StreamingResponseBody is needed as result instead
+    // of a future wrapping the stream response
     return documentServices
         .withAuthentication(authenticationProvider.getCamundaAuthentication())
-        .getDocumentContent(documentId, storeId, contentHash);
+        .getDocumentContent(documentId, storeId, contentHash)
+        // Any service exception that can occur is handled by the GlobalControllerExceptionHandler
+        .thenApply(ResponseMapper::toDocumentContentResponse)
+        .join();
   }
 
   @CamundaDeleteMapping(path = "/{documentId}")
@@ -194,12 +144,5 @@ public class DocumentController {
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createLink(documentId, storeId, contentHash, params),
         ResponseMapper::toDocumentLinkResponse);
-  }
-
-  public static class DocumentContentFetchException extends RuntimeException {
-
-    public DocumentContentFetchException(final String message, final Throwable cause) {
-      super(message, cause);
-    }
   }
 }

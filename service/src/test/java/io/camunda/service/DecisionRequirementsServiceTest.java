@@ -20,7 +20,8 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
@@ -125,7 +126,7 @@ public final class DecisionRequirementsServiceTest {
         .thenReturn(false);
 
     // then
-    final var exception = assertThrows(ForbiddenException.class, () -> services.getByKey(124L));
+    final var exception = assertThrows(ServiceException.class, () -> services.getByKey(124L));
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'");
@@ -149,9 +150,10 @@ public final class DecisionRequirementsServiceTest {
 
     // then
     final var exception =
-        assertThrows(ForbiddenException.class, () -> services.getDecisionRequirementsXml(124L));
+        assertThrows(ServiceException.class, () -> services.getDecisionRequirementsXml(124L));
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'");
+    assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
   }
 }

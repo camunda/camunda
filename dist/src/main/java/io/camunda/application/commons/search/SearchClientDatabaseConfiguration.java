@@ -7,11 +7,11 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.search.condition.ConditionalOnDatabaseNone;
+import io.camunda.application.commons.condition.ConditionalOnDatabaseNone;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
-import io.camunda.search.clients.impl.NoopSearchClientsProxy;
+import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -77,7 +77,7 @@ public class SearchClientDatabaseConfiguration {
 
   @Bean
   @ConditionalOnDatabaseNone
-  public NoopSearchClientsProxy noopSearchClientsProxy() {
-    return new NoopSearchClientsProxy();
+  public NoDBSearchClientsProxy noDBSearchClientsProxy() {
+    return new NoDBSearchClientsProxy();
   }
 }

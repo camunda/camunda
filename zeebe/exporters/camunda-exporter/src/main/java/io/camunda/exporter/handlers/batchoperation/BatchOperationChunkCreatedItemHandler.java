@@ -26,19 +26,27 @@ import org.slf4j.LoggerFactory;
  * OperationEntity} with the item details and scheduling state. This is only done when the
  * configuration <code>exportItemsOnCreation</code> is set to <code>true</code>.
  */
-public class BatchOperationChunkCreatedItemHandler extends AbstractOperationHandler
+public class BatchOperationChunkCreatedItemHandler
     implements ExportHandler<OperationEntity, BatchOperationChunkRecordValue> {
 
+  protected static final String ID_PATTERN = "%s_%s";
   private static final Logger LOG =
       LoggerFactory.getLogger(BatchOperationChunkCreatedItemHandler.class);
 
+  private final String indexName;
+
   public BatchOperationChunkCreatedItemHandler(final String indexName) {
-    super(indexName);
+    this.indexName = indexName;
   }
 
   @Override
   public ValueType getHandledValueType() {
     return ValueType.BATCH_OPERATION_CHUNK;
+  }
+
+  @Override
+  public Class<OperationEntity> getEntityType() {
+    return OperationEntity.class;
   }
 
   @Override
@@ -51,6 +59,11 @@ public class BatchOperationChunkCreatedItemHandler extends AbstractOperationHand
     return record.getValue().getItems().stream()
         .map(item -> generateId(record.getValue().getBatchOperationKey(), item.getItemKey()))
         .toList();
+  }
+
+  @Override
+  public OperationEntity createNewEntity(final String id) {
+    return new OperationEntity().setId(id);
   }
 
   @Override
@@ -81,6 +94,23 @@ public class BatchOperationChunkCreatedItemHandler extends AbstractOperationHand
   public void flush(final OperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     batchRequest.add(indexName, entity);
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
+  /**
+   * Generates a unique document identifier for a batch operation item based on the batch operation
+   * KEY and the itemKey
+   *
+   * @param batchOperationKey the ID of the batch operation
+   * @param itemKey the key of the item within the batch operation
+   * @return a unique identifier string for an item in a batch operation
+   */
+  private String generateId(final long batchOperationKey, final long itemKey) {
+    return String.format(ID_PATTERN, batchOperationKey, itemKey);
   }
 
   private Long extractItemKey(final String id) {

@@ -27,6 +27,7 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
@@ -95,7 +96,9 @@ public class RoleQueryControllerTest extends RestControllerTest {
     final var path = "%s/%s".formatted(ROLE_BASE_URL, roleId);
     when(roleServices.getRole(roleId))
         .thenThrow(
-            new CamundaSearchException("role not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "role not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient

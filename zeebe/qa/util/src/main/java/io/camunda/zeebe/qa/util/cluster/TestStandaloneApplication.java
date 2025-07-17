@@ -10,10 +10,10 @@ package io.camunda.zeebe.qa.util.cluster;
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_PASSWORD;
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Optional;

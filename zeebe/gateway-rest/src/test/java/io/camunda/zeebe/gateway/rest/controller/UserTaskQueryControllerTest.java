@@ -28,6 +28,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -240,9 +241,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     // Mock the behavior for an invalid userTaskKey to throw NotFoundException
     when(userTaskServices.getByKey(INVALID_USER_TASK_KEY))
         .thenThrow(
-            new CamundaSearchException(
-                String.format("User Task with key %d not found", INVALID_USER_TASK_KEY),
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    String.format("User Task with key %d not found", INVALID_USER_TASK_KEY),
+                    CamundaSearchException.Reason.NOT_FOUND)));
   }
 
   @Test
@@ -731,8 +733,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForFormInvalidUserTaskKey() {
     when(userTaskServices.getUserTaskForm(INVALID_USER_TASK_KEY))
         .thenThrow(
-            new CamundaSearchException(
-                "User Task with key 999 not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "User Task with key 999 not found", CamundaSearchException.Reason.NOT_FOUND)));
     webClient
         .get()
         .uri("/v2/user-tasks/{userTaskKey}/form", INVALID_USER_TASK_KEY)

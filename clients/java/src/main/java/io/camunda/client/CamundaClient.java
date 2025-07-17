@@ -66,6 +66,7 @@ import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
@@ -110,7 +111,6 @@ import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
@@ -951,54 +951,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a element instance
    */
   ElementInstanceGetRequest newElementInstanceGetRequest(long elementInstanceKey);
-
-  /**
-   * Executes a search request to query activities within ad-hoc sub-processes.
-   *
-   * <p>Note that this API currently requires filters for both process definition key and ad-hoc
-   * sub-process ID and does not support paging or sorting.
-   *
-   * <pre>
-   * long processDefinitionKey = ...;
-   * String adHocSubProcessId = ...;
-   *
-   * camundaClient
-   *  .newAdHocSubProcessActivitySearchRequest()
-   *  .filter((f) -> f
-   *     .processDefinitionKey(processDefinitionKey)
-   *     .adHocSubProcessId(adHocSubProcessId)
-   *  )
-   *  .send();
-   * </pre>
-   *
-   * @return a builder for the ad-hoc sub-process activity search request
-   */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest();
-
-  /**
-   * Executes a search request to query activities within ad-hoc sub-processes.
-   *
-   * <p>Note that this API currently requires filters for both process definition key and ad-hoc
-   * sub-process ID and does not support paging or sorting.
-   *
-   * <pre>
-   * long processDefinitionKey = ...;
-   * String adHocSubProcessId = ...;
-   *
-   * camundaClient
-   *  .newAdHocSubProcessActivitySearchRequest(
-   *    processDefinitionKey,
-   *    adHocSubProcessId
-   *  )
-   *  .send();
-   * </pre>
-   *
-   * @return a builder for the ad-hoc sub-process activity search request
-   */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/27930")
-  AdHocSubProcessActivitySearchRequest newAdHocSubProcessActivitySearchRequest(
-      long processDefinitionKey, String adHocSubProcessId);
 
   /**
    * Command to activate activities within an activated ad-hoc sub-process.
@@ -2194,6 +2146,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the assign client to group command
    */
   AssignClientToGroupCommandStep1 newAssignClientToGroupCommand();
+
+  /**
+   * Command to unassign a client from a group.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignClientFromGroupCommand()
+   *   .clientId("clientId")
+   *   .groupId("groupId")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the unassign client from group command
+   */
+  UnassignClientFromGroupCommandStep1 newUnassignClientFromGroupCommand();
 
   /**
    * Command to create an authorization

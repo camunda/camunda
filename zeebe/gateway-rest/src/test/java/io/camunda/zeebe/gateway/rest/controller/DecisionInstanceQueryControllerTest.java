@@ -27,7 +27,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -298,9 +298,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     final var decisionInstanceId = "123-1";
     when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision instance with key 123-1 was not found.",
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision instance with key 123-1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
     // when
     webClient
         .get()
@@ -355,7 +356,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     final var decisionInstanceId = "123-1";
     when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(
-            new ForbiddenException(
+            ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionDefinition().readDecisionInstance())));
     // when
     webClient
@@ -371,7 +372,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
                   {
                   "type": "about:blank",
-                  "title": "io.camunda.service.exception.ForbiddenException",
+                  "title": "FORBIDDEN",
                   "status": 403,
                   "detail": "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
                   "instance": "/v2/decision-instances/123-1"

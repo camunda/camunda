@@ -16,8 +16,8 @@ export const Paths = {
   forbidden() {
     return "/forbidden";
   },
-  mappings() {
-    return "/mappings";
+  mappingRules() {
+    return "/mapping-rules";
   },
   users() {
     return "/users";

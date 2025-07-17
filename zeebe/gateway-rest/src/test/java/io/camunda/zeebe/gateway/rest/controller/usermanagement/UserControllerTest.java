@@ -13,17 +13,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
+import io.camunda.service.exception.ErrorMapper;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,11 +103,13 @@ public class UserControllerTest extends RestControllerTest {
     final var dto = validCreateUserRequest("foo");
 
     when(userServices.createUser(dto))
-        .thenThrow(new CamundaSearchException(RejectionType.ALREADY_EXISTS.name()));
+        .thenThrow(
+            ErrorMapper.mapBrokerRejection(
+                new BrokerRejection(UserIntent.CREATE, -1, RejectionType.ALREADY_EXISTS, message)));
 
-    final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
-    expectedBody.setTitle("Bad Request");
-    expectedBody.setDetail(RejectionType.ALREADY_EXISTS.name());
+    final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, message);
+    expectedBody.setTitle(RejectionType.ALREADY_EXISTS.name());
+    expectedBody.setDetail("Command 'CREATE' rejected with code 'ALREADY_EXISTS': " + message);
     expectedBody.setInstance(URI.create(USER_BASE_URL));
 
     // when then
@@ -117,7 +121,7 @@ public class UserControllerTest extends RestControllerTest {
         .bodyValue(dto)
         .exchange()
         .expectStatus()
-        .isBadRequest()
+        .isEqualTo(HttpStatus.CONFLICT.value())
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
   }

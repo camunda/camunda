@@ -12,7 +12,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -55,17 +56,18 @@ public class SetupController {
   public CompletableFuture<ResponseEntity<Object>> createAdminUser(
       @RequestBody final UserRequest request) {
     if (securityConfiguration.getAuthentication().getMethod() != AuthenticationMethod.BASIC) {
-      final var exception = new ForbiddenException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
+      final var exception =
+          new ServiceException(WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
-          RestErrorMapper.mapForbiddenExceptionToProblem(exception));
+          RestErrorMapper.mapErrorToProblem(exception));
     }
 
     if (roleServices
         .withAuthentication(authenticationProvider.getAnonymousCamundaAuthentication())
         .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
-      final var exception = new ForbiddenException(ADMIN_EXISTS_ERROR_MESSAGE);
+      final var exception = new ServiceException(ADMIN_EXISTS_ERROR_MESSAGE, Status.FORBIDDEN);
       return RestErrorMapper.mapProblemToCompletedResponse(
-          RestErrorMapper.mapForbiddenExceptionToProblem(exception));
+          RestErrorMapper.mapErrorToProblem(exception));
     }
 
     return RequestMapper.toUserDTO(request)

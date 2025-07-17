@@ -1206,7 +1206,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Vacuum
-        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh > /dev/null
+        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh
         shell: bash
       - name: Run OpenAPI Linter
         run: >
@@ -1281,6 +1281,7 @@ jobs:
     secrets: inherit
     permissions:
       contents: read
+    if: always() && needs.check-results.result == 'success'
     with:
       job_to_run: 'concurrency-group'
       base_group_name: deploy-maven-snapshot
@@ -1337,6 +1338,7 @@ jobs:
     secrets: inherit
     permissions:
       contents: read
+    if: always() && needs.check-results.result == 'success'
     with:
       base_group_name: deploy-camunda-docker-snapshot
 

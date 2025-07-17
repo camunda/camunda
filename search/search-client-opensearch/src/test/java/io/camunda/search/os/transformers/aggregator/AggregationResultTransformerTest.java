@@ -11,13 +11,21 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.json.jackson.JacksonJsonpParser;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public class AggregationResultTransformerTest {
@@ -39,6 +47,8 @@ public class AggregationResultTransformerTest {
     "aggregations": %s
   }
   """;
+  private static final List<String> PROCESS_IDS =
+      new LinkedList<>(List.of("process-1", "process-2", "process-5", "process-0"));
   private final SearchAggregationResultTransformer transformer =
       new SearchAggregationResultTransformer(null, null);
 
@@ -154,5 +164,33 @@ public class AggregationResultTransformerTest {
     final var resultString = objectMapper.writeValueAsString(result);
     Assertions.assertThat(resultString.replaceAll("\\s+", ""))
         .isEqualTo(expectedResultString.replaceAll("\\s+", "").replace("'", "\""));
+  }
+
+  @Test
+  public void shouldKeepAggregationResultOrder() {
+    // given
+    final Map<String, Aggregate> aggregations =
+        Map.of(
+            "by_process_id",
+            new Aggregate.Builder()
+                .composite(c -> c.buckets(buckets -> buckets.array(createCompositeBuckets())))
+                .build());
+
+    // when
+    final var result = new SearchAggregationResultTransformer<>(null, null).apply(aggregations);
+    final var byProcessId = result.get("by_process_id");
+
+    // then
+    Assertions.assertThat(byProcessId.aggregations().keySet())
+        .containsExactlyElementsOf(PROCESS_IDS);
+  }
+
+  private List<CompositeBucket> createCompositeBuckets() {
+    return PROCESS_IDS.stream()
+        .map(
+            processId ->
+                CompositeBucket.of(
+                    cb -> cb.key(Map.of("bpmnProcessId", JsonData.of(processId))).docCount(90)))
+        .collect(Collectors.toList());
   }
 }

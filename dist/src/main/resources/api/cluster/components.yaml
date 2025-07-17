@@ -418,6 +418,7 @@ schemas:
       - UNKNOWN
       - ENABLED
       - DISABLED
+      - CONFIG_NOT_FOUND
 
   PartitionStateCode:
     title: PartitionStateCode

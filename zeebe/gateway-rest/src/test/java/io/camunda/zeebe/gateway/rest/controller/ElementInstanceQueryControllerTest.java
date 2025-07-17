@@ -24,6 +24,7 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -339,7 +340,9 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetElementInstanceByKey() {
     when(elementInstanceServices.getByKey(any(Long.class)))
-        .thenThrow(new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND));
+        .thenThrow(
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND)));
     // when / then
     webClient
         .get()

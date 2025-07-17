@@ -22,7 +22,7 @@ import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
@@ -339,7 +339,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.updateRole(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.UPDATE, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
@@ -465,7 +465,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED,
                         1L,
@@ -495,7 +495,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
@@ -604,7 +604,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.REMOVE_ENTITY,
                         1L,
@@ -634,7 +634,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.REMOVE_ENTITY, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
@@ -661,7 +661,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "User not found"))));
 
@@ -688,7 +688,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
@@ -797,7 +797,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "User not found"))));
 
@@ -824,7 +824,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
@@ -931,7 +931,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Group not found"))));
 
@@ -958,7 +958,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
@@ -1067,7 +1067,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_REMOVED,
                         1L,
@@ -1097,7 +1097,7 @@ public class RoleControllerTest extends RestControllerTest {
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         RoleIntent.ENTITY_ADDED, 1L, RejectionType.NOT_FOUND, "Role not found"))));
 
