@@ -61,7 +61,7 @@ We run our load tests in different variants to cover different goals.
 A load test where we run some artificial load, ensuring that the system behaves reliably.
 
 ![normal](assets/normal.png)
-It contains only a start event, one service task, and end end event. Covering a straight-through processing use case, with a [bigger data set of ~45 kb](https://github.com/camunda/camunda/blob/main/zeebe/benchmarks/project/src/main/resources/bpmn/big_payload.json).
+It contains only a start event, one service task, and an end event. Covering a straight-through processing use case, with a [bigger data set of ~45 kb](https://github.com/camunda/camunda/blob/main/zeebe/benchmarks/project/src/main/resources/bpmn/big_payload.json).
 
 Reducing the used feature set to a small amount allows easy comparison between tests, as fewer variations and outside factors can influence test results. This test load is historical, as it was one of the first we designed. Likely might be replaced by the more realistic load tests.
 
