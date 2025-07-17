@@ -326,6 +326,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public VariableEntity getVariable(final long key) {
+    return doGetWithReader(readers.variableReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Variable", key));
+  }
+
+  @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
     return doSearchWithReader(readers.variableReader(), query);
   }

@@ -265,6 +265,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public VariableEntity getVariable(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
     return SearchQueryResult.empty();
   }

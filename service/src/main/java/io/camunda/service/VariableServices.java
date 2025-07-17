@@ -8,15 +8,15 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.VARIABLE_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.query.VariableQuery.Builder;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -50,8 +50,7 @@ public final class VariableServices
             variableSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                        authentication, VARIABLE_READ_AUTHORIZATION))
                 .searchVariables(query));
   }
 
@@ -61,22 +60,14 @@ public final class VariableServices
   }
 
   public VariableEntity getByKey(final Long key) {
-    final var result =
-        executeSearchRequest(
-                () ->
-                    variableSearchClient
-                        .withSecurityContext(
-                            securityContextProvider.provideSecurityContext(authentication))
-                        .searchVariables(
-                            variableSearchQuery(
-                                q -> q.filter(f -> f.variableKeys(key)).singleResult())))
-            .items()
-            .getFirst();
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
-    if (!securityContextProvider.isAuthorized(
-        result.processDefinitionId(), authentication, authorization)) {
-      throw ErrorMapper.createForbiddenException(authorization);
-    }
-    return result;
+    return executeSearchRequest(
+        () ->
+            variableSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withAuthorization(
+                            VARIABLE_READ_AUTHORIZATION, VariableEntity::processDefinitionId)))
+                .getVariable(key));
   }
 }

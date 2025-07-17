@@ -263,6 +263,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public VariableEntity getVariable(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
     throw new NoSecondaryStorageException();
   }
