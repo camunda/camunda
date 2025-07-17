@@ -21,13 +21,13 @@ import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.UserTaskStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
-import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +51,14 @@ public class UserTaskFilterImpl
 
   @Override
   public UserTaskFilter state(final UserTaskState state) {
-    filter.setState(EnumUtil.convert(state, UserTaskStateEnum.class));
+    return state(b -> b.eq(state));
+  }
+
+  @Override
+  public UserTaskFilter state(final Consumer<UserTaskStateProperty> fn) {
+    final UserTaskStateProperty property = new UserTaskStatePropertyImpl();
+    fn.accept(property);
+    filter.setState(provideSearchRequestProperty(property));
     return this;
   }
 

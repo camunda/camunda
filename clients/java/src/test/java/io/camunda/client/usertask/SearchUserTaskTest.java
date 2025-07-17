@@ -71,7 +71,30 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getState()).isEqualTo(UserTaskStateEnum.COMPLETED);
+    assertThat(request.getFilter().getState().get$Eq()).isEqualTo(UserTaskStateEnum.COMPLETED);
+  }
+
+  @Test
+  void shouldSearchUserTaskByStatesIn() {
+    // when
+    client
+        .newUserTaskSearchRequest()
+        .filter(
+            f ->
+                f.state(
+                    fn ->
+                        fn.in(
+                            UserTaskState.CREATING,
+                            UserTaskState.ASSIGNING,
+                            UserTaskState.UPDATING)))
+        .send()
+        .join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getState().get$In())
+        .containsExactly(
+            UserTaskStateEnum.CREATING, UserTaskStateEnum.ASSIGNING, UserTaskStateEnum.UPDATING);
   }
 
   @Test
