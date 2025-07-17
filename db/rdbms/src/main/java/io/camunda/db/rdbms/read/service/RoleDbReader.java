@@ -31,17 +31,9 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
     this.roleMapper = roleMapper;
   }
 
-  public Optional<RoleEntity> findOne(final String roleId) {
-    final var result = search(RoleQuery.of(b -> b.filter(f -> f.roleId(roleId))));
-    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
-  }
-
-  public SearchQueryResult<RoleEntity> search(final RoleQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
-  }
-
-  private RoleEntity map(final RoleDbModel model) {
-    return new RoleEntity(model.roleKey(), model.roleId(), model.name(), model.description());
+  @Override
+  public RoleEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(id).orElse(null);
   }
 
   @Override
@@ -57,5 +49,18 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
     final var hits = roleMapper.search(dbQuery).stream().map(this::map).toList();
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<RoleEntity> findOne(final String roleId) {
+    final var result = search(RoleQuery.of(b -> b.filter(f -> f.roleId(roleId))));
+    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
+  }
+
+  public SearchQueryResult<RoleEntity> search(final RoleQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
+  }
+
+  private RoleEntity map(final RoleDbModel model) {
+    return new RoleEntity(model.roleKey(), model.roleId(), model.name(), model.description());
   }
 }

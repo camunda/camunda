@@ -7,13 +7,14 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.ROLE_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -51,7 +52,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             roleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.role().read())))
+                        authentication, ROLE_READ_AUTHORIZATION))
                 .searchRoles(query));
   }
 
@@ -61,7 +62,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             roleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.role().read())))
+                        authentication, ROLE_READ_AUTHORIZATION))
                 .searchRoleMembers(query));
   }
 
@@ -135,13 +136,13 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   public RoleEntity getRole(final String roleId) {
-    return search(
-            SearchQueryBuilders.roleSearchQuery()
-                .filter(f -> f.roleId(roleId))
-                .singleResult()
-                .build())
-        .items()
-        .getFirst();
+    return executeSearchRequest(
+        () ->
+            roleSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, withAuthorization(ROLE_READ_AUTHORIZATION, roleId)))
+                .getRole(roleId));
   }
 
   public CompletableFuture<RoleRecord> deleteRole(final String roleId) {

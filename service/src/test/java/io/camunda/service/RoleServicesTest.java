@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -104,8 +105,8 @@ public class RoleServicesTest {
   public void shouldReturnSingleVariableForGet() {
     // given
     final var entity = mock(RoleEntity.class);
-    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchRoles(any())).thenReturn(result);
+    when(entity.roleId()).thenReturn("roleId");
+    when(client.getRole(eq("roleId"))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getRole(entity.roleId());
