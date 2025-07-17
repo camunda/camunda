@@ -11,6 +11,8 @@ import static io.camunda.search.query.SearchQueryBuilders.flownodeInstanceSearch
 import static io.camunda.search.query.SearchQueryBuilders.formSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.userTaskSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
@@ -23,11 +25,10 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
-import io.camunda.service.exception.ErrorMapper;
+import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -90,7 +91,7 @@ public final class UserTaskServices
     return search(
         query,
         securityContextProvider.provideSecurityContext(
-            authentication, Authorization.of(a -> a.processDefinition().readUserTask())));
+            authentication, USER_TASK_READ_AUTHORIZATION));
   }
 
   private SearchQueryResult<UserTaskEntity> search(
@@ -121,13 +122,14 @@ public final class UserTaskServices
         result.items().stream()
             .map(
                 item ->
-                    item.hasName()
-                        ? item
-                        : item.withName(
-                            cacheResult
-                                .getProcessItem(item.processDefinitionKey())
-                                .getElementName(item.elementId())))
+                    toCacheEnrichedUserTaskEntity(
+                        item, cacheResult.getProcessItem(item.processDefinitionKey())))
             .collect(Collectors.toList()));
+  }
+
+  private UserTaskEntity toCacheEnrichedUserTaskEntity(
+      final UserTaskEntity item, final ProcessCacheItem cachedItem) {
+    return item.hasName() ? item : item.withName(cachedItem.getElementName(item.elementId()));
   }
 
   public SearchQueryResult<UserTaskEntity> search(
@@ -166,20 +168,19 @@ public final class UserTaskServices
   }
 
   public UserTaskEntity getByKey(final long userTaskKey) {
-    final var query =
-        UserTaskQuery.of(q -> q.filter(f -> f.userTaskKeys(userTaskKey)).singleResult());
-    final var userTask =
-        search(query, securityContextProvider.provideSecurityContext(authentication))
-            .items()
-            .getFirst();
+    final var result =
+        executeSearchRequest(
+            () ->
+                userTaskSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication,
+                            withAuthorization(
+                                USER_TASK_READ_AUTHORIZATION, UserTaskEntity::processDefinitionId)))
+                    .getUserTask(userTaskKey));
 
-    final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
-    if (!securityContextProvider.isAuthorized(
-        userTask.processDefinitionId(), authentication, authorization)) {
-      throw ErrorMapper.createForbiddenException(authorization);
-    }
-
-    return userTask;
+    final var cachedItem = processCache.getCacheItem(result.processDefinitionKey());
+    return toCacheEnrichedUserTaskEntity(result, cachedItem);
   }
 
   public Optional<FormEntity> getUserTaskForm(final long userTaskKey) {

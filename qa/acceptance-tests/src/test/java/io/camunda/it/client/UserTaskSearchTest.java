@@ -619,7 +619,7 @@ class UserTaskSearchTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .contains("A single result was expected, but none was found matching");
+        .contains("User Task with key '%d' not found".formatted(userTaskKey));
   }
 
   @Test
