@@ -76,15 +76,17 @@ to make use of [ephemeral containers](https://kubernetes.io/docs/concepts/worklo
 
 To get a shell with a jdk on a node you can use the following command:
 
-> You need to replace `<broker-0>` with the pod name you want to profile below.
+> ![Note]
 >
-> ```sh
-> kubectl debug -it -c debugger --image=eclipse-temurin:17-jdk-focal --target=zeebe <broker-0> -- /bin/bash
-> ```
+> You need to replace `<broker-0>` with the pod name you want to profile below.
+
+```sh
+kubectl debug -it -c debugger --profile=restricted --image=eclipse-temurin:21.0.3_9-jdk-alpine --target=zeebe <broker-0> -- /bin/bash
+```
 
 ## Thread dump
 
-You can obtain a thread dump from the command line by finding the PID of your Java process, e.g. `pgrep java`.
+You can obtain a thread dump from the command line by finding the PID of your Java process, e.g. `jps` or `pgrep java` (if jps is not available).
 
 > If `pgrep` is not available, you can install it by running `apt update && apt install procps`.
 
@@ -112,7 +114,26 @@ The PIDs of each thread listed there are decimal representations of the `nid` li
 
 ## Heap dump
 
-Normally in our benchmarks we use docker images with only the JRE, which means you will not have any java debug tools in
+
+
+Normally we have Java tools available in our benchmarks. This means we can directly use `jmap`.
+
+```shell
+$ k exec -it <pod> -- jps
+7 StandaloneBroker
+328 Jps
+k exec <POD> -- jmap -dump:live,format=b,file=data/heap.dump 7
+```
+
+Afterward, this file needs to copied to the local disk.
+
+```shell
+kubectl cp <pod>:/usr/local/camunda/data/heap.dump /tmp/heap.dump
+```
+
+### Alternative
+
+If we use docker images with only the JRE, which means you will not have any java debug tools in
 the pod installed. In order to do a heap dump you would need to install the jdk to use jmap for example.
 
 To do that run the following:
@@ -159,6 +180,18 @@ JAVA_TOOL_OPTIONS=-XX:+PrintFlagsFinal -XX:+HeapDumpOnOutOfMemoryError -XX:MinRA
 # Profiling
 
 ## async-profiler
+
+To make our life easier we are providing a script to execute profiling inside a container, you can find it [here](../zeebe/benchmarks/docs/scripts/executeProfiling.sh)
+
+Simply run the script with the respective pod name:
+
+```shell
+./executeProfiling <POD>
+```
+
+This will run the [async-profiler](https://github.com/async-profiler/async-profiler) inside the container and download the resulting flame graph.
+
+### Alternative
 
 To run async profiling you would first have to download the async profiler preferably via an
 [ephemeral container](#ephemeral-container-for-a-debugging-shell) shell.
@@ -218,3 +251,33 @@ application is behaving. They provide a cheap, cost-effective way of getting a p
 
 > TODO: describe useful metrics/patterns and correlation, specifically related to Zeebe, that we use when debugging
 
+## JFR
+
+To run JFR inside a container we can make use of the following command:
+
+```shell
+  kubectl exec -it "$1" -- jcmd 1 JFR.start duration=100s filename=/usr/local/camunda/data/flight-$(date +%d%m%y-%H%M).jfr
+```
+
+If the flight recording is done, you can copy the recording (via kubectl cp) and open it with Intellij (or [JMC](https://www.oracle.com/java/technologies/javase/products-jmc9-downloads.html)).
+
+If `jcmd` is in the container not available we can make use of a debug container
+
+```shell
+kubectl debug -it -c debugger --profile=restricted --image=eclipse-temurin:21.0.3_9-jdk-alpine --target=operate-importer operate-deployment-importer-archiver-5cfb55bcfd-kscsq -- sh
+```
+With this debug container we can now run jcmd to get a Java flight recording:
+```shell
+jcmd 7 JFR.start duration=100s filename=flight.jfr
+7:
+Started recording 1. The result will be written to:
+
+/usr/local/operate/flight.jfr
+```
+After this is done, and written we can download this from the actual container:
+
+```shell
+$ k exec -it operate-deployment-importer-archiver-5cfb55bcfd-kscsq -- ls -la flight.jfr
+-rw-r--r--    1 camunda  camunda    1452909 Jun 28 11:32 flight.jfr
+$ k cp operate-deployment-importer-archiver-5cfb55bcfd-kscsq:/usr/local/operate/flight.jfr /tmp/flight.jfr
+```
