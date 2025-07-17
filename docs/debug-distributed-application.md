@@ -114,8 +114,6 @@ The PIDs of each thread listed there are decimal representations of the `nid` li
 
 ## Heap dump
 
-
-
 Normally we have Java tools available in our benchmarks. This means we can directly use `jmap`.
 
 ```shell
@@ -256,7 +254,7 @@ application is behaving. They provide a cheap, cost-effective way of getting a p
 To run JFR inside a container we can make use of the following command:
 
 ```shell
-  kubectl exec -it "$1" -- jcmd 1 JFR.start duration=100s filename=/usr/local/camunda/data/flight-$(date +%d%m%y-%H%M).jfr
+kubectl exec -it "$1" -- jcmd 1 JFR.start duration=100s filename=/usr/local/camunda/data/flight-$(date +%d%m%y-%H%M).jfr
 ```
 
 If the flight recording is done, you can copy the recording (via kubectl cp) and open it with Intellij (or [JMC](https://www.oracle.com/java/technologies/javase/products-jmc9-downloads.html)).
@@ -266,7 +264,9 @@ If `jcmd` is in the container not available we can make use of a debug container
 ```shell
 kubectl debug -it -c debugger --profile=restricted --image=eclipse-temurin:21.0.3_9-jdk-alpine --target=operate-importer operate-deployment-importer-archiver-5cfb55bcfd-kscsq -- sh
 ```
+
 With this debug container we can now run jcmd to get a Java flight recording:
+
 ```shell
 jcmd 7 JFR.start duration=100s filename=flight.jfr
 7:
@@ -274,6 +274,7 @@ Started recording 1. The result will be written to:
 
 /usr/local/operate/flight.jfr
 ```
+
 After this is done, and written we can download this from the actual container:
 
 ```shell
@@ -281,3 +282,4 @@ $ k exec -it operate-deployment-importer-archiver-5cfb55bcfd-kscsq -- ls -la fli
 -rw-r--r--    1 camunda  camunda    1452909 Jun 28 11:32 flight.jfr
 $ k cp operate-deployment-importer-archiver-5cfb55bcfd-kscsq:/usr/local/operate/flight.jfr /tmp/flight.jfr
 ```
+
