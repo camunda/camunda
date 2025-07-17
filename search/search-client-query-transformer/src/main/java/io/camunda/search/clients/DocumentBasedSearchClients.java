@@ -46,8 +46,8 @@ import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
-import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
@@ -83,11 +83,10 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.CloseableSilently;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class DocumentBasedSearchClients implements SearchClientsProxy, CloseableSilently {
@@ -208,24 +207,22 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
-      final ProcessDefinitionStatisticsFilter filter) {
-    if (!filter.incidentErrorHashCodes().isEmpty()) {
-      return mapIncidentErrorHashCodesToProcessInstanceKeys(
-          filter.incidentErrorHashCodes(),
-          filter.processInstanceKeyOperations(),
-          List::of,
-          processInstanceKeys -> {
-            // Create a new filter that narrows the results to only process instances with
-            // matching incident error hashes and existing key filters
-            final var updatedFilter =
-                filter.toBuilder()
-                    .replaceProcessInstanceKeyOperations(
-                        List.of(Operation.in(List.copyOf(processInstanceKeys))))
-                    .hasIncident(true)
-                    .build();
-            return executeProcessDefinitionFlowNodeStatistics(updatedFilter);
-          });
+      final ProcessDefinitionStatisticsFilter query) {
+
+    var filter = query;
+    if (query.incidentErrorHashCodes() != null && !query.incidentErrorHashCodes().isEmpty()) {
+      filter = normalizePDTopLevelIncidentHashCodes(query);
+      if (filter.incidentErrorHashCodes() == null && filter.errorMessageOperations().isEmpty()) {
+        // If the incidentErrorHashCodes were resolved to null, we can return an empty result
+        return List.of();
+      }
     }
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var normalizedOr = normalizePDOrFilterErrorHashCodes(filter.orFilters());
+      filter = filter.toBuilder().orFilters(normalizedOr).build();
+    }
+
     return executeProcessDefinitionFlowNodeStatistics(filter);
   }
 
@@ -240,34 +237,33 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
-      final ProcessInstanceQuery filter) {
-    if (!filter.filter().incidentErrorHashCodes().isEmpty()) {
-      return mapIncidentErrorHashCodesToProcessInstanceKeys(
-          filter.filter().incidentErrorHashCodes(),
-          filter.filter().processInstanceKeyOperations(),
-          SearchQueryResult::empty,
-          processInstanceKeys -> {
-            // Create a new filter that narrows the results to only process instances with
-            // matching incident error hashes and existing key filters
-            final var updatedFilter =
-                filter.filter().toBuilder()
-                    .replaceProcessInstanceKeyOperations(
-                        List.of(Operation.in(List.copyOf(processInstanceKeys))))
-                    .hasIncident(true)
-                    .build();
+      final ProcessInstanceQuery query) {
 
-            final var updatedQuery =
-                ProcessInstanceQuery.of(
-                    q ->
-                        q.filter(updatedFilter)
-                            .sort(filter.sort())
-                            .page(filter.page())
-                            .resultConfig(filter.resultConfig()));
+    var filter = query.filter();
 
-            return executeSearchProcessInstances(updatedQuery);
-          });
+    if (Objects.nonNull(query.filter().incidentErrorHashCode())) {
+      filter = normalizePITopLevelIncidentHashCodes(filter);
+      if (filter.incidentErrorHashCode() == null && filter.errorMessageOperations().isEmpty()) {
+        // If the incidentErrorHashCode was resolved to null, we can return an empty result
+        return SearchQueryResult.empty();
+      }
     }
-    return executeSearchProcessInstances(filter);
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var normalizedOr = normalizePIOrFilterErrorHashCodes(filter.orFilters());
+      filter = filter.toBuilder().orFilters(normalizedOr).build();
+    }
+
+    final ProcessInstanceFilter finalFilter = filter;
+    final var updatedQuery =
+        ProcessInstanceQuery.of(
+            q ->
+                q.filter(finalFilter)
+                    .sort(query.sort())
+                    .page(query.page())
+                    .resultConfig(query.resultConfig()));
+
+    return executeSearchProcessInstances(updatedQuery);
   }
 
   @Override
@@ -289,40 +285,6 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   public SearchQueryResult<ProcessInstanceEntity> executeSearchProcessInstances(
       final ProcessInstanceQuery filter) {
     return getSearchExecutor().search(filter, ProcessInstanceForListViewEntity.class);
-  }
-
-  private <R> R mapIncidentErrorHashCodesToProcessInstanceKeys(
-      final List<Integer> incidentErrorHashCodes,
-      final List<Operation<Long>> existingProcessInstanceKeyOperations,
-      final Supplier<R> fnEmptyResult,
-      final Function<Set<Long>, R> fnResult) {
-
-    // Search for active incidents that match the given error message hash codes
-    final var incidentFilter =
-        FilterBuilders.incident(
-            f ->
-                f.errorMessageHashOperations(
-                        FilterUtil.mapDefaultToOperation(incidentErrorHashCodes))
-                    .states(IncidentState.ACTIVE.name()));
-
-    final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
-
-    if (incidentResult.items().isEmpty()) {
-      return fnEmptyResult.get();
-    }
-
-    // Collect all relevant process instance keys (from both incidents and existing filter)
-    final Set<Long> processInstanceKeys = new HashSet<>();
-    incidentResult.items().forEach(i -> processInstanceKeys.add(i.processInstanceKey()));
-
-    for (final var op : existingProcessInstanceKeyOperations) {
-      if (op.operator().equals(Operator.EQUALS)) {
-        processInstanceKeys.add(op.value());
-      } else if (op.operator().equals(Operator.IN)) {
-        processInstanceKeys.addAll(op.values());
-      }
-    }
-    return fnResult.apply(processInstanceKeys);
   }
 
   @Override
@@ -568,5 +530,164 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       final BatchOperationItemQuery query) {
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.operation.OperationEntity.class);
+  }
+
+  /**
+   * Normalizes a top-level incidentErrorHashCode by resolving it to a full errorMessage, and always
+   * adds it as an additional errorMessageOperation (AND), regardless of existing ones. This
+   * reflects the fact that a process instance can have multiple incidents, and all error messages
+   * can be valid under AND semantics.
+   */
+  private ProcessInstanceFilter normalizePITopLevelIncidentHashCodes(
+      final ProcessInstanceFilter filter) {
+    if (filter.incidentErrorHashCode() == null) {
+      return filter;
+    }
+
+    final var resolvedErrorMessage =
+        findErrorMessageByErrorHashCodes(List.of(filter.incidentErrorHashCode()));
+
+    if (resolvedErrorMessage == null || resolvedErrorMessage.isBlank()) {
+      return filter.toBuilder().incidentErrorHashCode(null).build();
+    }
+
+    final var existingOps =
+        filter.errorMessageOperations() != null
+            ? new ArrayList<>(filter.errorMessageOperations())
+            : new ArrayList<Operation<String>>();
+
+    existingOps.add(Operation.eq(resolvedErrorMessage));
+
+    return filter.toBuilder()
+        .incidentErrorHashCode(null)
+        .replaceErrorMessageOperations(existingOps)
+        .build();
+  }
+
+  /**
+   * Given a list of OR filters, normalize any sub-filter that uses incidentErrorHashCode by
+   * resolving it to a full errorMessage equals operation, and adding it to any existing
+   * errorMessage filters, using AND semantics within the subfilter. If the hash code cannot be
+   * resolved, skip that clause.
+   */
+  private List<ProcessInstanceFilter> normalizePIOrFilterErrorHashCodes(
+      final List<ProcessInstanceFilter> orFilters) {
+
+    final List<ProcessInstanceFilter> normalized = new ArrayList<>();
+    for (final var subFilter : orFilters) {
+      if (subFilter.incidentErrorHashCode() == null) {
+        normalized.add(subFilter);
+        continue;
+      }
+
+      final var resolvedErrorMessage =
+          findErrorMessageByErrorHashCodes(List.of(subFilter.incidentErrorHashCode()));
+
+      if (resolvedErrorMessage == null || resolvedErrorMessage.isBlank()) {
+        continue;
+      }
+
+      final var existingOps =
+          subFilter.errorMessageOperations() != null
+              ? new ArrayList<>(subFilter.errorMessageOperations())
+              : new ArrayList<Operation<String>>();
+
+      existingOps.add(Operation.eq(resolvedErrorMessage));
+
+      final var updatedSubFilter =
+          subFilter.toBuilder()
+              .incidentErrorHashCode(null)
+              .replaceErrorMessageOperations(existingOps)
+              .build();
+
+      normalized.add(updatedSubFilter);
+    }
+    return normalized;
+  }
+
+  private ProcessDefinitionStatisticsFilter normalizePDTopLevelIncidentHashCodes(
+      final ProcessDefinitionStatisticsFilter filter) {
+    if (filter.incidentErrorHashCodes() == null || filter.incidentErrorHashCodes().isEmpty()) {
+      return filter;
+    }
+
+    final var resolvedErrorMessage =
+        findErrorMessageByErrorHashCodes(filter.incidentErrorHashCodes());
+
+    if (resolvedErrorMessage == null || resolvedErrorMessage.isEmpty()) {
+      return filter.toBuilder().incidentErrorHashCodes(null).build();
+    }
+    final var existingOps =
+        filter.errorMessageOperations() != null
+            ? new ArrayList<>(filter.errorMessageOperations())
+            : new ArrayList<Operation<String>>();
+
+    existingOps.add(Operation.eq(resolvedErrorMessage));
+
+    return filter.toBuilder()
+        .incidentErrorHashCodes(null)
+        .replaceErrorMessageOperations(existingOps)
+        .build();
+  }
+
+  private List<ProcessDefinitionStatisticsFilter> normalizePDOrFilterErrorHashCodes(
+      final List<ProcessDefinitionStatisticsFilter> orFilters) {
+
+    final List<ProcessDefinitionStatisticsFilter> normalized = new ArrayList<>();
+    for (final var subFilter : orFilters) {
+      if (subFilter.incidentErrorHashCodes() == null
+          || subFilter.incidentErrorHashCodes().isEmpty()) {
+        normalized.add(subFilter);
+        continue;
+      }
+
+      final var resolvedErrorMessage =
+          findErrorMessageByErrorHashCodes(subFilter.incidentErrorHashCodes());
+
+      if (resolvedErrorMessage == null || resolvedErrorMessage.isBlank()) {
+        continue;
+      }
+
+      final var existingOps =
+          subFilter.errorMessageOperations() != null
+              ? new ArrayList<>(subFilter.errorMessageOperations())
+              : new ArrayList<Operation<String>>();
+
+      existingOps.add(Operation.eq(resolvedErrorMessage));
+
+      final var updatedSubFilter =
+          subFilter.toBuilder()
+              .incidentErrorHashCodes(null)
+              .replaceErrorMessageOperations(existingOps)
+              .build();
+
+      normalized.add(updatedSubFilter);
+    }
+    return normalized;
+  }
+
+  private String findErrorMessageByErrorHashCodes(final List<Integer> hashCodes) {
+    if (hashCodes == null || hashCodes.isEmpty()) {
+      return null;
+    }
+
+    final var incidentFilter =
+        FilterBuilders.incident(
+            f ->
+                f.errorMessageHashOperations(FilterUtil.mapDefaultToOperation(hashCodes))
+                    .states(IncidentState.ACTIVE.name()));
+
+    final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
+
+    if (incidentResult.items().isEmpty()) {
+      return null;
+    }
+
+    final var incident = incidentResult.items().getFirst();
+
+    if (incident.errorMessage() == null || incident.errorMessage().isBlank()) {
+      return null;
+    }
+    return incident.errorMessage();
   }
 }
