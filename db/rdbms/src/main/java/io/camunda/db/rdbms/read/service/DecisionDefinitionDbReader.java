@@ -31,16 +31,10 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
     this.decisionDefinitionMapper = decisionDefinitionMapper;
   }
 
-  public Optional<DecisionDefinitionEntity> findOne(final long decisionDefinitionKey) {
-    final var result =
-        search(
-            DecisionDefinitionQuery.of(
-                b -> b.filter(f -> f.decisionDefinitionKeys(decisionDefinitionKey))));
-    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
-  }
-
-  public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public DecisionDefinitionEntity getByKey(final long key,
+      final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
   }
 
   @Override
@@ -57,5 +51,17 @@ public class DecisionDefinitionDbReader extends AbstractEntityReader<DecisionDef
     final var hits = decisionDefinitionMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<DecisionDefinitionEntity> findOne(final long decisionDefinitionKey) {
+    final var result =
+        search(
+            DecisionDefinitionQuery.of(
+                b -> b.filter(f -> f.decisionDefinitionKeys(decisionDefinitionKey))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
+  }
+
+  public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }
