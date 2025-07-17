@@ -71,6 +71,8 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -210,13 +212,6 @@ public class WebSecurityConfig {
         .authorizeHttpRequests(
             (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().denyAll())
         .build();
-  }
-
-  private static void noContentSuccessHandler(
-      final HttpServletRequest request,
-      final HttpServletResponse response,
-      final Authentication authentication) {
-    response.setStatus(HttpStatus.NO_CONTENT.value());
   }
 
   private static void setupSecureHeaders(
@@ -469,12 +464,12 @@ public class WebSecurityConfig {
                           .loginPage(LOGIN_URL)
                           .loginProcessingUrl(LOGIN_URL)
                           .failureHandler(authFailureHandler)
-                          .successHandler(WebSecurityConfig::noContentSuccessHandler))
+                          .successHandler(new NoContentWithCsrfTokenSuccessHandler()))
               .logout(
                   (logout) ->
                       logout
                           .logoutUrl(LOGOUT_URL)
-                          .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
+                          .logoutSuccessHandler(new NoContentResponseHandler())
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
               .exceptionHandling(
                   exceptionHandling ->
@@ -643,7 +638,7 @@ public class WebSecurityConfig {
                   (logout) ->
                       logout
                           .logoutUrl(LOGOUT_URL)
-                          .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
+                          .logoutSuccessHandler(new NoContentResponseHandler())
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
               .addFilterAfter(
                   new WebApplicationAuthorizationCheckFilter(securityConfiguration),
@@ -652,6 +647,35 @@ public class WebSecurityConfig {
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+  }
+
+  protected static class NoContentResponseHandler
+      implements AuthenticationSuccessHandler, LogoutSuccessHandler {
+
+    @Override
+    public void onAuthenticationSuccess(
+        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        throws IOException, ServletException {
+      response.setStatus(HttpStatus.NO_CONTENT.value());
+    }
+
+    @Override
+    public void onLogoutSuccess(
+        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        throws IOException, ServletException {
+      onAuthenticationSuccess(request, response, authentication);
+    }
+  }
+
+  protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
+    @Override
+    public void onAuthenticationSuccess(
+        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        throws IOException, ServletException {
+      super.onAuthenticationSuccess(request, response, authentication);
+
+      addCsrfTokenWhenAvailable(request, response);
     }
   }
 }
