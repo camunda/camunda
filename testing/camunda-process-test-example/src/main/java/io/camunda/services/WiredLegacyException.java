@@ -6,7 +6,7 @@ public class WiredLegacyException extends Exception {
 
   public WiredLegacyException() {
     super(
-        "The legacy system has wired hic-ups so there might be strange errors like tis from time to time");
+        "The legacy system has wired hiccups so there might be strange errors like this from time to time");
   }
 
   public WiredLegacyException(String message) {
