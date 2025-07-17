@@ -775,7 +775,7 @@ public class VariableAssertTest {
   }
 
   // Used to test assertVariableSatisfies JSON logic
-  public static class SimpleJsonObject {
+  private static final class SimpleJsonObject {
 
     @JsonProperty("string")
     private String strValue;
@@ -793,7 +793,7 @@ public class VariableAssertTest {
     private SimpleJsonNestedObject nestedObject;
   }
 
-  private static class SimpleJsonNestedObject {
+  private static final class SimpleJsonNestedObject {
 
     @JsonProperty private String key;
   }
