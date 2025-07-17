@@ -129,6 +129,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         .withProperty(
             AuthenticationProperties.API_UNPROTECTED,
             securityConfig.getAuthentication().getUnprotectedApi())
+        .withProperty(
+            "camunda.security.authorizations.enabled",
+            securityConfig.getAuthorizations().isEnabled())
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)

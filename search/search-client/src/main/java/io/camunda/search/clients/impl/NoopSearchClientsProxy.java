@@ -181,6 +181,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public ProcessDefinitionEntity getProcessDefinition(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery filter) {
     return SearchQueryResult.empty();

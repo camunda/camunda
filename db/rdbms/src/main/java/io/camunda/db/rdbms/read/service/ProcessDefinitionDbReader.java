@@ -12,12 +12,9 @@ import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessDefinitionSearchColumn;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
-import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,20 +31,10 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
     this.processDefinitionMapper = processDefinitionMapper;
   }
 
-  public Optional<ProcessDefinitionEntity> findOne(final long processDefinitionKey) {
-    final var result =
-        search(
-            ProcessDefinitionQuery.of(
-                b -> b.filter(f -> f.processDefinitionKeys(processDefinitionKey))));
-    if (result.items() == null || result.items().isEmpty()) {
-      return Optional.empty();
-    } else {
-      return Optional.of(result.items().getFirst());
-    }
-  }
-
-  public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public ProcessDefinitionEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
   }
 
   @Override
@@ -66,9 +53,19 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
-  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
-      final ProcessDefinitionStatisticsFilter filter) {
-    LOG.trace("[RDBMS DB] Query process definition flow node statistics with filter {}", filter);
-    return processDefinitionMapper.flowNodeStatistics(filter);
+  public Optional<ProcessDefinitionEntity> findOne(final long processDefinitionKey) {
+    final var result =
+        search(
+            ProcessDefinitionQuery.of(
+                b -> b.filter(f -> f.processDefinitionKeys(processDefinitionKey))));
+    if (result.items() == null || result.items().isEmpty()) {
+      return Optional.empty();
+    } else {
+      return Optional.of(result.items().getFirst());
+    }
+  }
+
+  public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

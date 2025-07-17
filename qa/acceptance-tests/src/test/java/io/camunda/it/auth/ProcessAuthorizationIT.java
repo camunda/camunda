@@ -41,8 +41,10 @@ class ProcessAuthorizationIT {
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
 
+  private static final String PROCESS_DEFINITION_ID_WITH_START_FORM = "Process_11hxie4";
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
+  private static final String START_FORM_RESTRICTED = "startFormUser";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -64,10 +66,25 @@ class ProcessAuthorizationIT {
                   READ_PROCESS_DEFINITION,
                   List.of("service_tasks_v1", "service_tasks_v2"))));
 
+  @UserDefinition
+  private static final TestUser START_FORM_USER =
+      new TestUser(
+          START_FORM_RESTRICTED,
+          "password",
+          List.of(
+              new Permissions(
+                  PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("Process_11hxie4"))));
+
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    deployResource(adminClient, "form/form.form");
+
     final List<String> processes =
-        List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
+        List.of(
+            "service_tasks_v1.bpmn",
+            "service_tasks_v2.bpmn",
+            "incident_process_v1.bpmn",
+            "process_start_form.bpmn");
     processes.forEach(process -> deployResource(adminClient, String.format("process/%s", process)));
     waitForProcessesToBeDeployed(adminClient, processes.size());
   }
@@ -118,6 +135,21 @@ class ProcessAuthorizationIT {
     // then
     assertThat(processDefinition).isNotNull();
     assertThat(processDefinition.getProcessDefinitionId()).isEqualTo("service_tasks_v1");
+  }
+
+  @Test
+  void shouldReturnProcessDefinitionStartForm(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(START_FORM_RESTRICTED) final CamundaClient userClient) {
+    final var processDefinitionKey =
+        getProcessDefinitionKey(adminClient, PROCESS_DEFINITION_ID_WITH_START_FORM);
+
+    // when
+    final var form =
+        userClient.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
+
+    // then
+    assertThat(form.getFormId()).isEqualTo("test");
   }
 
   private long getProcessDefinitionKey(

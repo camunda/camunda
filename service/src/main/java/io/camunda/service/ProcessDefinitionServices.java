@@ -7,7 +7,8 @@
  */
 package io.camunda.service;
 
-import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.PROCESS_DEFINITION_READ_AUTHORIZATION;
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.FormEntity;
@@ -16,9 +17,7 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -50,8 +49,7 @@ public class ProcessDefinitionServices
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.processDefinition().readProcessDefinition())))
+                        authentication, PROCESS_DEFINITION_READ_AUTHORIZATION))
                 .searchProcessDefinitions(query));
   }
 
@@ -62,8 +60,7 @@ public class ProcessDefinitionServices
             processDefinitionSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication,
-                        Authorization.of(a -> a.processDefinition().readProcessDefinition())))
+                        authentication, PROCESS_DEFINITION_READ_AUTHORIZATION))
                 .processDefinitionFlowNodeStatistics(filter));
   }
 
@@ -78,25 +75,16 @@ public class ProcessDefinitionServices
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {
-    final var result =
-        executeSearchRequest(
-            () ->
-                processDefinitionSearchClient
-                    .withSecurityContext(
-                        securityContextProvider.provideSecurityContext(authentication))
-                    .searchProcessDefinitions(
-                        processDefinitionSearchQuery(
-                            q ->
-                                q.filter(f -> f.processDefinitionKeys(processDefinitionKey))
-                                    .singleResult()))
-                    .items()
-                    .getFirst());
-    final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
-    if (!securityContextProvider.isAuthorized(
-        result.processDefinitionId(), authentication, authorization)) {
-      throw ErrorMapper.createForbiddenException(authorization);
-    }
-    return result;
+    return executeSearchRequest(
+        () ->
+            processDefinitionSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withAuthorization(
+                            PROCESS_DEFINITION_READ_AUTHORIZATION,
+                            ProcessDefinitionEntity::processDefinitionId)))
+                .getProcessDefinition(processDefinitionKey));
   }
 
   public Optional<FormEntity> getProcessDefinitionStartForm(final long processDefinitionKey) {
@@ -111,11 +99,8 @@ public class ProcessDefinitionServices
 
   public Optional<String> getProcessDefinitionXml(final Long processDefinitionKey) {
     final var processDefinition = getByKey(processDefinitionKey);
-    final var xml = processDefinition.bpmnXml();
-    if (xml == null || xml.isEmpty()) {
-      return Optional.empty();
-    } else {
-      return Optional.of(xml);
-    }
+    return Optional.ofNullable(processDefinition)
+        .map(ProcessDefinitionEntity::bpmnXml)
+        .filter(xml -> !xml.isEmpty());
   }
 }

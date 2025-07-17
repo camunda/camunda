@@ -9,6 +9,7 @@ package io.camunda.service.cache;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +32,10 @@ public class ProcessElementProvider {
       final Long processDefinitionKey,
       final BiConsumer<Long, ProcessElement> processDefinitionKeyElementConsumer) {
     try {
-      final var processDefinition = processDefinitionServices.getByKey(processDefinitionKey);
+      final var processDefinition =
+          processDefinitionServices
+              .withAuthentication(CamundaAuthentication.anonymous())
+              .getByKey(processDefinitionKey);
       extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
     } catch (final Exception e) {
       LOG.warn(
@@ -48,11 +52,13 @@ public class ProcessElementProvider {
 
     try {
       final var result =
-          processDefinitionServices.search(
-              ProcessDefinitionQuery.of(
-                  q ->
-                      q.filter(f -> f.processDefinitionKeys(keysList))
-                          .page(p -> p.size(keysList.size()))));
+          processDefinitionServices
+              .withAuthentication(CamundaAuthentication.anonymous())
+              .search(
+                  ProcessDefinitionQuery.of(
+                      q ->
+                          q.filter(f -> f.processDefinitionKeys(keysList))
+                              .page(p -> p.size(keysList.size()))));
 
       if (result.total() < processDefinitionKeys.size()) {
         LOG.warn("Could not load all required process definitions into the cache");

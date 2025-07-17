@@ -204,6 +204,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public ProcessDefinitionEntity getProcessDefinition(final long key) {
+    return doGetWithReader(readers.processDefinitionReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Process Definition", key));
+  }
+
+  @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery query) {
     return doSearchWithReader(readers.processDefinitionReader(), query);

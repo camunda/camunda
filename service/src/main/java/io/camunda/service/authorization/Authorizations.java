@@ -18,6 +18,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.security.auth.Authorization;
 
@@ -58,6 +59,9 @@ public abstract class Authorizations {
   public static final Authorization<MessageSubscriptionEntity>
       MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION =
           Authorization.of(a -> a.processDefinition().readProcessInstance());
+
+  public static final Authorization<ProcessDefinitionEntity> PROCESS_DEFINITION_READ_AUTHORIZATION =
+      Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
   public static final Authorization<ProcessInstanceEntity> PROCESS_INSTANCE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
