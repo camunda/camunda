@@ -23,12 +23,11 @@ public class BatchOperationDocumentReader extends DocumentBasedReader
   }
 
   @Override
-  public BatchOperationEntity getByKey(
-      final long key, final ResourceAccessChecks resourceAccessChecks) {
+  public BatchOperationEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
         .getByQuery(
-            BatchOperationQuery.of(
-                b -> b.filter(f -> f.batchOperationKeys(String.valueOf(key))).singleResult()),
+            BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationKeys(id)).singleResult()),
             io.camunda.webapps.schema.entities.operation.BatchOperationEntity.class);
   }
 

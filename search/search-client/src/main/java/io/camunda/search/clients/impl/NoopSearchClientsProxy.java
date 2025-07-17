@@ -78,6 +78,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public BatchOperationEntity getBatchOperation(final String id) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
     return SearchQueryResult.empty();

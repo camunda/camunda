@@ -65,8 +65,18 @@ import java.util.List;
 public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
+  public AuthorizationEntity getAuthorization(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery filter) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public BatchOperationEntity getBatchOperation(final String id) {
     throw new NoSecondaryStorageException();
   }
 

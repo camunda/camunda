@@ -324,7 +324,7 @@ class BatchOperationAuthorizationIT {
   }
 
   @Test
-  void shouldReturnNotFoundForUnauthorizedReadOfBatchOperation(
+  void shouldReturnForbiddenForUnauthorizedReadOfBatchOperation(
       @Authenticated(ADMIN) final CamundaClient camundaAdminClient,
       @Authenticated(RESTRICTED_READ) final CamundaClient camundaRestictedClient) {
     // given some processes with a scopeId in variables
@@ -351,7 +351,7 @@ class BatchOperationAuthorizationIT {
               } catch (final ProblemException e) {
                 code = e.code();
               }
-              assertThat(code).isEqualTo(404);
+              assertThat(code).isEqualTo(403);
             });
   }
 
