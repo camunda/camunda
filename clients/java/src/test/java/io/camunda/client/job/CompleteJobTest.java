@@ -25,6 +25,7 @@ import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections;
@@ -40,6 +41,8 @@ import org.mockito.Mockito;
 public final class CompleteJobTest extends ClientTest {
 
   public static final String USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK.getValue();
+  public static final String AD_HOC_SUB_PROCESS_DISCRIMINATOR =
+      TypeEnum.AD_HOC_SUB_PROCESS.getValue();
 
   @Test
   public void shouldCompleteJobByKey() {
@@ -634,6 +637,123 @@ public final class CompleteJobTest extends ClientTest {
     assertThat(request).isEqualTo(expectedRequest);
 
     rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldCompleteAdHocSubProcessWithElementIdAndNoVariables() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    final String elementId = "elementId";
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.forAdHocSubProcess().activateElement(elementId))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setType(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .addActivateElements(
+                        GatewayOuterClass.JobResultActivateElement.newBuilder()
+                            .setElementId(elementId)
+                            .build()))
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  public void shouldCompleteAdHocSubProcessWithElementIdAndVariables() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    final String elementId = "elementId";
+    final String variables = "{\"key\":\"value\",\"anotherKey\":\"anotherValue\"}";
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(r -> r.forAdHocSubProcess().activateElement(elementId).variables(variables))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setType(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .addActivateElements(
+                        GatewayOuterClass.JobResultActivateElement.newBuilder()
+                            .setElementId(elementId)
+                            .setVariables(variables)
+                            .build()))
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  public void shouldCompleteAdHocSubProcessWithMultipleElementIds() {
+    // given
+    final ActivatedJob job = Mockito.mock(ActivatedJob.class);
+    Mockito.when(job.getKey()).thenReturn(12L);
+    final String elementId1 = "elementId1";
+    final String elementId2 = "elementId2";
+    final String elementId3 = "elementId3";
+
+    // when
+    client
+        .newCompleteCommand(job)
+        .withResult(
+            r ->
+                r.forAdHocSubProcess()
+                    .activateElement(elementId1)
+                    .variable("key", "value")
+                    .activateElement(elementId2)
+                    .variable("anotherKey", "anotherValue")
+                    .activateElement(elementId3))
+        .send()
+        .join();
+
+    // then
+    final CompleteJobRequest request = gatewayService.getLastRequest();
+
+    final CompleteJobRequest expectedRequest =
+        CompleteJobRequest.newBuilder()
+            .setJobKey(job.getKey())
+            .setResult(
+                JobResult.newBuilder()
+                    .setType(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .addActivateElements(
+                        GatewayOuterClass.JobResultActivateElement.newBuilder()
+                            .setElementId(elementId1)
+                            .setVariables("{\"key\":\"value\"}")
+                            .build())
+                    .addActivateElements(
+                        GatewayOuterClass.JobResultActivateElement.newBuilder()
+                            .setElementId(elementId2)
+                            .setVariables("{\"anotherKey\":\"anotherValue\"}")
+                            .build())
+                    .addActivateElements(
+                        GatewayOuterClass.JobResultActivateElement.newBuilder()
+                            .setElementId(elementId3)
+                            .build()))
+            .build();
+
+    assertThat(request).isEqualTo(expectedRequest);
   }
 
   public static class POJO {
