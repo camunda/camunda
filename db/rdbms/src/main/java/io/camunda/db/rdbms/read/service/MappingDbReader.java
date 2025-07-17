@@ -30,15 +30,9 @@ public class MappingDbReader extends AbstractEntityReader<MappingEntity> impleme
     this.mappingMapper = mappingMapper;
   }
 
-  public Optional<MappingEntity> findOne(final String mappingId) {
-    LOG.trace("[RDBMS DB] Search for mapping with mapping ID {}", mappingId);
-    final SearchQueryResult<MappingEntity> queryResult =
-        search(MappingQuery.of(b -> b.filter(f -> f.mappingId(mappingId))));
-    return Optional.ofNullable(queryResult.items()).flatMap(hits -> hits.stream().findFirst());
-  }
-
-  public SearchQueryResult<MappingEntity> search(final MappingQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public MappingEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(id).orElse(null);
   }
 
   @Override
@@ -54,5 +48,16 @@ public class MappingDbReader extends AbstractEntityReader<MappingEntity> impleme
     final var hits = mappingMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<MappingEntity> findOne(final String mappingId) {
+    LOG.trace("[RDBMS DB] Search for mapping with mapping ID {}", mappingId);
+    final SearchQueryResult<MappingEntity> queryResult =
+        search(MappingQuery.of(b -> b.filter(f -> f.mappingId(mappingId))));
+    return Optional.ofNullable(queryResult.items()).flatMap(hits -> hits.stream().findFirst());
+  }
+
+  public SearchQueryResult<MappingEntity> search(final MappingQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

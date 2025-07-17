@@ -14,6 +14,8 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface MappingSearchClient {
 
+  MappingEntity getMapping(final String id);
+
   SearchQueryResult<MappingEntity> searchMappings(MappingQuery filter);
 
   MappingSearchClient withSecurityContext(SecurityContext securityContext);
