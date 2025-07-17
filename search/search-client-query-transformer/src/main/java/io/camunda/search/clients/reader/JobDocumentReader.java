@@ -22,14 +22,6 @@ public class JobDocumentReader extends DocumentBasedReader implements JobReader 
   }
 
   @Override
-  public JobEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
-    return getSearchExecutor()
-        .getByQuery(
-            JobQuery.of(b -> b.filter(f -> f.jobKeys(key)).singleResult()),
-            io.camunda.webapps.schema.entities.JobEntity.class);
-  }
-
-  @Override
   public SearchQueryResult<JobEntity> search(
       final JobQuery query, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
