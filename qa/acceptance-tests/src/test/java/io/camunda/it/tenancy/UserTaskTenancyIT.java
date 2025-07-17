@@ -8,8 +8,10 @@
 package io.camunda.it.tenancy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
@@ -66,7 +68,7 @@ public class UserTaskTenancyIT {
 
     deployResource(adminClient, "process/bpm_variable_test.bpmn", TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
-    waitForProcessBeingExported(adminClient);
+    waitForUserTasksBeingExported(adminClient);
   }
 
   @Test
@@ -99,6 +101,42 @@ public class UserTaskTenancyIT {
     assertThat(result.items()).hasSize(0);
   }
 
+  @Test
+  void getByKeyShouldReturnTenantOwnedUserTask(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given
+    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID, TENANT_A);
+    // when
+    final var result = camundaClient.newUserTaskGetRequest(userTaskKey).send().join();
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getUserTaskKey()).isEqualTo(userTaskKey);
+    assertThat(result.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  @Test
+  void getByKeyShouldThrowNotFoundException(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER2) final CamundaClient camundaClient) {
+    // given
+    final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID, TENANT_A);
+
+    // when
+    final var exception =
+        assertThrowsExactly(
+            ProblemException.class,
+            () -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join());
+
+    // then
+    assertThat(exception.getMessage()).startsWith("Failed with code 404");
+    assertThat(exception.details()).isNotNull();
+    assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(exception.details().getStatus()).isEqualTo(404);
+    assertThat(exception.details().getDetail())
+        .contains("User Task with key '%s' not found".formatted(userTaskKey));
+  }
+
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
     camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
   }
@@ -129,7 +167,7 @@ public class UserTaskTenancyIT {
         .join();
   }
 
-  private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
+  private static void waitForUserTasksBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -137,5 +175,17 @@ public class UserTaskTenancyIT {
             () -> {
               assertThat(camundaClient.newUserTaskSearchRequest().send().join().items()).hasSize(4);
             });
+  }
+
+  private long getUserTaskKey(
+      final CamundaClient camundaClient, final String processId, final String tenantId) {
+    return camundaClient
+        .newUserTaskSearchRequest()
+        .filter(f -> f.bpmnProcessId(processId).tenantId(tenantId))
+        .send()
+        .join()
+        .items()
+        .getFirst()
+        .getUserTaskKey();
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
+import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.security.auth.Authorization;
 
 public abstract class Authorizations {
@@ -77,4 +78,7 @@ public abstract class Authorizations {
 
   public static final Authorization<UserEntity> USER_READ_AUTHORIZATION =
       Authorization.of(a -> a.user().read());
+
+  public static final Authorization<UserTaskEntity> USER_TASK_READ_AUTHORIZATION =
+      Authorization.of(a -> a.processDefinition().readUserTask());
 }

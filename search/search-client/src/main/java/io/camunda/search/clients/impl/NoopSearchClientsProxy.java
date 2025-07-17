@@ -255,6 +255,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public UserTaskEntity getUserTask(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
     return SearchQueryResult.empty();
   }

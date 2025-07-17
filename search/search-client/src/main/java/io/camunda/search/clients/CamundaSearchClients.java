@@ -315,6 +315,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+  public UserTaskEntity getUserTask(final long key) {
+    return doGetWithReader(readers.userTaskReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("User Task", key));
+  }
+
+  @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
     return doSearchWithReader(readers.userTaskReader(), query);
   }
