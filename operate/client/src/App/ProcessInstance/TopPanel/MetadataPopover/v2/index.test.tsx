@@ -272,40 +272,40 @@ describe('MetadataPopover', () => {
     expect(
       await screen.findByText(/"flowNodeId": "Activity_0zqism7"/),
     ).toBeInTheDocument();
-    // expect(
-    //   screen.getByText(/"flowNodeInstanceKey": "2251799813699889"/),
-    // ).toBeInTheDocument();
-    // expect(
-    //   screen.getByText(/"flowNodeType": "TASK_CALL_ACTIVITY"/),
-    // ).toBeInTheDocument();
-    // expect(
-    //   screen.getByText(/"startDate": "2018-12-12 00:00:00"/),
-    // ).toBeInTheDocument();
-    // expect(
-    //   screen.getByText(/"endDate": "2018-12-12 00:00:00"/),
-    // ).toBeInTheDocument();
-    // expect(
-    //   screen.getByText(/"jobDeadline": "2018-12-12 00:00:00"/),
-    // ).toBeInTheDocument();
-    // expect(screen.getByText(/"incidentErrorType": null/)).toBeInTheDocument();
-    // expect(
-    //   screen.getByText(/"incidentErrorMessage": null/),
-    // ).toBeInTheDocument();
-    // expect(screen.getByText(/"jobId": null/)).toBeInTheDocument();
-    // expect(screen.getByText(/"jobType": null/)).toBeInTheDocument();
-    // expect(screen.getByText(/"jobRetries": null/)).toBeInTheDocument();
-    // expect(screen.getByText(/"jobWorker": null/)).toBeInTheDocument();
-    // expect(screen.getByText(/"jobCustomHeaders": null/)).toBeInTheDocument();
-    // expect(
-    //   screen.getByText(/"calledProcessInstanceKey": "229843728748927482"/),
-    // ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"flowNodeInstanceKey": "2251799813699889"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"flowNodeType": "TASK_CALL_ACTIVITY"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"startDate": "2018-12-12 00:00:00"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"endDate": "2018-12-12 00:00:00"/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/"jobDeadline": "2018-12-12 00:00:00"/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"incidentErrorType": null/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"incidentErrorMessage": null/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/"jobId": null/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobType": null/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobRetries": null/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobWorker": null/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobCustomHeaders": null/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"calledProcessInstanceKey": "229843728748927482"/),
+    ).toBeInTheDocument();
 
-    // await user.click(screen.getByRole('button', {name: /close/i}));
-    // expect(
-    //   screen.queryByText(
-    //     /Flow Node "Activity_0zqism7" 2251799813699889 Metadata/,
-    //   ),
-    // ).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: /close/i}));
+    expect(
+      screen.queryByText(
+        /Flow Node "Activity_0zqism7" 2251799813699889 Metadata/,
+      ),
+    ).not.toBeInTheDocument();
   });
 
   it('should render metadata for multi instance flow nodes', async () => {
