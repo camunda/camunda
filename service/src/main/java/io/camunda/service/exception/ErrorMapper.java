@@ -70,6 +70,12 @@ public class ErrorMapper {
         LOGGER.debug(detail, cse);
         yield new ServiceException(detail, UNAVAILABLE);
       }
+      case SECONDARY_STORAGE_NOT_SET -> {
+        final String detail =
+            "The search client requires a secondary storage, but none is set. Secondary storage can be configured using the 'camunda.database.type' property";
+        LOGGER.debug(detail, cse);
+        yield new ServiceException(detail, FORBIDDEN);
+      }
       case SEARCH_SERVER_FAILED -> {
         final String detail = "The search server was unable to process the request";
         LOGGER.debug(detail, cse);

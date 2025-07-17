@@ -50,6 +50,7 @@ public class CamundaSearchException extends RuntimeException {
     NOT_FOUND,
     NOT_UNIQUE,
     CONNECTION_FAILED,
+    SECONDARY_STORAGE_NOT_SET,
     SEARCH_CLIENT_FAILED,
     SEARCH_SERVER_FAILED,
     UNKNOWN
