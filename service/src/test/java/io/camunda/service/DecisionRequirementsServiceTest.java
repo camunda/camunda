@@ -20,7 +20,6 @@ import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
@@ -33,17 +32,14 @@ public final class DecisionRequirementsServiceTest {
 
   private DecisionRequirementsServices services;
   private DecisionRequirementSearchClient client;
-  private SecurityContextProvider securityContextProvider;
-  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(DecisionRequirementSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    securityContextProvider = mock(SecurityContextProvider.class);
     services =
         new DecisionRequirementsServices(
-            mock(BrokerClient.class), securityContextProvider, client, authentication);
+            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
   }
 
   @Test

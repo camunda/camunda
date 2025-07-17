@@ -81,11 +81,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-services</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-schema-manager</artifactId>
     </dependency>
     <dependency>

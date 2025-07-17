@@ -43,7 +43,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
     // fetch the authorization entities for the authenticated user
     final var securityContext = createSecurityContext(authentication, requiredAuthorization);
-    final var resourceIds = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+    final var resourceIds = authorizationChecker.retrieveAuthorizedResourceIds(securityContext);
 
     if (resourceIds.contains(WILDCARD)) {
       // no authorization check required, user can access

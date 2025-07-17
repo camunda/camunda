@@ -20,7 +20,6 @@ import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
@@ -56,13 +55,10 @@ public class TenantServiceTest {
     final CamundaAuthentication authentication =
         CamundaAuthentication.of(builder -> builder.user("foo"));
     client = mock(TenantSearchClient.class);
-    final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    when(securityContextProvider.isAuthorized(
-            "tenant-id", authentication, Authorization.of(a -> a.tenant().read())))
-        .thenReturn(true);
     services =
-        new TenantServices(stubbedBrokerClient, securityContextProvider, client, authentication);
+        new TenantServices(
+            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
   }
 
   @Test

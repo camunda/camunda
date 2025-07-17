@@ -25,10 +25,7 @@ import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.clients.TenantSearchClient;
-import io.camunda.search.clients.reader.AuthorizationReader;
-import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
@@ -122,20 +119,8 @@ public class IdentityMigrationModuleConfiguration {
   }
 
   @Bean
-  public SecurityContextProvider securityContextProvider(
-      final SecurityConfiguration securityConfiguration,
-      final AuthorizationChecker authorizationChecker) {
-    return new SecurityContextProvider(securityConfiguration, authorizationChecker);
-  }
-
-  @Bean
-  public AuthorizationReader authorizationReader() {
-    return new NoopAuthorizationReader();
-  }
-
-  @Bean
-  public AuthorizationChecker authorizationChecker(final AuthorizationReader authorizationReader) {
-    return new AuthorizationChecker(authorizationReader);
+  public SecurityContextProvider securityContextProvider() {
+    return new SecurityContextProvider();
   }
 
   @Bean

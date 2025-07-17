@@ -224,7 +224,6 @@ public final class ProcessInstanceServiceTest {
     final var rootInstance = mock(ProcessInstanceEntity.class);
     when(rootInstance.processInstanceKey()).thenReturn(123L);
     when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
-    authorizeProcessReadInstance(true, "root_process_id");
     when(rootInstance.treePath()).thenReturn(null); // No treePath
 
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
@@ -242,7 +241,6 @@ public final class ProcessInstanceServiceTest {
     final var rootInstance = mock(ProcessInstanceEntity.class);
     when(rootInstance.processInstanceKey()).thenReturn(123L);
     when(rootInstance.processDefinitionId()).thenReturn("root_process_id");
-    authorizeProcessReadInstance(true, "root_process_id");
     when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
 
     when(processInstanceSearchClient.getProcessInstance(eq(123L))).thenReturn(rootInstance);
@@ -384,14 +382,6 @@ public final class ProcessInstanceServiceTest {
         .isEqualTo("source1");
     assertThat(modificationPlan.getMoveInstructions().getFirst().getTargetElementId())
         .isEqualTo("target1");
-  }
-
-  private void authorizeProcessReadInstance(final boolean authorize, final String processId) {
-    when(securityContextProvider.isAuthorized(
-            processId,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(authorize);
   }
 
   @Test
