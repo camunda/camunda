@@ -166,7 +166,7 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   public SnapshotMetrics getSnapshotMetrics() {
-    return snapshotStore.getSnapshotMetrics();
+    return snapshotStore.getMetrics();
   }
 
   @Override
