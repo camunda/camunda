@@ -16,8 +16,8 @@ import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import java.util.UUID;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -26,18 +26,25 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class ClientsByGroupIntegrationTest {
 
   private static CamundaClient camundaClient;
+  private static final String GROUP_ID = Strings.newRandomValidIdentityId();
+
+  @BeforeAll
+  static void setup() {
+    createGroup(GROUP_ID);
+  }
 
   @Test
   void shouldAssignClientToGroup() {
     // given
     final var clientId = "clientId";
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = UUID.randomUUID().toString();
-    final var description = UUID.randomUUID().toString();
-    createGroup(groupId, groupName, description);
 
     // when
-    camundaClient.newAssignClientToGroupCommand().clientId(clientId).groupId(groupId).send().join();
+    camundaClient
+        .newAssignClientToGroupCommand()
+        .clientId(clientId)
+        .groupId(GROUP_ID)
+        .send()
+        .join();
 
     // then
     Awaitility.await("Client is assigned to the group")
@@ -45,7 +52,7 @@ public class ClientsByGroupIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> result =
-                  camundaClient.newClientsByGroupSearchRequest(groupId).send().join();
+                  camundaClient.newClientsByGroupSearchRequest(GROUP_ID).send().join();
               assertThat(result.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
   }
@@ -70,19 +77,20 @@ public class ClientsByGroupIntegrationTest {
   void shouldUnassignClientFromGroup() {
     // given
     final var clientId = "clientId_toRemove";
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = UUID.randomUUID().toString();
-    final var description = UUID.randomUUID().toString();
-    createGroup(groupId, groupName, description);
 
-    camundaClient.newAssignClientToGroupCommand().clientId(clientId).groupId(groupId).send().join();
+    camundaClient
+        .newAssignClientToGroupCommand()
+        .clientId(clientId)
+        .groupId(GROUP_ID)
+        .send()
+        .join();
 
     Awaitility.await("Client is assigned to the group")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
               final SearchResponse<Client> result =
-                  camundaClient.newClientsByGroupSearchRequest(groupId).send().join();
+                  camundaClient.newClientsByGroupSearchRequest(GROUP_ID).send().join();
               assertThat(result.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
 
@@ -90,7 +98,7 @@ public class ClientsByGroupIntegrationTest {
     camundaClient
         .newUnassignClientFromGroupCommand()
         .clientId(clientId)
-        .groupId(groupId)
+        .groupId(GROUP_ID)
         .send()
         .join();
 
@@ -100,7 +108,7 @@ public class ClientsByGroupIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> result =
-                  camundaClient.newClientsByGroupSearchRequest(groupId).send().join();
+                  camundaClient.newClientsByGroupSearchRequest(GROUP_ID).send().join();
               assertThat(result.items()).noneMatch(r -> clientId.equals(r.getClientId()));
             });
   }
@@ -108,9 +116,7 @@ public class ClientsByGroupIntegrationTest {
   @Test
   void shouldRejectUnassigningIfClientIsNotAssignedToGroup() {
     // given
-    final var groupId = Strings.newRandomValidIdentityId();
     final var clientId = Strings.newRandomValidIdentityId();
-    camundaClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
 
     // when/then
     assertThatThrownBy(
@@ -118,7 +124,7 @@ public class ClientsByGroupIntegrationTest {
                 camundaClient
                     .newUnassignClientFromGroupCommand()
                     .clientId(clientId)
-                    .groupId(groupId)
+                    .groupId(GROUP_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -126,18 +132,109 @@ public class ClientsByGroupIntegrationTest {
             "Expected to remove entity with ID '"
                 + clientId
                 + "' from group with ID '"
-                + groupId
+                + GROUP_ID
                 + "', but the entity is not assigned to this group.");
   }
 
-  private static void createGroup(
-      final String groupId, final String groupName, final String description) {
+  @Test
+  void searchClientsShouldReturnEmptyListWhenSearchingForNonExistingGroupId() {
+    final var clientsSearchResponse =
+        camundaClient.newClientsByGroupSearchRequest("someGroupId").send().join();
+    assertThat(clientsSearchResponse.items()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectClientsByGroupSearchIfMissingGroupId() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newClientsByGroupSearchRequest(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRejectClientsByGroupSearchIfEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newClientsByGroupSearchRequest("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
+  }
+
+  @Test
+  void shouldReturnClientsByGroup() {
+    // given
+    final var firstClientId = "someClientId";
+    final var secondClientId = "otherClientId";
+
+    // when
     camundaClient
-        .newCreateGroupCommand()
-        .groupId(groupId)
-        .name(groupName)
-        .description(description)
+        .newAssignClientToGroupCommand()
+        .clientId(firstClientId)
+        .groupId(GROUP_ID)
         .send()
         .join();
+
+    camundaClient
+        .newAssignClientToGroupCommand()
+        .clientId(secondClientId)
+        .groupId(GROUP_ID)
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Clients are assigned to the group and can be searched")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final SearchResponse<Client> result =
+                  camundaClient.newClientsByGroupSearchRequest(GROUP_ID).send().join();
+              assertThat(result.items())
+                  .map(Client::getClientId)
+                  .contains(firstClientId, secondClientId);
+            });
+  }
+
+  @Test
+  void shouldReturnClientsByGroupSorted() {
+    // given
+    final var firstClientId = "AClientId";
+    final var secondClientId = "BClientId";
+    final var groupId = Strings.newRandomValidIdentityId();
+    createGroup(groupId);
+
+    // when
+    camundaClient
+        .newAssignClientToGroupCommand()
+        .clientId(firstClientId)
+        .groupId(groupId)
+        .send()
+        .join();
+
+    camundaClient
+        .newAssignClientToGroupCommand()
+        .clientId(secondClientId)
+        .groupId(groupId)
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Clients are assigned to the group and can be searched")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var clients =
+                  camundaClient
+                      .newClientsByGroupSearchRequest(groupId)
+                      .sort(fn -> fn.clientId().desc())
+                      .send()
+                      .join();
+              assertThat(clients.items().size()).isEqualTo(2);
+              assertThat(clients.items())
+                  .extracting(Client::getClientId)
+                  .containsExactly(secondClientId, firstClientId);
+            });
+  }
+
+  private static void createGroup(final String groupId) {
+    camundaClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
   }
 }
