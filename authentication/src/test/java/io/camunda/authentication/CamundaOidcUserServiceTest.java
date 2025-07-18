@@ -31,6 +31,9 @@ import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AccessToken.TokenType;
 import org.springframework.security.oauth2.core.oidc.OidcIdToken;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 
 public class CamundaOidcUserServiceTest {
   private static final String REGISTRATION_ID = "test";
@@ -41,11 +44,12 @@ public class CamundaOidcUserServiceTest {
   private CamundaOidcUserService camundaOidcUserService;
 
   @Mock private CamundaOAuthPrincipalService camundaOAuthPrincipalService;
+  @Mock private JwtDecoder jwtDecoder;
 
   @BeforeEach
   public void setUp() throws Exception {
     MockitoAnnotations.openMocks(this).close();
-    camundaOidcUserService = new CamundaOidcUserService(camundaOAuthPrincipalService);
+    camundaOidcUserService = new CamundaOidcUserService(camundaOAuthPrincipalService, jwtDecoder);
   }
 
   @Test
@@ -57,6 +61,7 @@ public class CamundaOidcUserServiceTest {
             "email", "foo@camunda.test",
             "role", "R1",
             "group", "G1");
+    when(jwtDecoder.decode(TOKEN_VALUE)).thenReturn(createJwt(TOKEN_VALUE, claims));
 
     final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
 
@@ -94,7 +99,28 @@ public class CamundaOidcUserServiceTest {
   public void clientIdIsSetInAuthContext() {
     // given
     final Map<String, Object> claims = Map.of("sub", "test|foo@camunda.test", "client_id", "blah");
+    when(jwtDecoder.decode(TOKEN_VALUE)).thenReturn(createJwt(TOKEN_VALUE, claims));
+    when(camundaOAuthPrincipalService.loadOAuthContext(claims))
+        .thenReturn(
+            new OAuthContext(
+                Set.of("test-id", "test-id-2"),
+                new AuthenticationContext.AuthenticationContextBuilder()
+                    .withClientId("blah")
+                    .build()));
 
+    final var oidcUser = camundaOidcUserService.loadUser(createOidcUserRequest(claims));
+    final var camundaUser = (CamundaOidcUser) oidcUser;
+    final var authenticationContext = camundaUser.getAuthenticationContext();
+
+    assertThat(authenticationContext.clientId()).isEqualTo("blah");
+    assertThat(authenticationContext.username()).isNull();
+  }
+
+  @Test
+  public void fallbackToIdTokenWhenAccessTokenDecodingFails() {
+    // given
+    final Map<String, Object> claims = Map.of("sub", "test|foo@camunda.test", "client_id", "blah");
+    when(jwtDecoder.decode(TOKEN_VALUE)).thenThrow(new JwtException("Failed to decode"));
     when(camundaOAuthPrincipalService.loadOAuthContext(claims))
         .thenReturn(
             new OAuthContext(
@@ -119,5 +145,9 @@ public class CamundaOidcUserServiceTest {
         new OAuth2AccessToken(
             TokenType.BEARER, TOKEN_VALUE, TOKEN_ISSUED_AT, TOKEN_EXPIRES_AT, Set.of()),
         new OidcIdToken(TOKEN_VALUE, TOKEN_ISSUED_AT, TOKEN_EXPIRES_AT, claims));
+  }
+
+  private Jwt createJwt(final String tokenValue, final Map<String, Object> claims) {
+    return new Jwt(tokenValue, TOKEN_ISSUED_AT, TOKEN_EXPIRES_AT, Map.of("alg", "none"), claims);
   }
 }

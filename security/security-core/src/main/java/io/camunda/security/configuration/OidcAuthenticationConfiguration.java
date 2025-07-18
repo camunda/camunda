@@ -25,6 +25,7 @@ public class OidcAuthenticationConfiguration {
   private String jwkSetUri;
   private String authorizationUri;
   private String tokenUri;
+  private AuthorizeRequestConfiguration authorizeRequestConfiguration;
   private Set<String> audiences;
   private String usernameClaim = "sub";
   private String clientIdClaim;
@@ -101,6 +102,15 @@ public class OidcAuthenticationConfiguration {
 
   public void setTokenUri(final String tokenUri) {
     this.tokenUri = tokenUri;
+  }
+
+  public AuthorizeRequestConfiguration getAuthorizeRequest() {
+    return authorizeRequestConfiguration;
+  }
+
+  public void setAuthorizeRequest(
+      final AuthorizeRequestConfiguration authorizeRequestConfiguration) {
+    this.authorizeRequestConfiguration = authorizeRequestConfiguration;
   }
 
   public Set<String> getAudiences() {
