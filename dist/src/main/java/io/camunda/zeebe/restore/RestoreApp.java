@@ -10,9 +10,11 @@ package io.camunda.zeebe.restore;
 import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.RestoreBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RestoreCfg;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -29,11 +31,12 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {"io.camunda.zeebe.restore"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.restore"})
-@Import(value = {BrokerBasedConfiguration.class, WorkingDirectoryConfiguration.class})
+@Import(value = {BrokerBasedConfiguration.class, RestoreBasedConfiguration.class, WorkingDirectoryConfiguration.class})
 public class RestoreApp implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(RestoreApp.class);
   private final BrokerCfg configuration;
+  private final RestoreCfg restoreConfig;
   private final BackupStore backupStore;
 
   @Value("${backupId}")
@@ -46,10 +49,12 @@ public class RestoreApp implements ApplicationRunner {
   @Autowired
   public RestoreApp(
       final BrokerBasedConfiguration configuration,
+      final RestoreBasedConfiguration restoreBasedConfiguration,
       final BackupStore backupStore,
       final RestoreConfiguration restoreConfiguration,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration.config();
+    this.restoreConfig = restoreBasedConfiguration.config();
     this.backupStore = backupStore;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;
@@ -72,7 +77,7 @@ public class RestoreApp implements ApplicationRunner {
   public void run(final ApplicationArguments args)
       throws IOException, ExecutionException, InterruptedException {
     LOG.info("Starting to restore from backup {}", backupId);
-    new RestoreManager(configuration, backupStore, meterRegistry)
+    new RestoreManager(configuration, restoreConfig, backupStore, meterRegistry)
         .restore(backupId, restoreConfiguration.validateConfig());
     LOG.info("Successfully restored broker from backup {}", backupId);
   }
