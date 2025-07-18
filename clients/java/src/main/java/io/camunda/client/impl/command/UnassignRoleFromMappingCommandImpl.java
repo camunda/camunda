@@ -61,7 +61,7 @@ public class UnassignRoleFromMappingCommandImpl
   @Override
   public CamundaFuture<UnassignRoleFromMappingResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-    ArgumentUtil.ensureNotNullNorEmpty("mappingId", mappingId);
+    ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingId);
     final HttpCamundaFuture<UnassignRoleFromMappingResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
         "/roles/" + roleId + "/mapping-rules/" + mappingId,
