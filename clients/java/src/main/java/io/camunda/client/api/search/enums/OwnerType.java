@@ -20,7 +20,7 @@ public enum OwnerType {
   CLIENT,
   ROLE,
   GROUP,
-  MAPPING,
+  MAPPING_RULE,
   UNSPECIFIED,
   UNKNOWN_ENUM_VALUE;
 }

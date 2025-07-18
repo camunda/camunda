@@ -243,7 +243,7 @@ public class OidcAuthOverGrpcIT {
     defaultMappingClient
         .newCreateAuthorizationCommand()
         .ownerId(RESTRICTED_USER_ID)
-        .ownerType(OwnerType.MAPPING)
+        .ownerType(OwnerType.MAPPING_RULE)
         .resourceId("*")
         .resourceType(ResourceType.RESOURCE)
         .permissionTypes(PermissionType.CREATE)
