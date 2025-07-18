@@ -21,7 +21,6 @@ import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -31,7 +30,7 @@ import io.grpc.StatusRuntimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.concurrent.Future;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -299,12 +298,7 @@ public class BrokerAdminServiceTest {
   private void waitForSnapshotAtBroker() {
     Awaitility.await("snapshot is taken")
         .atMost(Duration.ofSeconds(60))
-        .until(
-            () ->
-                Optional.ofNullable(partitions.query().get(1).snapshotId())
-                    .flatMap(FileBasedSnapshotId::ofFileName),
-            Optional::isPresent)
-        .orElseThrow();
+        .until(() -> partitions.query().get(1).snapshotId(), Objects::nonNull);
   }
 
   private static final class TestClockRequest extends BrokerExecuteCommand<ClockRecord> {

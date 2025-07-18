@@ -116,6 +116,6 @@ public class BrokerSnapshotTest {
                             .processedPositionInSnapshot())
                     .isNotNull());
     final PartitionStatus partitionStatus = brokerAdminService.getPartitionStatus().get(1);
-    return FileBasedSnapshotId.ofFileName(partitionStatus.snapshotId()).get();
+    return FileBasedSnapshotId.ofFileName(partitionStatus.snapshotId()).getOrThrow();
   }
 }

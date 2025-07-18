@@ -947,7 +947,7 @@ public class ClusteringRule extends ExternalResource {
 
     return Optional.ofNullable(partitionStatus)
         .map(PartitionStatus::snapshotId)
-        .flatMap(FileBasedSnapshotId::ofFileName);
+        .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow());
   }
 
   public Optional<SnapshotId> getSnapshot(final Broker broker) {

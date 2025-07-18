@@ -8,6 +8,8 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Parsed;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
@@ -56,17 +58,12 @@ public final class FileBasedSnapshotId implements SnapshotId {
     return new FileBasedSnapshotId(1, 1, 0, 0, brokerId);
   }
 
-  // TODO(npepinpe): using Either here would improve readability and observability, as validation
-  //  can have better error messages, and the return type better expresses what we attempt to do,
-  //  i.e. either it failed (with an error) or it succeeded
-  public static Optional<FileBasedSnapshotId> ofPath(final Path path) {
+  public static SnapshotParseResult ofPath(final Path path) {
     return ofFileName(path.getFileName().toString());
   }
 
-  public static Optional<FileBasedSnapshotId> ofFileName(final String name) {
+  public static SnapshotParseResult ofFileName(final String name) {
     final var parts = name.split("-");
-    Optional<FileBasedSnapshotId> snapshotId = Optional.empty();
-
     if (parts.length >= SNAPSHOT_ID_PARTS) {
       try {
         final var index = Long.parseLong(parts[0]);
@@ -75,12 +72,11 @@ public final class FileBasedSnapshotId implements SnapshotId {
         final var exporterPosition = Long.parseLong(parts[3]);
         final var brokerId = Integer.parseInt((parts[4]));
 
-        snapshotId =
-            Optional.of(
-                new FileBasedSnapshotId(
-                    index, term, processedPosition, exporterPosition, brokerId));
+        return new Parsed(
+            new FileBasedSnapshotId(
+                index, term, processedPosition, exporterPosition, brokerId));
       } catch (final NumberFormatException e) {
-        LOGGER.warn("Failed to parse part of snapshot id", e);
+        return new Invalid(new IllegalArgumentException("Failed to parse part of snapshot id", e));
       }
     } else if (parts.length == PREV_SNAPSHOT_ID_PARTS) {
       try {
@@ -88,17 +84,19 @@ public final class FileBasedSnapshotId implements SnapshotId {
         final var term = Long.parseLong(parts[1]);
         final var processedPosition = Long.parseLong(parts[2]);
         final var exporterPosition = Long.parseLong(parts[3]);
+        final var brokerId = Integer.parseInt((parts[4]));
 
-        snapshotId =
-            Optional.of(new FileBasedSnapshotId(index, term, processedPosition, exporterPosition));
+        return new Parsed(
+            new FileBasedSnapshotId(index, term, processedPosition, exporterPosition, brokerId));
       } catch (final NumberFormatException e) {
-        LOGGER.warn("Failed to parse part of snapshot id", e);
+        return new Invalid(new IllegalArgumentException("Failed to parse part of snapshot id", e));
       }
     } else {
-      LOGGER.warn("Expected snapshot file format to be %d-%d-%d-%d-%d, but was {}", name);
+      return new Invalid(
+          new IllegalArgumentException(
+              "Expected snapshot file format to be %%d-%%d-%%d-%%d-%%d, but was %s"
+                  .formatted(name)));
     }
-
-    return snapshotId;
   }
 
   @Override
@@ -171,5 +169,24 @@ public final class FileBasedSnapshotId implements SnapshotId {
         + ", brokerId="
         + brokerId
         + '}';
+  }
+
+  public sealed interface SnapshotParseResult permits Parsed, Invalid {
+    FileBasedSnapshotId getOrThrow();
+
+    record Parsed(FileBasedSnapshotId snapshotId) implements SnapshotParseResult {
+
+      @Override
+      public FileBasedSnapshotId getOrThrow() {
+        return snapshotId;
+      }
+    }
+
+    record Invalid(Exception exception) implements SnapshotParseResult {
+      @Override
+      public FileBasedSnapshotId getOrThrow() {
+        throw new IllegalStateException("Snapshot id could not be parsed", exception);
+      }
+    }
   }
 }

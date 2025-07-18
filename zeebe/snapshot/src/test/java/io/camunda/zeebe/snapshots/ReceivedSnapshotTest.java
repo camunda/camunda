@@ -57,7 +57,7 @@ public class ReceivedSnapshotTest {
 
     // when
     assertThatThrownBy(() -> receiverSnapshotStore.newReceivedSnapshot("invalid").join())
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
