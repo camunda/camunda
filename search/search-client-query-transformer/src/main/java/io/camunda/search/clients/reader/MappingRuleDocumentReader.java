@@ -7,7 +7,7 @@
  */
 package io.camunda.search.clients.reader;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
+import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.MappingRuleEntity;
@@ -56,7 +56,8 @@ public class MappingRuleDocumentReader extends DocumentBasedReader implements Ma
   }
 
   private MappingRuleQuery expandTenantFilter(final MappingRuleQuery query) {
-    final var mappingIds = tenantMemberReader.getTenantMembers(query.filter().tenantId(), MAPPING);
+    final var mappingIds =
+        tenantMemberReader.getTenantMembers(query.filter().tenantId(), MAPPING_RULE);
     return query.toBuilder()
         .filter(query.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
@@ -64,14 +65,14 @@ public class MappingRuleDocumentReader extends DocumentBasedReader implements Ma
 
   private MappingRuleQuery expandGroupFilter(final MappingRuleQuery mappingQuery) {
     final var mappingIds =
-        groupMemberReader.getGroupMembers(mappingQuery.filter().groupId(), MAPPING);
+        groupMemberReader.getGroupMembers(mappingQuery.filter().groupId(), MAPPING_RULE);
     return mappingQuery.toBuilder()
         .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
   }
 
   private MappingRuleQuery expandRoleFilter(final MappingRuleQuery query) {
-    final var mappingIds = roleMemberReader.getRoleMembers(query.filter().roleId(), MAPPING);
+    final var mappingIds = roleMemberReader.getRoleMembers(query.filter().roleId(), MAPPING_RULE);
     return query.toBuilder()
         .filter(query.filter().toBuilder().mappingIds(mappingIds).build())
         .build();
