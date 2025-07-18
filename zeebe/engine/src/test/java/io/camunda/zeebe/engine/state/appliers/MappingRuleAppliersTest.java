@@ -57,8 +57,10 @@ public class MappingRuleAppliersTest {
     authorizationState = processingState.getAuthorizationState();
     groupState = processingState.getGroupState();
     membershipState = processingState.getMembershipState();
-    mappingRuleDeletedApplier = new MappingRuleDeletedApplier(processingState.getMappingRuleState());
-    mappingRuleUpdatedApplier = new MappingRuleUpdatedApplier(processingState.getMappingRuleState());
+    mappingRuleDeletedApplier =
+        new MappingRuleDeletedApplier(processingState.getMappingRuleState());
+    mappingRuleUpdatedApplier =
+        new MappingRuleUpdatedApplier(processingState.getMappingRuleState());
   }
 
   @Test
