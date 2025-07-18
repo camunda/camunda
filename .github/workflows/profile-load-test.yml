@@ -1,0 +1,53 @@
+# description: This workflow allows to profile more easily running load tests
+# type: CI
+# owner: @camunda/zeebe-distributed-platform
+name: Profile running load test
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Specifies the name of the load test to profile'
+        required: true
+      pod:
+        description: 'Specifies the pod name of the load test to profile. Please only specify the suffix like zeebe-0, or zeebe-1, etc.'
+        default: 'zeebe-0'
+        required: false
+jobs:
+  profile-load-test:
+    name: Async profiling running load test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.3
+        with:
+          cluster_name: 'zeebe-cluster'
+          location: europe-west1-b
+      - name: Set right namespace
+        run: |
+          kubectl config set-context --current --namespace=${{ inputs.name }}
+      - name: Execute profiling
+        run: >
+          ./zeebe/benchmarks/docs/scripts/executeProfiling.sh ${{ inputs.name }}-${{ inputs.pod }}
+      - uses: actions/upload-artifact@v4
+        with:
+          # Name of the artifact to upload.
+          # Optional. Default is 'artifact'
+          name: flamegraph.html
+          # A file, directory or wildcard pattern that describes what to upload
+          # Required.
+          path: ${{ inputs.name }}-${{ inputs.pod }}*
+      - name: Summarize profiling
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Profiling \`${{ inputs.name }}\`
+            Async profiling has been executed on ${{ inputs.name }}-${{ inputs.pod }}. Please make sure to download the artifact.
+          EOF
