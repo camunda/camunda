@@ -276,8 +276,8 @@ Started recording 1. The result will be written to:
 After this is done, and written we can download this from the actual container:
 
 ```shell
-$ k exec -it operate-deployment-importer-archiver-5cfb55bcfd-kscsq -- ls -la flight.jfr
+$ kubectl exec -it <pod-name> -- ls -la flight.jfr
 -rw-r--r--    1 camunda  camunda    1452909 Jun 28 11:32 flight.jfr
-$ k cp operate-deployment-importer-archiver-5cfb55bcfd-kscsq:/usr/local/operate/flight.jfr /tmp/flight.jfr
+$ kubectl cp <pod-name>:/usr/local/operate/flight.jfr /tmp/flight.jfr
 ```
 
