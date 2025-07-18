@@ -48,7 +48,7 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalServiceImpl.class);
 
-  private final MappingRuleServices mappingServices;
+  private final MappingRuleServices mappingRuleServices;
   private final TenantServices tenantServices;
   private final RoleServices roleServices;
   private final GroupServices groupServices;
@@ -66,7 +66,7 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
       final GroupServices groupServices,
       final AuthorizationServices authorizationServices,
       final SecurityConfiguration securityConfiguration) {
-    mappingServices = mappingRuleServices;
+    this.mappingRuleServices = mappingRuleServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
@@ -104,14 +104,14 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
       ownerTypeToIds.put(CLIENT, Set.of(clientId));
     }
 
-   final var mappings =
-        mappingServices
+    final var mappingRules =
+        mappingRuleServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getMatchingMappings(claims);
+            .getMatchingMappingRules(claims);
     final Set<String> mappingIds =
-        mappings.map(MappingRuleEntity::mappingRuleId).collect(Collectors.toSet());
+        mappingRules.map(MappingRuleEntity::mappingRuleId).collect(Collectors.toSet());
     if (mappingIds.isEmpty()) {
-      LOG.debug("No mappings found for these claims: {}", claims);
+      LOG.debug("No mappingRules found for these claims: {}", claims);
     } else {
       ownerTypeToIds.put(MAPPING_RULE, mappingIds);
     }
