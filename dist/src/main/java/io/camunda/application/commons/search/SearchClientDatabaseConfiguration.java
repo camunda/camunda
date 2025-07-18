@@ -13,12 +13,12 @@ import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.auth.AnonymousResourceAccessController;
-import io.camunda.search.clients.auth.CompositeResourceAccessController;
 import io.camunda.search.clients.auth.DefaultResourceAccessProvider;
 import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
 import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
 import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
 import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
+import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.SearchClientReaders;
@@ -149,7 +149,7 @@ public class SearchClientDatabaseConfiguration {
   public DocumentBasedSearchClients documentBasedSearchClients(
       final SearchClientReaders readers, final List<ResourceAccessController> controllers) {
     return new DocumentBasedSearchClients(
-        readers, new CompositeResourceAccessController(controllers), null);
+        readers, new ResourceAccessDelegatingController(controllers), null);
   }
 
   @Bean

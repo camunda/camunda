@@ -59,7 +59,7 @@ public class DefaultCamundaAuthenticationProviderTest {
     authenticationConverter = new DefaultCamundaAuthenticationConverter();
     authenticationProvider =
         new DefaultCamundaAuthenticationProvider(
-            new CamundaAuthenticationConverters(List.of(authenticationConverter)));
+            new CamundaAuthenticationDelegatingConverter(List.of(authenticationConverter)));
   }
 
   @Test
@@ -229,7 +229,7 @@ public class DefaultCamundaAuthenticationProviderTest {
     final var unprotectedAuthenticationConverter = new UnprotectedCamundaAuthenticationConverter();
     authenticationProvider =
         new DefaultCamundaAuthenticationProvider(
-            new CamundaAuthenticationConverters(
+            new CamundaAuthenticationDelegatingConverter(
                 List.of(unprotectedAuthenticationConverter, authenticationConverter)));
 
     // when

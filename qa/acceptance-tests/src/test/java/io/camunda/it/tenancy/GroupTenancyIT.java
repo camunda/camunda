@@ -10,6 +10,7 @@ package io.camunda.it.tenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.Group;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -37,7 +38,7 @@ public class GroupTenancyIT {
 
   private static final String ADMIN = "admin";
   private static final String USER1 = "user1";
-  private static final String TENANT_A = "tena" + "ntA";
+  private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
   private static final String GROUP_A = "groupA";
   private static final String GROUP_B = "groupB";
@@ -66,6 +67,8 @@ public class GroupTenancyIT {
     final var result = camundaClient.newGroupsSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(2);
+    assertThat(result.items().stream().map(Group::getGroupId).toList())
+        .containsExactlyInAnyOrder(GROUP_A, GROUP_B);
   }
 
   @Test
@@ -75,6 +78,8 @@ public class GroupTenancyIT {
     final var result = camundaClient.newGroupsSearchRequest().send().join();
     // then
     assertThat(result.items()).hasSize(2);
+    assertThat(result.items().stream().map(Group::getGroupId).toList())
+        .containsExactlyInAnyOrder(GROUP_A, GROUP_B);
   }
 
   private static void createGroup(final CamundaClient camundaClient, final String group) {

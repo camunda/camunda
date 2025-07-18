@@ -15,15 +15,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticationProvider {
 
-  private final CamundaAuthenticationConverter<Authentication> converters;
+  private final CamundaAuthenticationConverter<Authentication> converter;
 
-  public DefaultCamundaAuthenticationProvider(final CamundaAuthenticationConverters converters) {
-    this.converters = converters;
+  public DefaultCamundaAuthenticationProvider(
+      final CamundaAuthenticationDelegatingConverter converter) {
+    this.converter = converter;
   }
 
   @Override
   public CamundaAuthentication getCamundaAuthentication() {
     final var springBasedAuthentication = SecurityContextHolder.getContext().getAuthentication();
-    return converters.convert(springBasedAuthentication);
+    return converter.convert(springBasedAuthentication);
   }
 }

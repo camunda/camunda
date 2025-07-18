@@ -18,14 +18,14 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CompositeResourceAccessController implements ResourceAccessController {
+public class ResourceAccessDelegatingController implements ResourceAccessController {
 
   private static final Logger LOG =
-      LoggerFactory.getLogger(CompositeResourceAccessController.class);
+      LoggerFactory.getLogger(ResourceAccessDelegatingController.class);
 
   private final List<ResourceAccessController> controllers;
 
-  public CompositeResourceAccessController(final List<ResourceAccessController> controllers) {
+  public ResourceAccessDelegatingController(final List<ResourceAccessController> controllers) {
     this.controllers = controllers;
   }
 

@@ -16,14 +16,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 
-public class CamundaAuthenticationConverters
+public class CamundaAuthenticationDelegatingConverter
     implements CamundaAuthenticationConverter<Authentication> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CamundaAuthenticationConverters.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(CamundaAuthenticationDelegatingConverter.class);
 
   private final List<CamundaAuthenticationConverter<Authentication>> converters;
 
-  public CamundaAuthenticationConverters(
+  public CamundaAuthenticationDelegatingConverter(
       final List<CamundaAuthenticationConverter<Authentication>> converters) {
     this.converters = converters;
   }
