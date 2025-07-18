@@ -117,7 +117,8 @@ public class CamundaDockerIT {
             .withCreateContainerCmdModifier(
                 (final CreateContainerCmd cmd) ->
                     cmd.withEntrypoint("/usr/local/camunda/bin/prefix-migration"))
-            .withStartupCheckStrategy(new OneShotStartupCheckStrategy())
+            .withStartupCheckStrategy(
+                new OneShotStartupCheckStrategy().withTimeout(Duration.ofSeconds(180)))
             .withNetwork(Network.SHARED)
             .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
             .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticsearchUrl())
