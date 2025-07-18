@@ -51,6 +51,7 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
+import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
@@ -83,14 +84,9 @@ final class OpenSearchArchiverRepositoryIT {
 
   @AfterEach
   void afterEach() throws IOException {
-    // wipes all data in OS between tests
-    final var response =
-        transport
-            .restClient()
-            .performRequest(
-                new org.opensearch.client.Request(
-                    "DELETE", zeebeIndex + "*," + batchOperationIndex + "*"));
-    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+    final DeleteIndexRequest deleteRequest =
+        new DeleteIndexRequest.Builder().index(zeebeIndex + "*", batchOperationIndex + "*").build();
+    testClient.indices().delete(deleteRequest);
   }
 
   @Test
