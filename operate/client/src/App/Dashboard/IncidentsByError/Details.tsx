@@ -16,7 +16,7 @@ import type {ProcessDto} from 'modules/api/incidents/fetchIncidentsByError';
 import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {observer} from 'mobx-react';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 type Props = {
   errorMessage: string;
@@ -27,15 +27,7 @@ type Props = {
 
 const Details: React.FC<Props> = observer(
   ({errorMessage, incidentErrorHashCode, processes, tabIndex}) => {
-    const {data: currentUser} = useCurrentUser();
-    const tenantsById: Record<string, string> =
-      currentUser?.tenants.reduce(
-        (acc, tenant) => ({
-          [tenant.tenantId]: tenant.name,
-          ...acc,
-        }),
-        {},
-      ) ?? {};
+    const tenantsById = useAvailableTenants();
     const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
     return (

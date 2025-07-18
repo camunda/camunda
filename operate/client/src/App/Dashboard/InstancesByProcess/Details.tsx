@@ -15,7 +15,7 @@ import type {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessI
 import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {observer} from 'mobx-react';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 type Props = {
   processName: string;
@@ -26,15 +26,7 @@ type Props = {
 const Details: React.FC<Props> = observer(
   ({processName, processes, tabIndex}) => {
     const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
-    const {data: currentUser} = useCurrentUser();
-    const tenantsById: Record<string, string> =
-      currentUser?.tenants.reduce(
-        (acc, tenant) => ({
-          [tenant.tenantId]: tenant.name,
-          ...acc,
-        }),
-        {},
-      ) ?? {};
+    const tenantsById = useAvailableTenants();
 
     return (
       <ul>

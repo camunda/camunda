@@ -11,6 +11,7 @@ import {Field} from 'react-final-form';
 import {observer} from 'mobx-react';
 import {Dropdown} from '@carbon/react';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 type Props = {
   onChange?: (selectedItem: string) => void;
@@ -19,14 +20,7 @@ type Props = {
 const TenantField: React.FC<Props> = observer(({onChange}) => {
   const {data: currentUser} = useCurrentUser();
   const tenants = currentUser?.tenants;
-  const tenantsById: Record<string, string> =
-    tenants?.reduce(
-      (acc, tenant) => ({
-        [tenant.tenantId]: tenant.name,
-        ...acc,
-      }),
-      {},
-    ) ?? {};
+  const tenantsById = useAvailableTenants();
   const items = ['all', ...(tenants?.map(({tenantId}) => tenantId) ?? [])];
 
   return (
