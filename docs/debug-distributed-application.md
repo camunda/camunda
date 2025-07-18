@@ -254,9 +254,7 @@ application is behaving. They provide a cheap, cost-effective way of getting a p
 To run JFR inside a container we can make use of the following command:
 
 ```shell
-kubectl exec -it "$1" -- jcmd 1 JFR.start duration=100s filename=/usr/local/camunda/data/flight-$(date +%d%m%y-%H%M).jfr
-```
-
+kubectl exec -it <pod-name> -- jcmd 1 JFR.start duration=100s filename=/usr/local/camunda/data/flight-$(date +%d%m%y-%H%M).jfr
 If the flight recording is done, you can copy the recording (via kubectl cp) and open it with Intellij (or [JMC](https://www.oracle.com/java/technologies/javase/products-jmc9-downloads.html)).
 
 If `jcmd` is in the container not available we can make use of a debug container
