@@ -260,6 +260,7 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	workDone := make(chan struct{})
+	shutdownWorkDone := make(chan struct{})
 	sh := &shutdown.ShutdownHandler{
 		ProcessHandler: &processmanagement.ProcessHandler{
 			C8: state.C8,
@@ -280,13 +281,15 @@ func main() {
 	case "stop":
 		go func() {
 			sh.ShutdownProcesses(state)
-			close(workDone)
+			close(shutdownWorkDone)
 		}()
 	}
 
 	select {
 	case <-workDone:
-		log.Info().Msg("All processes are running and healthy, exiting...")
+		log.Info().Msg("All processes are running and healthy, exiting script...")
+	case <-shutdownWorkDone:
+		log.Info().Msg("All processes have been shut down, exiting script...")
 	case <-ctx.Done():
 		log.Info().Msg("Received shutdown signal, stopping all workers...")
 		sh.ShutdownProcesses(state)
