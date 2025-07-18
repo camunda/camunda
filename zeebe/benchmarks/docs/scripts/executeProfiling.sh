@@ -11,13 +11,19 @@ fi
 node=$1
 
 # Download and extract latest async profiler
-curl -L https://github.com/jvm-profiling-tools/async-profiler/releases/download/v4.0/async-profiler-4.0-linux-x64.tar.gz -o profiler.tar.gz
-tar -xzvf profiler.tar.gz
+if [ ! -d "async-profiler-4.0-linux-x64/" ];
+then
+  curl -L https://github.com/jvm-profiling-tools/async-profiler/releases/download/v4.0/async-profiler-4.0-linux-x64.tar.gz -o profiler.tar.gz
+  tar -xzvf profiler.tar.gz
+fi
 
-# Copy async profiler to pod
-kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":/usr/local/camunda/data/asprof
-kubectl cp async-profiler-4.0-linux-x64/lib/libasyncProfiler.so "$node":/usr/local/camunda/data/libasyncProfiler.so
-kubectl exec "$node" -- chmod +x /usr/local/camunda/data/asprof
+if ! kubectl exec "$node" -- test -f data/libasyncProfiler.so;
+then
+  # Copy async profiler to pod
+  kubectl cp async-profiler-4.0-linux-x64/bin/asprof "$node":/usr/local/camunda/data/asprof
+  kubectl cp async-profiler-4.0-linux-x64/lib/libasyncProfiler.so "$node":/usr/local/camunda/data/libasyncProfiler.so
+  kubectl exec "$node" -- chmod +x /usr/local/camunda/data/asprof
+fi
 
 # Run profiling
 filename=flamegraph-$(date +%Y-%m-%d_%H-%M-%S).html
