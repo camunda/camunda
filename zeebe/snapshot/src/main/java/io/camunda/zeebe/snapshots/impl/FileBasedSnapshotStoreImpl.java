@@ -74,7 +74,7 @@ public final class FileBasedSnapshotStoreImpl {
       new AtomicReference<>();
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
-  private volatile Optional<FileBasedSnapshot> bootstrapSnapshot = Optional.empty();
+  private final AtomicReference<FileBasedSnapshot> bootstrapSnapshot = new AtomicReference<>();
   private final CRC32CChecksumProvider checksumProvider;
   private final ConcurrencyControl actor;
 
@@ -683,7 +683,7 @@ public final class FileBasedSnapshotStoreImpl {
               () -> {
                 // the destination folder should not exist, as only one snapshot for bootstrap is
                 // created at a time
-                if (Files.exists(destinationFolder) || bootstrapSnapshot.isPresent()) {
+                if (Files.exists(destinationFolder) || bootstrapSnapshot.get() != null) {
                   return CompletableActorFuture.completedExceptionally(
                       new SnapshotAlreadyExistsException(
                           String.format(
@@ -711,7 +711,7 @@ public final class FileBasedSnapshotStoreImpl {
               actor)
           .thenApply(
               persisted -> {
-                bootstrapSnapshot = Optional.of((FileBasedSnapshot) persisted);
+                bootstrapSnapshot.set((FileBasedSnapshot) persisted);
                 return persisted;
               },
               actor);
@@ -733,11 +733,13 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   private void deleteBootstrapSnapshotsInternal() {
-    bootstrapSnapshot.ifPresent(FileBasedSnapshot::delete);
-    bootstrapSnapshot = Optional.empty();
+    final var deletableSnapshot = bootstrapSnapshot.getAndSet(null);
+    if (deletableSnapshot != null) {
+      deletableSnapshot.delete();
+    }
   }
 
   public Optional<PersistedSnapshot> getBootstrapSnapshot() {
-    return bootstrapSnapshot.map(PersistedSnapshot.class::cast);
+    return Optional.ofNullable(bootstrapSnapshot.get());
   }
 }
