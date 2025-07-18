@@ -64,7 +64,7 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSMSecurityConfigurerAdapter.class);
-  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst");
+  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
 
   private final CCSMTokenService ccsmTokenService;
 
