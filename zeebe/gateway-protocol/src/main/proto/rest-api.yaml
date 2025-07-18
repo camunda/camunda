@@ -9457,44 +9457,56 @@ components:
       type: object
       properties:
         decisionInstanceId:
-          type: string
           description: The ID of the decision instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationFailure:
-          type: string
           description: The evaluation failure of the decision instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         evaluationDate:
           description: The evaluation date of the decision instance.
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         decisionDefinitionId:
-          type: string
           description: The ID of the DMN decision.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         decisionDefinitionName:
-          type: string
           description: The name of the DMN decision.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         decisionDefinitionVersion:
-          type: integer
-          format: int32
           description: The version of the decision.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         decisionDefinitionType:
           $ref: "#/components/schemas/DecisionDefinitionTypeEnum"
         tenantId:
-          type: string
           description: The tenant ID of the decision instance.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         decisionInstanceKey:
-          type: string
           description: |
             The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         processDefinitionKey:
-          type: string
           description: The key of the process definition.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         processInstanceKey:
-          type: string
           description: The key of the process instance.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         decisionDefinitionKey:
           description: The key of the decision.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        elementInstanceKey:
+          description: The key of the element instance this decision instance is linked to.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
     DecisionInstanceSearchQueryResult:
@@ -9553,6 +9565,9 @@ components:
         decisionDefinitionKey:
           type: string
           description: The key of the decision.
+        elementInstanceKey:
+          type: string
+          description: The key of the element instance this decision instance is linked to.
 
     DecisionInstanceGetQueryResult:
       allOf:
