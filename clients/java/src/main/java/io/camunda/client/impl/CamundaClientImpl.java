@@ -130,6 +130,7 @@ import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
+import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
@@ -258,6 +259,7 @@ import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestIm
 import io.camunda.client.impl.search.request.ElementInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByRoleSearchRequestImpl;
+import io.camunda.client.impl.search.request.GroupsByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentsByProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.JobSearchRequestImpl;
@@ -1274,6 +1276,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public GroupsByRoleSearchRequest newGroupsByRoleSearchRequest(final String roleId) {
     return new GroupsByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
+  }
+
+  @Override
+  public GroupsByTenantSearchRequest newGroupsByTenantSearchRequest(final String tenantId) {
+    return new GroupsByTenantSearchRequestImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override
