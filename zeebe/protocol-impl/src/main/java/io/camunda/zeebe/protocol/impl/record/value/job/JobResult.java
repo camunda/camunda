@@ -151,4 +151,9 @@ public class JobResult extends UnpackedObject implements JobResultValue {
         element -> activateElementsProp.add().copyFrom((JobResultActivateElement) element));
     return this;
   }
+
+  public JobResult addActivateElement(final JobResultActivateElement activateElement) {
+    activateElementsProp.add().copyFrom(activateElement);
+    return this;
+  }
 }
