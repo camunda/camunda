@@ -163,4 +163,16 @@ public class ConfigValidatorTest {
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("CamundaExporter processCache.maxCacheSize must be >= 1.");
   }
+
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(ints = {-1, 0})
+  void shouldForbidNonPositiveMaxBatchOperationCacheSize(final int maxCacheSize) {
+    // given
+    config.getBatchOperationCache().setMaxCacheSize(maxCacheSize);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining("CamundaExporter batchOperationCache.maxCacheSize must be >= 1.");
+  }
 }
