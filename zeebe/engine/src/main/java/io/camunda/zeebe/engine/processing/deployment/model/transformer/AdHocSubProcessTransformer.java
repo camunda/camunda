@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import java.util.Collection;
@@ -49,6 +50,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     final Collection<AbstractFlowElement> childElements =
         executableAdHocSubProcess.getChildElements();
     setAdHocActivities(executableAdHocSubProcess, childElements);
+    setImplementationType(executableAdHocSubProcess, element);
   }
 
   private static void setActiveElementsCollection(
@@ -72,6 +74,15 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
         .filter(e -> isAdHocActivity(e.getElementType(), e.getEventType()))
         .filter(flowElement -> flowElement.getIncoming().isEmpty())
         .forEach(executableAdHocSubProcess::addAdHocActivity);
+  }
+
+  private static void setImplementationType(
+      final ExecutableAdHocSubProcess executableAdHocSubProcess, final AdHocSubProcess element) {
+    final var implementationType =
+        Optional.ofNullable(element.getSingleExtensionElement(ZeebeAdHoc.class))
+            .map(ZeebeAdHoc::getImplementationType)
+            .orElse(ZeebeAdHocImplementationType.BPMN);
+    executableAdHocSubProcess.setImplementationType(implementationType);
   }
 
   /**
