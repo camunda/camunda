@@ -8,7 +8,6 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.aggregation.result.AggregationResultBase;
-import io.camunda.search.clients.auth.ResourceAccessChecks;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.transformers.ServiceTransformer;
@@ -21,10 +20,12 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.function.Function;
 
-public final class SearchClientBasedQueryExecutor {
+public final class SearchClientBasedQueryExecutor implements CloseableSilently {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
@@ -134,7 +135,8 @@ public final class SearchClientBasedQueryExecutor {
     return transformers.getTransformer(documentClass);
   }
 
-  public DocumentBasedSearchClient getSearchClient() {
-    return searchClient;
+  @Override
+  public void close() {
+    searchClient.close();
   }
 }

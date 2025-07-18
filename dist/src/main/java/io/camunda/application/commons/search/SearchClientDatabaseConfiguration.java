@@ -13,6 +13,7 @@ import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
+import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
@@ -80,9 +81,9 @@ public class SearchClientDatabaseConfiguration {
 
   @Bean
   @ConditionalOnBean(DocumentBasedSearchClient.class)
-  public DocumentBasedSearchClients documentBasedSearchClients(
-      final SearchClientBasedQueryExecutor executor) {
-    return new DocumentBasedSearchClients(executor);
+  public DocumentBasedSearchClients documentBasedSearchClients(final SearchClientReaders readers) {
+
+    return new DocumentBasedSearchClients(readers);
   }
 
   @Bean
