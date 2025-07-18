@@ -14,6 +14,8 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotId;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Parsed;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -156,18 +158,18 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   private void checkSnapshotIdIsValid(final String snapshotId) throws SnapshotWriteException {
-    final var receivedSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId);
-    if (receivedSnapshotId.isEmpty()) {
-      throw new SnapshotWriteException(
-          String.format("Snapshot file name '%s' has unexpected format", snapshotId));
-    }
-
-    final FileBasedSnapshotId chunkSnapshotId = receivedSnapshotId.get();
-    if (this.snapshotId.compareTo(chunkSnapshotId) != 0) {
-      throw new SnapshotWriteException(
-          String.format(
-              "Expected snapshot id in chunk to be '%s' but was '%s' instead",
-              this.snapshotId, chunkSnapshotId));
+    switch (FileBasedSnapshotId.ofFileName(snapshotId)) {
+      case Invalid(final var cause) ->
+          throw new SnapshotWriteException(
+              String.format("Snapshot file name '%s' has unexpected format", snapshotId), cause);
+      case Parsed(final var chunkSnapshotId) -> {
+        if (!chunkSnapshotId.equals(this.snapshotId)) {
+          throw new SnapshotWriteException(
+              String.format(
+                  "Expected snapshot id in chunk to be '%s' but was '%s' instead",
+                  this.snapshotId, chunkSnapshotId));
+        }
+      }
     }
   }
 

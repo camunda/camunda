@@ -25,6 +25,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsExcepti
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotCopyForBootstrapException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.Invalid;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -150,11 +151,12 @@ public final class FileBasedSnapshotStoreImpl {
   //  i.e. either it failed (with an error) or it succeeded
   private FileBasedSnapshot collectSnapshot(final Path path) throws IOException {
     final var optionalMeta = FileBasedSnapshotId.ofPath(path);
-    if (optionalMeta.isEmpty()) {
+    if (optionalMeta instanceof Invalid(final var cause)) {
+      LOGGER.warn("Failed to parse snapshot id", cause);
       return null;
     }
 
-    final var snapshotId = optionalMeta.get();
+    final var snapshotId = optionalMeta.getOrThrow();
     final var checksumPath = buildSnapshotsChecksumPath(path, snapshotId);
 
     if (!Files.exists(checksumPath)) {
@@ -298,14 +300,7 @@ public final class FileBasedSnapshotStoreImpl {
 
   public ActorFuture<FileBasedReceivedSnapshot> newReceivedSnapshot(final String snapshotId) {
     final var newSnapshotFuture = new CompletableActorFuture<FileBasedReceivedSnapshot>();
-    final var optSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId);
-    final var parsedSnapshotId =
-        optSnapshotId.orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "Expected snapshot id in a format like 'index-term-processedPosition-exportedPosition', got '"
-                        + snapshotId
-                        + "'."));
+    final var parsedSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId).getOrThrow();
 
     actor.run(
         () -> {
@@ -585,12 +580,7 @@ public final class FileBasedSnapshotStoreImpl {
 
   public void restore(final String snapshotId, final Map<String, Path> snapshotFiles)
       throws IOException {
-    final var parsedSnapshotId =
-        FileBasedSnapshotId.ofFileName(snapshotId)
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "Failed to parse snapshot id %s".formatted(snapshotId)));
+    final var parsedSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId).getOrThrow();
     final var snapshotPath = buildSnapshotDirectory(parsedSnapshotId, false);
     ensureDirectoryExists(snapshotPath);
 

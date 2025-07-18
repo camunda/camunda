@@ -17,11 +17,10 @@ import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import java.util.Optional;
+import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,12 +73,7 @@ final class FormLinkingIT {
     partitions.takeSnapshot();
     Awaitility.await("Snapshot is taken")
         .atMost(Duration.ofSeconds(60))
-        .until(
-            () ->
-                Optional.ofNullable(partitions.query().get(1).snapshotId())
-                    .flatMap(FileBasedSnapshotId::ofFileName),
-            Optional::isPresent)
-        .orElseThrow();
+        .until(() -> partitions.query().get(1).snapshotId(), Objects::nonNull);
     zeebe.stop();
 
     // when
