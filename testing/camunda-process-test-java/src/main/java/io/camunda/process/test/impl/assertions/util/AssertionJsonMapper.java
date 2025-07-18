@@ -25,14 +25,22 @@ public class AssertionJsonMapper {
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
   public static JsonNode readJson(final String value) {
+    return readJson(value, JsonNode.class, NullNode.getInstance());
+  }
+
+  public static <T> T readJson(final String value, final Class<T> clazz) {
+    return readJson(value, clazz, null);
+  }
+
+  public static <T> T readJson(final String value, final Class<T> clazz, final T defaultValue) {
     if (value == null) {
-      return NullNode.getInstance();
+      return defaultValue;
     }
 
     try {
-      return JSON_MAPPER.readValue(value, JsonNode.class);
+      return JSON_MAPPER.readValue(value, clazz);
     } catch (final JsonProcessingException e) {
-      throw new RuntimeException(String.format("Failed to read JSON: '%s'", value), e);
+      throw new JsonMappingException(String.format("Failed to read JSON: '%s'", value), e);
     }
   }
 
@@ -40,8 +48,15 @@ public class AssertionJsonMapper {
     try {
       return JSON_MAPPER.convertValue(value, JsonNode.class);
     } catch (final IllegalArgumentException e) {
-      throw new RuntimeException(
+      throw new JsonMappingException(
           String.format("Failed to transform value to JSON: '%s'", value), e);
+    }
+  }
+
+  public static class JsonMappingException extends RuntimeException {
+
+    public JsonMappingException(final String message, final Throwable cause) {
+      super(message, cause);
     }
   }
 }
