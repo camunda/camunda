@@ -33,7 +33,7 @@ import {useProcessInstanceOperations} from 'modules/hooks/useProcessInstanceOper
 import {ProcessInstanceOperationsContext} from './processInstanceOperationsContext';
 import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
 import {useHasActiveBatchOperationMutation} from 'modules/mutations/processInstance/useHasActiveBatchOperationMutation';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 const headerColumns = [
   'Process Name',
@@ -92,7 +92,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const hasActiveBatchOperationMutation = useHasActiveBatchOperationMutation(
     processInstance.processInstanceKey,
   );
-  const {data: currentUser} = useCurrentUser();
+  const tenantsById = useAvailableTenants();
 
   const navigate = useNavigate();
 
@@ -121,14 +121,6 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
     processDefinitionId,
   } = processInstance;
 
-  const tenantsById: Record<string, string> =
-    currentUser?.tenants.reduce(
-      (acc, tenant) => ({
-        [tenant.tenantId]: tenant.name,
-        ...acc,
-      }),
-      {},
-    ) ?? {};
   const tenantName = tenantsById[tenantId] ?? tenantId;
   const versionColumnTitle = `View process "${getProcessDefinitionName(
     processInstance,

@@ -17,7 +17,7 @@ import {useParams} from 'react-router-dom';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
 import {formatDate} from 'modules/utils/date';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   return [
@@ -57,9 +57,9 @@ const Header: React.FC = observer(() => {
     state: {status, decisionInstance},
   } = decisionInstanceDetailsStore;
   const {decisionInstanceId} = useParams<{decisionInstanceId: string}>();
-  const {data: currentUser} = useCurrentUser();
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
   const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
+  const tenantsById = useAvailableTenants();
 
   if (status === 'initial') {
     return <Skeleton headerColumns={headerColumns} />;
@@ -67,14 +67,6 @@ const Header: React.FC = observer(() => {
 
   if (status === 'fetched' && decisionInstance !== null) {
     const tenantId = decisionInstance.tenantId;
-    const tenantsById: Record<string, string> =
-      currentUser?.tenants.reduce(
-        (acc, tenant) => ({
-          [tenant.tenantId]: tenant.name,
-          ...acc,
-        }),
-        {},
-      ) ?? {};
     const tenantName = tenantsById[tenantId] ?? tenantId;
     const versionColumnTitle = `View decision "${
       decisionInstance.decisionName

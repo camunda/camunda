@@ -12,20 +12,12 @@ import {observer} from 'mobx-react';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {ComboBox} from 'modules/components/ComboBox';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 const ProcessField: React.FC = observer(() => {
   const {processes, versionsByProcessAndTenant} = processesStore;
   const form = useForm();
-  const {data: currentUser} = useCurrentUser();
-  const tenantsById: Record<string, string> =
-    currentUser?.tenants.reduce(
-      (acc, tenant) => ({
-        [tenant.tenantId]: tenant.name,
-        ...acc,
-      }),
-      {},
-    ) ?? {};
+  const tenantsById = useAvailableTenants();
 
   const selectedTenant = useField('tenant').input.value;
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;

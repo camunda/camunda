@@ -23,6 +23,7 @@ import EmptyStateProcessInstancesByName from 'modules/components/Icon/empty-stat
 import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
@@ -34,14 +35,7 @@ const InstancesByProcess: React.FC = observer(() => {
   const modelerLink = Array.isArray(currentUser?.c8Links)
     ? currentUser?.c8Links.find((link) => link.name === 'modeler')?.link
     : undefined;
-  const tenantsById: Record<string, string> =
-    currentUser?.tenants.reduce(
-      (acc, tenant) => ({
-        [tenant.tenantId]: tenant.name,
-        ...acc,
-      }),
-      {},
-    ) ?? {};
+  const tenantsById = useAvailableTenants();
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
   if (['initial', 'first-fetch'].includes(status)) {
