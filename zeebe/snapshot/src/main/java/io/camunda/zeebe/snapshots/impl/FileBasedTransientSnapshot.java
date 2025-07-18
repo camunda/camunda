@@ -73,7 +73,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   }
 
   private void takeInternal(final Consumer<Path> takeSnapshot) {
-    final var snapshotMetrics = snapshotStore.getSnapshotMetrics();
+    final var snapshotMetrics = snapshotStore.getMetrics();
 
     try (final var ignored = snapshotMetrics.startTimer(isBootstrap)) {
       try {
