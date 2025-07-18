@@ -237,7 +237,8 @@ jobs:
       GENERAL_UT_DO_NOT_SKIP_MODULES: "zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-util operate-qa-data-generator operate-qa-it-tests operate-qa-backup-restore-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-qa-backup-restore-tests tasklist-test-coverage"
     runs-on: ubuntu-latest
     timeout-minutes: 2
-    permissions: { }
+    permissions:
+      pull-requests: write
     steps:
       - run: echo "This job is only needed for output declarations"
 
@@ -247,7 +248,8 @@ jobs:
     name: "[UT] General Unit Tests"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     runs-on: gcp-perf-core-16-default
     steps:
       - uses: actions/checkout@v4
@@ -370,7 +372,8 @@ jobs:
     name: "[UT] Zeebe - ${{matrix.component}} - ${{matrix.suiteName}}"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     runs-on: gcp-perf-core-16-default
     strategy:
       fail-fast: false
@@ -456,7 +459,8 @@ jobs:
     needs: [ detect-changes ]
     name: "[IT] Elasticsearch"
     timeout-minutes: 15
-    permissions: { }  # GITHUB_TOKEN unused in this job
+    permissions:
+      pull-requests: write
     runs-on: gcp-perf-core-16-default
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
