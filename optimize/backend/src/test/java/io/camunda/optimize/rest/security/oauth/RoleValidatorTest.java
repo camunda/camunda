@@ -24,7 +24,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 class RoleValidatorTest {
 
-  private final List<String> allowedRoles = Arrays.asList("admin", "analyst");
+  private final List<String> allowedRoles = Arrays.asList("admin", "analyst", "owner");
   private final RoleValidator validator = new RoleValidator(allowedRoles);
 
   @Test
