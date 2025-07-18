@@ -683,15 +683,15 @@ public class WebSecurityConfig {
     private Consumer<Builder> authorizationRequestCustomizer(
         final SecurityConfiguration securityConfiguration) {
       return customizer -> {
-        final var additionalAuthenticationParameters =
+        final var additionalParameters =
             securityConfiguration
                 .getAuthentication()
                 .getOidc()
-                .getAdditionalAuthenticationParameters();
+                .getAuthorizeRequest()
+                .getAdditionalParameters();
 
-        if (additionalAuthenticationParameters != null
-            && !additionalAuthenticationParameters.isEmpty()) {
-          customizer.additionalParameters(additionalAuthenticationParameters);
+        if (additionalParameters != null && !additionalParameters.isEmpty()) {
+          customizer.additionalParameters(additionalParameters);
         }
       };
     }

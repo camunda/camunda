@@ -10,7 +10,6 @@ package io.camunda.security.configuration;
 import io.camunda.security.auth.OidcGroupsLoader;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class OidcAuthenticationConfiguration {
@@ -26,7 +25,7 @@ public class OidcAuthenticationConfiguration {
   private String jwkSetUri;
   private String authorizationUri;
   private String tokenUri;
-  private Map<String, Object> additionalAuthenticationParams;
+  private AuthorizeRequestConfiguration authorizeRequestConfiguration;
   private Set<String> audiences;
   private String usernameClaim = "sub";
   private String clientIdClaim;
@@ -105,13 +104,13 @@ public class OidcAuthenticationConfiguration {
     this.tokenUri = tokenUri;
   }
 
-  public Map<String, Object> getAdditionalAuthenticationParameters() {
-    return additionalAuthenticationParams;
+  public AuthorizeRequestConfiguration getAuthorizeRequest() {
+    return authorizeRequestConfiguration;
   }
 
-  public void setAdditionalAuthenticationParameters(
-      final Map<String, Object> additionalAuthenticationParams) {
-    this.additionalAuthenticationParams = additionalAuthenticationParams;
+  public void setAuthorizeRequest(
+      final AuthorizeRequestConfiguration authorizeRequestConfiguration) {
+    this.authorizeRequestConfiguration = authorizeRequestConfiguration;
   }
 
   public Set<String> getAudiences() {
