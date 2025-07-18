@@ -10,9 +10,9 @@ package io.camunda.application.commons.configuration;
 import io.atomix.cluster.ClusterConfig;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.zeebe.broker.clustering.ClusterConfigFactory;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.RestApiCompositeFilter;
@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -102,7 +101,4 @@ public class BrokerBasedConfiguration {
     final var configFactory = new ClusterConfigFactory();
     return configFactory.mapConfiguration(properties);
   }
-
-  @ConfigurationProperties("zeebe.broker")
-  public static final class BrokerBasedProperties extends BrokerCfg {}
 }

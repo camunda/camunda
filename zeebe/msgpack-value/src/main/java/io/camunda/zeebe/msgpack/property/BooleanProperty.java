@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack.property;
 
 import io.camunda.zeebe.msgpack.value.BooleanValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 
 public final class BooleanProperty extends BaseProperty<BooleanValue> {
 
@@ -16,6 +17,14 @@ public final class BooleanProperty extends BaseProperty<BooleanValue> {
   }
 
   public BooleanProperty(final String key, final boolean defaultValue) {
+    super(key, new BooleanValue(), new BooleanValue(defaultValue));
+  }
+
+  public BooleanProperty(final StringValue key) {
+    super(key, new BooleanValue());
+  }
+
+  public BooleanProperty(final StringValue key, final boolean defaultValue) {
     super(key, new BooleanValue(), new BooleanValue(defaultValue));
   }
 

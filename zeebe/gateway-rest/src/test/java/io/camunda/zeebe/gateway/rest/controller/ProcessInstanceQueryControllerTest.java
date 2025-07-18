@@ -26,6 +26,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
@@ -43,6 +44,7 @@ import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
@@ -111,7 +113,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }
           """;
@@ -163,7 +166,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
@@ -187,7 +190,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices).search(new ProcessInstanceQuery.Builder().build());
   }
@@ -231,7 +234,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -274,7 +277,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -311,7 +314,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .search(
@@ -363,7 +366,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -405,7 +408,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -446,7 +449,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -486,7 +489,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(processInstanceServices, never()).search(any(ProcessInstanceQuery.class));
   }
@@ -507,7 +510,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(PROCESS_INSTANCE_ENTITY_JSON);
+        .json(PROCESS_INSTANCE_ENTITY_JSON, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the valid key
     verify(processInstanceServices).getByKey(validProcesInstanceKey);
@@ -519,9 +522,11 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
     final var invalidProcesInstanceKey = 100L;
     when(processInstanceServices.getByKey(invalidProcesInstanceKey))
         .thenThrow(
-            new CamundaSearchException(
-                String.format("Process Instance with key %d not found", invalidProcesInstanceKey),
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    String.format(
+                        "Process Instance with key %d not found", invalidProcesInstanceKey),
+                    CamundaSearchException.Reason.NOT_FOUND)));
     // when / then
     webClient
         .get()
@@ -641,7 +646,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(filter).build());
@@ -677,7 +682,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     // then
     verify(processInstanceServices)
@@ -729,7 +734,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .search(new ProcessInstanceQuery.Builder().filter(expectedFilter.build()).build());
@@ -752,7 +757,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_CALL_HIERARCHY);
+        .json(EXPECTED_CALL_HIERARCHY, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the valid key
     verify(processInstanceServices).callHierarchy(processInstanceKey);

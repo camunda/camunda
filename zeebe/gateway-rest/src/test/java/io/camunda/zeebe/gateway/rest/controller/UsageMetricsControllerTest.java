@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(UsageMetricsController.class)
 public class UsageMetricsControllerTest extends RestControllerTest {
@@ -38,7 +40,8 @@ public class UsageMetricsControllerTest extends RestControllerTest {
          "decisionInstances": 17
       }""";
 
-  static final UsageMetricsCount USAGE_METRICS_COUNT_ENTITY = new UsageMetricsCount(5L, 23L, 17L);
+  static final SearchQueryResult<UsageMetricsCount> USAGE_METRICS_COUNT_ENTITY =
+      SearchQueryResult.of(new UsageMetricsCount(5L, 23L, 17L));
 
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -69,7 +72,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     final var startTime = OffsetDateTime.of(1970, 11, 14, 10, 50, 26, 0, ZoneOffset.UTC);
     final var endTime = OffsetDateTime.of(2024, 12, 31, 10, 50, 26, 0, ZoneOffset.UTC);
@@ -108,7 +111,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -135,7 +138,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -162,7 +165,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -189,6 +192,6 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 }

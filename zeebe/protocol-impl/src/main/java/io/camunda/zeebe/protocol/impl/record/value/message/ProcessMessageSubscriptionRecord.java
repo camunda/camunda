@@ -7,18 +7,18 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.message;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -26,19 +26,33 @@ import org.agrona.DirectBuffer;
 public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
     implements ProcessMessageSubscriptionRecordValue {
 
+  // Static StringValue keys for property names
+  private static final StringValue SUBSCRIPTION_PARTITION_ID_KEY =
+      new StringValue("subscriptionPartitionId");
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
+  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
+  private static final StringValue MESSAGE_NAME_KEY = new StringValue("messageName");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
+  private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+
   private final IntegerProperty subscriptionPartitionIdProp =
-      new IntegerProperty("subscriptionPartitionId");
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
-  private final StringProperty messageNameProp = new StringProperty("messageName", "");
-  private final DocumentProperty variablesProp = new DocumentProperty("variables");
-  private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
-  private final StringProperty elementIdProp = new StringProperty("elementId", "");
+      new IntegerProperty(SUBSCRIPTION_PARTITION_ID_KEY);
+  private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
+  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
+  private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
+  private final StringProperty messageNameProp = new StringProperty(MESSAGE_NAME_KEY, "");
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
+  private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
   private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public ProcessMessageSubscriptionRecord() {
     super(11);
@@ -121,7 +135,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public String getBpmnProcessId() {
-    return bufferAsString(bpmnProcessIdProp.getValue());
+    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
   }
 
   public ProcessMessageSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
@@ -136,12 +150,12 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public String getMessageName() {
-    return bufferAsString(messageNameProp.getValue());
+    return BufferUtil.bufferAsString(messageNameProp.getValue());
   }
 
   @Override
   public String getCorrelationKey() {
-    return bufferAsString(correlationKeyProp.getValue());
+    return BufferUtil.bufferAsString(correlationKeyProp.getValue());
   }
 
   public ProcessMessageSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
@@ -151,7 +165,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public String getElementId() {
-    return bufferAsString(getElementIdBuffer());
+    return BufferUtil.bufferAsString(getElementIdBuffer());
   }
 
   @Override
@@ -196,7 +210,7 @@ public final class ProcessMessageSubscriptionRecord extends UnifiedRecordValue
 
   @Override
   public String getTenantId() {
-    return bufferAsString(tenantIdProp.getValue());
+    return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
 
   public ProcessMessageSubscriptionRecord setTenantId(final String tenantId) {

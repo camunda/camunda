@@ -123,6 +123,8 @@
     "startProcessFromFormInvalidFormDescription": "Something went wrong and the form could not be displayed. Please contact your provider.",
     "startProcessFromFormWithFileComponentsHeading": "Form contains file components",
     "startProcessFromFormWithFileComponentsDescription": "This form contains file components which are not supported in the public start form. Please contact your process administrator.",
+    "startProcessFromFormV2ApiNotSupportedHeading": "Public forms not supported",
+    "startProcessFromFormV2ApiNotSupportedDescription": "Public forms are not supported for this version. Please contact your administrator.",
     "assigneeTagUnassignedTitle": "Task unassigned",
     "assigneeTagUnassigned": "Unassigned",
     "assigneeTagAssignedToMeAria": "Task assigned to me",

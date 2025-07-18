@@ -38,7 +38,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord.ReconstructionProgress;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -48,6 +47,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
@@ -89,6 +89,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
@@ -206,7 +207,6 @@ final class JsonSerializableToJsonTest {
                   .setResourceName(wrapString(resourceName))
                   .setVersion(processVersion)
                   .setChecksum(checksum);
-              record.setReconstructionProgress(ReconstructionProgress.DECISION_REQUIREMENTS);
 
               final int key = 1234;
               final int position = 4321;
@@ -379,10 +379,7 @@ final class JsonSerializableToJsonTest {
                   .setDeploymentKey(deploymentKey)
                   .setDuplicate(true)
                   .setVersionTag(versionTag);
-              record
-                  .setTenantId("tenant-23")
-                  .setReconstructionKey(123)
-                  .setReconstructionProgress(ReconstructionProgress.FORM);
+              record.setTenantId("tenant-23").setReconstructionKey(123);
               return record;
             },
         """
@@ -707,6 +704,7 @@ final class JsonSerializableToJsonTest {
               final Set<String> changedAttributes = Set.of("bar", "foo");
               final JobResult result =
                   new JobResult()
+                      .setType(JobResultType.USER_TASK)
                       .setDenied(true)
                       .setDeniedReason("Reason to deny lifecycle transition")
                       .setCorrections(
@@ -724,7 +722,15 @@ final class JsonSerializableToJsonTest {
                               "followUpDate",
                               "candidateGroupsList",
                               "candidateUsersList",
-                              "priority"));
+                              "priority"))
+                      .setActivateElements(
+                          List.of(
+                              new JobResultActivateElement()
+                                  .setElementId("gandalf")
+                                  .setVariables(VARIABLES_MSGPACK),
+                              new JobResultActivateElement()
+                                  .setElementId("sauron")
+                                  .setVariables(VARIABLES_MSGPACK)));
 
               jobRecord
                   .setWorker(wrapString(worker))
@@ -782,6 +788,7 @@ final class JsonSerializableToJsonTest {
               "tenantId": "<default>",
               "changedAttributes": ["bar", "foo"],
               "result": {
+                "type": "USER_TASK",
                 "denied": true,
                 "deniedReason": "Reason to deny lifecycle transition",
                 "correctedAttributes": [
@@ -799,7 +806,21 @@ final class JsonSerializableToJsonTest {
                   "candidateGroupsList": ["fellowship", "eagles"],
                   "candidateUsersList": ["frodo", "sam", "gollum"],
                   "priority": 1
-                }
+                },
+               "activateElements": [
+                  {
+                    "elementId": "gandalf",
+                    "variables": {
+                      "foo": "bar"
+                    }
+                  },
+                  {
+                    "elementId": "sauron",
+                    "variables": {
+                      "foo": "bar"
+                    }
+                  }
+                ]
               }
             }
           ],
@@ -853,6 +874,7 @@ final class JsonSerializableToJsonTest {
               final Set<String> changedAttributes = Set.of("bar", "foo");
               final JobResult result =
                   new JobResult()
+                      .setType(JobResultType.AD_HOC_SUB_PROCESS)
                       .setDenied(true)
                       .setDeniedReason("Reason to deny lifecycle transition")
                       .setCorrections(
@@ -870,7 +892,15 @@ final class JsonSerializableToJsonTest {
                               "followUpDate",
                               "candidateGroupsList",
                               "candidateUsersList",
-                              "priority"));
+                              "priority"))
+                      .setActivateElements(
+                          List.of(
+                              new JobResultActivateElement()
+                                  .setElementId("gandalf")
+                                  .setVariables(VARIABLES_MSGPACK),
+                              new JobResultActivateElement()
+                                  .setElementId("sauron")
+                                  .setVariables(VARIABLES_MSGPACK)));
 
               final Map<String, String> customHeaders =
                   Collections.singletonMap("workerVersion", "42");
@@ -927,6 +957,7 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": ["bar", "foo"],
           "result": {
+            "type": "AD_HOC_SUB_PROCESS",
             "denied": true,
             "deniedReason": "Reason to deny lifecycle transition",
             "correctedAttributes": [
@@ -944,7 +975,21 @@ final class JsonSerializableToJsonTest {
               "candidateGroupsList": ["fellowship", "eagles"],
               "candidateUsersList": ["frodo", "sam", "gollum"],
               "priority": 1
-            }
+            },
+            "activateElements": [
+              {
+                "elementId": "gandalf",
+                "variables": {
+                  "foo": "bar"
+                }
+              },
+              {
+                "elementId": "sauron",
+                "variables": {
+                  "foo": "bar"
+                }
+              }
+            ]
           }
         }
         """
@@ -980,6 +1025,7 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": [],
           "result": {
+            "type": "USER_TASK",
             "denied": false,
             "deniedReason": "",
             "correctedAttributes": [],
@@ -990,7 +1036,8 @@ final class JsonSerializableToJsonTest {
               "candidateGroupsList": [],
               "candidateUsersList": [],
               "priority": -1
-            }
+            },
+            "activateElements": []
           }
         }
         """
@@ -1031,6 +1078,7 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": [],
           "result": {
+            "type": "USER_TASK",
             "denied": false,
             "deniedReason": "",
             "correctedAttributes": [],
@@ -1041,7 +1089,8 @@ final class JsonSerializableToJsonTest {
               "candidateGroupsList": [],
               "candidateUsersList": [],
               "priority": -1
-            }
+            },
+            "activateElements": []
           }
         }
         """
@@ -3428,7 +3477,7 @@ final class JsonSerializableToJsonTest {
   """
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
-      //////////////////////////////////// UsageMetricRecord //////////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord rPI //////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "UsageMetricRecord",
@@ -3439,7 +3488,7 @@ final class JsonSerializableToJsonTest {
                     .setEventType(EventType.RPI)
                     .setStartTime(123L)
                     .setEndTime(124L)
-                    .setValues(USAGE_METRICS_MSGPACK),
+                    .setCounterValues(USAGE_METRICS_MSGPACK),
         """
       {
         "intervalType": "ACTIVE",
@@ -3447,7 +3496,33 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": 123,
         "endTime": 124,
-        "values": {"tenant1":5}
+        "counterValues": {"tenant1":5},
+        "setValues": {}
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////////// UsageMetricRecord eDI //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "UsageMetricRecord eDI",
+        (Supplier<UsageMetricRecord>)
+            () ->
+                new UsageMetricRecord()
+                    .setIntervalType(IntervalType.ACTIVE)
+                    .setEventType(EventType.EDI)
+                    .setStartTime(123L)
+                    .setEndTime(124L)
+                    .setCounterValues(USAGE_METRICS_MSGPACK),
+        """
+      {
+        "intervalType": "ACTIVE",
+        "eventType": "EDI",
+        "resetTime": -1,
+        "startTime": 123,
+        "endTime": 124,
+        "counterValues": {"tenant1":5},
+        "setValues": {}
       }
       """
       },
@@ -3464,7 +3539,8 @@ final class JsonSerializableToJsonTest {
         "resetTime": -1,
         "startTime": -1,
         "endTime": -1,
-        "values": {}
+        "counterValues": {},
+        "setValues": {}
       }
       """
       },

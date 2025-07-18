@@ -12,6 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +25,7 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByBatchOperationId() {
     // given
-    final var filter = FilterBuilders.batchOperation(f -> f.batchOperationIds("123"));
+    final var filter = FilterBuilders.batchOperation(f -> f.batchOperationKeys("123"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -40,7 +45,7 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
   void shouldQueryLegacyByBatchOperationId() {
     // given
     final var batchIdUuid = UUID.randomUUID().toString();
-    final var filter = FilterBuilders.batchOperation(f -> f.batchOperationIds(batchIdUuid));
+    final var filter = FilterBuilders.batchOperation(f -> f.batchOperationKeys(batchIdUuid));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -99,7 +104,7 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
     // given
     final var filter =
         FilterBuilders.batchOperation(
-            f -> f.batchOperationIds("123").states("ACTIVE").operationTypes("CREATE"));
+            f -> f.batchOperationKeys("123").states("ACTIVE").operationTypes("CREATE"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -132,5 +137,52 @@ class BatchOperationFilterTransformerTest extends AbstractTransformerTest {
               assertThat(t.field()).isEqualTo("type");
               assertThat(t.value().stringValue()).isEqualTo("CREATE");
             });
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckEventWhenEnabled() {
+    // given
+    final var authorization =
+        Authorization.of(a -> a.batchOperation().read().resourceIds(List.of("1", "2")));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperation(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckWhenDisabled() {
+    // given
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperation(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
+  }
+
+  @Test
+  public void shouldIgnoreTenantCheck() {
+    // given
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperation(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
   }
 }

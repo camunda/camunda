@@ -14,18 +14,12 @@ class CopyVariables {
     makeAutoObservable(this);
   }
 
-  /**
-   * Returns true if any of the variable values is truncated
-   */
   get isTruncated() {
     return variablesStore.state.items.some((item) => {
       return item.isPreview;
     });
   }
 
-  /**
-   * Returns true if the list of variables is paginated (50 variables or more)
-   */
   get isPaginated() {
     return variablesStore.state.items.length >= 50;
   }

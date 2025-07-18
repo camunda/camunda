@@ -24,9 +24,8 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('Info bar', () => {
   it('should render with correct links', async () => {
-    const originalWindowOpen = window.open;
     const mockOpenFn = vi.fn();
-    window.open = mockOpenFn;
+    vi.stubGlobal('open', mockOpenFn);
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
@@ -62,19 +61,36 @@ describe('Info bar', () => {
         name: /info/i,
       }),
     );
-    await user.click(
-      screen.getByRole('button', {name: 'Slack Community Channel'}),
-    );
+    await user.click(screen.getByRole('button', {name: 'Community Forum'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
-      'https://camunda.com/slack',
+      'https://forum.camunda.io',
       '_blank',
     );
+  });
 
-    window.open = originalWindowOpen;
+  it('should not render feedback and support link for free plan', async () => {
+    mockMe().withSuccess(createUser({salesPlanType: 'free'}));
+    await authenticationStore.authenticate();
+
+    const mockOpenFn = vi.fn();
+    vi.stubGlobal('open', mockOpenFn);
+
+    const {user} = render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /info/i,
+      }),
+    );
+
+    expect(
+      screen.queryByRole('button', {name: 'Feedback and Support'}),
+    ).not.toBeInTheDocument();
   });
 
   it.each<[MeDto['salesPlanType'], string]>([
-    ['free', 'https://forum.camunda.io/'],
     ['enterprise', 'https://jira.camunda.com/projects/SUPPORT/queues'],
     ['paid-cc', 'https://jira.camunda.com/projects/SUPPORT/queues'],
   ])(
@@ -83,9 +99,8 @@ describe('Info bar', () => {
       mockMe().withSuccess(createUser({salesPlanType}));
       await authenticationStore.authenticate();
 
-      const originalWindowOpen = window.open;
       const mockOpenFn = vi.fn();
-      window.open = mockOpenFn;
+      vi.stubGlobal('open', mockOpenFn);
 
       const {user} = render(<AppHeader />, {
         wrapper: Wrapper,
@@ -101,8 +116,6 @@ describe('Info bar', () => {
         screen.getByRole('button', {name: 'Feedback and Support'}),
       );
       expect(mockOpenFn).toHaveBeenLastCalledWith(link, '_blank');
-
-      window.open = originalWindowOpen;
     },
   );
 });

@@ -23,4 +23,7 @@ public class ErrorMessages {
       "A single result was expected, but multiple results were found matching %s";
   public static final String ERROR_SINGLE_RESULT_NOT_FOUND =
       "A single result was expected, but none was found matching %s";
+
+  public static final String ERROR_RESOURCE_ACCESS_CONTROLLER_NO_MATCHING_FOUND =
+      "Failed to find a matching ResourceAccessController, make sure to set a security context using #withSecurityContext()";
 }

@@ -48,6 +48,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.util.unit.DataSize;
 
 @WebMvcTest(JobController.class)
@@ -109,11 +110,19 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "<default>",
-              "variables": {},
-              "customHeaders": {},
               "processDefinitionId": "stubProcess",
               "elementId": "stubActivity",
-              "worker": "bar"
+              "worker": "bar",
+              "customHeaders": {
+                "foo": 12,
+                "bar": "val"
+              },
+              "variables": {
+                "foo": 13,
+                "bar": "world"
+              },
+              "kind": "BPMN_ELEMENT",
+              "listenerEventType": "UNSPECIFIED"
             },
             {
               "jobKey": "%d",
@@ -125,11 +134,19 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
               "retries": 12,
               "deadline": 123123123,
               "tenantId": "<default>",
-              "variables": {},
-              "customHeaders": {},
               "processDefinitionId": "stubProcess",
               "elementId": "stubActivity",
-              "worker": "bar"
+              "worker": "bar",
+              "customHeaders": {
+                "foo": 12,
+                "bar": "val"
+              },
+              "variables": {
+                "foo": 13,
+                "bar": "world"
+              },
+              "kind": "BPMN_ELEMENT",
+              "listenerEventType": "UNSPECIFIED"
             }
           ]
         }"""
@@ -149,7 +166,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     // two responses where received (base partition determination and tested activation)
     Mockito.verify(responseObserver, Mockito.times(2)).onNext(any());
@@ -191,7 +208,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verify(responseObserver, Mockito.never()).onNext(any());
     Mockito.verify(responseObserver).onCompleted();
@@ -292,7 +309,7 @@ public class JobControllerRoundRobinTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     assertThat(callCounter).hasValue(1);
   }

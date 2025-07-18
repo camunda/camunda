@@ -11,6 +11,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.search.clients.aggregator.SearchAggregatorBuilders;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
+import io.camunda.search.sort.SortOption.FieldSorting;
+import io.camunda.search.sort.SortOrder;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.provider.Arguments;
@@ -20,6 +23,15 @@ public class SearchTermsAggregatorTransformerTest
 
   private static Stream<Arguments> provideAggregations() {
     return Stream.of(
+        Arguments.arguments(
+            SearchAggregatorBuilders.terms()
+                .name("name")
+                .field("name")
+                .size(10)
+                .sorting(List.of(new FieldSorting("name", SortOrder.ASC)))
+                .minDocCount(1)
+                .build(),
+            "{'terms':{'field':'name','min_doc_count':1,'order':[{'name':'asc'}],'size':10}}"),
         Arguments.arguments(
             SearchAggregatorBuilders.terms()
                 .name("name")

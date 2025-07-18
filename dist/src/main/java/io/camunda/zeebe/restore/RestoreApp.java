@@ -14,6 +14,8 @@ import io.camunda.application.commons.configuration.WorkingDirectoryConfiguratio
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,11 +69,11 @@ public class RestoreApp implements ApplicationRunner {
   }
 
   @Override
-  public void run(final ApplicationArguments args) {
+  public void run(final ApplicationArguments args)
+      throws IOException, ExecutionException, InterruptedException {
     LOG.info("Starting to restore from backup {}", backupId);
     new RestoreManager(configuration, backupStore, meterRegistry)
-        .restore(backupId, restoreConfiguration.validateConfig())
-        .join();
+        .restore(backupId, restoreConfiguration.validateConfig());
     LOG.info("Successfully restored broker from backup {}", backupId);
   }
 }

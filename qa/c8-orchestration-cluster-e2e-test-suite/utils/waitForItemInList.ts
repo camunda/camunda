@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { expect, Locator, Page } from "@playwright/test";
+import {expect, Locator, Page} from '@playwright/test';
 
 export const waitForItemInList = async (
   page: Page,
@@ -29,20 +29,16 @@ export const waitForItemInList = async (
 
       if (emptyStateLocator) {
         await Promise.race([
-          page.getByRole("cell").filter({ hasText: /.+/ }).first().waitFor(),
+          page.getByRole('cell').filter({hasText: /.+/}).first().waitFor(),
           emptyStateLocator?.waitFor(),
         ]);
       } else {
-        await page
-          .getByRole("cell")
-          .filter({ hasText: /.+/ })
-          .first()
-          .waitFor();
+        await page.getByRole('cell').filter({hasText: /.+/}).first().waitFor();
       }
 
       return await item.isVisible();
     },
-    { timeout },
+    {timeout},
   );
 
   return shouldBeVisible ? await poll.toBeTruthy() : await poll.toBeFalsy();

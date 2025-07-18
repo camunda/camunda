@@ -12,7 +12,7 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
 import io.camunda.authentication.ConditionalOnInternalGroupsEnabled;
 import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
@@ -106,7 +106,7 @@ public class GroupController {
   @CamundaPutMapping(
       path = "/{groupId}/clients/{clientId}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> assignApplicationToGroup(
+  public CompletableFuture<ResponseEntity<Object>> assignClientToGroup(
       @PathVariable final String groupId, @PathVariable final String clientId) {
     return RequestMapper.toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
@@ -129,7 +129,7 @@ public class GroupController {
   }
 
   @CamundaDeleteMapping(path = "/{groupId}/clients/{clientId}")
-  public CompletableFuture<ResponseEntity<Object>> unassignApplicationFromGroup(
+  public CompletableFuture<ResponseEntity<Object>> unassignClientFromGroup(
       @PathVariable final String groupId, @PathVariable final String clientId) {
     return RequestMapper.toGroupMemberRequest(groupId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
@@ -138,7 +138,7 @@ public class GroupController {
   @CamundaDeleteMapping(
       path = "/{groupId}/mapping-rules/{mappingId}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> unassignMappingToGroup(
+  public CompletableFuture<ResponseEntity<Object>> unassignMappingFromGroup(
       @PathVariable final String groupId, @PathVariable final String mappingId) {
     return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
@@ -273,9 +273,9 @@ public class GroupController {
   }
 
   private ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInGroup(
-      final String groupId, final MappingQuery mappingQuery) {
+      final String groupId, final MappingRuleQuery mappingRuleQuery) {
     try {
-      final var composedMappingQuery = buildMappingQuery(groupId, mappingQuery);
+      final var composedMappingQuery = buildMappingQuery(groupId, mappingRuleQuery);
       final var result =
           mappingServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -308,9 +308,10 @@ public class GroupController {
         .build();
   }
 
-  private MappingQuery buildMappingQuery(final String groupId, final MappingQuery mappingQuery) {
-    return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().groupId(groupId).build())
+  private MappingRuleQuery buildMappingQuery(
+      final String groupId, final MappingRuleQuery mappingRuleQuery) {
+    return mappingRuleQuery.toBuilder()
+        .filter(mappingRuleQuery.filter().toBuilder().groupId(groupId).build())
         .build();
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.operate;
 
+import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,7 @@ import org.springframework.context.annotation.Profile;
     // versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Profile("operate")
+@ConditionalOnSecondaryStorage
 public class OperateModuleConfiguration {
 
   // if present, then it will ensure

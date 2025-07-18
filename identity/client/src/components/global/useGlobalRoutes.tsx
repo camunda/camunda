@@ -12,7 +12,7 @@ import Users from "src/pages/users";
 import Groups from "src/pages/groups";
 import Roles from "src/pages/roles";
 import Tenants from "src/pages/tenants";
-import Mappings from "src/pages/mappings";
+import MappingRules from "src/pages/mapping-rules";
 import Authorizations from "src/pages/authorizations";
 import { isOIDC, isInternalGroupsEnabled } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
@@ -24,10 +24,10 @@ export const useGlobalRoutes = () => {
   const OIDCDependentRoutes = isOIDC
     ? [
         {
-          path: `${Paths.mappings()}/*`,
-          key: Paths.mappings(),
-          label: t("mappings"),
-          element: <Mappings />,
+          path: `${Paths.mappingRules()}/*`,
+          key: Paths.mappingRules(),
+          label: t("mappingRules"),
+          element: <MappingRules />,
         },
       ]
     : [

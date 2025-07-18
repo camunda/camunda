@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.message;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
@@ -19,8 +20,11 @@ import java.util.stream.StreamSupport;
 public final class MessageBatchRecord extends UnifiedRecordValue
     implements MessageBatchRecordValue {
 
+  // Static StringValue key to avoid memory waste
+  private static final StringValue MESSAGE_KEYS_KEY = new StringValue("messageKeys");
+
   private final ArrayProperty<LongValue> messageKeysProp =
-      new ArrayProperty<>("messageKeys", LongValue::new);
+      new ArrayProperty<>(MESSAGE_KEYS_KEY, LongValue::new);
 
   public MessageBatchRecord() {
     super(1);

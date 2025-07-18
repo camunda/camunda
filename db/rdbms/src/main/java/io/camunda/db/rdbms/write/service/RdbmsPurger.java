@@ -32,7 +32,7 @@ public class RdbmsPurger {
           "AUTHORIZATIONS",
           "USERS",
           "FORM",
-          "MAPPINGS",
+          "MAPPING_RULES",
           "TENANT_MEMBER",
           "TENANT",
           "ROLE_MEMBER",
@@ -43,7 +43,8 @@ public class RdbmsPurger {
           "BATCH_OPERATION_ITEM",
           "BATCH_OPERATION",
           "JOB",
-          "SEQUENCE_FLOW");
+          "SEQUENCE_FLOW",
+          "USAGE_METRIC");
 
   private final PurgeMapper purgeMapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;

@@ -14,8 +14,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.operate.data.usertest.UserTestDataGenerator;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.testhelpers.StatefulRestTemplate;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.util.rest.StatefulRestTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -168,7 +168,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
   @Override
   protected void createOperations() {
-    restTemplate.loginWhenNeeded(OPERATE_USER, OPERATE_PASSWORD);
     final int operationsCount = ThreadLocalRandom.current().nextInt(20) + 90;
     for (int i = 0; i < operationsCount; i++) {
       final int no = ThreadLocalRandom.current().nextInt(operationsCount);

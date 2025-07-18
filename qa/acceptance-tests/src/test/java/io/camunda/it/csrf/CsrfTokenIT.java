@@ -13,13 +13,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
+import io.camunda.qa.util.cluster.TestWebappClient.TestLoggedInWebappClient;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.configuration.CsrfConfiguration;
 import java.io.IOException;
-import java.net.CookieManager;
-import java.net.HttpCookie;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -59,14 +57,18 @@ public class CsrfTokenIT {
   public void visitProtectedEndpointSuccessfulWhenCsrfTokenPresent()
       throws URISyntaxException, IOException, InterruptedException {
 
-    final var testContext = setupTestContext();
+    // given
+    final var webappClient = CAMUNDA_APPLICATION.newWebappClient();
 
-    // Test all protected endpoints with CSRF token
-    for (final String endpoint : PROTECTED_ENDPOINTS) {
-      final var response = sendRequestWithCsrfToken(testContext, endpoint);
-      assertThat(response.statusCode())
-          .as("Endpoint %s should return OK when CSRF token is present", endpoint)
-          .isEqualTo(HttpStatus.OK.value());
+    try (final var loggedInClient =
+        webappClient.logIn(DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD)) {
+      // Test all protected endpoints with CSRF token
+      for (final String endpoint : PROTECTED_ENDPOINTS) {
+        final var response = sendRequestWithCsrfToken(loggedInClient, endpoint);
+        assertThat(response.statusCode())
+            .as("Endpoint %s should return OK when CSRF token is present", endpoint)
+            .isEqualTo(HttpStatus.OK.value());
+      }
     }
   }
 
@@ -74,14 +76,18 @@ public class CsrfTokenIT {
   public void visitProtectedEndpointSuccessfulWhenBasicAuthWithoutCsrfToken()
       throws URISyntaxException, IOException, InterruptedException {
 
-    final var testContext = setupTestContext();
+    // given
+    final var webappClient = CAMUNDA_APPLICATION.newWebappClient();
 
-    // Test all protected endpoints with CSRF token
-    for (final String endpoint : PROTECTED_ENDPOINTS) {
-      final var response = sendRequestWithoutCsrfTokenWithBasicAuth(testContext, endpoint);
-      assertThat(response.statusCode())
-          .as("Endpoint %s should return OK when CSRF token is present", endpoint)
-          .isEqualTo(HttpStatus.OK.value());
+    try (final var loggedInClient =
+        webappClient.logIn(DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD)) {
+      // Test all protected endpoints with CSRF token
+      for (final String endpoint : PROTECTED_ENDPOINTS) {
+        final var response = sendRequestWithoutCsrfTokenWithBasicAuth(loggedInClient, endpoint);
+        assertThat(response.statusCode())
+            .as("Endpoint %s should return OK when CSRF token is present", endpoint)
+            .isEqualTo(HttpStatus.OK.value());
+      }
     }
   }
 
@@ -89,152 +95,88 @@ public class CsrfTokenIT {
   public void visitProtectedEndpointNotAuthorizedWhenCsrfTokenAbsent()
       throws URISyntaxException, IOException, InterruptedException {
 
-    final var testContext = setupTestContext();
+    // given
+    final var webappClient = CAMUNDA_APPLICATION.newWebappClient();
 
-    // Test all protected endpoints without CSRF token
-    for (final String endpoint : PROTECTED_ENDPOINTS) {
-      final var response = sendRequestWithoutCsrfToken(testContext, endpoint);
-      assertThat(response.statusCode())
-          .as("Endpoint %s should return UNAUTHORIZED when CSRF token is absent", endpoint)
-          .isEqualTo(HttpStatus.UNAUTHORIZED.value());
+    try (final var loggedInClient =
+        webappClient.logIn(DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD)) {
+      // Test all protected endpoints without CSRF token
+      for (final String endpoint : PROTECTED_ENDPOINTS) {
+        final var response = sendRequestWithoutCsrfToken(loggedInClient, endpoint);
+        assertThat(response.statusCode())
+            .as("Endpoint %s should return UNAUTHORIZED when CSRF token is absent", endpoint)
+            .isEqualTo(HttpStatus.UNAUTHORIZED.value());
+      }
     }
   }
 
-  private TestContext setupTestContext()
-      throws URISyntaxException, IOException, InterruptedException {
+  @Test
+  public void shouldSetCsrfCookiesOnLogin() {
 
-    final var operateClient = CAMUNDA_APPLICATION.newOperateClient();
-    final var uri = operateClient.getEndpoint();
-    final var cookieHandler = new CookieManager();
-    final var httpClient = HttpClient.newBuilder().cookieHandler(cookieHandler).build();
+    // given
+    final var webappClient = CAMUNDA_APPLICATION.newWebappClient();
 
-    final var csrfToken = loginWithCamundaService(httpClient, uri);
-    final var cookies = extractCookies(cookieHandler);
-
-    return new TestContext(uri, csrfToken, cookies.sessionCookie, cookies.csrfCookie);
-  }
-
-  private CookieContext extractCookies(final CookieManager cookieHandler) {
-    final var cookies = cookieHandler.getCookieStore().getCookies();
-
-    assertThat(cookies.stream().map(HttpCookie::getName))
-        .hasSize(2)
-        .contains(WebSecurityConfig.X_CSRF_TOKEN, WebSecurityConfig.SESSION_COOKIE);
-
-    final var sessionCookie = findCookie(cookies, WebSecurityConfig.SESSION_COOKIE);
-    final var csrfCookie = findCookie(cookies, WebSecurityConfig.X_CSRF_TOKEN);
-
-    return new CookieContext(sessionCookie, csrfCookie);
-  }
-
-  private HttpCookie findCookie(final List<HttpCookie> cookies, final String cookieName) {
-    return cookies.stream()
-        .filter(c -> cookieName.equals(c.getName()))
-        .findFirst()
-        .orElseThrow(() -> new IllegalStateException("Cookie not found: " + cookieName));
+    // when
+    try (final var loggedInClient =
+        webappClient.logIn(DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD)) {
+      // then
+      assertThat(loggedInClient.getCookies())
+          .extracting(c -> c.getName())
+          .containsExactlyInAnyOrder(
+              WebSecurityConfig.SESSION_COOKIE, WebSecurityConfig.X_CSRF_TOKEN);
+    }
   }
 
   private HttpResponse<String> sendRequestWithCsrfToken(
-      final TestContext context, final String endpoint)
+      final TestLoggedInWebappClient webappClient, final String endpoint)
       throws URISyntaxException, IOException, InterruptedException {
-    return sendRequest(context, endpoint, true, false);
+    return sendRequest(webappClient, endpoint, true, false);
   }
 
   private HttpResponse<String> sendRequestWithoutCsrfToken(
-      final TestContext context, final String endpoint)
+      final TestLoggedInWebappClient webappClient, final String endpoint)
       throws URISyntaxException, IOException, InterruptedException {
-    return sendRequest(context, endpoint, false, false);
+    return sendRequest(webappClient, endpoint, false, false);
   }
 
   private HttpResponse<String> sendRequestWithoutCsrfTokenWithBasicAuth(
-      final TestContext context, final String endpoint)
+      final TestLoggedInWebappClient webappClient, final String endpoint)
       throws URISyntaxException, IOException, InterruptedException {
-    return sendRequest(context, endpoint, false, true);
+    return sendRequest(webappClient, endpoint, false, true);
   }
 
   private HttpResponse<String> sendRequest(
-      final TestContext context,
+      final TestLoggedInWebappClient webappClient,
       final String endpoint,
       final boolean includeCsrfToken,
       final boolean useBasicAuth)
       throws URISyntaxException, IOException, InterruptedException {
 
-    final var httpClient = HttpClient.newBuilder().build();
-    final var requestBuilder =
-        HttpRequest.newBuilder()
-            .uri(new URI(context.uri + endpoint))
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-            .POST(BodyPublishers.ofString("{}"));
+    try (final var httpClient = HttpClient.newBuilder().build()) {
 
-    if (useBasicAuth) {
-      requestBuilder.header(
-          HttpHeaders.AUTHORIZATION,
-          "Basic "
-              + Base64.getEncoder()
-                  .encodeToString(
-                      (DEFAULT_USER_USERNAME + ":" + DEFAULT_USER_PASSWORD).getBytes()));
-    } else {
-      requestBuilder.header(HttpHeaders.COOKIE, context.sessionCookie.toString());
-    }
+      final var requestBuilder =
+          HttpRequest.newBuilder()
+              .uri(webappClient.getRootEndpoint().resolve(endpoint))
+              .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+              .POST(BodyPublishers.ofString("{}"));
 
-    if (includeCsrfToken) {
-      requestBuilder.header(WebSecurityConfig.X_CSRF_TOKEN, context.csrfToken);
-      requestBuilder.header(HttpHeaders.COOKIE, context.csrfCookie.toString());
-    }
+      if (useBasicAuth) {
+        requestBuilder.header(
+            HttpHeaders.AUTHORIZATION,
+            "Basic "
+                + Base64.getEncoder()
+                    .encodeToString(
+                        (DEFAULT_USER_USERNAME + ":" + DEFAULT_USER_PASSWORD).getBytes()));
+      } else {
+        requestBuilder.header(HttpHeaders.COOKIE, webappClient.getSessionCookie().toString());
+      }
 
-    return httpClient.send(requestBuilder.build(), BodyHandlers.ofString());
-  }
+      if (includeCsrfToken) {
+        requestBuilder.header(WebSecurityConfig.X_CSRF_TOKEN, webappClient.getCsrfToken());
+        requestBuilder.header(HttpHeaders.COOKIE, webappClient.getCsrfCookie().toString());
+      }
 
-  private String loginWithCamundaService(final HttpClient httpClient, final URI uri)
-      throws IOException, InterruptedException, URISyntaxException {
-
-    final var authRequest =
-        HttpRequest.newBuilder()
-            .uri(new URI(uri.toString() + "login"))
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_FORM_URLENCODED.toString())
-            .POST(
-                HttpRequest.BodyPublishers.ofString(
-                    "username=" + DEFAULT_USER_USERNAME + "&password=" + DEFAULT_USER_PASSWORD))
-            .build();
-
-    // Test public API
-    final var response = httpClient.send(authRequest, BodyHandlers.ofString());
-    assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT.value());
-
-    final var rootServletRequest =
-        httpClient.send(
-            HttpRequest.newBuilder().uri(new URI(uri.toString())).GET().build(),
-            BodyHandlers.ofString());
-
-    return rootServletRequest.headers().firstValue(WebSecurityConfig.X_CSRF_TOKEN).orElse(null);
-  }
-
-  // Helper classes to organize test data
-  private static class TestContext {
-    final URI uri;
-    final String csrfToken;
-    final HttpCookie sessionCookie;
-    final HttpCookie csrfCookie;
-
-    TestContext(
-        final URI uri,
-        final String csrfToken,
-        final HttpCookie sessionCookie,
-        final HttpCookie csrfCookie) {
-      this.uri = uri;
-      this.csrfToken = csrfToken;
-      this.sessionCookie = sessionCookie;
-      this.csrfCookie = csrfCookie;
-    }
-  }
-
-  private static class CookieContext {
-    final HttpCookie sessionCookie;
-    final HttpCookie csrfCookie;
-
-    CookieContext(final HttpCookie sessionCookie, final HttpCookie csrfCookie) {
-      this.sessionCookie = sessionCookie;
-      this.csrfCookie = csrfCookie;
+      return httpClient.send(requestBuilder.build(), BodyHandlers.ofString());
     }
   }
 }

@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest;
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.search.entities.AdHocSubProcessActivityEntity;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
@@ -28,7 +27,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.JobEntity;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -43,7 +42,6 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationError;
@@ -137,7 +135,8 @@ public final class SearchQueryResponseMapper {
   private SearchQueryResponseMapper() {}
 
   public static UsageMetricsResponse toUsageMetricsResponse(
-      final UsageMetricsCount usageMetricsCount) {
+      final SearchQueryResult<UsageMetricsCount> usageMetricsCountResult) {
+    final UsageMetricsCount usageMetricsCount = usageMetricsCountResult.items().getFirst();
     return new UsageMetricsResponse()
         .assignees(usageMetricsCount.assignees())
         .processInstances(usageMetricsCount.processInstances())
@@ -339,7 +338,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static MappingRuleSearchQueryResult toMappingSearchQueryResponse(
-      final SearchQueryResult<MappingEntity> result) {
+      final SearchQueryResult<MappingRuleEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new MappingRuleSearchQueryResult()
         .page(page)
@@ -542,7 +541,7 @@ public final class SearchQueryResponseMapper {
 
   public static BatchOperationResponse toBatchOperation(final BatchOperationEntity entity) {
     return new BatchOperationResponse()
-        .batchOperationId(entity.batchOperationId())
+        .batchOperationKey(entity.batchOperationKey())
         .state(BatchOperationResponse.StateEnum.fromValue(entity.state().name()))
         .batchOperationType(BatchOperationTypeEnum.fromValue(entity.operationType()))
         .startDate(formatDate(entity.startDate()))
@@ -577,7 +576,7 @@ public final class SearchQueryResponseMapper {
   public static BatchOperationItemResponse toBatchOperationItem(
       final BatchOperationItemEntity entity) {
     return new BatchOperationItemResponse()
-        .batchOperationId(entity.batchOperationId())
+        .batchOperationKey(entity.batchOperationKey())
         .itemKey(entity.itemKey().toString())
         .processInstanceKey(entity.processInstanceKey().toString())
         .processedDate(formatDate(entity.processedDate()))
@@ -692,16 +691,16 @@ public final class SearchQueryResponseMapper {
     return new RoleClientResult().clientId(roleMember.id());
   }
 
-  private static List<MappingRuleResult> toMappings(final List<MappingEntity> mappings) {
+  private static List<MappingRuleResult> toMappings(final List<MappingRuleEntity> mappings) {
     return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
   }
 
-  public static MappingRuleResult toMapping(final MappingEntity mappingEntity) {
+  public static MappingRuleResult toMapping(final MappingRuleEntity mappingRuleEntity) {
     return new MappingRuleResult()
-        .claimName(mappingEntity.claimName())
-        .claimValue(mappingEntity.claimValue())
-        .mappingRuleId(mappingEntity.mappingId())
-        .name(mappingEntity.name());
+        .claimName(mappingRuleEntity.claimName())
+        .claimValue(mappingRuleEntity.claimValue())
+        .mappingRuleId(mappingRuleEntity.mappingRuleId())
+        .name(mappingRuleEntity.name());
   }
 
   private static List<DecisionDefinitionResult> toDecisionDefinitions(
@@ -734,19 +733,6 @@ public final class SearchQueryResponseMapper {
         .state(ElementInstanceStateEnum.fromValue(instance.state().name()))
         .type(ElementInstanceResult.TypeEnum.fromValue(instance.type().name()))
         .tenantId(instance.tenantId());
-  }
-
-  public static AdHocSubProcessActivityResult toAdHocSubProcessActivity(
-      final AdHocSubProcessActivityEntity entity) {
-    return new AdHocSubProcessActivityResult()
-        .processDefinitionKey(entity.processDefinitionKey().toString())
-        .processDefinitionId(entity.processDefinitionId())
-        .adHocSubProcessId(entity.adHocSubProcessId())
-        .elementId(entity.elementId())
-        .elementName(entity.elementName())
-        .type(AdHocSubProcessActivityResult.TypeEnum.fromValue(entity.type().name()))
-        .documentation(entity.documentation())
-        .tenantId(entity.tenantId());
   }
 
   public static DecisionDefinitionResult toDecisionDefinition(final DecisionDefinitionEntity d) {
@@ -890,7 +876,8 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
-        .result(entity.result());
+        .result(entity.result())
+        .tenantId(entity.tenantId());
   }
 
   public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
@@ -910,7 +897,8 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
         .result(entity.result())
         .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
-        .matchedRules(toMatchedRules(entity.evaluatedOutputs()));
+        .matchedRules(toMatchedRules(entity.evaluatedOutputs()))
+        .tenantId(entity.tenantId());
   }
 
   private static List<EvaluatedDecisionInputItem> toEvaluatedInputs(

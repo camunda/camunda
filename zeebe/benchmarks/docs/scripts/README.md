@@ -39,13 +39,3 @@ N 1: 3
 N 2: 3
 ```
 
-## Partition.sh
-
-**Usage:**
-
-```bash
-./partition.sh [--heal] <targetPodName>
-```
-
-This script will cause a partition or network interrupt for the given pod.
-

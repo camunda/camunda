@@ -17,7 +17,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -40,19 +39,16 @@ public final class BatchOperationLeadPartitionCompleteProcessor
   private final BatchOperationState batchOperationState;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final BatchOperationMetrics metrics;
-  private final int partitionId;
 
   public BatchOperationLeadPartitionCompleteProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final int partitionId,
       final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
     batchOperationState = processingState.getBatchOperationState();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.metrics = metrics;
-    this.partitionId = partitionId;
   }
 
   /**
@@ -82,15 +78,6 @@ public final class BatchOperationLeadPartitionCompleteProcessor
 
   private void doProcessRecord(final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
     final var batchOperationKey = command.getValue().getBatchOperationKey();
-    if (Protocol.decodePartitionId(batchOperationKey) != partitionId) {
-      LOGGER.warn(
-          "Received command for batch operation {} on partition {}, but partition {} is leader for this batch operation. Ignoring command.",
-          batchOperationKey,
-          Protocol.decodePartitionId(batchOperationKey),
-          partitionId);
-      return;
-    }
-
     LOGGER.debug(
         "Processing command from partition {} to mark batch operation {} as completed",
         command.getValue().getSourcePartitionId(),
@@ -110,6 +97,8 @@ public final class BatchOperationLeadPartitionCompleteProcessor
       return;
     }
 
+    // mark the source partition as finished. This information is directly applied and present
+    // in the batch operation state
     stateWriter.appendFollowUpEvent(
         batchOperationKey,
         BatchOperationIntent.PARTITION_COMPLETED,
@@ -117,6 +106,8 @@ public final class BatchOperationLeadPartitionCompleteProcessor
         FollowUpEventMetadata.of(
             b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
 
+    // after the source partition is marked as finished, we check if now all partitions are
+    // finished (either completed or failed). If yes, we can append the final COMPLETED event
     if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
       handleCompleted(command, batchOperationKey, bo);
     }

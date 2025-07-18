@@ -46,57 +46,73 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
   protected void process(final List<Client> batch) {
     final var clients = managementIdentityClient.fetchClients();
 
-    clients.forEach(
-        client -> {
-          final var clientId = client.clientId();
-          final var permissions =
-              managementIdentityClient.fetchClientPermissions(client.id()).stream()
-                  .map(
-                      permission ->
-                          String.format(
-                              "%s:%s",
-                              permission.resourceServerAudience(), permission.definition()))
-                  .toList();
-          if (permissions.isEmpty()) {
-            logger.debug(
-                "No permissions found for client '{}', skipping authorization creation.", clientId);
-            return;
-          }
-          totalAuthorizationsCount.incrementAndGet();
-
-          final var authorizations =
-              permissions.stream()
-                  .map(
-                      permission ->
-                          getAuthorizationsByAudience(
-                              permission, clientId, AuthorizationOwnerType.CLIENT))
-                  .flatMap(List::stream)
-                  .toList();
-
-          final var combinedPermissions = extractCombinedPermissions(authorizations);
-
-          for (final var request : combinedPermissions) {
-            try {
-              authorizationService.createAuthorization(request).join();
-              logger.debug(
-                  "Authorization created for client '{}' with permissions '{}'.",
-                  clientId,
-                  request.permissionTypes());
-            } catch (final Exception e) {
-              if (!isConflictError(e)) {
-                throw new MigrationException(
-                    String.format(
-                        "Failed to create authorization for client '%s' with permissions '%s'",
-                        clientId, request.permissionTypes()),
-                    e);
+    clients.stream()
+        .filter(
+            client -> {
+              switch (client.type()) {
+                case M2M, CONFIDENTIAL -> {
+                  return true;
+                }
+                default -> {
+                  logger.debug(
+                      "Got client with type {} which is not relevant for migration, skipping.",
+                      client.type());
+                  return false;
+                }
               }
-              logger.debug(
-                  "Authorization already exists for client '{}' with permissions '{}', skipping.",
-                  clientId,
-                  request.permissionTypes());
-            }
-          }
-        });
+            })
+        .forEach(
+            client -> {
+              final var clientId = client.clientId();
+              final var permissions =
+                  managementIdentityClient.fetchClientPermissions(client.id()).stream()
+                      .map(
+                          permission ->
+                              String.format(
+                                  "%s:%s",
+                                  permission.resourceServerAudience(), permission.definition()))
+                      .toList();
+              if (permissions.isEmpty()) {
+                logger.debug(
+                    "No permissions found for client '{}', skipping authorization creation.",
+                    clientId);
+                return;
+              }
+              totalAuthorizationsCount.incrementAndGet();
+
+              final var authorizations =
+                  permissions.stream()
+                      .map(
+                          permission ->
+                              getAuthorizationsByAudience(
+                                  permission, clientId, AuthorizationOwnerType.CLIENT))
+                      .flatMap(List::stream)
+                      .toList();
+
+              final var combinedPermissions = extractCombinedPermissions(authorizations);
+
+              for (final var request : combinedPermissions) {
+                try {
+                  authorizationService.createAuthorization(request).join();
+                  logger.debug(
+                      "Authorization created for client '{}' with permissions '{}'.",
+                      clientId,
+                      request.permissionTypes());
+                } catch (final Exception e) {
+                  if (!isConflictError(e)) {
+                    throw new MigrationException(
+                        String.format(
+                            "Failed to create authorization for client '%s' with permissions '%s'",
+                            clientId, request.permissionTypes()),
+                        e);
+                  }
+                  logger.debug(
+                      "Authorization already exists for client '{}' with permissions '{}', skipping.",
+                      clientId,
+                      request.permissionTypes());
+                }
+              }
+            });
   }
 
   @Override

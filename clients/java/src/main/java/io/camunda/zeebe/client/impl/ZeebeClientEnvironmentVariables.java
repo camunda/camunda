@@ -36,6 +36,7 @@ public final class ZeebeClientEnvironmentVariables {
   public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
   public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
   public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
+  public static final String OAUTH_ENV_TOKEN_RESOURCE = "ZEEBE_TOKEN_RESOURCE";
   public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
   public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH = "ZEEBE_SSL_CLIENT_KEYSTORE_PATH";
   public static final String OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET =

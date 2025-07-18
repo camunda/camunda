@@ -10,7 +10,8 @@ package io.camunda.search.connect.configuration;
 public enum DatabaseType {
   ELASTICSEARCH(DatabaseConfig.ELASTICSEARCH),
   OPENSEARCH(DatabaseConfig.OPENSEARCH),
-  RDBMS(DatabaseConfig.RDBMS);
+  RDBMS(DatabaseConfig.RDBMS),
+  NONE(DatabaseConfig.NONE);
 
   private final String type;
 
@@ -32,6 +33,10 @@ public enum DatabaseType {
 
   public boolean isRdbms() {
     return equals(RDBMS);
+  }
+
+  public boolean isNone() {
+    return equals(NONE);
   }
 
   @Override

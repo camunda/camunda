@@ -39,6 +39,7 @@ final class BatchOperationArchiverJobTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
+    assertThat(repository.moves).isEmpty();
   }
 
   @Test
@@ -51,6 +52,7 @@ final class BatchOperationArchiverJobTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
+    assertThat(repository.moves).isEmpty();
   }
 
   @Test

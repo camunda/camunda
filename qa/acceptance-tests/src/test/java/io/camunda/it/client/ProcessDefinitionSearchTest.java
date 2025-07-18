@@ -7,51 +7,69 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import org.awaitility.Awaitility;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 public class ProcessDefinitionSearchTest {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(ProcessDefinitionSearchTest.class);
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
+  private static final List<ProcessDefinitionTestContext> PROCESSES_IN_DEFAULT_TENANT =
+      List.of(
+          new ProcessDefinitionTestContext(
+              "processA_ID", "process/processA-v1.bpmn", 1, "<default>"),
+          new ProcessDefinitionTestContext(
+              "processA_ID", "process/processA-v2.bpmn", 2, "<default>"),
+          new ProcessDefinitionTestContext(
+              "processA_ID", "process/processA-v3.bpmn", 3, "<default>"),
+          new ProcessDefinitionTestContext(
+              "processB_ID", "process/processB-v1.bpmn", 1, "<default>"),
+          new ProcessDefinitionTestContext(
+              "processB_ID", "process/processB-v2.bpmn", 2, "<default>"),
+          new ProcessDefinitionTestContext(
+              "service_tasks_v1", "process/service_tasks_v1.bpmn", 1, "<default>"),
+          new ProcessDefinitionTestContext(
+              "service_tasks_v2", "process/service_tasks_v2.bpmn", 1, "<default>"),
+          new ProcessDefinitionTestContext(
+              "processWithVersionTag", "process/processWithVersionTag.bpmn", 1, "<default>"),
+          new ProcessDefinitionTestContext(
+              "Process_11hxie4", "process/process_start_form.bpmn", 1, "<default>"));
 
   private static CamundaClient camundaClient;
 
   @BeforeAll
   public static void beforeAll() throws InterruptedException {
     final List<String> forms = List.of("form.form", "form_v2.form");
-    forms.forEach(form -> deployResource("form/" + form));
+    forms.forEach(form -> deployResource(camundaClient, "form/" + form));
 
-    final List<String> processes =
-        List.of(
-            "service_tasks_v1.bpmn",
-            "service_tasks_v2.bpmn",
-            "process_start_form.bpmn",
-            "processWithVersionTag.bpmn");
+    PROCESSES_IN_DEFAULT_TENANT.forEach(
+        process ->
+            DEPLOYED_PROCESSES.addAll(
+                deployResource(camundaClient, process.resourceName()).getProcesses()));
 
-    processes.forEach(
-        process -> DEPLOYED_PROCESSES.addAll(deployResource("process/" + process).getProcesses()));
-
-    waitForProcessesToBeDeployed();
+    waitForProcessesToBeDeployed(camundaClient, PROCESSES_IN_DEFAULT_TENANT.size());
   }
 
   @Test
@@ -254,6 +272,179 @@ public class ProcessDefinitionSearchTest {
   }
 
   @Test
+  void shouldRetrieveAllLatestProcessDefinitions() {
+    // given
+    final var expectedProcessDefinitionInDefaultTenant = keepLatestProcessDefinitionVersions();
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(f -> f.isLatestVersion(true))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(expectedProcessDefinitionInDefaultTenant.size());
+    final var results =
+        result.items().stream()
+            .map(
+                pd ->
+                    new ProcessDefinitionTestContext(
+                        pd.getProcessDefinitionId(),
+                        pd.getResourceName(),
+                        pd.getVersion(),
+                        pd.getTenantId()))
+            .toList();
+    assertThat(results)
+        .containsExactlyInAnyOrderElementsOf(expectedProcessDefinitionInDefaultTenant.values());
+  }
+
+  @Test
+  void shouldRetrieveSingleLatestProcessDefinitionWhenFilteredById() {
+    // given
+    final var expectedProcessDefinitionInDefaultTenant =
+        keepLatestProcessDefinitionVersions().entrySet().stream()
+            .filter(entry -> Objects.equals(entry.getKey(), "processA_ID"))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    // when
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(f -> f.isLatestVersion(true).processDefinitionId("processA_ID"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getVersion()).isEqualTo(3);
+    final var results =
+        result.items().stream()
+            .map(
+                pd ->
+                    new ProcessDefinitionTestContext(
+                        pd.getProcessDefinitionId(),
+                        pd.getResourceName(),
+                        pd.getVersion(),
+                        pd.getTenantId()))
+            .toList();
+    assertThat(results)
+        .containsExactlyInAnyOrderElementsOf(expectedProcessDefinitionInDefaultTenant.values());
+  }
+
+  @Test
+  void shouldRetrieveAllLatestProcessDefinitionsWhenPaginated() {
+    // given
+    final var expectedProcessDefinitionInDefaultTenant = keepLatestProcessDefinitionVersions();
+    // when
+    final var processDefinitions = new ArrayList<ProcessDefinition>();
+    var endCursor = "";
+    do {
+      final String finalEndCursor = endCursor;
+      final var result =
+          camundaClient
+              .newProcessDefinitionSearchRequest()
+              .filter(f -> f.isLatestVersion(true))
+              .page(
+                  p -> {
+                    p.limit(1);
+                    if (!Objects.equals(finalEndCursor, "")) {
+                      p.after(finalEndCursor);
+                    }
+                  })
+              .send()
+              .join();
+      if (!result.items().isEmpty()) {
+        processDefinitions.addAll(result.items());
+        endCursor = result.page().endCursor();
+      } else {
+        endCursor = null; // No more items to fetch
+      }
+    } while (endCursor != null && !endCursor.isEmpty());
+
+    // then
+    assertThat(processDefinitions).hasSize(expectedProcessDefinitionInDefaultTenant.size());
+    assertThat(
+            processDefinitions.stream()
+                .map(
+                    pd ->
+                        new ProcessDefinitionTestContext(
+                            pd.getProcessDefinitionId(),
+                            pd.getResourceName(),
+                            pd.getVersion(),
+                            pd.getTenantId()))
+                .toList())
+        .containsExactlyInAnyOrderElementsOf(expectedProcessDefinitionInDefaultTenant.values());
+  }
+
+  private static Stream<Arguments> sortOrderWithComparator() {
+    return Stream.of(
+        Arguments.of(
+            (Function<ProcessDefinitionSort, ProcessDefinitionSort>)
+                s -> s.processDefinitionId().asc(),
+            Comparator.comparing(ProcessDefinitionTestContext::processId)
+                .thenComparing(ProcessDefinitionTestContext::tenantId)),
+        Arguments.of(
+            (Function<ProcessDefinitionSort, ProcessDefinitionSort>)
+                s -> s.processDefinitionId().desc(),
+            Comparator.comparing(ProcessDefinitionTestContext::processId)
+                .reversed()
+                .thenComparing(ProcessDefinitionTestContext::tenantId)));
+  }
+
+  @ParameterizedTest
+  @MethodSource("sortOrderWithComparator")
+  void shouldRetrieveAllLatestProcessDefinitionsWhenPaginatedAndSorted(
+      final Function<ProcessDefinitionSort, ProcessDefinitionSort> sort,
+      final Comparator<ProcessDefinitionTestContext> comparator) {
+    // given
+    final var expectedProcessDefinitionInDefaultTenant = keepLatestProcessDefinitionVersions();
+
+    // when
+    final var processDefinitions = new LinkedHashSet<ProcessDefinition>();
+    var endCursor = "";
+    do {
+      final String finalEndCursor = endCursor;
+      final var result =
+          camundaClient
+              .newProcessDefinitionSearchRequest()
+              .filter(f -> f.isLatestVersion(true))
+              .sort(sort::apply)
+              .page(
+                  p -> {
+                    p.limit(1);
+                    if (!Objects.equals(finalEndCursor, "")) {
+                      p.after(finalEndCursor);
+                    }
+                  })
+              .send()
+              .join();
+      if (!result.items().isEmpty()) {
+        processDefinitions.addAll(result.items());
+        endCursor = result.page().endCursor();
+      } else {
+        endCursor = null; // No more items to fetch
+      }
+    } while (endCursor != null && !endCursor.isEmpty());
+
+    // then
+    assertThat(processDefinitions).hasSize(expectedProcessDefinitionInDefaultTenant.size());
+    assertThat(
+            processDefinitions.stream()
+                .map(
+                    pd ->
+                        new ProcessDefinitionTestContext(
+                            pd.getProcessDefinitionId(),
+                            pd.getResourceName(),
+                            pd.getVersion(),
+                            pd.getTenantId()))
+                .toList())
+        .containsExactlyElementsOf(
+            expectedProcessDefinitionInDefaultTenant.values().stream().sorted(comparator).toList());
+  }
+
+  @Test
   void shouldRetrieveProcessDefinitionsByProcessDefinitionId() {
     // given
     final var processDefinitionId = "service_tasks_v1";
@@ -281,7 +472,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient.newProcessDefinitionSearchRequest().filter(f -> f.name(name)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(6);
     assertThat(result.items().getFirst().getName()).isEqualTo(name);
   }
 
@@ -299,7 +490,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(6);
     assertThat(result.items().getFirst().getVersion()).isEqualTo(version);
   }
 
@@ -335,7 +526,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(9);
     assertThat(result.items().getFirst().getTenantId()).isEqualTo(tenantId);
   }
 
@@ -353,7 +544,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(9);
     assertThat(result.items().getFirst().getVersionTag()).isEqualTo(versionTag);
   }
 
@@ -393,7 +584,7 @@ public class ProcessDefinitionSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(4);
+    assertThat(result.items().size()).isEqualTo(9);
     assertThat(result.items().stream().map(ProcessDefinition::getProcessDefinitionId).toList())
         .containsExactlyElementsOf(expectedProcessDefinitionIds);
   }
@@ -568,7 +759,7 @@ public class ProcessDefinitionSearchTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(2);
+    assertThat(resultAfter.items().size()).isEqualTo(7);
 
     // apply searchBefore
     final var resultBefore =
@@ -600,41 +791,27 @@ public class ProcessDefinitionSearchTest {
     assertThat(resultForm.getVersion()).isEqualTo(2L);
   }
 
-  private static DeploymentEvent deployResource(final String resourceName) {
-    return camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath(resourceName)
-        .send()
-        .join();
+  private Map<String, ProcessDefinitionTestContext> keepLatestProcessDefinitionVersions() {
+    return PROCESSES_IN_DEFAULT_TENANT.stream()
+        .collect(
+            Collectors.toMap(
+                p -> p.processId, p -> p, (p1, p2) -> p1.version >= p2.version ? p1 : p2));
   }
 
-  private static void waitForProcessesToBeDeployed() throws InterruptedException {
-    Awaitility.await("should deploy processes and import in Operate")
-        .atMost(Duration.ofMinutes(5))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
-              assertThat(result.items().size()).isEqualTo(DEPLOYED_PROCESSES.size());
-
-              final var processDefinitionKey =
-                  camundaClient
-                      .newProcessDefinitionSearchRequest()
-                      .filter(f -> f.name("Process With Form"))
-                      .send()
-                      .join()
-                      .items()
-                      .get(0)
-                      .getProcessDefinitionKey();
-
-              final var resultForm =
-                  camundaClient
-                      .newProcessDefinitionGetFormRequest(processDefinitionKey)
-                      .send()
-                      .join();
-
-              assertThat(resultForm.getFormId().equals("test"));
-              assertEquals(2L, resultForm.getVersion());
-            });
+  record ProcessDefinitionTestContext(
+      String processId, String resourceName, int version, String tenantId) {
+    @Override
+    public String toString() {
+      return "ProcessTestContext{"
+          + "processId='"
+          + processId
+          + '\''
+          + ", version="
+          + version
+          + ", tenantId='"
+          + tenantId
+          + '\''
+          + '}';
+    }
   }
 }

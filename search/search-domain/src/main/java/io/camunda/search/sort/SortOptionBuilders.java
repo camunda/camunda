@@ -69,8 +69,8 @@ public final class SortOptionBuilders {
     return new UserSort.Builder();
   }
 
-  public static MappingSort.Builder mapping() {
-    return new MappingSort.Builder();
+  public static MappingRuleSort.Builder mapping() {
+    return new MappingRuleSort.Builder();
   }
 
   public static RoleSort.Builder role() {
@@ -124,8 +124,8 @@ public final class SortOptionBuilders {
     return fn.apply(user()).build();
   }
 
-  public static MappingSort mapping(
-      final Function<MappingSort.Builder, ObjectBuilder<MappingSort>> fn) {
+  public static MappingRuleSort mapping(
+      final Function<MappingRuleSort.Builder, ObjectBuilder<MappingRuleSort>> fn) {
     return fn.apply(mapping()).build();
   }
 

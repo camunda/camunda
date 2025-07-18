@@ -133,4 +133,33 @@ public final class OAuthCredentialsProviderBuilderTest {
                 + "expected timeout to be a positive number of milliseconds smaller than 2147483647.")
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  @Test
+  void shouldBuildWithResourceParameter() {
+    // given
+    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
+
+    // when
+    builder
+        .audience("a")
+        .clientId("b")
+        .clientSecret("c")
+        .resource("https://api.example.com")
+        .authorizationServerUrl("http://some.url");
+
+    // then
+    assertThatCode(builder::build).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldBuildWithoutResourceParameter() {
+    // given
+    final OAuthCredentialsProviderBuilder builder = new OAuthCredentialsProviderBuilder();
+
+    // when
+    builder.audience("a").clientId("b").clientSecret("c").authorizationServerUrl("http://some.url");
+
+    // then
+    assertThatCode(builder::build).doesNotThrowAnyException();
+  }
 }

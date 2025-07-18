@@ -44,7 +44,8 @@ public class ClientConfig {
     mixpanelToken = operateProperties.getCloud().getMixpanelToken();
     contextPath = context.getContextPath();
     baseName = context.getContextPath() + "/operate";
-    canLogout = profileService.currentProfileCanLogout();
+    // when operating in SaaS we don't have the logout option.
+    canLogout = securityConfiguration.getAuthentication().getOidc().getOrganizationId() == null;
     isLoginDelegated = profileService.isLoginDelegated();
     tasklistUrl = operateProperties.getTasklistUrl();
     resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();

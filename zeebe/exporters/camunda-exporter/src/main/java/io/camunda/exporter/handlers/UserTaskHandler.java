@@ -39,12 +39,21 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskHandler.class);
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
+          UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
+          UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED,
+          UserTaskIntent.ASSIGNING,
+          UserTaskIntent.CLAIMING,
           UserTaskIntent.ASSIGNED,
-          UserTaskIntent.UPDATED);
+          UserTaskIntent.UPDATING,
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.ASSIGNMENT_DENIED,
+          UserTaskIntent.UPDATE_DENIED,
+          UserTaskIntent.COMPLETION_DENIED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
 
@@ -81,7 +90,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   @Override
   public List<String> generateIds(final Record<UserTaskRecordValue> record) {
-    if (record.getIntent().equals(UserTaskIntent.CREATED)) {
+    if (record.getIntent().equals(UserTaskIntent.CREATING)) {
       exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, record.getKey());
     }
 
@@ -102,13 +111,22 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity.setAction(record.getValue().getAction());
     entity.setKey(record.getKey());
 
-    switch (record.getIntent()) {
-      case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
-      case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED ->
-          updateChangedAttributes(record, entity);
+    switch ((UserTaskIntent) record.getIntent()) {
+      case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
+      case UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
+        entity.setState(TaskState.CREATED);
+        updateChangedAttributes(record, entity);
+      }
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
       case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
       case UserTaskIntent.MIGRATED -> handleMigration(record, entity);
+      case UserTaskIntent.ASSIGNING, UserTaskIntent.CLAIMING ->
+          entity.setState(TaskState.ASSIGNING);
+      case UserTaskIntent.UPDATING -> entity.setState(TaskState.UPDATING);
+      case UserTaskIntent.COMPLETING -> entity.setState(TaskState.COMPLETING);
+      case UserTaskIntent.CANCELING -> entity.setState(TaskState.CANCELING);
+      case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
+          entity.setState(TaskState.CREATED);
       default -> {}
     }
 
@@ -182,56 +200,48 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     if (entity.getBpmnProcessId() != null) {
       updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     }
+    if (entity.getProcessDefinitionVersion() != null) {
+      updateFields.put(
+          TaskTemplate.PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    }
 
     return updateFields;
   }
 
   private void createTaskEntity(final TaskEntity entity, final Record<UserTaskRecordValue> record) {
-    final var formKey =
-        record.getValue().getFormKey() > 0 ? String.valueOf(record.getValue().getFormKey()) : null;
+    final var taskValue = record.getValue();
+    final var formKey = taskValue.getFormKey() > 0 ? String.valueOf(taskValue.getFormKey()) : null;
 
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
-        .setState(TaskState.CREATED)
-        .setAssignee(getAssigneeOrNull(record))
-        .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
-        .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
-        .setFlowNodeInstanceId(String.valueOf(record.getValue().getElementInstanceKey()))
-        .setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()))
-        .setFlowNodeBpmnId(record.getValue().getElementId())
+        .setState(TaskState.CREATING)
+        .setFlowNodeInstanceId(String.valueOf(taskValue.getElementInstanceKey()))
+        .setProcessInstanceId(String.valueOf(taskValue.getProcessInstanceKey()))
+        .setFlowNodeBpmnId(taskValue.getElementId())
         .setName(
             ProcessCacheUtil.getFlowNodeName(
-                    processCache,
-                    record.getValue().getProcessDefinitionKey(),
-                    record.getValue().getElementId())
+                    processCache, taskValue.getProcessDefinitionKey(), taskValue.getElementId())
                 .orElse(null))
-        .setBpmnProcessId(record.getValue().getBpmnProcessId())
-        .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
-        .setProcessDefinitionVersion(record.getValue().getProcessDefinitionVersion())
+        .setBpmnProcessId(taskValue.getBpmnProcessId())
+        .setProcessDefinitionId(String.valueOf(taskValue.getProcessDefinitionKey()))
+        .setProcessDefinitionVersion(taskValue.getProcessDefinitionVersion())
         .setFormKey(!ExporterUtil.isEmpty(formKey) ? formKey : null)
         .setExternalFormReference(
-            ExporterUtil.isEmpty(record.getValue().getExternalFormReference())
+            ExporterUtil.isEmpty(taskValue.getExternalFormReference())
                 ? null
-                : record.getValue().getExternalFormReference())
-        .setCustomHeaders(record.getValue().getCustomHeaders())
-        .setPriority(record.getValue().getPriority())
+                : taskValue.getExternalFormReference())
+        .setCustomHeaders(taskValue.getCustomHeaders())
         .setPartitionId(record.getPartitionId())
-        .setTenantId(record.getValue().getTenantId())
+        .setTenantId(taskValue.getTenantId())
         .setPosition(record.getPosition())
-        .setAction(
-            ExporterUtil.isEmpty(record.getValue().getAction())
-                ? null
-                : record.getValue().getAction())
+        .setAction(ExporterUtil.isEmpty(taskValue.getAction()) ? null : taskValue.getAction())
         .setCreationTime(
-            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-
-    if (!record.getValue().getCandidateGroupsList().isEmpty()) {
-      entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));
-    }
-
-    if (!record.getValue().getCandidateUsersList().isEmpty()) {
-      entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
-    }
+            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
+        .setDueDate(ExporterUtil.toOffsetDateTime(taskValue.getDueDate()))
+        .setFollowUpDate(ExporterUtil.toOffsetDateTime(taskValue.getFollowUpDate()))
+        .setPriority(taskValue.getPriority())
+        .setCandidateGroups(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateGroupsList()))
+        .setCandidateUsers(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateUsersList()));
 
     if (!ExporterUtil.isEmpty(formKey)) {
       formCache
@@ -271,14 +281,16 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     final var value = record.getValue();
 
     for (final String attribute : value.getChangedAttributes()) {
-      entity.getChangedAttributes().add(attribute);
+      entity.addChangedAttribute(attribute);
 
       switch (attribute) {
         case "assignee" -> entity.setAssignee(getAssigneeOrNull(record));
         case "candidateGroupsList" ->
-            entity.setCandidateGroups(value.getCandidateGroupsList().toArray(new String[0]));
+            entity.setCandidateGroups(
+                ExporterUtil.toStringArrayOrNull(value.getCandidateGroupsList()));
         case "candidateUsersList" ->
-            entity.setCandidateUsers(value.getCandidateUsersList().toArray(new String[0]));
+            entity.setCandidateUsers(
+                ExporterUtil.toStringArrayOrNull(value.getCandidateUsersList()));
         case "dueDate" -> entity.setDueDate(ExporterUtil.toOffsetDateTime(value.getDueDate()));
         case "followUpDate" ->
             entity.setFollowUpDate(ExporterUtil.toOffsetDateTime(value.getFollowUpDate()));
@@ -302,6 +314,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setState(TaskState.CANCELED)
         .setCompletionTime(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    updateChangedAttributes(record, entity);
   }
 
   private void handleMigration(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
@@ -315,6 +328,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                 .orElse(null))
         .setBpmnProcessId(record.getValue().getBpmnProcessId())
         .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
-        .setState(TaskState.CREATED);
+        .setProcessDefinitionVersion(record.getValue().getProcessDefinitionVersion());
   }
 }

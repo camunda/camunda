@@ -24,6 +24,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
   public static final boolean DEFAULT_VERSION_CHECK_ENABLED = true;
 
+  private boolean continuousBackups = false;
+
   /**
    * Allows to enable/disable the version check, that prevents us on migrating to alpha versions,
    * etc.
@@ -40,6 +42,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
   private EngineCfg engine = new EngineCfg();
   private FeatureFlagsCfg features = new FeatureFlagsCfg();
+
+  public boolean isContinuousBackups() {
+    return continuousBackups;
+  }
+
+  public void setContinuousBackups(final boolean continuousBackups) {
+    this.continuousBackups = continuousBackups;
+  }
 
   public boolean isVersionCheckRestrictionEnabled() {
     return versionCheckRestrictionEnabled;

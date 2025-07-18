@@ -24,6 +24,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
@@ -77,6 +78,11 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     queries.add(stringTerms(IMPLEMENTATION, List.of(TaskImplementation.ZEEBE_USER_TASK.name())));
 
     return and(queries);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {

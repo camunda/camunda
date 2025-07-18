@@ -57,6 +57,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
+import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
@@ -171,6 +172,7 @@ public final class RequestMapper extends RequestUtil {
 
     if (!request.getResult().hasCorrections()) {
       return new JobResult()
+          .setType(JobResultType.from(request.getResult().getType()))
           .setDenied(request.getResult().getDenied())
           .setDeniedReason(request.getResult().getDeniedReason());
     }
@@ -207,6 +209,7 @@ public final class RequestMapper extends RequestUtil {
     }
 
     return new JobResult()
+        .setType(JobResultType.from(request.getResult().getType()))
         .setDenied(request.getResult().getDenied())
         .setDeniedReason(request.getResult().getDeniedReason())
         .setCorrections(corrections)

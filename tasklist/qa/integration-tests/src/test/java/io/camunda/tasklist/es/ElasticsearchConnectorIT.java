@@ -19,6 +19,7 @@ import io.camunda.tasklist.connect.ElasticsearchConnector;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TestPlugin;
+import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -31,7 +32,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -42,9 +42,8 @@ import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @SpringBootTest(
-    classes = {ElasticsearchConnector.class, TasklistProperties.class},
+    classes = {ElasticsearchConnector.class, TestTasklistPropertiesOverride.class},
     properties = TasklistProperties.PREFIX + ".database=elasticsearch")
-@EnableConfigurationProperties(TasklistProperties.class)
 public class ElasticsearchConnectorIT {
 
   @Container

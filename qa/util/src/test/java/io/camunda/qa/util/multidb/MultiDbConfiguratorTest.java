@@ -10,7 +10,7 @@ package io.camunda.qa.util.multidb;
 import static io.camunda.qa.util.multidb.MultiDbConfigurator.zeebePrefix;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;

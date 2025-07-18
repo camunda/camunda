@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.aggregator;
 
+import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
@@ -16,6 +17,7 @@ public record SearchTermsAggregator(
     String field,
     Integer size,
     Integer minDocCount,
+    List<FieldSorting> sorting,
     List<SearchAggregator> aggregations)
     implements SearchAggregator {
 
@@ -35,6 +37,7 @@ public record SearchTermsAggregator(
     private String field;
     private Integer size = 10; // Default to 10 buckets
     private Integer minDocCount = 1; // Default to showing at least 1 document
+    private List<FieldSorting> sorting;
 
     @Override
     protected Builder self() {
@@ -43,6 +46,14 @@ public record SearchTermsAggregator(
 
     public Builder field(final String value) {
       field = value;
+      return this;
+    }
+
+    public Builder sorting(final List<FieldSorting> value) {
+      if (value == null) {
+        throw new IllegalArgumentException("Order must not be null.");
+      }
+      sorting = value;
       return this;
     }
 
@@ -67,6 +78,7 @@ public record SearchTermsAggregator(
           Objects.requireNonNull(field, "Expected non-null field for field."),
           size,
           minDocCount,
+          sorting,
           aggregations);
     }
   }

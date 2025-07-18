@@ -110,6 +110,7 @@ components:
             - DISABLING
             - DISABLED
             - UNKNOWN
+            - CONFIG_NOT_FOUND
           description: Status of the exporter
           example: "ENABLED"
 

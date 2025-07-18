@@ -9,7 +9,7 @@
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {useFilters} from 'modules/hooks/useFilters';
-import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas';
+import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const formatToISO = (dateString: string | undefined): string | undefined => {
   if (!dateString) return undefined;

@@ -113,7 +113,7 @@ public final class EventAppliers implements EventApplier {
 
     registerDecisionAppliers(state);
     registerDecisionRequirementsAppliers(state);
-    registerDecisionEvaluationAppliers();
+    registerDecisionEvaluationAppliers(state);
 
     registerFormAppliers(state);
 
@@ -445,8 +445,12 @@ public final class EventAppliers implements EventApplier {
         new DecisionRequirementsDeletedApplier(state.getDecisionState()));
   }
 
-  private void registerDecisionEvaluationAppliers() {
-    register(DecisionEvaluationIntent.EVALUATED, NOOP_EVENT_APPLIER);
+  private void registerDecisionEvaluationAppliers(final MutableProcessingState state) {
+    register(DecisionEvaluationIntent.EVALUATED, 1, NOOP_EVENT_APPLIER);
+    register(
+        DecisionEvaluationIntent.EVALUATED,
+        2,
+        new DecisionEvaluationV2Applier(state.getUsageMetricState()));
     register(DecisionEvaluationIntent.FAILED, NOOP_EVENT_APPLIER);
   }
 
@@ -478,6 +482,7 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.ASSIGNING, 2, new UserTaskAssigningV2Applier(state));
     register(UserTaskIntent.ASSIGNED, 1, new UserTaskAssignedV1Applier(state));
     register(UserTaskIntent.ASSIGNED, 2, new UserTaskAssignedV2Applier(state));
+    register(UserTaskIntent.ASSIGNED, 3, new UserTaskAssignedV3Applier(state));
     register(UserTaskIntent.CLAIMING, new UserTaskClaimingApplier(state));
     register(UserTaskIntent.UPDATING, 1, new UserTaskUpdatingV1Applier(state));
     register(UserTaskIntent.UPDATING, 2, new UserTaskUpdatingV2Applier(state));

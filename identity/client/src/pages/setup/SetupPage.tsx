@@ -22,8 +22,9 @@ import {
   Button,
 } from "src/pages/setup/styled.ts";
 import Divider from "src/components/form/Divider";
-import { createAdminUser } from "src/utility/api/setup";
 import { useApiCall } from "src/utility/api";
+import { createAdminUser } from "src/utility/api/setup";
+import { ErrorResponse } from "src/utility/api/request";
 import { isValidEmail } from "src/utility/isValidEmail";
 
 interface SetupFormProps {
@@ -32,7 +33,9 @@ interface SetupFormProps {
 
 const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
   const { t } = useTranslate();
-  const [apiCall, { error }] = useApiCall(createAdminUser);
+  const [apiCall] = useApiCall(createAdminUser, {
+    suppressErrorNotification: true,
+  });
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -59,7 +62,7 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
 
   const handleSubmit = async () => {
     if (username && password && confirmPassword) {
-      const { success } = await apiCall({
+      const { success, error } = await apiCall({
         name,
         email,
         username,
@@ -69,7 +72,8 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
       if (success) {
         onSuccess();
       } else {
-        setSubmitError(error?.detail || "");
+        const detail = (error as ErrorResponse<"detailed">)?.detail;
+        setSubmitError(detail || t("setupCreateAdminUserGenericError"));
       }
     }
   };

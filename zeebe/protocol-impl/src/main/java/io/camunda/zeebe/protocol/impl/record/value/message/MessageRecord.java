@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -22,16 +23,24 @@ import org.agrona.DirectBuffer;
 
 public final class MessageRecord extends UnifiedRecordValue implements MessageRecordValue {
 
-  private final StringProperty nameProp = new StringProperty("name");
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
-  // TTL in milliseconds
-  private final LongProperty timeToLiveProp = new LongProperty("timeToLive");
-  private final LongProperty deadlineProp = new LongProperty("deadline", -1);
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue NAME_KEY = new StringValue("name");
+  private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
+  private static final StringValue TIME_TO_LIVE_KEY = new StringValue("timeToLive");
+  private static final StringValue DEADLINE_KEY = new StringValue("deadline");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue MESSAGE_ID_KEY = new StringValue("messageId");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
-  private final DocumentProperty variablesProp = new DocumentProperty("variables");
-  private final StringProperty messageIdProp = new StringProperty("messageId", "");
+  private final StringProperty nameProp = new StringProperty(NAME_KEY);
+  private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
+  private final LongProperty timeToLiveProp = new LongProperty(TIME_TO_LIVE_KEY);
+  private final LongProperty deadlineProp = new LongProperty(DEADLINE_KEY, -1);
+
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  private final StringProperty messageIdProp = new StringProperty(MESSAGE_ID_KEY, "");
   private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageRecord() {
     super(7);

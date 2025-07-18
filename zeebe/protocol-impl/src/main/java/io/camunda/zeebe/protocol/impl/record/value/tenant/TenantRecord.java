@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -20,13 +21,22 @@ import org.agrona.DirectBuffer;
 
 public final class TenantRecord extends UnifiedRecordValue implements TenantRecordValue {
   private static final long DEFAULT_KEY = -1;
-  private final LongProperty tenantKeyProp = new LongProperty("tenantKey", DEFAULT_KEY);
-  private final StringProperty tenantIdProp = new StringProperty("tenantId");
-  private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty descriptionProp = new StringProperty("description", "");
-  private final StringProperty entityIdProp = new StringProperty("entityId", "");
+
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue TENANT_KEY_KEY = new StringValue("tenantKey");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue NAME_KEY = new StringValue("name");
+  private static final StringValue DESCRIPTION_KEY = new StringValue("description");
+  private static final StringValue ENTITY_ID_KEY = new StringValue("entityId");
+  private static final StringValue ENTITY_TYPE_KEY = new StringValue("entityType");
+
+  private final LongProperty tenantKeyProp = new LongProperty(TENANT_KEY_KEY, DEFAULT_KEY);
+  private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY);
+  private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
+  private final StringProperty descriptionProp = new StringProperty(DESCRIPTION_KEY, "");
+  private final StringProperty entityIdProp = new StringProperty(ENTITY_ID_KEY, "");
   private final EnumProperty<EntityType> entityTypeProp =
-      new EnumProperty<>("entityType", EntityType.class, EntityType.UNSPECIFIED);
+      new EnumProperty<>(ENTITY_TYPE_KEY, EntityType.class, EntityType.UNSPECIFIED);
 
   public TenantRecord() {
     super(6);

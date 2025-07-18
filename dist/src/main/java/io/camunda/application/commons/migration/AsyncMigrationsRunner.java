@@ -11,10 +11,12 @@ import io.camunda.migration.api.Migrator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
@@ -27,14 +29,20 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(AsyncMigrationsRunner.class);
   private final List<Migrator> migrators;
+  private final ApplicationEventPublisher eventPublisher;
 
-  public AsyncMigrationsRunner(final List<Migrator> migrators) {
+  public AsyncMigrationsRunner(
+      final List<Migrator> migrators, final ApplicationEventPublisher eventPublisher) {
     this.migrators = migrators;
+    this.eventPublisher = eventPublisher;
   }
 
   @Override
   public void run(final ApplicationArguments args) throws Exception {
-    LOG.info("Starting {} migration tasks", migrators.size());
+    LOG.info(
+        "Starting {} migrations: {}",
+        migrators.size(),
+        migrators.stream().map(Migrator::getName).collect(Collectors.joining(", ")));
     /* Detach from main Spring thread */
     new Thread(
             () -> {
@@ -50,6 +58,7 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
 
   private void startMigrators(final ApplicationArguments args) throws Exception {
     final Exception migrationsExceptions = new Exception("migration failed");
+    boolean migrationFailed = false;
     try (final var executor =
         Executors.newFixedThreadPool(
             migrators.size(), new CustomizableThreadFactory("migration-"))) {
@@ -58,16 +67,33 @@ public class AsyncMigrationsRunner implements ApplicationRunner {
         try {
           result.get();
         } catch (final ExecutionException e) {
+          migrationFailed = true;
           LOG.error("Migrator failed", e.getCause());
           migrationsExceptions.addSuppressed(e.getCause());
         }
       }
     }
 
+    eventPublisher.publishEvent(new ProcessMigrationFinishedEvent(migrationFailed));
+
     if (migrationsExceptions.getSuppressed().length > 0) {
       throw migrationsExceptions;
     }
-
     LOG.info("All migration tasks completed");
+  }
+
+  public static class ProcessMigrationFinishedEvent extends MigrationFinishedEvent {
+
+    private final boolean success;
+
+    public ProcessMigrationFinishedEvent(final boolean success) {
+      super(success);
+      this.success = success;
+    }
+
+    @Override
+    public boolean isSuccess() {
+      return success;
+    }
   }
 }

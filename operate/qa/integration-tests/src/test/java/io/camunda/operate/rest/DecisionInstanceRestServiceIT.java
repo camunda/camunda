@@ -13,8 +13,8 @@ import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionInstanceRestService;
@@ -30,12 +30,11 @@ import org.springframework.test.web.servlet.MvcResult;
     classes = {
       TestApplicationWithNoBeans.class,
       DecisionInstanceRestService.class,
-      OperateProperties.class,
       OperateProfileService.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      OperateProperties.class
+      TestOperatePropertiesOverride.class
     })
 public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
 

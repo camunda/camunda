@@ -7,17 +7,15 @@
  */
 package io.camunda.operate;
 
+import org.junit.platform.suite.api.ExcludePackages;
 import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages({
-  "io.camunda.operate.rest.dto.incidents",
-  "io.camunda.operate.webapp.rest",
-  "io.camunda.operate.webapp.security.permission",
-  "io.camunda.operate.webapp.security",
-  "io.camunda.operate.webapp.zeebe.operation",
-  "io.camunda.operate.webapp.controller",
-  "io.camunda.operate.webapp.security"
+@SelectPackages({"io.camunda.operate"})
+@ExcludePackages({
+  "io.camunda.operate.elasticsearch",
+  "io.camunda.operate.webapp.elasticsearch",
+  "io.camunda.operate.webapp.opensearch"
 })
 public class OperateCoreFeaturesTestSuite {}

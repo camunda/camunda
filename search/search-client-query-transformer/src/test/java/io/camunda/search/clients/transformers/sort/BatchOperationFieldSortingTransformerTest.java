@@ -24,7 +24,7 @@ public class BatchOperationFieldSortingTransformerTest extends AbstractSortTrans
 
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
-        new TestArguments("id", SortOrder.ASC, s -> s.batchOperationId().asc()),
+        new TestArguments("id", SortOrder.ASC, s -> s.batchOperationKey().asc()),
         new TestArguments("state", SortOrder.DESC, s -> s.state().desc()),
         new TestArguments("type", SortOrder.ASC, s -> s.operationType().asc()),
         new TestArguments("startDate", SortOrder.DESC, s -> s.startDate().desc()),

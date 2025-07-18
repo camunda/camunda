@@ -38,7 +38,9 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {
+      TestApplication.class,
+    },
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",

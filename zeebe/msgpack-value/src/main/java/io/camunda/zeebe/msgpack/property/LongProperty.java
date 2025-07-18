@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack.property;
 
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 
 public final class LongProperty extends BaseProperty<LongValue> {
   public LongProperty(final String key) {
@@ -15,6 +16,14 @@ public final class LongProperty extends BaseProperty<LongValue> {
   }
 
   public LongProperty(final String key, final long defaultValue) {
+    super(key, new LongValue(), new LongValue(defaultValue));
+  }
+
+  public LongProperty(final StringValue key) {
+    super(key, new LongValue());
+  }
+
+  public LongProperty(final StringValue key, final long defaultValue) {
     super(key, new LongValue(), new LongValue(defaultValue));
   }
 

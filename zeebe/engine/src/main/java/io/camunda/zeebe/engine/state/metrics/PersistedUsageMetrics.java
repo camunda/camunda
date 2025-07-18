@@ -13,7 +13,9 @@ import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
@@ -22,13 +24,15 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
   private final LongProperty toTimeProp = new LongProperty("toTime");
   private final DocumentProperty tenantRPIMapProp = new DocumentProperty("tenantRPI");
   private final DocumentProperty tenantEDIMapProp = new DocumentProperty("tenantEDI");
+  private final DocumentProperty tenantTUMapProp = new DocumentProperty("tenantTU");
 
   public PersistedUsageMetrics() {
-    super(4);
+    super(5);
     declareProperty(fromTimeProp)
         .declareProperty(toTimeProp)
         .declareProperty(tenantRPIMapProp)
-        .declareProperty(tenantEDIMapProp);
+        .declareProperty(tenantEDIMapProp)
+        .declareProperty(tenantTUMapProp);
   }
 
   public long getFromTime() {
@@ -64,16 +68,30 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
   }
 
   public DirectBuffer getTenantEDIMapValue() {
-    return tenantRPIMapProp.getValue();
+    return tenantEDIMapProp.getValue();
   }
 
   public Map<String, Long> getTenantEDIMap() {
     return MsgPackConverter.convertToLongMap(tenantEDIMapProp.getValue());
   }
 
-  public void setTenantEDIMap(final Map<String, Long> tenantEDIMap) {
+  public PersistedUsageMetrics setTenantEDIMap(final Map<String, Long> tenantEDIMap) {
     tenantEDIMapProp.setValue(
         BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantEDIMap)));
+    return this;
+  }
+
+  public DirectBuffer getTenantTUMapValue() {
+    return tenantTUMapProp.getValue();
+  }
+
+  public Map<String, Set<String>> getTenantTUMap() {
+    return MsgPackConverter.convertToSetStringMap(tenantTUMapProp.getValue());
+  }
+
+  public PersistedUsageMetrics setTenantTUMap(final Map<String, Set<String>> tenantTUMap) {
+    tenantTUMapProp.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantTUMap)));
+    return this;
   }
 
   public PersistedUsageMetrics recordRPI(final String tenantId) {
@@ -87,6 +105,15 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
     final var tenantEDIMap = getTenantEDIMap();
     tenantEDIMap.merge(tenantId, 1L, Long::sum);
     setTenantEDIMap(tenantEDIMap);
+    return this;
+  }
+
+  public PersistedUsageMetrics recordTU(final String tenantId, final String assignee) {
+    final var tenantTUMap = getTenantTUMap();
+    final boolean added = tenantTUMap.computeIfAbsent(tenantId, k -> new HashSet<>()).add(assignee);
+    if (added) {
+      setTenantTUMap(tenantTUMap);
+    }
     return this;
   }
 }

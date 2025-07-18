@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.connect.ElasticsearchConnector;
-import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import java.util.Map;
@@ -37,11 +37,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {
-      TasklistProperties.class,
       TestApplicationWithNoBeans.class,
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
-      TasklistProperties.class,
+      TestTasklistPropertiesOverride.class,
       ElasticsearchConnector.class,
       JacksonConfig.class
     },

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack.property;
 
 import io.camunda.zeebe.msgpack.value.PackedValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import org.agrona.DirectBuffer;
 
 public class PackedProperty extends BaseProperty<PackedValue> {
@@ -16,6 +17,14 @@ public class PackedProperty extends BaseProperty<PackedValue> {
   }
 
   public PackedProperty(final String key, final DirectBuffer defaultValue) {
+    super(key, new PackedValue(), new PackedValue(defaultValue, 0, defaultValue.capacity()));
+  }
+
+  public PackedProperty(final StringValue key) {
+    super(key, new PackedValue());
+  }
+
+  public PackedProperty(final StringValue key, final DirectBuffer defaultValue) {
     super(key, new PackedValue(), new PackedValue(defaultValue, 0, defaultValue.capacity()));
   }
 

@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="StandaloneCamunda DEV" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
-    <option name="ACTIVE_PROFILES" value="identity,tasklist,operate,broker,consolidated-auth,dev" />
+    <option name="ACTIVE_PROFILES" value="identity,tasklist,operate,broker,consolidated-auth,dev,insecure" />
     <envs>
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL" value="http://localhost:9200" />
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS" value="false" />

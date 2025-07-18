@@ -1263,6 +1263,31 @@ public class CamundaClientPropertiesPostProcessorTest {
               .isEqualTo("alias-password");
         }
       }
+
+      @SpringBootTest(
+          properties = "spring.config.location=classpath:properties/8.7/self-managed.yaml")
+      @Nested
+      class TokenResource {
+        @Autowired CamundaClientProperties camundaClientProperties;
+
+        @Test
+        void shouldReadTokenResource() {
+          assertThat(camundaClientProperties.getAuth().getResource())
+              .isEqualTo("https://api.example.com");
+        }
+      }
+
+      @Nested
+      @SpringBootTest(properties = "zeebe.token.resource=https://api.example.com")
+      class ZeebeTokenResource {
+        @Autowired CamundaClientProperties camundaClientProperties;
+
+        @Test
+        void shouldReadResource() {
+          assertThat(camundaClientProperties.getAuth().getResource())
+              .isEqualTo("https://api.example.com");
+        }
+      }
     }
   }
 }

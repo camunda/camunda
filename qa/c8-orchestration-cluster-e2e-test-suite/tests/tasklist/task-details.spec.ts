@@ -208,7 +208,16 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Zeebe_user_task');
-    await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(page.getByRole('cell', {name: 'zeebeVar'})).toBeVisible({
+          timeout: 60000,
+        });
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
     await expect(taskDetailsPage.assignToMeButton).toBeHidden();
     await expect(taskDetailsPage.unassignButton).toBeHidden();
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
@@ -218,8 +227,12 @@ test.describe('task details page', () => {
     // this is necessary because sometimes the importer takes some time to receive the variables
     await waitForAssertion({
       assertion: async () => {
-        await expect(page.getByText('jobWorkerVar')).toBeVisible();
-        await expect(page.getByText('zeebeVar')).toBeVisible({timeout: 60000});
+        await expect(
+          page.getByRole('cell', {name: 'jobWorkerVar'}),
+        ).toBeVisible();
+        await expect(page.getByRole('cell', {name: 'zeebeVar'})).toBeVisible({
+          timeout: 60000,
+        });
       },
       onFailure: async () => {
         await page.reload();

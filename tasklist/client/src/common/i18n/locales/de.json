@@ -123,6 +123,8 @@
     "startProcessFromFormInvalidFormDescription": "Etwas ist schief gelaufen und das Formular konnte nicht angezeigt werden. Bitte kontaktieren Sie Ihren Anbieter.",
     "startProcessFromFormWithFileComponentsHeading": "Formular enthält Dateikomponenten",
     "startProcessFromFormWithFileComponentsDescription": "Dieses Formular enthält Dateikomponenten, die im öffentlichen Startformular nicht unterstützt werden. Bitte kontaktieren Sie Ihren Prozessadministrator.",
+    "startProcessFromFormV2ApiNotSupportedHeading": "Öffentliche Formulare nicht unterstützt",
+    "startProcessFromFormV2ApiNotSupportedDescription": "Öffentliche Formulare werden in dieser Version nicht unterstützt. Bitte kontaktieren Sie Ihren Administrator.",
     "assigneeTagUnassignedTitle": "Aufgabe nicht zugewiesen",
     "assigneeTagUnassigned": "Nicht zugewiesen",
     "assigneeTagAssignedToMeAria": "Aufgabe mir zugewiesen",

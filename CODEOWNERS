@@ -82,8 +82,10 @@
 /operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
 /operate/webapp/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
 
+##########################
+## Distributed Platform ##
+##########################
 
-# Distributed Platform
 /zeebe/atomix @camunda/zeebe-distributed-platform
 /zeebe/backup @camunda/zeebe-distributed-platform
 /zeebe/backup-stores @camunda/zeebe-distributed-platform

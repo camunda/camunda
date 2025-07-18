@@ -15,7 +15,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -46,11 +46,14 @@ public class IncidentServices
 
   @Override
   public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
-    return incidentSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchIncidents(query);
+    return executeSearchRequest(
+        () ->
+            incidentSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                .searchIncidents(query));
   }
 
   @Override
@@ -61,16 +64,20 @@ public class IncidentServices
 
   public IncidentEntity getByKey(final Long key) {
     final var result =
-        incidentSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchIncidents(
-                incidentSearchQuery(q -> q.filter(f -> f.incidentKeys(key)).singleResult()))
+        executeSearchRequest(
+                () ->
+                    incidentSearchClient
+                        .withSecurityContext(
+                            securityContextProvider.provideSecurityContext(authentication))
+                        .searchIncidents(
+                            incidentSearchQuery(
+                                q -> q.filter(f -> f.incidentKeys(key)).singleResult())))
             .items()
             .getFirst();
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
         result.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
+      throw ErrorMapper.createForbiddenException(authorization);
     }
     return result;
   }

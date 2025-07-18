@@ -7,6 +7,7 @@
  */
 package io.camunda.application.initializers;
 
+import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.search.connect.configuration.ConnectConfiguration.DATABASE_TYPE_DEFAULT;
 import static io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH;
 import static java.util.Optional.ofNullable;
@@ -22,7 +23,7 @@ public class StandaloneSchemaManagerInitializer
   @Override
   public void initialize(final ConfigurableApplicationContext applicationContext) {
     final String databaseTypeProperty =
-        applicationContext.getEnvironment().getProperty("camunda.database.type");
+        applicationContext.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
     if (ELASTICSEARCH
         != ofNullable(databaseTypeProperty).map(DatabaseType::from).orElse(DATABASE_TYPE_DEFAULT)) {
       throw new IllegalArgumentException(

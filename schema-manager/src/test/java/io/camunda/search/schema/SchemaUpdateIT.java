@@ -20,6 +20,7 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
@@ -50,13 +51,17 @@ class SchemaUpdateIT {
 
   private static String currentMinorVersion; // e.g. "8.8"
 
-  private static final String PREVIOUS_VERSION =
-      VersionUtil.getPreviousVersion(); // e.g. "8.7-0-SNAPSHOT"
+  private static String previousMinorSnapshotVersion; // e.g. "8.7-SNAPSHOT"
 
   @BeforeAll
   static void beforeAll() {
     final var semanticVersion = VersionUtil.getSemanticVersion().get();
     currentMinorVersion = "%d.%d".formatted(semanticVersion.major(), semanticVersion.minor());
+    final var previousSemanticVersion =
+        SemanticVersion.parse(VersionUtil.getPreviousVersion()).get();
+    previousMinorSnapshotVersion =
+        "%d.%d-SNAPSHOT"
+            .formatted(previousSemanticVersion.major(), previousSemanticVersion.minor());
   }
 
   @BeforeEach
@@ -72,7 +77,7 @@ class SchemaUpdateIT {
                     : OPENSEARCH_NETWORK_ALIAS,
                 9200);
     try (final var previousVersionContainer =
-        new GenericContainer<>("camunda/camunda:%s".formatted(PREVIOUS_VERSION))
+        new GenericContainer<>("camunda/camunda:%s".formatted(previousMinorSnapshotVersion))
             .withNetwork(Network.SHARED)
             .withExposedPorts(9600)
             .waitingFor(

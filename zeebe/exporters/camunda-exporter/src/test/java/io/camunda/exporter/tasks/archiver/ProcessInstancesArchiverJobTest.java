@@ -51,6 +51,7 @@ final class ProcessInstancesArchiverJobTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
+    assertThat(repository.moves).isEmpty();
   }
 
   @Test
@@ -63,6 +64,7 @@ final class ProcessInstancesArchiverJobTest {
 
     // then
     assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
+    assertThat(repository.moves).isEmpty();
   }
 
   @Test

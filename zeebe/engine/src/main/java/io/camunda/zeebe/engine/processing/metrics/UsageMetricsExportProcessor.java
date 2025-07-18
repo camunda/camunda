@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
@@ -22,6 +23,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,61 +47,115 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
     this.keyGenerator = keyGenerator;
   }
 
-  private List<UsageMetricRecord> divideRecord(final UsageMetricRecord record) {
-    final var size = record.getValues().size();
-    final int halfCapacity = (int) Math.ceil(size / 2.0f);
-    final var values1 = new HashMap<String, Long>(halfCapacity);
-    final var values2 = new HashMap<String, Long>(halfCapacity);
+  @Override
+  public void processRecord(final TypedRecord<UsageMetricRecord> usageMetricRecord) {
 
-    record
-        .getValues()
-        .forEach(
-            (tenantId, value) -> {
-              if (values1.size() < halfCapacity) {
-                values1.put(tenantId, value);
-              } else {
-                values2.put(tenantId, value);
-              }
-            });
+    final UsageMetricRecord eventRecord =
+        new UsageMetricRecord()
+            .setIntervalType(IntervalType.ACTIVE)
+            .setEventType(EventType.NONE)
+            .setResetTime(usageMetricRecord.getTimestamp());
+
+    final var bucket = usageMetricState.getActiveBucket();
+    if (bucket == null) {
+      appendFollowUpEvent(eventRecord);
+      return;
+    }
+
+    final var isRPIMapEmpty = bucket.getTenantRPIMap().isEmpty();
+    final var isEDIMapEmpty = bucket.getTenantEDIMap().isEmpty();
+    final var isTUMapEmpty = bucket.getTenantTUMap().isEmpty();
+
+    if (!isRPIMapEmpty || !isEDIMapEmpty || !isTUMapEmpty) {
+      processMetricType(
+          bucket, eventRecord, EventType.RPI, isRPIMapEmpty, bucket.getTenantRPIMapValue());
+      processMetricType(
+          bucket, eventRecord, EventType.EDI, isEDIMapEmpty, bucket.getTenantEDIMapValue());
+      processMetricType(
+          bucket, eventRecord, EventType.TU, isTUMapEmpty, bucket.getTenantTUMapValue());
+    } else {
+      appendFollowUpEvent(eventRecord);
+    }
+  }
+
+  /** Processes a specific metric type and appends the resulting records. */
+  private void processMetricType(
+      final PersistedUsageMetrics bucket,
+      final UsageMetricRecord baseRecord,
+      final EventType eventType,
+      final boolean valuesMapIsEmpty,
+      final DirectBuffer valuesBuffer) {
+    if (!valuesMapIsEmpty) {
+      final UsageMetricRecord clonedRecord = initializeEventRecord(baseRecord);
+      enhanceEventRecord(clonedRecord, bucket, eventType, valuesBuffer);
+      checkRecordLength(clonedRecord).forEach(this::appendFollowUpEvent);
+    }
+  }
+
+  /** Creates a UsageMetricRecord with original properties. */
+  private UsageMetricRecord initializeEventRecord(final UsageMetricRecord original) {
+    return new UsageMetricRecord()
+        .setIntervalType(original.getIntervalType())
+        .setEventType(original.getEventType())
+        .setResetTime(original.getResetTime());
+  }
+
+  /** Composes the event record with additional information. */
+  private void enhanceEventRecord(
+      final UsageMetricRecord usageMetricRecord,
+      final PersistedUsageMetrics bucket,
+      final EventType eventType,
+      final DirectBuffer valuesBuffer) {
+    usageMetricRecord
+        .setEventType(eventType)
+        .setStartTime(bucket.getFromTime())
+        .setEndTime(bucket.getToTime());
+    if (eventType == EventType.TU) {
+      usageMetricRecord.setSetValues(valuesBuffer);
+    } else {
+      usageMetricRecord.setCounterValues(valuesBuffer);
+    }
+  }
+
+  private List<UsageMetricRecord> divideRecord(final UsageMetricRecord usageMetricRecord) {
+
+    final var setValues = usageMetricRecord.getSetValues();
+    final var size = setValues.size();
+    if (size <= 1) {
+      return List.of(usageMetricRecord);
+    }
+
+    final int halfCapacity = (int) Math.ceil(size / 2.0f);
+    final var values1 = new HashMap<String, Set<String>>(halfCapacity);
+    final var values2 = new HashMap<String, Set<String>>(halfCapacity);
+
+    setValues.forEach(
+        (tenantId, value) -> {
+          if (values1.size() < halfCapacity) {
+            values1.put(tenantId, value);
+          } else {
+            values2.put(tenantId, value);
+          }
+        });
 
     final var record1 =
-        UsageMetricRecord.copyWithoutValues(record)
-            .setValues(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(values1)));
+        UsageMetricRecord.copyWithoutValues(usageMetricRecord)
+            .setSetValues(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(values1)));
     final var record2 =
-        UsageMetricRecord.copyWithoutValues(record)
-            .setValues(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(values2)));
+        UsageMetricRecord.copyWithoutValues(usageMetricRecord)
+            .setSetValues(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(values2)));
 
     final var result = new ArrayList<>(checkRecordLength(record1));
     result.addAll(checkRecordLength(record2));
     return result;
   }
 
-  private List<UsageMetricRecord> checkRecordLength(final UsageMetricRecord record) {
-    if (!stateWriter.canWriteEventOfLength(record.getLength())) {
-      return divideRecord(record);
+  private List<UsageMetricRecord> checkRecordLength(final UsageMetricRecord usageMetricRecord) {
+    if (!stateWriter.canWriteEventOfLength(usageMetricRecord.getLength())
+        && EventType.TU.equals(usageMetricRecord.getEventType())) {
+      return divideRecord(usageMetricRecord);
     }
-    return List.of(record);
-  }
-
-  @Override
-  public void processRecord(final TypedRecord<UsageMetricRecord> record) {
-
-    final UsageMetricRecord eventRecord =
-        new UsageMetricRecord()
-            .setIntervalType(IntervalType.ACTIVE)
-            .setEventType(EventType.NONE)
-            .setResetTime(record.getTimestamp());
-
-    final var bucket = usageMetricState.getActiveBucket();
-    if (bucket != null && !bucket.getTenantRPIMap().isEmpty()) {
-      eventRecord
-          .setEventType(EventType.RPI)
-          .setStartTime(bucket.getFromTime())
-          .setEndTime(bucket.getToTime())
-          .setValues(bucket.getTenantRPIMapValue());
-    }
-
-    checkRecordLength(eventRecord).forEach(this::appendFollowUpEvent);
+    return List.of(usageMetricRecord);
   }
 
   private void appendFollowUpEvent(final UsageMetricRecord eventRecord) {

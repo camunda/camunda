@@ -9,9 +9,9 @@ package io.camunda.application;
 
 import static io.camunda.zeebe.protocol.impl.record.RecordMetadata.CURRENT_BROKER_VERSION;
 
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.initializers.StandaloneSchemaManagerInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;

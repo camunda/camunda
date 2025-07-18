@@ -17,8 +17,8 @@ import io.camunda.operate.JacksonConfig;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.ProcessReader;
@@ -40,12 +40,11 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
     classes = {
       TestApplicationWithNoBeans.class,
       ProcessRestService.class,
-      OperateProperties.class,
       OperateProfileService.class,
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      OperateProperties.class
+      TestOperatePropertiesOverride.class
     })
 public class ProcessRestServiceIT extends OperateAbstractIT {
 

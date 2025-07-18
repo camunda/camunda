@@ -28,6 +28,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -45,6 +46,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = UserTaskController.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
@@ -83,7 +85,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }""";
 
@@ -113,7 +116,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         "page": {
           "totalItems": 2,
           "startCursor": "0",
-          "endCursor": "1"
+          "endCursor": "1",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -240,9 +244,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     // Mock the behavior for an invalid userTaskKey to throw NotFoundException
     when(userTaskServices.getByKey(INVALID_USER_TASK_KEY))
         .thenThrow(
-            new CamundaSearchException(
-                String.format("User Task with key %d not found", INVALID_USER_TASK_KEY),
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    String.format("User Task with key %d not found", INVALID_USER_TASK_KEY),
+                    CamundaSearchException.Reason.NOT_FOUND)));
   }
 
   @Test
@@ -259,7 +264,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
   }
@@ -282,7 +287,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
   }
@@ -318,7 +323,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices)
         .search(
@@ -367,7 +372,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -410,7 +415,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -454,7 +459,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -497,7 +502,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -539,7 +544,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -581,7 +586,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -622,7 +627,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -662,7 +667,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
   }
@@ -678,7 +683,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(USER_TASK_ITEM_JSON);
+        .json(USER_TASK_ITEM_JSON, JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(VALID_USER_TASK_KEY);
@@ -722,7 +727,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(FORM_ITEM_JSON);
+        .json(FORM_ITEM_JSON, JsonCompareMode.STRICT);
 
     verify(userTaskServices).getUserTaskForm(VALID_FORM_KEY);
   }
@@ -731,8 +736,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   public void shouldReturn404ForFormInvalidUserTaskKey() {
     when(userTaskServices.getUserTaskForm(INVALID_USER_TASK_KEY))
         .thenThrow(
-            new CamundaSearchException(
-                "User Task with key 999 not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "User Task with key 999 not found", CamundaSearchException.Reason.NOT_FOUND)));
     webClient
         .get()
         .uri("/v2/user-tasks/{userTaskKey}/form", INVALID_USER_TASK_KEY)
@@ -804,7 +810,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_VARIABLE_RESULT_JSON);
+        .json(EXPECTED_VARIABLE_RESULT_JSON, JsonCompareMode.STRICT);
 
     verify(userTaskServices)
         .searchUserTaskVariables(
@@ -861,7 +867,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
   }

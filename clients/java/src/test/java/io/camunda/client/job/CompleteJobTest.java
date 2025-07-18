@@ -18,9 +18,10 @@ package io.camunda.client.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.command.CompleteJobCommandStep1;
-import io.camunda.client.api.command.CompleteJobResult;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CompleteJobResponse;
+import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import io.camunda.client.util.ClientTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
@@ -37,6 +38,8 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public final class CompleteJobTest extends ClientTest {
+
+  public static final String USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK.getValue();
 
   @Test
   public void shouldCompleteJobByKey() {
@@ -194,7 +197,11 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().send().join();
+    client
+        .newCompleteCommand(job)
+        .withResult(CompleteJobCommandJobResultStep::forUserTask)
+        .send()
+        .join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -212,7 +219,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().deny(false).send().join();
+    client.newCompleteCommand(job).withResult(r -> r.forUserTask().deny(false)).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -232,9 +239,8 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .deny(true)
-        .deniedReason("Reason to deny lifecycle transition")
+        .withResult(
+            r -> r.forUserTask().deny(true).deniedReason("Reason to deny lifecycle transition"))
         .send()
         .join();
 
@@ -257,8 +263,7 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .deny(true, "Reason to deny lifecycle transition")
+        .withResult(r -> r.forUserTask().deny(true, "Reason to deny lifecycle transition"))
         .send()
         .join();
 
@@ -279,7 +284,7 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult(r -> r.deny(false)).send().join();
+    client.newCompleteCommand(job).withResult(r -> r.forUserTask().deny(false)).send().join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -299,7 +304,8 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult(r -> r.deny(true).deniedReason("Reason to deny lifecycle transition"))
+        .withResult(
+            r -> r.forUserTask().deny(true).deniedReason("Reason to deny lifecycle transition"))
         .send()
         .join();
 
@@ -322,9 +328,7 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .deny(false)
-        .resultDone()
+        .withResult(r -> r.forUserTask().deny(false))
         .variable("we_can", "still_set_vars")
         .send()
         .join();
@@ -348,13 +352,15 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .correctAssignee("Test")
-        .correctDueDate("due date")
-        .correctFollowUpDate("follow up date")
-        .correctCandidateUsers(Arrays.asList("User A", "User B"))
-        .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
-        .correctPriority(80)
+        .withResult(
+            r ->
+                r.forUserTask()
+                    .correctAssignee("Test")
+                    .correctDueDate("due date")
+                    .correctFollowUpDate("follow up date")
+                    .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                    .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
+                    .correctPriority(80))
         .send()
         .join();
 
@@ -366,6 +372,9 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
+                    .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")
@@ -398,12 +407,14 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .correctAssignee("Test")
-        .correctDueDate("due date")
-        .correctFollowUpDate("")
-        .correctCandidateUsers(Arrays.asList("User A", "User B"))
-        .correctPriority(80)
+        .withResult(
+            r ->
+                r.forUserTask()
+                    .correctAssignee("Test")
+                    .correctDueDate("due date")
+                    .correctFollowUpDate("")
+                    .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                    .correctPriority(80))
         .send()
         .join();
 
@@ -415,6 +426,9 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
+                    .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")
@@ -443,13 +457,15 @@ public final class CompleteJobTest extends ClientTest {
     // when
     client
         .newCompleteCommand(job)
-        .withResult()
-        .correctAssignee(null)
-        .correctDueDate(null)
-        .correctFollowUpDate(null)
-        .correctCandidateGroups(null)
-        .correctCandidateUsers(null)
-        .correctPriority(null)
+        .withResult(
+            r ->
+                r.forUserTask()
+                    .correctAssignee(null)
+                    .correctDueDate(null)
+                    .correctFollowUpDate(null)
+                    .correctCandidateGroups(null)
+                    .correctCandidateUsers(null)
+                    .correctPriority(null))
         .send()
         .join();
 
@@ -461,6 +477,9 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
+                    .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .clearAssignee()
@@ -488,13 +507,14 @@ public final class CompleteJobTest extends ClientTest {
     client
         .newCompleteCommand(job)
         .withResult(
-            new CompleteJobResult()
-                .deny(false)
-                .correctAssignee("Test")
-                .correctDueDate(null)
-                .correctFollowUpDate("")
-                .correctCandidateUsers(Arrays.asList("User A", "User B"))
-                .correctPriority(80))
+            r ->
+                r.forUserTask()
+                    .deny(false)
+                    .correctAssignee("Test")
+                    .correctDueDate(null)
+                    .correctFollowUpDate("")
+                    .correctCandidateUsers(Arrays.asList("User A", "User B"))
+                    .correctPriority(80))
         .send()
         .join();
 
@@ -506,6 +526,7 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
                     .setDenied(false)
                     .setDeniedReason("")
                     .setCorrections(
@@ -538,15 +559,16 @@ public final class CompleteJobTest extends ClientTest {
     client
         .newCompleteCommand(job)
         .withResult(
-            new CompleteJobResult()
-                .deny(false)
-                .correct(
-                    c ->
-                        c.assignee("Test")
-                            .dueDate(null)
-                            .followUpDate("")
-                            .candidateUsers(Arrays.asList("User A", "User B"))
-                            .priority(80)))
+            r ->
+                r.forUserTask()
+                    .deny(false)
+                    .correct(
+                        c ->
+                            c.assignee("Test")
+                                .dueDate(null)
+                                .followUpDate("")
+                                .candidateUsers(Arrays.asList("User A", "User B"))
+                                .priority(80)))
         .send()
         .join();
 
@@ -558,6 +580,7 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
                     .setDenied(false)
                     .setDeniedReason("")
                     .setCorrections(
@@ -587,7 +610,11 @@ public final class CompleteJobTest extends ClientTest {
     Mockito.when(job.getKey()).thenReturn(12L);
 
     // when
-    client.newCompleteCommand(job).withResult().send().join();
+    client
+        .newCompleteCommand(job)
+        .withResult(CompleteJobCommandJobResultStep::forUserTask)
+        .send()
+        .join();
 
     // then
     final CompleteJobRequest request = gatewayService.getLastRequest();
@@ -597,6 +624,9 @@ public final class CompleteJobTest extends ClientTest {
             .setJobKey(job.getKey())
             .setResult(
                 JobResult.newBuilder()
+                    .setType(USER_TASK_DISCRIMINATOR)
+                    .setDenied(false)
+                    .setDeniedReason("")
                     .setCorrections(JobResultCorrections.newBuilder().build())
                     .build())
             .build();

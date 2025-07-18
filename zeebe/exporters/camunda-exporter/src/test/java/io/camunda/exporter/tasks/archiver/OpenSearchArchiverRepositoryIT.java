@@ -10,7 +10,6 @@ package io.camunda.exporter.tasks.archiver;
 import static io.camunda.search.test.utils.SearchDBExtension.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -59,7 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 @SuppressWarnings("resource")
 final class OpenSearchArchiverRepositoryIT {
@@ -594,12 +593,12 @@ final class OpenSearchArchiverRepositoryIT {
     } else {
       final URI uri = URI.create(isAWSRun);
       final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-      final String region = new DefaultAwsRegionProviderChain().getRegion();
+      final var region = new DefaultAwsRegionProviderChain().getRegion();
       return new OpenSearchClient(
           new AwsSdk2Transport(
               httpClient,
               uri.getHost(),
-              Region.of(region),
+              region,
               AwsSdk2TransportOptions.builder()
                   .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
                   .build()));
@@ -613,12 +612,12 @@ final class OpenSearchArchiverRepositoryIT {
     } else {
       final URI uri = URI.create(isAWSRun);
       final SdkHttpClient httpClient = ApacheHttpClient.builder().build();
-      final String region = new DefaultAwsRegionProviderChain().getRegion();
+      final var region = new DefaultAwsRegionProviderChain().getRegion();
       return new OpenSearchAsyncClient(
           new AwsSdk2Transport(
               httpClient,
               uri.getHost(),
-              Region.of(region),
+              region,
               AwsSdk2TransportOptions.builder()
                   .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
                   .build()));

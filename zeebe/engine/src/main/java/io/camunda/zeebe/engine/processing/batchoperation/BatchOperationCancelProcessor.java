@@ -32,6 +32,10 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Processes commands to cancel batch operations. It validates the command and checks for
+ * authorization. The CANCEL command is then distributed to all other partitions.
+ */
 @ExcludeAuthorizationCheck
 public final class BatchOperationCancelProcessor
     implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {

@@ -14,10 +14,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.MappingSearchClient;
-import io.camunda.search.entities.MappingEntity;
-import io.camunda.search.filter.MappingFilter;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.clients.MappingRuleSearchClient;
+import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.filter.MappingRuleFilter;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -44,19 +44,19 @@ public class MappingServicesTest {
   ArgumentCaptor<BrokerMappingDeleteRequest> mappingDeleteRequestArgumentCaptor;
   ArgumentCaptor<BrokerMappingUpdateRequest> mappingUpdateRequestArgumentCaptor;
   private MappingServices services;
-  private MappingSearchClient client;
+  private MappingRuleSearchClient client;
   private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
-  private SearchQueryResult<MappingEntity> result;
+  private SearchQueryResult<MappingRuleEntity> result;
 
   @BeforeEach
   public void before() {
     authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
     stubbedBrokerClient = new StubbedBrokerClient();
-    client = mock(MappingSearchClient.class);
+    client = mock(MappingRuleSearchClient.class);
     result = mock(SearchQueryResult.class);
     when(client.withSecurityContext(any())).thenReturn(client);
-    when(client.searchMappings(any())).thenReturn(result);
+    when(client.searchMappingRules(any())).thenReturn(result);
     mappingDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingDeleteRequest.class);
     mappingUpdateRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerMappingUpdateRequest.class);
     services =
@@ -87,9 +87,9 @@ public class MappingServicesTest {
   public void shouldEmptyQueryReturnRoles() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchMappings(any())).thenReturn(result);
+    when(client.searchMappingRules(any())).thenReturn(result);
 
-    final MappingFilter filter = new MappingFilter.Builder().build();
+    final MappingRuleFilter filter = new MappingRuleFilter.Builder().build();
     final var searchQuery = SearchQueryBuilders.mappingSearchQuery((b) -> b.filter(filter));
 
     // when
@@ -102,20 +102,20 @@ public class MappingServicesTest {
   @Test
   public void shouldReturnSingleVariable() {
     // given
-    final var entity = mock(MappingEntity.class);
+    final var entity = mock(MappingRuleEntity.class);
     final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchMappings(any())).thenReturn(result);
+    when(client.searchMappingRules(any())).thenReturn(result);
   }
 
   @Test
   public void shouldReturnSingleVariableForFind() {
     // given
-    final var entity = mock(MappingEntity.class);
+    final var entity = mock(MappingRuleEntity.class);
     final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchMappings(any())).thenReturn(result);
+    when(client.searchMappingRules(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getMapping("mappingId");
+    final var searchQueryResult = services.getMapping("mappingRuleId");
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -184,9 +184,10 @@ public class MappingServicesTest {
     // when
     services.getMatchingMappings(claims);
     // then
-    final ArgumentCaptor<MappingQuery> queryCaptor = ArgumentCaptor.forClass(MappingQuery.class);
-    verify(client, times(1)).searchMappings(queryCaptor.capture());
-    final MappingQuery query = queryCaptor.getValue();
+    final ArgumentCaptor<MappingRuleQuery> queryCaptor =
+        ArgumentCaptor.forClass(MappingRuleQuery.class);
+    verify(client, times(1)).searchMappingRules(queryCaptor.capture());
+    final MappingRuleQuery query = queryCaptor.getValue();
     assertThat(query.filter().claimName()).isNull();
     assertThat(query.filter().claimValue()).isNull();
     assertThat(query.filter().name()).isNull();

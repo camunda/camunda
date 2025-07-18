@@ -28,6 +28,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(SignalController.class)
@@ -85,7 +86,7 @@ public class SignalControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE);
+    response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(signalServices)
         .broadcastSignal("signalName", Map.of("key", "value"), "tenantId");
   }
@@ -154,7 +155,7 @@ public class SignalControllerTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE);
+    response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
     Mockito.verify(signalServices).broadcastSignal("", Map.of("key", "value"), "tenantId");
   }
 
@@ -190,7 +191,7 @@ public class SignalControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest()
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   private CompletableFuture<BrokerResponse<SignalRecord>> buildSignalResponse(

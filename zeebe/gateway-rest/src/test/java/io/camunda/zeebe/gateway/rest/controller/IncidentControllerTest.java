@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
-import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -27,6 +27,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(IncidentController.class)
 public class IncidentControllerTest extends RestControllerTest {
@@ -76,7 +77,7 @@ public class IncidentControllerTest extends RestControllerTest {
     Mockito.when(incidentServices.resolveIncident(anyLong(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new CamundaBrokerException(
+                ErrorMapper.mapBrokerRejection(
                     new BrokerRejection(
                         IncidentIntent.RESOLVE,
                         1L,
@@ -106,7 +107,7 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verify(incidentServices).resolveIncident(1L, null);
   }

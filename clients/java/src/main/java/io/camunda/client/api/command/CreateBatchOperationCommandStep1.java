@@ -72,11 +72,32 @@ public interface CreateBatchOperationCommandStep1 {
   interface ProcessInstanceMigrationStep<E extends SearchRequestFilter>
       extends CreateBatchOperationCommandStep2<E> {
 
+    /**
+     * Sets the whole migration plan for the batch operation. The migration plan contains the
+     * detailed instructions how to migrate single active elements from the source process
+     * definition to the target process definition.
+     *
+     * @param migrationPlan the migration plan to use for the batch operation
+     * @return the builder for fluent use
+     */
     ProcessInstanceMigrationStep<E> migrationPlan(MigrationPlan migrationPlan);
 
+    /**
+     * Adds a single migration mapping instruction to the command.
+     *
+     * @param sourceElementId the id of the source element to migrate
+     * @param targetElementId the id of the target element to migrate into
+     * @return the builder for fluent use
+     */
     ProcessInstanceMigrationStep<E> addMappingInstruction(
         String sourceElementId, String targetElementId);
 
+    /**
+     * Sets the target process definition key for the migration.
+     *
+     * @param targetProcessDefinitionKey the key of the target process definition to migrate to
+     * @return the builder for fluent use
+     */
     ProcessInstanceMigrationStep<E> targetProcessDefinitionKey(long targetProcessDefinitionKey);
   }
 

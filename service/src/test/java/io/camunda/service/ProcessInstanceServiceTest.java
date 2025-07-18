@@ -34,7 +34,8 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -151,10 +152,11 @@ public final class ProcessInstanceServiceTest {
     // when
     final Executable executeGetByKey = () -> services.getByKey(1L);
     // then
-    final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
+    final var exception = assertThrowsExactly(ServiceException.class, executeGetByKey);
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+    assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
   }
 
   @Test
@@ -448,10 +450,11 @@ public final class ProcessInstanceServiceTest {
     final Executable executeGetByKey = () -> services.searchIncidents(processInstanceKey, query);
 
     // then
-    final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
+    final var exception = assertThrowsExactly(ServiceException.class, executeGetByKey);
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+    assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
     verifyNoInteractions(incidentSearchClient);
   }
 }

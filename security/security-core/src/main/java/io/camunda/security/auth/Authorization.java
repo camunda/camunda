@@ -31,14 +31,25 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
 import java.util.function.Function;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public record Authorization(
     @JsonProperty("resource_type") AuthorizationResourceType resourceType,
-    @JsonProperty("permission_type") PermissionType permissionType) {
+    @JsonProperty("permission_type") PermissionType permissionType,
+    @JsonProperty("resource_ids") List<String> resourceIds) {
 
   public static final String WILDCARD = "*";
+
+  public static Authorization withResourceIds(
+      final Authorization authorization, final List<String> resourceIds) {
+    return of(
+        b ->
+            b.resourceType(authorization.resourceType())
+                .permissionType(authorization.permissionType())
+                .resourceIds(resourceIds));
+  }
 
   public static Authorization of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
@@ -47,6 +58,7 @@ public record Authorization(
   public static class Builder {
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
+    private List<String> resourceIds;
 
     public Builder resourceType(final AuthorizationResourceType resourceType) {
       this.resourceType = resourceType;
@@ -70,7 +82,7 @@ public record Authorization(
       return resourceType(DECISION_REQUIREMENTS_DEFINITION);
     }
 
-    public Builder mapping() {
+    public Builder mappingRule() {
       return resourceType(MAPPING_RULE);
     }
 
@@ -134,8 +146,17 @@ public record Authorization(
       return resourceType(BATCH_OPERATION);
     }
 
+    public Builder resourceId(final String resourceId) {
+      return resourceIds(List.of(resourceId));
+    }
+
+    public Builder resourceIds(final List<String> resourceIds) {
+      this.resourceIds = resourceIds;
+      return this;
+    }
+
     public Authorization build() {
-      return new Authorization(resourceType, permissionType);
+      return new Authorization(resourceType, permissionType, resourceIds);
     }
   }
 }

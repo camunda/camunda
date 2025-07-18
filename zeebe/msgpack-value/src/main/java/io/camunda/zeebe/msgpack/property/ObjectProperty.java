@@ -8,9 +8,14 @@
 package io.camunda.zeebe.msgpack.property;
 
 import io.camunda.zeebe.msgpack.value.ObjectValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 
 public final class ObjectProperty<T extends ObjectValue> extends BaseProperty<T> {
   public ObjectProperty(final String key, final T objectValue) {
+    super(key, objectValue, objectValue);
+  }
+
+  public ObjectProperty(final StringValue key, final T objectValue) {
     super(key, objectValue, objectValue);
   }
 

@@ -8,8 +8,13 @@
 package io.camunda.webapps.schema.entities.usertask;
 
 public enum TaskState {
+  CREATING,
   CREATED,
+  ASSIGNING,
+  UPDATING,
+  COMPLETING,
   COMPLETED,
+  CANCELING,
   CANCELED,
   FAILED
 }

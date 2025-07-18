@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration.Type;
@@ -14,6 +15,7 @@ import io.camunda.migration.identity.client.ManagementIdentityClient;
 import java.io.IOException;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -53,6 +55,13 @@ public class ManagementIdentityConnectorConfig {
       case KEYCLOAK -> Type.KEYCLOAK.name();
       default -> Type.AUTH0.name();
     };
+  }
+
+  @Bean
+  public Jackson2ObjectMapperBuilderCustomizer jsonCustomizer() {
+    return builder ->
+        builder.featuresToEnable(
+            DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE);
   }
 
   @Bean

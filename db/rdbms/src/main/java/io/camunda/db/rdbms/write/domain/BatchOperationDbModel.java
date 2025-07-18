@@ -16,7 +16,7 @@ import java.util.function.Function;
 
 public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
 
-  private String batchOperationId;
+  private String batchOperationKey;
   private BatchOperationState state;
   private String operationType;
   private OffsetDateTime startDate;
@@ -27,7 +27,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
   private List<BatchOperationErrorDbModel> errors = new ArrayList<>();
 
   public BatchOperationDbModel(
-      final String batchOperationId,
+      final String batchOperationKey,
       final BatchOperationState state,
       final String operationType,
       final OffsetDateTime startDate,
@@ -35,7 +35,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       final Integer operationsTotalCount,
       final Integer operationsFailedCount,
       final Integer operationsCompletedCount) {
-    this.batchOperationId = batchOperationId;
+    this.batchOperationKey = batchOperationKey;
     this.state = state;
     this.operationType = operationType;
     this.startDate = startDate;
@@ -46,7 +46,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
   }
 
   public BatchOperationDbModel(
-      final String batchOperationId,
+      final String batchOperationKey,
       final BatchOperationState state,
       final String operationType,
       final OffsetDateTime startDate,
@@ -55,7 +55,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       final Integer operationsFailedCount,
       final Integer operationsCompletedCount,
       final List<BatchOperationErrorDbModel> errors) {
-    this.batchOperationId = batchOperationId;
+    this.batchOperationKey = batchOperationKey;
     this.state = state;
     this.operationType = operationType;
     this.startDate = startDate;
@@ -75,12 +75,12 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
 
   // Methods without get/set prefix
 
-  public String batchOperationId() {
-    return batchOperationId;
+  public String batchOperationKey() {
+    return batchOperationKey;
   }
 
-  public void batchOperationId(final String batchOperationId) {
-    this.batchOperationId = batchOperationId;
+  public void batchOperationKey(final String batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
   }
 
   public BatchOperationState state() {
@@ -149,7 +149,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
 
   public Builder toBuilder() {
     return new Builder()
-        .batchOperationId(batchOperationId)
+        .batchOperationKey(batchOperationKey)
         .state(state)
         .operationType(operationType)
         .startDate(startDate)
@@ -161,7 +161,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
   }
 
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
-    private String batchOperationId;
+    private String batchOperationKey;
     private BatchOperationState state;
     private String operationType;
     private OffsetDateTime startDate;
@@ -178,8 +178,8 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
       return fn.apply(new Builder()).build();
     }
 
-    public Builder batchOperationId(final String batchOperationId) {
-      this.batchOperationId = batchOperationId;
+    public Builder batchOperationKey(final String batchOperationKey) {
+      this.batchOperationKey = batchOperationKey;
       return this;
     }
 
@@ -226,7 +226,7 @@ public class BatchOperationDbModel implements Copyable<BatchOperationDbModel> {
     @Override
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
-          batchOperationId,
+          batchOperationKey,
           state,
           operationType,
           startDate,

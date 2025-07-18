@@ -39,6 +39,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(SetupController.class)
 class SetupControllerTest extends RestControllerTest {
@@ -111,7 +112,7 @@ class SetupControllerTest extends RestControllerTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN, SetupController.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
-    expectedBody.setTitle("io.camunda.service.exception.ForbiddenException");
+    expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
 
     webClient
@@ -136,7 +137,7 @@ class SetupControllerTest extends RestControllerTest {
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN, SetupController.ADMIN_EXISTS_ERROR_MESSAGE);
-    expectedBody.setTitle("io.camunda.service.exception.ForbiddenException");
+    expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
 
     webClient
@@ -368,6 +369,6 @@ class SetupControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest()
         .expectBody()
-        .json(expectedError);
+        .json(expectedError, JsonCompareMode.STRICT);
   }
 }

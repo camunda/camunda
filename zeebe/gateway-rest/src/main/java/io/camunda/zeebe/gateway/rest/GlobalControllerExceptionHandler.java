@@ -10,10 +10,12 @@ package io.camunda.zeebe.gateway.rest;
 import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import io.camunda.service.exception.ServiceException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.CompletionException;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -116,10 +118,28 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ProblemDetail> handleAllExceptions(
       final Exception ex, final HttpServletRequest request) {
-    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
     final ProblemDetail problemDetail =
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     problemDetail.setInstance(URI.create(request.getRequestURI()));
-    return ResponseEntity.of(problemDetail).build();
+    return RestErrorMapper.mapProblemToResponse(problemDetail);
+  }
+
+  @ExceptionHandler(ServiceException.class)
+  public ResponseEntity<ProblemDetail> handleServiceException(
+      final ServiceException ex, final HttpServletRequest request) {
+    return getProblemDetailResponseEntity(ex, request);
+  }
+
+  @ExceptionHandler(CompletionException.class)
+  public ResponseEntity<ProblemDetail> handleCompletionException(
+      final CompletionException ex, final HttpServletRequest request) {
+    return getProblemDetailResponseEntity(ex, request);
+  }
+
+  private static ResponseEntity<ProblemDetail> getProblemDetailResponseEntity(
+      final Exception ex, final HttpServletRequest request) {
+    final ProblemDetail problemDetail = RestErrorMapper.mapErrorToProblem(ex);
+    problemDetail.setInstance(URI.create(request.getRequestURI()));
+    return RestErrorMapper.mapProblemToResponse(problemDetail);
   }
 }

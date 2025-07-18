@@ -48,6 +48,17 @@ const runningOrderProcessInstance: InstanceMock = {
       sortValues: [''],
     },
   ],
+  variablesV2: [
+    {
+      variableKey: '2251799813687144-signalNumber',
+      name: 'orderNumber',
+      value: '47',
+      isTruncated: false,
+      tenantId: '',
+      processInstanceKey: '2251799813687144',
+      scopeKey: '2251799813687144',
+    },
+  ],
   sequenceFlows: [
     {
       processInstanceId: '225179981395430',

@@ -20,6 +20,10 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.Set;
 import org.immutables.value.Value;
 
+/**
+ * A record value that represents the execution of a batch operation. It contains a set of item keys
+ * that are being or were processed as part of the batch operation.
+ */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationExecutionRecordValue.Builder.class)
 public interface BatchOperationExecutionRecordValue extends BatchOperationRelated, RecordValue {

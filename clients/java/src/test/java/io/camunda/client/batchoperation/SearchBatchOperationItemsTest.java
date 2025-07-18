@@ -33,7 +33,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     // when
     client
         .newBatchOperationItemsSearchRequest()
-        .filter(f -> f.batchOperationId("123"))
+        .filter(f -> f.batchOperationKey("123"))
         .sort(s -> s.state().asc())
         .send()
         .join();
@@ -44,7 +44,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     assertThat(restRequest.getUrl()).isEqualTo("/v2/batch-operation-items/search");
     assertThat(restRequest.getBodyAsString())
         .isEqualTo(
-            "{\"sort\":[{\"field\":\"state\",\"order\":\"ASC\"}],\"filter\":{\"batchOperationId\":{\"$eq\":\"123\",\"$in\":[],\"$notIn\":[]}}}");
+            "{\"sort\":[{\"field\":\"state\",\"order\":\"ASC\"}],\"filter\":{\"batchOperationKey\":{\"$eq\":\"123\",\"$in\":[],\"$notIn\":[]}}}");
   }
 
   @Test
@@ -65,7 +65,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
         .newBatchOperationItemsSearchRequest()
         .filter(
             f ->
-                f.batchOperationId("123")
+                f.batchOperationKey("123")
                     .state(BatchOperationItemState.ACTIVE)
                     .processInstanceKey(123L)
                     .itemKey(456L))
@@ -75,7 +75,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     // then
     final BatchOperationItemSearchQuery request =
         gatewayService.getLastRequest(BatchOperationItemSearchQuery.class);
-    assertThat(request.getFilter().getBatchOperationId().get$Eq()).isEqualTo("123");
+    assertThat(request.getFilter().getBatchOperationKey().get$Eq()).isEqualTo("123");
     assertThat(request.getFilter().getState().get$Eq())
         .isEqualTo(BatchOperationItemStateEnum.ACTIVE);
     assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("123");
@@ -89,7 +89,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
         .newBatchOperationItemsSearchRequest()
         .sort(
             s ->
-                s.batchOperationId()
+                s.batchOperationKey()
                     .asc()
                     .state()
                     .asc()
@@ -104,7 +104,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     final BatchOperationItemSearchQuery request =
         gatewayService.getLastRequest(BatchOperationItemSearchQuery.class);
     assertThat(request.getSort().size()).isEqualTo(4);
-    assertThat(request.getSort().get(0).getField()).isEqualTo(FieldEnum.BATCH_OPERATION_ID);
+    assertThat(request.getSort().get(0).getField()).isEqualTo(FieldEnum.BATCH_OPERATION_KEY);
     assertThat(request.getSort().get(0).getOrder()).isEqualTo(SortOrderEnum.ASC);
     assertThat(request.getSort().get(1).getField()).isEqualTo(FieldEnum.STATE);
     assertThat(request.getSort().get(1).getOrder()).isEqualTo(SortOrderEnum.ASC);

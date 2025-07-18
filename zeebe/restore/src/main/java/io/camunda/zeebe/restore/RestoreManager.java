@@ -10,7 +10,6 @@ package io.camunda.zeebe.restore;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
-import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
@@ -35,10 +34,13 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,41 +60,44 @@ public class RestoreManager {
     this.meterRegistry = meterRegistry;
   }
 
-  public CompletableFuture<Void> restore(final long backupId, final boolean validateConfig) {
-    final Path dataDirectory = Path.of(configuration.getData().getDirectory());
-    try {
-      if (!dataFolderIsEmpty(dataDirectory)) {
-        LOG.error(
-            "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
-            dataDirectory);
-        return CompletableFuture.failedFuture(
-            new DirectoryNotEmptyException(dataDirectory.toString()));
-      }
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(e);
+  public void restore(final long backupId, final boolean validateConfig)
+      throws IOException, ExecutionException, InterruptedException {
+    final var dataDirectory = Path.of(configuration.getData().getDirectory());
+    if (!dataFolderIsEmpty(dataDirectory)) {
+      LOG.error(
+          "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
+          dataDirectory);
+      throw new DirectoryNotEmptyException(dataDirectory.toString());
     }
 
-    final var partitionToRestore = collectPartitions();
+    final var partitionsToRestore = collectPartitions();
 
-    final var partitionIds = partitionToRestore.stream().map(p -> p.partition().id().id()).toList();
-    LOG.info("Restoring partitions {}", partitionIds);
-
-    return CompletableFuture.allOf(
-            partitionToRestore.stream()
-                .map(partition -> restorePartition(partition, backupId, validateConfig))
-                .toArray(CompletableFuture[]::new))
-        .<Void>thenApply(
-            ignored -> {
-              // restore Topology file
-              if (configuration.getCluster().getNodeId() == 0) {
-                restoreTopologyFile();
-              }
+    try (final var executor =
+        Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("zeebe-restore-", 0).factory())) {
+      final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
+      for (final var partition : partitionsToRestore) {
+        tasks.add(
+            () -> {
+              restorePartition(partition, backupId, validateConfig);
               return null;
-            })
-        .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
+            });
+      }
+      for (final var result : executor.invokeAll(tasks)) {
+        result.get(); // throw exception if any of the tasks failed
+      }
+
+      if (configuration.getCluster().getNodeId() == 0) {
+        restoreTopologyFile();
+      }
+    } catch (final ExecutionException | InterruptedException e) {
+      LOG.error("Failed to restore broker. Deleting data directory {}", dataDirectory, e);
+      FileUtil.deleteFolderContents(dataDirectory);
+      throw e;
+    }
   }
 
-  private void restoreTopologyFile() {
+  private void restoreTopologyFile() throws ExecutionException, InterruptedException, IOException {
     final var coordinatorId = MemberId.from("0");
     LOG.info("Restoring topology file");
     final var file =
@@ -101,52 +106,26 @@ public class RestoreManager {
     final var staticConfiguration =
         StaticConfigurationGenerator.getStaticConfiguration(configuration, coordinatorId);
     final var initializer = new StaticInitializer(staticConfiguration);
-    try {
-      // it's ok to block, it's not really async
-      final var base = initializer.initialize().get();
-      final var configuration =
-          new ClusterConfiguration(
-              base.version(),
-              base.members(),
-              base.lastChange(),
-              Optional.of(
-                  ClusterChangePlan.init(
-                      1L, List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
-              base.routingState());
-      final var persistedConfiguration =
-          PersistedClusterConfiguration.ofFile(file, new ProtoBufSerializer());
-      persistedConfiguration.update(configuration);
-      LOG.info("Successfully restored topology file {}", base);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
+    // it's ok to block, it's not really async
+    final var base = initializer.initialize().get();
+    final var configuration =
+        new ClusterConfiguration(
+            base.version(),
+            base.members(),
+            base.lastChange(),
+            Optional.of(
+                ClusterChangePlan.init(
+                    1L, List.of(new UpdateRoutingState(coordinatorId, Optional.empty())))),
+            base.routingState());
+    final var persistedConfiguration =
+        PersistedClusterConfiguration.ofFile(file, new ProtoBufSerializer());
+    persistedConfiguration.update(configuration);
+    LOG.info("Successfully restored topology file {}", base);
   }
 
-  private CompletableFuture<Void> logFailureAndDeleteDataDirectory(
-      final Path dataDirectory, final Throwable error) {
-    LOG.error("Failed to restore broker. Deleting data directory {}", dataDirectory, error);
-    try {
-      FileUtil.deleteFolderContents(dataDirectory);
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(e);
-    }
-    // Must fail because restore failed
-    return CompletableFuture.failedFuture(error);
-  }
-
-  private void logSuccessfulRestore(
-      final BackupDescriptor backup, final int partitionId, final long backupId) {
-    LOG.info(
-        "Successfully restored partition {} from backup {}. Backup description: {}",
-        partitionId,
-        backupId,
-        backup);
-  }
-
-  private CompletableFuture<Void> restorePartition(
-      final InstrumentedRaftPartition partition,
-      final long backupId,
-      final boolean validateConfig) {
+  private void restorePartition(
+      final InstrumentedRaftPartition partition, final long backupId, final boolean validateConfig)
+      throws IOException {
     final BackupValidator validator;
     final RaftPartition raftPartition = partition.partition();
 
@@ -158,15 +137,23 @@ public class RestoreManager {
     }
 
     final var registry = partition.registry();
-    return new PartitionRestoreService(
+    final var restoreService =
+        new PartitionRestoreService(
             backupStore,
             partition.partition(),
             configuration.getCluster().getNodeId(),
             new ChecksumProviderRocksDBImpl(),
-            partition.registry())
-        .restore(backupId, validator)
-        .thenAccept(backup -> logSuccessfulRestore(backup, raftPartition.id().id(), backupId))
-        .whenComplete((ok, error) -> MicrometerUtil.close(registry));
+            partition.registry());
+    try {
+      final var backup = restoreService.restore(backupId, validator);
+      LOG.info(
+          "Successfully restored partition {} from backup {}. Backup description: {}",
+          raftPartition.id().id(),
+          backupId,
+          backup);
+    } finally {
+      MicrometerUtil.close(registry);
+    }
   }
 
   private Set<InstrumentedRaftPartition> collectPartitions() {

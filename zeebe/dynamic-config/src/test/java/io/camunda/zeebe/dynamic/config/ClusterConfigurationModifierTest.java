@@ -32,27 +32,22 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 final class ClusterConfigurationModifierTest {
 
-  private final MemberId localMemberId = MemberId.from("0");
   private final ConcurrencyControl executor = new TestConcurrencyControl();
-  private final DynamicPartitionConfig config =
-      new DynamicPartitionConfig(
-          new ExportersConfig(
-              Map.of(
-                  "expA",
-                  new ExporterState(0, State.ENABLED, Optional.empty()),
-                  "expB",
-                  new ExporterState(0, State.ENABLED, Optional.empty()))));
-
-  final ClusterConfiguration currentConfiguration =
-      ClusterConfiguration.init()
-          .addMember(
-              localMemberId,
-              MemberState.initializeAsActive(
-                  Map.of(
-                      1, PartitionState.active(1, config), 2, PartitionState.active(2, config))));
 
   @Nested
   final class RoutingStateInitializerTest {
+
+    private final MemberId localMemberId = MemberId.from("0");
+    private final ClusterConfiguration currentConfiguration =
+        ClusterConfiguration.init()
+            .addMember(
+                localMemberId,
+                MemberState.initializeAsActive(
+                    Map.of(
+                        1,
+                        PartitionState.active(
+                            1, new DynamicPartitionConfig(new ExportersConfig(Map.of()))))));
+
     @Test
     void shouldNotInitializeRoutingStateIfPartitionScalingIsDisabled() {
       // given
@@ -85,20 +80,22 @@ final class ClusterConfigurationModifierTest {
 
   @Nested
   class ExporterStateInitializerTest {
+    private static final MemberId LOCAL_MEMBER_ID = MemberId.from("0");
 
     @ParameterizedTest
     @MethodSource("provideConfigs")
     void shouldUpdateExporterConfig(final ExporterConfigParameter parameter) {
       // given
       final var exporterStateInitializer =
-          new ExporterStateInitializer(parameter.configuredExporters(), localMemberId, executor);
+          new ExporterStateInitializer(parameter.configuredExporters(), LOCAL_MEMBER_ID, executor);
 
       // when
-      final var newConfiguration = exporterStateInitializer.modify(currentConfiguration).join();
+      final var newConfiguration =
+          exporterStateInitializer.modify(parameter.initialConfig()).join();
 
       // then
       ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration)
-          .member(localMemberId)
+          .member(LOCAL_MEMBER_ID)
           .hasPartitionSatisfying(
               1,
               partition ->
@@ -115,7 +112,7 @@ final class ClusterConfigurationModifierTest {
       final ClusterConfiguration currentConfiguration =
           ClusterConfiguration.init()
               .addMember(
-                  localMemberId,
+                  LOCAL_MEMBER_ID,
                   MemberState.initializeAsActive(
                       Map.of(
                           1,
@@ -134,13 +131,13 @@ final class ClusterConfigurationModifierTest {
 
       // when
       final var newConfiguration =
-          new ExporterStateInitializer(Set.of("expA", "expB"), localMemberId, executor)
+          new ExporterStateInitializer(Set.of("expA", "expB"), LOCAL_MEMBER_ID, executor)
               .modify(currentConfiguration)
               .join();
 
       // then
       ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration)
-          .member(localMemberId)
+          .member(LOCAL_MEMBER_ID)
           .hasPartitionSatisfying(
               1, partition -> PartitionStateAssert.assertThat(partition).hasConfig(expectedConfig))
           .hasPartitionSatisfying(
@@ -151,16 +148,21 @@ final class ClusterConfigurationModifierTest {
     void shouldNotUpdateMemberStateIfNoExporterChanges() {
       // when
       final var newConfiguration =
-          new ExporterStateInitializer(Set.of("expA", "expB"), localMemberId, executor)
-              .modify(currentConfiguration)
+          new ExporterStateInitializer(Set.of("expA", "expB"), LOCAL_MEMBER_ID, executor)
+              .modify(withTwoEnabledExporters())
               .join();
 
       // then
-      assertThat(newConfiguration).isEqualTo(currentConfiguration);
+      assertThat(newConfiguration).isEqualTo(withTwoEnabledExporters());
     }
 
     public static Stream<Arguments> provideConfigs() {
-      return Stream.of(exporterAdded(), exporterRemoved(), exporterAddedAndRemoved());
+      return Stream.of(
+          exporterAdded(),
+          enabledExporterRemoved(),
+          exporterAddedAndRemoved(),
+          disabledExporterConfigRemoved(),
+          exporterReadded());
     }
 
     private static Arguments exporterAddedAndRemoved() {
@@ -171,7 +173,7 @@ final class ClusterConfigurationModifierTest {
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
                       "expB",
-                      new ExporterState(0, State.DISABLED, Optional.empty()),
+                      new ExporterState(0, State.CONFIG_NOT_FOUND, Optional.empty()),
                       "exporter1",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
                       "exporter2",
@@ -181,10 +183,12 @@ final class ClusterConfigurationModifierTest {
           Named.of(
               "Exporters Added and Removed",
               new ExporterConfigParameter(
-                  Set.of("exporter1", "exporter2", "expA"), expectedConfig)));
+                  withTwoEnabledExporters(),
+                  Set.of("exporter1", "exporter2", "expA"),
+                  expectedConfig)));
     }
 
-    private static Arguments exporterRemoved() {
+    private static Arguments enabledExporterRemoved() {
       final var expectedConfig =
           new DynamicPartitionConfig(
               new ExportersConfig(
@@ -192,10 +196,12 @@ final class ClusterConfigurationModifierTest {
                       "expA",
                       new ExporterState(0, State.ENABLED, Optional.empty()),
                       "expB",
-                      new ExporterState(0, State.DISABLED, Optional.empty()))));
+                      new ExporterState(0, State.CONFIG_NOT_FOUND, Optional.empty()))));
       return Arguments.of(
           Named.of(
-              "Exporters Removed", new ExporterConfigParameter(Set.of("expA"), expectedConfig)));
+              "Enabled Exporters Removed",
+              new ExporterConfigParameter(
+                  withTwoEnabledExporters(), Set.of("expA"), expectedConfig)));
     }
 
     private static Arguments exporterAdded() {
@@ -215,10 +221,95 @@ final class ClusterConfigurationModifierTest {
           Named.of(
               "New Exporters Added",
               new ExporterConfigParameter(
-                  Set.of("expA", "expB", "exporter1", "exporter2"), expectedConfig)));
+                  withTwoEnabledExporters(),
+                  Set.of("expA", "expB", "exporter1", "exporter2"),
+                  expectedConfig)));
+    }
+
+    private static Arguments exporterReadded() {
+      final var initialConfig =
+          new DynamicPartitionConfig(
+              new ExportersConfig(
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expC",
+                      new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty()))));
+
+      final ClusterConfiguration currentConfiguration =
+          ClusterConfiguration.init()
+              .addMember(
+                  MemberId.from("0"),
+                  MemberState.initializeAsActive(
+                      Map.of(
+                          1,
+                          PartitionState.active(1, initialConfig),
+                          2,
+                          PartitionState.active(2, initialConfig))));
+
+      final var expectedConfig =
+          new DynamicPartitionConfig(
+              new ExportersConfig(
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expC",
+                      new ExporterState(1, State.ENABLED, Optional.empty()))));
+      return Arguments.of(
+          Named.of(
+              "Exporters Readded",
+              new ExporterConfigParameter(
+                  currentConfiguration, Set.of("expA", "expC"), expectedConfig)));
+    }
+
+    private static Arguments disabledExporterConfigRemoved() {
+      final var initialConfig =
+          new DynamicPartitionConfig(
+              new ExportersConfig(
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.DISABLED, Optional.empty()))));
+
+      final ClusterConfiguration currentConfiguration =
+          ClusterConfiguration.init()
+              .addMember(
+                  LOCAL_MEMBER_ID,
+                  MemberState.initializeAsActive(
+                      Map.of(
+                          1,
+                          PartitionState.active(1, initialConfig),
+                          2,
+                          PartitionState.active(2, initialConfig))));
+
+      // expectedConfig = initialConfig. Disabled exporters should stay disabled.
+      return Arguments.of(
+          Named.of(
+              "Disabled Exporter's Config is Removed",
+              new ExporterConfigParameter(currentConfiguration, Set.of("expA"), initialConfig)));
+    }
+
+    private static ClusterConfiguration withTwoEnabledExporters() {
+      final DynamicPartitionConfig config =
+          new DynamicPartitionConfig(
+              new ExportersConfig(
+                  Map.of(
+                      "expA",
+                      new ExporterState(0, State.ENABLED, Optional.empty()),
+                      "expB",
+                      new ExporterState(0, State.ENABLED, Optional.empty()))));
+      return ClusterConfiguration.init()
+          .addMember(
+              LOCAL_MEMBER_ID,
+              MemberState.initializeAsActive(
+                  Map.of(
+                      1, PartitionState.active(1, config), 2, PartitionState.active(2, config))));
     }
 
     private record ExporterConfigParameter(
-        Set<String> configuredExporters, DynamicPartitionConfig expectedConfig) {}
+        ClusterConfiguration initialConfig,
+        Set<String> configuredExporters,
+        DynamicPartitionConfig expectedConfig) {}
   }
 }

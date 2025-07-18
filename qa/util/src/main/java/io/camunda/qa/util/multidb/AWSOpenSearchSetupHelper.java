@@ -7,7 +7,6 @@
  */
 package io.camunda.qa.util.multidb;
 
-import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
@@ -27,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
 
@@ -43,13 +42,13 @@ public class AWSOpenSearchSetupHelper implements MultiDbSetupHelper {
       final String endpoint, final Collection<IndexDescriptor> expectedDescriptors) {
     final URI uri = URI.create(endpoint);
     this.expectedDescriptors = expectedDescriptors;
-    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    final var region = new DefaultAwsRegionProviderChain().getRegion();
     client =
         new OpenSearchClient(
             new AwsSdk2Transport(
                 httpClient,
                 uri.getHost(),
-                Region.of(region),
+                region,
                 AwsSdk2TransportOptions.builder()
                     .setMapper(new JacksonJsonpMapper(OBJECT_MAPPER))
                     .build()));

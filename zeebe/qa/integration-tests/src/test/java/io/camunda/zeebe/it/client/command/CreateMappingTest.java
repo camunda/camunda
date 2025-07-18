@@ -27,7 +27,7 @@ public class CreateMappingTest {
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "Map Name";
-  public static final String ID = "mappingId";
+  public static final String ID = "mappingRuleId";
 
   @AutoClose CamundaClient client;
 

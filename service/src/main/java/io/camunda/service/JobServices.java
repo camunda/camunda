@@ -115,11 +115,14 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
 
   @Override
   public SearchQueryResult<JobEntity> search(final JobQuery query) {
-    return jobSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchJobs(query);
+    return executeSearchRequest(
+        () ->
+            jobSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.of(a -> a.processDefinition().readProcessInstance())))
+                .searchJobs(query));
   }
 
   public record ActivateJobsRequest(

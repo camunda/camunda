@@ -24,7 +24,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -38,6 +38,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = DecisionRequirementsController.class)
 public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
@@ -58,7 +59,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }""";
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
@@ -102,11 +104,12 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
 
     when(decisionRequirementsServices.getByKey(INVALID_DECISION_REQUIREMENTS_KEY))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision requirements with key "
-                    + INVALID_DECISION_REQUIREMENTS_KEY
-                    + " not found",
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision requirements with key "
+                        + INVALID_DECISION_REQUIREMENTS_KEY
+                        + " not found",
+                    CamundaSearchException.Reason.NOT_FOUND)));
   }
 
   @Test
@@ -124,7 +127,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
   }
@@ -148,7 +151,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
   }
@@ -184,7 +187,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices)
         .search(
@@ -245,7 +248,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices)
         .search(
@@ -303,7 +306,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, never()).search(any(DecisionRequirementsQuery.class));
   }
@@ -318,7 +321,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(DECISION_REQUIREMENTS_ITEM_JSON);
+        .json(DECISION_REQUIREMENTS_ITEM_JSON, JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, times(1)).getByKey(VALID_DECISION_REQUIREMENTS_KEY);
   }
@@ -358,7 +361,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     final long decisionRequirementsKey = 1L;
     when(service.apply(decisionRequirementsServices, decisionRequirementsKey))
         .thenThrow(
-            new ForbiddenException(
+            ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionRequirementsDefinition().read())));
     // when / then
     webClient
@@ -373,7 +376,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                     {
                       "type": "about:blank",
                       "status": 403,
-                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "title": "FORBIDDEN",
                       "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'"
                     }
                 """);
@@ -445,8 +448,10 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
     final Long decisionRequirementsKey = 1L;
     when(decisionRequirementsServices.getDecisionRequirementsXml(decisionRequirementsKey))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision with key 1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
 
     // when/then
     final var expectedResponse =
@@ -468,7 +473,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -498,7 +503,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -525,6 +530,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 }

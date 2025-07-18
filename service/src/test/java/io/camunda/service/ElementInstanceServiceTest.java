@@ -23,7 +23,8 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheResult;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ServiceException;
+import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Set;
@@ -143,10 +144,11 @@ public final class ElementInstanceServiceTest {
       // when
       final Executable executeGetByKey = () -> services.getByKey(entity.flowNodeInstanceKey());
       // then
-      final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
+      final var exception = assertThrowsExactly(ServiceException.class, executeGetByKey);
       assertThat(exception.getMessage())
           .isEqualTo(
               "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+      assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
     }
 
     @Test

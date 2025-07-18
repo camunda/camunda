@@ -31,6 +31,10 @@ import io.camunda.zeebe.util.Either;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Processes commands to create batch operations. It validates the command and checks for
+ * authorization. This command will be distributed to all other existing partitions.
+ */
 public final class BatchOperationCreateProcessor
     implements DistributedTypedRecordProcessor<BatchOperationCreationRecord> {
 
@@ -91,6 +95,8 @@ public final class BatchOperationCreateProcessor
     final var recordWithKey = new BatchOperationCreationRecord();
     recordWithKey.wrap(recordValue);
     recordWithKey.setBatchOperationKey(key);
+    // we remember the partition ids of the batch operation, so that we can count the number of
+    // finished partitions in the end.
     recordWithKey.setPartitionIds(routingInfo.partitions());
 
     stateWriter.appendFollowUpEvent(

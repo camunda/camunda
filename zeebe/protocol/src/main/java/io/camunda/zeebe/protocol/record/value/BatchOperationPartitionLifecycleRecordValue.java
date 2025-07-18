@@ -25,5 +25,10 @@ import org.immutables.value.Value;
 public interface BatchOperationPartitionLifecycleRecordValue
     extends BatchOperationRelated, RecordValue {
 
+  /**
+   * Returns the partition id of the source partition where this record was created.
+   *
+   * @return the source partition id
+   */
   Integer getSourcePartitionId();
 }

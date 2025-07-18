@@ -32,6 +32,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
 
 import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
@@ -58,6 +59,7 @@ public final class OAuthCredentialsProviderBuilder {
   private String clientSecret;
   private String audience;
   private String scope;
+  private String resource;
   private String authorizationServerUrl;
   private URL authorizationServer;
   private Path keystorePath;
@@ -125,6 +127,19 @@ public final class OAuthCredentialsProviderBuilder {
    */
   String getScope() {
     return scope;
+  }
+
+  /** The resource for which the access token should be valid. */
+  public OAuthCredentialsProviderBuilder resource(final String resource) {
+    this.resource = resource;
+    return this;
+  }
+
+  /**
+   * @see OAuthCredentialsProviderBuilder#resource(String)
+   */
+  public String getResource() {
+    return resource;
   }
 
   /** The authorization server's URL, from which the access token will be requested. */
@@ -383,6 +398,10 @@ public final class OAuthCredentialsProviderBuilder {
         ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE);
     applyEnvironmentValueIfNotNull(
         this::scope, OAUTH_ENV_TOKEN_SCOPE, ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE);
+    applyEnvironmentValueIfNotNull(
+        this::resource,
+        OAUTH_ENV_TOKEN_RESOURCE,
+        ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE);
     applyEnvironmentValueIfNotNull(
         this::authorizationServerUrl,
         OAUTH_ENV_AUTHORIZATION_SERVER,

@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import java.util.List;
@@ -17,13 +18,21 @@ import java.util.List;
 public final class ProcessInstanceMigrationRecord extends UnifiedRecordValue
     implements ProcessInstanceMigrationRecordValue {
 
-  private final LongProperty processInstanceKeyProperty = new LongProperty("processInstanceKey");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue TARGET_PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("targetProcessDefinitionKey");
+  private static final StringValue MAPPING_INSTRUCTIONS_KEY =
+      new StringValue("mappingInstructions");
+
+  private final LongProperty processInstanceKeyProperty =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY);
   private final LongProperty targetProcessDefinitionKeyProperty =
-      new LongProperty("targetProcessDefinitionKey");
+      new LongProperty(TARGET_PROCESS_DEFINITION_KEY_KEY);
   private final ArrayProperty<ProcessInstanceMigrationMappingInstruction>
       mappingInstructionsProperty =
           new ArrayProperty<>(
-              "mappingInstructions", ProcessInstanceMigrationMappingInstruction::new);
+              MAPPING_INSTRUCTIONS_KEY, ProcessInstanceMigrationMappingInstruction::new);
 
   public ProcessInstanceMigrationRecord() {
     super(3);

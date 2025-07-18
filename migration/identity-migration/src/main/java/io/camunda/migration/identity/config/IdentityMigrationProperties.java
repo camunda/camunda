@@ -8,16 +8,22 @@
 package io.camunda.migration.identity.config;
 
 import io.camunda.migration.identity.config.cluster.ClusterProperties;
+import jakarta.validation.Valid;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 @ConfigurationProperties(
     prefix = IdentityMigrationProperties.CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY)
+@Validated
 public class IdentityMigrationProperties {
   public static final String CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY =
       "camunda.migration.identity";
   public static final String PROP_CAMUNDA_MIGRATION_IDENTITY_MODE =
       CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY + ".mode";
+
+  @Valid
   private ManagementIdentityProperties managementIdentity = new ManagementIdentityProperties();
+
   private String organizationId;
   private Mode mode = Mode.CLOUD;
   private ConsoleProperties console = new ConsoleProperties();

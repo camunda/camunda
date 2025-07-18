@@ -34,8 +34,8 @@ public class ElasticSearchBatchOperationCacheLoader
   }
 
   @Override
-  public CachedBatchOperationEntity load(final String batchOperationId) throws IOException {
-    final var termQuery = QueryBuilders.ids(i -> i.values(batchOperationId));
+  public CachedBatchOperationEntity load(final String batchOperationKey) throws IOException {
+    final var termQuery = QueryBuilders.ids(i -> i.values(batchOperationKey));
     final var sourceFilter =
         SourceConfigBuilders.filter()
             .includes(BatchOperationTemplate.ID, BatchOperationTemplate.TYPE)
@@ -53,7 +53,7 @@ public class ElasticSearchBatchOperationCacheLoader
       final var entity = response.hits().hits().getFirst().source();
       return new CachedBatchOperationEntity(entity.getId(), entity.getType());
     } else {
-      LOG.debug("BatchOperation '{}' not found in Elasticsearch", batchOperationId);
+      LOG.debug("BatchOperation '{}' not found in Elasticsearch", batchOperationKey);
       return null;
     }
   }

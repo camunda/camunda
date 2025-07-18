@@ -31,7 +31,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "description": "Total number of gRPC calls handled per second, grouped by method. Useful for monitoring overall traffic volume and per-method activity.",
         "fieldConfig": {
@@ -118,12 +118,12 @@
             "sort": "none"
           }
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
             "exemplar": false,
@@ -139,6 +139,121 @@
         "type": "timeseries"
       }
     },
+    "eepb54fqwq48wc": {
+      "name": "Request Rate gRPC (top 10)",
+      "uid": "eepb54fqwq48wc",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+        },
+        "description": "Total number of gRPC calls handled per second, grouped by method. Useful for monitoring overall traffic volume and per-method activity.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "reqps"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "grpc_method"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": [
+                    {
+                      "targetBlank": true,
+                      "title": "Show details",
+                      "url": "/d/bep7p39l2r3eoe/grpc?orgId=1&from=now-6h&to=now&timezone=browser&var-namespace=$__all&var-grpc_method=${__value.raw}&var-region~=$region\n"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "pluginVersion": "12.0.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "sum by(grpc_method) (rate(grpc_server_handled_total{\n    camunda_region=~\"$region\",\n    cluster=~\"$cluster\",\n    grpc_method=~\"$grpc_method\",\n    namespace=~\"$namespace\",\n    pod=~\"$pod\"\n    }[$__rate_interval]))",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "__auto",
+            "range": false,
+            "refId": "A"
+          }
+        ],
+        "title": "Request Rate gRPC (top 10)",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "includeByName": {},
+              "indexByName": {},
+              "renameByName": {
+                "Value": "Request Rate (req/s)"
+              }
+            }
+          },
+          {
+            "id": "sortBy",
+            "options": {
+              "fields": {},
+              "sort": [
+                {
+                  "desc": true,
+                  "field": "Request Rate (req/s)"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "table"
+      }
+    },
     "feopv1yehyps0f": {
       "name": "p95 Latency gRPC",
       "uid": "feopv1yehyps0f",
@@ -146,7 +261,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "description": "Shows high-percentile latency per gRPC method over the selected range, excluding the ActivateJobs method.",
         "fieldConfig": {
@@ -218,12 +333,12 @@
             "sort": "none"
           }
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
             "expr": "histogram_quantile(0.95,\n  sum by (le, grpc_method) (\n    increase(grpc_server_handled_latency_seconds_bucket{\n      camunda_region=\"$region\",\n      grpc_method=~\"$grpc_method\",\n      grpc_method!~\"ActivateJobs\"\n    }[$__rate_interval])\n  )\n)\n",
@@ -236,6 +351,123 @@
         "type": "timeseries"
       }
     },
+    "cepb55seej0n4c": {
+      "name": "p95 Latency gRPC (top 10)",
+      "uid": "cepb55seej0n4c",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+        },
+        "description": "Shows high-percentile latency per gRPC method over the selected range, excluding the ActivateJobs method.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "auto"
+              },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "transparent",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 0.3
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "grpc_method"
+              },
+              "properties": [
+                {
+                  "id": "links",
+                  "value": [
+                    {
+                      "targetBlank": true,
+                      "title": "Show details",
+                      "url": "/d/bep7p39l2r3eoe/grpc?orgId=1&from=now-6h&to=now&timezone=browser&var-namespace=$__all&var-grpc_method=${__value.raw}&var-region~=$region\n"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "options": {
+          "cellHeight": "sm",
+          "footer": {
+            "countRows": false,
+            "fields": "",
+            "reducer": [
+              "sum"
+            ],
+            "show": false
+          },
+          "showHeader": true
+        },
+        "pluginVersion": "12.0.2",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${DS_PROMETHEUS}"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "histogram_quantile(0.95,\n  sum by (le, grpc_method) (\n    increase(grpc_server_handled_latency_seconds_bucket{\n      camunda_region=~\"$region\",\n      cluster=~\"$cluster\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\"\n    }[$__rate_interval])\n  )\n)\n",
+            "format": "table",
+            "instant": true,
+            "legendFormat": "__auto",
+            "range": false,
+            "refId": "Latency p95"
+          }
+        ],
+        "title": "p95 Latency gRPC (top 10)",
+        "transformations": [
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true
+              },
+              "includeByName": {},
+              "indexByName": {},
+              "renameByName": {}
+            }
+          },
+          {
+            "id": "sortBy",
+            "options": {
+              "fields": {},
+              "sort": [
+                {
+                  "desc": true,
+                  "field": "Value"
+                }
+              ]
+            }
+          }
+        ],
+        "type": "table"
+      }
+    },
     "deopwfw0nde68b": {
       "name": "Error Rate gRPC",
       "uid": "deopwfw0nde68b",
@@ -243,7 +475,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "description": "Fraction of gRPC requests resulting in INTERNAL errors per method. High values may indicate server-side issues or crashes.",
         "fieldConfig": {
@@ -315,12 +547,12 @@
             "sort": "none"
           }
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -400,12 +632,12 @@
             "unit": "dtdurations"
           }
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
             "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{camunda_region=~\"$region\", namespace=~\"$namespace\", grpc_method=~\"$grpc_method\", grpc_method!~\"ActivateJobs\"}[$__rate_interval])) by (le)",
@@ -426,7 +658,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "description": "Highest-requested API endpoints based on request rate, excluding internal /actuator and Prometheus paths.",
         "fieldConfig": {
@@ -495,12 +727,12 @@
             "sort": "none"
           }
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -586,12 +818,12 @@
           },
           "showHeader": true
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -635,7 +867,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "description": "Endpoints with the highest average request duration, excluding known internal and noisy paths.",
         "fieldConfig": {
@@ -707,12 +939,12 @@
             "sort": "none"
           }
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
             "exemplar": false,
@@ -798,12 +1030,12 @@
           },
           "showHeader": true
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "editorMode": "code",
             "exemplar": false,
@@ -842,7 +1074,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "description": "Endpoints with the highest proportion of server-side errors (5xx), useful for spotting failing API routes.",
         "fieldConfig": {
@@ -914,12 +1146,12 @@
             "sort": "none"
           }
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -1009,12 +1241,12 @@
           },
           "showHeader": true
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -1057,7 +1289,7 @@
       "model": {
         "datasource": {
           "type": "prometheus",
-          "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "uid": "${DS_PROMETHEUS}"
         },
         "description": "Endpoints with the highest proportion of server-side errors (5xx), useful for spotting failing API routes.",
         "fieldConfig": {
@@ -1129,12 +1361,12 @@
             "sort": "none"
           }
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -1224,12 +1456,12 @@
           },
           "showHeader": true
         },
-        "pluginVersion": "11.6.1",
+        "pluginVersion": "12.0.2",
         "targets": [
           {
             "datasource": {
               "type": "prometheus",
-              "uid": "thanos-global-view"
+              "uid": "${DS_PROMETHEUS}"
             },
             "disableTextWrap": false,
             "editorMode": "code",
@@ -1271,7 +1503,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "11.6.1"
+      "version": "12.0.2"
     },
     {
       "type": "datasource",
@@ -1315,7 +1547,7 @@
   "links": [],
   "panels": [
     {
-      "collapsed": true,
+      "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1323,651 +1555,429 @@
         "y": 0
       },
       "id": 7,
-      "panels": [
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 1
-          },
-          "id": 9,
-          "libraryPanel": {
-            "name": "Request Rate gRPC",
-            "uid": "ceopv2m5x6wowa"
-          },
-          "title": "Request Rate gRPC"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_THANOS:_GLOBAL-VIEW}"
-          },
-          "description": "Total number of gRPC calls handled per second, grouped by method. Useful for monitoring overall traffic volume and per-method activity.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "custom": {
-                "align": "auto",
-                "cellOptions": {
-                  "type": "auto"
-                },
-                "inspect": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "reqps"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "grpc_method"
-                },
-                "properties": [
-                  {
-                    "id": "links",
-                    "value": [
-                      {
-                        "targetBlank": true,
-                        "title": "Show details",
-                        "url": "/d/bep7p39l2r3eoe/grpc?orgId=1&from=now-6h&to=now&timezone=browser&var-namespace=$__all&var-grpc_method=${__value.raw}&var-region~=$region\n"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 1
-          },
-          "id": 18,
-          "options": {
-            "cellHeight": "sm",
-            "footer": {
-              "countRows": false,
-              "fields": "",
-              "reducer": [
-                "sum"
-              ],
-              "show": false
-            },
-            "showHeader": true
-          },
-          "pluginVersion": "11.6.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_THANOS:_GLOBAL-VIEW}"
-              },
-              "editorMode": "code",
-              "exemplar": false,
-              "expr": "sum by(grpc_method) (rate(grpc_server_handled_total{\n    camunda_region=~\"$region\",\n    cluster=~\"$cluster\",\n    grpc_method=~\"$grpc_method\",\n    namespace=~\"$namespace\",\n    pod=~\"$pod\"\n    }[$__rate_interval]))",
-              "format": "table",
-              "instant": true,
-              "legendFormat": "__auto",
-              "range": false,
-              "refId": "A"
-            }
-          ],
-          "title": "Request Rate gRPC",
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true
-                },
-                "includeByName": {},
-                "indexByName": {},
-                "renameByName": {
-                  "Value": "Request Rate (req/s)"
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "desc": true,
-                    "field": "Request Rate (req/s)"
-                  }
-                ]
-              }
-            }
-          ],
-          "type": "table"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 9
-          },
-          "id": 8,
-          "libraryPanel": {
-            "name": "p95 Latency gRPC",
-            "uid": "feopv1yehyps0f"
-          },
-          "title": "p95 Latency gRPC"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_THANOS:_GLOBAL-VIEW}"
-          },
-          "description": "Shows high-percentile latency per gRPC method over the selected range, excluding the ActivateJobs method.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "custom": {
-                "align": "auto",
-                "cellOptions": {
-                  "type": "auto"
-                },
-                "inspect": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "transparent"
-                  },
-                  {
-                    "color": "red",
-                    "value": 0.3
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "grpc_method"
-                },
-                "properties": [
-                  {
-                    "id": "links",
-                    "value": [
-                      {
-                        "targetBlank": true,
-                        "title": "Show details",
-                        "url": "/d/bep7p39l2r3eoe/grpc?orgId=1&from=now-6h&to=now&timezone=browser&var-namespace=$__all&var-grpc_method=${__value.raw}&var-region~=$region\n"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 9
-          },
-          "id": 19,
-          "options": {
-            "cellHeight": "sm",
-            "footer": {
-              "countRows": false,
-              "fields": "",
-              "reducer": [
-                "sum"
-              ],
-              "show": false
-            },
-            "showHeader": true
-          },
-          "pluginVersion": "11.6.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_THANOS:_GLOBAL-VIEW}"
-              },
-              "editorMode": "code",
-              "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by (le, grpc_method) (\n    increase(grpc_server_handled_latency_seconds_bucket{\n      camunda_region=~\"$region\",\n      cluster=~\"$cluster\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\"\n    }[$__rate_interval])\n  )\n)\n",
-              "format": "table",
-              "instant": true,
-              "legendFormat": "__auto",
-              "range": false,
-              "refId": "Latency p95"
-            }
-          ],
-          "title": "p95 Latency gRPC",
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true
-                },
-                "includeByName": {},
-                "indexByName": {},
-                "renameByName": {}
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "desc": true,
-                    "field": "Value"
-                  }
-                ]
-              }
-            }
-          ],
-          "type": "table"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 17
-          },
-          "id": 10,
-          "libraryPanel": {
-            "name": "Error Rate gRPC",
-            "uid": "deopwfw0nde68b"
-          },
-          "title": "Error Rate gRPC"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_THANOS:_GLOBAL-VIEW}"
-          },
-          "description": "Fraction of gRPC requests resulting in errors per method. High values may indicate server-side issues or crashes.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "custom": {
-                "align": "auto",
-                "cellOptions": {
-                  "type": "auto"
-                },
-                "inspect": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 0.1
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "grpc_method"
-                },
-                "properties": [
-                  {
-                    "id": "links",
-                    "value": [
-                      {
-                        "targetBlank": true,
-                        "title": "Show details",
-                        "url": "/d/bep7p39l2r3eoe/grpc?orgId=1&from=now-6h&to=now&timezone=browser&var-namespace=$__all&var-grpc_method=${__value.raw}&var-region~=$region\n"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 17
-          },
-          "id": 20,
-          "options": {
-            "cellHeight": "sm",
-            "footer": {
-              "countRows": false,
-              "fields": "",
-              "reducer": [
-                "sum"
-              ],
-              "show": false
-            },
-            "showHeader": true
-          },
-          "pluginVersion": "11.6.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_THANOS:_GLOBAL-VIEW}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "code",
-              "exemplar": false,
-              "expr": "\n  sum by(grpc_method) (\n    rate(grpc_server_handled_total{\n      camunda_region=~\"$region\",\n      cluster=~\"$cluster\",\n      code!=\"OK\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(grpc_method) (\n    rate(grpc_server_handled_total{\n      camunda_region=~\"$region\",\n      cluster=~\"$cluster\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\"\n    }[$__rate_interval])\n  )\n",
-              "format": "table",
-              "fullMetaSearch": false,
-              "hide": false,
-              "includeNullMetadata": true,
-              "instant": true,
-              "legendFormat": "__auto",
-              "range": false,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Error Rate gRPC",
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true
-                },
-                "includeByName": {},
-                "indexByName": {},
-                "renameByName": {
-                  "Value": "Error Rate (%)"
-                }
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "desc": true,
-                    "field": "Error Rate (%)"
-                  }
-                ]
-              }
-            }
-          ],
-          "type": "table"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 25
-          },
-          "id": 11,
-          "libraryPanel": {
-            "name": "Latency Heatmap gRPC",
-            "uid": "aeopx01aoiiv4c"
-          },
-          "title": "Latency Heatmap gRPC"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 33
-          },
-          "id": 4,
-          "libraryPanel": {
-            "name": "Request Rate REST",
-            "uid": "dep78ee16es5ce"
-          },
-          "title": "Request Rate REST"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 33
-          },
-          "id": 17,
-          "libraryPanel": {
-            "name": "Request Rate REST (top 10)",
-            "uid": "dep7o0du9lxxce"
-          },
-          "title": "Request Rate REST (top 10)"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 41
-          },
-          "id": 6,
-          "libraryPanel": {
-            "name": "Average Latency REST",
-            "uid": "eep78ety54bggd"
-          },
-          "title": "Average Latency REST"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 41
-          },
-          "id": 13,
-          "libraryPanel": {
-            "name": "Average Latency REST (top 10)",
-            "uid": "ceopr4mzesav4f"
-          },
-          "title": "Average Latency REST (top 10)"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 49
-          },
-          "id": 5,
-          "libraryPanel": {
-            "name": "Server error rate REST",
-            "uid": "deopr4y2r1wxsa"
-          },
-          "title": "Server error rate REST"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 49
-          },
-          "id": 14,
-          "libraryPanel": {
-            "name": "Server error rate REST (top 10)",
-            "uid": "bep78k0rlqf40a"
-          },
-          "title": "Server error rate REST (top 10)"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 57
-          },
-          "id": 15,
-          "libraryPanel": {
-            "name": "Client error rate REST",
-            "uid": "bep78xfm9mzuod"
-          },
-          "title": "Client error rate REST"
-        },
-        {
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 57
-          },
-          "id": 16,
-          "libraryPanel": {
-            "name": "Client error rate REST (top 10)",
-            "uid": "fep79bllbuqdce"
-          },
-          "title": "Client error rate REST (top 10)"
-        }
-      ],
+      "panels": [],
       "title": "API",
       "type": "row"
     },
     {
-      "collapsed": true,
       "gridPos": {
-        "h": 1,
-        "w": 24,
+        "h": 8,
+        "w": 12,
         "x": 0,
         "y": 1
       },
-      "id": 2,
-      "panels": [
+      "id": 9,
+      "libraryPanel": {
+        "uid": "ceopv2m5x6wowa",
+        "name": "Request Rate gRPC"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 1
+      },
+      "id": 18,
+      "libraryPanel": {
+        "uid": "eepb54fqwq48wc",
+        "name": "Request Rate gRPC (top 10)"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "id": 8,
+      "libraryPanel": {
+        "uid": "feopv1yehyps0f",
+        "name": "p95 Latency gRPC"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 9
+      },
+      "id": 19,
+      "libraryPanel": {
+        "uid": "cepb55seej0n4c",
+        "name": "p95 Latency gRPC (top 10)"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 17
+      },
+      "id": 10,
+      "libraryPanel": {
+        "uid": "deopwfw0nde68b",
+        "name": "Error Rate gRPC"
+      }
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Fraction of gRPC requests resulting in errors per method. High values may indicate server-side issues or crashes.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 0.1
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "grpc_method"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": true,
+                    "title": "Show details",
+                    "url": "/d/bep7p39l2r3eoe/grpc?orgId=1&from=now-6h&to=now&timezone=browser&var-namespace=$__all&var-grpc_method=${__value.raw}&var-region~=$region\n"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 17
+      },
+      "id": 20,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_THANOS:_GLOBAL-VIEW}"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 65,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "normal"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 2
-          },
-          "id": 1,
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "\n  sum by(grpc_method) (\n    rate(grpc_server_handled_total{\n      camunda_region=~\"$region\",\n      cluster=~\"$cluster\",\n      code!=\"OK\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(grpc_method) (\n    rate(grpc_server_handled_total{\n      camunda_region=~\"$region\",\n      cluster=~\"$cluster\",\n      grpc_method=~\"$grpc_method\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\"\n    }[$__rate_interval])\n  )\n",
+          "format": "table",
+          "fullMetaSearch": false,
+          "hide": false,
+          "includeNullMetadata": true,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Error Rate gRPC (top 10)",
+      "transformations": [
+        {
+          "id": "organize",
           "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
+            "excludeByName": {
+              "Time": true
             },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
+            "includeByName": {},
+            "indexByName": {},
+            "renameByName": {
+              "Value": "Error Rate (%)"
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "desc": true,
+                "field": "Error Rate (%)"
+              }
+            ]
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "id": 11,
+      "libraryPanel": {
+        "uid": "aeopx01aoiiv4c",
+        "name": "Latency Heatmap gRPC"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "id": 4,
+      "libraryPanel": {
+        "uid": "dep78ee16es5ce",
+        "name": "Request Rate REST"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "id": 17,
+      "libraryPanel": {
+        "uid": "dep7o0du9lxxce",
+        "name": "Request Rate REST (top 10)"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 41
+      },
+      "id": 6,
+      "libraryPanel": {
+        "uid": "eep78ety54bggd",
+        "name": "Average Latency REST"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 41
+      },
+      "id": 13,
+      "libraryPanel": {
+        "uid": "ceopr4mzesav4f",
+        "name": "Average Latency REST (top 10)"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 49
+      },
+      "id": 5,
+      "libraryPanel": {
+        "uid": "deopr4y2r1wxsa",
+        "name": "Server error rate REST"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 49
+      },
+      "id": 14,
+      "libraryPanel": {
+        "uid": "bep78k0rlqf40a",
+        "name": "Server error rate REST (top 10)"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 57
+      },
+      "id": 15,
+      "libraryPanel": {
+        "uid": "bep78xfm9mzuod",
+        "name": "Client error rate REST"
+      }
+    },
+    {
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 57
+      },
+      "id": 16,
+      "libraryPanel": {
+        "uid": "fep79bllbuqdce",
+        "name": "Client error rate REST (top 10)"
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 65
+      },
+      "id": 2,
+      "panels": [],
+      "title": "Alerts",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 65,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
           },
-          "pluginVersion": "11.6.1",
-          "targets": [
-            {
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count by(alertname) (ALERTS{team=~\"operate|tasklist|optimize|zeebe\", label_cloud_camunda_io_sales_plan_type!=\"trial\", alertstate=\"firing\", namespace=~\"$namespace\"})",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false,
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
               }
-            }
-          ],
-          "title": "Alerts",
-          "type": "timeseries"
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 66
+      },
+      "id": 1,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_THANOS:_GLOBAL-VIEW}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "count by(alertname) (ALERTS{team=~\"operate|tasklist|optimize|zeebe\", label_cloud_camunda_io_sales_plan_type!=\"trial\", alertstate=\"firing\", namespace=~\"$namespace\"})",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
         }
       ],
       "title": "Alerts",
-      "type": "row"
+      "type": "timeseries"
     }
   ],
   "schemaVersion": 41,
@@ -2118,6 +2128,16 @@
         "refresh": 1,
         "regex": "",
         "type": "query"
+      },
+      {
+        "current": {},
+        "label": "datasource",
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
       }
     ]
   },
@@ -2129,6 +2149,6 @@
   "timezone": "browser",
   "title": "Core Features Overview",
   "uid": "fel9lob8vajggd",
-  "version": 56,
+  "version": 61,
   "weekStart": ""
 }

@@ -25,6 +25,7 @@ import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -229,23 +230,25 @@ public class GroupMigrationHandlerTest {
     when(groupService.createGroup(any(GroupDTO.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.CREATE,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "group already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.CREATE,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "group already exists")))));
     when(managementIdentityClient.fetchGroupUsers(any()))
         .thenReturn(List.of(new User("id", "username1", "name", "email")));
     when(groupService.assignMember(any(GroupMemberDTO.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.ADD_ENTITY,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "group membership already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.ADD_ENTITY,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "group membership already exists")))));
     when(managementIdentityClient.fetchGroupRoles(any())).thenReturn(List.of());
     when(managementIdentityClient.fetchGroupAuthorizations(any()))
         .thenReturn(

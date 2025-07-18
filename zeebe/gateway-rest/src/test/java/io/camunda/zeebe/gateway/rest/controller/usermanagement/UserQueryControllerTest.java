@@ -23,6 +23,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = UserController.class)
 public class UserQueryControllerTest extends RestControllerTest {
@@ -53,7 +55,8 @@ public class UserQueryControllerTest extends RestControllerTest {
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }""";
   private static final String USERS_SEARCH_URL = "/v2/users/search";
@@ -113,7 +116,9 @@ public class UserQueryControllerTest extends RestControllerTest {
     final var path = "%s/%s".formatted("/v2/users", username);
     when(userServices.getUser(username))
         .thenThrow(
-            new CamundaSearchException("user not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "user not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient
@@ -153,7 +158,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices).search(new UserQuery.Builder().build());
   }
@@ -176,7 +181,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices).search(new UserQuery.Builder().build());
   }
@@ -208,7 +213,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(userServices)
         .search(new UserQuery.Builder().sort(new UserSort.Builder().name().desc().build()).build());
@@ -231,7 +236,7 @@ public class UserQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(userServices, never()).search(any(UserQuery.class));
   }

@@ -482,6 +482,28 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<MessageSubscriptionSearchQuerySortRequest>
+      toMessageSubscriptionSearchQuerySortRequest(final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final MessageSubscriptionSearchQuerySortRequest request =
+                  new MessageSubscriptionSearchQuerySortRequest();
+              request.setField(
+                  MessageSubscriptionSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
+  public static List<SearchRequestSort> fromMessageSubscriptionSearchQuerySortRequest(
+      final List<MessageSubscriptionSearchQuerySortRequest> requests) {
+    return requests.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .collect(Collectors.toList());
+  }
+
   private static SearchRequestSort createFrom(final Object field, final SortOrderEnum order) {
     final SearchRequestSort request = new SearchRequestSort();
     request.setField(field.toString());

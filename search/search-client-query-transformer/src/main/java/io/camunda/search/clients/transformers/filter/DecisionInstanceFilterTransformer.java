@@ -35,6 +35,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -68,6 +69,11 @@ public final class DecisionInstanceFilterTransformer
     ofNullable(getDecisionDefinitionTypesQuery(filter.decisionTypes())).ifPresent(queries::add);
     ofNullable(getTenantIdsQuery(filter.tenantIds())).ifPresent(queries::add);
     return and(queries);
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(DECISION_ID, authorization.resourceIds());
   }
 
   private SearchQuery getKeysQuery(final List<Long> keys) {

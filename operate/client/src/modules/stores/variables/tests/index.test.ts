@@ -21,6 +21,7 @@ import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations'
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
 import {mockVariableOperation, mockVariables} from './mocks';
+import {getScopeId} from 'modules/utils/variables';
 
 vi.mock('modules/constants/variables', async () => {
   const actual = await vi.importActual('modules/constants/variables');
@@ -273,7 +274,7 @@ describe('stores/variables', () => {
   });
 
   it('should get scopeId', async () => {
-    expect(variablesStore.scopeId).toBe('123');
+    expect(getScopeId()).toBe('123');
   });
 
   it('should get hasActiveOperation', async () => {

@@ -33,7 +33,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {TestApplication.class},
+    classes = {
+      TestApplication.class,
+    },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",

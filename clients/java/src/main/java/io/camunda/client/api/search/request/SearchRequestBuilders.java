@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.AdHocSubProcessActivityFilter;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
 import io.camunda.client.api.search.filter.BatchOperationItemFilter;
@@ -27,6 +26,7 @@ import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MappingFilter;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.RoleFilter;
@@ -49,6 +49,7 @@ import io.camunda.client.api.search.sort.GroupUserSort;
 import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.api.search.sort.JobSort;
 import io.camunda.client.api.search.sort.MappingSort;
+import io.camunda.client.api.search.sort.MessageSubscriptionSort;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.api.search.sort.RoleSort;
@@ -59,7 +60,6 @@ import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.api.search.sort.UserTaskSort;
 import io.camunda.client.api.search.sort.VariableSort;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
-import io.camunda.client.impl.search.filter.AdHocSubProcessActivityFilterImpl;
 import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationFilterImpl;
 import io.camunda.client.impl.search.filter.BatchOperationItemFilterImpl;
@@ -71,6 +71,7 @@ import io.camunda.client.impl.search.filter.GroupFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.client.impl.search.filter.JobFilterImpl;
 import io.camunda.client.impl.search.filter.MappingFilterImpl;
+import io.camunda.client.impl.search.filter.MessageSubscriptionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.RoleFilterImpl;
@@ -94,6 +95,7 @@ import io.camunda.client.impl.search.sort.GroupUserSortImpl;
 import io.camunda.client.impl.search.sort.IncidentSortImpl;
 import io.camunda.client.impl.search.sort.JobSortImpl;
 import io.camunda.client.impl.search.sort.MappingSortImpl;
+import io.camunda.client.impl.search.sort.MessageSubscriptionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
 import io.camunda.client.impl.search.sort.RoleSortImpl;
@@ -219,13 +221,6 @@ public final class SearchRequestBuilders {
     final ElementInstanceSort sort = new ElementInstanceSortImpl();
     fn.accept(sort);
     return sort;
-  }
-
-  public static AdHocSubProcessActivityFilter adHocSubProcessActivityFilter(
-      final Consumer<AdHocSubProcessActivityFilter> fn) {
-    final AdHocSubProcessActivityFilter filter = new AdHocSubProcessActivityFilterImpl();
-    fn.accept(filter);
-    return filter;
   }
 
   public static VariableFilter variableFilter(final Consumer<VariableFilter> fn) {
@@ -390,6 +385,20 @@ public final class SearchRequestBuilders {
 
   public static JobSort jobSort(final Consumer<JobSort> fn) {
     final JobSort sort = new JobSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static MessageSubscriptionFilter messageSubscriptionFilter(
+      final Consumer<MessageSubscriptionFilter> fn) {
+    final MessageSubscriptionFilter filter = new MessageSubscriptionFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static MessageSubscriptionSort messageSubscriptionSort(
+      final Consumer<MessageSubscriptionSort> fn) {
+    final MessageSubscriptionSort sort = new MessageSubscriptionSortImpl();
     fn.accept(sort);
     return sort;
   }

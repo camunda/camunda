@@ -21,6 +21,7 @@ import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_T
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class ProcessDefinitionFilterTransformer
@@ -40,5 +41,10 @@ public class ProcessDefinitionFilterTransformer
         intTerms(VERSION, filter.versions()),
         stringTerms(VERSION_TAG, filter.versionTags()),
         stringTerms(TENANT_ID, filter.tenantIds()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }

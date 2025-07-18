@@ -27,7 +27,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -96,7 +96,8 @@ public final class UserTaskServices
   private SearchQueryResult<UserTaskEntity> search(
       final UserTaskQuery query, final SecurityContext securityContext) {
     final var result =
-        userTaskSearchClient.withSecurityContext(securityContext).searchUserTasks(query);
+        executeSearchRequest(
+            () -> userTaskSearchClient.withSecurityContext(securityContext).searchUserTasks(query));
 
     return toCacheEnrichedResult(result);
   }
@@ -175,7 +176,7 @@ public final class UserTaskServices
     final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
     if (!securityContextProvider.isAuthorized(
         userTask.processDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
+      throw ErrorMapper.createForbiddenException(authorization);
     }
 
     return userTask;
@@ -187,9 +188,14 @@ public final class UserTaskServices
       return Optional.empty();
     }
     return Optional.of(
-        formSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchForms(formSearchQuery(q -> q.filter(f -> f.formKeys(formKey)).singleResult()))
+        executeSearchRequest(
+                () ->
+                    formSearchClient
+                        .withSecurityContext(
+                            securityContextProvider.provideSecurityContext(authentication))
+                        .searchForms(
+                            formSearchQuery(
+                                q -> q.filter(f -> f.formKeys(formKey)).singleResult())))
             .items()
             .getFirst());
   }
@@ -218,17 +224,24 @@ public final class UserTaskServices
                     .page(variableQuery.page()));
 
     // Execute the search
-    return variableSearchClient
-        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-        .searchVariables(variableQueryWithTreePathFilter);
+    return executeSearchRequest(
+        () ->
+            variableSearchClient
+                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .searchVariables(variableQueryWithTreePathFilter));
   }
 
   private String fetchFlowNodeTreePath(final long flowNodeInstanceKey) {
-    return flowNodeInstanceSearchClient
-        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-        .searchFlowNodeInstances(
-            flownodeInstanceSearchQuery(
-                q -> q.filter(f -> f.flowNodeInstanceKeys(flowNodeInstanceKey)).singleResult()))
+    return executeSearchRequest(
+            () ->
+                flowNodeInstanceSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(authentication))
+                    .searchFlowNodeInstances(
+                        flownodeInstanceSearchQuery(
+                            q ->
+                                q.filter(f -> f.flowNodeInstanceKeys(flowNodeInstanceKey))
+                                    .singleResult())))
         .items()
         .getFirst()
         .treePath();

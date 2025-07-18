@@ -1,0 +1,113 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import { FC } from "react";
+import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { TrashCan } from "@carbon/react/icons";
+import useTranslate from "src/utility/localization";
+import { useApi } from "src/utility/api/hooks";
+import { getMappingRulesByGroupId } from "src/utility/api/groups";
+import EntityList from "src/components/entityList";
+import { useEntityModal } from "src/components/modal";
+import DeleteModal from "src/pages/groups/detail/mapping-rules/DeleteModal";
+import AssignMappingRulesModal from "src/pages/groups/detail/mapping-rules/AssignMappingRulesModal.tsx";
+
+type MappingRulesProps = {
+  groupId: string;
+};
+
+const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
+  const { t } = useTranslate("groups");
+
+  const {
+    data: mappingRules,
+    loading,
+    success,
+    reload,
+  } = useApi(getMappingRulesByGroupId, {
+    groupId: groupId,
+  });
+
+  const isMappingRulesListEmpty =
+    !mappingRules || mappingRules.items?.length === 0;
+
+  const [assignMappingRules, assignMappingRulesModal] = useEntityModal(
+    AssignMappingRulesModal,
+    reload,
+    {
+      assignedMappingRules: mappingRules?.items || [],
+    },
+  );
+  const openAssignModal = () => assignMappingRules({ id: groupId });
+  const [unassignMappingRule, unassignMappingRuleModal] = useEntityModal(
+    DeleteModal,
+    reload,
+    {
+      groupId,
+    },
+  );
+
+  if (!loading && !success)
+    return (
+      <C3EmptyState
+        heading={t("somethingsWrong")}
+        description={t("unableToLoadMappingRules")}
+        button={{ label: t("retry"), onClick: reload }}
+      />
+    );
+
+  if (success && isMappingRulesListEmpty)
+    return (
+      <>
+        <C3EmptyState
+          heading={t("assignMappingRulesToGroup")}
+          description={t("membersAccessDisclaimer")}
+          button={{
+            label: t("assignMappingRule"),
+            onClick: openAssignModal,
+          }}
+          link={{
+            label: t("learnMoreAboutGroups"),
+            href: "https://docs.camunda.io/",
+          }}
+        />
+        {assignMappingRulesModal}
+      </>
+    );
+
+  return (
+    <>
+      <EntityList
+        data={mappingRules?.items}
+        headers={[
+          { header: t("mappingRuleId"), key: "mappingRuleId" },
+          { header: t("mappingRuleName"), key: "name" },
+          { header: t("claimName"), key: "claimName" },
+          { header: t("claimValue"), key: "claimValue" },
+        ]}
+        sortProperty="mappingRuleId"
+        loading={loading}
+        addEntityLabel={t("assignMappingRule")}
+        onAddEntity={openAssignModal}
+        searchPlaceholder={t("searchByMappingRuleId")}
+        menuItems={[
+          {
+            label: t("remove"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: unassignMappingRule,
+          },
+        ]}
+      />
+      {assignMappingRulesModal}
+      {unassignMappingRuleModal}
+    </>
+  );
+};
+
+export default MappingRules;

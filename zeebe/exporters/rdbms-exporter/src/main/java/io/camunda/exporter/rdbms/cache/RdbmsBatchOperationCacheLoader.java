@@ -31,7 +31,7 @@ public class RdbmsBatchOperationCacheLoader
     if (response.isPresent()) {
       final var batchOperationEntity = response.get();
       return new CachedBatchOperationEntity(
-          batchOperationEntity.batchOperationId(),
+          batchOperationEntity.batchOperationKey(),
           OperationType.valueOf(batchOperationEntity.operationType()));
     }
     LOG.debug("BatchOperation '{}' not found in RDBMS", key);

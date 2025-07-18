@@ -29,23 +29,23 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
     this.batchOperationMapper = batchOperationMapper;
   }
 
-  public boolean exists(final String batchOperationId) {
+  public boolean exists(final String batchOperationKey) {
     final var query =
         new BatchOperationDbQuery.Builder()
-            .filter(b -> b.batchOperationIds(batchOperationId))
+            .filter(b -> b.batchOperationKeys(batchOperationKey))
             .build();
 
     return batchOperationMapper.count(query) == 1;
   }
 
-  public Optional<BatchOperationEntity> findOne(final String batchOperationId) {
+  public Optional<BatchOperationEntity> findOne(final String batchOperationKey) {
     final var result =
-        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationIds(batchOperationId))));
+        search(BatchOperationQuery.of(b -> b.filter(f -> f.batchOperationKeys(batchOperationKey))));
     return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
   }
 
   public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
-    final var dbSort = convertSort(query.sort(), BatchOperationSearchColumn.BATCH_OPERATION_ID);
+    final var dbSort = convertSort(query.sort(), BatchOperationSearchColumn.BATCH_OPERATION_KEY);
     final var dbQuery =
         BatchOperationDbQuery.of(
             b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));

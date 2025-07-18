@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = LicenseController.class)
 public class LicenseControllerTest extends RestControllerTest {
@@ -63,7 +64,7 @@ public class LicenseControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_LICENSE_RESPONSE);
+        .json(EXPECTED_LICENSE_RESPONSE, JsonCompareMode.STRICT);
 
     verify(managementServices).isCamundaLicenseValid();
     verify(managementServices).getCamundaLicenseType();
@@ -90,7 +91,7 @@ public class LicenseControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_LICENSE_RESPONSE_NO_EXPIRATION);
+        .json(EXPECTED_LICENSE_RESPONSE_NO_EXPIRATION, JsonCompareMode.STRICT);
 
     verify(managementServices).isCamundaLicenseValid();
     verify(managementServices).getCamundaLicenseType();

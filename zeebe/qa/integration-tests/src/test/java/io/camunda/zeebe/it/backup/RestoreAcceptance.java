@@ -23,7 +23,6 @@ import io.camunda.zeebe.restore.BackupNotFoundException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.CompletionException;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +43,6 @@ public interface RestoreAcceptance {
   default void shouldFailForNonExistingBackup() {
     // then -- restore application exits with an error code
     assertThatCode(() -> restoreBackup(1234))
-        .isInstanceOf(CompletionException.class)
         .hasRootCauseExactlyInstanceOf(BackupNotFoundException.class);
   }
 

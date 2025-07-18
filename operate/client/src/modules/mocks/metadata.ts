@@ -13,6 +13,7 @@ const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the
 const USER_TASK_FLOW_NODE_ID = 'UserTask';
 const FLOW_NODE_INSTANCE_ID = '2251799813699889';
 const PROCESS_INSTANCE_ID = '2251799813685591';
+const BUSSINESS_RULE_FLOW_NODE_ID = 'BusinessRuleTask';
 
 const baseInstanceMetadata: MetaDataDto['instanceMetadata'] = {
   flowNodeId: FLOW_NODE_ID,
@@ -230,4 +231,5 @@ export {
   CALL_ACTIVITY_FLOW_NODE_ID,
   FLOW_NODE_ID,
   USER_TASK_FLOW_NODE_ID,
+  BUSSINESS_RULE_FLOW_NODE_ID,
 };

@@ -53,63 +53,71 @@ public final class BatchOperationServices
 
   @Override
   public SearchQueryResult<BatchOperationEntity> search(final BatchOperationQuery query) {
-    return batchOperationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
-        .searchBatchOperations(query);
+    return executeSearchRequest(
+        () ->
+            batchOperationSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.batchOperation().read())))
+                .searchBatchOperations(query));
   }
 
   public SearchQueryResult<BatchOperationItemEntity> searchItems(
       final BatchOperationItemQuery query) {
-    return batchOperationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
-        .searchBatchOperationItems(query);
+    return executeSearchRequest(
+        () ->
+            batchOperationSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.batchOperation().read())))
+                .searchBatchOperationItems(query));
   }
 
-  public BatchOperationEntity getById(final String batchOperationId) {
-    return batchOperationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.batchOperation().read())))
-        .searchBatchOperations(
-            batchOperationQuery(
-                q -> q.filter(f -> f.batchOperationIds(batchOperationId)).singleResult()))
+  public BatchOperationEntity getById(final String batchOperationKey) {
+    return executeSearchRequest(
+            () ->
+                batchOperationSearchClient
+                    .withSecurityContext(
+                        securityContextProvider.provideSecurityContext(
+                            authentication, Authorization.of(a -> a.batchOperation().read())))
+                    .searchBatchOperations(
+                        batchOperationQuery(
+                            q ->
+                                q.filter(f -> f.batchOperationKeys(batchOperationKey))
+                                    .singleResult())))
         .items()
         .getFirst();
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(
-      final String batchOperationId) {
-    LOGGER.debug("Cancelling batch operation with id '{}'", batchOperationId);
+      final String batchOperationKey) {
+    LOGGER.debug("Cancelling batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =
         new BrokerCancelBatchOperationRequest()
-            .setBatchOperationKey(getBatchOperationKey(batchOperationId));
+            .setBatchOperationKey(getBatchOperationKey(batchOperationKey));
 
     return sendBrokerRequest(brokerRequest);
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> suspend(
-      final String batchOperationId) {
-    LOGGER.debug("Suspending batch operation with id '{}'", batchOperationId);
+      final String batchOperationKey) {
+    LOGGER.debug("Suspending batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =
         new BrokerSuspendBatchOperationRequest()
-            .setBatchOperationKey(getBatchOperationKey(batchOperationId));
+            .setBatchOperationKey(getBatchOperationKey(batchOperationKey));
 
     return sendBrokerRequest(brokerRequest);
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> resume(
-      final String batchOperationId) {
-    LOGGER.debug("Resuming batch operation with id '{}'", batchOperationId);
+      final String batchOperationKey) {
+    LOGGER.debug("Resuming batch operation with key '{}'", batchOperationKey);
 
     final var brokerRequest =
         new BrokerResumeBatchOperationRequest()
-            .setBatchOperationKey(getBatchOperationKey(batchOperationId));
+            .setBatchOperationKey(getBatchOperationKey(batchOperationKey));
 
     return sendBrokerRequest(brokerRequest);
   }

@@ -16,6 +16,11 @@
   <name>Zeebe QA Utilities</name>
 
   <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <dependency>
       <groupId>co.elastic.clients</groupId>
@@ -25,6 +30,12 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-reader</artifactId>
+
     </dependency>
 
     <dependency>

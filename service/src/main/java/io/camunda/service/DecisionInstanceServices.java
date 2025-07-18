@@ -17,7 +17,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig.Builder;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -51,14 +51,16 @@ public final class DecisionInstanceServices
    */
   @Override
   public SearchQueryResult<DecisionInstanceEntity> search(final DecisionInstanceQuery query) {
-    return decisionInstanceSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication,
-                Authorization.of(a -> a.decisionDefinition().readDecisionInstance())))
-        .searchDecisionInstances(
-            decisionInstanceSearchQuery(
-                q -> q.filter(query.filter()).sort(query.sort()).page(query.page())));
+    return executeSearchRequest(
+        () ->
+            decisionInstanceSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        Authorization.of(a -> a.decisionDefinition().readDecisionInstance())))
+                .searchDecisionInstances(
+                    decisionInstanceSearchQuery(
+                        q -> q.filter(query.filter()).sort(query.sort()).page(query.page()))));
   }
 
   /**
@@ -71,20 +73,23 @@ public final class DecisionInstanceServices
    */
   public DecisionInstanceEntity getById(final String decisionInstanceId) {
     final var result =
-        decisionInstanceSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchDecisionInstances(
-                decisionInstanceSearchQuery(
-                    q ->
-                        q.filter(f -> f.decisionInstanceIds(decisionInstanceId))
-                            .resultConfig(Builder::includeAll)
-                            .singleResult()))
+        executeSearchRequest(
+                () ->
+                    decisionInstanceSearchClient
+                        .withSecurityContext(
+                            securityContextProvider.provideSecurityContext(authentication))
+                        .searchDecisionInstances(
+                            decisionInstanceSearchQuery(
+                                q ->
+                                    q.filter(f -> f.decisionInstanceIds(decisionInstanceId))
+                                        .resultConfig(Builder::includeAll)
+                                        .singleResult())))
             .items()
             .getFirst();
     final var authorization = Authorization.of(a -> a.decisionDefinition().readDecisionInstance());
     if (!securityContextProvider.isAuthorized(
         result.decisionDefinitionId(), authentication, authorization)) {
-      throw new ForbiddenException(authorization);
+      throw ErrorMapper.createForbiddenException(authorization);
     }
     return result;
   }

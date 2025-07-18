@@ -20,6 +20,7 @@ import io.camunda.migration.identity.dto.Role;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.RoleMemberRequest;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -109,12 +110,13 @@ public class UserRoleMigrationHandlerTest {
     when(roleServices.addMember(any()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        RoleIntent.ADD_ENTITY,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "role membership exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            RoleIntent.ADD_ENTITY,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "role membership exists")))));
 
     // when
     userRoleMigrationHandler.migrate();

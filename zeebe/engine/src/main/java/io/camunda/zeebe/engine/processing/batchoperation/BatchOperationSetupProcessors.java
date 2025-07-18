@@ -133,11 +133,7 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.COMPLETE_PARTITION,
             new BatchOperationLeadPartitionCompleteProcessor(
-                writers,
-                processingState,
-                commandDistributionBehavior,
-                partitionId,
-                batchOperationMetrics))
+                writers, processingState, commandDistributionBehavior, batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL_PARTITION,

@@ -79,6 +79,7 @@ public final class AsyncSnapshottingTest {
                     new TestIndexedRaftLogEntry(
                         l + 100, 1, new SerializedApplicationEntry(1, 10, new UnsafeBuffer()))),
             db -> Long.MAX_VALUE,
+            db -> Long.MAX_VALUE,
             new TestConcurrencyControl());
 
     snapshotController.recover().join();

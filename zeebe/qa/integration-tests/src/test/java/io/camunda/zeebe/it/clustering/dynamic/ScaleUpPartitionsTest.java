@@ -17,8 +17,8 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.client.CamundaClient;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;

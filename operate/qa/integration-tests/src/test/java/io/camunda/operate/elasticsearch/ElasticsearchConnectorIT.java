@@ -14,6 +14,7 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.TestPlugin;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.webapps.schema.SupportedVersions;
@@ -29,7 +30,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -40,9 +40,12 @@ import org.testcontainers.utility.DockerImageName;
 
 @Testcontainers
 @SpringBootTest(
-    classes = {ElasticsearchConnector.class, DatabaseInfo.class, OperateProperties.class},
+    classes = {
+      ElasticsearchConnector.class,
+      DatabaseInfo.class,
+      TestOperatePropertiesOverride.class
+    },
     properties = OperateProperties.PREFIX + ".database=elasticsearch")
-@EnableConfigurationProperties(OperateProperties.class)
 public class ElasticsearchConnectorIT {
 
   @Container

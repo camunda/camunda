@@ -25,7 +25,7 @@ import java.util.List;
 
 public class BatchOperationImpl implements BatchOperation {
 
-  private final String batchOperationId;
+  private final String batchOperationKey;
   private final BatchOperationType type;
   private final BatchOperationState status;
   private final String startDate;
@@ -36,7 +36,7 @@ public class BatchOperationImpl implements BatchOperation {
   private final List<Long> keys = new ArrayList<>();
 
   public BatchOperationImpl(final BatchOperationCreatedResult item) {
-    batchOperationId = item.getBatchOperationId();
+    batchOperationKey = item.getBatchOperationKey();
     type =
         item.getBatchOperationType() != null
             ? BatchOperationType.valueOf(item.getBatchOperationType().name())
@@ -50,7 +50,7 @@ public class BatchOperationImpl implements BatchOperation {
   }
 
   public BatchOperationImpl(final BatchOperationResponse item) {
-    batchOperationId = item.getBatchOperationId();
+    batchOperationKey = item.getBatchOperationKey();
     type =
         item.getBatchOperationType() != null
             ? BatchOperationType.valueOf(item.getBatchOperationType().name())
@@ -64,8 +64,8 @@ public class BatchOperationImpl implements BatchOperation {
   }
 
   @Override
-  public String getBatchOperationId() {
-    return batchOperationId;
+  public String getBatchOperationKey() {
+    return batchOperationKey;
   }
 
   @Override

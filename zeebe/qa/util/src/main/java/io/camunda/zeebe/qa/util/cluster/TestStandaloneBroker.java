@@ -7,13 +7,15 @@
  */
 package io.camunda.zeebe.qa.util.cluster;
 
+import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.security.configuration.ConfiguredMapping;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -98,6 +100,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 List.of(DEFAULT_MAPPING_ID)));
 
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+    withProperty(
+        AuthenticationProperties.API_UNPROTECTED,
+        securityConfig.getAuthentication().getUnprotectedApi());
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);
@@ -194,6 +199,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   /** Enables multi-tenancy in the security configuration. */
   public TestStandaloneBroker withMultiTenancyEnabled() {
+    withProperty("camunda.security.multiTenancy.enabled", "true");
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setEnabled(true));
   }
 
@@ -302,7 +308,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   public TestStandaloneBroker withRdbmsExporter() {
-    withProperty("camunda.database.type", "rdbms");
+    withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, "rdbms");
     withProperty(
         "camunda.database.url",
         "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");

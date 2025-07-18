@@ -9,6 +9,7 @@ package io.camunda.exporter.store;
 
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -16,6 +17,8 @@ import java.util.function.BiConsumer;
 /** A {@link BatchRequest} contains updates to one or more {@link ExporterEntity} */
 @SuppressWarnings("rawtypes")
 public interface BatchRequest {
+
+  BatchRequest withMetrics(final CamundaExporterMetrics metrics);
 
   BatchRequest add(String index, ExporterEntity entity);
 

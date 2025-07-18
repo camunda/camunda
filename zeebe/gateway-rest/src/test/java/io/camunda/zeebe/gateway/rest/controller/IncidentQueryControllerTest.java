@@ -23,6 +23,7 @@ import io.camunda.search.sort.IncidentSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -33,6 +34,7 @@ import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = IncidentController.class)
 public class IncidentQueryControllerTest extends RestControllerTest {
@@ -59,7 +61,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }""";
 
@@ -146,7 +149,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(incidentServices).search(new IncidentQuery.Builder().build());
   }
@@ -169,7 +172,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(incidentServices).search(new IncidentQuery.Builder().build());
   }
@@ -210,7 +213,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     final var creationTime = OffsetDateTime.of(2024, 5, 23, 23, 5, 0, 0, ZoneOffset.UTC);
 
@@ -262,7 +265,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(incidentServices)
         .search(
@@ -284,7 +287,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_GET_RESPONSE);
+        .json(EXPECTED_GET_RESPONSE, JsonCompareMode.STRICT);
 
     verify(incidentServices).getByKey(23L);
   }
@@ -292,7 +295,9 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetIncidentByKey() {
     when(incidentServices.getByKey(any(Long.class)))
-        .thenThrow(new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND));
+        .thenThrow(
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException("", CamundaSearchException.Reason.NOT_FOUND)));
     // when / then
     webClient
         .get()

@@ -7,10 +7,11 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
-import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CANCELED;
-import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETED;
-import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CREATED;
-import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.MIGRATED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.CLAIMING;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETION_DENIED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATE_DENIED;
 
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
@@ -25,20 +26,34 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
+import java.util.EnumSet;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Based on UserTaskRecordToTaskEntityMapper */
 public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
 
+  private static final Logger LOG = LoggerFactory.getLogger(UserTaskExportHandler.class);
+
   private static final Set<UserTaskIntent> EXPORTABLE_INTENTS =
-      Set.of(
+      EnumSet.of(
+          UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
-          UserTaskIntent.UPDATED,
-          UserTaskIntent.CANCELED,
+          UserTaskIntent.ASSIGNING,
+          UserTaskIntent.CLAIMING,
           UserTaskIntent.ASSIGNED,
+          UserTaskIntent.UPDATING,
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
-          UserTaskIntent.MIGRATED);
+          UserTaskIntent.CANCELING,
+          UserTaskIntent.CANCELED,
+          UserTaskIntent.MIGRATED,
+          UserTaskIntent.ASSIGNMENT_DENIED,
+          UserTaskIntent.UPDATE_DENIED,
+          UserTaskIntent.COMPLETION_DENIED);
 
   private final UserTaskWriter userTaskWriter;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
@@ -63,20 +78,38 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
   public void export(final Record<UserTaskRecordValue> record) {
     final UserTaskRecordValue value = record.getValue();
     switch (record.getIntent()) {
-      case CREATED -> userTaskWriter.create(map(record, UserTaskState.CREATED, null));
-      case CANCELED ->
+      case UserTaskIntent.CREATING ->
+          userTaskWriter.create(
+              map(record, UserTaskState.CREATING, null).toBuilder()
+                  // Clear assignee as it shouldn't be persisted yet. While the CREATING event may
+                  // contain it (if defined in the BPMN model), it's only used internally to trigger
+                  // the assignment transition after the CREATED event. Externally, the task should
+                  // remain unassigned until the ASSIGNED event is exported.
+                  .assignee(null)
+                  .build());
+      case UserTaskIntent.ASSIGNING, CLAIMING ->
+          userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.ASSIGNING);
+      case UserTaskIntent.UPDATING ->
+          userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.UPDATING);
+      case UserTaskIntent.COMPLETING ->
+          userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.COMPLETING);
+      case UserTaskIntent.CANCELING ->
+          userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CANCELING);
+      case UserTaskIntent.CREATED, ASSIGNED, UPDATED ->
+          userTaskWriter.update(map(record, UserTaskState.CREATED, null));
+      case UserTaskIntent.CANCELED ->
           userTaskWriter.update(
               map(
                   record,
                   UserTaskState.CANCELED,
                   DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case COMPLETED ->
+      case UserTaskIntent.COMPLETED ->
           userTaskWriter.update(
               map(
                   record,
                   UserTaskState.COMPLETED,
                   DateUtil.toOffsetDateTime(record.getTimestamp())));
-      case MIGRATED ->
+      case UserTaskIntent.MIGRATED ->
           userTaskWriter.migrateToProcess(
               new UserTaskMigrationDbModel.Builder()
                   .userTaskKey(value.getUserTaskKey())
@@ -89,7 +122,13 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                           .orElse(null))
                   .processDefinitionVersion(value.getProcessDefinitionVersion())
                   .build());
-      default -> userTaskWriter.update(map(record, null, null));
+      case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
+          userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CREATED);
+      default ->
+          // All currently supported intents are handled explicitly above.
+          // If new intent is added to EXPORTABLE_INTENTS but not handled here,
+          // this default case ensures it is ignored until explicitly supported.
+          LOG.warn("Unexpected intent {} for user task record", record.getIntent());
     }
   }
 

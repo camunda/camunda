@@ -24,13 +24,14 @@ import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
-import io.camunda.exporter.rdbms.handlers.MappingExportHandler;
+import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.RoleExportHandler;
 import io.camunda.exporter.rdbms.handlers.SequenceFlowExportHandler;
 import io.camunda.exporter.rdbms.handlers.TenantExportHandler;
+import io.camunda.exporter.rdbms.handlers.UsageMetricExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
@@ -240,7 +241,7 @@ public class RdbmsExporterWrapper implements Exporter {
           ValueType.PROCESS,
           new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter(), processCache));
       builder.withHandler(
-          ValueType.MAPPING, new MappingExportHandler(rdbmsWriter.getMappingWriter()));
+          ValueType.MAPPING, new MappingRuleExportHandler(rdbmsWriter.getMappingRuleWriter()));
       builder.withHandler(ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
       builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriter.getRoleWriter()));
       builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriter.getUserWriter()));
@@ -286,6 +287,8 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new SequenceFlowExportHandler(rdbmsWriter.getSequenceFlowWriter()));
+    builder.withHandler(
+        ValueType.USAGE_METRIC, new UsageMetricExportHandler(rdbmsWriter.getUsageMetricWriter()));
   }
 
   private void createBatchOperationHandlers(

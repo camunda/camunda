@@ -35,14 +35,29 @@ public final class VirtualMachineErrorHandler
    * there is no action we can take to resolve them, and it is safer to terminate and let a
    * hypervisor restart Zeebe.
    *
+   * <p>ClassCircularityError might occur while gateway loading virtual threads due to a known bug
+   * https://github.com/corretto/corretto-21/issues/65. gRPC wraps such errors in an
+   * IllegalStateException, so we should detect such a case and let a hypervisor restart Zeebe.
+   *
    * @param e the throwable
    */
   @Override
   public void handleError(final Throwable e) {
     if (e instanceof VirtualMachineError || e instanceof ClassCircularityError) {
-      tryLogging(e);
-      System.exit(EXIT_CODE);
+      tryLoggingThenExit(e);
     }
+
+    if (e instanceof IllegalStateException) {
+      final Throwable cause = e.getCause();
+      if (cause instanceof ClassCircularityError) {
+        tryLoggingThenExit(cause);
+      }
+    }
+  }
+
+  private void tryLoggingThenExit(final Throwable cause) {
+    tryLogging(cause);
+    System.exit(EXIT_CODE);
   }
 
   private void tryLogging(final Throwable e) {

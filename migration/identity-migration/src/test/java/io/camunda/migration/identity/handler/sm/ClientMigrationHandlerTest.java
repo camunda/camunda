@@ -7,6 +7,10 @@
  */
 package io.camunda.migration.identity.handler.sm;
 
+import static io.camunda.migration.identity.dto.ClientType.CONFIDENTIAL;
+import static io.camunda.migration.identity.dto.ClientType.M2M;
+import static io.camunda.migration.identity.dto.ClientType.PUBLIC;
+import static io.camunda.migration.identity.dto.ClientType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,6 +25,7 @@ import io.camunda.migration.identity.dto.Permission;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -63,7 +68,9 @@ public class ClientMigrationHandlerTest {
         .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
     when(managementIdentityClient.fetchClients())
         .thenReturn(
-            List.of(new Client("client1", "ClientOne"), new Client("client2", "ClientTwo")));
+            List.of(
+                new Client("client1", "ClientOne", CONFIDENTIAL),
+                new Client("client2", "ClientTwo", M2M)));
     when(managementIdentityClient.fetchClientPermissions(anyString()))
         .thenReturn(
             List.of(
@@ -210,20 +217,47 @@ public class ClientMigrationHandlerTest {
   }
 
   @Test
+  public void shouldSkipUnsupportedClients() {
+    // given
+    final String validClientId = "client3";
+    when(managementIdentityClient.fetchClients())
+        .thenReturn(
+            List.of(
+                new Client("client1", "ClientTwo", PUBLIC),
+                new Client("client2", "ClientTwo", UNKNOWN),
+                new Client(validClientId, "ClientOne", CONFIDENTIAL)));
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+    when(managementIdentityClient.fetchClientPermissions(anyString()))
+        .thenReturn(List.of(new Permission("write:*", "zeebe-api")));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(managementIdentityClient, times(1)).fetchClientPermissions(validClientId);
+    // zeebe write results in 6 authorizations
+    verify(authorizationServices, times(6)).createAuthorization(any());
+  }
+
+  @Test
   public void shouldContinueMigrationWithConflicts() {
     // given
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.CREATE,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "authorization already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.CREATE,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "authorization already exists")))));
     when(managementIdentityClient.fetchClients())
         .thenReturn(
-            List.of(new Client("client1", "ClientOne"), new Client("client2", "ClientTwo")));
+            List.of(
+                new Client("client1", "ClientOne", CONFIDENTIAL),
+                new Client("client2", "ClientTwo", M2M)));
     when(managementIdentityClient.fetchClientPermissions(anyString()))
         .thenReturn(
             List.of(

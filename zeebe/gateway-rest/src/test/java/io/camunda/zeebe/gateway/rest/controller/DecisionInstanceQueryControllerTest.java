@@ -27,7 +27,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -42,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = DecisionInstanceController.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
@@ -62,13 +63,15 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "decisionDefinitionName": "ddn",
                        "decisionDefinitionVersion": 0,
                        "decisionDefinitionType": "DECISION_TABLE",
-                       "result": "result"
+                       "result": "result",
+                       "tenantId": "tenantId"
                    }
                ],
                "page": {
                    "totalItems": 1,
                    "startCursor": "f",
-                   "endCursor": "v"
+                   "endCursor": "v",
+                   "hasMoreTotalItems": false
                }
            }""";
 
@@ -184,7 +187,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -201,7 +204,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -298,9 +301,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     final var decisionInstanceId = "123-1";
     when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision instance with key 123-1 was not found.",
-                CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision instance with key 123-1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
     // when
     webClient
         .get()
@@ -355,7 +359,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     final var decisionInstanceId = "123-1";
     when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(
-            new ForbiddenException(
+            ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionDefinition().readDecisionInstance())));
     // when
     webClient
@@ -371,7 +375,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             """
                   {
                   "type": "about:blank",
-                  "title": "io.camunda.service.exception.ForbiddenException",
+                  "title": "FORBIDDEN",
                   "status": 403,
                   "detail": "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
                   "instance": "/v2/decision-instances/123-1"
@@ -422,7 +426,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices)
         .search(new DecisionInstanceQuery.Builder().filter(filter).build());
@@ -455,7 +459,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
   }
@@ -487,7 +491,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
   }

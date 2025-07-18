@@ -27,6 +27,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -101,12 +102,13 @@ public class GroupMigrationHandlerTest {
     when(groupService.createGroup(any()))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.CREATE,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "group already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.CREATE,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "group already exists")))));
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
         .thenReturn(List.of());
@@ -238,12 +240,13 @@ public class GroupMigrationHandlerTest {
     when(groupService.createGroup(any(GroupDTO.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.CREATE,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "group already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.CREATE,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "group already exists")))));
     when(groupService.assignMember(any(GroupMemberDTO.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(consoleClient.fetchMembers()).thenReturn(new Members(List.of(), List.of()));
@@ -273,12 +276,13 @@ public class GroupMigrationHandlerTest {
     when(groupService.assignMember(any(GroupMemberDTO.class)))
         .thenReturn(
             CompletableFuture.failedFuture(
-                new BrokerRejectionException(
-                    new BrokerRejection(
-                        GroupIntent.ADD_ENTITY,
-                        -1,
-                        RejectionType.ALREADY_EXISTS,
-                        "member already exists"))));
+                ErrorMapper.mapError(
+                    new BrokerRejectionException(
+                        new BrokerRejection(
+                            GroupIntent.ADD_ENTITY,
+                            -1,
+                            RejectionType.ALREADY_EXISTS,
+                            "member already exists")))));
     when(consoleClient.fetchMembers()).thenReturn(new Members(List.of(), List.of()));
 
     // when

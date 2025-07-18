@@ -33,6 +33,7 @@ import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = JobController.class)
 public class JobQueryControllerTest extends RestControllerTest {
@@ -72,7 +73,8 @@ public class JobQueryControllerTest extends RestControllerTest {
             "page": {
                 "totalItems": 1,
                 "startCursor": "123base64",
-                "endCursor": "456base64"
+                "endCursor": "456base64",
+                "hasMoreTotalItems": false
             }
         }
         """;
@@ -135,7 +137,7 @@ public class JobQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(jobServices).search(new JobQuery.Builder().build());
   }
@@ -186,7 +188,7 @@ public class JobQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(jobServices)
         .search(
@@ -263,7 +265,7 @@ public class JobQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(jobServices)
         .search(

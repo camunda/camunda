@@ -18,6 +18,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
@@ -52,6 +53,15 @@ public class CamundaUserDetailsServiceTest {
     userDetailsService =
         new CamundaUserDetailsService(
             userService, authorizationServices, roleServices, tenantServices, groupServices);
+    when(userService.withAuthentication(any(CamundaAuthentication.class))).thenReturn(userService);
+    when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(authorizationServices);
+    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(roleServices);
+    when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(tenantServices);
+    when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(groupServices);
   }
 
   @Test

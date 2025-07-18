@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Import;
           value = OperateModuleConfiguration.class),
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import(WebappsModuleConfiguration.class)
+@Import({WebappsModuleConfiguration.class, TestOperatePropertiesOverride.class})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {

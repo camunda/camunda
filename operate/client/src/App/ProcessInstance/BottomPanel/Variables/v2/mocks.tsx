@@ -8,8 +8,6 @@
 
 import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {Form} from 'react-final-form';
-import arrayMutators from 'final-form-arrays';
 import {useEffect} from 'react';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {variablesStore} from 'modules/stores/variables';
@@ -19,7 +17,7 @@ import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {createInstance} from 'modules/testUtils';
 import type {VariableEntity} from 'modules/types/operate';
 
@@ -57,16 +55,7 @@ const getWrapper = (
         <QueryClientProvider client={getMockQueryClient()}>
           <MemoryRouter initialEntries={initialEntries}>
             <Routes>
-              <Route
-                path={Paths.processInstance()}
-                element={
-                  <Form onSubmit={() => {}} mutators={{...arrayMutators}}>
-                    {({handleSubmit}) => {
-                      return <form onSubmit={handleSubmit}>{children} </form>;
-                    }}
-                  </Form>
-                }
-              />
+              <Route path={Paths.processInstance()} element={children} />
             </Routes>
           </MemoryRouter>
         </QueryClientProvider>

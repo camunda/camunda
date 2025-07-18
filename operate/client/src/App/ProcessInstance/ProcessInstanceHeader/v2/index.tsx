@@ -10,7 +10,6 @@ import isNil from 'lodash/isNil';
 import {formatDate} from 'modules/utils/date';
 import {Operations} from 'modules/components/Operations/v2';
 import {getProcessDefinitionName} from 'modules/utils/instance';
-import {variablesStore} from 'modules/stores/variables';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
 import {Restricted} from 'modules/components/Restricted';
@@ -25,12 +24,16 @@ import {VersionTag} from '../styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
 import {useQueryClient} from '@tanstack/react-query';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 import {useNavigate} from 'react-router-dom';
+import {useProcessInstanceOperations} from 'modules/hooks/useProcessInstanceOperations';
+import {ProcessInstanceOperationsContext} from './processInstanceOperationsContext';
+import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
+import {useHasActiveBatchOperationMutation} from 'modules/mutations/processInstance/useHasActiveBatchOperationMutation';
 
 const headerColumns = [
   'Process Name',
@@ -85,7 +88,11 @@ type Props = {
 const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const queryClient = useQueryClient();
   const {data: permissions} = usePermissions();
-  const {data: hasActiveOperation} = useHasActiveOperations();
+  const {data: hasActiveOperationLegacy} = useHasActiveOperations();
+  const hasActiveBatchOperationMutation = useHasActiveBatchOperationMutation(
+    processInstance.processInstanceKey,
+  );
+
   const navigate = useNavigate();
 
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
@@ -94,6 +101,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
     processDefinitionKey,
   });
+  const {cancellation} = useProcessInstanceOperations(processInstance.state);
 
   if (processInstance === null || isPending) {
     return <Skeleton headerColumns={skeletonColumns} />;
@@ -264,7 +272,15 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
             permissions: permissions,
           }}
         >
-          <>
+          <ProcessInstanceOperationsContext.Provider
+            value={{
+              cancellation: {
+                isPending: cancellation.isPending,
+                onError: () => cancellation.setIsPending(false),
+                onMutate: () => cancellation.setIsPending(true),
+              },
+            }}
+          >
             <Operations
               instance={processInstance}
               onOperation={() => {
@@ -315,14 +331,16 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                 }
               }}
               forceSpinner={
-                variablesStore.hasActiveOperation || hasActiveOperation
+                cancellation.isPending ||
+                hasActiveOperationLegacy ||
+                (IS_BATCH_OPERATIONS_V2 && hasActiveBatchOperationMutation)
               }
               isInstanceModificationVisible={
                 !modificationsStore.isModificationModeEnabled
               }
               permissions={permissions}
             />
-          </>
+          </ProcessInstanceOperationsContext.Provider>
         </Restricted>
       }
     />

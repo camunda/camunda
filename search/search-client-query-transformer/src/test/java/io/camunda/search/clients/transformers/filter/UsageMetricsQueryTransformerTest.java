@@ -11,14 +11,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public final class UsageMetricsQueryTransformerTest extends AbstractTransformerTest {
@@ -91,5 +97,146 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
     // when
     transformer.toSearchQuery(filter);
     assertThat(transformer.getIndex()).isEqualTo(tasklistMetricIndex);
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckWhenEnabled() {
+    // given
+    final var startTime = OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var authorization =
+        Authorization.of(
+            a -> a.processDefinition().readProcessInstance().resourceIds(List.of("1", "2")));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(
+            FilterBuilders.usageMetrics(
+                f ->
+                    f.startTime(startTime).endTime(endTime).events("EVENT_PROCESS_INSTANCE_START")),
+            resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(2));
+  }
+
+  @Test
+  public void shouldReturnNonMatchWhenNoResourceIdsProvided() {
+    // given
+    final var startTime = OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(
+            FilterBuilders.usageMetrics(
+                f ->
+                    f.startTime(startTime).endTime(endTime).events("EVENT_PROCESS_INSTANCE_START")),
+            resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchMatchNoneQuery.class);
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckWhenDisabled() {
+    // given
+    final var startTime = OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(
+            FilterBuilders.usageMetrics(
+                f ->
+                    f.startTime(startTime).endTime(endTime).events("EVENT_PROCESS_INSTANCE_START")),
+            resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(2));
+  }
+
+  @Test
+  public void shouldApplyTenantCheck() {
+    // given
+    final var startTime = OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(
+            FilterBuilders.usageMetrics(
+                f ->
+                    f.startTime(startTime).endTime(endTime).events("EVENT_PROCESS_INSTANCE_START")),
+            resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(2));
+  }
+
+  @Test
+  public void shouldIgnoreTenantCheckWhenDisabled() {
+    // given
+    final var startTime = OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var tenantCheck = TenantCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(
+            FilterBuilders.usageMetrics(
+                f ->
+                    f.startTime(startTime).endTime(endTime).events("EVENT_PROCESS_INSTANCE_START")),
+            resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(2));
+  }
+
+  @Test
+  public void shouldApplyFilterAndChecks() {
+    // given
+    final var startTime = OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks = ResourceAccessChecks.of(authorizationCheck, tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(
+            FilterBuilders.usageMetrics(
+                f ->
+                    f.startTime(startTime).endTime(endTime).events("EVENT_PROCESS_INSTANCE_START")),
+            resourceAccessChecks);
+
+    // then
+    final var queryVariant = searchQuery.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(2));
   }
 }

@@ -738,7 +738,7 @@ public final class FileBasedSnapshotStoreImpl {
   public ActorFuture<PersistedSnapshot> copyForBootstrap(
       final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
     final var snapshotPath = persistedSnapshot.getPath();
-    final var zeroedSnapshotId = new FileBasedSnapshotId(1, 1, 0, 0, brokerId);
+    final var zeroedSnapshotId = FileBasedSnapshotId.forBoostrap(brokerId);
 
     final var destinationFolder = buildSnapshotDirectory(zeroedSnapshotId, true);
 

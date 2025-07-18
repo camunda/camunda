@@ -62,8 +62,8 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
     createMockZeebeCommand();
 
     // Create batch command that would exist in search before execution
-    final String batchOperationId = UUID.randomUUID().toString();
-    createBatchCommandDocument(batchOperationId);
+    final String batchOperationKey = UUID.randomUUID().toString();
+    createBatchCommandDocument(batchOperationKey);
 
     // Create operation entity to process
     final ModifyProcessInstanceRequestDto modifyInstructions =
@@ -74,7 +74,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
                     new Modification().setModification(Type.ADD_TOKEN).setToFlowNodeId("taskB")));
 
     final OperationEntity operation =
-        createOperationEntityDocument(batchOperationId, modifyInstructions);
+        createOperationEntityDocument(batchOperationKey, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
     // when
@@ -111,8 +111,8 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
     createMockZeebeCommand();
 
     // Create batch command that would exist in search before execution
-    final String batchOperationId = UUID.randomUUID().toString();
-    createBatchCommandDocument(batchOperationId);
+    final String batchOperationKey = UUID.randomUUID().toString();
+    createBatchCommandDocument(batchOperationKey);
 
     // Create operation entity to process
     final ModifyProcessInstanceRequestDto modifyInstructions =
@@ -126,7 +126,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
                         .setVariables(Map.of("taskB", List.of(Map.of("c", "d"))))));
 
     final OperationEntity operation =
-        createOperationEntityDocument(batchOperationId, modifyInstructions);
+        createOperationEntityDocument(batchOperationKey, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
     // when
@@ -168,8 +168,8 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
         .thenReturn(List.of(123L));
 
     // Create batch command that would exist in search before execution
-    final String batchOperationId = UUID.randomUUID().toString();
-    createBatchCommandDocument(batchOperationId);
+    final String batchOperationKey = UUID.randomUUID().toString();
+    createBatchCommandDocument(batchOperationKey);
 
     // Create operation entity to process
     final String operationId = UUID.randomUUID().toString();
@@ -183,7 +183,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
                         .setFromFlowNodeId("taskA")));
 
     final OperationEntity operation =
-        createOperationEntityDocument(batchOperationId, modifyInstructions);
+        createOperationEntityDocument(batchOperationKey, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
     // when
@@ -228,8 +228,8 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
         .thenReturn(List.of(123L));
 
     // Create batch command that would exist in search before execution
-    final String batchOperationId = UUID.randomUUID().toString();
-    createBatchCommandDocument(batchOperationId);
+    final String batchOperationKey = UUID.randomUUID().toString();
+    createBatchCommandDocument(batchOperationKey);
 
     // Create operation entity to process
     final ModifyProcessInstanceRequestDto modifyInstructions =
@@ -243,7 +243,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
                         .setToFlowNodeId("taskB")));
 
     final OperationEntity operation =
-        createOperationEntityDocument(batchOperationId, modifyInstructions);
+        createOperationEntityDocument(batchOperationKey, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
     // when
@@ -305,21 +305,21 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
     when(((ModifyProcessInstanceCommandStep3) mockZeebeCommand).send()).thenReturn(response);
   }
 
-  private void createBatchCommandDocument(final String batchOperationId) throws IOException {
+  private void createBatchCommandDocument(final String batchOperationKey) throws IOException {
     final BatchOperationEntity batchOperation =
         new BatchOperationEntity()
-            .setId(batchOperationId)
+            .setId(batchOperationKey)
             .setType(OperationType.MODIFY_PROCESS_INSTANCE)
             .setStartDate(OffsetDateTime.now())
             .setUsername("testuser")
             .setInstancesCount(1)
             .setOperationsTotalCount(1);
     testSearchRepository.createOrUpdateDocumentFromObject(
-        batchOperationTemplate.getFullQualifiedName(), batchOperationId, batchOperation);
+        batchOperationTemplate.getFullQualifiedName(), batchOperationKey, batchOperation);
   }
 
   private OperationEntity createOperationEntityDocument(
-      final String batchOperationId, final ModifyProcessInstanceRequestDto modifyInstructions)
+      final String batchOperationKey, final ModifyProcessInstanceRequestDto modifyInstructions)
       throws IOException {
     final OperationEntity operation =
         new OperationEntity()
@@ -329,7 +329,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstract
             .setBpmnProcessId("demoProcess")
             .setType(OperationType.MODIFY_PROCESS_INSTANCE)
             .setState(OperationState.LOCKED)
-            .setBatchOperationId(batchOperationId)
+            .setBatchOperationId(batchOperationKey)
             .setLockOwner(operateProperties.getOperationExecutor().getWorkerId())
             .setModifyInstructions(objectMapper.writeValueAsString(modifyInstructions));
 

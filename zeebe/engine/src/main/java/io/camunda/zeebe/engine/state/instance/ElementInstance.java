@@ -26,33 +26,58 @@ import org.agrona.DirectBuffer;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
 
-  private final LongProperty parentKeyProp = new LongProperty("parentKey", -1L);
-  private final IntegerProperty childCountProp = new IntegerProperty("childCount", 0);
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue PARENT_KEY = new StringValue("parentKey");
+  private static final StringValue CHILD_COUNT = new StringValue("childCount");
+  private static final StringValue CHILD_ACTIVATED_COUNT = new StringValue("childActivatedCount");
+  private static final StringValue CHILD_COMPLETED_COUNT = new StringValue("childCompletedCount");
+  private static final StringValue CHILD_TERMINATED_COUNT = new StringValue("childTerminatedCount");
+  private static final StringValue JOB_KEY = new StringValue("jobKey");
+  private static final StringValue MULTI_INSTANCE_LOOP_COUNTER =
+      new StringValue("multiInstanceLoopCounter");
+  private static final StringValue INTERRUPTING_ELEMENT_ID =
+      new StringValue("interruptingElementId");
+  private static final StringValue CALLED_CHILD_INSTANCE_KEY =
+      new StringValue("calledChildInstanceKey");
+  private static final StringValue ELEMENT_RECORD = new StringValue("elementRecord");
+  private static final StringValue ACTIVE_SEQUENCE_FLOWS = new StringValue("activeSequenceFlows");
+  private static final StringValue ACTIVE_SEQUENCE_FLOW_IDS =
+      new StringValue("activeSequenceFlowIds");
+  private static final StringValue USER_TASK_KEY = new StringValue("userTaskKey");
+  private static final StringValue EXECUTION_LISTENER_INDEX =
+      new StringValue("executionListenerIndex");
+  private static final StringValue TASK_LISTENER_INDICES_RECORD =
+      new StringValue("taskListenerIndicesRecord");
+  private static final StringValue PROCESS_DEPTH = new StringValue("processDepth");
+
+  private final LongProperty parentKeyProp = new LongProperty(PARENT_KEY, -1L);
+  private final IntegerProperty childCountProp = new IntegerProperty(CHILD_COUNT, 0);
   private final IntegerProperty childActivatedCountProp =
-      new IntegerProperty("childActivatedCount", 0);
+      new IntegerProperty(CHILD_ACTIVATED_COUNT, 0);
   private final IntegerProperty childCompletedCountProp =
-      new IntegerProperty("childCompletedCount", 0);
+      new IntegerProperty(CHILD_COMPLETED_COUNT, 0);
   private final IntegerProperty childTerminatedCountProp =
-      new IntegerProperty("childTerminatedCount", 0);
-  private final LongProperty jobKeyProp = new LongProperty("jobKey", 0L);
+      new IntegerProperty(CHILD_TERMINATED_COUNT, 0);
+  private final LongProperty jobKeyProp = new LongProperty(JOB_KEY, 0L);
   private final IntegerProperty multiInstanceLoopCounterProp =
-      new IntegerProperty("multiInstanceLoopCounter", 0);
+      new IntegerProperty(MULTI_INSTANCE_LOOP_COUNTER, 0);
   private final StringProperty interruptingEventKeyProp =
-      new StringProperty("interruptingElementId", "");
+      new StringProperty(INTERRUPTING_ELEMENT_ID, "");
   private final LongProperty calledChildInstanceKeyProp =
-      new LongProperty("calledChildInstanceKey", -1L);
+      new LongProperty(CALLED_CHILD_INSTANCE_KEY, -1L);
   private final ObjectProperty<IndexedRecord> recordProp =
-      new ObjectProperty<>("elementRecord", new IndexedRecord());
+      new ObjectProperty<>(ELEMENT_RECORD, new IndexedRecord());
   private final IntegerProperty activeSequenceFlowsProp =
-      new IntegerProperty("activeSequenceFlows", 0);
+      new IntegerProperty(ACTIVE_SEQUENCE_FLOWS, 0);
   private final ArrayProperty<StringValue> activeSequenceFlowIdsProp =
-      new ArrayProperty<>("activeSequenceFlowIds", StringValue::new);
-  private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
+      new ArrayProperty<>(ACTIVE_SEQUENCE_FLOW_IDS, StringValue::new);
+  private final LongProperty userTaskKeyProp = new LongProperty(USER_TASK_KEY, -1L);
   private final IntegerProperty executionListenerIndexProp =
-      new IntegerProperty("executionListenerIndex", 0);
+      new IntegerProperty(EXECUTION_LISTENER_INDEX, 0);
   private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
-      new ObjectProperty<>("taskListenerIndicesRecord", new TaskListenerIndicesRecord());
+      new ObjectProperty<>(TASK_LISTENER_INDICES_RECORD, new TaskListenerIndicesRecord());
   private final BooleanProperty isSuspendedProp = new BooleanProperty("isSuspended", false);
+  private final IntegerProperty processDepth = new IntegerProperty(PROCESS_DEPTH, 1);
 
   /**
    * Expresses the current depth of the process instance in the called process tree.
@@ -68,8 +93,6 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
    *     or after the property was added that are part of a root process instance created prior to
    *     the property existed, will not have a correct depth.
    */
-  private final IntegerProperty processDepth = new IntegerProperty("processDepth", 1);
-
   public ElementInstance() {
     super(17);
     declareProperty(parentKeyProp)

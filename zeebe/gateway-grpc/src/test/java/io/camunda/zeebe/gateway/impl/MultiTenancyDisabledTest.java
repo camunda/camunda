@@ -76,7 +76,6 @@ public class MultiTenancyDisabledTest extends GatewayTest {
   private void assertThatRejectsRequest(final ThrowingCallable requestCallable, final String name) {
     assertThatThrownBy(requestCallable)
         .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining("Expected to handle gRPC request " + name)
         .hasMessageContaining("but multi-tenancy is disabled");
   }
 
@@ -269,7 +268,7 @@ public class MultiTenancyDisabledTest extends GatewayTest {
         .until(() -> !streamObserver.getErrors().isEmpty());
     assertThat(streamObserver.getErrors().get(0))
         .is(statusRuntimeExceptionWithStatusCode(Status.INVALID_ARGUMENT.getCode()))
-        .hasMessageContaining("Expected to handle gRPC request StreamActivatedJobs")
+        .hasMessageContaining("Expected to handle request StreamActivatedJobs")
         .hasMessageContaining("but multi-tenancy is disabled");
   }
 

@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.commons.lang3.NotImplementedException;
 
 public class AuthorizationMigrationHandler extends MigrationHandler<Authorization> {
 
@@ -54,44 +55,50 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
   protected void process(final List<Authorization> batch) {
     final var usersEmailByUsername = getAllUsers();
 
-    usersEmailByUsername.forEach(
-        user -> {
-          final var authorizations = managementIdentityClient.fetchUserAuthorizations(user.getId());
+    try {
+      usersEmailByUsername.forEach(
+          user -> {
+            final List<Authorization> authorizations =
+                managementIdentityClient.fetchUserAuthorizations(user.getId());
 
-          authorizations.forEach(
-              authorization -> {
-                final var request =
-                    new CreateAuthorizationRequest(
-                        user.getEmail(),
-                        AuthorizationOwnerType.USER,
-                        authorization.resourceKey(),
-                        convertResourceType(authorization.resourceType()),
-                        convertPermissions(
-                            authorization.permissions(), authorization.resourceType()));
-                try {
-                  authorizationService.createAuthorization(request).join();
-                  createdAuthorizationsCount.incrementAndGet();
-                  logger.debug(
-                      "Migrated authorization: {} to an Authorization with ownerId: {}",
-                      authorization,
-                      request.ownerId());
-                } catch (final Exception e) {
-                  if (!isConflictError(e)) {
-                    throw new RuntimeException(
-                        "Failed to migrate authorization for entity with ID: "
-                            + authorization.entityId()
-                            + " and owner with ID: "
-                            + user.getEmail(),
-                        e);
+            authorizations.forEach(
+                authorization -> {
+                  final var request =
+                      new CreateAuthorizationRequest(
+                          user.getEmail(),
+                          AuthorizationOwnerType.USER,
+                          authorization.resourceKey(),
+                          convertResourceType(authorization.resourceType()),
+                          convertPermissions(
+                              authorization.permissions(), authorization.resourceType()));
+                  try {
+                    authorizationService.createAuthorization(request).join();
+                    createdAuthorizationsCount.incrementAndGet();
+                    logger.debug(
+                        "Migrated authorization: {} to an Authorization with ownerId: {}",
+                        authorization,
+                        request.ownerId());
+                  } catch (final Exception e) {
+                    if (!isConflictError(e)) {
+                      throw new RuntimeException(
+                          "Failed to migrate authorization for entity with ID: "
+                              + authorization.entityId()
+                              + " and owner with ID: "
+                              + user.getEmail(),
+                          e);
+                    }
+                    skippedAuthorizationsCount.incrementAndGet();
+                    logger.debug(
+                        "Authorization already exists for entity with ID: {} and owner with ID {}. Skipping creation.",
+                        authorization.entityId(),
+                        user.getEmail());
                   }
-                  skippedAuthorizationsCount.incrementAndGet();
-                  logger.debug(
-                      "Authorization already exists for entity with ID: {} and owner with ID {}. Skipping creation.",
-                      authorization.entityId(),
-                      user.getEmail());
-                }
-              });
-        });
+                });
+          });
+    } catch (final NotImplementedException e) {
+      logger.warn(
+          "Authorizations endpoint is not available, this indicates resource authorizations are not enabled in identity, skipping.");
+    }
   }
 
   @Override

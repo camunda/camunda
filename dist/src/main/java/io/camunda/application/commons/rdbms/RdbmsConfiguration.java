@@ -9,7 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
-import io.camunda.db.rdbms.read.service.AuthorizationReader;
+import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemReader;
 import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
@@ -20,12 +20,13 @@ import io.camunda.db.rdbms.read.service.FormReader;
 import io.camunda.db.rdbms.read.service.GroupReader;
 import io.camunda.db.rdbms.read.service.IncidentReader;
 import io.camunda.db.rdbms.read.service.JobReader;
-import io.camunda.db.rdbms.read.service.MappingReader;
+import io.camunda.db.rdbms.read.service.MappingRuleReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.RoleReader;
 import io.camunda.db.rdbms.read.service.SequenceFlowReader;
 import io.camunda.db.rdbms.read.service.TenantReader;
+import io.camunda.db.rdbms.read.service.UsageMetricReader;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
@@ -40,13 +41,14 @@ import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
-import io.camunda.db.rdbms.sql.MappingMapper;
+import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
+import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
@@ -74,8 +76,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public AuthorizationReader authorizationReader(final AuthorizationMapper authorizationMapper) {
-    return new AuthorizationReader(authorizationMapper);
+  public AuthorizationDbReader authorizationReader(final AuthorizationMapper authorizationMapper) {
+    return new AuthorizationDbReader(authorizationMapper);
   }
 
   @Bean
@@ -150,8 +152,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public MappingReader mappingRdbmsReader(final MappingMapper mappingMapper) {
-    return new MappingReader(mappingMapper);
+  public MappingRuleReader mappingRuleRdbmsReader(final MappingRuleMapper mappingRuleMapper) {
+    return new MappingRuleReader(mappingRuleMapper);
   }
 
   @Bean
@@ -177,6 +179,11 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public UsageMetricReader usageMetricReader(final UsageMetricMapper usageMetricMapper) {
+    return new UsageMetricReader(usageMetricMapper);
+  }
+
+  @Bean
   public RdbmsWriterMetrics rdbmsExporterMetrics(final MeterRegistry meterRegistry) {
     return new RdbmsWriterMetrics(meterRegistry);
   }
@@ -196,7 +203,8 @@ public class RdbmsConfiguration {
       final RdbmsWriterMetrics metrics,
       final BatchOperationReader batchOperationReader,
       final JobMapper jobMapper,
-      final SequenceFlowMapper sequenceFlowMapper) {
+      final SequenceFlowMapper sequenceFlowMapper,
+      final UsageMetricMapper usageMetricMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -211,14 +219,15 @@ public class RdbmsConfiguration {
         metrics,
         batchOperationReader,
         jobMapper,
-        sequenceFlowMapper);
+        sequenceFlowMapper,
+        usageMetricMapper);
   }
 
   @Bean
   public RdbmsService rdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final VariableReader variableReader,
-      final AuthorizationReader authorizationReader,
+      final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionReader decisionDefinitionReader,
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
@@ -232,11 +241,12 @@ public class RdbmsConfiguration {
       final UserReader userReader,
       final UserTaskReader userTaskReader,
       final FormReader formReader,
-      final MappingReader mappingReader,
+      final MappingRuleReader mappingRuleReader,
       final BatchOperationReader batchOperationReader,
       final SequenceFlowReader sequenceFlowReader,
       final BatchOperationItemReader batchOperationItemReader,
-      final JobReader jobReader) {
+      final JobReader jobReader,
+      final UsageMetricReader usageMetricReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         authorizationReader,
@@ -254,10 +264,11 @@ public class RdbmsConfiguration {
         userReader,
         userTaskReader,
         formReader,
-        mappingReader,
+        mappingRuleReader,
         batchOperationReader,
         sequenceFlowReader,
         batchOperationItemReader,
-        jobReader);
+        jobReader,
+        usageMetricReader);
   }
 }

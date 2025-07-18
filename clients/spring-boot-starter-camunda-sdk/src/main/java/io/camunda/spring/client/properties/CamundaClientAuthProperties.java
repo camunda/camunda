@@ -35,6 +35,7 @@ public class CamundaClientAuthProperties {
   private URI tokenUrl;
   private String audience;
   private String scope;
+  private String resource;
 
   private Path keystorePath;
   private String keystorePassword;
@@ -191,6 +192,14 @@ public class CamundaClientAuthProperties {
     this.audience = audience;
   }
 
+  public String getResource() {
+    return resource;
+  }
+
+  public void setResource(final String resource) {
+    this.resource = resource;
+  }
+
   public String getScope() {
     return scope;
   }
@@ -224,6 +233,9 @@ public class CamundaClientAuthProperties {
         + '\''
         + ", scope='"
         + scope
+        + '\''
+        + ", resource='"
+        + resource
         + '\''
         + ", keystorePath='"
         + keystorePath

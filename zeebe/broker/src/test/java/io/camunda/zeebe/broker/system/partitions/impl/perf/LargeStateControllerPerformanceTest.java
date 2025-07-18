@@ -88,6 +88,7 @@ public class LargeStateControllerPerformanceTest {
             context.temporaryFolder().resolve("runtime"),
             ignored -> Optional.empty(),
             ignored -> 0L,
+            ignored -> 0L,
             context.snapshotStore());
 
     // when

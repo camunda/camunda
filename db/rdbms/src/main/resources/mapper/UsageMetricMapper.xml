@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.UsageMetricMapper">
+
+  <resultMap id="UsageMetricStatisticsResultMap"
+    type="io.camunda.db.rdbms.write.domain.UsageMetricDbModel$UsageMetricTenantStatisticsDbModel">
+    <constructor>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="RPI" javaType="java.lang.Long"/>
+      <arg column="EDI" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
+  <resultMap id="UsageMetricStatisticsResultMap2"
+    type="io.camunda.db.rdbms.write.domain.UsageMetricDbModel$UsageMetricStatisticsDbModel">
+    <constructor>
+      <arg column="RPI" javaType="java.lang.Long"/>
+      <arg column="EDI" javaType="java.lang.Long"/>
+      <arg column="AT" javaType="java.lang.Long"/>
+    </constructor>
+  </resultMap>
+
+  <select id="usageMetricTenantsStatistics"
+    parameterType="io.camunda.search.filter.UsageMetricsFilter"
+    resultMap="UsageMetricStatisticsResultMap"
+    statementType="PREPARED">
+    SELECT TENANT_ID,
+      SUM(CASE WHEN EVENT_TYPE = 0 THEN EVENT_VALUE END) AS RPI,
+      SUM(CASE WHEN EVENT_TYPE = 1 THEN EVENT_VALUE END) AS EDI
+    FROM ${prefix}USAGE_METRIC
+    <bind name="filter" value="_parameter" />
+    <include refid="io.camunda.db.rdbms.sql.UsageMetricMapper.usageMetricStatisticsFilter"/>
+    GROUP BY TENANT_ID
+  </select>
+
+  <select id="usageMetricStatistics"
+    parameterType="io.camunda.search.filter.UsageMetricsFilter"
+    resultMap="UsageMetricStatisticsResultMap2"
+    statementType="PREPARED">
+    SELECT
+      SUM(CASE WHEN EVENT_TYPE = 0 THEN EVENT_VALUE END) AS RPI,
+      SUM(CASE WHEN EVENT_TYPE = 1 THEN EVENT_VALUE END) AS EDI,
+      COUNT(distinct TENANT_ID)                          AS AT
+    FROM ${prefix}USAGE_METRIC
+    <bind name="filter" value="_parameter" />
+    <include refid="io.camunda.db.rdbms.sql.UsageMetricMapper.usageMetricStatisticsFilter"/>
+  </select>
+
+  <sql id="usageMetricStatisticsFilter">
+    <where>
+      <if test="filter.startTime != null">
+        AND EVENT_TIME &gt;= #{filter.startTime}
+      </if>
+      <if test="filter.endTime != null">
+        AND EVENT_TIME &lt; #{filter.endTime}
+      </if>
+    </where>
+  </sql>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.UsageMetricDbModel">
+    INSERT INTO ${prefix}USAGE_METRIC (USAGE_METRIC_KEY,
+                                       EVENT_TIME,
+                                       TENANT_ID,
+                                       EVENT_TYPE,
+                                       EVENT_VALUE,
+                                       PARTITION_ID)
+    VALUES (#{key},
+            #{eventTime, jdbcType=TIMESTAMP},
+            #{tenantId},
+            #{eventType, typeHandler=io.camunda.db.rdbms.sql.typehandler.UsageMetricEventTypeTypeHandler},
+            #{value},
+            #{partitionId})
+  </insert>
+
+  <delete flushCache="true"
+          id="cleanupMetrics"
+          statementType="PREPARED">
+    DELETE
+    FROM ${prefix}USAGE_METRIC
+    WHERE PARTITION_ID = #{partitionId}
+      AND EVENT_TIME &lt; #{cleanupDate}
+    LIMIT #{limit}
+  </delete>
+  <delete flushCache="true"
+          id="cleanupMetrics"
+          statementType="PREPARED"
+          databaseId="oracle">
+    DELETE
+    FROM ${prefix}USAGE_METRIC
+    WHERE rowid IN (SELECT rowid
+                    FROM ${prefix}USAGE_METRIC
+                    WHERE PARTITION_ID = #{partitionId}
+                      AND EVENT_TIME &lt; #{cleanupDate}
+                      AND ROWNUM &lt;= #{limit})
+  </delete>
+  <delete flushCache="true"
+          id="cleanupMetrics"
+          statementType="PREPARED"
+          databaseId="postgresql">
+    DELETE
+    FROM ${prefix}USAGE_METRIC
+    WHERE ctid IN (SELECT ctid
+                   FROM ${prefix}USAGE_METRIC
+                   WHERE PARTITION_ID = #{partitionId}
+                     AND EVENT_TIME &lt; #{cleanupDate}
+                   LIMIT #{limit})
+  </delete>
+
+</mapper>

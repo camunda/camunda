@@ -21,6 +21,7 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -77,17 +78,20 @@ class ApplicationAuthorizationIT {
   void accessAppUserWithoutAppAccessNotAllowed(
       final String appName, @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
-    // when
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(createUri(restrictedClient, appName + PATH_OPERATE_WEBAPP_USER))
-            .header("Authorization", basicAuthentication(RESTRICTED))
-            .build();
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    // given
+    final var webappClient = STANDALONE_CAMUNDA.newWebappClient();
 
-    // then
-    assertRedirectToForbidden(appName, response);
+    try (final var loggedInClient = webappClient.logIn(RESTRICTED, DEFAULT_PASSWORD)) {
+      // when
+      final Either<Exception, HttpResponse<String>> result =
+          loggedInClient.send(appName + PATH_OPERATE_WEBAPP_USER);
+
+      // then
+      assertThat(result.isLeft()).isFalse();
+      final HttpResponse<String> response = result.get();
+
+      assertRedirectToForbidden(appName, response);
+    }
   }
 
   @ParameterizedTest
@@ -126,34 +130,39 @@ class ApplicationAuthorizationIT {
   void accessStaticUserWithoutAppAccessAllowed(
       @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
-    // when
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(createUri(restrictedClient, PATH_OPERATE + "/image.svg"))
-            .header("Authorization", basicAuthentication(RESTRICTED))
-            .build();
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    // given
+    final var webappClient = STANDALONE_CAMUNDA.newWebappClient();
 
-    // then
-    assertAccessAllowed(response);
+    try (final var loggedInClient = webappClient.logIn(RESTRICTED, DEFAULT_PASSWORD)) {
+      // when
+      final Either<Exception, HttpResponse<String>> result =
+          loggedInClient.send(PATH_OPERATE + "/image.svg");
+
+      // then
+      assertThat(result.isLeft()).isFalse();
+      final HttpResponse<String> response = result.get();
+
+      assertAccessAllowed(response);
+    }
   }
 
   @Test
   void accessAppUserWithSpecificAppAccessAllowed(
       @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
-    // when
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(createUri(restrictedClient, "tasklist/user"))
-            .header("Authorization", basicAuthentication(RESTRICTED))
-            .build();
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    // given
+    final var webappClient = STANDALONE_CAMUNDA.newWebappClient();
 
-    // then
-    assertAccessAllowed(response);
+    try (final var loggedInClient = webappClient.logIn(RESTRICTED, DEFAULT_PASSWORD)) {
+      // when
+      final Either<Exception, HttpResponse<String>> result = loggedInClient.send("tasklist/user");
+
+      // then
+      assertThat(result.isLeft()).isFalse();
+      final HttpResponse<String> response = result.get();
+
+      assertAccessAllowed(response);
+    }
   }
 
   @ParameterizedTest
@@ -161,17 +170,20 @@ class ApplicationAuthorizationIT {
   void accessAppUserWithAppWildcardAccessAllowed(
       final String appName, @Authenticated(ADMIN) final CamundaClient adminClient)
       throws IOException, URISyntaxException, InterruptedException {
-    // when
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(createUri(adminClient, appName + PATH_OPERATE_WEBAPP_USER))
-            .header("Authorization", basicAuthentication(ADMIN))
-            .build();
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    // given
+    final var webappClient = STANDALONE_CAMUNDA.newWebappClient();
 
-    // then
-    assertAccessAllowed(response);
+    try (final var loggedInClient = webappClient.logIn(ADMIN, DEFAULT_PASSWORD)) {
+      // when
+      final Either<Exception, HttpResponse<String>> result =
+          loggedInClient.send(appName + PATH_OPERATE_WEBAPP_USER);
+
+      // then
+      assertThat(result.isLeft()).isFalse();
+      final HttpResponse<String> response = result.get();
+
+      assertAccessAllowed(response);
+    }
   }
 
   @Test

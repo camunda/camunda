@@ -16,6 +16,7 @@
 package io.camunda.client.process;
 
 import static io.camunda.client.api.search.enums.ProcessInstanceState.ACTIVE;
+import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
@@ -333,12 +334,6 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.get$Or().get(0).getState().get$Eq())
         .isEqualTo(ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.get$Or().get(1).getHasIncident()).isTrue();
-  }
-
-  private void assertSort(
-      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
-    assertThat(sort.getField()).isEqualTo(name);
-    assertThat(sort.getOrder()).isEqualTo(order);
   }
 
   @Test

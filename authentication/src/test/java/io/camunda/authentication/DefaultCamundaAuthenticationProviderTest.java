@@ -9,6 +9,7 @@ package io.camunda.authentication;
 
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.auth0.jwt.JWT;
@@ -18,6 +19,8 @@ import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
+import io.camunda.authentication.exception.CamundaAuthenticationException;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.TenantServices.TenantDTO;
@@ -54,7 +57,9 @@ public class DefaultCamundaAuthenticationProviderTest {
     MockitoAnnotations.openMocks(this).close();
     RequestContextHolder.setRequestAttributes(requestAttributes);
     authenticationConverter = new DefaultCamundaAuthenticationConverter();
-    authenticationProvider = new DefaultCamundaAuthenticationProvider(authenticationConverter);
+    authenticationProvider =
+        new DefaultCamundaAuthenticationProvider(
+            new CamundaAuthenticationDelegatingConverter(List.of(authenticationConverter)));
   }
 
   @Test
@@ -204,6 +209,34 @@ public class DefaultCamundaAuthenticationProviderTest {
     // then
     assertThat(authContext.authenticatedUsername()).isNull();
     assertThat(authContext.authenticatedClientId()).isEqualTo(clientId);
+  }
+
+  @Test
+  void shouldThrowExceptionWhenNoMatchingConverterFound() {
+    // given
+    SecurityContextHolder.getContext().setAuthentication(null);
+
+    // when / then
+    assertThatThrownBy(() -> authenticationProvider.getCamundaAuthentication())
+        .isInstanceOf(CamundaAuthenticationException.class);
+  }
+
+  @Test
+  void shouldReturnAnonymousCamundaAuthenticationWhenApiProtectionDisabled() {
+    // given
+    SecurityContextHolder.getContext().setAuthentication(null);
+    authenticationConverter = new DefaultCamundaAuthenticationConverter();
+    final var unprotectedAuthenticationConverter = new UnprotectedCamundaAuthenticationConverter();
+    authenticationProvider =
+        new DefaultCamundaAuthenticationProvider(
+            new CamundaAuthenticationDelegatingConverter(
+                List.of(unprotectedAuthenticationConverter, authenticationConverter)));
+
+    // when
+    final var authContext = authenticationProvider.getCamundaAuthentication();
+
+    // then
+    assertThat(authContext).isEqualTo(CamundaAuthentication.anonymous());
   }
 
   private void setJwtAuthenticationInContext(final String sub, final String aud) {

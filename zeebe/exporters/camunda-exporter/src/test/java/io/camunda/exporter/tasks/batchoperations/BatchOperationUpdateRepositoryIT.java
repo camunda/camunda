@@ -246,10 +246,10 @@ abstract class BatchOperationUpdateRepositoryIT {
     }
 
     private OperationEntity createOperationEntity(
-        final String id, final String batchOperationId, final OperationState state)
+        final String id, final String batchOperationKey, final OperationState state)
         throws PersistenceException {
       final var operationEntity =
-          new OperationEntity().setId(id).setBatchOperationId(batchOperationId).setState(state);
+          new OperationEntity().setId(id).setBatchOperationId(batchOperationKey).setState(state);
       indexOperation(operationEntity);
       return operationEntity;
     }

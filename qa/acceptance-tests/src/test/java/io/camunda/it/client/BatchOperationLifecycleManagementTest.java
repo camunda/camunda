@@ -97,14 +97,14 @@ public class BatchOperationLifecycleManagementTest {
             .filter(b -> b.variables(getScopedVariables(testScopeId)))
             .send()
             .join();
-    final var batchOperationId = result.getBatchOperationId();
+    final var batchOperationKey = result.getBatchOperationKey();
     assertThat(result).isNotNull();
 
     // when we cancel the batch operation
-    camundaClient.newCancelBatchOperationCommand(batchOperationId).send().join();
+    camundaClient.newCancelBatchOperationCommand(batchOperationKey).send().join();
 
     // and
-    waitForBatchOperationStatus(camundaClient, batchOperationId, BatchOperationState.CANCELED);
+    waitForBatchOperationStatus(camundaClient, batchOperationKey, BatchOperationState.CANCELED);
   }
 
   @Test
@@ -117,14 +117,14 @@ public class BatchOperationLifecycleManagementTest {
             .filter(b -> b.variables(getScopedVariables(testScopeId)))
             .send()
             .join();
-    final var batchOperationId = result.getBatchOperationId();
+    final var batchOperationKey = result.getBatchOperationKey();
     assertThat(result).isNotNull();
 
     // when we suspend the batch operation
-    camundaClient.newSuspendBatchOperationCommand(batchOperationId).send().join();
+    camundaClient.newSuspendBatchOperationCommand(batchOperationKey).send().join();
 
     // and
-    waitForBatchOperationStatus(camundaClient, batchOperationId, BatchOperationState.SUSPENDED);
+    waitForBatchOperationStatus(camundaClient, batchOperationKey, BatchOperationState.SUSPENDED);
   }
 
   @Test
@@ -137,23 +137,23 @@ public class BatchOperationLifecycleManagementTest {
             .filter(b -> b.variables(getScopedVariables(testScopeId)))
             .send()
             .join();
-    final var batchOperationId = result.getBatchOperationId();
+    final var batchOperationKey = result.getBatchOperationKey();
     assertThat(result).isNotNull();
 
     // and it is suspended
-    camundaClient.newSuspendBatchOperationCommand(batchOperationId).send().join();
+    camundaClient.newSuspendBatchOperationCommand(batchOperationKey).send().join();
 
-    waitForBatchOperationStatus(camundaClient, batchOperationId, BatchOperationState.SUSPENDED);
+    waitForBatchOperationStatus(camundaClient, batchOperationKey, BatchOperationState.SUSPENDED);
 
     // when we resume the batch operation
-    camundaClient.newResumeBatchOperationCommand(batchOperationId).send().join();
+    camundaClient.newResumeBatchOperationCommand(batchOperationKey).send().join();
 
     // Then it should be activated again, and eventually completed
     // Note: The batch operation might complete too fast, or take too long to complete. So we wait
     // for either state.
     waitForBatchOperationStatus(
         camundaClient,
-        batchOperationId,
+        batchOperationKey,
         Set.of(BatchOperationState.ACTIVE, BatchOperationState.COMPLETED));
   }
 }

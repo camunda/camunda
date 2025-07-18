@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
@@ -44,6 +45,18 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   private static final Map<ValueType, Supplier<UnifiedRecordValue>> RECORDS_BY_TYPE =
       new EnumMap<>(ValueType.class);
+  /*
+   NOTE! When adding a new property here it must also be added to the ProtocolFactory! This class
+   contains a randomizer implementation which is used to generate a random
+   CommandDistributionRecord. The new property must be added there. Without it we won't generate a
+   complete record.
+  */
+  // Static StringValue keys for property names
+  private static final StringValue PARTITION_ID_KEY = new StringValue("partitionId");
+  private static final StringValue QUEUE_ID_KEY = new StringValue("queueId");
+  private static final StringValue VALUE_TYPE_KEY = new StringValue("valueType");
+  private static final StringValue INTENT_KEY = new StringValue("intent");
+  private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
 
   // You'll need to register any of the records value's that you want to distribute
   static {
@@ -68,19 +81,13 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE, BatchOperationPartitionLifecycleRecord::new);
   }
 
-  /*
-   NOTE! When adding a new property here it must also be added to the ProtocolFactory! This class
-   contains a randomizer implementation which is used to generate a random
-   CommandDistributionRecord. The new property must be added there. Without it we won't generate a
-   complete record.
-  */
-  private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId");
-  private final StringProperty queueIdProperty = new StringProperty("queueId", "");
+  private final IntegerProperty partitionIdProperty = new IntegerProperty(PARTITION_ID_KEY);
+  private final StringProperty queueIdProperty = new StringProperty(QUEUE_ID_KEY, "");
   private final EnumProperty<ValueType> valueTypeProperty =
-      new EnumProperty<>("valueType", ValueType.class, ValueType.NULL_VAL);
-  private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
+      new EnumProperty<>(VALUE_TYPE_KEY, ValueType.class, ValueType.NULL_VAL);
+  private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
-      new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
+      new ObjectProperty<>(COMMAND_VALUE_KEY, new UnifiedRecordValue(10));
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
 

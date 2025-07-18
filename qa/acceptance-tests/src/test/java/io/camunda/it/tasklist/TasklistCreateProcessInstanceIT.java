@@ -15,6 +15,7 @@ import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient.CreateProcessInstanceVariable;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.security.entity.AuthenticationMethod;
 import java.time.Duration;
 import java.util.List;
 import org.awaitility.Awaitility;
@@ -35,7 +36,9 @@ public class TasklistCreateProcessInstanceIT {
 
   @MultiDbTestApplication
   private static final TestCamundaApplication CAMUNDA_APPLICATION =
-      new TestCamundaApplication().withUnauthenticatedAccess();
+      new TestCamundaApplication()
+          .withAuthenticationMethod(AuthenticationMethod.BASIC)
+          .withUnauthenticatedAccess();
 
   @BeforeAll
   public static void beforeAll() {

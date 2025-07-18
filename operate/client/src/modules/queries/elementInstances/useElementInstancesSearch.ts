@@ -8,26 +8,40 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
-import type {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas';
+import type {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const ELEMENT_INSTANCES_SEARCH_QUERY_KEY = 'elementInstancesSearch';
 
-function getQueryKey(params: QueryElementInstancesRequestBody) {
-  return [ELEMENT_INSTANCES_SEARCH_QUERY_KEY, params];
-}
-
 const useElementInstancesSearch = (
-  params: QueryElementInstancesRequestBody,
+  elementId: string,
+  processInstanceKey: string,
+  isMultiInstance: boolean,
+  options: {enabled: boolean} = {enabled: true},
 ) => {
   return useQuery({
-    queryKey: getQueryKey(params),
-    queryFn: () =>
-      searchElementInstances(params).then(({response, error}) => {
-        if (response !== null) return response;
-        throw error;
-      }),
-    enabled: !!params,
+    queryKey: [
+      ELEMENT_INSTANCES_SEARCH_QUERY_KEY,
+      elementId,
+      processInstanceKey,
+      isMultiInstance,
+    ],
+    queryFn: async () => {
+      const payload: QueryElementInstancesRequestBody = {
+        filter: {
+          elementId,
+          processInstanceKey,
+          type: isMultiInstance ? 'MULTI_INSTANCE_BODY' : undefined,
+        },
+        page: {limit: 1},
+      };
+      const {response, error} = await searchElementInstances(payload);
+      if (response !== null) {
+        return response;
+      }
+      throw error;
+    },
+    ...options,
   });
 };
 
-export {useElementInstancesSearch, ELEMENT_INSTANCES_SEARCH_QUERY_KEY};
+export {useElementInstancesSearch};

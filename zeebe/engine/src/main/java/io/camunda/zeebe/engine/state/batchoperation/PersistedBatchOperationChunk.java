@@ -15,10 +15,19 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.List;
 import java.util.Set;
 
+/** Represents a chunk of itemKeys of a batch operation that is persisted in the database. */
 public class PersistedBatchOperationChunk extends UnpackedObject implements DbValue {
 
+  /** The key of the chunk. This key os unique just for the batch operation it belongs to. */
   private final LongProperty keyProp = new LongProperty("key");
+
+  /** The key of the batch operation this chunk belongs to. */
   private final LongProperty batchOperationKeyProp = new LongProperty("batchOperationKey");
+
+  /**
+   * The itemKeys of the batch operation chunk. This is an array of itemKeys that are part of the
+   * batch operation.
+   */
   private final ArrayProperty<LongValue> itemKeysProp =
       new ArrayProperty<>("itemKeys", LongValue::new);
 
@@ -54,6 +63,7 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
     return this;
   }
 
+  /** Removes the given itemKeys from the chunk. */
   public PersistedBatchOperationChunk removeItemKeys(final Set<Long> itemKeys) {
     final var newKeys =
         itemKeysProp.stream().map(LongValue::getValue).filter(k -> !itemKeys.contains(k)).toList();

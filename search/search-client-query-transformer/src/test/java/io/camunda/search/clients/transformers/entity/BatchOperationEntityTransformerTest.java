@@ -35,7 +35,7 @@ class BatchOperationEntityTransformerTest {
     // when
     final var searchEntity = transformer.apply(entity);
     assertThat(searchEntity).isNotNull();
-    assertThat(searchEntity.batchOperationId()).isEqualTo("1");
+    assertThat(searchEntity.batchOperationKey()).isEqualTo("1");
     assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.ACTIVE.name());
     assertThat(searchEntity.operationType())
         .isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE.name());
@@ -68,7 +68,7 @@ class BatchOperationEntityTransformerTest {
 
     // then
     assertThat(searchEntity).isNotNull();
-    assertThat(searchEntity.batchOperationId()).isEqualTo("1");
+    assertThat(searchEntity.batchOperationKey()).isEqualTo("1");
     assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.ACTIVE.name());
     assertThat(searchEntity.operationType())
         .isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE.name());
@@ -97,7 +97,7 @@ class BatchOperationEntityTransformerTest {
     // when
     final var searchEntity = transformer.apply(entity);
     assertThat(searchEntity).isNotNull();
-    assertThat(searchEntity.batchOperationId()).isEqualTo(uuid);
+    assertThat(searchEntity.batchOperationKey()).isEqualTo(uuid);
     assertThat(searchEntity.state().name()).isEqualTo(BatchOperationState.INCOMPLETED.name());
     assertThat(searchEntity.operationType())
         .isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE.name());

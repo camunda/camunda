@@ -32,6 +32,10 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Processes commands to suspend batch operations. It validates the command and checks for
+ * authorization. The SUSPEND command is then distributed to all other partitions.
+ */
 @ExcludeAuthorizationCheck
 public final class BatchOperationSuspendProcessor
     implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {

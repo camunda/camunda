@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Optional;
 import java.util.Random;
@@ -50,12 +52,12 @@ public class UserTaskAssignmentDeniedApplierTest {
     final var newAssignee = "changed";
 
     final var given = new UserTaskRecord().setUserTaskKey(userTaskKey);
-
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, given);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, given);
 
     testSetup.applyEventToState(
         userTaskKey, UserTaskIntent.ASSIGNING, given.setAssignee(initialAssignee));
+    testSetup.applyEventToState(userTaskKey, UsageMetricIntent.EXPORTED, new UsageMetricRecord());
     testSetup.applyEventToState(
         userTaskKey, UserTaskIntent.ASSIGNED, given.setAssignee(initialAssignee));
 

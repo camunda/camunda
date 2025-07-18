@@ -18,9 +18,9 @@ import {logger} from 'common/utils/logger';
 import {tracking} from 'common/tracking';
 import CheckImage from 'common/images/orange-check-mark.svg';
 import ErrorRobotImage from 'common/images/error-robot.svg';
-import {Message} from './Message';
+import {StartProcessFromFormMessage as Message} from 'common/public-start-form/StartProcessFromFormMessage';
 import {match, Pattern} from 'ts-pattern';
-import styles from './styles.module.scss';
+import styles from 'common/public-start-form/startProcessFromForm.module.scss';
 import {hasFileComponents} from './hasFileComponents';
 
 function parseValidJSON(schema: string): null | object {

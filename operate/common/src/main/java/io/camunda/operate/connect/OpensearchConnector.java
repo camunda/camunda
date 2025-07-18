@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.connect;
 
-import com.amazonaws.regions.DefaultAwsRegionProviderChain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.operate.conditions.OpensearchCondition;
@@ -68,11 +67,10 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.util.StringUtils;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
-import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 
 @Configuration
 @Conditional(OpensearchCondition.class)
@@ -215,8 +213,7 @@ public class OpensearchConnector {
       LOGGER.info("AWS Credentials are disabled. Using basic auth.");
       return false;
     }
-    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
-    try {
+    try (final var credentialsProvider = DefaultCredentialsProvider.builder().build()) {
       credentialsProvider.resolveCredentials();
       LOGGER.info("AWS Credentials can be resolved. Use AWS Opensearch");
       return true;
@@ -274,13 +271,13 @@ public class OpensearchConnector {
   }
 
   private OpenSearchClient getAwsClient(final OpensearchProperties osConfig) {
-    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    final var region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkHttpClient httpClient = AwsCrtHttpClient.builder().build();
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
             osConfig.getHost(),
-            Region.of(region),
+            region,
             AwsSdk2TransportOptions.builder()
                 .setMapper(new JacksonJsonpMapper(objectMapper))
                 .build());
@@ -288,13 +285,13 @@ public class OpensearchConnector {
   }
 
   private OpenSearchAsyncClient getAwsAsyncClient(final OpensearchProperties osConfig) {
-    final String region = new DefaultAwsRegionProviderChain().getRegion();
+    final var region = new DefaultAwsRegionProviderChain().getRegion();
     final SdkHttpClient httpClient = AwsCrtHttpClient.builder().build();
     final AwsSdk2Transport transport =
         new AwsSdk2Transport(
             httpClient,
             osConfig.getHost(),
-            Region.of(region),
+            region,
             AwsSdk2TransportOptions.builder()
                 .setMapper(new JacksonJsonpMapper(objectMapper))
                 .build());

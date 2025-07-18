@@ -38,18 +38,6 @@
       <artifactId>agrona</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty-transport</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-broker-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-impl</artifactId>
     </dependency>
@@ -61,11 +49,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-webjar</artifactId>
-    </dependency>
-    <!-- OAuth0 -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-mvc-auth-commons</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -140,15 +123,11 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-thymeleaf</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <artifactId>spring-boot-starter-thymeleaf</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -166,14 +145,6 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-jose</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-ldap</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.ldap</groupId>
-      <artifactId>spring-ldap-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -210,10 +181,6 @@
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-common</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-config</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.security</groupId>
@@ -269,12 +236,6 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-    </dependency>
-
-    <!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
-    <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>jakarta.json</artifactId>
     </dependency>
 
     <dependency>
@@ -353,15 +314,12 @@
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.auth0</groupId>
-      <artifactId>auth0</artifactId>
     </dependency>
 
     <dependency>
@@ -383,11 +341,6 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>sts</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.nimbusds</groupId>
-      <artifactId>nimbus-jose-jwt</artifactId>
     </dependency>
 
     <dependency>

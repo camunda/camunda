@@ -16,7 +16,12 @@ import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,9 +30,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
 
   @Test
-  void shouldQueryByBatchOperationId() {
+  void shouldQueryByBatchOperationKey() {
     // given
-    final var filter = FilterBuilders.batchOperationItem(f -> f.batchOperationIds("123"));
+    final var filter = FilterBuilders.batchOperationItem(f -> f.batchOperationKeys("123"));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -44,10 +49,10 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  void shouldQueryLegacyByBatchOperationId() {
+  void shouldQueryLegacyByBatchOperationKey() {
     // given
     final var batchIdUuid = UUID.randomUUID().toString();
-    final var filter = FilterBuilders.batchOperationItem(f -> f.batchOperationIds(batchIdUuid));
+    final var filter = FilterBuilders.batchOperationItem(f -> f.batchOperationKeys(batchIdUuid));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -185,7 +190,7 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
     final var filter =
         FilterBuilders.batchOperationItem(
             f ->
-                f.batchOperationIds("123")
+                f.batchOperationKeys("123")
                     .states("ACTIVE")
                     .itemKeys(123L)
                     .processInstanceKeys(456L));
@@ -229,5 +234,52 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
               assertThat(t.field()).isEqualTo("processInstanceKey");
               assertThat(t.value().longValue()).isEqualTo(456L);
             });
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckEventWhenEnabled() {
+    // given
+    final var authorization =
+        Authorization.of(a -> a.batchOperation().read().resourceIds(List.of("1", "2")));
+    final var authorizationCheck = AuthorizationCheck.enabled(authorization);
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperationItem(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
+  }
+
+  @Test
+  public void shouldIgnoreAuthorizationCheckWhenDisabled() {
+    // given
+    final var authorizationCheck = AuthorizationCheck.disabled();
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperationItem(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
+  }
+
+  @Test
+  public void shouldIgnoreTenantCheck() {
+    // given
+    final var tenantCheck = TenantCheck.enabled(List.of("a", "b"));
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
+
+    // when
+    final var searchQuery =
+        transformQuery(FilterBuilders.batchOperationItem(b -> b), resourceAccessChecks);
+
+    // then
+    assertThat(searchQuery).isNull();
   }
 }

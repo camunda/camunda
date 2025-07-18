@@ -23,7 +23,7 @@ public interface BatchOperationItems {
   List<BatchOperationItem> items();
 
   interface BatchOperationItem {
-    String getBatchOperationId();
+    String getBatchOperationKey();
 
     Long getItemKey();
 

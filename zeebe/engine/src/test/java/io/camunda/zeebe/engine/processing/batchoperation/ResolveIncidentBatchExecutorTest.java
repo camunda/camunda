@@ -175,4 +175,36 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
         .isNotEmpty()
         .allSatisfy(r -> assertThat(r.getBatchOperationReference()).isEqualTo(batchOperationKey));
   }
+
+  @Test
+  public void shouldRejectNonExistingIncident() {
+    // given
+    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+
+    // some random keys
+    final var processInstanceKey = 42L;
+    final var incidentKey = 43L;
+
+    final var batchOperationKey =
+        createNewResolveIncidentsBatchOperation(
+            Map.of(processInstanceKey, Set.of(incidentKey)), claims);
+
+    // then we have completed event
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.COMPLETED))
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.COMPLETED);
+
+    // and we have a rejected incident resolve command
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .onlyCommandRejections()
+                .withRecordKey(incidentKey)
+                .withIntents(IncidentIntent.RESOLVE)
+                .limit(r -> r.getIntent() == IncidentIntent.RESOLVE))
+        .allSatisfy(r -> assertThat(r.getBatchOperationReference()).isEqualTo(batchOperationKey));
+  }
 }

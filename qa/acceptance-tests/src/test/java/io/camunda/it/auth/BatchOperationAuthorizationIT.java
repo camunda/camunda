@@ -154,12 +154,12 @@ class BatchOperationAuthorizationIT {
 
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
-    final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaClient, batchOperationId, 3);
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaClient, batchOperationKey, 3);
 
     // then
     final var batchOperationResponse =
-        camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+        camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
     assertThat(batchOperationResponse).isNotNull();
     assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(3);
   }
@@ -175,14 +175,14 @@ class BatchOperationAuthorizationIT {
 
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
-    final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaClient, batchOperationId, 3);
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaClient, batchOperationKey, 3);
 
     // when
     final var batchOperationResponse =
         camundaClient
             .newBatchOperationSearchRequest()
-            .filter(f -> f.batchOperationId(String.valueOf(batchOperationId)))
+            .filter(f -> f.batchOperationKey(String.valueOf(batchOperationKey)))
             .send()
             .join();
 
@@ -204,13 +204,13 @@ class BatchOperationAuthorizationIT {
 
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
-    final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaClient, batchOperationId, 1, BatchOperationState.COMPLETED);
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaClient, batchOperationKey, 1, BatchOperationState.COMPLETED);
 
     // then
     waitForBatchOperationItems(
         camundaClient,
-        batchOperationId,
+        batchOperationKey,
         (items) -> {
           assertThat(items).hasSize(1);
           final var item = items.getFirst();
@@ -232,13 +232,13 @@ class BatchOperationAuthorizationIT {
 
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
-    final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaClient, batchOperationId, 1, BatchOperationState.COMPLETED);
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaClient, batchOperationKey, 1, BatchOperationState.COMPLETED);
 
     // then
     waitForBatchOperationItems(
         camundaClient,
-        batchOperationId,
+        batchOperationKey,
         (items) -> {
           assertThat(items).hasSize(1);
           final var item = items.getFirst();
@@ -263,12 +263,12 @@ class BatchOperationAuthorizationIT {
 
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
-    final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaClient, batchOperationId, 1);
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaClient, batchOperationKey, 1);
 
     // when
     final var batchOperationResponse =
-        camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+        camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
 
     // then
     assertThat(batchOperationResponse).isNotNull();
@@ -287,14 +287,14 @@ class BatchOperationAuthorizationIT {
 
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
-    final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaClient, batchOperationId, 1);
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaClient, batchOperationKey, 1);
 
     // when
     final var batchOperationResponse =
         camundaClient
             .newBatchOperationSearchRequest()
-            .filter(f -> f.batchOperationId(String.valueOf(batchOperationId)))
+            .filter(f -> f.batchOperationKey(String.valueOf(batchOperationKey)))
             .send()
             .join();
 
@@ -336,8 +336,8 @@ class BatchOperationAuthorizationIT {
 
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
-    final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaAdminClient, batchOperationId, 3);
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaAdminClient, batchOperationKey, 3);
 
     // then we should find nothing with our restricted user
     Awaitility.await("should not return batch operation")
@@ -347,7 +347,7 @@ class BatchOperationAuthorizationIT {
             () -> {
               int code = 0;
               try {
-                camundaRestictedClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                camundaRestictedClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               } catch (final ProblemException e) {
                 code = e.code();
               }
@@ -368,8 +368,8 @@ class BatchOperationAuthorizationIT {
 
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
-    final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaAdminClient, batchOperationId, 0);
+    final var batchOperationKey = batchOperationCreatedResponse.getBatchOperationKey();
+    waitForBatchOperation(camundaAdminClient, batchOperationKey, 0);
 
     // then we should find nothing with our restricted user
     Awaitility.await("should not return batch operation")
@@ -380,7 +380,7 @@ class BatchOperationAuthorizationIT {
               final var batchOperationResponse =
                   camundaRestictedClient
                       .newBatchOperationSearchRequest()
-                      .filter(f -> f.batchOperationId(String.valueOf(batchOperationId)))
+                      .filter(f -> f.batchOperationKey(String.valueOf(batchOperationKey)))
                       .send()
                       .join();
               assertThat(batchOperationResponse.items()).isEmpty();
@@ -404,7 +404,7 @@ class BatchOperationAuthorizationIT {
   }
 
   public static void waitForBatchOperation(
-      final CamundaClient camundaClient, final String batchOperationId, final long itemsCount) {
+      final CamundaClient camundaClient, final String batchOperationKey, final long itemsCount) {
     Awaitility.await("should wait for started batch operation")
         .atMost(Duration.ofSeconds(15))
         .pollInterval(Duration.ofMillis(100))
@@ -412,7 +412,7 @@ class BatchOperationAuthorizationIT {
         .untilAsserted(
             () -> {
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getOperationsTotalCount()).isEqualTo(itemsCount);
             });
@@ -420,7 +420,7 @@ class BatchOperationAuthorizationIT {
 
   public static void waitForBatchOperation(
       final CamundaClient camundaClient,
-      final String batchOperationId,
+      final String batchOperationKey,
       final long totalItemsCount,
       final BatchOperationState expectedState) {
     Awaitility.await("should wait for started batch operation")
@@ -430,7 +430,7 @@ class BatchOperationAuthorizationIT {
         .untilAsserted(
             () -> {
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus())
                   .withFailMessage(
@@ -447,14 +447,14 @@ class BatchOperationAuthorizationIT {
 
   private void waitForBatchOperationItems(
       final CamundaClient camundaClient,
-      final String batchOperationId,
+      final String batchOperationKey,
       final Consumer<List<BatchOperationItem>> assertions) {
     Awaitility.await()
         .untilAsserted(
             () ->
                 camundaClient
                     .newBatchOperationItemsSearchRequest()
-                    .filter(f -> f.batchOperationId(String.valueOf(batchOperationId)))
+                    .filter(f -> f.batchOperationKey(String.valueOf(batchOperationKey)))
                     .send()
                     .join()
                     .items(),

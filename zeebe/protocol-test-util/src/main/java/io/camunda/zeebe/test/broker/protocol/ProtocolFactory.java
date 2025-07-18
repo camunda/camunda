@@ -22,6 +22,9 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
 import java.lang.reflect.Field;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -304,6 +307,19 @@ public final class ProtocolFactory {
               .withRequestStreamId(random.nextInt())
               .withOperationReference(random.nextLong())
               .build();
+        });
+
+    // A randomizer for any String property whose name ends with the "Date" suffix,
+    // generating a random date between now - 2 years and now + 2 years
+    randomizerRegistry.registerRandomizer(
+        field -> field.getType() == String.class && field.getName().endsWith("Date"),
+        () -> {
+          final var now = OffsetDateTime.now();
+          final var min = now.minusYears(2).toEpochSecond();
+          final var max = now.plusYears(2).toEpochSecond();
+          final var randomEpoch = min + Math.abs(random.nextLong()) % (max - min + 1);
+          return OffsetDateTime.ofInstant(Instant.ofEpochSecond(randomEpoch), now.getOffset())
+              .format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
         });
   }
 

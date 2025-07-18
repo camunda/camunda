@@ -6,31 +6,87 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Locations, Paths} from 'modules/Routes';
-import {C3Navigation} from '@camunda/camunda-composite-components';
+import {useEffect, useState} from 'react';
+import {observer} from 'mobx-react-lite';
 import {Link} from 'react-router-dom';
-import {useCurrentPage} from '../useCurrentPage';
+import {ArrowRight} from '@carbon/react/icons';
+import {C3Navigation} from '@camunda/camunda-composite-components';
+import {Locations, Paths} from 'modules/Routes';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
-import {useEffect, useState} from 'react';
-import {ArrowRight} from '@carbon/react/icons';
-import {observer} from 'mobx-react';
-import {currentTheme, type ThemeType} from 'modules/stores/currentTheme';
-import capitalize from 'lodash/capitalize';
+import {useCurrentPage} from '../useCurrentPage';
 import {licenseTagStore} from 'modules/stores/licenseTag';
+import {currentTheme} from 'modules/stores/currentTheme';
 
-const orderedApps = [
-  'console',
-  'modeler',
-  'tasklist',
-  'operate',
-  'optimize',
-] as const;
+function getInfoSidebarItems(isPaidPlan: boolean) {
+  const BASE_INFO_SIDEBAR_ITEMS = [
+    {
+      key: 'docs',
+      label: 'Documentation',
+      onClick: () => {
+        tracking.track({
+          eventName: 'info-bar',
+          link: 'documentation',
+        });
+
+        window.open('https://docs.camunda.io/', '_blank');
+      },
+    },
+    {
+      key: 'academy',
+      label: 'Camunda Academy',
+      onClick: () => {
+        tracking.track({
+          eventName: 'info-bar',
+          link: 'academy',
+        });
+
+        window.open('https://academy.camunda.com/', '_blank');
+      },
+    },
+  ];
+  const FEEDBACK_AND_SUPPORT_ITEM = {
+    key: 'feedbackAndSupport',
+    label: 'Feedback and Support',
+    onClick: () => {
+      tracking.track({
+        eventName: 'info-bar',
+        link: 'feedback',
+      });
+
+      window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
+    },
+  } as const;
+  const COMMUNITY_FORUM_ITEM = {
+    key: 'communityForum',
+    label: 'Community Forum',
+    onClick: () => {
+      tracking.track({
+        eventName: 'info-bar',
+        link: 'forum',
+      });
+
+      window.open('https://forum.camunda.io', '_blank');
+    },
+  };
+
+  return isPaidPlan
+    ? [
+        ...BASE_INFO_SIDEBAR_ITEMS,
+        FEEDBACK_AND_SUPPORT_ITEM,
+        COMMUNITY_FORUM_ITEM,
+      ]
+    : [...BASE_INFO_SIDEBAR_ITEMS, COMMUNITY_FORUM_ITEM];
+}
 
 const AppHeader: React.FC = observer(() => {
+  const {
+    isForbidden,
+    state: {displayName, salesPlanType, userId, roles},
+  } = authenticationStore;
+  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
   const {currentPage} = useCurrentPage();
-  const {displayName, canLogout, userId, salesPlanType, roles, c8Links} =
-    authenticationStore.state;
+  const {theme, changeTheme} = currentTheme;
   const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 
   useEffect(() => {
@@ -47,6 +103,20 @@ const AppHeader: React.FC = observer(() => {
 
   return (
     <C3Navigation
+      toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
+      notificationSideBar={IS_SAAS ? {} : undefined}
+      appBar={{
+        ariaLabel: 'App panel',
+        isOpen: isAppBarOpen,
+        elementClicked: (app: string) => {
+          tracking.track({
+            eventName: 'app-switcher-item-clicked',
+            app,
+          });
+        },
+        appTeaserRouteProps: IS_SAAS ? {} : undefined,
+        elements: IS_SAAS ? undefined : [],
+      }}
       app={{
         ariaLabel: 'Camunda Operate',
         name: 'Operate',
@@ -56,14 +126,13 @@ const AppHeader: React.FC = observer(() => {
             tracking.track({
               eventName: 'navigation',
               link: 'header-logo',
-              currentPage,
             });
           },
         },
       }}
       forwardRef={Link}
       navbar={{
-        elements: authenticationStore.isForbidden()
+        elements: isForbidden()
           ? []
           : [
               {
@@ -121,94 +190,16 @@ const AppHeader: React.FC = observer(() => {
           expiresAt: licenseTagStore.state.expiresAt,
         },
       }}
-      toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
-      appBar={{
-        ariaLabel: 'App Panel',
-        isOpen: isAppBarOpen,
-        elements: window.clientConfig?.organizationId
-          ? orderedApps.map((appName) => ({
-              key: appName,
-              label: capitalize(appName),
-              href: c8Links[appName],
-              active: appName === 'operate',
-              routeProps:
-                appName === 'operate' ? {to: Paths.dashboard()} : undefined,
-            }))
-          : [],
-        elementClicked: (app) => {
-          tracking.track({
-            eventName: 'app-switcher-item-clicked',
-            app,
-          });
-        },
-      }}
       infoSideBar={{
         isOpen: false,
         ariaLabel: 'Info',
-        elements: [
-          {
-            key: 'docs',
-            label: 'Documentation',
-            onClick: () => {
-              tracking.track({
-                eventName: 'info-bar',
-                link: 'documentation',
-              });
-
-              window.open('https://docs.camunda.io/', '_blank');
-            },
-          },
-          {
-            key: 'academy',
-            label: 'Camunda Academy',
-            onClick: () => {
-              tracking.track({
-                eventName: 'info-bar',
-                link: 'academy',
-              });
-
-              window.open('https://academy.camunda.com/', '_blank');
-            },
-          },
-          {
-            key: 'feedbackAndSupport',
-            label: 'Feedback and Support',
-            onClick: () => {
-              tracking.track({
-                eventName: 'info-bar',
-                link: 'feedback',
-              });
-
-              if (
-                salesPlanType === 'paid-cc' ||
-                salesPlanType === 'enterprise'
-              ) {
-                window.open(
-                  'https://jira.camunda.com/projects/SUPPORT/queues',
-                  '_blank',
-                );
-              } else {
-                window.open('https://forum.camunda.io/', '_blank');
-              }
-            },
-          },
-          {
-            key: 'slackCommunityChannel',
-            label: 'Slack Community Channel',
-            onClick: () => {
-              tracking.track({
-                eventName: 'info-bar',
-                link: 'slack',
-              });
-
-              window.open('https://camunda.com/slack', '_blank');
-            },
-          },
-        ],
+        elements: getInfoSidebarItems(
+          ['paid-cc', 'enterprise'].includes(salesPlanType!),
+        ),
       }}
       userSideBar={{
-        version: import.meta.env.VITE_VERSION,
         ariaLabel: 'Settings',
+        version: import.meta.env.VITE_VERSION,
         customElements: {
           profile: {
             label: 'Profile',
@@ -218,15 +209,16 @@ const AppHeader: React.FC = observer(() => {
             },
           },
           themeSelector: {
-            currentTheme: currentTheme.state.selectedTheme,
+            currentTheme: theme,
             onChange: (theme: string) => {
-              currentTheme.changeTheme(theme as ThemeType);
+              changeTheme(theme as 'system' | 'dark' | 'light');
             },
           },
         },
         elements: [
-          ...(window.Osano?.cm !== undefined
-            ? [
+          ...(window.Osano?.cm === undefined
+            ? []
+            : [
                 {
                   key: 'cookie',
                   label: 'Cookie preferences',
@@ -241,8 +233,7 @@ const AppHeader: React.FC = observer(() => {
                     );
                   },
                 },
-              ]
-            : []),
+              ]),
           {
             key: 'terms',
             label: 'Terms of use',
@@ -283,7 +274,7 @@ const AppHeader: React.FC = observer(() => {
             },
           },
         ],
-        bottomElements: canLogout
+        bottomElements: window.clientConfig?.canLogout
           ? [
               {
                 key: 'logout',

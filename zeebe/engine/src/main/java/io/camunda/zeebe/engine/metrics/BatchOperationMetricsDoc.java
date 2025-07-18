@@ -48,7 +48,11 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
 
   EXECUTED_QUERIES {
     private static final KeyName[] KEY_NAMES =
-        new KeyName[] {PartitionKeyNames.PARTITION, BatchOperationKeyNames.ORGANIZATION_ID};
+        new KeyName[] {
+          PartitionKeyNames.PARTITION,
+          BatchOperationKeyNames.ORGANIZATION_ID,
+          BatchOperationKeyNames.QUERY_STATUS
+        };
 
     @Override
     public String getDescription() {
@@ -231,6 +235,14 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
       }
     },
 
+    /** The status (completed, failed) of the query. See {@link QueryStatus} for possible values. */
+    QUERY_STATUS {
+      @Override
+      public String asString() {
+        return "queryStatus";
+      }
+    },
+
     /**
      * Metrics that are annotated with this label are vitally important for usage tracking and
      * data-based decision-making as part of Camunda's SaaS offering.
@@ -282,6 +294,21 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
     private final String label;
 
     BatchOperationLatency(final String label) {
+      this.label = label;
+    }
+
+    public String getLabel() {
+      return label;
+    }
+  }
+
+  public enum QueryStatus {
+    COMPLETED("completed"),
+    FAILED("failed");
+
+    private final String label;
+
+    QueryStatus(final String label) {
       this.label = label;
     }
 

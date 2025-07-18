@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -159,7 +160,13 @@ public class OperationReferenceTest {
     client
         .newWorker()
         .jobType(listenerType)
-        .handler((jobClient, job) -> jobClient.newCompleteCommand(job).withResult().send().join())
+        .handler(
+            (jobClient, job) ->
+                jobClient
+                    .newCompleteCommand(job)
+                    .withResult(CompleteJobCommandJobResultStep::forUserTask)
+                    .send()
+                    .join())
         .open();
 
     // When
@@ -196,7 +203,13 @@ public class OperationReferenceTest {
     client
         .newWorker()
         .jobType(listenerType)
-        .handler((jobClient, job) -> jobClient.newCompleteCommand(job).withResult().send().join())
+        .handler(
+            (jobClient, job) ->
+                jobClient
+                    .newCompleteCommand(job)
+                    .withResult(CompleteJobCommandJobResultStep::forUserTask)
+                    .send()
+                    .join())
         .open();
 
     // When
@@ -238,9 +251,7 @@ public class OperationReferenceTest {
             (jobClient, job) ->
                 jobClient
                     .newCompleteCommand(job)
-                    .withResult()
-                    .deny(true)
-                    .deniedReason("Denied by listener")
+                    .withResult(r -> r.forUserTask().deny(true).deniedReason("Denied by listener"))
                     .send()
                     .join())
         .open();

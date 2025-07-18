@@ -126,6 +126,7 @@ test.describe('get familiar with operate', () => {
         sequenceFlows: runningOrderProcessInstance.sequenceFlows,
         sequenceFlowsV2: runningOrderProcessInstance.sequenceFlowsV2,
         variables: runningOrderProcessInstance.variables,
+        variablesV2: runningOrderProcessInstance.variablesV2,
         xml: runningOrderProcessInstance.xml,
       }),
     );

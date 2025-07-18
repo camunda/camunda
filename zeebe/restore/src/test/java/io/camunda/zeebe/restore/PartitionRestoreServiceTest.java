@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.MemberId;
@@ -39,7 +40,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -148,7 +148,7 @@ class PartitionRestoreServiceTest {
     final var backup = takeBackup(backupId, 4);
 
     // when
-    restoreService.restore(backupId, BackupValidator.none()).join();
+    restoreService.restore(backupId, BackupValidator.none());
 
     // then
     assertThat(dataDirectoryToRestore).isNotEmptyDirectory();
@@ -186,11 +186,9 @@ class PartitionRestoreServiceTest {
     takeBackup(backupId, 5);
 
     // when - then
-    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(1)))
-        .failsWithin(Duration.ofSeconds(1))
-        .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(IllegalStateException.class)
-        .withMessageContaining("Cannot find a record at checkpoint position");
+    assertThatThrownBy(() -> restoreService.restore(backupId, new ValidatePartitionCount(1)))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Cannot find a record at checkpoint position");
   }
 
   @Test
@@ -212,10 +210,8 @@ class PartitionRestoreServiceTest {
         StandardOpenOption.APPEND);
 
     // when - then
-    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(1)))
-        .failsWithin(Duration.ofSeconds(1))
-        .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(CorruptedSnapshotException.class);
+    assertThatThrownBy(() -> restoreService.restore(backupId, new ValidatePartitionCount(1)))
+        .isInstanceOf(CorruptedSnapshotException.class);
   }
 
   @Test
@@ -232,11 +228,9 @@ class PartitionRestoreServiceTest {
     takeBackup(backupId, 4);
 
     // when - then
-    assertThat(restoreService.restore(backupId, new ValidatePartitionCount(2)))
-        .failsWithin(Duration.ofSeconds(1))
-        .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(BackupNotValidException.class)
-        .withMessageContaining("Expected backup to have 2 partitions, but has 1");
+    assertThatThrownBy(() -> restoreService.restore(backupId, new ValidatePartitionCount(2)))
+        .isInstanceOf(BackupNotValidException.class)
+        .hasMessageContaining("Expected backup to have 2 partitions, but has 1");
   }
 
   private Set<String> getRegularFiles(final Path directory) throws IOException {

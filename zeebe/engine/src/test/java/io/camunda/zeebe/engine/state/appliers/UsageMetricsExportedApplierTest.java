@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,7 +35,24 @@ class UsageMetricsExportedApplierTest {
   }
 
   @Test
-  void shouldResetActiveBucket() {
+  void shouldNotResetActiveBucketWhenResetTimeIsFromTime() {
+    // given
+    final var mockProcessingState = mock(MutableProcessingState.class);
+    final var mockUsageMetricsState = mock(MutableUsageMetricState.class);
+    when(mockProcessingState.getUsageMetricState()).thenReturn(mockUsageMetricsState);
+    when(mockUsageMetricsState.getActiveBucket())
+        .thenReturn(new PersistedUsageMetrics().setFromTime(3L));
+
+    // when
+    new UsageMetricsExportedApplier(mockProcessingState)
+        .applyState(1L, new UsageMetricRecord().setResetTime(3L));
+
+    // then
+    verify(mockUsageMetricsState, never()).resetActiveBucket(1L);
+  }
+
+  @Test
+  void shouldResetActiveBucketRPI() {
     // given
     usageMetricState.resetActiveBucket(1L);
     usageMetricState.recordRPIMetric("tenant1");
@@ -53,19 +71,41 @@ class UsageMetricsExportedApplierTest {
   }
 
   @Test
-  void shouldNotResetActiveBucketWhenResetTimeIsFromTime() {
+  void shouldResetActiveBucketEDI() {
     // given
-    final var mockProcessingState = mock(MutableProcessingState.class);
-    final var mockUsageMetricsState = mock(MutableUsageMetricState.class);
-    when(mockProcessingState.getUsageMetricState()).thenReturn(mockUsageMetricsState);
-    when(mockUsageMetricsState.getActiveBucket())
-        .thenReturn(new PersistedUsageMetrics().setFromTime(3L));
+    usageMetricState.resetActiveBucket(1L);
+    usageMetricState.recordEDIMetric("tenant1");
+    usageMetricState.recordEDIMetric("tenant1");
+    final var bucket = usageMetricState.getActiveBucket();
+    assertThat(bucket).isNotNull();
+    assertThat(bucket.getTenantEDIMap()).containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", 2L));
 
     // when
-    new UsageMetricsExportedApplier(mockProcessingState)
-        .applyState(1L, new UsageMetricRecord().setResetTime(3L));
+    usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
 
     // then
-    verify(mockUsageMetricsState, never()).resetActiveBucket(1L);
+    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
+    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
+    assertThat(usageMetricState.getActiveBucket().getTenantEDIMap()).isEmpty();
+  }
+
+  @Test
+  void shouldResetActiveBucketTU() {
+    // given
+    usageMetricState.resetActiveBucket(1L);
+    usageMetricState.recordTUMetric("tenant1", "assignee1");
+    usageMetricState.recordTUMetric("tenant1", "assignee1");
+    final var bucket = usageMetricState.getActiveBucket();
+    assertThat(bucket).isNotNull();
+    assertThat(bucket.getTenantTUMap())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", Set.of("assignee1")));
+
+    // when
+    usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
+
+    // then
+    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
+    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
+    assertThat(usageMetricState.getActiveBucket().getTenantTUMap()).isEmpty();
   }
 }

@@ -41,6 +41,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(JobController.class)
 public class JobControllerTest extends RestControllerTest {
@@ -188,7 +189,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -227,7 +228,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -267,7 +268,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -307,7 +308,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -338,6 +339,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": true,
               "corrections": {}
             }
@@ -372,6 +374,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": true,
               "deniedReason": "Reason to deny lifecycle transition",
               "corrections": {}
@@ -409,6 +412,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": false,
               "corrections": {
                 "assignee": "Test",
@@ -468,6 +472,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": false,
               "corrections": {
                 "assignee": "Test",
@@ -521,6 +526,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": false,
               "corrections": {
                 "assignee": null,
@@ -573,6 +579,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "denied": false,
               "corrections": {}
             }
@@ -608,6 +615,7 @@ public class JobControllerTest extends RestControllerTest {
         """
           {
             "result": {
+              "type": "userTask",
               "unknownField": true,
               "corrections": {}
             }
@@ -808,7 +816,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -837,7 +845,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test

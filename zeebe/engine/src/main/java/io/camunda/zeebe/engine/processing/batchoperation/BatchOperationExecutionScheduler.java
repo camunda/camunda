@@ -41,6 +41,14 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The is class is a scheduler that periodically checks for newly created batch operations and
+ * initializes them with the itemKeys to be executed.
+ *
+ * <p>For this, it deserializes the filter object and queries the EntityKeyProvider for all matching
+ * itemKeys for this partition. Then this collection of itemKeys will be split into smaller chunks
+ * and appended to the TaskResultBuilder as BatchOperationChunkRecord.
+ */
 public class BatchOperationExecutionScheduler implements StreamProcessorLifecycleAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationExecutionScheduler.class);
@@ -81,6 +89,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     scheduleExecution();
   }
 
+  /** Schedules the next execution of the batch operation scheduler run. */
   private void scheduleExecution() {
     if (!executing.get()) {
       processingContext
@@ -119,11 +128,12 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       return;
     }
 
-    // First fire a start event
+    // First fire a start event to indicate the beginning of the INIT phase
     appendStartedCommand(taskResultBuilder, batchOperation);
 
     final Set<Item> keys;
     try {
+      // Then query all relevant itemKeys for the batch operation and this local partition
       keys = queryAllKeys(batchOperation);
     } catch (final Exception e) {
       LOG.error(
@@ -139,6 +149,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
     metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
 
+    // we always append the EXECUTE command at the end, even if no items were found, so we can
+    // leave the completion logic in that processor.
     appendExecution(batchOperation.getKey(), taskResultBuilder);
 
     metrics.startStartExecuteLatencyMeasure(
@@ -158,6 +170,8 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
           batchOperation.getKey(),
           partitionId);
       for (int i = 0; i < keys.size(); i += chunkSize) {
+        // split the keys into smaller chunks of size chunkSize to overcome the size limit of a
+        // single record
         final Set<Item> chunkKeys =
             keys.stream().skip(i).limit(chunkSize).collect(Collectors.toSet());
         appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
@@ -243,6 +257,14 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
+  /**
+   * Queries all itemKeys for the given batch operation from the secondary database. Before the
+   * query is sent, the filter is enhanced by the local partitionId to just fetch the items that are
+   * relevant for this partition.
+   *
+   * @param batchOperation the batch operation
+   * @return a set of itemKeys that match the filter of the batch operation
+   */
   private Set<Item> queryAllKeys(final PersistedBatchOperation batchOperation) {
     final Supplier<Boolean> abortCondition =
         () -> !batchOperationState.exists(batchOperation.getKey());
@@ -252,6 +274,10 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             batchOperation.getKey(), batchOperation.getBatchOperationType())) {
       return switch (batchOperation.getBatchOperationType()) {
         case CANCEL_PROCESS_INSTANCE ->
+            /*
+             * For canceling a process instance, we only want to fetch active root processes.
+             * Eventual subprocesses are canceled by the root process instance.
+             */
             entityKeyProvider.fetchProcessInstanceItems(
                 partitionId,
                 batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
@@ -261,6 +287,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
                 batchOperation.getAuthentication(),
                 abortCondition);
         case MIGRATE_PROCESS_INSTANCE, MODIFY_PROCESS_INSTANCE ->
+            // For migrating or modifying a process instance, we want to fetch all active process
             entityKeyProvider.fetchProcessInstanceItems(
                 partitionId,
                 batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
@@ -269,6 +296,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
                 batchOperation.getAuthentication(),
                 abortCondition);
         case RESOLVE_INCIDENT ->
+            // For resolving an incident, we want to fetch incidents from active process instances
             entityKeyProvider.fetchIncidentItems(
                 partitionId,
                 batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()

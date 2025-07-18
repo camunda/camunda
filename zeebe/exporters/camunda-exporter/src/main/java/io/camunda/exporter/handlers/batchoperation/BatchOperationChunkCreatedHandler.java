@@ -72,7 +72,8 @@ public class BatchOperationChunkCreatedHandler
   public void updateEntity(
       final Record<BatchOperationChunkRecordValue> record, final BatchOperationEntity entity) {
     // set to just the size of the current chunk. delta update is performed in the update script
-    entity.setOperationsTotalCount(record.getValue().getItems().size());
+    entity.setOperationsTotalCount(
+        entity.getOperationsTotalCount() + record.getValue().getItems().size());
   }
 
   @Override

@@ -24,7 +24,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStar
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getRoleRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatingRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -264,7 +264,7 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportUserTask() {
     // given
-    final var userTaskRecord = getUserTaskCreatedRecord(1L);
+    final var userTaskRecord = getUserTaskCreatingRecord(1L);
 
     // when
     exporter.export(userTaskRecord);
@@ -586,8 +586,8 @@ class RdbmsExporterIT {
 
     // then
     final var formKey = ((Form) formCreatedRecord.getValue()).getFormKey();
-    final var userTask = rdbmsService.getFormReader().findOne(formKey);
-    assertThat(userTask).isNotNull();
+    final var formEntity = rdbmsService.getFormReader().findOne(formKey);
+    assertThat(formEntity).isNotNull();
   }
 
   @Test

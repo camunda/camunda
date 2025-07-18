@@ -73,8 +73,8 @@ public class CreateDocumentLinkTest {
                     .join());
 
     // then
-    assertThat(exception.getMessage()).startsWith("Failed with code 405");
-    assertThat(exception.details().getStatus()).isEqualTo(405);
+    assertThat(exception.getMessage()).startsWith("Failed with code 403");
+    assertThat(exception.details().getStatus()).isEqualTo(403);
     assertThat(exception.details().getDetail())
         .contains("The in-memory document store does not support creating links");
   }

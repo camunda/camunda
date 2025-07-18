@@ -49,6 +49,7 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 import org.springframework.util.unit.DataSize;
 
@@ -146,7 +147,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verify(responseObserver, Mockito.never()).onNext(any());
     Mockito.verify(responseObserver).onCompleted();
@@ -270,7 +271,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     assertThat(callCounter).hasValue(1);
   }
@@ -315,7 +316,11 @@ public class JobControllerLongPollingTest extends RestControllerTest {
             .expectStatus()
             .isOk();
 
-    response.expectHeader().contentType(MediaType.APPLICATION_JSON).expectBody().json(expectedBody);
+    response
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -356,7 +361,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   @TestConfiguration

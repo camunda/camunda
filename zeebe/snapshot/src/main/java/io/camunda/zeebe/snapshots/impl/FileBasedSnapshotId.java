@@ -52,6 +52,10 @@ public final class FileBasedSnapshotId implements SnapshotId {
     brokerId = Optional.empty();
   }
 
+  static FileBasedSnapshotId forBoostrap(final int brokerId) {
+    return new FileBasedSnapshotId(1, 1, 0, 0, brokerId);
+  }
+
   // TODO(npepinpe): using Either here would improve readability and observability, as validation
   //  can have better error messages, and the return type better expresses what we attempt to do,
   //  i.e. either it failed (with an error) or it succeeded

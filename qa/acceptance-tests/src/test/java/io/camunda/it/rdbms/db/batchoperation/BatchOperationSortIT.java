@@ -41,10 +41,10 @@ public class BatchOperationSortIT {
             BatchOperationQuery.of(
                 b ->
                     b.filter(new BatchOperationFilter.Builder().build())
-                        .sort(BatchOperationSort.of(s -> s.batchOperationId().asc()))
+                        .sort(BatchOperationSort.of(s -> s.batchOperationKey().asc()))
                         .page(SearchQueryPage.of(p -> p.from(0).size(10)))));
 
     assertThat(searchResult.items())
-        .isSortedAccordingTo(Comparator.comparing(BatchOperationEntity::batchOperationId));
+        .isSortedAccordingTo(Comparator.comparing(BatchOperationEntity::batchOperationKey));
   }
 }

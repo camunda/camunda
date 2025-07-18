@@ -15,6 +15,7 @@ import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.security.entity.ClusterMetadata.AppName;
+import jakarta.json.Json;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.context.annotation.Profile;
@@ -66,11 +67,16 @@ public class OidcCamundaUserService implements CamundaUserService {
         .map(
             user -> {
               if (user instanceof final CamundaOidcUser camundaOAuthPrincipal) {
-                return camundaOAuthPrincipal.getIdToken().getTokenValue();
+                return Json.createValue(camundaOAuthPrincipal.getIdToken().getTokenValue())
+                    .toString();
               }
 
-              return null;
+              throw new UnsupportedOperationException(
+                  "Not supported for token class: " + user.getClass().getName());
             })
-        .orElse(null);
+        .orElseThrow(
+            () ->
+                new UnsupportedOperationException(
+                    "User is not authenticated or does not have a valid token"));
   }
 }

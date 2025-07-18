@@ -43,12 +43,12 @@
     <version.camunda-license-check>2.10.0</version.camunda-license-check>
     <version.checkstyle>10.26.1</version.checkstyle>
     <version.commons-beanutils>1.11.0</version.commons-beanutils>
-    <version.commons-lang>3.17.0</version.commons-lang>
+    <version.commons-lang>3.18.0</version.commons-lang>
     <version.commons-logging>1.3.5</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.18.0</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
-    <version.commons-validator>1.9.0</version.commons-validator>
+    <version.commons-validator>1.10.0</version.commons-validator>
     <version.zstd-jni>1.5.7-4</version.zstd-jni>
     <version.commons-text>1.13.1</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
@@ -70,7 +70,7 @@
     <version.jackson>2.19.1</version.jackson>
     <version.junit>5.13.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
-    <version.log4j>2.24.3</version.log4j>
+    <version.log4j>2.25.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
     <version.mockito>5.18.0</version.mockito>
     <version.model>7.7.0</version.model>
@@ -83,8 +83,8 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.31.1</version.protobuf>
     <version.protobuf-common>2.59.1</version.protobuf-common>
-    <version.micrometer>1.15.1</version.micrometer>
-    <version.rocksdbjni>9.11.2</version.rocksdbjni>
+    <version.micrometer>1.15.2</version.micrometer>
+    <version.rocksdbjni>10.2.1</version.rocksdbjni>
     <version.sbe>1.35.6</version.sbe>
     <version.scala>2.13.16</version.scala>
     <version.slf4j>2.0.17</version.slf4j>
@@ -105,6 +105,7 @@
     <version.spring>6.2.8</version.spring>
     <version.spring-security>6.5.1</version.spring-security>
     <version.spring-boot>3.4.7</version.spring-boot>
+    <version.tomcat>10.1.43</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -118,7 +119,7 @@
     <version.resilience4j>2.3.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.180</version.classgraph>
+    <version.classgraph>4.8.181</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -127,11 +128,11 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
-    <version.zpt>8.7.7</version.zpt>
+    <version.zpt>8.7.8</version.zpt>
     <version.feign>13.6</version.feign>
     <version.google-sdk>26.63.0</version.google-sdk>
     <version.azure-sdk>1.2.36</version.azure-sdk>
-    <version.awssdk>2.31.77</version.awssdk>
+    <version.awssdk>2.31.78</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
@@ -152,7 +153,7 @@
     <version.jna-platform>5.17.0</version.jna-platform>
     <version.liquibase>4.33.0</version.liquibase>
     <version.sqlformatter>2.0.5</version.sqlformatter>
-    <version.caffeine>3.2.1</version.caffeine>
+    <version.caffeine>3.2.2</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
 
     <version.commons-io>2.19.0</version.commons-io>
@@ -165,7 +166,6 @@
     <version.node>v24.2.0</version.node>
     <version.yarn>v1.22.22</version.yarn>
 
-    <version.aws-java-sdk>1.12.787</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.21.3</version.elasticsearch-test-container>
     <version.postgres-test-container>1.21.3</version.postgres-test-container>
     <version.elasticsearch7>7.17.29</version.elasticsearch7>
@@ -193,7 +193,7 @@
     <version.jopt-simple>5.0.4</version.jopt-simple>
     <version.mybatis-spring>3.0.5</version.mybatis-spring>
     <version.mybatis>3.5.19</version.mybatis>
-    <version.mybatis-spring-boot-starter>3.0.4</version.mybatis-spring-boot-starter>
+    <version.mybatis-spring-boot-starter>3.0.5</version.mybatis-spring-boot-starter>
     <version.javassist>3.30.2-GA</version.javassist>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
@@ -208,7 +208,7 @@
     <plugin.version.compiler>3.14.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.16.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.8.1</plugin.version.dependency>
-    <plugin.version.enforcer>3.6.0</plugin.version.enforcer>
+    <plugin.version.enforcer>3.6.1</plugin.version.enforcer>
     <plugin.version.exec>3.5.1</plugin.version.exec>
     <plugin.version.failsafe>3.5.3</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
@@ -853,6 +853,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-search-domain</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client-reader</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -2046,6 +2052,22 @@
       </dependency>
 
       <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-el</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-websocket</artifactId>
+        <version>${version.tomcat}</version>
+      </dependency>
+
+      <dependency>
         <groupId>org.keycloak</groupId>
         <artifactId>keycloak-admin-client</artifactId>
         <version>${version.keycloak-client}</version>
@@ -2096,16 +2118,6 @@
         <groupId>com.nimbusds</groupId>
         <artifactId>nimbus-jose-jwt</artifactId>
         <version>${version.nimbus-jose-jwt}</version>
-      </dependency>
-
-      <!-- Start AWS -->
-
-      <dependency>
-        <groupId>com.amazonaws</groupId>
-        <artifactId>aws-java-sdk-bom</artifactId>
-        <version>${version.aws-java-sdk}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
 
       <!-- testcontainers and docker: see

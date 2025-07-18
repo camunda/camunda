@@ -21,9 +21,12 @@ import org.springframework.http.MediaType;
 
 public class EndpointAccessErrorFilter extends HttpFilter {
   private final ObjectMapper objectMapper;
+  private final String errorMessage;
 
-  public EndpointAccessErrorFilter(@Autowired final ObjectMapper objectMapper) {
+  public EndpointAccessErrorFilter(
+      @Autowired final ObjectMapper objectMapper, final String errorMessage) {
     this.objectMapper = objectMapper;
+    this.errorMessage = errorMessage;
   }
 
   @Override
@@ -35,9 +38,7 @@ public class EndpointAccessErrorFilter extends HttpFilter {
     final var detail =
         RestErrorMapper.createProblemDetail(
             HttpStatusCode.valueOf(HttpServletResponse.SC_FORBIDDEN),
-            String.format(
-                "Due to security configuration, %s endpoint is not accessible",
-                req.getRequestURI()),
+            String.format("%s endpoint is not accessible: %s", req.getRequestURI(), errorMessage),
             "Access issue");
     detail.setInstance(URI.create(req.getRequestURI()));
     res.getWriter().write(objectMapper.writeValueAsString(detail));

@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
@@ -25,26 +26,45 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class IncidentRecord extends UnifiedRecordValue implements IncidentRecordValue {
-  private final EnumProperty<ErrorType> errorTypeProp =
-      new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);
-  private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue ERROR_TYPE_KEY = new StringValue("errorType");
+  private static final StringValue ERROR_MESSAGE_KEY = new StringValue("errorMessage");
+  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
+  private static final StringValue JOB_KEY_KEY = new StringValue("jobKey");
+  private static final StringValue VARIABLE_SCOPE_KEY_KEY = new StringValue("variableScopeKey");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue ELEMENT_INSTANCE_PATH_KEY =
+      new StringValue("elementInstancePath");
+  private static final StringValue PROCESS_DEFINITION_PATH_KEY =
+      new StringValue("processDefinitionPath");
+  private static final StringValue CALLING_ELEMENT_PATH_KEY = new StringValue("callingElementPath");
 
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final EnumProperty<ErrorType> errorTypeProp =
+      new EnumProperty<>(ERROR_TYPE_KEY, ErrorType.class, ErrorType.UNKNOWN);
+  private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE_KEY, "");
+  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
-  private final StringProperty elementIdProp = new StringProperty("elementId", "");
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
-  private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
-  private final LongProperty variableScopeKeyProp = new LongProperty("variableScopeKey", -1L);
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
+  private final LongProperty elementInstanceKeyProp =
+      new LongProperty(ELEMENT_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty jobKeyProp = new LongProperty(JOB_KEY_KEY, -1L);
+  private final LongProperty variableScopeKeyProp = new LongProperty(VARIABLE_SCOPE_KEY_KEY, -1L);
   private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final ArrayProperty<ArrayValue<LongValue>> elementInstancePathProp =
-      new ArrayProperty<>("elementInstancePath", () -> new ArrayValue<>(LongValue::new));
+      new ArrayProperty<>(ELEMENT_INSTANCE_PATH_KEY, () -> new ArrayValue<>(LongValue::new));
   private final ArrayProperty<LongValue> processDefinitionPathProp =
-      new ArrayProperty<>("processDefinitionPath", LongValue::new);
+      new ArrayProperty<>(PROCESS_DEFINITION_PATH_KEY, LongValue::new);
   private final ArrayProperty<IntegerValue> callingElementPathProp =
-      new ArrayProperty<>("callingElementPath", IntegerValue::new);
+      new ArrayProperty<>(CALLING_ELEMENT_PATH_KEY, IntegerValue::new);
 
   public IncidentRecord() {
     super(13);

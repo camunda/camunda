@@ -8,10 +8,12 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.ID;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.*;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public final class BatchOperationFilterTransformer
@@ -22,9 +24,14 @@ public final class BatchOperationFilterTransformer
   }
 
   @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return matchAll();
+  }
+
+  @Override
   public SearchQuery toSearchQuery(final BatchOperationFilter filter) {
     return and(
-        stringOperations(ID, filter.batchOperationIdOperations()),
+        stringOperations(ID, filter.batchOperationKeyOperations()),
         stringOperations(STATE, filter.stateOperations()),
         stringOperations(TYPE, filter.operationTypeOperations()));
   }

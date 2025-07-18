@@ -15,6 +15,7 @@
  */
 package io.camunda.client.process;
 
+import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
@@ -170,11 +171,5 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertThat(pageRequest.getLimit()).isEqualTo(5);
     assertThat(pageRequest.getBefore()).isEqualTo("b");
     assertThat(pageRequest.getAfter()).isEqualTo("a");
-  }
-
-  private void assertSort(
-      final SearchRequestSort sort, final String name, final SortOrderEnum order) {
-    assertThat(sort.getField()).isEqualTo(name);
-    assertThat(sort.getOrder()).isEqualTo(order);
   }
 }

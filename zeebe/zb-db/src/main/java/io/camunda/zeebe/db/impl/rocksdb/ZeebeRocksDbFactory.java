@@ -236,7 +236,6 @@ public final class ZeebeRocksDbFactory<
         // files
         // this is also a candidate for tuning, it was a rough guess
         .setMinWriteBufferNumberToMerge(rocksDbConfiguration.getMinWriteBufferNumberToMerge())
-        .setMaxWriteBufferNumberToMaintain(maxConcurrentMemtableCount)
         .setMaxWriteBufferNumber(maxConcurrentMemtableCount)
         .setWriteBufferSize(memtableMemory)
         // compaction

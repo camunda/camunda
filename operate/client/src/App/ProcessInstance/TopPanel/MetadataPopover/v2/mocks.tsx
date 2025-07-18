@@ -15,7 +15,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {useEffect} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {MetadataPopover} from '.';
-import {ProcessInstance} from 'modules/testUtils/pages/ProcessInstance';
+import {ProcessInstance} from 'modules/testUtils/pages/ProcessInstance/v2';
 import {render} from 'modules/testing-library';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -34,7 +34,9 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
     <ProcessDefinitionKeyContext.Provider value="123">
       <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
+        <MemoryRouter
+          initialEntries={[Paths.processInstance('2251799813685591')]}
+        >
           <Routes>
             <Route path={Paths.processInstance()} element={children} />
             <Route path={Paths.decisionInstance()} element={<></>} />

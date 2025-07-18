@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = MessageSubscriptionController.class)
 public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
@@ -50,7 +51,8 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
             "page": {
                 "totalItems": 1,
                 "startCursor": "WzIyNTE3OTk4MTM2ODU4Mjld",
-                "endCursor": "WzIyNTE3OTk4MTM2ODU4NjZd"
+                "endCursor": "WzIyNTE3OTk4MTM2ODU4NjZd",
+                "hasMoreTotalItems": false
             }
         }
       """;
@@ -102,7 +104,7 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(services).search(new MessageSubscriptionQuery.Builder().build());
   }
@@ -124,7 +126,7 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(services).search(new MessageSubscriptionQuery.Builder().build());
   }
@@ -163,7 +165,7 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(services)
         .search(
@@ -252,7 +254,7 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(services)
         .search(

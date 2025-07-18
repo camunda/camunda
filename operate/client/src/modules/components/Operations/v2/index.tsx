@@ -20,15 +20,17 @@ import {OperationsContainer} from '../styled';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {ModificationHelperModal} from '../ModificationHelperModal';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
+import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {Cancel} from './Cancel';
 import {Delete} from './Delete';
+import {ResolveIncidentLegacy} from './ResolveIncidentLegacy';
 import {ResolveIncident} from './ResolveIncident';
 import type {
   InstanceOperationEntity,
   ResourceBasedPermissionDto,
   OperationEntityType,
 } from 'modules/types/operate';
+import {IS_BATCH_OPERATIONS_V2} from 'modules/feature-flags';
 
 type Props = {
   instance: ProcessInstance;
@@ -86,13 +88,19 @@ const Operations: React.FC<Props> = observer(
           />
         )}
         <OperationItems>
-          {instance.hasIncident && !isModificationModeEnabled && (
-            <ResolveIncident
-              processInstanceKey={instance.processInstanceKey}
-              permissions={permissions}
-              applyOperation={applyOperation}
-            />
-          )}
+          {instance.hasIncident &&
+            !isModificationModeEnabled &&
+            (IS_BATCH_OPERATIONS_V2 ? (
+              <ResolveIncident
+                processInstanceKey={instance.processInstanceKey}
+              />
+            ) : (
+              <ResolveIncidentLegacy
+                processInstanceKey={instance.processInstanceKey}
+                permissions={permissions}
+                applyOperation={applyOperation}
+              />
+            ))}
           {isInstanceActive && !isModificationModeEnabled && (
             <Cancel processInstanceKey={instance.processInstanceKey} />
           )}

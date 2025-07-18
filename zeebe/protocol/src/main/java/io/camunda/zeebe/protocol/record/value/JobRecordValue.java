@@ -136,6 +136,12 @@ public interface JobRecordValue
   interface JobResultValue {
 
     /**
+     * @return the type of the job result, e.g. "userTask" for user task jobs or "adHocSubprocess"
+     *     for ad-hoc subprocess jobs. Depending on the type different properties are set.
+     */
+    JobResultType getType();
+
+    /**
      * @return true if the operation was rejected by Task Listener
      */
     boolean isDenied();
@@ -162,6 +168,12 @@ public interface JobRecordValue
      *     JobResultValue#getCorrectedAttributes()} to determine which fields are set
      */
     JobResultCorrectionsValue getCorrections();
+
+    /**
+     * @return a list of elements that need to be activated as a result of completing the job, as
+     *     well as variables that need to be set on the scope of each of these elements.
+     */
+    List<JobResultActivateElementValue> getActivateElements();
   }
 
   /**
@@ -203,5 +215,21 @@ public interface JobRecordValue
      * @return the corrected priority
      */
     int getPriority();
+  }
+
+  /** Represents the activate elements that can be opart of a {@link JobResultValue} */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobResultActivateElementValue.Builder.class)
+  interface JobResultActivateElementValue {
+
+    /**
+     * @return the id of the element that needs to be activated
+     */
+    String getElementId();
+
+    /**
+     * @return the variables that need to be set on the element when it is activated
+     */
+    Map<String, Object> getVariables();
   }
 }

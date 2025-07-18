@@ -31,7 +31,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('decisions', () => {
-  test(`have no violations`, async ({page, decisionsPage, makeAxeBuilder}) => {
+  test('have no violations', async ({page, decisionsPage, makeAxeBuilder}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -50,7 +50,7 @@ test.describe('decisions', () => {
     validateResults(results);
   });
 
-  test(`have no violations when a decision is selected`, async ({
+  test('have no violations when a decision is selected', async ({
     page,
     decisionsPage,
     makeAxeBuilder,

@@ -31,7 +31,7 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('process instance page', () => {
-  test(`error page`, async ({page, processInstancePage}) => {
+  test('error page', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -46,13 +46,17 @@ test.describe('process instance page', () => {
       id: runningInstance.detail.id,
     });
 
+    await expect(processInstancePage.variablesTableSpinner).not.toBeVisible();
     await processInstancePage.resetZoomButton.click();
-    await page.waitForTimeout(500);
+
+    await expect(
+      page.getByText('Variables could not be fetched'),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
 
-  test(`running instance`, async ({page, processInstancePage}) => {
+  test('running instance', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -63,8 +67,9 @@ test.describe('process instance page', () => {
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
+        variablesV2: runningInstance.variablesV2,
         xml: runningInstance.xml,
+        incidents: runningInstance.incidents,
       }),
     );
 
@@ -78,7 +83,7 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`add variable state`, async ({page, processInstancePage}) => {
+  test('add variable state', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -89,7 +94,7 @@ test.describe('process instance page', () => {
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
+        variablesV2: runningInstance.variablesV2,
         xml: runningInstance.xml,
       }),
     );
@@ -106,7 +111,7 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`edit variable state`, async ({page, processInstancePage}) => {
+  test('edit variable state', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -117,7 +122,7 @@ test.describe('process instance page', () => {
         statisticsV2: runningInstance.statisticsV2,
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
+        variablesV2: runningInstance.variablesV2,
         xml: runningInstance.xml,
       }),
     );
@@ -138,7 +143,7 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`instance with incident`, async ({page, processInstancePage}) => {
+  test('instance with incident', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -149,7 +154,7 @@ test.describe('process instance page', () => {
         statisticsV2: instanceWithIncident.statisticsV2,
         sequenceFlows: instanceWithIncident.sequenceFlows,
         sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
-        variables: instanceWithIncident.variables,
+        variablesV2: instanceWithIncident.variablesV2,
         xml: instanceWithIncident.xml,
         incidents: instanceWithIncident.incidents,
       }),
@@ -172,7 +177,7 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`completed instance`, async ({page, processInstancePage}) => {
+  test('completed instance', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -183,7 +188,7 @@ test.describe('process instance page', () => {
         statisticsV2: completedInstance.statisticsV2,
         sequenceFlows: completedInstance.sequenceFlows,
         sequenceFlowsV2: completedInstance.sequenceFlowsV2,
-        variables: completedInstance.variables,
+        variablesV2: completedInstance.variablesV2,
         xml: completedInstance.xml,
       }),
     );
@@ -203,7 +208,7 @@ test.describe('process instance page', () => {
     await expect(page).toHaveScreenshot();
   });
 
-  test(`compensation process instance`, async ({page, processInstancePage}) => {
+  test('compensation process instance', async ({page, processInstancePage}) => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
@@ -214,7 +219,7 @@ test.describe('process instance page', () => {
         statisticsV2: compensationProcessInstance.statisticsV2,
         sequenceFlows: compensationProcessInstance.sequenceFlows,
         sequenceFlowsV2: compensationProcessInstance.sequenceFlowsV2,
-        variables: compensationProcessInstance.variables,
+        variablesV2: compensationProcessInstance.variablesV2,
         xml: compensationProcessInstance.xml,
       }),
     );

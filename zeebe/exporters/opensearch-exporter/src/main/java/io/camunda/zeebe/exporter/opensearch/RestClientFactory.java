@@ -139,7 +139,7 @@ final class RestClientFactory {
    */
   public void configureAws(
       final HttpAsyncClientBuilder builder, final AwsConfiguration awsConfiguration) {
-    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.builder().build();
     credentialsProvider.resolveCredentials();
     final AwsV4HttpSigner signer = AwsV4HttpSigner.create();
 

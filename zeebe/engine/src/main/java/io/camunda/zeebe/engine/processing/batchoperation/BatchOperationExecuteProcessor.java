@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -36,6 +37,31 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This is the main execution processor for batch operations. When an EXECUTE command is processed,
+ * the following steps will be executed:
+ *
+ * <ul>
+ *   <li>Check if the batch operation exists and is not suspended. Otherwise, the processor will
+ *       skip further execution.
+ *   <li>Retrieve the next batch of item keys to process (up to <code>BATCH_SIZE</code>).
+ *   <li>If there are no item keys to process:
+ *       <ul>
+ *         <li>Mark this partition as completed.
+ *         <li>Distribute a <code>COMPLETE_PARTITION</code> command to the lead partition.
+ *       </ul>
+ *   <li>If there are item keys to process:
+ *       <ul>
+ *         <li>Execute the batch operation for each item key using the appropriate handler for the
+ *             type of the batch operation.
+ *       </ul>
+ *   <li>Append an <code>EXECUTING</code> event to the state writer, followed by an <code>EXECUTED
+ *       </code> event.
+ *   <li>Append the next follow-up <code>EXECUTE</code> command to process the next batch of item
+ *       keys, if any are left. This creates an <code>EXECUTE</code>-loop until all items are
+ *       processed.
+ * </ul>
+ */
 @ExcludeAuthorizationCheck
 public final class BatchOperationExecuteProcessor
     implements TypedRecordProcessor<BatchOperationExecutionRecord> {
@@ -92,12 +118,14 @@ public final class BatchOperationExecuteProcessor
       return;
     }
 
+    // if suspended, skip execution and stop the EXECUTE-loop
     if (batchOperation.isSuspended()) {
       LOGGER.info("Batch operation {} is suspended.", batchOperation.getKey());
       return;
     }
 
     final var entityKeys = batchOperationState.getNextItemKeys(batchKey, BATCH_SIZE);
+    // If there are no more items to process, we can mark the partition as completed
     if (entityKeys.isEmpty()) {
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
@@ -112,11 +140,14 @@ public final class BatchOperationExecuteProcessor
     // This is only done for the first batch operation execution iteration
     metrics.stopStartExecuteLatencyMeasure(batchKey);
 
+    // mark the items as in progress
     appendBatchOperationExecutionExecutingEvent(command.getValue(), Set.copyOf(entityKeys));
 
+    // retrieve the handler for the batch operation type and execute each itemKey with it
     final var handler = handlers.get(batchOperation.getBatchOperationType());
     entityKeys.forEach(entityKey -> handler.execute(entityKey, batchOperation));
 
+    // schedule the next EXECUTE command to continue processing the next batch of items
     appendBatchOperationExecutionExecutedEvent(batchOperation, Set.copyOf(entityKeys));
     appendBatchOperationExecuteCommand(command, batchKey, batchOperation);
 
@@ -189,19 +220,18 @@ public final class BatchOperationExecuteProcessor
   private void appendBatchOperationExecutionCompletedEvent(
       final BatchOperationExecutionRecord executionRecord) {
 
-    final int originPartitionId =
-        Protocol.decodePartitionId(executionRecord.getBatchOperationKey());
     final var batchInternalComplete =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(executionRecord.getBatchOperationKey())
             .setSourcePartitionId(partitionId);
 
     LOGGER.debug(
-        "Send internal complete command for batch operation {} to original partition {}",
+        "Send internal complete command for batch operation {} to lead partition {}",
         executionRecord.getBatchOperationKey(),
-        originPartitionId);
+        getLeadPartition(executionRecord));
 
-    if (originPartitionId == partitionId) {
+    if (isLeadPartition(executionRecord, partitionId)) {
+      // If we are the lead partition, we can directly append the follow-up command
       commandWriter.appendFollowUpCommand(
           executionRecord.getBatchOperationKey(),
           BatchOperationIntent.COMPLETE_PARTITION,
@@ -209,6 +239,9 @@ public final class BatchOperationExecuteProcessor
           FollowUpCommandMetadata.of(
               b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
     } else {
+      // If we are not the lead partition, we need to distribute the command to the lead partition
+      // we also append a local follow-up PARTITION_COMPLETED event to mark the partition locally as
+      // completed
       stateWriter.appendFollowUpEvent(
           executionRecord.getBatchOperationKey(),
           BatchOperationIntent.PARTITION_COMPLETED,
@@ -218,11 +251,35 @@ public final class BatchOperationExecuteProcessor
       commandDistributionBehavior
           .withKey(keyGenerator.nextKey())
           .inQueue(DistributionQueue.BATCH_OPERATION)
-          .forPartition(originPartitionId)
+          .forPartition(getLeadPartition(executionRecord))
           .distribute(
               ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
               BatchOperationIntent.COMPLETE_PARTITION,
               batchInternalComplete);
     }
+  }
+
+  /**
+   * Returns the lead partition ID for the given batch operation record value. THe lead partition is
+   * the partition the batch operation was originally created on.
+   *
+   * @param recordValue the batch operation record value
+   * @return the lead partition ID
+   */
+  private static int getLeadPartition(final BatchOperationRelated recordValue) {
+    return Protocol.decodePartitionId(recordValue.getBatchOperationKey());
+  }
+
+  /**
+   * Checks if the given partition ID is the lead partition for the given batch operation.
+   *
+   * @param recordValue the batch operation record value
+   * @param partitionId the partition ID to check
+   * @return <code>true</code> if the partition ID is the lead partition, <code>false</code>
+   *     otherwise
+   */
+  private static boolean isLeadPartition(
+      final BatchOperationRelated recordValue, final int partitionId) {
+    return getLeadPartition(recordValue) == partitionId;
   }
 }

@@ -16,6 +16,7 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -57,9 +58,9 @@ public final class UsageMetricsServiceTest {
             .build();
 
     // when
-    final UsageMetricsCount searchQueryResult = services.search(searchQuery);
+    final SearchQueryResult<UsageMetricsCount> searchQueryResult = services.search(searchQuery);
 
     // then
-    assertThat(searchQueryResult).isEqualTo(new UsageMetricsCount(42L, 5L, 23L));
+    assertThat(searchQueryResult.items().getFirst()).isEqualTo(new UsageMetricsCount(42L, 5L, 23L));
   }
 }

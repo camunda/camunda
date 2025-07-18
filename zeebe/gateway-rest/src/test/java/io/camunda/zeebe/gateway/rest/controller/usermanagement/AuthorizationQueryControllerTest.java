@@ -22,6 +22,7 @@ import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -37,6 +38,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = AuthorizationController.class)
 public class AuthorizationQueryControllerTest extends RestControllerTest {
@@ -57,7 +59,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
              "page": {
                "totalItems": 1,
                "startCursor": "f",
-               "endCursor": "v"
+               "endCursor": "v",
+               "hasMoreTotalItems": false
              }
            }""";
   private static final String AUTHORIZATION_SEARCH_URL = "/v2/authorizations/search";
@@ -135,8 +138,9 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     final var path = "%s/%s".formatted("/v2/authorizations", authorizationKey);
     when(authorizationServices.getAuthorization(authorizationKey))
         .thenThrow(
-            new CamundaSearchException(
-                "authorization not found", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "authorization not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient
@@ -178,7 +182,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(authorizationServices).search(new AuthorizationQuery.Builder().build());
   }
@@ -202,7 +206,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(authorizationServices).search(new AuthorizationQuery.Builder().build());
   }
@@ -235,7 +239,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(authorizationServices)
         .search(
@@ -261,7 +265,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(authorizationServices, never()).search(any(AuthorizationQuery.class));
   }

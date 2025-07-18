@@ -24,7 +24,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.service.exception.ForbiddenException;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -38,6 +38,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = DecisionDefinitionController.class)
 public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
@@ -59,7 +60,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               "page": {
                   "totalItems": 1,
                   "startCursor": "f",
-                  "endCursor": "v"
+                  "endCursor": "v",
+                  "hasMoreTotalItems": false
               }
           }""";
 
@@ -102,7 +104,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionDefinitionServices).search(new DecisionDefinitionQuery.Builder().build());
   }
@@ -126,7 +128,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionDefinitionServices).search(new DecisionDefinitionQuery.Builder().build());
   }
@@ -165,7 +167,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionDefinitionServices)
         .search(
@@ -231,7 +233,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE);
+        .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
     verify(decisionDefinitionServices)
         .search(
@@ -292,7 +294,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(decisionDefinitionServices, never()).search(any(DecisionDefinitionQuery.class));
   }
@@ -324,8 +326,10 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final Long decisionDefinitionKey = 1L;
     when(decisionDefinitionServices.getDecisionDefinitionXml(decisionDefinitionKey))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision with key 1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
 
     // when/then
     final var expectedResponse =
@@ -347,7 +351,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -377,7 +381,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -405,7 +409,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -437,7 +441,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -446,8 +450,10 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final Long decisionDefinitionKey = 1L;
     when(decisionDefinitionServices.getByKey(decisionDefinitionKey))
         .thenThrow(
-            new CamundaSearchException(
-                "Decision with key 1 was not found.", CamundaSearchException.Reason.NOT_FOUND));
+            ErrorMapper.mapSearchError(
+                new CamundaSearchException(
+                    "Decision with key 1 was not found.",
+                    CamundaSearchException.Reason.NOT_FOUND)));
 
     // when/then
     final var expectedResponse =
@@ -468,7 +474,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -497,7 +503,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @ParameterizedTest
@@ -509,7 +515,9 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     final var service = testParameters.getRight();
     final long decisionDefinitionKey = 1L;
     when(service.apply(decisionDefinitionServices, decisionDefinitionKey))
-        .thenThrow(new ForbiddenException(Authorization.of(a -> a.decisionDefinition().read())));
+        .thenThrow(
+            ErrorMapper.createForbiddenException(
+                Authorization.of(a -> a.decisionDefinition().read())));
     // when / then
     webClient
         .get()
@@ -523,7 +531,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                     {
                       "type": "about:blank",
                       "status": 403,
-                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "title": "FORBIDDEN",
                       "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'"
                     }
                 """);

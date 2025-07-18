@@ -9,6 +9,7 @@ package io.camunda.application.commons.console.ping;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.Profile;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
 import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
 import io.camunda.service.ManagementServices;
@@ -20,6 +21,8 @@ import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.net.URI;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -31,6 +34,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -42,13 +46,16 @@ public class PingConsoleRunner implements ApplicationRunner {
   private final ConsolePingConfiguration pingConfiguration;
   private final ManagementServices managementServices;
   private final Either<Exception, String> licensePayload;
+  private final ApplicationContext applicationContext;
 
   @Autowired
   public PingConsoleRunner(
       final ConsolePingConfiguration pingConfigurationProperties,
-      final ManagementServices managementServices) {
+      final ManagementServices managementServices,
+      final ApplicationContext applicationContext) {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
+    this.applicationContext = applicationContext;
     licensePayload = getLicensePayload();
   }
 
@@ -120,6 +127,18 @@ public class PingConsoleRunner implements ApplicationRunner {
     }
   }
 
+  private List<String> getActiveProfiles() {
+    return Arrays.stream(applicationContext.getEnvironment().getActiveProfiles())
+        .filter(
+            profile ->
+                profile.equals(Profile.BROKER.getId())
+                    || profile.equals(Profile.GATEWAY.getId())
+                    || profile.equals(Profile.OPERATE.getId())
+                    || profile.equals(Profile.TASKLIST.getId())
+                    || profile.equals(Profile.STANDALONE.getId()))
+        .toList();
+  }
+
   public ScheduledThreadPoolExecutor createTaskExecutor() {
     final var threadFactory =
         Thread.ofPlatform()
@@ -150,6 +169,7 @@ public class PingConsoleRunner implements ApplicationRunner {
             pingConfiguration.clusterId(),
             pingConfiguration.clusterName(),
             VersionUtil.getVersion(),
+            getActiveProfiles(),
             pingConfiguration.properties());
     try {
       return Either.right(objectMapper.writeValueAsString(payload));

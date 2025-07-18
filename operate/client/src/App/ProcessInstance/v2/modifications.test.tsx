@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Link} from 'react-router-dom';
 import {
   render,
   waitForElementToBeRemoved,
@@ -15,34 +14,33 @@ import {
   fireEvent,
 } from 'modules/testing-library';
 import {ProcessInstance} from './index';
-import {createBatchOperation, createVariable} from 'modules/testUtils';
+import {
+  createBatchOperation,
+  createVariable,
+  createVariableV2,
+} from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
-import {variablesStore} from 'modules/stores/variables';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import * as flowNodeInstanceUtils from 'modules/utils/flowNodeInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-
-import {Paths} from 'modules/Routes';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {
   getWrapper,
-  mockProcessInstance,
   mockRequests,
   processInstancesMock,
   waitForPollingsToBeComplete,
 } from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {act} from 'react';
 
 const clearPollingStates = () => {
-  variablesStore.isPollRequestRunning = false;
   incidentsStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
 };
@@ -59,6 +57,12 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should display the modifications header and footer when modification mode is enabled', async () => {
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     expect(
@@ -112,6 +116,12 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should display confirmation modal when discard all is clicked during the modification mode', async () => {
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     storeStateLocally({
@@ -154,6 +164,12 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should disable apply modifications button if there are no modifications pending', async () => {
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     storeStateLocally({
@@ -173,6 +189,21 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
     });
@@ -198,6 +229,12 @@ describe('ProcessInstance - modification mode', () => {
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     await user.click(
       await screen.findByRole('button', {
@@ -206,6 +243,12 @@ describe('ProcessInstance - modification mode', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     await user.click(screen.getByTestId('apply-modifications-button'));
 
@@ -229,10 +272,8 @@ describe('ProcessInstance - modification mode', () => {
     );
   });
 
-  it.skip('should stop polling during the modification mode', async () => {
+  it('should stop polling during the modification mode', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
-
-    const handlePollingVariablesSpy = vi.spyOn(variablesStore, 'handlePolling');
 
     const handlePollingIncidentsSpy = vi.spyOn(incidentsStore, 'handlePolling');
 
@@ -242,31 +283,30 @@ describe('ProcessInstance - modification mode', () => {
       'startPolling',
     );
 
+    mockRequests();
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
 
-    mockRequests();
-
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(0);
     expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(0);
-    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(0);
 
     clearPollingStates();
-    vi.runOnlyPendingTimers();
-    await waitFor(() =>
-      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1),
-    );
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+    await waitFor(() => {
+      expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
+    });
     expect(initFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
-      expect([
-        variablesStore.state.status,
-        flowNodeInstanceStore.state.status,
-      ]).toEqual(['fetched', 'fetched']);
+      expect(flowNodeInstanceStore.state.status).toBe('fetched');
     });
 
     expect(
@@ -283,18 +323,20 @@ describe('ProcessInstance - modification mode', () => {
     clearPollingStates();
     mockRequests();
 
-    vi.runOnlyPendingTimers();
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
 
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     clearPollingStates();
     mockRequests();
 
-    vi.runOnlyPendingTimers();
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
 
     expect(handlePollingIncidentsSpy).toHaveBeenCalledTimes(1);
-    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(1);
 
     mockRequests();
     await user.click(screen.getByTestId('discard-all-button'));
@@ -305,12 +347,13 @@ describe('ProcessInstance - modification mode', () => {
     clearPollingStates();
     mockRequests();
 
-    vi.runOnlyPendingTimers();
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
 
-    await waitFor(() =>
-      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(3),
-    );
-    expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(startPollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(1);
+    });
 
     await waitForPollingsToBeComplete();
 
@@ -323,6 +366,13 @@ describe('ProcessInstance - modification mode', () => {
     mockModify().withSuccess(
       createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
     );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
 
     vi.useFakeTimers({shouldAdvanceTime: true});
 
@@ -388,6 +438,7 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should block navigation when modification mode is enabled', async () => {
+    mockRequests();
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     storeStateLocally({
@@ -439,144 +490,5 @@ describe('ProcessInstance - modification mode', () => {
     await user.click(screen.getByRole('button', {name: 'Leave'}));
 
     expect(await screen.findByText('instances page')).toBeInTheDocument();
-  });
-
-  it('should block navigation when navigating to processes page modification mode is enabled - with context path', async () => {
-    const contextPath = '/custom';
-    const baseName = contextPath + '/operate';
-    vi.stubGlobal('clientConfig', {
-      contextPath,
-      baseName,
-    });
-
-    mockRequests(contextPath);
-
-    const {user} = render(<ProcessInstance />, {
-      wrapper: getWrapper({
-        initialPath: `${baseName}/processes/4294980768`,
-        contextPath: baseName,
-      }),
-    });
-
-    storeStateLocally({
-      [`hideModificationHelperModal`]: true,
-    });
-
-    expect(
-      await screen.findByRole('button', {
-        name: /modify instance/i,
-      }),
-    ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole('button', {
-        name: /modify instance/i,
-      }),
-    );
-
-    await user.click(
-      screen.getByRole('link', {
-        description: /View process "someProcessName version 1" instances/,
-      }),
-    );
-
-    expect(
-      await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.',
-      ),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Stay'}));
-
-    expect(
-      screen.queryByText(
-        'By leaving this page, all planned modification/s will be discarded.',
-      ),
-    ).not.toBeInTheDocument();
-
-    await user.click(
-      screen.getByRole('link', {
-        description: /View process "someProcessName version 1" instances/,
-      }),
-    );
-
-    expect(
-      await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.',
-      ),
-    ).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', {name: 'Leave'}));
-
-    expect(await screen.findByText('instances page')).toBeInTheDocument();
-  });
-
-  it('should block navigation when navigating to dashboard with modification mode is enabled - with context path', async () => {
-    const contextPath = '/custom';
-    const baseName = contextPath + '/operate';
-    vi.stubGlobal('clientConfig', {
-      contextPath,
-      baseName,
-    });
-
-    mockRequests(contextPath);
-
-    const {user} = render(
-      <>
-        <Link to={Paths.dashboard()}>go to dashboard</Link>
-        <ProcessInstance />
-      </>,
-      {
-        wrapper: getWrapper({
-          initialPath: `${baseName}/processes/4294980768`,
-          contextPath: baseName,
-        }),
-      },
-    );
-
-    mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-    mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-    mockFetchCallHierarchy(contextPath).withSuccess([]);
-    mockFetchCallHierarchy(contextPath).withSuccess([]);
-
-    storeStateLocally({
-      [`hideModificationHelperModal`]: true,
-    });
-
-    expect(
-      await screen.findByRole('button', {
-        name: /modify instance/i,
-      }),
-    ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole('button', {
-        name: /modify instance/i,
-      }),
-    );
-
-    await user.click(screen.getByText(/go to dashboard/));
-
-    expect(
-      await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.',
-      ),
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: 'Stay'}));
-
-    expect(
-      screen.queryByText(
-        'By leaving this page, all planned modification/s will be discarded.',
-      ),
-    ).not.toBeInTheDocument();
-
-    await user.click(screen.getByText(/go to dashboard/));
-
-    expect(
-      await screen.findByText(
-        'By leaving this page, all planned modification/s will be discarded.',
-      ),
-    ).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', {name: 'Leave'}));
-
-    expect(await screen.findByText('dashboard page')).toBeInTheDocument();
   });
 });
