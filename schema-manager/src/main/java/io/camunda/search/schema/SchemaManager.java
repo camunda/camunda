@@ -103,7 +103,10 @@ public class SchemaManager {
         ofNullable(schemaManagerMetrics)
             .map(SchemaManagerMetrics::startSchemaInitTimer)
             .orElse(() -> {});
-    retryDecorator.decorate("init schema", this::initializeSchema);
+    // even that initializeSchema does not declare throwing any exception, it may still do sneaky
+    // throws (see #joinOnFutures) which are retried only by
+    // io.github.resilience4j.retry.Retry.decorateCheckedRunnable
+    retryDecorator.decorateCheckedRunnable("init schema", this::initializeSchema);
     // record the time taken to initialize schema only if it was successful
     timer.close();
   }

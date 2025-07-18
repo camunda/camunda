@@ -66,6 +66,10 @@ public class RetryDecorator {
     return Retry.decorateCallable(retry, callable).call();
   }
 
+  /**
+   * Caution: This method will retry only on unchecked exceptions (extending RuntimeException).
+   * Sneaky throws of checked exceptions will not be retried.
+   */
   public void decorate(final String operationName, final Runnable runnable) {
     final Retry retry = buildRetry(operationName, null);
     Retry.decorateRunnable(retry, runnable).run();
