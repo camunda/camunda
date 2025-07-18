@@ -34,7 +34,7 @@ public class BrokerBasedPropertiesOverride {
     final BrokerBasedProperties override = new BrokerBasedProperties();
     BeanUtils.copyProperties(legacyBrokerBasedProperties, override);
 
-    // TODO: Populate the bean using unifiedConfiguration
+    // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
 
     return override;

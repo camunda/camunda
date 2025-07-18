@@ -7,17 +7,17 @@
  */
 package io.camunda.configuration;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+public class Data {
 
-@Configuration
-@EnableConfigurationProperties(Camunda.class)
-public class UnifiedConfiguration {
+  private static final String PREFIX = "camunda.data";
 
-  @Autowired private Camunda camunda;
+  private SecondaryStorage secondaryStorage = new SecondaryStorage();
 
-  public Camunda getCamunda() {
-    return camunda;
+  public SecondaryStorage getSecondaryStorage() {
+    return secondaryStorage;
+  }
+
+  public void setSecondaryStorage(final SecondaryStorage secondaryStorage) {
+    this.secondaryStorage = secondaryStorage;
   }
 }
