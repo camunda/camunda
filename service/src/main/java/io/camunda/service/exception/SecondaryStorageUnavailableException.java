@@ -9,10 +9,6 @@ package io.camunda.service.exception;
 
 import static io.camunda.search.exception.NoSecondaryStorageException.NO_SECONDARY_STORAGE_MESSAGE;
 
-/**
- * Exception thrown when a request requires secondary storage but the system is running in headless
- * mode.
- */
 public class SecondaryStorageUnavailableException extends ServiceException {
 
   public SecondaryStorageUnavailableException() {

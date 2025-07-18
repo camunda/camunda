@@ -70,7 +70,7 @@ public class NoSecondaryStorageTest {
     // then - verify deployment and execution succeed
     assertThat(deploymentEvent.getKey()).isPositive();
     assertThat(deploymentEvent.getProcesses()).hasSize(1);
-    assertThat(deploymentEvent.getProcesses().get(0).getBpmnProcessId()).isEqualTo(processId);
+    assertThat(deploymentEvent.getProcesses().getFirst().getBpmnProcessId()).isEqualTo(processId);
 
     assertThat(processInstanceEvent.getBpmnProcessId()).isEqualTo(processId);
     assertThat(processInstanceEvent.getProcessInstanceKey()).isPositive();
@@ -81,7 +81,7 @@ public class NoSecondaryStorageTest {
     // given - a process with a service task
     final var processId = Strings.newRandomValidBpmnId();
     final var jobType = "test-service";
-    final var process = createProcessWithServiceTask(processId, jobType);
+    final var process = createProcessWithServiceTask(processId);
 
     // when - deploying the process and creating an instance
     camundaClient
@@ -103,7 +103,7 @@ public class NoSecondaryStorageTest {
         camundaClient.newActivateJobsCommand().jobType(jobType).maxJobsToActivate(1).send().join();
 
     assertThat(activateJobsResponse.getJobs()).hasSize(1);
-    final var job = activateJobsResponse.getJobs().get(0);
+    final var job = activateJobsResponse.getJobs().getFirst();
     assertThat(job.getProcessInstanceKey()).isEqualTo(processInstance.getProcessInstanceKey());
 
     // complete the job
@@ -155,7 +155,7 @@ public class NoSecondaryStorageTest {
   public void shouldReturnForbiddenWhenQueryingWithNoSecondaryStorage() {
     assertThatThrownBy(() -> camundaClient.newUsersSearchRequest().send().join())
         .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("The search client requires a secondary storage, but none is set")
+        .hasMessageContaining("This endpoint requires a secondary storage, but none is set")
         .hasMessageContaining(
             String.format(
                 "Secondary storage can be configured using the '%s' property",
@@ -164,16 +164,26 @@ public class NoSecondaryStorageTest {
         .hasMessageContaining("status: 403");
   }
 
+  @Test
+  public void shouldHandleSupportedEndpoint() {
+    // when - calling a no-db supported endpoint
+    final var topology = camundaClient.newTopologyRequest().send().join();
+
+    // then - verify the response is not null and contains expected fields
+    assertThat(topology).isNotNull();
+    assertThat(topology.getBrokers()).isNotEmpty();
+    assertThat(topology.getClusterSize()).isGreaterThan(0);
+  }
+
   private BpmnModelInstance createSimpleProcess(final String processId) {
     return Bpmn.createExecutableProcess(processId).startEvent("start").endEvent("end").done();
   }
 
-  private BpmnModelInstance createProcessWithServiceTask(
-      final String processId, final String jobType) {
+  private BpmnModelInstance createProcessWithServiceTask(final String processId) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent("start")
         .serviceTask("service")
-        .zeebeJobType(jobType)
+        .zeebeJobType("test-service")
         .endEvent("end")
         .done();
   }

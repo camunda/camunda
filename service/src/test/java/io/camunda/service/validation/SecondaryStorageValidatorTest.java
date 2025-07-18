@@ -20,9 +20,9 @@ public class SecondaryStorageValidatorTest {
     final SecondaryStorageValidator validator = new SecondaryStorageValidator("none");
 
     // When/Then
-    assertThatThrownBy(() -> validator.validateSecondaryStorageEnabled())
+    assertThatThrownBy(validator::validateSecondaryStorageEnabled)
         .isInstanceOf(SecondaryStorageUnavailableException.class)
-        .hasMessageContaining("This endpoint requires secondary storage");
+        .hasMessageContaining("This endpoint requires a secondary storage");
   }
 
   @Test
