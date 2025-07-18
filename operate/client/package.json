@@ -41,7 +41,7 @@
     "build": "npm run ts-check && vite build && node ./renameProdIndex.js && node license-build.js",
     "test": "vitest run --project=unit",
     "test:browser": "vitest run --project=browser",
-    "ts-check": "tsc --project tsconfig.vitest.json",
+    "ts-check": "tsc -b",
     "eslint": "eslint .",
     "lint": "npm run ts-check && npm run eslint",
     "fix:prettier": "prettier --write \"**/*.ts\"",
