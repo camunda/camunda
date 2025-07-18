@@ -65,7 +65,7 @@ final class SnapshotWithExportersTest {
               .until(
                   () ->
                       Optional.ofNullable(partitions.query().get(1).snapshotId())
-                          .flatMap(FileBasedSnapshotId::ofFileName),
+                          .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow()),
                   Optional::isPresent)
               .orElseThrow();
       // pause processing to avoid new processing to cause a new snapshot after restart
@@ -83,7 +83,7 @@ final class SnapshotWithExportersTest {
               .until(
                   () ->
                       Optional.ofNullable(partitions.query().get(1).snapshotId())
-                          .flatMap(FileBasedSnapshotId::ofFileName),
+                          .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow()),
                   hasStableValue())
               .orElseThrow();
 
@@ -122,7 +122,7 @@ final class SnapshotWithExportersTest {
               .until(
                   () ->
                       Optional.ofNullable(partitions.query().get(1).snapshotId())
-                          .flatMap(FileBasedSnapshotId::ofFileName),
+                          .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow()),
                   Optional::isPresent)
               .orElseThrow();
 
@@ -165,7 +165,7 @@ final class SnapshotWithExportersTest {
                 .until(
                     () ->
                         Optional.ofNullable(partitions.query().get(1).snapshotId())
-                            .flatMap(FileBasedSnapshotId::ofFileName),
+                            .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow()),
                     hasStableValue())
                 .orElseThrow();
 

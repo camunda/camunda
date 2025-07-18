@@ -102,7 +102,7 @@ public class LeaderRoleTest {
     when(context.getLog()).thenReturn(log);
 
     final ReceivableSnapshotStore persistedSnapshotStore = mock(ReceivableSnapshotStore.class);
-    when(persistedSnapshotStore.purgePendingSnapshots())
+    when(persistedSnapshotStore.abortPendingSnapshots())
         .thenReturn(CompletableActorFuture.completed(null));
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
     when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.ok());

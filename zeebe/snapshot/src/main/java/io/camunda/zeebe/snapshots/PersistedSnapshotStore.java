@@ -49,7 +49,7 @@ public interface PersistedSnapshotStore extends CloseableSilently, BootstrapSnap
    *
    * @return future which will be completed when all pending snapshots are deleted
    */
-  ActorFuture<Void> purgePendingSnapshots();
+  ActorFuture<Void> abortPendingSnapshots();
 
   /**
    * Adds an {@link PersistedSnapshotListener} to the store, which is notified when a new {@link

@@ -311,7 +311,7 @@ public class TransientSnapshotTest {
     transientSnapshot.take(this::writeSnapshot).join();
 
     // when
-    snapshotStore.purgePendingSnapshots().join();
+    snapshotStore.abortPendingSnapshots().join();
     final var persisted = transientSnapshot.persist();
 
     // then

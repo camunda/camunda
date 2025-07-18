@@ -30,7 +30,6 @@ import org.junit.rules.TemporaryFolder;
 
 public class FileBasedTransientSnapshotTest {
   private static final String SNAPSHOT_DIRECTORY = "snapshots";
-  private static final String PENDING_DIRECTORY = "pending";
   private static final Map<String, String> SNAPSHOT_FILE_CONTENTS =
       Map.of(
           "file1", "file1 contents",
@@ -41,12 +40,10 @@ public class FileBasedTransientSnapshotTest {
 
   private FileBasedSnapshotStore snapshotStore;
   private Path snapshotsDir;
-  private Path pendingDir;
 
   @Before
   public void beforeEach() throws IOException {
     final var root = temporaryFolder.getRoot().toPath();
-    pendingDir = root.resolve(PENDING_DIRECTORY);
     snapshotsDir = root.resolve(SNAPSHOT_DIRECTORY);
     snapshotStore = createStore(root);
   }
@@ -57,9 +54,6 @@ public class FileBasedTransientSnapshotTest {
     snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L);
 
     // then
-    assertThat(pendingDir)
-        .as("the pending directory is empty as nothing was written")
-        .isEmptyDirectory();
     assertThat(snapshotsDir)
         .as("the snapshots directory is empty as nothing was written")
         .isEmptyDirectory();
@@ -70,7 +64,7 @@ public class FileBasedTransientSnapshotTest {
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
 
     // when
-    final var pathId = FileBasedSnapshotId.ofPath(transientSnapshot.getPath()).orElseThrow();
+    final var pathId = FileBasedSnapshotId.ofPath(transientSnapshot.getPath()).getOrThrow();
 
     // then
     assertThat(pathId).isEqualTo(transientSnapshot.snapshotId());
@@ -118,7 +112,6 @@ public class FileBasedTransientSnapshotTest {
     assertThat(transientSnapshot.getPath())
         .as("the transient directory should not exist after abort")
         .doesNotExist();
-    assertThat(pendingDir).as("the pending directory is empty after abort").isEmptyDirectory();
   }
 
   @Test
@@ -129,7 +122,7 @@ public class FileBasedTransientSnapshotTest {
     final var persistedSnapshot = transientSnapshot.persist().join();
 
     // when
-    snapshotStore.purgePendingSnapshots().join();
+    snapshotStore.abortPendingSnapshots().join();
 
     // then
     assertThat(persistedSnapshot.getPath())
@@ -186,41 +179,6 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
-  public void shouldRemoveTransientSnapshotOnPersist() {
-    // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
-    transientSnapshot.take(this::writeSnapshot);
-
-    // when
-    final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
-    newSnapshot.take(this::writeSnapshot);
-    newSnapshot.persist().join();
-
-    // then
-    assertThat(pendingDir)
-        .as("there are no more transient snapshots after persisting a snapshot with higher index")
-        .isEmptyDirectory();
-  }
-
-  @Test
-  public void shouldRemoveTransientWhenCurrentSnapshotIsNewer() {
-    // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(10L, 10L, 10L, 10L).get();
-    transientSnapshot.take(this::writeSnapshot);
-    transientSnapshot.persist().join();
-
-    // when
-    final var oldSnapshot = snapshotStore.newTransientSnapshot(1L, 1L, 1L, 1L).get();
-    oldSnapshot.take(this::writeSnapshot);
-    oldSnapshot.persist().join();
-
-    // then
-    assertThat(pendingDir)
-        .as("transient and outdated snapshot has been deleted")
-        .isEmptyDirectory();
-  }
-
-  @Test
   public void shouldNotRemoveTransientSnapshotWithGreaterIdOnPersist() {
     // given
     final var newerTransientSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
@@ -252,7 +210,6 @@ public class FileBasedTransientSnapshotTest {
 
     // then
     assertThatThrownBy(didTakeSnapshot::join).hasCauseInstanceOf(RuntimeException.class);
-    assertThat(pendingDir).as("there is no leftover transient directory").isEmptyDirectory();
     assertThat(snapshotsDir).as("there is no committed snapshot").isEmptyDirectory();
   }
 

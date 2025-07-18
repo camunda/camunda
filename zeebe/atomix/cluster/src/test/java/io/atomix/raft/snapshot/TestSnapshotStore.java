@@ -76,7 +76,7 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   }
 
   @Override
-  public ActorFuture<Void> purgePendingSnapshots() {
+  public ActorFuture<Void> abortPendingSnapshots() {
     receivedSnapshots.clear();
     return CompletableActorFuture.completed(null);
   }

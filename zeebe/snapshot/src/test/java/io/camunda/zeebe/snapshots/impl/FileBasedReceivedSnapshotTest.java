@@ -70,7 +70,7 @@ public class FileBasedReceivedSnapshotTest {
 
     // when
     final ReceivedSnapshot receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot("1-0-123-121").join();
+        receiverSnapshotStore.newReceivedSnapshot("1-0-123-121-1").join();
 
     // then
     assertThat(receivedSnapshot.getPath())

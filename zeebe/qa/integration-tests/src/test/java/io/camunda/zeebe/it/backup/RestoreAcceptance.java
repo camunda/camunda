@@ -20,9 +20,8 @@ import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.restore.BackupNotFoundException;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import java.time.Duration;
-import java.util.Optional;
+import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -63,11 +62,7 @@ public interface RestoreAcceptance {
 
       Awaitility.await("Snapshot is taken")
           .atMost(Duration.ofSeconds(60))
-          .until(
-              () ->
-                  Optional.ofNullable(partitions.query().get(1).snapshotId())
-                      .flatMap(FileBasedSnapshotId::ofFileName),
-              Optional::isPresent);
+          .until(() -> partitions.query().get(1).snapshotId(), Objects::nonNull);
 
       assertThat(actuator.take(backupId)).isInstanceOf(TakeBackupRuntimeResponse.class);
       Awaitility.await("until a backup exists with the given ID")
