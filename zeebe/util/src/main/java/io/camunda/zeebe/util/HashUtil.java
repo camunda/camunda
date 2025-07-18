@@ -10,7 +10,9 @@ package io.camunda.zeebe.util;
 import com.google.common.hash.Hashing;
 import java.nio.charset.StandardCharsets;
 
-public class HashUtils {
+public class HashUtil {
+
+  private HashUtil() {}
 
   public static long getStringHashValue(final String stringValue) {
     return Hashing.murmur3_128().hashString(stringValue, StandardCharsets.UTF_8).asLong();

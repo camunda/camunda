@@ -10,7 +10,7 @@ package io.camunda.it.rdbms.db.usagemetrics;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.ATU;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.EDI;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.RPI;
-import static io.camunda.zeebe.util.HashUtils.getStringHashValue;
+import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
