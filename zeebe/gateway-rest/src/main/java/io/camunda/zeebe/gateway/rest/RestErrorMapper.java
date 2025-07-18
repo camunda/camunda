@@ -245,6 +245,7 @@ public class RestErrorMapper {
     return CompletableFuture.completedFuture(RestErrorMapper.mapProblemToResponse(problemDetail));
   }
 
+<<<<<<< HEAD
   public static ResponseEntity<Object> mapUserManagementExceptionsToResponse(final Exception e) {
     if (e instanceof IllegalArgumentException) {
       final var problemDetail =
@@ -297,5 +298,19 @@ public class RestErrorMapper {
   public static ResponseEntity<Object> mapDocumentHandlingExceptionToResponse(
       final DocumentException e) {
     return mapProblemToResponse(mapDocumentHandlingExceptionToProblem(e));
+=======
+  public static HttpStatus mapStatus(final Status status) {
+    return switch (status) {
+      case ABORTED -> HttpStatus.BAD_GATEWAY;
+      case UNAVAILABLE, RESOURCE_EXHAUSTED -> HttpStatus.SERVICE_UNAVAILABLE;
+      case UNKNOWN, INTERNAL -> HttpStatus.INTERNAL_SERVER_ERROR;
+      case FORBIDDEN -> HttpStatus.FORBIDDEN;
+      case NOT_FOUND -> HttpStatus.NOT_FOUND;
+      case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
+      case ALREADY_EXISTS, INVALID_STATE -> HttpStatus.CONFLICT;
+      case INVALID_ARGUMENT -> HttpStatus.BAD_REQUEST;
+      case DEADLINE_EXCEEDED -> HttpStatus.GATEWAY_TIMEOUT;
+    };
+>>>>>>> 523b3b61 (fix: return 503 instead of 429 for backpressure errors)
   }
 }
