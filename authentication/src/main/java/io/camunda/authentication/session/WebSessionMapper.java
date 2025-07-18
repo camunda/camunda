@@ -7,6 +7,9 @@
  */
 package io.camunda.authentication.session;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import java.time.Duration;
 import java.time.Instant;
@@ -25,19 +28,27 @@ public class WebSessionMapper {
 
   public static final Logger LOGGER = LoggerFactory.getLogger(WebSessionMapper.class);
   private final WebSessionAttributeConverter converter;
+  private final ObjectMapper objectMapper;
 
-  public WebSessionMapper(final WebSessionAttributeConverter converter) {
+  public WebSessionMapper(
+      final WebSessionAttributeConverter converter, final ObjectMapper objectMapper) {
     this.converter = converter;
+    this.objectMapper = objectMapper;
   }
 
   public PersistentWebSessionEntity toPersistentWebSession(final WebSession webSession) {
     final var attributes = serializeSessionAttributes(webSession);
-    return new PersistentWebSessionEntity(
-        webSession.getId(),
-        webSession.getCreationTime().toEpochMilli(),
-        webSession.getLastAccessedTime().toEpochMilli(),
-        webSession.getMaxInactiveInterval().getSeconds(),
-        attributes);
+    try {
+      return new PersistentWebSessionEntity(
+          webSession.getId(),
+          webSession.getCreationTime().toEpochMilli(),
+          webSession.getLastAccessedTime().toEpochMilli(),
+          webSession.getMaxInactiveInterval().getSeconds(),
+          objectMapper.writeValueAsString(attributes));
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(
+          "Could not serialize web session attributes for web session " + webSession.getId());
+    }
   }
 
   public WebSession fromPersistentWebSession(
@@ -71,12 +82,24 @@ public class WebSessionMapper {
   }
 
   private Map<String, Object> deserializeSessionAttributes(
-      final PersistentWebSessionEntity persistentWebSessionEntity) {
-    return Optional.ofNullable(persistentWebSessionEntity.attributes())
-        .orElse(new HashMap<>())
-        .entrySet()
-        .stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> converter.deserialize(e.getValue())));
+      final PersistentWebSessionEntity webSessionEntity) {
+    try {
+      final var attributes =
+          parseJsonAttributes(webSessionEntity.attributesAsJson()).orElseGet(HashMap::new);
+      return attributes.entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, e -> converter.deserialize(e.getValue())));
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(
+          "Could not deserialize session attributes for web session " + webSessionEntity.id());
+    }
+  }
+
+  private Optional<Map<String, byte[]>> parseJsonAttributes(final String attributesAsJson)
+      throws JsonProcessingException {
+    if (attributesAsJson == null || attributesAsJson.isEmpty()) {
+      return Optional.empty();
+    }
+    return Optional.of(objectMapper.readValue(attributesAsJson, new TypeReference<>() {}));
   }
 
   private Instant toInstant(final Long value) {
