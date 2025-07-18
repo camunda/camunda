@@ -15,6 +15,7 @@ on:
     paths:
       - '.github/workflows/operate-*'
       - "operate/**"
+      - "/**"
 jobs:
   run-importer-tests:
     uses: ./.github/workflows/operate-run-tests.yml

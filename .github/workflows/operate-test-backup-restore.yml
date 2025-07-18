@@ -28,7 +28,7 @@ jobs:
         id: filter
   run-backup-restore-tests:
     needs: [detect-changes]
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.operate-backend-changes == 'true' }}
+    # if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.operate-backend-changes == 'true' }}
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions: {}  # GITHUB_TOKEN unused in this job
