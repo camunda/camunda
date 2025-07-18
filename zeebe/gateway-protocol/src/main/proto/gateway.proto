@@ -239,11 +239,17 @@ message CreateProcessInstanceRequest {
   // will start at the start event. If non-empty the process instance will apply start
   // instructions after it has been created
   repeated ProcessInstanceCreationStartInstruction startInstructions = 5;
+
   // the tenant id of the process definition
   string tenantId = 6;
 
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 7;
+
+  // a list of runtime instruction that can modify the behavior of the process
+  // instance during its execution
+  // if empty (default), the process instance will be executed normally
+  repeated ProcessInstanceCreationRuntimeInstruction runtimeInstructions = 8;
 }
 
 message ProcessInstanceCreationStartInstruction {
@@ -257,6 +263,18 @@ message ProcessInstanceCreationStartInstruction {
 
   // element ID
   string elementId = 1;
+}
+
+message ProcessInstanceCreationRuntimeInstruction {
+  oneof instruction {
+    SuspendProcessInstanceInstruction suspend = 1;
+  }
+}
+
+message SuspendProcessInstanceInstruction {
+  // the ID of the process element after which the process instance should be
+  // suspended
+  string afterElementId = 1;
 }
 
 message CreateProcessInstanceResponse {
