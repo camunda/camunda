@@ -689,7 +689,8 @@ public class WebSecurityConfig {
                 .getOidc()
                 .getAdditionalAuthenticationParameters();
 
-        if (!additionalAuthenticationParameters.isEmpty()) {
+        if (additionalAuthenticationParameters != null
+            && !additionalAuthenticationParameters.isEmpty()) {
           customizer.additionalParameters(additionalAuthenticationParameters);
         }
       };
