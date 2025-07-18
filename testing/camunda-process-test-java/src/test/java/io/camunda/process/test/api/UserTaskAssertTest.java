@@ -22,7 +22,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.protocol.rest.UserTaskResult;
-import io.camunda.client.protocol.rest.UserTaskResult.StateEnum;
+import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import java.time.Duration;
@@ -66,7 +66,7 @@ public class UserTaskAssertTest {
                         .name("a")
                         .elementInstanceKey("1")
                         .elementId("test_element")
-                        .state(StateEnum.CREATED)
+                        .state(UserTaskStateEnum.CREATED)
                         .assignee("tester")
                         .priority(60))));
 
@@ -90,7 +90,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED))));
+                          .state(UserTaskStateEnum.CREATED))));
 
       // then
       assertThat(UserTaskSelectors.byTaskName("a")).isCreated();
@@ -106,7 +106,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.COMPLETED))));
+                          .state(UserTaskStateEnum.COMPLETED))));
 
       // then
       assertThat(UserTaskSelectors.byTaskName("a")).isCompleted();
@@ -122,7 +122,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CANCELED))));
+                          .state(UserTaskStateEnum.CANCELED))));
 
       // then
       assertThat(UserTaskSelectors.byTaskName("a")).isCanceled();
@@ -138,7 +138,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.FAILED))));
+                          .state(UserTaskStateEnum.FAILED))));
 
       // then
       assertThat(UserTaskSelectors.byTaskName("a")).isFailed();
@@ -154,12 +154,12 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.FAILED)),
+                          .state(UserTaskStateEnum.FAILED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("mult")
                           .elementInstanceKey("2")
-                          .state(StateEnum.CREATED))));
+                          .state(UserTaskStateEnum.CREATED))));
 
       // then
       assertThat(UserTaskSelectors.byTaskName("mult")).isCreated();
@@ -170,7 +170,10 @@ public class UserTaskAssertTest {
       // when
       final UserTask activeTask =
           new UserTaskImpl(
-              new UserTaskResult().name("a").elementInstanceKey("1").state(StateEnum.CREATED));
+              new UserTaskResult()
+                  .name("a")
+                  .elementInstanceKey("1")
+                  .state(UserTaskStateEnum.CREATED));
 
       when(camundaDataSource.findUserTasks(any()))
           .thenReturn(Collections.emptyList())
@@ -196,7 +199,10 @@ public class UserTaskAssertTest {
       // when
       final UserTask completedTask =
           new UserTaskImpl(
-              new UserTaskResult().name("a").elementInstanceKey("1").state(StateEnum.COMPLETED));
+              new UserTaskResult()
+                  .name("a")
+                  .elementInstanceKey("1")
+                  .state(UserTaskStateEnum.COMPLETED));
 
       when(camundaDataSource.findUserTasks(any()))
           .thenReturn(Collections.singletonList(completedTask));
@@ -221,7 +227,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .priority(PRIORITY))));
 
       // then
@@ -238,18 +244,18 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .priority(40)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .priority(PRIORITY))));
 
       // then
@@ -266,7 +272,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .priority(40))));
 
       // then
@@ -290,7 +296,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .elementId(ELEMENT_ID))));
 
       // then
@@ -307,18 +313,18 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .elementId("other")),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .elementId(ELEMENT_ID))));
 
       // then
@@ -335,7 +341,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .elementId("other_element_id"))));
 
       // then
@@ -358,7 +364,7 @@ public class UserTaskAssertTest {
                   new UserTaskImpl(
                       new UserTaskResult()
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .name(NAME))));
 
       // then
@@ -375,17 +381,17 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .name("other")),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .name(NAME))));
 
       // then
@@ -402,7 +408,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name(NAME)
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED))));
+                          .state(UserTaskStateEnum.CREATED))));
 
       // then
       Assertions.assertThatThrownBy(
@@ -425,7 +431,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .assignee(ASSIGNEE))));
 
       // then
@@ -442,18 +448,18 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .assignee("other")),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .assignee(ASSIGNEE))));
 
       // then
@@ -470,7 +476,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .assignee("other"))));
 
       // then
@@ -494,7 +500,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .dueDate(DUE_DATE))));
 
       // then
@@ -511,18 +517,18 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .dueDate("2025-04-30T10:00:00.000Z")),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .dueDate(DUE_DATE))));
 
       // then
@@ -539,7 +545,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .dueDate("2025-04-30T10:00:00.000Z"))));
 
       // then
@@ -564,7 +570,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .completionDate(COMPLETION_DATE))));
 
       // then
@@ -581,18 +587,18 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .completionDate("2025-04-30T10:00:00.000Z")),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .completionDate(COMPLETION_DATE))));
 
       // then
@@ -609,7 +615,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .completionDate("2025-04-30T10:00:00.000Z"))));
 
       // then
@@ -635,7 +641,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .followUpDate(FOLLOW_UP_DATE))));
 
       // then
@@ -652,18 +658,18 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .followUpDate("2025-04-30T10:00:00.000Z")),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .followUpDate(FOLLOW_UP_DATE))));
 
       // then
@@ -680,7 +686,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .followUpDate("2025-04-30T10:00:00.000Z"))));
 
       // then
@@ -705,7 +711,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .creationDate(CREATION_DATE))));
 
       // then
@@ -722,18 +728,18 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .creationDate("2025-04-30T10:00:00.000Z")),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .creationDate(CREATION_DATE))));
 
       // then
@@ -750,7 +756,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .creationDate("2025-04-30T10:00:00.000Z"))));
 
       // then
@@ -776,7 +782,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .candidateGroups(candidateGroups))));
 
       // then
@@ -793,7 +799,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .candidateGroups(candidateGroups))));
 
       // then
@@ -810,7 +816,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .candidateGroups(
                               Arrays.asList("hr", "engineering", "management", "legal")))));
 
@@ -828,18 +834,18 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("b")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)),
+                          .state(UserTaskStateEnum.CREATED)),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("c")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .candidateGroups(Collections.singletonList("marketing"))),
                   new UserTaskImpl(
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .candidateGroups(candidateGroups))));
 
       // then
@@ -856,7 +862,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .candidateGroups(candidateGroups))));
 
       // then
@@ -876,7 +882,7 @@ public class UserTaskAssertTest {
                       new UserTaskResult()
                           .name("a")
                           .elementInstanceKey("1")
-                          .state(StateEnum.CREATED)
+                          .state(UserTaskStateEnum.CREATED)
                           .candidateGroups(Collections.singletonList("marketing")))));
 
       // then
