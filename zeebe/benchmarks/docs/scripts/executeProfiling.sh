@@ -12,7 +12,7 @@ node=$1
 
 # Determine right container path
 containerPath=/usr/local/camunda/data
-if ! kubectl exec ck-profiling-tests-zeebe-0 -- ls -la "$containerPath";
+if ! kubectl exec "$node" -- ls -la "$containerPath";
 then
   # Old container path
   containerPath=/usr/local/zeebe/data
