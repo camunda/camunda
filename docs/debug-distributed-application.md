@@ -260,7 +260,7 @@ If the flight recording is done, you can copy the recording (via kubectl cp) and
 If `jcmd` is in the container not available we can make use of a debug container
 
 ```shell
-kubectl debug -it -c debugger --profile=restricted --image=eclipse-temurin:21.0.3_9-jdk-alpine --target=operate-importer operate-deployment-importer-archiver-5cfb55bcfd-kscsq -- sh
+kubectl debug -it -c debugger --profile=restricted --image=eclipse-temurin:21.0.3_9-jdk-alpine --target=<container> <POD> -- sh
 ```
 
 With this debug container we can now run jcmd to get a Java flight recording:
