@@ -32,3 +32,9 @@ kubectl exec "$node" -- ./data/asprof -e itimer -d 100 -t -f "/usr/local/camunda
 
 # Copy result
 kubectl cp "$node:/usr/local/camunda/data/$filename" "$node-$filename"
+
+# Clean up
+# Comment out the following lines to make exeuction faster next time
+kubectl exec "$node" -- rm ./data/asprof data/libasyncProfiler.so "data/$filename"
+rm profiler.tar.gz
+rm -r async-profiler-4.0-linux-x64/
