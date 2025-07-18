@@ -12,13 +12,16 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class CamundaExporterMetrics {
   private static final String NAMESPACE = "zeebe.camunda.exporter";
@@ -50,6 +53,8 @@ public class CamundaExporterMetrics {
   private final Timer flushDuration;
   private final Counter failedFlush;
   private final Timer recordExportDuration;
+
+  private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this(meterRegistry, InstantSource.system());
@@ -137,6 +142,10 @@ public class CamundaExporterMetrics {
                 "How much time it took to export a record from the moment it was written (not committed)")
             .serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets())
             .register(meterRegistry);
+
+    Gauge.builder(meterName("since.last.flush.seconds"), this::secondSinceLastFlush)
+        .description("Time in seconds since the last successful flush")
+        .register(meterRegistry);
   }
 
   public CloseableSilently measureFlushDuration() {
@@ -183,6 +192,14 @@ public class CamundaExporterMetrics {
 
   public void recordFlushFailureType(final String failureType) {
     meterRegistry.counter(meterName("flush.failure.type"), "failure_type", failureType).increment();
+  }
+
+  private double secondSinceLastFlush() {
+    return Duration.between(lastFlushTime.get(), Instant.now()).toMillis() / 1000.0;
+  }
+
+  public void recordFlushOccurrence(final Instant time) {
+    lastFlushTime.set(time);
   }
 
   /**
