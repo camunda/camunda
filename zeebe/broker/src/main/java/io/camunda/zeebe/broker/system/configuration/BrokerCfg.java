@@ -28,7 +28,6 @@ public class BrokerCfg {
   private FlowControlCfg flowControl = new FlowControlCfg();
   private LimitCfg backpressure = new LimitCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
-  private RestoreCfg restore = new RestoreCfg();
 
   private ExperimentalCfg experimental = new ExperimentalCfg();
 
@@ -54,7 +53,6 @@ public class BrokerCfg {
     flowControl.init(this, brokerBase);
     backpressure.init(this, brokerBase);
     processingCfg.init(this, brokerBase);
-    restore.init(this, brokerBase);
     experimental.init(this, brokerBase);
   }
 
@@ -162,14 +160,6 @@ public class BrokerCfg {
     this.experimental = experimental;
   }
 
-  public RestoreCfg getRestore() {
-    return restore;
-  }
-
-  public void setRestore(final RestoreCfg restore) {
-    this.restore = restore;
-  }
-
   @Override
   public String toString() {
     return "BrokerCfg{"
@@ -193,8 +183,6 @@ public class BrokerCfg {
         + backpressure
         + ", processingCfg="
         + processingCfg
-        + ", restore="
-        + restore
         + ", experimental="
         + experimental
         + ", executionMetricsExporterEnabled="

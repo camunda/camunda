@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RestoreCfg;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationInitializer.StaticInitializer;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationManagerService;
@@ -48,14 +49,17 @@ import org.slf4j.LoggerFactory;
 public class RestoreManager {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
+  private final RestoreCfg restoreConfig;
   private final BackupStore backupStore;
   private final MeterRegistry meterRegistry;
 
   public RestoreManager(
       final BrokerCfg configuration,
+      final RestoreCfg restoreConfig,
       final BackupStore backupStore,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
+    this.restoreConfig = restoreConfig;
     this.backupStore = backupStore;
     this.meterRegistry = meterRegistry;
   }
@@ -186,7 +190,7 @@ public class RestoreManager {
       return true;
     }
 
-    final var ignoreFiles = configuration.getRestore().getIgnoreFilesInTarget();
+    final var ignoreFiles = restoreConfig.getIgnoreFilesInTarget();
     try (final var entries = Files.list(dir)) {
       return entries
           // ignore configured files/directories that we don't care about

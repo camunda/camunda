@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RestoreCfg;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -26,9 +27,10 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
+    final var restoreConfig = new RestoreCfg();
     final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, restoreConfig, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when
     Files.createDirectory(dir.resolve("other-data"));
@@ -43,9 +45,10 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
+    final var restoreConfig = new RestoreCfg();
     final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, restoreConfig, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when
     Files.createDirectory(dir.resolve("lost+found"));
@@ -60,10 +63,11 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    configuration.getRestore().setIgnoreFilesInTarget(List.of("lost+found", ".DS_Store", "Thumbs.db"));
+    final var restoreConfig = new RestoreCfg();
+    restoreConfig.setIgnoreFilesInTarget(List.of("lost+found", ".DS_Store", "Thumbs.db"));
     final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, restoreConfig, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when - create ignored files
     Files.createDirectory(dir.resolve("lost+found"));
@@ -80,10 +84,11 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    configuration.getRestore().setIgnoreFilesInTarget(List.of("lost+found"));
+    final var restoreConfig = new RestoreCfg();
+    restoreConfig.setIgnoreFilesInTarget(List.of("lost+found"));
     final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, restoreConfig, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when - create ignored and non-ignored files
     Files.createDirectory(dir.resolve("lost+found"));

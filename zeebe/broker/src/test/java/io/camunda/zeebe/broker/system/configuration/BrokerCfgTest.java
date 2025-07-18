@@ -431,27 +431,6 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldSetRestoreConfig() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("restore-cfg", environment);
-    final RestoreCfg restore = cfg.getRestore();
-
-    // then
-    assertThat(restore.getIgnoreFilesInTarget())
-        .containsExactly("lost+found", ".DS_Store", "Thumbs.db", "System Volume Information");
-  }
-
-  @Test
-  public void shouldUseDefaultRestoreConfig() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("default", environment);
-    final RestoreCfg restore = cfg.getRestore();
-
-    // then
-    assertThat(restore.getIgnoreFilesInTarget()).containsExactly("lost+found");
-  }
-
-  @Test
   public void shouldUseConfiguredBackpressureAlgorithms() {
 
     final LimitCfg backpressure = new LimitCfg();

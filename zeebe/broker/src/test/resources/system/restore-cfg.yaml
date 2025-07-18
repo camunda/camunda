@@ -1,8 +1,7 @@
 zeebe:
-  broker:
-    restore:
-      ignoreFilesInTarget:
-        - "lost+found"
-        - ".DS_Store"
-        - "Thumbs.db"
-        - "System Volume Information"
+  restore:
+    ignoreFilesInTarget:
+      - "lost+found"
+      - ".DS_Store"
+      - "Thumbs.db"
+      - "System Volume Information"
