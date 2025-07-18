@@ -306,7 +306,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   operate-backend-unit-tests:
-    if: needs.detect-changes.outputs.operate-backend-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[UT] Operate - ${{matrix.suiteName}}"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
@@ -346,7 +346,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   tasklist-backend-unit-tests:
-    if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[UT] Tasklist - ${{matrix.suiteName}}"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
@@ -366,7 +366,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   zeebe-unit-tests:
-    if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[UT] Zeebe - ${{matrix.component}} - ${{matrix.suiteName}}"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
