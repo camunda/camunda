@@ -11,7 +11,9 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,16 +28,16 @@ public class Permissions extends UnpackedObject implements DbValue {
     declareProperty(permissions);
   }
 
-  public Map<PermissionType, Set<String>> getPermissions() {
+  public Map<PermissionType, Set<AuthorizationScope>> getPermissions() {
     return MsgPackConverter.convertToPermissionMap(permissions.getValue());
   }
 
-  public void setPermissions(final Map<PermissionType, Set<String>> permissions) {
+  public void setPermissions(final Map<PermissionType, Set<AuthorizationScope>> permissions) {
     this.permissions.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(permissions)));
   }
 
   public void removeResourceIdentifiers(
-      final PermissionType permissionType, final Set<String> resourceIds) {
+      final PermissionType permissionType, final Set<AuthorizationScope> resourceIds) {
     final var permissions = getPermissions();
     final var resourceIdentifiers = permissions.get(permissionType);
     resourceIdentifiers.removeAll(resourceIds);
@@ -48,7 +50,7 @@ public class Permissions extends UnpackedObject implements DbValue {
   }
 
   public void addResourceIdentifiers(
-      final PermissionType permissionType, final Set<String> resourceIdentifiers) {
+      final PermissionType permissionType, final Set<AuthorizationScope> resourceIdentifiers) {
     final var permissions = getPermissions();
     permissions
         .computeIfAbsent(permissionType, ignored -> new HashSet<>())
@@ -57,9 +59,13 @@ public class Permissions extends UnpackedObject implements DbValue {
   }
 
   public void addResourceIdentifier(
-      final PermissionType permissionType, final String resourceIdentifier) {
+      final PermissionType permissionType,
+      final ResourceIdFormat resourceIdFormat,
+      final String resourceIdentifier) {
     final var permissions = getPermissions();
-    permissions.computeIfAbsent(permissionType, ignored -> new HashSet<>()).add(resourceIdentifier);
+    permissions
+        .computeIfAbsent(permissionType, ignored -> new HashSet<>())
+        .add(AuthorizationScope.of(resourceIdFormat, resourceIdentifier));
     setPermissions(permissions);
   }
 

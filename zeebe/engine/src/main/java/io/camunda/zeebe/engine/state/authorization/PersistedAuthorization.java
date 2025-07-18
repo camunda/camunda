@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,6 +32,8 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
   private final StringProperty ownerIdProp = new StringProperty("ownerId");
   private final EnumProperty<AuthorizationOwnerType> ownerTypeProp =
       new EnumProperty<>("ownerType", AuthorizationOwnerType.class);
+  private final EnumProperty<ResourceIdFormat> resourceIdFormatProp =
+      new EnumProperty<>("resourceIdFormat", ResourceIdFormat.class, ResourceIdFormat.UNSPECIFIED);
   private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final EnumProperty<AuthorizationResourceType> resourceTypeProp =
       new EnumProperty<>("resourceType", AuthorizationResourceType.class);
@@ -42,6 +45,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
     declareProperty(authorizationKeyProp)
         .declareProperty(ownerIdProp)
         .declareProperty(ownerTypeProp)
+        .declareProperty(resourceIdFormatProp)
         .declareProperty(resourceIdProp)
         .declareProperty(resourceTypeProp)
         .declareProperty(permissionTypesProp);
@@ -51,6 +55,7 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
     setAuthorizationKey(authorizationRecord.getAuthorizationKey())
         .setOwnerId(authorizationRecord.getOwnerId())
         .setOwnerType(authorizationRecord.getOwnerType())
+        .setResourceIdFormat(authorizationRecord.getResourceIdFormat())
         .setResourceId(authorizationRecord.getResourceId())
         .setResourceType(authorizationRecord.getResourceType())
         .setPermissionTypes(authorizationRecord.getPermissionTypes());
@@ -80,6 +85,15 @@ public class PersistedAuthorization extends UnpackedObject implements DbValue {
 
   public PersistedAuthorization setOwnerType(final AuthorizationOwnerType ownerType) {
     ownerTypeProp.setValue(ownerType);
+    return this;
+  }
+
+  public ResourceIdFormat getResourceIdFormat() {
+    return resourceIdFormatProp.getValue();
+  }
+
+  public PersistedAuthorization setResourceIdFormat(final ResourceIdFormat resourceIdFormat) {
+    resourceIdFormatProp.setValue(resourceIdFormat);
     return this;
   }
 
