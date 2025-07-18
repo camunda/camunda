@@ -7,8 +7,6 @@
  */
 package io.camunda.service.validation;
 
-import io.camunda.search.connect.configuration.DatabaseConfig;
-import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -19,14 +17,12 @@ public class SecondaryStorageValidator {
   private final String databaseType;
 
   public SecondaryStorageValidator(
-      @Value("${camunda.database.type:" + DatabaseConfig.ELASTICSEARCH + "}")
-          final String databaseType) {
+      @Value("${camunda.database.type:elasticsearch}") final String databaseType) {
     this.databaseType = databaseType;
   }
 
   public void validateSecondaryStorageEnabled() {
-    final DatabaseType dbType = DatabaseType.from(databaseType);
-    if (dbType.isNone()) {
+    if ("none".equalsIgnoreCase(databaseType)) {
       throw new SecondaryStorageUnavailableException();
     }
   }

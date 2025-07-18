@@ -7,9 +7,9 @@
  */
 package io.camunda.service.exception;
 
-import static io.camunda.search.exception.NoSecondaryStorageException.NO_SECONDARY_STORAGE_MESSAGE;
-
 public class SecondaryStorageUnavailableException extends ServiceException {
+  public static final String NO_SECONDARY_STORAGE_MESSAGE =
+      "This endpoint requires a secondary storage, but none is set. Secondary storage can be configured using the 'camunda.database.type' property.";
 
   public SecondaryStorageUnavailableException() {
     super(NO_SECONDARY_STORAGE_MESSAGE, ServiceException.Status.FORBIDDEN);
