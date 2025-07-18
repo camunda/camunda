@@ -9,6 +9,9 @@ package io.camunda.application;
 
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
+import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -49,8 +52,9 @@ public class StandalonePrefixMigration implements CommandLineRunner {
             .sources(
                 StandalonePrefixMigration.class,
                 SearchEngineDatabaseConfiguration.class,
-                TasklistProperties.class,
-                OperateProperties.class)
+                UnifiedConfiguration.class,
+                TasklistPropertiesOverride.class,
+                OperatePropertiesOverride.class)
             .addCommandLineProperties(true)
             .build(args);
 
