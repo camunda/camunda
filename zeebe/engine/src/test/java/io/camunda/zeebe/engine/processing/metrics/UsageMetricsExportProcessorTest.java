@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.metrics;
 
+import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mock;
@@ -32,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class UsageMetricsExportProcessorTest {
-
+  private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
   private MutableUsageMetricState state;
   private StateWriter stateWriter;
   private UsageMetricsExportProcessor processor;
@@ -145,7 +146,7 @@ class UsageMetricsExportProcessorTest {
             new PersistedUsageMetrics()
                 .setFromTime(1)
                 .setToTime(10)
-                .setTenantTUMap(Map.of("tenant1", Set.of("assignee1"))));
+                .setTenantATUMap(Map.of("tenant1", Set.of(ASSIGNEE_HASH_1))));
     // when
     processor.processRecord(record);
 
@@ -156,12 +157,12 @@ class UsageMetricsExportProcessorTest {
             eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
     final var actual = recordArgumentCaptor.getValue();
     assertThat(actual.getIntervalType()).isEqualTo(IntervalType.ACTIVE);
-    assertThat(actual.getEventType()).isEqualTo(EventType.TU);
+    assertThat(actual.getEventType()).isEqualTo(EventType.ATU);
     assertThat(actual.getResetTime()).isEqualTo(2);
     assertThat(actual.getStartTime()).isEqualTo(1);
     assertThat(actual.getEndTime()).isEqualTo(10);
     assertThat(actual.getCounterValues()).isEqualTo(Map.of());
-    assertThat(actual.getSetValues()).isEqualTo(Map.of("tenant1", Set.of("assignee1")));
+    assertThat(actual.getSetValues()).isEqualTo(Map.of("tenant1", Set.of(ASSIGNEE_HASH_1)));
   }
 
   @Test
@@ -174,7 +175,7 @@ class UsageMetricsExportProcessorTest {
                 .setToTime(10)
                 .setTenantRPIMap(Map.of("tenant1", 10L))
                 .setTenantEDIMap(Map.of("tenant1", 10L))
-                .setTenantTUMap(Map.of("tenant1", Set.of("assignee1"))));
+                .setTenantATUMap(Map.of("tenant1", Set.of(ASSIGNEE_HASH_1))));
     // when
     processor.processRecord(record);
 
@@ -193,12 +194,12 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual).extracting(UsageMetricRecord::getEndTime).containsOnly(10L);
     assertThat(actual)
         .extracting(UsageMetricRecord::getEventType)
-        .contains(EventType.RPI, EventType.EDI, EventType.TU);
+        .contains(EventType.RPI, EventType.EDI, EventType.ATU);
     assertThat(actual)
         .extracting(UsageMetricRecord::getCounterValues)
         .contains(Map.of("tenant1", 10L), Map.of());
     assertThat(actual)
         .extracting(UsageMetricRecord::getSetValues)
-        .contains(Map.of(), Map.of("tenant1", Set.of("assignee1")));
+        .contains(Map.of(), Map.of("tenant1", Set.of(ASSIGNEE_HASH_1)));
   }
 }

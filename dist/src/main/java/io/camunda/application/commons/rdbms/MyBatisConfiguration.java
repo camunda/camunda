@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
+import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
@@ -256,6 +257,12 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<UsageMetricMapper> usageMetricMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, UsageMetricMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<UsageMetricTUMapper> usageMetricTUMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, UsageMetricTUMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

@@ -25,6 +25,7 @@ import io.camunda.db.rdbms.read.service.RoleReader;
 import io.camunda.db.rdbms.read.service.SequenceFlowReader;
 import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.read.service.UsageMetricReader;
+import io.camunda.db.rdbms.read.service.UsageMetricTUReader;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
@@ -59,6 +60,7 @@ public class RdbmsService {
   private final BatchOperationItemReader batchOperationItemReader;
   private final JobReader jobReader;
   private final UsageMetricReader usageMetricReader;
+  private final UsageMetricTUReader usageMetricTUReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -82,7 +84,8 @@ public class RdbmsService {
       final SequenceFlowReader sequenceFlowReader,
       final BatchOperationItemReader batchOperationItemReader,
       final JobReader jobReader,
-      final UsageMetricReader usageMetricReader) {
+      final UsageMetricReader usageMetricReader,
+      final UsageMetricTUReader usageMetricTUReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -105,6 +108,7 @@ public class RdbmsService {
     this.batchOperationItemReader = batchOperationItemReader;
     this.jobReader = jobReader;
     this.usageMetricReader = usageMetricReader;
+    this.usageMetricTUReader = usageMetricTUReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -181,6 +185,10 @@ public class RdbmsService {
 
   public UsageMetricReader getUsageMetricReader() {
     return usageMetricReader;
+  }
+
+  public UsageMetricTUReader getUsageMetricTUReader() {
+    return usageMetricTUReader;
   }
 
   public BatchOperationItemReader getBatchOperationItemReader() {

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.metrics;
 
+import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
+
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -66,8 +68,9 @@ public class DbUsageMetricState implements MutableUsageMetricState {
   }
 
   @Override
-  public void recordTUMetric(final String tenantId, final String assignee) {
-    updateActiveBucket(getActiveBucket().recordTU(tenantId, assignee));
+  public void recordATUMetric(final String tenantId, final String assignee) {
+    final long assigneeHashed = getStringHashValue(assignee);
+    updateActiveBucket(getActiveBucket().recordATU(tenantId, assigneeHashed));
   }
 
   @Override

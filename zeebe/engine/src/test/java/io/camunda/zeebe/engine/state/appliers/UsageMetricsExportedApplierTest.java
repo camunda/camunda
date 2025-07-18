@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -23,7 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 class UsageMetricsExportedApplierTest {
-
+  private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
   private MutableProcessingState processingState;
   private MutableUsageMetricState usageMetricState;
   private UsageMetricsExportedApplier usageMetricsExportedApplier;
@@ -93,12 +97,12 @@ class UsageMetricsExportedApplierTest {
   void shouldResetActiveBucketTU() {
     // given
     usageMetricState.resetActiveBucket(1L);
-    usageMetricState.recordTUMetric("tenant1", "assignee1");
-    usageMetricState.recordTUMetric("tenant1", "assignee1");
+    usageMetricState.recordATUMetric("tenant1", "assignee1");
+    usageMetricState.recordATUMetric("tenant1", "assignee1");
     final var bucket = usageMetricState.getActiveBucket();
     assertThat(bucket).isNotNull();
-    assertThat(bucket.getTenantTUMap())
-        .containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", Set.of("assignee1")));
+    assertThat(bucket.getTenantATUMap())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", Set.of(ASSIGNEE_HASH_1)));
 
     // when
     usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
@@ -106,6 +110,6 @@ class UsageMetricsExportedApplierTest {
     // then
     assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
     assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
-    assertThat(usageMetricState.getActiveBucket().getTenantTUMap()).isEmpty();
+    assertThat(usageMetricState.getActiveBucket().getTenantATUMap()).isEmpty();
   }
 }

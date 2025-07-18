@@ -593,7 +593,7 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_usage_metric_table" author="camunda">
+  <changeSet id="create_usage_metric_tables" author="camunda">
     <createTable tableName="${prefix}USAGE_METRIC">
       <column name="USAGE_METRIC_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -602,6 +602,16 @@
       <column name="EVENT_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="EVENT_TYPE" type="INTEGER"/>
       <column name="EVENT_VALUE" type="BIGINT"/>
+      <column name="PARTITION_ID" type="NUMBER"/>
+    </createTable>
+
+    <createTable tableName="${prefix}USAGE_METRIC_TU">
+      <column name="USAGE_METRIC_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="TENANT_ID" type="VARCHAR(255)"/>
+      <column name="EVENT_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="ASSIGNEE_HASH" type="BIGINT"/>
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 

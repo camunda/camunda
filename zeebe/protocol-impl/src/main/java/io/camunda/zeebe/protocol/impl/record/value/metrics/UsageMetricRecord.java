@@ -121,8 +121,8 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
   }
 
   @Override
-  public Map<String, Set<String>> getSetValues() {
-    return MsgPackConverter.convertToSetStringMap(setValuesProp.getValue());
+  public Map<String, Set<Long>> getSetValues() {
+    return MsgPackConverter.convertToSetLongMap(setValuesProp.getValue());
   }
 
   public UsageMetricRecord setSetValues(final DirectBuffer value) {
