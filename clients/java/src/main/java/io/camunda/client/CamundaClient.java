@@ -113,6 +113,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
+import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
@@ -1275,6 +1276,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the clients by role search request
    */
   ClientsByRoleSearchRequest newClientsByRoleSearchRequest(String roleId);
+
+  /**
+   * Executes a search request to query clients by group.
+   *
+   * <pre>
+   * camundaClient
+   *   .newClientsByGroupSearchRequest("groupId")
+   *   .sort((s) -> s.clientId().asc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
+   * </pre>
+   *
+   * @param groupId the ID of the group
+   * @return a builder for the clients by group search request
+   */
+  ClientsByGroupSearchRequest newClientsByGroupSearchRequest(String groupId);
 
   /**
    * Command to assign a role to a tenant.

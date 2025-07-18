@@ -17,8 +17,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.Group;
-import io.camunda.client.protocol.rest.GroupClientSearchResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
@@ -33,16 +33,8 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -62,8 +54,6 @@ class GroupAuthorizationIT {
   private static final String RESTRICTED = "restrictedUser";
   private static final String RESTRICTED_WITH_READ = "restrictedUser2";
   private static final String DEFAULT_PASSWORD = "password";
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -207,12 +197,9 @@ class GroupAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final GroupClientSearchResult result =
-                  searchClients(
-                      camundaClient.getConfiguration().getRestAddress().toString(),
-                      ADMIN,
-                      GROUP_1.id());
-              assertThat(result.getItems()).anyMatch(r -> clientId.equals(r.getClientId()));
+              final var clients =
+                  camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+              assertThat(clients.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
   }
 
@@ -262,12 +249,9 @@ class GroupAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final GroupClientSearchResult result =
-                  searchClients(
-                      camundaClient.getConfiguration().getRestAddress().toString(),
-                      ADMIN,
-                      GROUP_1.id());
-              assertThat(result.getItems()).anyMatch(r -> clientId.equals(r.getClientId()));
+              final var clients =
+                  camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+              assertThat(clients.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
 
     // when
@@ -283,33 +267,49 @@ class GroupAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final GroupClientSearchResult result =
-                  searchClients(
-                      camundaClient.getConfiguration().getRestAddress().toString(),
-                      ADMIN,
-                      GROUP_1.id());
-              assertThat(result.getItems()).noneMatch(r -> clientId.equals(r.getClientId()));
+              final var clients =
+                  camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+              assertThat(clients.items()).noneMatch(r -> clientId.equals(r.getClientId()));
             });
   }
 
-  // TODO once available, this test should use the client to make the request
-  private static GroupClientSearchResult searchClients(
-      final String restAddress, final String username, final String groupId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/groups/" + groupId + "/clients/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
+  @Test
+  void getClientsByGroupShouldReturnEmptyListIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    final var clients = camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+    assertThat(clients.items().size()).isEqualTo(0);
+  }
 
-    // Send the request and get the response
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+  @Test
+  void getClientsByGroupShouldReturnClientsIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // when
+    final String firstClientId = "someClientId";
+    camundaClient
+        .newAssignClientToGroupCommand()
+        .clientId(firstClientId)
+        .groupId(GROUP_1.id())
+        .send()
+        .join();
 
-    return OBJECT_MAPPER.readValue(response.body(), GroupClientSearchResult.class);
+    final String secondClientId = "otherClientId";
+    camundaClient
+        .newAssignClientToGroupCommand()
+        .clientId(secondClientId)
+        .groupId(GROUP_1.id())
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Clients are assigned to the group and can be searched")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var clients =
+                  camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+              assertThat(clients.items())
+                  .map(Client::getClientId)
+                  .contains(firstClientId, secondClientId);
+            });
   }
 }
