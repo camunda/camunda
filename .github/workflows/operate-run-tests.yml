@@ -1,5 +1,5 @@
 # description: Reuseable workflow that executes the passed maven command
-# called by: operate-test-importer.yml, operate-test-backup-restore.yml
+# called by: operate-ci.yml
 # test location: operate
 # type: CI
 # owner: @camunda/data-layer
@@ -62,15 +62,13 @@ jobs:
         run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
       - name: Run Tests
         run: ${{ inputs.command }}
-      - name: Send Slack notification on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v2.1.1
+      # Collect information about build status for central statistics with CI Analytics
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
         with:
-          webhook: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "workflow_name": "${{ github.workflow }}",
-              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
-              "branch": "${{ github.head_ref || github.ref_name }}"
-            }
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

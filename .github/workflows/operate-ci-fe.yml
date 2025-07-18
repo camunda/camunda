@@ -13,8 +13,34 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
+  fe-unit-tests:
+    name: "[FE] Unit Tests"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { } # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci
+        name: Install dependencies
+      - run: npm run test
+        name: Unit & Integration tests
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   # Typescript Checker
-  # owner: Core Features
   operate-fe-type-check:
     name: Type check
     runs-on: ubuntu-latest
@@ -43,7 +69,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   # Code linting
-  # owner: Core Features
   operate-fe-eslint:
     name: ESLint
     runs-on: ubuntu-latest
@@ -71,8 +96,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  # description: This workflow runs a11y accessibility tests on Operate
-  # test location: operate/client/e2e-playwright/a11y
+  # This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
     name: a11y tests
     runs-on: ubuntu-latest

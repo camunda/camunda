@@ -305,26 +305,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  operate-backend-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[UT] Operate - ${{matrix.suiteName}}"
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    secrets: inherit
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [ DataLayer, CoreFeatures ]
-        include:
-          - suite: DataLayer
-            suiteName: Data Layer
-          - suite: CoreFeatures
-            suiteName: Core Features
-    with:
-      componentName: "Operate"
-      suite: ${{ matrix.suite }}
-
   optimize-backend-unit-tests:
     if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
     name: "[UT] Optimize - ${{matrix.suiteName}}"
@@ -928,6 +908,19 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  operate-integration-tests:
+    # TODO renable the if, currently running for all for testing purposes
+    #if: needs.detect-changes.outputs.operate-backend-changes == 'true'
+    name: "Operate"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/operate-ci.yml
+    secrets: inherit
+    permissions: { }
+    with:
+      # TODO - change these inputs to things like  needs.detect-changes.outputs.operate-backend-changes == 'true'
+      feChanges: true
+      beChanges: true
+
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: Camunda docker tests
@@ -1109,16 +1102,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  # Runs Operate's front end tests
-  # owner: Core Features
-  operate-frontend-tests:
-    if: needs.detect-changes.outputs.operate-frontend-changes == 'true'
-    needs: [ detect-changes ]
-    name: "[FE] Operate"
-    uses: ./.github/workflows/operate-ci-fe.yml
-    secrets: inherit
-    permissions: { }  # GITHUB_TOKEN unused in this job
-
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
     if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
@@ -1285,8 +1268,7 @@ jobs:
       - maven-spotless-linter
       - openapi-lint
       - opensearch-integration-tests
-      - operate-backend-unit-tests
-      - operate-frontend-tests
+      - operate-integration-tests
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
