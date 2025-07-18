@@ -181,18 +181,24 @@ public class RestoreManager {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private static boolean dataFolderIsEmpty(final Path dir) throws IOException {
+  private boolean dataFolderIsEmpty(final Path dir) throws IOException {
     if (!Files.exists(dir)) {
       return true;
     }
 
+    final var ignoreFiles = configuration.getRestore().getIgnoreFilesInTarget();
     try (final var entries = Files.list(dir)) {
       return entries
-          // ignore the well-known lost+found directory, we don't care that it's there.
-          .filter(path -> !path.endsWith("lost+found"))
+          // ignore configured files/directories that we don't care about
+          .filter(path -> !shouldIgnoreFile(path, ignoreFiles))
           .findFirst()
           .isEmpty();
     }
+  }
+
+  private static boolean shouldIgnoreFile(final Path path, final List<String> ignoreFiles) {
+    final String fileName = path.getFileName().toString();
+    return ignoreFiles.contains(fileName);
   }
 
   static final class ValidatePartitionCount implements BackupValidator {
