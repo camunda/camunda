@@ -81,7 +81,7 @@ public class AssignRoleToMappingTest extends ClientRestTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be null");
+        .hasMessageContaining("mappingRuleId must not be null");
   }
 
   @Test
@@ -91,6 +91,6 @@ public class AssignRoleToMappingTest extends ClientRestTest {
             () ->
                 client.newAssignRoleToMappingCommand().roleId(ROLE_ID).mappingId("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be empty");
+        .hasMessageContaining("mappingRuleId must not be empty");
   }
 }

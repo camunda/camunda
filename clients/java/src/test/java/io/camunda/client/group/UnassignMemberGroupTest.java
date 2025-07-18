@@ -244,7 +244,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be null");
+        .hasMessageContaining("mappingRuleId must not be null");
   }
 
   @Test
