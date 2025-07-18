@@ -382,7 +382,7 @@ public class RemoveEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
+            "Expected to remove mapping_rule with ID '%s' from tenant with ID '%s', but the mapping_rule is not assigned to this tenant."
                 .formatted(mappingId, tenantId));
   }
 
@@ -413,7 +413,7 @@ public class RemoveEntityTenantTest {
     assertThat(notAssignedUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
+            "Expected to remove mapping_rule with ID '%s' from tenant with ID '%s', but the mapping_rule is not assigned to this tenant."
                 .formatted(mappingId, tenantId));
   }
 
