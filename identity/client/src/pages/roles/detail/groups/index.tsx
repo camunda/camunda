@@ -80,21 +80,21 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
   type GroupsListHeaders = {
     header: string;
     key: GroupKeys;
+    isSortable?: boolean;
   }[];
 
   const groupsListHeaders: GroupsListHeaders = isInternalGroupsEnabled
     ? [
-        { header: t("groupId"), key: "groupId" },
+        { header: t("groupId"), key: "groupId", isSortable: true },
         { header: t("groupName"), key: "name" },
       ]
-    : [{ header: t("groupId"), key: "groupId" }];
+    : [{ header: t("groupId"), key: "groupId", isSortable: true }];
 
   return (
     <>
       <EntityList
         data={groups}
         headers={groupsListHeaders}
-        sortProperty="groupId"
         loading={loading}
         addEntityLabel={t("assignGroup")}
         onAddEntity={openAssignModal}

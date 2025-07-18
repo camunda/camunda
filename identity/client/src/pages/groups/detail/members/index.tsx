@@ -78,12 +78,13 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   type MembersListHeaders = {
     header: string;
     key: UserKeys;
+    isSortable?: boolean;
   }[];
 
   const membersListHeaders: MembersListHeaders = isOIDC
-    ? [{ header: t("username"), key: "username" }]
+    ? [{ header: t("username"), key: "username", isSortable: true }]
     : [
-        { header: t("username"), key: "username" },
+        { header: t("username"), key: "username", isSortable: true },
         { header: t("name"), key: "name" },
         { header: t("email"), key: "email" },
       ];

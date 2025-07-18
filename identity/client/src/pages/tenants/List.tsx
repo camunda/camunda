@@ -68,10 +68,9 @@ const List: FC = () => {
       <EntityList
         data={tenantSearchResults == null ? [] : tenantSearchResults.items}
         headers={[
-          { header: t("tenantId"), key: "tenantId" },
-          { header: t("name"), key: "name" },
+          { header: t("tenantId"), key: "tenantId", isSortable: true },
+          { header: t("name"), key: "name", isSortable: true },
         ]}
-        sortProperty="name"
         onEntityClick={showDetails}
         addEntityLabel={t("createTenant")}
         onAddEntity={addTenant}

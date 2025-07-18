@@ -81,9 +81,9 @@ const List: FC = () => {
       <EntityList
         data={userSearchResults == null ? [] : userSearchResults.items}
         headers={[
-          { header: t("username"), key: "username" },
-          { header: t("name"), key: "name" },
-          { header: t("email"), key: "email" },
+          { header: t("username"), key: "username", isSortable: true },
+          { header: t("name"), key: "name", isSortable: true },
+          { header: t("email"), key: "email", isSortable: true },
         ]}
         menuItems={[
           {
@@ -98,7 +98,6 @@ const List: FC = () => {
             isDangerous: true,
           },
         ]}
-        sortProperty="username"
         onEntityClick={showDetails}
         addEntityLabel={t("createUser")}
         onAddEntity={addUser}

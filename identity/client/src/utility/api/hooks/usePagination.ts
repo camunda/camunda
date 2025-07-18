@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import useApi from "./useApi";
+import { useCallback, useMemo, useState } from "react";
 
 export type PageSearchParams = {
   page: {
@@ -35,7 +34,20 @@ export const DEFAULT_PAGINATION_CONFIG = {
   pageSize: 15,
 };
 
+export type SortConfig = {
+  field: string;
+  order: "ASC" | "DESC";
+};
+
+const useSorting = (defaultConfig?: SortConfig[]) => {
+  const [sort, setSort] = useState(defaultConfig);
+
+  return [sort, setSort];
+};
+
 const usePagination = (config: Page = DEFAULT_PAGINATION_CONFIG) => {
+  const [sortParams, setSort] = useSorting();
+
   const [pageState, setPageState] = useState<Page>(() => config);
 
   const setPage = useCallback((newPage: number) => {
@@ -52,17 +64,20 @@ const usePagination = (config: Page = DEFAULT_PAGINATION_CONFIG) => {
     }));
   };
 
-  const pageParams = useMemo(
-    () => ({
+  const pageParams = useMemo(() => {
+    const result = {
       page: {
         from: (pageState.page - 1) * pageState.pageSize,
         limit: pageState.pageSize,
       },
-    }),
-    [pageState],
-  );
+    };
 
-  return { pageParams, page: pageState, setPage, setPageSize };
+    if (sortParams) result.sort = sortParams;
+
+    return result;
+  }, [pageState, sortParams]);
+
+  return { pageParams, page: pageState, setPage, setPageSize, setSort };
 };
 
 export default usePagination;
