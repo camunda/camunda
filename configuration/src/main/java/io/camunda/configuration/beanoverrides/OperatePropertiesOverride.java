@@ -14,13 +14,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
 @EnableConfigurationProperties(LegacyOperateProperties.class)
 @PropertySource("classpath:operate-version.properties")
-@Profile("operate")
 public class OperatePropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;

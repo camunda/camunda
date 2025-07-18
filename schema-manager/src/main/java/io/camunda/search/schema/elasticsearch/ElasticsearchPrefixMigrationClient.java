@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.OpType;
 import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
+import co.elastic.clients.elasticsearch.indices.ExistsRequest;
 import co.elastic.clients.json.JsonData;
 import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.utils.CloneResult;
@@ -43,9 +44,13 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
             .build();
 
     try {
-      LOG.info("Reindexing [{}] into [{}]", src, dest);
-      client.reindex(reindexRequest);
+      final ExistsRequest existRequest = new ExistsRequest.Builder().index(src).build();
+      if (client.indices().exists(existRequest).value()) {
+        LOG.info("Reindexing [{}] into [{}]", src, dest);
+        client.reindex(reindexRequest);
+      }
       return new ReindexResult(true, src, dest, null);
+
     } catch (final IOException e) {
       LOG.error("Failed to reindex [{}] into [{}]", src, dest, e);
       return new ReindexResult(false, src, dest, e);
