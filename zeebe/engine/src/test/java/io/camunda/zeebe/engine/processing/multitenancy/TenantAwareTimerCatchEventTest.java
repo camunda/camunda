@@ -35,7 +35,7 @@ public class TenantAwareTimerCatchEventTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
+          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true));
 
   private static BpmnModelInstance processWithTimer(
       final Consumer<IntermediateCatchEventBuilder> consumer) {

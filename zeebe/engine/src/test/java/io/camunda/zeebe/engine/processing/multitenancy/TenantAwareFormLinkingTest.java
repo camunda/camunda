@@ -28,7 +28,7 @@ public class TenantAwareFormLinkingTest {
   @Rule
   public final EngineRule engine =
       EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
+          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true));
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 

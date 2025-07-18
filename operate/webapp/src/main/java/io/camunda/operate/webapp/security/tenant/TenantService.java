@@ -59,7 +59,7 @@ public class TenantService {
   }
 
   private boolean isMultiTenancyEnabled() {
-    return securityConfiguration.getMultiTenancy().isEnabled();
+    return securityConfiguration.getMultiTenancy().isChecksEnabled();
   }
 
   public static final class AuthenticatedTenants {

@@ -279,7 +279,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   @Test
   void shouldAllowActivateJobWithAuthorizedTenantWhenMultiTenancyEnabled() {
     // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
     final ActivateJobsStub stub = new ActivateJobsStub();
     stub.registerWith(stubbedBrokerClient);
 
@@ -326,7 +326,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   @Test
   void shouldAllowActivateJobWithDefaultTenantWhenMultiTenancyDisabled() {
     // given
-    when(multiTenancyCfg.isEnabled()).thenReturn(false);
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
     final ActivateJobsStub stub = new ActivateJobsStub();
     stub.registerWith(stubbedBrokerClient);
 

@@ -56,7 +56,7 @@ public abstract class ZeebeContainerManager {
             zeebeVersion,
             prefix,
             2,
-            securityConfiguration.getMultiTenancy().isEnabled(),
+            securityConfiguration.getMultiTenancy().isChecksEnabled(),
             ConnectionTypes.ELASTICSEARCH.getType());
 
     client =
