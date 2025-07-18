@@ -15,20 +15,10 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.protocol.rest.JobResult.TypeEnum;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-public class CompleteUserTaskJobResult implements CompleteJobResult {
-
-  private boolean isDenied;
-  private String deniedReason;
-  private JobResultCorrections corrections;
-
-  public CompleteUserTaskJobResult() {
-    corrections = new JobResultCorrections();
-  }
-
+public interface CompleteUserTaskJobResultStep1 extends CompleteJobResult {
   /**
    * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For example,
    * a user task listener can deny the completion of a task by setting this flag to true. In this
@@ -39,10 +29,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param isDenied indicates if the worker has denied the reason for the job
    * @return this job result
    */
-  public CompleteUserTaskJobResult deny(final boolean isDenied) {
-    this.isDenied = isDenied;
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 deny(final boolean isDenied);
 
   /**
    * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For example,
@@ -56,11 +43,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param deniedReason indicates the reason why the worker denied the job
    * @return this job result
    */
-  public CompleteUserTaskJobResult deny(final boolean isDenied, final String deniedReason) {
-    deny(isDenied);
-    deniedReason(deniedReason);
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 deny(final boolean isDenied, final String deniedReason);
 
   /**
    * Indicates the reason why the worker denied the job. For example, a user task listener can deny
@@ -70,10 +53,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param deniedReason indicates the reason why the worker denied the job
    * @return this job result
    */
-  public CompleteUserTaskJobResult deniedReason(final String deniedReason) {
-    this.deniedReason = deniedReason;
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 deniedReason(final String deniedReason);
 
   /**
    * Applies corrections to the user task attributes.
@@ -84,14 +64,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param corrections the corrections to apply to the user task.
    * @return this job result
    */
-  public CompleteUserTaskJobResult correct(final JobResultCorrections corrections) {
-    if (corrections == null) {
-      this.corrections = new JobResultCorrections();
-    } else {
-      this.corrections = corrections;
-    }
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 correct(final JobResultCorrections corrections);
 
   /**
    * Dynamically applies corrections to the user task attributes using a lambda expression.
@@ -105,9 +78,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param corrections a lambda expression to modify the {@link JobResultCorrections}.
    * @return this job result
    */
-  public CompleteUserTaskJobResult correct(final UnaryOperator<JobResultCorrections> corrections) {
-    return correct(corrections.apply(this.corrections));
-  }
+  CompleteUserTaskJobResultStep1 correct(final UnaryOperator<JobResultCorrections> corrections);
 
   /**
    * Correct the assignee of the task.
@@ -115,10 +86,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param assignee assignee of the task
    * @return this job result
    */
-  public CompleteUserTaskJobResult correctAssignee(final String assignee) {
-    corrections.assignee(assignee);
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 correctAssignee(final String assignee);
 
   /**
    * Correct the due date of the task.
@@ -126,10 +94,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param dueDate due date of the task
    * @return this job result
    */
-  public CompleteUserTaskJobResult correctDueDate(final String dueDate) {
-    corrections.dueDate(dueDate);
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 correctDueDate(final String dueDate);
 
   /**
    * Correct the follow up date of the task.
@@ -137,10 +102,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param followUpDate follow up date of the task
    * @return this job result
    */
-  public CompleteUserTaskJobResult correctFollowUpDate(final String followUpDate) {
-    corrections.followUpDate(followUpDate);
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 correctFollowUpDate(final String followUpDate);
 
   /**
    * Correct the candidate groups of the task.
@@ -148,10 +110,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param candidateGroups candidate groups of the task
    * @return this job result
    */
-  public CompleteUserTaskJobResult correctCandidateGroups(final List<String> candidateGroups) {
-    corrections.candidateGroups(candidateGroups);
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 correctCandidateGroups(final List<String> candidateGroups);
 
   /**
    * Correct the candidate users of the task.
@@ -159,10 +118,7 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param candidateUsers candidate users of the task
    * @return this job result
    */
-  public CompleteUserTaskJobResult correctCandidateUsers(final List<String> candidateUsers) {
-    corrections.candidateUsers(candidateUsers);
-    return this;
-  }
+  CompleteUserTaskJobResultStep1 correctCandidateUsers(final List<String> candidateUsers);
 
   /**
    * Correct the priority of the task.
@@ -170,25 +126,5 @@ public class CompleteUserTaskJobResult implements CompleteJobResult {
    * @param priority priority of the task
    * @return this job result
    */
-  public CompleteUserTaskJobResult correctPriority(final Integer priority) {
-    corrections.priority(priority);
-    return this;
-  }
-
-  public boolean isDenied() {
-    return isDenied;
-  }
-
-  public String getDeniedReason() {
-    return deniedReason;
-  }
-
-  public JobResultCorrections getCorrections() {
-    return corrections;
-  }
-
-  @Override
-  public TypeEnum getType() {
-    return TypeEnum.USER_TASK;
-  }
+  CompleteUserTaskJobResultStep1 correctPriority(final Integer priority);
 }

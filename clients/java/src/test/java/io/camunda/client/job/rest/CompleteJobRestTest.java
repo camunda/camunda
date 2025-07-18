@@ -23,6 +23,8 @@ import io.camunda.client.job.CompleteJobTest;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
 import io.camunda.client.protocol.rest.JobResult;
 import io.camunda.client.protocol.rest.JobResult.TypeEnum;
+import io.camunda.client.protocol.rest.JobResultActivateElement;
+import io.camunda.client.protocol.rest.JobResultAdHocSubProcess;
 import io.camunda.client.protocol.rest.JobResultUserTask;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
@@ -42,6 +44,8 @@ import org.mockito.Mockito;
 class CompleteJobRestTest extends ClientRestTest {
 
   public static final JobResult.TypeEnum USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK;
+  public static final JobResult.TypeEnum AD_HOC_SUB_PROCESS_DISCRIMINATOR =
+      TypeEnum.AD_HOC_SUB_PROCESS;
 
   @Test
   void shouldCompleteJobByKey() {
@@ -506,6 +510,109 @@ class CompleteJobRestTest extends ClientRestTest {
                             .candidateUsers(null)
                             .candidateGroups(null)
                             .priority(null)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteAdHocSubProcessWithElementIdAndNoVariables() {
+    // given
+    final long jobKey = 12;
+    final String elementId = "elementId";
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(r -> r.forAdHocSubProcess().activateElement(elementId))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResultAdHocSubProcess()
+                    .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .addActivateElementsItem(new JobResultActivateElement().elementId(elementId)));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteAdHocSubProcessWithElementIdAndVariables() {
+    // given
+    final long jobKey = 12;
+    final String elementId = "elementId";
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(
+            r ->
+                r.forAdHocSubProcess()
+                    .activateElement(elementId)
+                    .variables("{\"key\":\"value\",\"anotherKey\":\"anotherValue\"}"))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResultAdHocSubProcess()
+                    .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .addActivateElementsItem(
+                        new JobResultActivateElement()
+                            .elementId(elementId)
+                            .putVariablesItem("key", "value")
+                            .putVariablesItem("anotherKey", "anotherValue")));
+
+    assertThat(request).isEqualTo(expectedRequest);
+  }
+
+  @Test
+  void shouldCompleteAdHocSubProcessWithMultipleElementIds() {
+    // given
+    final long jobKey = 12;
+    final String elementId1 = "elementId1";
+    final String elementId2 = "elementId2";
+    final String elementId3 = "elementId3";
+
+    // when
+    client
+        .newCompleteCommand(jobKey)
+        .withResult(
+            r ->
+                r.forAdHocSubProcess()
+                    .activateElement(elementId1)
+                    .variable("key", "value")
+                    .activateElement(elementId2)
+                    .variable("anotherKey", "anotherValue")
+                    .activateElement(elementId3))
+        .send()
+        .join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+
+    final JobCompletionRequest expectedRequest =
+        new JobCompletionRequest()
+            .result(
+                new JobResultAdHocSubProcess()
+                    .type(AD_HOC_SUB_PROCESS_DISCRIMINATOR)
+                    .addActivateElementsItem(
+                        new JobResultActivateElement()
+                            .elementId(elementId1)
+                            .putVariablesItem("key", "value"))
+                    .addActivateElementsItem(
+                        new JobResultActivateElement()
+                            .elementId(elementId2)
+                            .putVariablesItem("anotherKey", "anotherValue"))
+                    .addActivateElementsItem(new JobResultActivateElement().elementId(elementId3)));
 
     assertThat(request).isEqualTo(expectedRequest);
   }

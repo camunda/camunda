@@ -18,10 +18,10 @@ package io.camunda.client.impl.command;
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.CompleteAdHocSubProcessResultStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.command.CompleteJobResult;
-import io.camunda.client.api.command.CompleteUserTaskJobResult;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
@@ -29,6 +29,8 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
+import io.camunda.client.protocol.rest.JobResultActivateElement;
+import io.camunda.client.protocol.rest.JobResultAdHocSubProcess;
 import io.camunda.client.protocol.rest.JobResultCorrections;
 import io.camunda.client.protocol.rest.JobResultUserTask;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -39,9 +41,11 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJobCommandStep1>
@@ -100,18 +104,28 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   public CompleteJobCommandStep1 withResult(
       final Function<CompleteJobCommandJobResultStep, CompleteJobResult> function) {
     final CompleteJobResult result = function.apply(this);
-    if (result instanceof CompleteUserTaskJobResult) {
-      setJobResult((CompleteUserTaskJobResult) result);
+    if (result instanceof CompleteUserTaskJobResultImpl) {
+      setJobResult((CompleteUserTaskJobResultImpl) result);
+    } else if (result instanceof CompleteAdHocSubProcessResultStep1) {
+      setJobResult(((CompleteAdHocSubProcessJobResultImpl) result));
+    } else {
+      throw new IllegalArgumentException(
+          "Unsupported job result type: " + result.getClass().getName());
     }
     return this;
   }
 
   @Override
-  public CompleteUserTaskJobResult forUserTask() {
-    return new CompleteUserTaskJobResult();
+  public CompleteUserTaskJobResultImpl forUserTask() {
+    return new CompleteUserTaskJobResultImpl();
   }
 
-  private void setJobResult(final CompleteUserTaskJobResult jobResult) {
+  @Override
+  public CompleteAdHocSubProcessResultStep1 forAdHocSubProcess() {
+    return new CompleteAdHocSubProcessJobResultImpl(objectMapper);
+  }
+
+  private void setJobResult(final CompleteUserTaskJobResultImpl jobResult) {
     if (useRest) {
       setRestJobResult(jobResult);
     } else {
@@ -119,7 +133,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     }
   }
 
-  private void setRestJobResult(final CompleteUserTaskJobResult jobResult) {
+  private void setRestJobResult(final CompleteUserTaskJobResultImpl jobResult) {
     final JobResultUserTask resultRest = new JobResultUserTask();
     final JobResultCorrections correctionsRest = new JobResultCorrections();
     correctionsRest
@@ -137,7 +151,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     httpRequestObject.setResult(resultRest);
   }
 
-  private void setGrpcJobResult(final CompleteUserTaskJobResult jobResult) {
+  private void setGrpcJobResult(final CompleteUserTaskJobResultImpl jobResult) {
     final JobResult.Builder resultGrpc = JobResult.newBuilder();
     final GatewayOuterClass.JobResultCorrections.Builder correctionsGrpc =
         GatewayOuterClass.JobResultCorrections.newBuilder();
@@ -166,6 +180,50 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
         .setDenied(jobResult.isDenied())
         .setDeniedReason(jobResult.getDeniedReason() == null ? "" : jobResult.getDeniedReason())
         .setCorrections(correctionsGrpc);
+    grpcRequestObjectBuilder.setResult(resultGrpc);
+  }
+
+  private void setJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
+    if (useRest) {
+      setRestJobResult(jobResult);
+    } else {
+      setGrpcJobResult(jobResult);
+    }
+  }
+
+  private void setRestJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
+    final JobResultAdHocSubProcess resultRest = new JobResultAdHocSubProcess();
+    final List<JobResultActivateElement> activateElements =
+        jobResult.getActivateElements().stream()
+            .map(
+                element -> {
+                  final JobResultActivateElement activateElement =
+                      new JobResultActivateElement().elementId(element.getElementId());
+                  if (element.getVariables() != null) {
+                    activateElement.setVariables(jsonMapper.fromJsonAsMap(element.getVariables()));
+                  }
+                  return activateElement;
+                })
+            .collect(Collectors.toList());
+    resultRest.type(jobResult.getType()).activateElements(activateElements);
+    httpRequestObject.setResult(resultRest);
+  }
+
+  private void setGrpcJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
+    final JobResult.Builder resultGrpc = JobResult.newBuilder();
+    resultGrpc.setType(jobResult.getType().getValue());
+    jobResult.getActivateElements().stream()
+        .map(
+            element -> {
+              final GatewayOuterClass.JobResultActivateElement.Builder activateElement =
+                  GatewayOuterClass.JobResultActivateElement.newBuilder()
+                      .setElementId(element.getElementId());
+              if (element.getVariables() != null) {
+                activateElement.setVariables(element.getVariables());
+              }
+              return activateElement.build();
+            })
+        .forEach(resultGrpc::addActivateElements);
     grpcRequestObjectBuilder.setResult(resultGrpc);
   }
 

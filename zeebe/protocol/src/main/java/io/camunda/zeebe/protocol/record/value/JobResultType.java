@@ -24,7 +24,7 @@ public enum JobResultType {
   /** Represents a user task job result type. */
   USER_TASK("userTask"),
   /** Represents an ad-hoc subprocess job result type. */
-  AD_HOC_SUB_PROCESS("adHocSubprocess");
+  AD_HOC_SUB_PROCESS("adHocSubProcess");
 
   final String type;
 
