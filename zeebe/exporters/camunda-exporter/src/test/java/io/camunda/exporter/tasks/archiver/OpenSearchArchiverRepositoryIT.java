@@ -85,7 +85,7 @@ final class OpenSearchArchiverRepositoryIT {
   void afterEach() throws IOException {
     // wipes all data in OS between tests
     final var response =
-        transport.restClient().performRequest(new org.opensearch.client.Request("DELETE", "_all"));
+        transport.restClient().performRequest(new org.opensearch.client.Request("DELETE", "*"));
     assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
   }
 
