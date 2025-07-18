@@ -18,8 +18,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * Interceptor that validates secondary storage availability for endpoints requiring it. When
- * secondary storage is not configured (database.type=none), requests to endpoints marked with
- * {@link RequiresSecondaryStorage} will be rejected with HTTP 403 Forbidden.
+ * secondary storage is not configured (camunda.database.type=none), requests to endpoints marked
+ * with {@link RequiresSecondaryStorage} will be rejected with HTTP 403 Forbidden.
  */
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
@@ -33,18 +33,14 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
   @Override
   public boolean preHandle(
-      final HttpServletRequest request, final HttpServletResponse response, final Object handler)
-      throws Exception {
+      final HttpServletRequest request, final HttpServletResponse response, final Object handler) {
 
-    if (handler instanceof HandlerMethod handlerMethod) {
+    if (handler instanceof final HandlerMethod handlerMethod) {
       final boolean requiresSecondaryStorage =
           handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)
               || handlerMethod.getBeanType().isAnnotationPresent(RequiresSecondaryStorage.class);
 
       if (requiresSecondaryStorage) {
-        // This will throw SecondaryStorageUnavailableException if secondary storage is not
-        // available
-        // The exception will be caught by the ErrorMapper and converted to HTTP 403
         secondaryStorageValidator.validateSecondaryStorageEnabled();
       }
     }
