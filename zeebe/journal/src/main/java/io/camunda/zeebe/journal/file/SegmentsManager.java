@@ -282,7 +282,12 @@ final class SegmentsManager implements AutoCloseable {
     loadSegments()
         .forEach(
             segment -> {
-              if (segments.put(segment.descriptor().index(), segment) == null) {
+              final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
+              if (replacedSegment != null) {
+                // The previous segment can be safely deleted to free resources.
+                replacedSegment.close();
+                replacedSegment.delete();
+              } else {
                 journalMetrics.incSegmentCount();
               }
             });

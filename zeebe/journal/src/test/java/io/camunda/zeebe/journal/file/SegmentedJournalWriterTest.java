@@ -37,6 +37,7 @@ final class SegmentedJournalWriterTest {
   private SegmentedJournalWriter writer;
   private final SegmentDescriptorSerializer descriptorSerializer =
       new SegmentDescriptorSerializerSbe();
+  private SegmentedJournal journal;
 
   private void fillWithOnes(final FileChannel channel, final long size) {
     // Fill with ones to verify in tests that the append invalidates next entry by overwriting with
@@ -47,7 +48,7 @@ final class SegmentedJournalWriterTest {
   @BeforeEach
   void beforeEach(final @TempDir Path tempDir) {
     segments = journalFactory.segmentsManager(tempDir);
-    segments.open();
+    journal = journalFactory.journal(segments);
     writer = new SegmentedJournalWriter(segments, flusher, journalFactory.metrics());
   }
 
@@ -138,8 +139,7 @@ final class SegmentedJournalWriterTest {
   @Test
   void shouldInvalidateNextEntryAfterAppend() {
     try (final SegmentedJournalReader reader =
-        new SegmentedJournalReader(
-            journalFactory.journal(segments), new JournalMetrics(meterRegistry))) {
+        new SegmentedJournalReader(journal, new JournalMetrics(meterRegistry))) {
       // when
       writer.append(-1, journalFactory.entry());
 
@@ -157,7 +157,7 @@ final class SegmentedJournalWriterTest {
 
     final var followerJournalFactory = new TestJournalFactory("data", 5, this::fillWithOnes);
     final var followerSegments = followerJournalFactory.segmentsManager(tempDir);
-    followerSegments.open();
+    final var followerJournal = followerJournalFactory.journal(followerSegments);
     final var followerWriter =
         new SegmentedJournalWriter(
             followerSegments,
@@ -165,8 +165,7 @@ final class SegmentedJournalWriterTest {
             followerJournalFactory.metrics());
 
     try (final SegmentedJournalReader reader =
-        new SegmentedJournalReader(
-            followerJournalFactory.journal(followerSegments), new JournalMetrics(meterRegistry))) {
+        new SegmentedJournalReader(followerJournal, new JournalMetrics(meterRegistry))) {
       // when
       final byte[] serializedRecord = BufferUtil.bufferAsArray(writtenRecord.serializedRecord());
       followerWriter.append(writtenRecord.checksum(), serializedRecord);
