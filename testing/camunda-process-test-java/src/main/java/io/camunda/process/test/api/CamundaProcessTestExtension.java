@@ -16,6 +16,8 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.coverage.ProcessCoverage;
+import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -63,11 +65,17 @@ import org.slf4j.LoggerFactory;
  * <p>After each test method:
  *
  * <ul>
+ *   <li>Collect process coverage data
  *   <li>Close created {@link CamundaClient}s
  *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
  *
- * <p>The container runtime is closed once all tests have run.
+ * <p>After all tests have run:
+ *
+ * <ul>
+ *   <li>Report process coverage (JSON)
+ *   <li>Close container runtime
+ * </ul>
  */
 public class CamundaProcessTestExtension
     implements BeforeEachCallback, BeforeAllCallback, AfterEachCallback, AfterAllCallback {
@@ -87,6 +95,8 @@ public class CamundaProcessTestExtension
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
+  private final ProcessCoverageBuilder processCoverageBuilder;
+  private ProcessCoverage processCoverage;
 
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
@@ -96,8 +106,10 @@ public class CamundaProcessTestExtension
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
+      final ProcessCoverageBuilder processCoverageBuilder,
       final Consumer<String> testResultPrintStream) {
     runtimeBuilder = containerRuntimeBuilder;
+    this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
@@ -117,7 +129,10 @@ public class CamundaProcessTestExtension
    * </pre>
    */
   public CamundaProcessTestExtension() {
-    this(CamundaProcessTestContainerRuntime.newBuilder(), System.err::println);
+    this(
+        CamundaProcessTestContainerRuntime.newBuilder(),
+        ProcessCoverage.newBuilder(),
+        System.err::println);
   }
 
   @Override
@@ -132,6 +147,13 @@ public class CamundaProcessTestExtension
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(runtime, createdClients::add, camundaManagementClient);
+
+    // create process coverage
+    processCoverage =
+        processCoverageBuilder
+            .testClass(context.getRequiredTestClass())
+            .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+            .build();
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
@@ -199,13 +221,15 @@ public class CamundaProcessTestExtension
   }
 
   @Override
-  public void afterEach(final ExtensionContext extensionContext) {
+  public void afterEach(final ExtensionContext context) {
     if (runtime == null) {
       // Skip if the runtime is not created.
       return;
     }
 
-    if (isTestFailed(extensionContext)) {
+    processCoverage.collectTestRunCoverage(context.getDisplayName());
+
+    if (isTestFailed(context)) {
       printTestResults();
     }
     CamundaAssert.reset();
@@ -265,6 +289,8 @@ public class CamundaProcessTestExtension
       // Skip if the runtime is not created.
       return;
     }
+
+    processCoverage.reportCoverage();
     runtime.close();
   }
 
@@ -459,6 +485,31 @@ public class CamundaProcessTestExtension
   public CamundaProcessTestExtension withRemoteConnectorsRestApiAddress(
       final URI remoteConnectorsRestApiAddress) {
     runtimeBuilder.withRemoteConnectorsRestApiAddress(remoteConnectorsRestApiAddress);
+    return this;
+  }
+
+  /**
+   * Specifies process definition keys that should be excluded from coverage analysis. These
+   * processes will not be considered when calculating coverage metrics.
+   *
+   * @param processDefinitionIds an array of process definition ids to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension excludeProcessDefinitionIds(
+      final String... processDefinitionIds) {
+    processCoverageBuilder.excludeProcessDefinitionIds(processDefinitionIds);
+    return this;
+  }
+
+  /**
+   * Specifies the output directory for coverage reports. Coverage reports will be generated and
+   * saved to this directory after test execution.
+   *
+   * @param reportDirectory the directory path where reports should be saved
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCoverageReportDirectory(final String reportDirectory) {
+    processCoverageBuilder.reportDirectory(reportDirectory);
     return this;
   }
 
