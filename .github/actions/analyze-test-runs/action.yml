@@ -63,6 +63,57 @@ runs:
 
         echo "::warning::Found flaky tests!\n ${flakyTests}"
       fi
+  - name: Comment flaky tests on PR
+    if: steps.find-flakes.outputs.FLAKY_TESTS != ''
+    uses: actions/github-script@v7
+    with:
+      github-token: ${{ github.token }}
+      script: |
+        const flakyTests = `${{ steps.find-flakes.outputs.FLAKY_TESTS }}`;
+        const prNumber = context.issue.number;
+        const owner = context.repo.owner;
+        const repo = context.repo.repo;
+        const body = `
+          ### Oh! We’ve got ourselves flaky ones!
+          \`\`\`
+          ${flakyTests}
+          \`\`\`
+          Related to your code? Maybe.
+          Fixable now? Maybe not.
+          Mind giving it a look? Or don't, but I will remember, and
+          ![I'll be back](https://media.tenor.com/p2Ie017Zwu8AAAAM/exterminador-do.gif)
+        `;
+
+        // Find existing comments
+        const comments = await github.rest.issues.listComments({
+          owner,
+          repo,
+          issue_number: prNumber,
+        });
+
+        // Get comments about flakyness
+        const marker = `${flakyTests}`;
+        const botComment = comments.data.find(comment =>
+          comment.user.type === "Bot" && comment.body.includes(marker)
+        );
+
+        if (botComment) {
+          await github.rest.issues.updateComment({
+            owner,
+            repo,
+            comment_id: botComment.id,
+            body: body
+          });
+          console.log("✅ Updated existing flaky test comment");
+        } else {
+          await github.rest.issues.createComment({
+            owner,
+            repo,
+            issue_number: prNumber,
+            body: body
+          });
+          console.log("✅ Created new flaky test comment");
+        }
 
   - name: Unfinished tests
     if: failure() || cancelled()
