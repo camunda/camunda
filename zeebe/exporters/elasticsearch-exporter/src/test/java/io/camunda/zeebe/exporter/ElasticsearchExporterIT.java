@@ -234,7 +234,7 @@ final class ElasticsearchExporterIT {
         .isPresent()
         .get()
         .extracting(ComponentTemplateWrapper::name)
-        .isEqualTo(config.index.prefix);
+        .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
   @ParameterizedTest(name = "{0}")

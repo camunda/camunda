@@ -231,7 +231,7 @@ final class OpensearchExporterIT {
         .isPresent()
         .get()
         .extracting(ComponentTemplateWrapper::name)
-        .isEqualTo(config.index.prefix);
+        .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
   @Test
