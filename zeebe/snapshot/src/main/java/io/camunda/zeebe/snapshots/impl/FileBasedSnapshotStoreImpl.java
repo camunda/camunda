@@ -78,8 +78,8 @@ public final class FileBasedSnapshotStoreImpl {
       final ConcurrencyControl actor,
       final SnapshotMetrics metrics) {
     this.brokerId = brokerId;
-    this.actor = actor;
-    this.metrics = metrics;
+    this.actor = Objects.requireNonNull(actor);
+    this.metrics = Objects.requireNonNull(metrics);
     this.checksumProvider = Objects.requireNonNull(checksumProvider);
 
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
