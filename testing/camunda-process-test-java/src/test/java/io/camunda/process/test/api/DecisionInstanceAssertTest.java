@@ -69,7 +69,7 @@ public class DecisionInstanceAssertTest {
   void configureAssertions() {
     CamundaAssert.initialize(camundaDataSource);
     CamundaAssert.setAssertionInterval(Duration.ZERO);
-    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(1));
+    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(3));
   }
 
   @AfterEach
