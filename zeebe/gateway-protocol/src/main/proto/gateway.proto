@@ -246,6 +246,9 @@ message CreateProcessInstanceRequest {
   // a reference key chosen by the user and will be part of all records resulted from this operation
   optional uint64 operationReference = 7;
 
+  // a list of runtime instruction that can modify the behavior of the process
+  // instance during its execution
+  // if empty (default), the process instance will be executed normally
   repeated ProcessInstanceCreationRuntimeInstruction runtimeInstructions = 8;
 }
 
@@ -269,6 +272,8 @@ message ProcessInstanceCreationRuntimeInstruction {
 }
 
 message SuspendProcessInstanceInstruction {
+  // the ID of the process element after which the process instance should be
+  // suspended
   string afterElementId = 1;
 }
 
