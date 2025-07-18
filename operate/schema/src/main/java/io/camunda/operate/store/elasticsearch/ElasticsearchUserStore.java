@@ -36,11 +36,7 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-@Profile(
-    "!"
-        + OperateProfileService.SSO_AUTH_PROFILE
-        + " & !"
-        + OperateProfileService.IDENTITY_AUTH_PROFILE)
+@Profile("!" + OperateProfileService.IDENTITY_AUTH_PROFILE)
 public class ElasticsearchUserStore implements UserStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUserStore.class);

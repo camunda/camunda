@@ -50,11 +50,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>operate-webjar</artifactId>
     </dependency>
-    <!-- OAuth0 -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-mvc-auth-commons</artifactId>
-    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
@@ -325,10 +320,6 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.auth0</groupId>
-      <artifactId>auth0</artifactId>
     </dependency>
 
     <dependency>
