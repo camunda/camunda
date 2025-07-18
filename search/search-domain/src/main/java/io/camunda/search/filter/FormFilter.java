@@ -15,12 +15,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public record FormFilter(List<Long> formKeys, List<String> formIds) implements FilterBase {
+public record FormFilter(List<Long> formKeys, List<String> formIds, String tenantId)
+    implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<FormFilter> {
 
     private List<Long> formKeys;
     private List<String> formIds;
+    private String tenantId;
 
     public Builder formKeys(final Long value, final Long... values) {
       return formKeys(collectValues(value, values));
@@ -40,11 +42,17 @@ public record FormFilter(List<Long> formKeys, List<String> formIds) implements F
       return this;
     }
 
+    public Builder tenantId(final String value) {
+      tenantId = value;
+      return this;
+    }
+
     @Override
     public FormFilter build() {
       return new FormFilter(
           Objects.requireNonNullElse(formKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(formIds, Collections.emptyList()));
+          Objects.requireNonNullElse(formIds, Collections.emptyList()),
+          tenantId);
     }
   }
 }
