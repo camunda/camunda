@@ -71,7 +71,9 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     final JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
     jobWorkerProperties.setType(type);
     jobWorkerProperties.setRetries(retries);
-    jobWorkerProperties.setTaskHeaders(taskHeaders);
+    if (taskHeaders != null) {
+      jobWorkerProperties.setTaskHeaders(taskHeaders);
+    }
     listener.setJobWorkerProperties(jobWorkerProperties);
     executionListeners.add(listener);
   }
