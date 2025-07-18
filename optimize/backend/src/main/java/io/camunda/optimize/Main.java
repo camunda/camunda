@@ -7,10 +7,12 @@
  */
 package io.camunda.optimize;
 
+import static io.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CAMUNDA_OPTIMIZE_DATABASE;
 import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.util.tomcat.LoggingConfigurationReader;
+import io.camunda.search.connect.configuration.DatabaseConfig;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.boot.SpringApplication;
@@ -24,6 +26,7 @@ public class Main {
 
   public static void main(final String[] args) {
     new LoggingConfigurationReader().defineLog4jLoggingConfiguration();
+    overrideOptimizeDatabaseType();
 
     final ConfigurationService configurationService = ConfigurationService.createDefault();
     final SpringApplication optimize = new SpringApplication(Main.class);
@@ -33,5 +36,16 @@ public class Main {
 
     optimize.setDefaultProperties(defaultProperties);
     optimize.run(args);
+  }
+
+  private static void overrideOptimizeDatabaseType() {
+    final String databaseType = getDatabaseType();
+    if (DatabaseConfig.NONE.equalsIgnoreCase(databaseType)) {
+      System.setProperty(CAMUNDA_OPTIMIZE_DATABASE, DatabaseConfig.NONE);
+    }
+  }
+
+  private static String getDatabaseType() {
+    return System.getProperty("camunda.database.type", System.getenv("CAMUNDA_DATABASE_TYPE"));
   }
 }
