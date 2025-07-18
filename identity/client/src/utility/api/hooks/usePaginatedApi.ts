@@ -15,7 +15,7 @@ const usePaginatedApi = <R extends { page?: PageResult }, P>(
   params: P = {} as P,
   Options?: UseApiOptions,
 ) => {
-  const { pageParams, page, setPage, setPageSize } = usePagination();
+  const { pageParams, page, setPage, setPageSize, ...more } = usePagination();
 
   const result = useApi(
     apiDefinition,
@@ -31,6 +31,7 @@ const usePaginatedApi = <R extends { page?: PageResult }, P>(
     page: { ...page, ...result?.data?.page },
     setPage,
     setPageSize,
+    ...more,
   };
 };
 

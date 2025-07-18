@@ -38,7 +38,8 @@ import LateLoading from "src/components/layout/LateLoading";
 import Flex from "src/components/layout/Flex";
 import useTranslate from "src/utility/localization";
 import { StyledTableContainer } from "./components";
-import { PageResult } from "src/utility/api/hooks/usePagination";
+import { PageResult, SortConfig } from "src/utility/api/hooks/usePagination";
+import { DataTableCustomHeaderProps, PropTypes } from "carbon-components-react";
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
@@ -67,6 +68,7 @@ type HeaderData<D extends EntityData> = {
 export type DataTableHeader<D extends EntityData> = {
   header: string;
   key: Extract<keyof HeaderData<D>, string | ReactNode>;
+  isSortable?: boolean;
 };
 
 export type EntityListHeader<D extends EntityData> = DataTableHeader<D> & {
@@ -99,7 +101,6 @@ type EntityListProps<D extends EntityData> = {
     | [MenuItem<D>]
     | [MenuItem<D>, MenuItem<D>]
     | [TextMenuItem<D>, TextMenuItem<D>, TextMenuItem<D>];
-  sortProperty?: keyof D;
   loading?: boolean;
   isInsideModal?: boolean;
   title?: ReactNode;
@@ -113,6 +114,7 @@ type EntityListProps<D extends EntityData> = {
   setPage?: (page: number) => void;
   setPageSize?: (pageSize: number) => void;
   page?: ({ page: number; pageSize: number } & Partial<PageResult>) | undefined;
+  setSort?: (sort: null | SortConfig[]) => void;
 };
 
 const MAX_ICON_ACTIONS = 2;
@@ -130,7 +132,6 @@ const EntityList = <D extends EntityData>({
   onAddEntity,
   onEntityClick,
   menuItems,
-  sortProperty,
   loading,
   batchSelection,
   searchPlaceholder,
@@ -138,6 +139,7 @@ const EntityList = <D extends EntityData>({
   setPage = () => {},
   setPageSize = () => {},
   page: pageData,
+  setSort = () => {},
 }: EntityListProps<D>): ReturnType<FC> => {
   const debounce = useDebounce(300);
   const { t } = useTranslate("components");
@@ -149,29 +151,13 @@ const EntityList = <D extends EntityData>({
     const entityTableData: (D & { id: string })[] = [];
 
     data?.forEach((dataset) => {
-      const id = dataset.id || (Date.now() + Math.random()).toString();
+      const id = dataset.id || crypto.randomUUID();
       entityIndex[id] = dataset;
       entityTableData.push({ ...dataset, id });
     });
 
-    const sortedEntityTableData =
-      entityTableData.length > 0
-        ? entityTableData.sort((a, b) => {
-            const propertyName =
-              sortProperty || Object.keys(entityTableData[0])[0];
-
-            if (a[propertyName] < b[propertyName]) {
-              return -1;
-            }
-            if (a[propertyName] > b[propertyName]) {
-              return 1;
-            }
-            return 0;
-          })
-        : entityTableData;
-
-    return [entityIndex, sortedEntityTableData];
-  }, [sortProperty, data]);
+    return [entityIndex, entityTableData];
+  }, [data]);
 
   const areRowsEmpty = !tableData || tableData.length === 0;
 
@@ -211,7 +197,14 @@ const EntityList = <D extends EntityData>({
       };
 
   return (
-    <DataTable rows={tableData} headers={headers} isSortable>
+    <DataTable
+      rows={tableData}
+      headers={headers}
+      isSortable
+      sortRow={() => {
+        return 0;
+      }}
+    >
       {({
         rows,
         getHeaderProps,
@@ -220,8 +213,7 @@ const EntityList = <D extends EntityData>({
         onInputChange,
       }) => (
         <StyledTableContainer {...tableContainerProps}>
-          {loading && data !== null && <LateLoading />}
-          {loading && data === null ? (
+          {loading ? (
             <DataTableSkeleton
               columnCount={headers.length}
               headers={headers}
@@ -285,14 +277,32 @@ const EntityList = <D extends EntityData>({
                         }}
                       />
                     )}
-                    {headers.map((header) => (
-                      <TableHeader
-                        {...getHeaderProps({ header })}
-                        key={`applications-header-${header.header}`}
-                      >
-                        {header.header}
-                      </TableHeader>
-                    ))}
+                    {headers.map((header) => {
+                      return (
+                        <TableHeader
+                          {...getHeaderProps({
+                            header: header,
+                            isSortable: !!header.isSortable,
+                            onClick: (_, { sortHeaderKey, sortDirection }) => {
+                              if (sortDirection === "NONE") {
+                                setSort(null);
+                                return;
+                              }
+
+                              setSort([
+                                {
+                                  field: sortHeaderKey,
+                                  order: sortDirection,
+                                },
+                              ]);
+                            },
+                          })}
+                          key={`applications-header-${header.header}`}
+                        >
+                          {header.header}
+                        </TableHeader>
+                      );
+                    })}
                     {hasMenu && <TableExpandHeader />}
                   </TableRow>
                 </TableHead>

@@ -49,12 +49,12 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
     reload,
   );
 
-  if (loading)
-    return (
-      <LoadingWrapper>
-        <Loading withOverlay={false} />
-      </LoadingWrapper>
-    );
+  // if (loading)
+  //   return (
+  //     <LoadingWrapper>
+  //       <Loading withOverlay={false} />
+  //     </LoadingWrapper>
+  //   );
 
   return (
     <>
@@ -63,9 +63,9 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
           title={t(tab)}
           data={data.items}
           headers={[
-            { header: t("ownerType"), key: "ownerType" },
-            { header: t("ownerId"), key: "ownerId" },
-            { header: t("resourceId"), key: "resourceId" },
+            { header: t("ownerType"), key: "ownerType", isSortable: true },
+            { header: t("ownerId"), key: "ownerId", isSortable: true },
+            { header: t("resourceId"), key: "resourceId", isSortable: true },
             { header: t("permissionTypes"), key: "permissionTypes" },
           ]}
           addEntityLabel={t("createAuthorization")}

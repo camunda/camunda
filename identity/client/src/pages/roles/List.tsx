@@ -68,10 +68,9 @@ const List: FC = () => {
       <EntityList
         data={roles?.items ?? []}
         headers={[
-          { header: t("roleId"), key: "roleId" },
-          { header: t("roleName"), key: "name" },
+          { header: t("roleId"), key: "roleId", isSortable: true },
+          { header: t("roleName"), key: "name", isSortable: true },
         ]}
-        sortProperty="name"
         onEntityClick={showDetails}
         addEntityLabel={t("createRole")}
         onAddEntity={addRole}

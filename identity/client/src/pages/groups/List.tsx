@@ -31,9 +31,7 @@ const List: FC = () => {
     loading,
     reload,
     success,
-    page,
-    setPage,
-    setPageSize,
+    ...paginationProps
   } = usePaginatedApi(searchGroups);
 
   console.log("groupSearchResults", groupSearchResults);
@@ -72,10 +70,9 @@ const List: FC = () => {
       <EntityList
         data={groupSearchResults == null ? [] : groupSearchResults.items}
         headers={[
-          { header: t("groupId"), key: "groupId" },
-          { header: t("groupName"), key: "name" },
+          { header: t("groupId"), key: "groupId", isSortable: true },
+          { header: t("groupName"), key: "name", isSortable: true },
         ]}
-        sortProperty="name"
         onEntityClick={showDetails}
         addEntityLabel={t("createGroup")}
         onAddEntity={addGroup}
@@ -90,12 +87,7 @@ const List: FC = () => {
           },
         ]}
         searchPlaceholder={t("searchByGroupId")}
-        setPage={setPage}
-        setPageSize={setPageSize}
-        page={{
-          ...page,
-          ...groupSearchResults?.page,
-        }}
+        {...paginationProps}
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification

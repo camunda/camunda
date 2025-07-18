@@ -80,14 +80,15 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
   type GroupsListHeaders = {
     header: string;
     key: GroupKeys;
+    isSortable?: boolean;
   }[];
 
   const groupsListHeaders: GroupsListHeaders = isCamundaGroupsEnabled
     ? [
-        { header: t("groupId"), key: "groupId" },
+        { header: t("groupId"), key: "groupId", isSortable: true },
         { header: t("groupName"), key: "name" },
       ]
-    : [{ header: t("groupId"), key: "groupId" }];
+    : [{ header: t("groupId"), key: "groupId", isSortable: true }];
 
   return (
     <>

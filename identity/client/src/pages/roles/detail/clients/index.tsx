@@ -79,8 +79,7 @@ const Clients: FC<ClientsProps> = ({ roleId }) => {
     <>
       <EntityList
         data={clients?.items}
-        headers={[{ header: t("clientId"), key: "clientId" }]}
-        sortProperty="clientId"
+        headers={[{ header: t("clientId"), key: "clientId", isSortable: true }]}
         loading={loading}
         addEntityLabel={t("assignClient")}
         onAddEntity={openAssignModal}

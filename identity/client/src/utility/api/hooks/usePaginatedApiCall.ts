@@ -10,10 +10,8 @@ import { useCallback, useEffect, useState } from "react";
 import useApiCall from "./useApiCall";
 import usePagination, { PageResult } from "./usePagination";
 
-const STATIC = {};
-
 const usePaginatedApiCall = (...props) => {
-  const { pageParams, page, setPage, setPageSize } = usePagination();
+  const { pageParams, page, setPage, setPageSize, ...rest } = usePagination();
 
   const [pageResult, setPageResult] = useState(() => ({}));
 
@@ -37,7 +35,7 @@ const usePaginatedApiCall = (...props) => {
 
   return [
     call,
-    { page: { ...page, ...pageResult }, setPage, setPageSize },
+    { page: { ...page, ...pageResult }, setPage, setPageSize, ...rest },
     result,
     reset,
   ];
