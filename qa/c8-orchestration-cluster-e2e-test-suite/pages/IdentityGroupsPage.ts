@@ -6,8 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {sleep} from 'utils/sleep';
 
 export class IdentityGroupsPage {
   private page: Page;
@@ -33,10 +34,19 @@ export class IdentityGroupsPage {
   readonly deleteGroupModalCancelButton: Locator;
   readonly deleteGroupModalDeleteButton: Locator;
   readonly emptyState: Locator;
+  readonly assignUserButton: Locator;
+  readonly searchBox: Locator;
+  readonly searchBoxResult: Locator;
+  readonly assignUserButtonModal: Locator;
+  readonly selectGroupRow: (name: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.groupsList = page.getByRole('table');
+
+    this.selectGroupRow = (name) =>
+      this.groupsList.getByRole('row', {name: name});
+
     this.createGroupButton = page.getByRole('button', {
       name: /Create( a)? group/,
     });
@@ -112,9 +122,46 @@ export class IdentityGroupsPage {
       },
     );
     this.emptyState = page.getByText('No groups created yet');
+    this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
+    this.searchBox = page.getByRole('searchbox');
+    this.searchBoxResult = page.getByRole('listitem');
+    this.assignUserButtonModal = page
+      .getByLabel('Assign user')
+      .getByRole('button', {name: 'Assign user'});
   }
 
   async navigateToGroups() {
     await this.page.goto(relativizePath(Paths.groups()));
+  }
+
+  async createGroup(groupId: string, groupName: string, description?: string) {
+    await this.createGroupButton.click();
+    await this.createGroupIdField.fill(groupId);
+    await this.createNameField.fill(groupName);
+    if (description) {
+      await this.createDescriptionField.fill(description);
+    }
+    await this.createGroupModalCreateButton.click();
+    await sleep(8000);
+  }
+
+  async assertGroupExists(groupName: string) {
+    await expect(this.selectGroupRow(groupName)).toBeVisible();
+  }
+
+  async clickGroupId(groupName: string) {
+    await this.selectGroupRow(groupName).click();
+  }
+
+  async assignUserToGroup(userName: string, userEmail: string) {
+    await this.assignUserButton.click();
+    await this.searchBox.fill(userName);
+    await this.searchBoxResult
+      .filter({
+        hasText: userEmail,
+      })
+      .click();
+    await this.assignUserButtonModal.click();
+    await sleep(8000);
   }
 }
