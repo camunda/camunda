@@ -22,6 +22,7 @@ have:
 * unit tests, quick in execution, testing components in isolation
 * integration tests, slower in execution, testing components with dependencies
 * E2E or acceptance tests, slow, testing a complete user journey or a feature end-to-end (E2E)
+* Reliability testing, validating the reliability and performance of the system/platform
 
 ![testing-pyramid](./assets/testing-pyramid.png)
 
@@ -106,3 +107,9 @@ successfully before running the tests.
 
 Acceptance tests (ATs) are mostly slow, testing a complete user journey or a feature end-to-end (E2E), covering multiple or even all components at the same time in an integrated manner.
 Details, general recommendations, and how-tos/examples of how to write them, you can find in the [acceptance test guide](./testing/acceptance.md).
+
+## Reliability testing
+
+We define reliability testing as a type of software testing and practice that validates system performance and reliability. It can thus be done over time and with injection failure scenarios (injecting chaos).
+
+Details, about the current available practices, tools, and infrastructure you can find in the [reliability testing guide](testing/reliability-testing.md).
