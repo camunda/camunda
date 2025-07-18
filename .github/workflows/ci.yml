@@ -44,6 +44,7 @@ jobs:
       camunda-docker-tests: ${{ steps.filter.outputs.camunda-docker-tests}}
       identity-frontend-tests: ${{ steps.filter.outputs.identity-frontend-tests }}
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
+      zeebe-base-module-changes: ${{ steps.filter.outputs.zeebe-base-module-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       operate-backend-changes: ${{ steps.filter.outputs.operate-backend-changes }}
       operate-frontend-changes: ${{ steps.filter.outputs.operate-frontend-changes }}
@@ -306,7 +307,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   operate-backend-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.operate-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-base-module-changes == 'true'
     name: "[UT] Operate - ${{matrix.suiteName}}"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
@@ -326,7 +327,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   optimize-backend-unit-tests:
-    if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
+    if: needs.detect-changes.outputs.optimize-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-base-module-changes == 'true'
     name: "[UT] Optimize - ${{matrix.suiteName}}"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
@@ -346,7 +347,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   tasklist-backend-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.zeebe-base-module-changes == 'true'
     name: "[UT] Tasklist - ${{matrix.suiteName}}"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
@@ -366,7 +367,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   zeebe-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    if: needs.detect-changes.outputs.zeebe-changes == 'true' || needs.detect-changes.outputs.zeebe-base-module-changes == 'true'
     name: "[UT] Zeebe - ${{matrix.component}} - ${{matrix.suiteName}}"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
