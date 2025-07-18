@@ -61,7 +61,7 @@ public class UnassignMappingFromGroupCommandImpl
   @Override
   public CamundaFuture<UnassignMappingFromGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    ArgumentUtil.ensureNotNullNorEmpty("mappingId", mappingId);
+    ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingId);
     final HttpCamundaFuture<UnassignMappingFromGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
         "/groups/" + groupId + "/mapping-rules/" + mappingId,

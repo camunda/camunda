@@ -60,7 +60,7 @@ public class AssignRoleToMappingCommandImpl
   @Override
   public CamundaFuture<AssignRoleToMappingResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-    ArgumentUtil.ensureNotNullNorEmpty("mappingId", mappingId);
+    ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingId);
     final HttpCamundaFuture<AssignRoleToMappingResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
         "/roles/" + roleId + "/mapping-rules/" + mappingId,
