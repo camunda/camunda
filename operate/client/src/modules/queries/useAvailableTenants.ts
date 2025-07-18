@@ -33,6 +33,8 @@ export const useAvailableTenants = () => {
     },
     gcTime: Infinity,
     staleTime: Infinity,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false,
   });
 
   return data ?? {};
