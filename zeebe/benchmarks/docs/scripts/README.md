@@ -1,17 +1,23 @@
 # Scripts
 
-This folder contains several scripts we wrote in order to test or debug things.
+This folder contains several scripts we wrote to test or debug things.
 
 ## Profile.sh
 
 **Usage:**
-Run executeProfiling.sh with a pod name. It will run in your current namespace and copy two scripts to the given pod.
+Run executeProfiling.sh with a pod name. It will download the async profiler package, run in your current namespace, copy necessary binaries to the pod, run the async profiler, and copy the resulting flamegraph back to your local disk.
 
-The first script `installProfiler.sh` will install all necessary dependencies to run the async profiler. The second script
-`runProfiler.sh` will execute the profiler. The split was done, to be able to skip the installation phase.
+Example:
 
-If you run `executeProfiling` it makes sure that both scripts are executed on the given pod and copies at the end the resulting
-flamegraph to your current working directory.
+```
+ $ ./executeProfiling.sh release-8-8-0-alpha6-zeebe-2
+...
+Profiling for 100 seconds
+Done
++ kubectl cp release-8-8-0-alpha6-zeebe-2:/usr/local/camunda/data/flamegraph-2025-07-11_19-02-52.html release-8-8-0-alpha6-zeebe-2-flamegraph-2025-07-11_19-02-52.html
+tar: Removing leading `/' from member names
+
+```
 
 ## PartitionDistribution.sh
 
