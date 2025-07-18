@@ -126,6 +126,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     //noinspection resource
     withBean("config", brokerProperties, BrokerBasedProperties.class)
         .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
+        .withProperty(
+            AuthenticationProperties.API_UNPROTECTED,
+            securityConfig.getAuthentication().getUnprotectedApi())
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)

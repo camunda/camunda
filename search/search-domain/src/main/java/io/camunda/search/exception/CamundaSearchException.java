@@ -53,6 +53,7 @@ public class CamundaSearchException extends RuntimeException {
     SECONDARY_STORAGE_NOT_SET,
     SEARCH_CLIENT_FAILED,
     SEARCH_SERVER_FAILED,
-    UNKNOWN
+    UNKNOWN,
+    FORBIDDEN
   }
 }

@@ -100,6 +100,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 List.of(DEFAULT_MAPPING_ID)));
 
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+    withProperty(
+        AuthenticationProperties.API_UNPROTECTED,
+        securityConfig.getAuthentication().getUnprotectedApi());
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);
@@ -196,6 +199,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   /** Enables multi-tenancy in the security configuration. */
   public TestStandaloneBroker withMultiTenancyEnabled() {
+    withProperty("camunda.security.multiTenancy.enabled", "true");
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setEnabled(true));
   }
 

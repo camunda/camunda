@@ -18,7 +18,7 @@ public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticati
   private final CamundaAuthenticationConverter<Authentication> converter;
 
   public DefaultCamundaAuthenticationProvider(
-      final CamundaAuthenticationConverter<Authentication> converter) {
+      final CamundaAuthenticationDelegatingConverter converter) {
     this.converter = converter;
   }
 

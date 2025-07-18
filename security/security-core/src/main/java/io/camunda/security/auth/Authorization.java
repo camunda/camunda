@@ -146,6 +146,10 @@ public record Authorization(
       return resourceType(BATCH_OPERATION);
     }
 
+    public Builder resourceId(final String resourceId) {
+      return resourceIds(List.of(resourceId));
+    }
+
     public Builder resourceIds(final List<String> resourceIds) {
       this.resourceIds = resourceIds;
       return this;

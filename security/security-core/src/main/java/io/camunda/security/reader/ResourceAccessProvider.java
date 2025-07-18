@@ -5,21 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.auth;
+package io.camunda.security.reader;
 
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.reader.AuthorizationCheck;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 
 /** Strategy to apply authorization to a search query. */
-public interface AuthorizationQueryStrategy {
+public interface ResourceAccessProvider {
 
-  AuthorizationQueryStrategy NONE = (securityContext) -> AuthorizationCheck.disabled();
+  ResourceAccessProvider NONE = (authentication, authorization) -> ResourceAccess.wildcard(null);
 
   /**
    * Apply authorization to a search query.
    *
-   * @param securityContext
    * @return the search query request with authorization applied
    */
-  AuthorizationCheck resolveAuthorizationCheck(SecurityContext securityContext);
+  ResourceAccess resolveResourceAccess(
+      final CamundaAuthentication authentication, final Authorization requiredAuthorization);
 }

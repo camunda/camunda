@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms;
 
-import io.camunda.db.rdbms.read.service.AuthorizationReader;
+import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemReader;
 import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
-  private final AuthorizationReader authorizationReader;
+  private final AuthorizationDbReader authorizationReader;
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionInstanceReader decisionInstanceReader;
   private final DecisionRequirementsReader decisionRequirementsReader;
@@ -62,7 +62,7 @@ public class RdbmsService {
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
-      final AuthorizationReader authorizationReader,
+      final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionReader decisionDefinitionReader,
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
@@ -107,7 +107,7 @@ public class RdbmsService {
     this.usageMetricReader = usageMetricReader;
   }
 
-  public AuthorizationReader getAuthorizationReader() {
+  public AuthorizationDbReader getAuthorizationReader() {
     return authorizationReader;
   }
 

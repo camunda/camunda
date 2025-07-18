@@ -7,11 +7,8 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
-import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
-import io.camunda.search.clients.auth.DocumentTenantQueryStrategy;
-import io.camunda.search.clients.auth.TenantQueryStrategy;
 import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.search.clients.reader.SearchEntityReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
@@ -38,8 +35,12 @@ import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.exception.ErrorMessages;
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
+import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
@@ -61,125 +62,109 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.security.reader.ResourceAccessController;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DocumentBasedSearchClients implements SearchClientsProxy {
 
-  private final SearchClientReaders readers;
-  private final AuthorizationQueryStrategy authorizationQueryStrategy;
-  private final TenantQueryStrategy tenantQueryStrategy;
-  private final SecurityContext securityContext;
+  private static final Logger LOG = LoggerFactory.getLogger(DocumentBasedSearchClients.class);
 
-  public DocumentBasedSearchClients(final SearchClientReaders readers) {
-    this.readers = readers;
-    authorizationQueryStrategy =
-        new DocumentAuthorizationQueryStrategy(new AuthorizationChecker(this));
-    tenantQueryStrategy = new DocumentTenantQueryStrategy();
-    securityContext = null;
-  }
+  private final SearchClientReaders readers;
+  private final ResourceAccessController resourceAccessController;
+  private final SecurityContext securityContext;
 
   public DocumentBasedSearchClients(
       final SearchClientReaders readers,
-      final AuthorizationQueryStrategy authorizationQueryStrategy,
-      final TenantQueryStrategy tenantQueryStrategy,
+      final ResourceAccessController resourceAccessController,
       final SecurityContext securityContext) {
     this.readers = readers;
-    this.authorizationQueryStrategy = authorizationQueryStrategy;
-    this.tenantQueryStrategy = tenantQueryStrategy;
+    this.resourceAccessController = resourceAccessController;
     this.securityContext = securityContext;
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.authorizationReader().search(query, access));
+    return doSearchWithReader(readers.authorizationReader(), query);
   }
 
   @Override
   public SearchQueryResult<SequenceFlowEntity> searchSequenceFlows(final SequenceFlowQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.sequenceFlowReader().search(query, access));
+    return doSearchWithReader(readers.sequenceFlowReader(), query);
   }
 
   @Override
   public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
       final MessageSubscriptionQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.messageSubscriptionReader().search(query, access));
+    return doSearchWithReader(readers.messageSubscriptionReader(), query);
   }
 
   @Override
   public DocumentBasedSearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new DocumentBasedSearchClients(
-        readers, authorizationQueryStrategy, tenantQueryStrategy, securityContext);
+    return new DocumentBasedSearchClients(readers, resourceAccessController, securityContext);
   }
 
   @Override
   public SearchQueryResult<MappingRuleEntity> searchMappingRules(
       final MappingRuleQuery mappingQuery) {
-    return executeWithResourceAccessChecks(
-        access -> readers.mappingRuleReader().search(mappingQuery, access));
+    return doSearchWithReader(readers.mappingRuleReader(), mappingQuery);
   }
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.decisionDefinitionReader().search(query, access));
+    return doSearchWithReader(readers.decisionDefinitionReader(), query);
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
       final DecisionInstanceQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.decisionInstanceReader().search(query, access));
+    return doSearchWithReader(readers.decisionInstanceReader(), query);
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.decisionRequirementsReader().search(query, access));
+    return doSearchWithReader(readers.decisionRequirementsReader(), query);
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.flowNodeInstanceReader().search(query, access));
+    return doSearchWithReader(readers.flowNodeInstanceReader(), query);
   }
 
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery query) {
-    return executeWithResourceAccessChecks(access -> readers.formReader().search(query, access));
+    return doSearchWithReader(readers.formReader(), query);
   }
 
   @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.incidentReader().search(query, access));
+    return doSearchWithReader(readers.incidentReader(), query);
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
-      final ProcessDefinitionQuery filter) {
-    return executeWithResourceAccessChecks(
-        access -> readers.processDefinitionReader().search(filter, access));
+      final ProcessDefinitionQuery query) {
+    return doSearchWithReader(readers.processDefinitionReader(), query);
   }
 
   @Override
   public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
-    return executeWithResourceAccessChecks(
+    return doReadWithResourceAccessController(
         access ->
             readers
                 .processDefinitionStatisticsReader()
@@ -188,15 +173,14 @@ public class DocumentBasedSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
-      final ProcessInstanceQuery filter) {
-    return executeWithResourceAccessChecks(
-        access -> readers.processInstanceReader().search(filter, access));
+      final ProcessInstanceQuery query) {
+    return doSearchWithReader(readers.processInstanceReader(), query);
   }
 
   @Override
   public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
       final long processInstanceKey) {
-    return executeWithResourceAccessChecks(
+    return doReadWithResourceAccessController(
         access ->
             readers
                 .processInstanceStatisticsReader()
@@ -208,57 +192,52 @@ public class DocumentBasedSearchClients implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
-    return executeWithResourceAccessChecks(access -> readers.jobReader().search(query, access));
+    return doSearchWithReader(readers.jobReader(), query);
   }
 
   @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
-    return executeWithResourceAccessChecks(access -> readers.roleReader().search(query, access));
+    return doSearchWithReader(readers.roleReader(), query);
   }
 
   @Override
   public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.roleMemberReader().search(query, access));
+    return doSearchWithReader(readers.roleMemberReader(), query);
   }
 
   @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
-    return executeWithResourceAccessChecks(access -> readers.tenantReader().search(query, access));
+    return doSearchWithReader(readers.tenantReader(), query);
   }
 
   @Override
   public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.tenantMemberReader().search(query, access));
+    return doSearchWithReader(readers.tenantMemberReader(), query);
   }
 
   @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
-    return executeWithResourceAccessChecks(access -> readers.groupReader().search(query, access));
+    return doSearchWithReader(readers.groupReader(), query);
   }
 
   @Override
   public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.groupMemberReader().search(query, access));
+    return doSearchWithReader(readers.groupMemberReader(), query);
   }
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
-    return executeWithResourceAccessChecks(access -> readers.userReader().search(query, access));
+    return doSearchWithReader(readers.userReader(), query);
   }
 
   @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.userTaskReader().search(query, access));
+    return doSearchWithReader(readers.userTaskReader(), query);
   }
 
   @Override
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.variableReader().search(query, access));
+    return doSearchWithReader(readers.variableReader(), query);
   }
 
   @Override
@@ -289,10 +268,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy {
                                 .endTime(query.filter().endTime())
                                 .events(event))
                     .unlimited());
-    return executeWithResourceAccessChecks(
-            access -> readers.usageMetricsReader().search(finalQuery, access))
-        .items()
-        .stream()
+    return doSearchWithReader(readers.usageMetricsReader(), finalQuery).items().stream()
         .map(UsageMetricsEntity::value)
         .distinct()
         .count();
@@ -301,21 +277,59 @@ public class DocumentBasedSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<BatchOperationEntity> searchBatchOperations(
       final BatchOperationQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.batchOperationReader().search(query, access));
+    return doSearchWithReader(readers.batchOperationReader(), query);
   }
 
   @Override
   public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final BatchOperationItemQuery query) {
-    return executeWithResourceAccessChecks(
-        access -> readers.batchOperationItemReader().search(query, access));
+    return doSearchWithReader(readers.batchOperationItemReader(), query);
   }
 
-  protected <T> T executeWithResourceAccessChecks(final Function<ResourceAccessChecks, T> applier) {
-    final var authorizationCheck =
-        authorizationQueryStrategy.resolveAuthorizationCheck(securityContext);
-    final var tenantCheck = tenantQueryStrategy.resolveTenantCheck(securityContext);
-    return applier.apply(ResourceAccessChecks.of(authorizationCheck, tenantCheck));
+  protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearchWithReader(
+      final SearchEntityReader<T, Q> reader, final Q query) {
+    return withResultTypeCheck(reader, query);
+  }
+
+  protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> withResultTypeCheck(
+      final SearchEntityReader<T, Q> reader, final Q query) {
+    return ensureSingeResultIfNecessary(() -> doSearch(reader, query), query);
+  }
+
+  protected <T> SearchQueryResult<T> ensureSingeResultIfNecessary(
+      final Supplier<SearchQueryResult<T>> resultSupplier, final TypedSearchQuery<?, ?> query) {
+    final var result = resultSupplier.get();
+    if (SearchQueryResultType.SINGLE_RESULT.equals(query.page().resultType())) {
+      if (result.items().isEmpty()) {
+        throw new CamundaSearchException(
+            ErrorMessages.ERROR_SINGLE_RESULT_NOT_FOUND.formatted(query),
+            CamundaSearchException.Reason.NOT_FOUND);
+      } else if (result.items().size() > 1) {
+        throw new CamundaSearchException(
+            ErrorMessages.ERROR_SINGLE_RESULT_NOT_UNIQUE.formatted(query),
+            CamundaSearchException.Reason.NOT_UNIQUE);
+      }
+    }
+    return result;
+  }
+
+  protected <T, Q extends TypedSearchQuery<?, ?>> SearchQueryResult<T> doSearch(
+      final SearchEntityReader<T, Q> reader, final Q query) {
+    try {
+      return doReadWithResourceAccessController(a -> reader.search(query, a));
+    } catch (final ResourceAccessDeniedException denied) {
+      final var missingAuthorization = denied.getMissingAuthorization();
+      LOG.trace(
+          "Unauthorized to perform a Search Query with permission '{}' on resource '{}', returning an empty search query result",
+          missingAuthorization.permissionType(),
+          missingAuthorization.resourceType(),
+          denied);
+      return SearchQueryResult.empty();
+    }
+  }
+
+  protected <T> T doReadWithResourceAccessController(
+      final Function<ResourceAccessChecks, T> applier) {
+    return resourceAccessController.doSearch(securityContext, applier);
   }
 }

@@ -30,6 +30,7 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
@@ -328,9 +329,8 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public AuthorizationChecker authorizationChecker(
-      final AuthorizationSearchClient authorizationSearchClient) {
-    return new AuthorizationChecker(authorizationSearchClient);
+  public AuthorizationChecker authorizationChecker(final AuthorizationReader authorizationReader) {
+    return new AuthorizationChecker(authorizationReader);
   }
 
   @Bean
