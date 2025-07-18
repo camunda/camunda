@@ -20,6 +20,7 @@ import org.opensearch.client.opensearch._types.OpType;
 import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
 import org.opensearch.client.opensearch.core.ReindexRequest;
 import org.opensearch.client.opensearch.indices.Alias;
+import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +42,11 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
             .build();
 
     try {
-      LOG.info("Reindexing [{}] into [{}]", src, dest);
-      client.reindex(reindexRequest);
+      final var existRequest = new ExistsRequest.Builder().index(src).build();
+      if (client.indices().exists(existRequest).value()) {
+        LOG.info("Reindexing [{}] into [{}]", src, dest);
+        client.reindex(reindexRequest);
+      }
       return new ReindexResult(true, src, dest, null);
     } catch (final IOException e) {
       LOG.error("Failed to reindex [{}] into [{}]", src, dest, e);
