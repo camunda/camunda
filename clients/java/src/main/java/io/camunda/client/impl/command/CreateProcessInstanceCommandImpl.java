@@ -139,9 +139,7 @@ public final class CreateProcessInstanceCommandImpl
     grpcRequestObjectBuilder.addRuntimeInstructions(
         GatewayOuterClass.ProcessInstanceCreationRuntimeInstruction.newBuilder()
             .setSuspend(
-                SuspendProcessInstanceInstruction.newBuilder()
-                    .setAfterElementId(elementId)
-                    .build()));
+                SuspendProcessInstanceInstruction.newBuilder().setAfterElementId(elementId)));
     httpRequestObject.addRuntimeInstructionsItem(
         new ProcessInstanceCreationSuspendInstruction().afterElementId(elementId));
     return this;
