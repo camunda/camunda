@@ -21,7 +21,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class RolesByMappingIntegrationTest {
+public class RolesByMappingRuleIntegrationTest {
 
   private static CamundaClient camundaClient;
 
