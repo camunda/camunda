@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.util.collection;
 
+import java.util.Map;
+
 public final class Tuple<L, R> {
 
   private L left;
@@ -35,6 +37,11 @@ public final class Tuple<L, R> {
 
   public void setLeft(final L left) {
     this.left = left;
+  }
+
+  /** Convenience method to use Tuple in Map.ofEntry. */
+  public Map.Entry<L, R> toEntry() {
+    return Map.entry(left, right);
   }
 
   @Override

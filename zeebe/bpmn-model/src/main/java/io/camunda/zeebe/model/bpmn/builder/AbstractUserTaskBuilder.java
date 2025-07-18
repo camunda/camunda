@@ -38,7 +38,8 @@ import java.util.function.Consumer;
  * @author Sebastian Menski
  */
 public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<B>>
-    extends AbstractTaskBuilder<B, UserTask> implements ZeebeUserTaskPropertiesBuilder<B> {
+    extends AbstractTaskBuilder<B, UserTask>
+    implements ZeebeUserTaskPropertiesBuilder<B>, BuilderWithTaskHeaders<B> {
 
   protected AbstractUserTaskBuilder(
       final BpmnModelInstance modelInstance, final UserTask element, final Class<?> selfType) {
@@ -210,6 +211,7 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     return zeebeTaskPriority(asZeebeExpression(expression));
   }
 
+  @Override
   public B zeebeTaskHeader(final String key, final String value) {
     final ZeebeTaskHeaders taskHeaders = getCreateSingleExtensionElement(ZeebeTaskHeaders.class);
     final ZeebeHeader header = createChild(taskHeaders, ZeebeHeader.class);

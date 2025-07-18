@@ -25,7 +25,8 @@ import io.camunda.zeebe.model.bpmn.instance.Task;
  */
 public abstract class AbstractJobWorkerTaskBuilder<
         B extends AbstractJobWorkerTaskBuilder<B, T>, T extends Task>
-    extends AbstractTaskBuilder<B, T> implements ZeebeJobWorkerElementBuilder<B> {
+    extends AbstractTaskBuilder<B, T>
+    implements ZeebeJobWorkerElementBuilder<B>, BuilderWithTaskHeaders<B> {
 
   private final ZeebeJobWorkerPropertiesBuilder<B> jobWorkerPropertiesBuilder;
 
