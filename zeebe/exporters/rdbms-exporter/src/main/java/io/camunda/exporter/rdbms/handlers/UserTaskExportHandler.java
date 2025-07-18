@@ -29,9 +29,13 @@ import java.time.OffsetDateTime;
 import java.util.EnumSet;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Based on UserTaskRecordToTaskEntityMapper */
 public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(UserTaskExportHandler.class);
 
   private static final Set<UserTaskIntent> EXPORTABLE_INTENTS =
       EnumSet.of(
@@ -120,11 +124,11 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                   .build());
       case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
           userTaskWriter.updateState(value.getUserTaskKey(), UserTaskState.CREATED);
-      default -> {
-        // All currently supported intents are handled explicitly above.
-        // If new intent is added to EXPORTABLE_INTENTS but not handled here,
-        // this default case ensures it is ignored until explicitly supported.
-      }
+      default ->
+          // All currently supported intents are handled explicitly above.
+          // If new intent is added to EXPORTABLE_INTENTS but not handled here,
+          // this default case ensures it is ignored until explicitly supported.
+          LOG.warn("Unexpected intent {} for user task record", record.getIntent());
     }
   }
 
