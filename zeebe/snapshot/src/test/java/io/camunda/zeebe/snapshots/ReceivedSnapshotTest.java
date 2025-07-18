@@ -128,7 +128,7 @@ public class ReceivedSnapshotTest {
     final var receivedSnapshot = receiveSnapshot(persistedSnapshot).persist().join();
 
     // when
-    receiverSnapshotStore.purgePendingSnapshots().join();
+    receiverSnapshotStore.abortPendingSnapshots().join();
 
     // then
     assertThat(receivedSnapshot.getPath()).as("the received snapshot still exists").exists();

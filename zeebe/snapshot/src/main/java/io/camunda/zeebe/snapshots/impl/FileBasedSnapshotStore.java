@@ -94,9 +94,9 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
-  public ActorFuture<Void> purgePendingSnapshots() {
+  public ActorFuture<Void> abortPendingSnapshots() {
     final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
-    return snapshotStore.purgePendingSnapshots();
+    return snapshotStore.abortPendingSnapshots();
   }
 
   @Override

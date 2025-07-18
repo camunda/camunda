@@ -40,7 +40,6 @@ import org.junit.rules.TemporaryFolder;
 
 public class FileBasedSnapshotStoreTest {
   private static final String SNAPSHOT_DIRECTORY = "snapshots";
-  private static final String PENDING_DIRECTORY = "pending";
 
   private static final String SNAPSHOT_CONTENT_FILE_NAME = "file1.txt";
   private static final String SNAPSHOT_CONTENT = "this is the content";
@@ -50,7 +49,6 @@ public class FileBasedSnapshotStoreTest {
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
 
   private Path snapshotsDir;
-  private Path pendingSnapshotsDir;
   private FileBasedSnapshotStore snapshotStore;
   private Path rootDirectory;
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -59,7 +57,6 @@ public class FileBasedSnapshotStoreTest {
   public void before() throws IOException {
     rootDirectory = temporaryFolder.newFolder("snapshots").toPath();
     snapshotsDir = rootDirectory.resolve(SNAPSHOT_DIRECTORY);
-    pendingSnapshotsDir = rootDirectory.resolve(PENDING_DIRECTORY);
     snapshotStore = createStore(rootDirectory);
   }
 
@@ -80,7 +77,9 @@ public class FileBasedSnapshotStoreTest {
 
     // then
     assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
-    assertThat(root.resolve(FileBasedSnapshotStoreImpl.PENDING_DIRECTORY)).exists().isDirectory();
+    assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_BOOTSTRAP_DIRECTORY))
+        .exists()
+        .isDirectory();
     assertThat(store.getLatestSnapshot()).isEmpty();
   }
 
@@ -92,7 +91,6 @@ public class FileBasedSnapshotStoreTest {
     snapshotStore.delete().join();
 
     // then
-    assertThat(pendingSnapshotsDir).doesNotExist();
     assertThat(snapshotsDir).doesNotExist();
   }
 
@@ -284,15 +282,15 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldPurgePendingSnapshots() {
+  public void shouldAbortPendingSnapshots() {
     // given
     takeTransientSnapshot();
 
     // when
-    snapshotStore.purgePendingSnapshots().join();
+    snapshotStore.abortPendingSnapshots().join();
 
     // then
-    assertThat(pendingSnapshotsDir).isEmptyDirectory();
+    assertThat(snapshotsDir).isEmptyDirectory();
   }
 
   @Test

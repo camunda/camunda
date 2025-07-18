@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
@@ -48,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotStoreImpl {
   public static final String SNAPSHOTS_DIRECTORY = "snapshots";
-  public static final String PENDING_DIRECTORY = "pending";
   static final int VERSION = 1;
   // When sorted with other files in the snapshot, the metadata file must be ordered at the end.
   // This is required for backward compatibility of checksum calculation. Otherwise, the older
@@ -66,8 +66,6 @@ public final class FileBasedSnapshotStoreImpl {
   private final int brokerId;
   // the root snapshotsDirectory where all snapshots should be stored
   private final Path snapshotsDirectory;
-  // the root snapshotsDirectory when pending snapshots should be stored
-  private final Path pendingDirectory;
   // keeps track of all snapshot modification listeners
   private final Set<PersistedSnapshotListener> listeners;
   private final SnapshotMetrics snapshotMetrics;
@@ -92,14 +90,12 @@ public final class FileBasedSnapshotStoreImpl {
     this.brokerId = brokerId;
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     bootstrapSnapshotsDirectory = root.resolve(SNAPSHOTS_BOOTSTRAP_DIRECTORY);
-    pendingDirectory = root.resolve(PENDING_DIRECTORY);
     this.actor = actor;
     this.snapshotMetrics = snapshotMetrics;
 
     try {
       FileUtil.ensureDirectoryExists(snapshotsDirectory);
       FileUtil.ensureDirectoryExists(bootstrapSnapshotsDirectory);
-      FileUtil.ensureDirectoryExists(pendingDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to create snapshot directories", e);
     }
@@ -112,7 +108,6 @@ public final class FileBasedSnapshotStoreImpl {
 
   public void start() {
     setLatestSnapshot(loadLatestSnapshot(snapshotsDirectory));
-    purgePendingSnapshotsDirectory();
   }
 
   public void close() {
@@ -230,16 +225,6 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
-  private void purgePendingSnapshotsDirectory() {
-    try (final var files = Files.list(pendingDirectory)) {
-      files.filter(Files::isDirectory).forEach(this::purgePendingSnapshot);
-    } catch (final IOException e) {
-      LOGGER.error(
-          "Failed to purge pending snapshots, which may result in unnecessary disk usage and should be monitored",
-          e);
-    }
-  }
-
   public boolean hasSnapshotId(final String id) {
     final var optLatestSnapshot = getLatestSnapshot();
 
@@ -275,7 +260,7 @@ public final class FileBasedSnapshotStoreImpl {
                 .orElse(0L));
   }
 
-  public ActorFuture<Void> purgePendingSnapshots() {
+  public ActorFuture<Void> abortPendingSnapshots() {
     final CompletableActorFuture<Void> abortFuture = new CompletableActorFuture<>();
     actor.run(
         () -> {
@@ -317,12 +302,6 @@ public final class FileBasedSnapshotStoreImpl {
             throw new UncheckedIOException(e);
           }
 
-          try {
-            LOGGER.debug("DELETE FOLDER {}", pendingDirectory);
-            deleteFolder(pendingDirectory);
-          } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-          }
           return null;
         });
   }
@@ -396,6 +375,7 @@ public final class FileBasedSnapshotStoreImpl {
 
     final var newSnapshotId =
         new FileBasedSnapshotId(index, term, processedPosition, exportedPosition, brokerId);
+
     final FileBasedSnapshot currentSnapshot = currentPersistedSnapshotRef.get();
     if (currentSnapshot != null && currentSnapshot.getSnapshotId().compareTo(newSnapshotId) == 0) {
       final String error =
@@ -413,6 +393,7 @@ public final class FileBasedSnapshotStoreImpl {
     addPendingSnapshot(newPendingSnapshot);
     return Either.right(newPendingSnapshot);
   }
+
 
   private void addPendingSnapshot(final PersistableSnapshot pendingSnapshot) {
     final Runnable action = () -> pendingSnapshots.add(pendingSnapshot);
@@ -444,42 +425,14 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
-  private void purgePendingSnapshots(final SnapshotId cutoffSnapshot) {
+  private void abortPendingSnapshots(final SnapshotId cutoffSnapshot) {
     LOGGER.trace(
-        "Search for orphaned snapshots below oldest valid snapshot with index {} in {}",
-        cutoffSnapshot.getSnapshotIdAsString(),
-        pendingDirectory);
+        "Search for orphaned snapshots below oldest valid snapshot with index {}",
+        cutoffSnapshot.getSnapshotIdAsString());
 
     pendingSnapshots.stream()
         .filter(pendingSnapshot -> pendingSnapshot.snapshotId().compareTo(cutoffSnapshot) < 0)
         .forEach(PersistableSnapshot::abort);
-
-    // If there are orphaned directories if a previous abort failed, delete them explicitly
-    try (final var pendingSnapshotsDirectories = Files.newDirectoryStream(pendingDirectory)) {
-      for (final var pendingSnapshot : pendingSnapshotsDirectories) {
-        purgePendingSnapshot(cutoffSnapshot, pendingSnapshot);
-      }
-    } catch (final IOException e) {
-      LOGGER.warn(
-          "Failed to delete orphaned snapshots, could not list pending directory {}",
-          pendingDirectory,
-          e);
-    }
-  }
-
-  private void purgePendingSnapshot(final SnapshotId cutoffIndex, final Path pendingSnapshot) {
-    final var optionalMetadata = FileBasedSnapshotId.ofPath(pendingSnapshot);
-    if (optionalMetadata.isPresent() && optionalMetadata.get().compareTo(cutoffIndex) < 0) {
-      try {
-        deleteFolder(pendingSnapshot);
-        LOGGER.debug("Deleted orphaned snapshot {}", pendingSnapshot);
-      } catch (final IOException e) {
-        LOGGER.warn(
-            "Failed to delete orphaned snapshot {}, risk using unnecessary disk space",
-            pendingSnapshot,
-            e);
-      }
-    }
   }
 
   private boolean isCurrentSnapshotNewer(final FileBasedSnapshotId snapshotId) {
@@ -504,7 +457,7 @@ public final class FileBasedSnapshotStoreImpl {
           currentPersistedSnapshotId,
           snapshotId);
 
-      purgePendingSnapshots(currentPersistedSnapshotId);
+      abortPendingSnapshots(currentPersistedSnapshotId);
       return currentPersistedSnapshot;
     }
 
@@ -593,7 +546,7 @@ public final class FileBasedSnapshotStoreImpl {
           LOGGER.debug("Deleting previous snapshot {}", previousSnapshot.getId());
           previousSnapshot.delete();
         });
-    purgePendingSnapshots(newPersistedSnapshot.getSnapshotId());
+    abortPendingSnapshots(newPersistedSnapshot.getSnapshotId());
   }
 
   private void rollbackPartialSnapshot(final Path destination) {
@@ -605,15 +558,6 @@ public final class FileBasedSnapshotStoreImpl {
               + "partial snapshot",
           destination,
           ioException);
-    }
-  }
-
-  private void purgePendingSnapshot(final Path pendingSnapshot) {
-    try {
-      deleteFolder(pendingSnapshot);
-      LOGGER.debug("Deleted not completed (orphaned) snapshot {}", pendingSnapshot);
-    } catch (final IOException e) {
-      LOGGER.warn("Failed to delete not completed (orphaned) snapshot {}", pendingSnapshot, e);
     }
   }
 
@@ -644,8 +588,6 @@ public final class FileBasedSnapshotStoreImpl {
     return "FileBasedSnapshotStore{"
         + "snapshotsDirectory="
         + snapshotsDirectory
-        + ", pendingDirectory="
-        + pendingDirectory
         + ", listeners="
         + listeners
         + ", currentPersistedSnapshotRef="
