@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-class AssignMappingToTenantTest {
+class AssignMappingRuleToTenantTest {
 
   private static final String TENANT_ID = "tenantId";
   private static final String CLAIM_NAME = "claimName";
@@ -112,7 +112,7 @@ class AssignMappingToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(
-            "Expected to add mapping with ID '%s' to tenant with ID '%s', but the mapping doesn't exist."
+            "Expected to add mapping_rule with ID '%s' to tenant with ID '%s', but the mapping_rule doesn't exist."
                 .formatted(invalidMappingId, TENANT_ID));
   }
 
@@ -133,7 +133,7 @@ class AssignMappingToTenantTest {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to add mapping with ID '%s' to tenant with ID '%s', but the mapping is already assigned to the tenant."
+            "Expected to add mapping_rule with ID '%s' to tenant with ID '%s', but the mapping_rule is already assigned to the tenant."
                 .formatted(ID, TENANT_ID));
   }
 }
