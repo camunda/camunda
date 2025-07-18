@@ -15,7 +15,7 @@ import { searchRoles } from "src/utility/api/roles";
 import useTranslate from "src/utility/localization";
 import OwnerSelection from "./OwnerSelection";
 import TextField from "src/components/form/TextField";
-import { isOIDC } from "src/configuration";
+import { isCamundaGroupsEnabled, isOIDC } from "src/configuration";
 
 type SelectionProps = {
   type: OwnerType;
@@ -49,13 +49,24 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
         />
       );
     case OwnerType.GROUP:
+      if (isCamundaGroupsEnabled) {
+        return (
+          <OwnerSelection
+            id="groupSelection"
+            onChange={onChange}
+            searchFn={searchGroups}
+            getId={(group) => group.groupId}
+            itemToString={(group) => group.name || group.groupId}
+          />
+        );
+      }
       return (
-        <OwnerSelection
-          id="groupSelection"
+        <TextField
+          value={ownerId}
+          label={t("groupId")}
           onChange={onChange}
-          searchFn={searchGroups}
-          getId={(group) => group.groupId}
-          itemToString={(group) => group.name || group.groupId}
+          placeholder={t("enterGroupId")}
+          type="text"
         />
       );
     case OwnerType.MAPPING:

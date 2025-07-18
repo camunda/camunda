@@ -7,13 +7,13 @@
  */
 
 import { FC, useEffect, useState } from "react";
+import styled from "styled-components";
 import { Tag } from "@carbon/react";
 import { UseEntityModalCustomProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApi, useApiCall } from "src/utility/api/hooks";
 import { searchGroups, Group } from "src/utility/api/groups";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignTenantGroup, Tenant } from "src/utility/api/tenants";
@@ -24,13 +24,14 @@ const SelectedGroups = styled.div`
 
 const AssignGroupsModal: FC<
   UseEntityModalCustomProps<
-    { id: Tenant["tenantKey"] },
+    { tenantId: Tenant["tenantId"] },
     { assignedGroups: Group[] }
   >
-> = ({ entity: tenant, assignedGroups, onSuccess, open, onClose }) => {
-  const { t, Translate } = useTranslate("tenants");
+> = ({ entity: { tenantId }, assignedGroups, onSuccess, open, onClose }) => {
+  const { t } = useTranslate("tenants");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
   const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
+  const [currentInputValue, setCurrentInputValue] = useState("");
 
   const {
     data: groupSearchResults,
@@ -45,11 +46,17 @@ const AssignGroupsModal: FC<
     groupSearchResults?.items.filter(
       ({ groupId }) =>
         !assignedGroups.some((group) => group.groupId === groupId) &&
-        !selectedGroups.some((group) => group.groupId === groupId),
+        !selectedGroups.some((group) => group.groupId === groupId) &&
+        groupId.toLowerCase().includes(currentInputValue.toLowerCase()),
     ) || [];
+
+  const handleDropdownChange = (value: string) => {
+    setCurrentInputValue(value);
+  };
 
   const onSelectGroup = (group: Group) => {
     setSelectedGroups([...selectedGroups, group]);
+    setCurrentInputValue("");
   };
 
   const onUnselectGroup =
@@ -60,7 +67,7 @@ const AssignGroupsModal: FC<
       );
     };
 
-  const canSubmit = tenant && selectedGroups.length;
+  const canSubmit = tenantId && selectedGroups.length && !loadingAssignGroup;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -69,7 +76,7 @@ const AssignGroupsModal: FC<
 
     const results = await Promise.all(
       selectedGroups.map(({ groupId }) =>
-        callAssignGroup({ groupId, tenantId: tenant.id }),
+        callAssignGroup({ groupId, tenantId }),
       ),
     );
 
@@ -83,6 +90,7 @@ const AssignGroupsModal: FC<
   useEffect(() => {
     if (open) {
       setSelectedGroups([]);
+      setCurrentInputValue("");
     }
   }, [open]);
 
@@ -98,11 +106,7 @@ const AssignGroupsModal: FC<
       onClose={onClose}
       overflowVisible
     >
-      <p>
-        <Translate i18nKey="searchAndAssignGroupToTenant">
-          Search and assign group to tenant
-        </Translate>
-      </p>
+      <p>{t("searchAndAssignGroupToTenant")}</p>
       {selectedGroups.length > 0 && (
         <SelectedGroups>
           {selectedGroups.map((group) => (
@@ -125,6 +129,7 @@ const AssignGroupsModal: FC<
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByGroupId")}
         onSelect={onSelectGroup}
+        onChange={handleDropdownChange}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification

@@ -14,7 +14,7 @@ import Roles from "src/pages/roles";
 import Tenants from "src/pages/tenants";
 import MappingRules from "src/pages/mapping-rules";
 import Authorizations from "src/pages/authorizations";
-import { isOIDC, isInternalGroupsEnabled } from "src/configuration";
+import { isOIDC, isCamundaGroupsEnabled } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
 
 export const useGlobalRoutes = () => {
@@ -39,7 +39,7 @@ export const useGlobalRoutes = () => {
         },
       ];
 
-  const internalGroupsDependentRoutes = isInternalGroupsEnabled
+  const camundaGroupsDependentRoutes = isCamundaGroupsEnabled
     ? [
         {
           path: `${Paths.groups()}/*`,
@@ -52,7 +52,7 @@ export const useGlobalRoutes = () => {
 
   const routes = [
     ...OIDCDependentRoutes,
-    ...internalGroupsDependentRoutes,
+    ...camundaGroupsDependentRoutes,
     {
       path: `${Paths.roles()}/*`,
       key: Paths.roles(),

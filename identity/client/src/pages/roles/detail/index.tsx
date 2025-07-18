@@ -100,7 +100,7 @@ const Details: FC = () => {
                   ? [
                       {
                         key: "mapping-rules",
-                        label: t("mapping-rules"),
+                        label: t("mappingRules"),
                         content: <MappingRules roleId={role.roleId} />,
                       },
                       {
