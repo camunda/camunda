@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
+import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
 import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -96,6 +97,16 @@ public class UserTaskWriter {
               "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
               userTaskDbModel));
     }
+  }
+
+  public void updateState(final long userTaskKey, final UserTaskState state) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.USER_TASK,
+            WriteStatementType.UPDATE,
+            userTaskKey,
+            "io.camunda.db.rdbms.sql.UserTaskMapper.updateState",
+            new UserTaskDbModel.Builder().userTaskKey(userTaskKey).state(state).build()));
   }
 
   public void scheduleForHistoryCleanup(
