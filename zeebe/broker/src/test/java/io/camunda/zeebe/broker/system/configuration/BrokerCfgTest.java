@@ -301,6 +301,21 @@ public final class BrokerCfgTest {
   }
 
   @Test
+  public void shouldOverrideUsageMetricsViaEnvironment() {
+    // given
+    environment.put("zeebe.broker.experimental.engine.usageMetrics.exportInterval", "1s");
+
+    // when
+    final var cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final var experimentalCfg = cfg.getExperimental();
+    final var engine = experimentalCfg.getEngine();
+    final var usageMetrics = engine.getUsageMetrics();
+
+    // then
+    assertThat(usageMetrics.getExportInterval()).isEqualTo(Duration.ofSeconds(1));
+  }
+
+  @Test
   public void shouldOverrideMaxAppendBatchSizeViaEnvironment() {
     // given
     environment.put(ZEEBE_BROKER_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE, "256KB");

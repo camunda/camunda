@@ -29,7 +29,6 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricExportHandler.class);
 
-  private static final String ID_PATTERN = "%s_%s";
   private final UsageMetricWriter usageMetricWriter;
 
   public UsageMetricExportHandler(final UsageMetricWriter usageMetricWriter) {

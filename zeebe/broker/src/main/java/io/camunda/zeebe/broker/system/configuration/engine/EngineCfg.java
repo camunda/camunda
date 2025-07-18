@@ -30,6 +30,7 @@ public final class EngineCfg implements ConfigurationEntry {
     batchOperations.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
     distribution.init(globalConfig, brokerBase);
+    usageMetrics.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
