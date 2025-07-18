@@ -77,9 +77,10 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
       case UserTaskIntent.CREATING ->
           userTaskWriter.create(
               map(record, UserTaskState.CREATING, null).toBuilder()
-                  // Clear assignee as it may be initialized later during the assignment transition
-                  // (if defined via the BPMN model) or modified by 'creating' task listeners, in
-                  // which case the final value will be reflected in the subsequent CREATED event.
+                  // Clear assignee as it shouldn't be persisted yet. While the CREATING event may
+                  // contain it (if defined in the BPMN model), it's only used internally to trigger
+                  // the assignment transition after the CREATED event. Externally, the task should
+                  // remain unassigned until the ASSIGNED event is exported.
                   .assignee(null)
                   .build());
       case UserTaskIntent.ASSIGNING, CLAIMING ->
