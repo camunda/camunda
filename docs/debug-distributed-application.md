@@ -203,7 +203,7 @@ root@pod:# jps
 910 Jps
 ```
 
-You can then setup the async-profiler with these commands:
+You can then set up the async-profiler with these commands:
 
 > You need to replace `<pid>` with the process id of the java process you want to profile
 >
@@ -255,7 +255,11 @@ To run JFR inside a container we can make use of the following command:
 
 ```shell
 kubectl exec -it <pod-name> -- jcmd 1 JFR.start duration=100s filename=/usr/local/camunda/data/flight-$(date +%d%m%y-%H%M).jfr
+```
+
 If the flight recording is done, you can copy the recording (via kubectl cp) and open it with Intellij (or [JMC](https://www.oracle.com/java/technologies/javase/products-jmc9-downloads.html)).
+
+### Alternative
 
 If `jcmd` is in the container not available we can make use of a debug container
 
@@ -263,21 +267,19 @@ If `jcmd` is in the container not available we can make use of a debug container
 kubectl debug -it -c debugger --profile=restricted --image=eclipse-temurin:21.0.3_9-jdk-alpine --target=<container> <POD> -- sh
 ```
 
-With this debug container we can now run jcmd to get a Java flight recording:
+With this debug container we can now run `jcmd` to get a Java flight recording:
 
 ```shell
 jcmd 7 JFR.start duration=100s filename=flight.jfr
-7:
-Started recording 1. The result will be written to:
-
-/usr/local/operate/flight.jfr
 ```
 
-After this is done, and written we can download this from the actual container:
+After the recording is done, and written we can download it from the actual container:
 
 ```shell
+# Check existence of recording
 $ kubectl exec -it <pod-name> -- ls -la flight.jfr
 -rw-r--r--    1 camunda  camunda    1452909 Jun 28 11:32 flight.jfr
+# Copy file
 $ kubectl cp <pod-name>:/usr/local/operate/flight.jfr /tmp/flight.jfr
 ```
 
