@@ -41,7 +41,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -66,20 +65,18 @@ public final class FileBasedSnapshotStoreImpl {
   private final int brokerId;
   // the root snapshotsDirectory where all snapshots should be stored
   private final Path snapshotsDirectory;
+  private final Path bootstrapSnapshotsDirectory;
   // keeps track of all snapshot modification listeners
   private final Set<PersistedSnapshotListener> listeners;
   private final SnapshotMetrics snapshotMetrics;
   // Use AtomicReference so that getting latest snapshot doesn't have to go through the actor
   private final AtomicReference<FileBasedSnapshot> currentPersistedSnapshotRef =
       new AtomicReference<>();
-  // used to write concurrently received snapshots in different pending directories
-  private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
   private volatile Optional<FileBasedSnapshot> bootstrapSnapshot = Optional.empty();
   private final CRC32CChecksumProvider checksumProvider;
   private final ConcurrencyControl actor;
-  private final Path bootstrapSnapshotsDirectory;
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
@@ -99,8 +96,6 @@ public final class FileBasedSnapshotStoreImpl {
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to create snapshot directories", e);
     }
-
-    receivingSnapshotStartCount = new AtomicLong();
 
     listeners = new CopyOnWriteArraySet<>();
     this.checksumProvider = Objects.requireNonNull(checksumProvider);
@@ -592,8 +587,6 @@ public final class FileBasedSnapshotStoreImpl {
         + listeners
         + ", currentPersistedSnapshotRef="
         + currentPersistedSnapshotRef
-        + ", receivingSnapshotStartCount="
-        + receivingSnapshotStartCount
         + ", pendingSnapshots="
         + pendingSnapshots
         + ", availableSnapshots="
