@@ -198,7 +198,7 @@ public class RolesByMappingIntegrationTest {
         .hasMessageContaining(
             "Expected to add an entity with ID '"
                 + mappingId
-                + "' and type 'MAPPING' to role with ID '"
+                + "' and type 'MAPPING_RULE' to role with ID '"
                 + EXISTING_ROLE_ID
                 + "', but the entity doesn't exist.");
   }
@@ -221,7 +221,7 @@ public class RolesByMappingIntegrationTest {
         .hasMessageContaining(
             "Expected to remove an entity with ID '"
                 + mappingId
-                + "' and type 'MAPPING' from role with ID '"
+                + "' and type 'MAPPING_RULE' from role with ID '"
                 + EXISTING_ROLE_ID
                 + "', but the entity doesn't exist.");
   }
