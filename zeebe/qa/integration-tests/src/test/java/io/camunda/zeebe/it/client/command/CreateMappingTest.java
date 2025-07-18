@@ -136,7 +136,7 @@ public class CreateMappingTest {
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to create mapping with claimName 'claimName' and claimValue 'claimValue', but a mapping with this claim already exists.");
+            "Expected to create mapping rule with claimName 'claimName' and claimValue 'claimValue', but a mapping rule with this claim already exists.");
   }
 
   @Test
