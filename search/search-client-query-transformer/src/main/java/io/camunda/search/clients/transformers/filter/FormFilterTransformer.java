@@ -11,13 +11,16 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.FormIndex.BPMN_ID;
 import static io.camunda.webapps.schema.descriptors.index.FormIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.FormIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.FormFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.Optional;
 
 public class FormFilterTransformer extends IndexFilterTransformer<FormFilter> {
 
@@ -27,7 +30,10 @@ public class FormFilterTransformer extends IndexFilterTransformer<FormFilter> {
 
   @Override
   public SearchQuery toSearchQuery(final FormFilter filter) {
-    return and(longTerms(KEY, filter.formKeys()), stringTerms(BPMN_ID, filter.formIds()));
+    final var tenantFilter =
+        Optional.ofNullable(filter.tenantId()).map(t -> term(TENANT_ID, t)).orElse(null);
+    return and(
+        longTerms(KEY, filter.formKeys()), stringTerms(BPMN_ID, filter.formIds()), tenantFilter);
   }
 
   @Override

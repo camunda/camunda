@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -112,22 +111,12 @@ public class ProcessDefinitionController {
   public ResponseEntity<FormResult> getStartProcessForm(
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
-      final ProcessDefinitionEntity processDefinition =
-          processDefinitionServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getByKey(processDefinitionKey);
-
-      if (processDefinition.formId() != null) {
-        return ResponseEntity.ok()
-            .body(
-                SearchQueryResponseMapper.toFormItem(
-                    formServices
-                        .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                        .getLatestVersionByFormId(processDefinition.formId())
-                        .get()));
-      } else {
-        return ResponseEntity.noContent().build();
-      }
+      return processDefinitionServices
+          .withAuthentication(authenticationProvider.getCamundaAuthentication())
+          .getProcessDefinitionStartForm(processDefinitionKey)
+          .map(SearchQueryResponseMapper::toFormItem)
+          .map(s -> ResponseEntity.ok().body(s))
+          .orElseGet(() -> ResponseEntity.noContent().build());
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
