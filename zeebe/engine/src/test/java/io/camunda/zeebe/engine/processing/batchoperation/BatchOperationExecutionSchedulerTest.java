@@ -96,7 +96,7 @@ public class BatchOperationExecutionSchedulerTest {
     scheduler =
         new BatchOperationExecutionScheduler(
             scheduledTaskStateFactory,
-            entityKeyProvider,
+            null, // TODO
             engineConfiguration,
             PARTITION_ID,
             mock(BatchOperationMetrics.class));

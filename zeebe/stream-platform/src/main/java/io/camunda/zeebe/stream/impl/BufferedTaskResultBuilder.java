@@ -20,6 +20,8 @@ import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StagedSchedu
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
+import java.util.List;
 
 /**
  * Implementation of {@code TaskResultBuilder} that buffers the task results. After being done with
@@ -43,11 +45,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
       final Intent intent,
       final UnifiedRecordValue value,
       final FollowUpCommandMetadata metadata) {
-    final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
-    if (valueType == null) {
-      // usually happens when the record is not registered at the TypedStreamEnvironment
-      throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
-    }
+    final ValueType valueType = getValueType(value);
 
     if (cache.contains(intent, key)) {
       return true;
@@ -69,7 +67,53 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
   }
 
   @Override
+  public boolean canAppendCommandRecords(
+      final long key,
+      final Intent intent,
+      final List<? extends UnifiedRecordValue> values,
+      final FollowUpCommandMetadata metadata) {
+    if (values.isEmpty()) {
+      return true;
+    }
+
+    if (values.stream().map(UnifiedRecordValue::getClass).distinct().count() > 1) {
+      throw new IllegalArgumentException(
+          "Cannot append multiple record types in a single batch: " + values);
+    }
+
+    final ValueType valueType = getValueType(values.getFirst());
+
+    final var universalRecordMetadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(intent)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("")
+            .valueType(valueType)
+            .operationReference(metadata.operationReference())
+            .batchOperationReference(metadata.batchOperationReference());
+
+    final var totalRecordLength =
+        values.stream()
+            .map(v -> RecordBatchEntry.createEntry(key, universalRecordMetadata, -1, v))
+            .map(RecordBatchEntry::getLength)
+            .reduce(0, Integer::sum);
+
+    return mutableRecordBatch.canAppendRecordOfLength(totalRecordLength);
+  }
+
+  @Override
   public TaskResult build() {
     return () -> mutableRecordBatch;
+  }
+
+  private static ValueType getValueType(final UnifiedRecordValue values) {
+    final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(values.getClass());
+    if (valueType == null) {
+      // usually happens when the record is not registered at the TypedStreamEnvironment
+      throw new IllegalStateException(
+          "Missing value type mapping for record: " + values.getClass());
+    }
+    return valueType;
   }
 }
