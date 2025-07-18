@@ -59,6 +59,13 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final URL authorizationServerUrl;
   private final String payload;
   private final String clientId;
+<<<<<<< HEAD
+=======
+  private final String clientSecret;
+  private final String audience;
+  private final String scope;
+  private final String resource;
+>>>>>>> f5d4e621 (feat: add resource parameter to OAuth credentials provider)
   private final OAuthCredentialsCache credentialsCache;
   private final Duration connectionTimeout;
   private final Duration readTimeout;
@@ -66,7 +73,14 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
     clientId = builder.getClientId();
+<<<<<<< HEAD
     payload = createParams(builder);
+=======
+    clientSecret = builder.getClientSecret();
+    audience = builder.getAudience();
+    scope = builder.getScope();
+    resource = builder.getResource();
+>>>>>>> f5d4e621 (feat: add resource parameter to OAuth credentials provider)
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
     connectionTimeout = builder.getConnectTimeout();
     readTimeout = builder.getReadTimeout();
@@ -122,7 +136,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     if (scope != null) {
       payload.put("scope", scope);
     }
+<<<<<<< HEAD
     final String resource = builder.getResource();
+=======
+>>>>>>> f5d4e621 (feat: add resource parameter to OAuth credentials provider)
     if (resource != null) {
       payload.put("resource", resource);
     }
