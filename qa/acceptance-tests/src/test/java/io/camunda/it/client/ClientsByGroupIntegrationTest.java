@@ -10,34 +10,22 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.protocol.rest.GroupClientSearchResult;
+import io.camunda.client.api.search.response.Client;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.UUID;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class ClientsByGroupIntegrationTest {
+
   private static CamundaClient camundaClient;
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-
-  private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   @Test
   void shouldAssignClientToGroup() {
@@ -56,10 +44,9 @@ public class ClientsByGroupIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final GroupClientSearchResult result =
-                  searchClientsByGroupId(
-                      camundaClient.getConfiguration().getRestAddress().toString(), groupId);
-              assertThat(result.getItems()).anyMatch(r -> clientId.equals(r.getClientId()));
+              final SearchResponse<Client> result =
+                  camundaClient.newClientsByGroupSearchRequest(groupId).send().join();
+              assertThat(result.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
   }
 
@@ -94,10 +81,9 @@ public class ClientsByGroupIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final GroupClientSearchResult result =
-                  searchClientsByGroupId(
-                      camundaClient.getConfiguration().getRestAddress().toString(), groupId);
-              assertThat(result.getItems()).anyMatch(r -> clientId.equals(r.getClientId()));
+              final SearchResponse<Client> result =
+                  camundaClient.newClientsByGroupSearchRequest(groupId).send().join();
+              assertThat(result.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
 
     // when
@@ -113,10 +99,9 @@ public class ClientsByGroupIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final GroupClientSearchResult result =
-                  searchClientsByGroupId(
-                      camundaClient.getConfiguration().getRestAddress().toString(), groupId);
-              assertThat(result.getItems()).noneMatch(r -> clientId.equals(r.getClientId()));
+              final SearchResponse<Client> result =
+                  camundaClient.newClientsByGroupSearchRequest(groupId).send().join();
+              assertThat(result.items()).noneMatch(r -> clientId.equals(r.getClientId()));
             });
   }
 
@@ -154,20 +139,5 @@ public class ClientsByGroupIntegrationTest {
         .description(description)
         .send()
         .join();
-  }
-
-  // TODO: will be removed in the next PR for client search
-  private static GroupClientSearchResult searchClientsByGroupId(
-      final String restAddress, final String groupId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/groups/" + groupId + "/clients/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), GroupClientSearchResult.class);
   }
 }
