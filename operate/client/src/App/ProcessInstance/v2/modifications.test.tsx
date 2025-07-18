@@ -16,6 +16,7 @@ import {
 import {ProcessInstance} from './index';
 import {
   createBatchOperation,
+  createUser,
   createVariable,
   createVariableV2,
 } from 'modules/testUtils';
@@ -39,6 +40,7 @@ import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {act} from 'react';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 const clearPollingStates = () => {
   incidentsStore.isPollRequestRunning = false;
@@ -54,6 +56,7 @@ describe('ProcessInstance - modification mode', () => {
   beforeEach(() => {
     mockRequests();
     modificationsStore.reset();
+    mockMe().withSuccess(createUser());
   });
 
   it('should display the modifications header and footer when modification mode is enabled', async () => {

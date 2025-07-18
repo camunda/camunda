@@ -6,25 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {act, render, screen, waitFor} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {AppHeader} from '../index';
-import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogout} from 'modules/mocks/api/logout';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {Wrapper as BaseWrapper} from './mocks';
-import {useEffect} from 'react';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {authenticationStore} from 'modules/stores/authentication';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    return authenticationStore.reset;
-  }, []);
-  return <BaseWrapper>{children}</BaseWrapper>;
+  return (
+    <QueryClientProvider client={getMockQueryClient()}>
+      <BaseWrapper>{children}</BaseWrapper>
+    </QueryClientProvider>
+  );
 };
 
 const mockUser = createUser({
   displayName: 'Franz Kafka',
   canLogout: true,
+  authorizedApplications: ['operate'],
 });
 
 const mockSsoUser = createUser({
@@ -38,10 +41,6 @@ describe('User info', () => {
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
-    });
-
-    await act(async () => {
-      await authenticationStore.authenticate();
     });
 
     await user.click(
@@ -64,10 +63,6 @@ describe('User info', () => {
       wrapper: Wrapper,
     });
 
-    await act(async () => {
-      await authenticationStore.authenticate();
-    });
-
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
@@ -83,15 +78,12 @@ describe('User info', () => {
   });
 
   it('should handle logout', async () => {
+    const logoutSpy = vi.spyOn(authenticationStore, 'handleLogout');
     mockLogout().withSuccess(null);
     mockMe().withSuccess(mockUser);
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
-    });
-
-    await act(async () => {
-      await authenticationStore.authenticate();
     });
 
     await user.click(
@@ -114,9 +106,7 @@ describe('User info', () => {
       }),
     );
 
-    await waitFor(() =>
-      expect(screen.queryByText('Franz Kafka')).not.toBeInTheDocument(),
-    );
+    await waitFor(() => expect(logoutSpy).toHaveBeenCalled());
   });
 
   it('should render links', async () => {
@@ -127,10 +117,6 @@ describe('User info', () => {
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
-    });
-
-    await act(async () => {
-      await authenticationStore.authenticate();
     });
 
     await user.click(
@@ -192,10 +178,6 @@ describe('User info', () => {
       wrapper: Wrapper,
     });
 
-    await act(async () => {
-      await authenticationStore.authenticate();
-    });
-
     await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
@@ -226,9 +208,7 @@ describe('User info', () => {
       wrapper: Wrapper,
     });
 
-    await act(async () => {
-      await authenticationStore.authenticate();
-    });
+    expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
 
     expect(screen.queryByText('Dashboard')).not.toBeInTheDocument();
     expect(screen.queryByText('Processes')).not.toBeInTheDocument();

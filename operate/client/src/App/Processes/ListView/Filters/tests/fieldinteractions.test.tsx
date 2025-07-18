@@ -11,7 +11,11 @@ import {getWrapper} from './mocks';
 
 import {Filters} from '../index';
 
-import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
+import {
+  createUser,
+  groupedProcessesMock,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {
@@ -21,11 +25,13 @@ import {
 } from 'modules/testUtils/selectComboBoxOption';
 import {ERRORS} from 'modules/validators';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('Interaction with other fields during validation', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockMe().withSuccess(createUser());
 
     processesStore.fetchProcesses();
 

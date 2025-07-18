@@ -7,7 +7,6 @@
  */
 
 import type {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
-import type {MeDto} from './api/v2/authentication/me';
 import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import type {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import type {ProcessDto} from './api/processes/fetchGroupedProcesses';
@@ -16,6 +15,7 @@ import type {BatchOperationDto} from './api/sharedTypes';
 import type {
   ProcessInstance,
   Variable,
+  CurrentUser,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
@@ -173,14 +173,19 @@ const createVariableV2 = (options: Partial<Variable> = {}): Variable => {
   };
 };
 
-const createUser = (options: Partial<MeDto> = {}): MeDto => ({
+const createUser = (options: Partial<CurrentUser> = {}): CurrentUser => ({
   userId: 'demo',
+  userKey: 123,
   displayName: 'firstname lastname',
-  canLogout: true,
-  roles: null,
-  salesPlanType: null,
-  c8Links: {},
+  email: 'firstname.lastname@camunda.com',
+  authorizedApplications: [],
   tenants: [],
+  groups: [],
+  roles: [],
+  salesPlanType: null,
+  c8Links: [],
+  canLogout: true,
+  apiUser: false,
   ...options,
 });
 

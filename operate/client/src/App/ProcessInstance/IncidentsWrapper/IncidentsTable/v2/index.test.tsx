@@ -9,13 +9,17 @@
 import {IncidentsTable} from '.';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
-import {authenticationStore} from 'modules/stores/authentication';
 import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {createInstance, createProcessInstance} from 'modules/testUtils';
+import {
+  createInstance,
+  createProcessInstance,
+  createUser,
+} from 'modules/testUtils';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('IncidentsTable', () => {
   beforeEach(() => {
@@ -95,16 +99,8 @@ describe('IncidentsTable', () => {
 
   it('should render the right column headers for restricted user', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockMe().withSuccess(createUser());
     incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
 
@@ -119,20 +115,12 @@ describe('IncidentsTable', () => {
 
   it('should render the right column headers for restricted user (with resource-based permissions)', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockMe().withSuccess(createUser());
     vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
     });
 
     incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
 
@@ -147,20 +135,12 @@ describe('IncidentsTable', () => {
 
   it('should render incident details (with resource-based permissions enabled)', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockMe().withSuccess(createUser());
     vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
     });
 
     incidentsStore.setIncidents(incidentsMock);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
     let withinRow = within(

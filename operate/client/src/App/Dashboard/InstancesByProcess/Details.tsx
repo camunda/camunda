@@ -14,8 +14,8 @@ import {tracking} from 'modules/tracking';
 import type {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
 import {Li, LinkWrapper} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
-import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
+import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 
 type Props = {
   processName: string;
@@ -26,13 +26,12 @@ type Props = {
 const Details: React.FC<Props> = observer(
   ({processName, processes, tabIndex}) => {
     const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+    const tenantsById = useAvailableTenants();
 
     return (
       <ul>
         {processes.map((process) => {
-          const tenantName =
-            authenticationStore.tenantsById?.[process.tenantId] ??
-            process.tenantId;
+          const tenantName = tenantsById[process.tenantId] ?? process.tenantId;
 
           const totalInstancesCount =
             process.instancesWithActiveIncidentsCount +

@@ -25,6 +25,8 @@ import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fet
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {createUser} from 'modules/testUtils';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 const DECISION_INSTANCE_ID = '4294980768';
 
@@ -55,6 +57,8 @@ describe('<DecisionInstance />', () => {
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
+    mockMe().withSuccess(createUser());
+    mockMe().withSuccess(createUser());
   });
 
   it('should set page title', async () => {

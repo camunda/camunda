@@ -11,9 +11,10 @@ import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
-import {authenticationStore} from 'modules/stores/authentication';
 import {Decision} from '..';
 import {createWrapper} from './mocks';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {createUser} from 'modules/testUtils';
 
 vi.mock('modules/feature-flags', () => ({
   IS_DECISION_DEFINITION_DELETION_ENABLED: true,
@@ -22,6 +23,8 @@ vi.mock('modules/feature-flags', () => ({
 describe('<Decision /> - operations', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
   });
 
@@ -62,19 +65,10 @@ describe('<Decision /> - operations', () => {
   });
 
   it('should not show delete button when user has no resource based permissions', async () => {
-    window.clientConfig = {
+    vi.stubGlobal('clientConfig', {
       resourcePermissionsEnabled: true,
-    };
-
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
     });
+    mockMe().withSuccess(createUser());
 
     render(<Decision />, {
       wrapper: createWrapper(
@@ -87,7 +81,5 @@ describe('<Decision /> - operations', () => {
         name: /delete decision definition/i,
       }),
     ).not.toBeInTheDocument();
-
-    window.clientConfig = undefined;
   });
 });

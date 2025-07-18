@@ -20,6 +20,8 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogin} from 'modules/mocks/api/login';
 import {Paths} from 'modules/Routes';
+import {createUser} from 'modules/testUtils';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 function createWrapper(
   initialPath: string = Paths.login(),
@@ -52,6 +54,7 @@ describe('<Login />', () => {
 
   it('should login', async () => {
     mockLogin().withSuccess(null);
+    mockMe().withSuccess(createUser());
 
     const {user} = render(<Login />, {
       wrapper: createWrapper(Paths.login()),
@@ -81,6 +84,7 @@ describe('<Login />', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('spinner'));
 
     mockLogin().withSuccess(null);
+    mockMe().withSuccess(createUser());
 
     fireEvent.click(screen.getByRole('button', {name: 'Login'}));
 
@@ -90,6 +94,7 @@ describe('<Login />', () => {
 
   it('should redirect to the previous page', async () => {
     mockLogin().withSuccess(null);
+    mockMe().withSuccess(createUser());
 
     const {user} = render(<Login />, {
       wrapper: createWrapper(Paths.login()),
@@ -108,6 +113,7 @@ describe('<Login />', () => {
 
   it('should not allow the form to be submitted with empty fields', async () => {
     mockLogin().withSuccess(null);
+    mockMe().withSuccess(createUser());
     const {user} = render(<Login />, {
       wrapper: createWrapper(),
     });
@@ -189,10 +195,6 @@ describe('<Login />', () => {
   });
 
   it('should handle request failures', async () => {
-    const consoleErrorMock = vi
-      .spyOn(global.console, 'error')
-      .mockImplementation(() => {});
-
     mockLogin().withNetworkError();
 
     const {user} = render(<Login />, {
@@ -204,7 +206,5 @@ describe('<Login />', () => {
     await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(await screen.findByText(GENERIC_ERROR)).toBeInTheDocument();
-
-    consoleErrorMock.mockRestore();
   });
 });

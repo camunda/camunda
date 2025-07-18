@@ -21,9 +21,11 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {createUser} from 'modules/testUtils';
-import {authenticationStore} from 'modules/stores/authentication';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -35,13 +37,15 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path={Paths.processes()} element={<div>Processes</div>} />
-          <Route path={Paths.dashboard()} element={children} />
-        </Routes>
-        <LocationLog />
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path={Paths.processes()} element={<div>Processes</div>} />
+            <Route path={Paths.dashboard()} element={children} />
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -51,6 +55,7 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
 describe('InstancesByProcess', () => {
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
+    mockMe().withSuccess(createUser());
   });
 
   it('should display skeleton when loading', async () => {
@@ -301,14 +306,12 @@ describe('InstancesByProcess', () => {
 
   it('should render modeler button', async () => {
     mockFetchProcessInstancesByName().withSuccess([]);
-
-    authenticationStore.setUser(
+    mockMe().withSuccess(
       createUser({
-        c8Links: {
-          modeler: 'https://link-to-modeler',
-        },
+        c8Links: [{name: 'modeler', link: 'https://link-to-modeler'}],
       }),
     );
+
     processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
@@ -328,7 +331,6 @@ describe('InstancesByProcess', () => {
   it('should not render modeler button', async () => {
     mockFetchProcessInstancesByName().withSuccess([]);
 
-    authenticationStore.setUser(createUser());
     processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {

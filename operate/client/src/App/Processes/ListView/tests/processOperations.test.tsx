@@ -7,19 +7,20 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {authenticationStore} from 'modules/stores/authentication';
 import {ListView} from '..';
 import {createWrapper} from './mocks';
 import {
   groupedProcessesMock,
   mockProcessXML,
   operations,
+  createUser,
 } from 'modules/testUtils';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('<ListView /> - operations', () => {
   beforeEach(() => {
@@ -37,6 +38,7 @@ describe('<ListView /> - operations', () => {
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });
+    mockMe().withSuccess(createUser());
   });
 
   it('should show delete button when version is selected', async () => {
@@ -122,16 +124,6 @@ describe('<ListView /> - operations', () => {
       search: queryString,
     });
 
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
     render(<ListView />, {
       wrapper: createWrapper(`/processes${queryString}`),
     });
@@ -152,16 +144,6 @@ describe('<ListView /> - operations', () => {
     vi.stubGlobal('location', {
       ...window.location,
       search: queryString,
-    });
-
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
     });
 
     vi.stubGlobal('clientConfig', {

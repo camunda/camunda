@@ -6,18 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {ReactQueryDevtools} from '@tanstack/react-query-devtools';
+import {reactQueryClient} from 'modules/react-query/reactQueryClient';
 
 type Props = {
   children: React.ReactNode;
 };
 
-const queryClient = new QueryClient();
-
 const ReactQueryProvider: React.FC<Props> = ({children}) => {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={reactQueryClient}>
       {children}
       <ReactQueryDevtools buttonPosition="bottom-right" />
     </QueryClientProvider>

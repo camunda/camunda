@@ -15,11 +15,11 @@ import {notificationsStore} from 'modules/stores/notifications';
 
 const SessionWatcher: React.FC = observer(() => {
   const removeNotification = useRef<(() => void) | null>(null);
-  const {status} = authenticationStore.state;
+  const status = authenticationStore.status;
   const location = useLocation();
 
   useEffect(() => {
-    async function handleSessionExpiration() {
+    function handleSessionExpiration() {
       removeNotification.current = notificationsStore.displayNotification({
         kind: 'info',
         title: 'Session expired',
@@ -27,20 +27,23 @@ const SessionWatcher: React.FC = observer(() => {
       });
     }
 
+    if (location.pathname === Paths.login()) {
+      return;
+    }
+
     if (
-      removeNotification.current === null &&
-      location.pathname !== Paths.login() &&
-      (status === 'session-expired' ||
-        (location.pathname !== Paths.dashboard() &&
-          status === 'invalid-initial-session'))
+      status === 'session-expired' ||
+      (status === 'session-invalid' && location.pathname !== Paths.dashboard())
     ) {
       handleSessionExpiration();
     }
+  }, [status, location.pathname]);
 
-    if (['logged-in', 'user-information-fetched'].includes(status)) {
+  useEffect(() => {
+    if (status === 'logged-in') {
       removeNotification.current?.();
     }
-  }, [status, location.pathname]);
+  }, [status]);
 
   return null;
 });
