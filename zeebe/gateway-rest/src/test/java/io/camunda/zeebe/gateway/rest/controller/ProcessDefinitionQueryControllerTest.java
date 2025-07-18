@@ -247,7 +247,9 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         Pair.of(PROCESS_DEFINITION_URL + "%d", ProcessDefinitionServices::getByKey),
         Pair.of(
             PROCESS_DEFINITION_URL + "%d/xml", ProcessDefinitionServices::getProcessDefinitionXml),
-        Pair.of(PROCESS_DEFINITION_URL + "%d/form", ProcessDefinitionServices::getByKey));
+        Pair.of(
+            PROCESS_DEFINITION_URL + "%d/form",
+            ProcessDefinitionServices::getProcessDefinitionStartForm));
   }
 
   @Test
@@ -393,11 +395,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturnFormItemForValidFormKey() throws Exception {
-    when(processDefinitionServices.getByKey(1L))
-        .thenReturn(
-            new ProcessDefinitionEntity(
-                1L, "name", "id", "xml", "resource", 1, "tag", "tenant", "formId"));
-    when(formServices.getLatestVersionByFormId("formId"))
+    when(processDefinitionServices.getProcessDefinitionStartForm(1L))
         .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1L)));
 
     webClient
@@ -410,13 +408,12 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(FORM_ITEM_JSON, JsonCompareMode.STRICT);
 
-    verify(processDefinitionServices, times(1)).getByKey(1L);
-    verify(formServices, times(1)).getLatestVersionByFormId("formId");
+    verify(processDefinitionServices, times(1)).getProcessDefinitionStartForm(1L);
   }
 
   @Test
   public void shouldReturn404ForFormInvaliProcessKey() throws Exception {
-    when(processDefinitionServices.getByKey(999L))
+    when(processDefinitionServices.getProcessDefinitionStartForm(999L))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
@@ -443,7 +440,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturn500OnUnexpectedException() throws Exception {
-    when(processDefinitionServices.getByKey(1L))
+    when(processDefinitionServices.getProcessDefinitionStartForm(1L))
         .thenThrow(new RuntimeException("Unexpected error"));
 
     webClient

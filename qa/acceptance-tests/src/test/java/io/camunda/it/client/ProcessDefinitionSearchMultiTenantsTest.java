@@ -46,7 +46,9 @@ public class ProcessDefinitionSearchMultiTenantsTest {
       new TestCamundaApplication().withBasicAuth().withMultiTenancyEnabled();
 
   private static final String TENANT_ID_1 = "tenant1";
+  private static final String TENANT_ID_2 = "tenant2";
   private static final String USERNAME_1 = "user1";
+  private static final String PROCESS_DEFINITION_WITH_START_FORM_ID = "Process_11hxie4";
 
   private static final List<ProcessDefinitionTestContext> PROCESSES_IN_DEFAULT_TENANT =
       List.of(
@@ -91,6 +93,9 @@ public class ProcessDefinitionSearchMultiTenantsTest {
         InitializationConfiguration.DEFAULT_USER_USERNAME,
         USERNAME_1);
 
+    deployResourceForTenant(camundaClient, "form/form.form", TENANT_ID_1);
+    deployResourceForTenant(camundaClient, "form/form_v2.form", TENANT_ID_1);
+
     final List<String> forms = List.of("form.form", "form_v2.form");
     forms.forEach(form -> deployResource(adminClient, "form/" + form));
 
@@ -101,6 +106,34 @@ public class ProcessDefinitionSearchMultiTenantsTest {
 
     waitForProcessesToBeDeployed(
         adminClient, PROCESSES_IN_DEFAULT_TENANT.size() + PROCESSES_IN_TENANT_1.size());
+  }
+
+  @Test
+  void shouldReturnFormAssignedToDefaultTenant(@Authenticated final CamundaClient camundaClient) {
+    // given (user with access to <default> and tenant1)
+    final var processDefinitionAssignedToDefaultTenant =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(
+                f ->
+                    f.processDefinitionId(PROCESS_DEFINITION_WITH_START_FORM_ID)
+                        .tenantId("<default>"))
+            .page(p -> p.limit(1))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+
+    // when
+    final var form =
+        camundaClient
+            .newProcessDefinitionGetFormRequest(
+                processDefinitionAssignedToDefaultTenant.getProcessDefinitionKey())
+            .send()
+            .join();
+
+    // then
+    assertThat(form.getTenantId()).isEqualTo("<default>");
   }
 
   @Test
