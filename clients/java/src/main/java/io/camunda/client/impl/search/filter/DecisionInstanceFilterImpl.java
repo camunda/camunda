@@ -18,12 +18,15 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
 import java.time.OffsetDateTime;
@@ -42,13 +45,29 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionInstanceKey(final long decisionInstanceKey) {
-    filter.setDecisionInstanceKey(ParseUtil.keyToString(decisionInstanceKey));
+    decisionInstanceKey(b -> b.eq(decisionInstanceKey));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setDecisionInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionInstanceId(final String decisionInstanceId) {
-    filter.decisionInstanceId(decisionInstanceId);
+    decisionInstanceId(b -> b.eq(decisionInstanceId));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionInstanceId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setDecisionInstanceId(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -77,7 +96,15 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter evaluationFailure(final String evaluationFailure) {
-    filter.setEvaluationFailure(evaluationFailure);
+    evaluationFailure(b -> b.eq(evaluationFailure));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter evaluationFailure(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setEvaluationFailure(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -97,13 +124,29 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter processDefinitionKey(final long processDefinitionKey) {
-    filter.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
+    processDefinitionKey(b -> b.eq(processDefinitionKey));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public DecisionInstanceFilter processInstanceKey(final long processInstanceKey) {
-    filter.setProcessInstanceKey(ParseUtil.keyToString(processInstanceKey));
+    processInstanceKey(b -> b.eq(processInstanceKey));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -123,19 +166,43 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionDefinitionId(final String decisionDefinitionId) {
-    filter.setDecisionDefinitionId(decisionDefinitionId);
+    decisionDefinitionId(b -> b.eq(decisionDefinitionId));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionDefinitionId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setDecisionDefinitionId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionDefinitionName(final String decisionDefinitionName) {
-    filter.setDecisionDefinitionName(decisionDefinitionName);
+    decisionDefinitionName(b -> b.eq(decisionDefinitionName));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionDefinitionName(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setDecisionDefinitionName(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public DecisionInstanceFilter decisionDefinitionVersion(final int decisionDefinitionVersion) {
-    filter.setDecisionDefinitionVersion(decisionDefinitionVersion);
+    decisionDefinitionVersion(b -> b.eq(decisionDefinitionVersion));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionDefinitionVersion(final Consumer<IntegerProperty> fn) {
+    final IntegerProperty property = new IntegerPropertyImpl();
+    fn.accept(property);
+    filter.setDecisionDefinitionVersion(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -166,7 +233,15 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter tenantId(final String tenantId) {
-    filter.setTenantId(tenantId);
+    tenantId(b -> b.eq(tenantId));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter tenantId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTenantId(provideSearchRequestProperty(property));
     return this;
   }
 

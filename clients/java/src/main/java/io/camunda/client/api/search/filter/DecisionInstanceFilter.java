@@ -17,6 +17,8 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstanceState;
@@ -28,8 +30,14 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by decisionInstanceKey */
   DecisionInstanceFilter decisionInstanceKey(long decisionInstanceKey);
 
+  /** Filter by decisionInstanceKey using {@link BasicLongProperty} consumer */
+  DecisionInstanceFilter decisionInstanceKey(final Consumer<BasicLongProperty> fn);
+
   /** Filter by decisionInstanceId */
   DecisionInstanceFilter decisionInstanceId(String decisionInstanceId);
+
+  /** Filter by decisionInstanceId using {@link StringProperty} consumer */
+  DecisionInstanceFilter decisionInstanceId(final Consumer<StringProperty> fn);
 
   /** Filter by state */
   DecisionInstanceFilter state(DecisionInstanceState state);
@@ -37,36 +45,57 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by evaluationFailure */
   DecisionInstanceFilter evaluationFailure(String evaluationFailure);
 
+  /** Filter by evaluationFailure using {@link StringProperty} consumer */
+  DecisionInstanceFilter evaluationFailure(final Consumer<StringProperty> fn);
+
   /** Filter by evaluationDate */
   DecisionInstanceFilter evaluationDate(OffsetDateTime evaluationDate);
 
   /** Filter by evaluationDate using {@link DateTimeProperty} consumer */
-  DecisionInstanceFilter evaluationDate(Consumer<DateTimeProperty> callback);
+  DecisionInstanceFilter evaluationDate(final Consumer<DateTimeProperty> fn);
 
   /** Filter by processDefinitionKey */
   DecisionInstanceFilter processDefinitionKey(long processDefinitionKey);
 
+  /** Filter by processDefinitionKey using {@link BasicLongProperty} consumer */
+  DecisionInstanceFilter processDefinitionKey(final Consumer<BasicLongProperty> fn);
+
   /** Filter by processInstanceKey */
   DecisionInstanceFilter processInstanceKey(long processInstanceKey);
+
+  /** Filter by processInstanceKey using {@link BasicLongProperty} consumer */
+  DecisionInstanceFilter processInstanceKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by decisionDefinitionKey */
   DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
 
   /** Filter by decisionDefinitionKey using {@link BasicLongProperty} consumer */
-  DecisionInstanceFilter decisionDefinitionKey(Consumer<BasicLongProperty> fn);
+  DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn);
 
   /** Filter by decisionDefinitionId */
   DecisionInstanceFilter decisionDefinitionId(String decisionDefinitionId);
 
+  /** Filter by decisionDefinitionId using {@link StringProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionId(final Consumer<StringProperty> fn);
+
   /** Filter by decisionDefinitionName */
   DecisionInstanceFilter decisionDefinitionName(String decisionDefinitionName);
 
+  /** Filter by decisionDefinitionName using {@link StringProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionName(final Consumer<StringProperty> fn);
+
   /** Filter by decisionDefinitionVersion */
   DecisionInstanceFilter decisionDefinitionVersion(int decisionDefinitionVersion);
+
+  /** Filter by decisionDefinitionVersion using {@link IntegerProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionVersion(final Consumer<IntegerProperty> fn);
 
   /** Filter by decisionDefinitionType */
   DecisionInstanceFilter decisionDefinitionType(DecisionDefinitionType decisionDefinitionType);
 
   /** Filter by tenantId */
   DecisionInstanceFilter tenantId(String tenantId);
+
+  /** Filter by tenantId using {@link StringProperty} consumer */
+  DecisionInstanceFilter tenantId(final Consumer<StringProperty> fn);
 }
