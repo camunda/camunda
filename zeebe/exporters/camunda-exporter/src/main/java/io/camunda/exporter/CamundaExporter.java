@@ -60,6 +60,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -284,7 +285,7 @@ public class CamundaExporter implements Exporter {
 
     if (writer.getBatchSize() == configuration.getBulk().getSize()) {
       LOG.info(
-          """
+"""
 Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
 processing records from previous version
 """,
@@ -390,6 +391,7 @@ processing records from previous version
       metrics.recordBulkSize(writer.getBatchSize());
       final BatchRequest batchRequest = clientAdapter.createBatchRequest().withMetrics(metrics);
       writer.flush(batchRequest);
+      metrics.recordFlushOccurrence(Instant.now());
       metrics.stopFlushLatencyMeasurement();
     } catch (final PersistenceException ex) {
       metrics.recordFailedFlush();
