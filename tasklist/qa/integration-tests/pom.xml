@@ -483,6 +483,7 @@
       <scope>test</scope>
     </dependency>
 
+<<<<<<< HEAD
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-elasticsearch-exporter</artifactId>
@@ -536,6 +537,8 @@
       <artifactId>archunit-junit5-engine</artifactId>
       <scope>test</scope>
     </dependency>
+=======
+>>>>>>> ab142826 (fix: Qualify Operate's OpenSearchAsyncClient in OpensearchArchiverRepository)
   </dependencies>
 
   <build>
