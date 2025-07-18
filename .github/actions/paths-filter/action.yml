@@ -183,6 +183,18 @@ outputs:
         steps.filter-common.outputs.maven-change == 'true' ||
         steps.filter-common.outputs.rdbms-change == 'true'
       }}
+  zeebe-base-module-changes:
+    description: Output whether backend tests should be run if base level modules or Zeebe have changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.base-module-change == 'true' ||
+        steps.filter-zeebe.outputs.zeebe-change == 'true'
+      }}
 
 runs:
   using: composite
@@ -249,6 +261,15 @@ runs:
         - 'qa/acceptance-tests/**'
         - 'search/search-domain/**'
         - 'zeebe/exporters/rdbms-exporter/**'
+
+        base-module-change:
+        - 'authentication/**'
+        - 'clients/**'
+        - 'document/**'
+        - 'schema-manager/**'
+        - 'search/**'
+        - 'security/**'
+        - 'service/**'
 
   - uses: dorny/paths-filter@v3
     id: filter-identity
