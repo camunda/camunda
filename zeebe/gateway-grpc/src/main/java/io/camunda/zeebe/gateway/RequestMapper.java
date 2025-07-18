@@ -231,12 +231,15 @@ public final class RequestMapper extends RequestUtil {
     jobResult.setType(JobResultType.from(result.getType()));
     result.getActivateElementsList().stream()
         .map(
-            element ->
-                new JobResultActivateElement()
-                    .setElementId(element.getElementId())
-                    .setVariables(
-                        new UnsafeBuffer(
-                            MsgPackConverter.convertToMsgPack(element.getVariables()))))
+            element -> {
+              final var activateElement =
+                  new JobResultActivateElement().setElementId(element.getElementId());
+              if (element.getVariables() != null && !element.getVariables().isEmpty()) {
+                activateElement.setVariables(
+                    new UnsafeBuffer(MsgPackConverter.convertToMsgPack(element.getVariables())));
+              }
+              return activateElement;
+            })
         .forEach(jobResult::addActivateElement);
     return jobResult;
   }

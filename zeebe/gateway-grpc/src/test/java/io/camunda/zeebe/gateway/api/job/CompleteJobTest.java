@@ -14,16 +14,19 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultActivateElement;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultActivateElementValue;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.Collections;
 import java.util.List;
+import org.assertj.core.groups.Tuple;
 import org.junit.Test;
 
 public final class CompleteJobTest extends GatewayTest {
@@ -355,6 +358,54 @@ public final class CompleteJobTest extends GatewayTest {
     assertThat(brokerRequestValue.getResult().isDenied()).isTrue();
     assertThat(brokerRequestValue.getResult().getDeniedReason())
         .isEqualTo("Reason to deny lifecycle transition");
+  }
+
+  @Test
+  public void shouldMapRequestAndResponseWithAdHocSubProcessResult() {
+    // given
+    final CompleteJobStub stub = new CompleteJobStub();
+    stub.registerWith(brokerClient);
+    final var variables1 = Collections.singletonMap("foo", "bar");
+    final var variables2 = Collections.singletonMap("baz", "qux");
+
+    final JobResult jobResult =
+        JobResult.newBuilder()
+            .setType("adHocSubProcess")
+            .addActivateElements(
+                JobResultActivateElement.newBuilder()
+                    .setElementId("elementId1")
+                    .setVariables(JsonUtil.toJson(variables1))
+                    .build())
+            .addActivateElements(
+                JobResultActivateElement.newBuilder()
+                    .setElementId("elementId2")
+                    .setVariables(JsonUtil.toJson(variables2))
+                    .build())
+            .addActivateElements(
+                JobResultActivateElement.newBuilder().setElementId("elementId3").build())
+            .build();
+
+    final CompleteJobRequest request =
+        CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setResult(jobResult).build();
+
+    // when
+    final CompleteJobResponse response = client.completeJob(request);
+
+    // then
+    assertThat(response).isNotNull();
+
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
+
+    final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getResult().getActivateElements())
+        .extracting(
+            JobResultActivateElementValue::getElementId,
+            JobResultActivateElementValue::getVariables)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple("elementId1", variables1),
+            Tuple.tuple("elementId2", variables2),
+            Tuple.tuple("elementId3", Collections.emptyMap()));
   }
 
   private static void verifyJobResultCorrections(
