@@ -21,8 +21,6 @@ import org.springframework.core.env.Environment;
 @ComponentScan("io.camunda.configuration")
 public class UnifiedConfigurationHelper {
 
-  private static UnifiedConfigurationHelper instance;
-
   private static final Map<String, Set<String>> LEGACY_PROPERTIES =
       Map.of(
           "camunda.data.secondary-storage.elasticsearch.url",
@@ -45,7 +43,7 @@ public class UnifiedConfigurationHelper {
           + "Legacy properties: %s";
 
   private static final String LEGACY_MODERN_PROPERTIES_DIFFERENT_VALUES_WARNING =
-      "Invalid configuration. "
+      "Ambiguous configuration. "
           + "The following legacy properties should be removed in favor of '%s':\n"
           + "Legacy properties: %s";
 
@@ -60,31 +58,17 @@ public class UnifiedConfigurationHelper {
   private static final String WRONG_MODERN_PROPERTY_ERROR =
       "Property %s does not need legacy configuration validation.";
 
-  // --- Exposed static interface ---
-
-  public static <T> T validateLegacyConfiguration(
-      final String newProperty,
-      final T newValue,
-      final Class<T> expectedType,
-      final boolean legacyConfigAllowed,
-      final boolean onlyIfValuesMatch) {
-    return instance.instanceValidateLegacyConfiguration(
-        newProperty, newValue, expectedType, legacyConfigAllowed, onlyIfValuesMatch);
-  }
-
-  // --- Instance ---
-
-  private Environment environment;
-  private Map<String, Set<String>> legacyProperties;
-  private final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
+  private static Environment environment;
+  private static Map<String, Set<String>> legacyProperties = LEGACY_PROPERTIES;
+  private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
 
   public UnifiedConfigurationHelper(@Autowired Environment environment) {
-    this.environment = environment;
-    this.legacyProperties = LEGACY_PROPERTIES;
-    UnifiedConfigurationHelper.instance = this;
+    // We need to pin the environment object statically so that it can be used to perform the
+    // fallback mechanism.
+    UnifiedConfigurationHelper.environment = environment;
   }
 
-  private <T> T instanceValidateLegacyConfiguration(
+  public static <T> T validateLegacyConfiguration(
       final String newProperty,
       final T newValue,
       final Class<T> expectedType,
@@ -102,7 +86,7 @@ public class UnifiedConfigurationHelper {
 
     Set<T> legacyValues = new HashSet<>();
     for (String legacyProperty : legacyProperties) {
-      final String value = getEnvironment().getProperty(legacyProperty);
+      final String value = environment.getProperty(legacyProperty);
       if (isSet(value)) {
         legacyValues.add(parseLegacyValue(value, expectedType));
       }
@@ -148,7 +132,7 @@ public class UnifiedConfigurationHelper {
     return newValue;
   }
 
-  private void logDeprecationMessage(
+  private static void logDeprecationMessage(
       final Set<String> legacyProperties, final String newProperty) {
     // TODO-?: Maybe we could print this deprecation message only once, instead of printing it every
     //  time the property is accessed through its .get().
@@ -156,16 +140,16 @@ public class UnifiedConfigurationHelper {
     String deprecationMessage =
         String.format(
             LEGACY_MODERN_PROPERTIES_DIFFERENT_VALUES_WARNING,
-            String.join(", ", legacyProperties),
-            newProperty);
+            newProperty,
+            String.join(", ", legacyProperties));
     LOGGER.warn(deprecationMessage);
   }
 
   @SuppressWarnings("unchecked")
-  private <T> T parseLegacyValue(final String strValue, final Class<T> type) {
+  private static <T> T parseLegacyValue(final String strValue, final Class<T> type) {
     if (strValue == null) return null;
 
-    return switch(type.getSimpleName()) {
+    return switch (type.getSimpleName()) {
       case "String" -> (T) strValue;
       case "Integer" -> (T) Integer.valueOf(strValue);
       case "Boolean" -> (T) Boolean.valueOf(strValue);
@@ -174,26 +158,27 @@ public class UnifiedConfigurationHelper {
     };
   }
 
-  private boolean isUnset(Object value) {
+  private static boolean isUnset(Object value) {
     if (value == null) return true;
     if (value instanceof String) return ((String) value).trim().isEmpty();
     return false;
   }
 
-  private boolean isSet(Object value) {
+  private static boolean isSet(Object value) {
     return !isUnset(value);
   }
 
-  public Set<String> getLegacyProperties(String newProperty) {
+  private static Set<String> getLegacyProperties(String newProperty) {
     return legacyProperties.get(newProperty);
   }
 
-  public Environment getEnvironment() {
-    return environment;
+  /* Setters used by tests to inject the mock objects */
+
+  public static void setCustomLegacyProperties(final Map<String, Set<String>> legacyProperties) {
+    UnifiedConfigurationHelper.legacyProperties = legacyProperties;
   }
 
-  // Allows tests to inject the mock properties map.
-  public void setCustomLegacyProperties(final Map<String, Set<String>> legacyProperties) {
-    this.legacyProperties = legacyProperties;
+  public static void setCustomEnvironment(final Environment environment) {
+    UnifiedConfigurationHelper.environment = environment;
   }
 }

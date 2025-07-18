@@ -7,9 +7,6 @@
  */
 package io.camunda.configuration;
 
-import java.beans.Transient;
-import org.springframework.beans.factory.annotation.Autowired;
-
 public class Elasticsearch {
 
   private static final String PREFIX = "camunda.data.secondary-storage.elasticsearch";
@@ -21,8 +18,9 @@ public class Elasticsearch {
       throw new RuntimeException(PREFIX + ".url cannot be empty or null.");
     }
 
-    String value = UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".url", url, String.class, true, true);
+    String value =
+        UnifiedConfigurationHelper.validateLegacyConfiguration(
+            PREFIX + ".url", url, String.class, true, true);
 
     return (String) value;
   }

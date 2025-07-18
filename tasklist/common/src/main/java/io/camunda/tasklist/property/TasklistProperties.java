@@ -14,6 +14,8 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 /** This class contains all project configuration parameters. */
 public class TasklistProperties {
 
+  private boolean override = false;
+
   public static final String PREFIX = "camunda.tasklist";
   public static final String ALPHA_RELEASES_SUFIX = "alpha";
   public static final String ELASTIC_SEARCH = "elasticsearch";
