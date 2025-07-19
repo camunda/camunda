@@ -908,8 +908,9 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  operate-integration-tests:
+  operate-ci:
     # TODO renable the if, currently running for all for testing purposes
+    # todo this handles both FE and BE
     #if: needs.detect-changes.outputs.operate-backend-changes == 'true'
     name: "Operate"
     needs: [ detect-changes ]
@@ -1268,7 +1269,7 @@ jobs:
       - maven-spotless-linter
       - openapi-lint
       - opensearch-integration-tests
-      - operate-integration-tests
+      - operate-ci
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
