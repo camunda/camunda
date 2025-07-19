@@ -19,7 +19,7 @@ import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.util.logging.RecordingAppender;
+import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;

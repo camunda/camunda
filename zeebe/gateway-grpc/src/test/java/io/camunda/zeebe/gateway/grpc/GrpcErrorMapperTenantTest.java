@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.gateway.RequestMapper;
 import io.camunda.zeebe.gateway.cmd.InvalidTenantRequestException;
-import io.camunda.zeebe.util.logging.RecordingAppender;
+import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import java.util.List;
