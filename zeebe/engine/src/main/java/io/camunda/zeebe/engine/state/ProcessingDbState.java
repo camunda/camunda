@@ -14,7 +14,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.asyncrequest.DbAsyncRequestState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
-import io.camunda.zeebe.engine.state.authorization.DbMappingState;
+import io.camunda.zeebe.engine.state.authorization.DbMappingRuleState;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
 import io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState;
@@ -58,7 +58,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
@@ -123,7 +123,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableTenantState tenantState;
   private final MutableRoleState roleState;
   private final MutableGroupState groupState;
-  private final MutableMappingState mappingState;
+  private final MutableMappingRuleState mappingState;
   private final MutableBatchOperationState batchOperationState;
   private final MutableMembershipState membershipState;
   private final MutableUsageMetricState usageMetricState;
@@ -180,7 +180,7 @@ public class ProcessingDbState implements MutableProcessingState {
     roleState = new DbRoleState(zeebeDb, transactionContext);
     groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
-    mappingState = new DbMappingState(zeebeDb, transactionContext);
+    mappingState = new DbMappingRuleState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
     usageMetricState =
@@ -343,7 +343,7 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public MutableMappingState getMappingState() {
+  public MutableMappingRuleState getMappingRuleState() {
     return mappingState;
   }
 

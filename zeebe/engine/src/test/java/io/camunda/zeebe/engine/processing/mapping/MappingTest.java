@@ -49,7 +49,7 @@ public class MappingTest {
         .hasClaimName(claimName)
         .hasClaimValue(claimValue)
         .hasName(name)
-        .hasMappingId(id);
+        .hasMappingRuleId(id);
   }
 
   @Test
@@ -82,7 +82,7 @@ public class MappingTest {
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             String.format(
-                "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.",
+                "Expected to create mapping rule with claimName '%s' and claimValue '%s', but a mapping rule with this claim already exists.",
                 claimName, claimValue));
   }
 
@@ -116,7 +116,7 @@ public class MappingTest {
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             String.format(
-                "Expected to create mapping with id '%s', but a mapping with this id already exists.",
+                "Expected to create mapping rule with id '%s', but a mapping rule with this id already exists.",
                 id));
   }
 
@@ -150,7 +150,7 @@ public class MappingTest {
     // then
     assertThat(updatedMapping)
         .isNotNull()
-        .hasMappingId(id)
+        .hasMappingRuleId(id)
         .hasName(name + "New")
         .hasClaimName(claimName + "New")
         .hasClaimValue(claimValue + "New");
@@ -179,7 +179,7 @@ public class MappingTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             String.format(
-                "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
+                "Expected to update mapping rule with id '%s', but a mapping rule with this id does not exist.",
                 id));
   }
 
@@ -225,7 +225,7 @@ public class MappingTest {
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             String.format(
-                "Expected to update mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.",
+                "Expected to update mapping rule with claimName '%s' and claimValue '%s', but a mapping rule with this claim already exists.",
                 existingClaimName, existingClaimValue));
   }
 
@@ -250,7 +250,7 @@ public class MappingTest {
     final var deletedMapping = engine.mapping().deleteMapping(mappingId).delete().getValue();
 
     // then
-    assertThat(deletedMapping).isNotNull().hasMappingId(mappingId);
+    assertThat(deletedMapping).isNotNull().hasMappingRuleId(mappingId);
   }
 
   @Test
@@ -275,31 +275,31 @@ public class MappingTest {
         .group()
         .addEntity(groupId)
         .withEntityId(mappingId)
-        .withEntityType(EntityType.MAPPING)
+        .withEntityType(EntityType.MAPPING_RULE)
         .add();
     engine
         .role()
         .addEntity(roleId)
         .withEntityId(mappingId)
-        .withEntityType(EntityType.MAPPING)
+        .withEntityType(EntityType.MAPPING_RULE)
         .add();
 
     // when
-    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingId()).delete();
+    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingRuleId()).delete();
 
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupId(groupId)
                 .withEntityId(mappingId)
-                .withEntityType(EntityType.MAPPING)
+                .withEntityType(EntityType.MAPPING_RULE)
                 .exists())
         .isTrue();
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleId(roleId)
                 .withEntityId(mappingId)
-                .withEntityType(EntityType.MAPPING)
+                .withEntityType(EntityType.MAPPING_RULE)
                 .exists())
         .isTrue();
   }

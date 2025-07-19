@@ -24,7 +24,7 @@ import org.immutables.value.Value;
 public interface MappingRecordValue extends RecordValue {
 
   /** The unique identifier of the mapping within our system. */
-  long getMappingKey();
+  long getMappingRuleKey();
 
   /** The name of the claim in the user token. */
   String getClaimName();
@@ -39,5 +39,5 @@ public interface MappingRecordValue extends RecordValue {
   String getName();
 
   /** The unique identifier of the mapping for external usage. */
-  String getMappingId();
+  String getMappingRuleId();
 }

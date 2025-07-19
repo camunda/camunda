@@ -28,7 +28,7 @@ import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -229,7 +229,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
           MAPPNING_ENTITIES.get(0).mappingRuleId(), MAPPNING_ENTITIES.get(1).mappingRuleId());
 
   @MockitoBean private GroupServices groupServices;
-  @MockitoBean private MappingServices mappingServices;
+  @MockitoBean private MappingRuleServices mappingServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 

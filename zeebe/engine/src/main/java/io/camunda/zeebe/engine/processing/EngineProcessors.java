@@ -37,7 +37,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
 import io.camunda.zeebe.engine.processing.identity.IdentitySetupProcessors;
-import io.camunda.zeebe.engine.processing.identity.MappingProcessors;
+import io.camunda.zeebe.engine.processing.identity.MappingRuleProcessors;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -311,7 +311,7 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior);
 
-    MappingProcessors.addMappingProcessors(
+    MappingRuleProcessors.addMappingRuleProcessors(
         typedRecordProcessors,
         processingState,
         authCheckBehavior,

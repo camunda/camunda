@@ -15,24 +15,25 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<MappingRecord> {
-  private static final String MAPPING_NULL_VALUE_ERROR_MESSAGE =
-      "Expected to update mappingRule with claimName '%s' and claimValue '%s' and name '%s' and mappingRuleId '%s', but at least one of them is null.";
-  private static final String MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE =
-      "Expected to update mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.";
-  private static final String MAPPING_ID_DOES_NOT_EXIST_ERROR_MESSAGE =
-      "Expected to update mapping with id '%s', but a mapping with this id does not exist.";
+public class MappingRuleUpdateProcessor
+    implements DistributedTypedRecordProcessor<MappingRuleRecord> {
+  private static final String MAPPING_RULE_NULL_VALUE_ERROR_MESSAGE =
+      "Expected to update mapping rule with claimName '%s' and claimValue '%s' and name '%s' and mappingRuleId '%s', but at least one of them is null.";
+  private static final String MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE =
+      "Expected to update mapping rule with claimName '%s' and claimValue '%s', but a mapping rule with this claim already exists.";
+  private static final String MAPPING_RULE_ID_DOES_NOT_EXIST_ERROR_MESSAGE =
+      "Expected to update mapping rule with id '%s', but a mapping rule with this id does not exist.";
 
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -40,13 +41,13 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
-  public MappingUpdateProcessor(
-      final MappingState mappingState,
+  public MappingRuleUpdateProcessor(
+      final MappingRuleState mappingRuleState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
-    this.mappingState = mappingState;
+    this.mappingRuleState = mappingRuleState;
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -56,12 +57,12 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
   }
 
   @Override
-  public void processNewCommand(final TypedRecord<MappingRecord> command) {
+  public void processNewCommand(final TypedRecord<MappingRuleRecord> command) {
 
     final var record = command.getValue();
-    final var mappingId = record.getMappingId();
-    if (record.getMappingId() == null
-        || record.getMappingId().isBlank()
+    final var mappingRuleId = record.getMappingRuleId();
+    if (record.getMappingRuleId() == null
+        || record.getMappingRuleId().isBlank()
         || record.getName() == null
         || record.getName().isBlank()
         || record.getClaimName() == null
@@ -69,19 +70,20 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
         || record.getClaimValue() == null
         || record.getClaimValue().isBlank()) {
       final var errorMessage =
-          MAPPING_NULL_VALUE_ERROR_MESSAGE.formatted(
+          MAPPING_RULE_NULL_VALUE_ERROR_MESSAGE.formatted(
               record.getClaimName(),
               record.getClaimValue(),
               record.getName(),
-              record.getMappingId());
+              record.getMappingRuleId());
       rejectionWriter.appendRejection(command, RejectionType.NULL_VAL, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NULL_VAL, errorMessage);
       return;
     }
 
-    final var persistedRecord = mappingState.get(mappingId);
+    final var persistedRecord = mappingRuleState.get(mappingRuleId);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage = MAPPING_ID_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(mappingId);
+      final var errorMessage =
+          MAPPING_RULE_ID_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(mappingRuleId);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -90,7 +92,7 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
     final var authorizationRequest =
         new AuthorizationRequest(
                 command, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE)
-            .addResourceId(mappingId);
+            .addResourceId(mappingRuleId);
     final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
@@ -99,21 +101,21 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
       return;
     }
 
-    final var persistedMappingWithSameClaim =
-        mappingState.get(record.getClaimName(), record.getClaimValue());
-    if (persistedMappingWithSameClaim.isPresent()
-        && !persistedMappingWithSameClaim.get().getMappingId().equals(mappingId)) {
+    final var persistedMappingRuleWithSameClaim =
+        mappingRuleState.get(record.getClaimName(), record.getClaimValue());
+    if (persistedMappingRuleWithSameClaim.isPresent()
+        && !persistedMappingRuleWithSameClaim.get().getMappingRuleId().equals(mappingRuleId)) {
       final var errorMessage =
-          MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
+          MAPPING_RULE_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE.formatted(
               record.getClaimName(), record.getClaimValue());
       rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.ALREADY_EXISTS, errorMessage);
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getMappingKey(), MappingIntent.UPDATED, record);
+    stateWriter.appendFollowUpEvent(record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record);
     responseWriter.writeEventOnCommand(
-        record.getMappingKey(), MappingIntent.UPDATED, record, command);
+        record.getMappingRuleKey(), MappingRuleIntent.UPDATED, record, command);
 
     commandDistributionBehavior
         .withKey(keyGenerator.nextKey())
@@ -122,8 +124,9 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
   }
 
   @Override
-  public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.UPDATED, command.getValue());
+  public void processDistributedCommand(final TypedRecord<MappingRuleRecord> command) {
+    stateWriter.appendFollowUpEvent(
+        command.getKey(), MappingRuleIntent.UPDATED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }

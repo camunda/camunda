@@ -179,7 +179,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be null");
+        .hasMessageContaining("mappingRuleId must not be null");
   }
 
   @Test
@@ -194,7 +194,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be empty");
+        .hasMessageContaining("mappingRuleId must not be empty");
   }
 
   @Test

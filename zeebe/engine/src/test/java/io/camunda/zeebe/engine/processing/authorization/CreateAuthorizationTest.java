@@ -145,7 +145,7 @@ public class CreateAuthorizationTest {
             .authorization()
             .newAuthorization()
             .withOwnerId(nonexistentMappingId)
-            .withOwnerType(AuthorizationOwnerType.MAPPING)
+            .withOwnerType(AuthorizationOwnerType.MAPPING_RULE)
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)

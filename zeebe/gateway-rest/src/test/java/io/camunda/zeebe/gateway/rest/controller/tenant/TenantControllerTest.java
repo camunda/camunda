@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
@@ -62,7 +62,7 @@ public class TenantControllerTest {
   public class TenantsApiEnabledTest extends RestControllerTest {
     @MockitoBean private TenantServices tenantServices;
     @MockitoBean private UserServices userServices;
-    @MockitoBean private MappingServices mappingServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
@@ -620,7 +620,7 @@ public class TenantControllerTest {
     private static Stream<Arguments> provideAddMemberByIdTestCases() {
       return Stream.of(
           Arguments.of(EntityType.USER, "users", "username"),
-          Arguments.of(EntityType.MAPPING, "mapping-rules", "mappingRuleId"),
+          Arguments.of(EntityType.MAPPING_RULE, "mapping-rules", "mappingRuleId"),
           Arguments.of(EntityType.GROUP, "groups", "groupId"),
           Arguments.of(EntityType.ROLE, "roles", "roleId"),
           Arguments.of(EntityType.CLIENT, "clients", "clientId"));
@@ -629,7 +629,7 @@ public class TenantControllerTest {
     private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
       return Stream.of(
           Arguments.of(EntityType.USER, "users", "username"),
-          Arguments.of(EntityType.MAPPING, "mapping-rules", "mappingRuleId"),
+          Arguments.of(EntityType.MAPPING_RULE, "mapping-rules", "mappingRuleId"),
           Arguments.of(EntityType.GROUP, "groups", "groupId"),
           Arguments.of(EntityType.ROLE, "roles", "roleId"),
           Arguments.of(EntityType.CLIENT, "clients", "clientId"));
@@ -654,7 +654,7 @@ public class TenantControllerTest {
 
     @MockitoBean private TenantServices tenantServices;
     @MockitoBean private UserServices userServices;
-    @MockitoBean private MappingServices mappingServices;
+    @MockitoBean private MappingRuleServices mappingRuleServices;
     @MockitoBean private GroupServices groupServices;
     @MockitoBean private RoleServices roleServices;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;

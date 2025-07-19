@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -122,7 +122,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.TENANT, TenantRecord.class);
     registry.put(ValueType.ROLE, RoleRecord.class);
     registry.put(ValueType.SCALE, ScaleRecord.class);
-    registry.put(ValueType.MAPPING, MappingRecord.class);
+    registry.put(ValueType.MAPPING_RULE, MappingRuleRecord.class);
     registry.put(ValueType.GROUP, GroupRecord.class);
     registry.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord.class);
     registry.put(ValueType.BATCH_OPERATION_CREATION, BatchOperationCreationRecord.class);

@@ -21,25 +21,25 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
-public class MappingsByGroupSearchTest {
+public class MappingRulesByGroupSearchTest {
 
   private static CamundaClient camundaClient;
 
-  private static final String MAPPING_ID_1 = "a" + Strings.newRandomValidUsername();
-  private static final String MAPPING_ID_2 = "b" + Strings.newRandomValidUsername();
-  private static final String MAPPING_ID_3 = "c" + Strings.newRandomValidUsername();
+  private static final String MAPPING_RULE_ID_1 = "a" + Strings.newRandomValidUsername();
+  private static final String MAPPING_RULE_ID_2 = "b" + Strings.newRandomValidUsername();
+  private static final String MAPPING_RULE_ID_3 = "c" + Strings.newRandomValidUsername();
   private static final String GROUP_ID = Strings.newRandomValidIdentityId();
 
   @BeforeAll
   static void setup() {
-    createMapping(MAPPING_ID_1);
-    createMapping(MAPPING_ID_2);
-    createMapping(MAPPING_ID_3);
+    createMappingRule(MAPPING_RULE_ID_1);
+    createMappingRule(MAPPING_RULE_ID_2);
+    createMappingRule(MAPPING_RULE_ID_3);
 
     createGroup(GROUP_ID);
 
-    assignMappingToGroup(MAPPING_ID_1, GROUP_ID);
-    assignMappingToGroup(MAPPING_ID_2, GROUP_ID);
+    assignMappingRuleToGroup(MAPPING_RULE_ID_1, GROUP_ID);
+    assignMappingRuleToGroup(MAPPING_RULE_ID_2, GROUP_ID);
 
     waitForGroupsToBeUpdated();
   }
@@ -53,8 +53,16 @@ public class MappingsByGroupSearchTest {
         .extracting(
             Mapping::getMappingId, Mapping::getClaimName, Mapping::getClaimValue, Mapping::getName)
         .contains(
-            tuple(MAPPING_ID_1, MAPPING_ID_1 + "claimName", MAPPING_ID_1 + "claimValue", "name"),
-            tuple(MAPPING_ID_2, MAPPING_ID_2 + "claimName", MAPPING_ID_2 + "claimValue", "name"));
+            tuple(
+                MAPPING_RULE_ID_1,
+                MAPPING_RULE_ID_1 + "claimName",
+                MAPPING_RULE_ID_1 + "claimValue",
+                "name"),
+            tuple(
+                MAPPING_RULE_ID_2,
+                MAPPING_RULE_ID_2 + "claimName",
+                MAPPING_RULE_ID_2 + "claimValue",
+                "name"));
   }
 
   @Test
@@ -62,12 +70,14 @@ public class MappingsByGroupSearchTest {
     final var mappings =
         camundaClient
             .newMappingsByGroupSearchRequest(GROUP_ID)
-            .filter(fn -> fn.mappingId(MAPPING_ID_1))
+            .filter(fn -> fn.mappingId(MAPPING_RULE_ID_1))
             .send()
             .join();
 
     assertThat(mappings.items().size()).isEqualTo(1);
-    assertThat(mappings.items()).extracting(Mapping::getMappingId).containsExactly(MAPPING_ID_1);
+    assertThat(mappings.items())
+        .extracting(Mapping::getMappingId)
+        .containsExactly(MAPPING_RULE_ID_1);
   }
 
   @Test
@@ -82,7 +92,7 @@ public class MappingsByGroupSearchTest {
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
         .extracting(Mapping::getMappingId)
-        .containsExactly(MAPPING_ID_2, MAPPING_ID_1);
+        .containsExactly(MAPPING_RULE_ID_2, MAPPING_RULE_ID_1);
   }
 
   @Test
@@ -101,13 +111,13 @@ public class MappingsByGroupSearchTest {
         .hasMessageContaining("groupId must not be empty");
   }
 
-  private static void createMapping(final String mappingId) {
+  private static void createMappingRule(final String mappingRuleId) {
     camundaClient
         .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .mappingId(mappingRuleId)
         .name("name")
-        .claimName(mappingId + "claimName")
-        .claimValue(mappingId + "claimValue")
+        .claimName(mappingRuleId + "claimName")
+        .claimValue(mappingRuleId + "claimValue")
         .send()
         .join();
   }
@@ -116,10 +126,10 @@ public class MappingsByGroupSearchTest {
     camundaClient.newCreateGroupCommand().groupId(groupId).name("name").send().join();
   }
 
-  private static void assignMappingToGroup(final String mappingId, final String groupId) {
+  private static void assignMappingRuleToGroup(final String mappingRuleId, final String groupId) {
     camundaClient
         .newAssignMappingToGroupCommand()
-        .mappingId(mappingId)
+        .mappingId(mappingRuleId)
         .groupId(groupId)
         .send()
         .join();

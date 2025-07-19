@@ -114,13 +114,13 @@ public final class SearchQueryBuilders {
     return fn.apply(userSearchQuery()).build();
   }
 
-  public static MappingRuleQuery.Builder mappingSearchQuery() {
+  public static MappingRuleQuery.Builder mappingRuleSearchQuery() {
     return new MappingRuleQuery.Builder();
   }
 
-  public static MappingRuleQuery mappingSearchQuery(
+  public static MappingRuleQuery mappingRuleSearchQuery(
       final Function<MappingRuleQuery.Builder, ObjectBuilder<MappingRuleQuery>> fn) {
-    return fn.apply(mappingSearchQuery()).build();
+    return fn.apply(mappingRuleSearchQuery()).build();
   }
 
   public static RoleQuery.Builder roleSearchQuery() {

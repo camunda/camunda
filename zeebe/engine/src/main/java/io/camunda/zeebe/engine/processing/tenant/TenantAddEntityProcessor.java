@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.GroupState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
@@ -42,7 +42,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
       "Expected to add entity to tenant with ID '%s', but no tenant with this ID exists.";
   private final TenantState tenantState;
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final GroupState groupState;
   private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -60,7 +60,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     tenantState = state.getTenantState();
-    mappingState = state.getMappingState();
+    mappingRuleState = state.getMappingRuleState();
     groupState = state.getGroupState();
     roleState = state.getRoleState();
     membershipState = state.getMembershipState();
@@ -144,7 +144,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       case GROUP ->
           authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
               || groupState.get(entityId).isPresent();
-      case MAPPING -> mappingState.get(entityId).isPresent();
+      case MAPPING_RULE -> mappingRuleState.get(entityId).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
     };

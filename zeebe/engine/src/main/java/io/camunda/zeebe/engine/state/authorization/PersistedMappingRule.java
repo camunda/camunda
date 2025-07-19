@@ -14,36 +14,36 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class PersistedMapping extends UnpackedObject
+public class PersistedMappingRule extends UnpackedObject
     implements DbValue, MappingRuleMatcher.MappingRule {
 
-  private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
+  private final LongProperty mappingRuleKeyProp = new LongProperty("mappingRuleKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final StringProperty nameProp = new StringProperty("name", "");
-  private final StringProperty mappingIdProp = new StringProperty("mappingId", "");
+  private final StringProperty mappingRuleIdProp = new StringProperty("mappingRuleId", "");
 
-  public PersistedMapping() {
+  public PersistedMappingRule() {
     super(5);
-    declareProperty(mappingKeyProp)
+    declareProperty(mappingRuleKeyProp)
         .declareProperty(claimNameProp)
         .declareProperty(claimValueProp)
         .declareProperty(nameProp)
-        .declareProperty(mappingIdProp);
+        .declareProperty(mappingRuleIdProp);
   }
 
-  public PersistedMapping copy() {
-    final var copy = new PersistedMapping();
+  public PersistedMappingRule copy() {
+    final var copy = new PersistedMappingRule();
     copy.copyFrom(this);
     return copy;
   }
 
-  public long getMappingKey() {
-    return mappingKeyProp.getValue();
+  public long getMappingRuleKey() {
+    return mappingRuleKeyProp.getValue();
   }
 
-  public PersistedMapping setMappingKey(final long mappingKey) {
-    mappingKeyProp.setValue(mappingKey);
+  public PersistedMappingRule setMappingRuleKey(final long mappingKey) {
+    mappingRuleKeyProp.setValue(mappingKey);
     return this;
   }
 
@@ -51,7 +51,7 @@ public class PersistedMapping extends UnpackedObject
     return BufferUtil.bufferAsString(claimNameProp.getValue());
   }
 
-  public PersistedMapping setClaimName(final String claimName) {
+  public PersistedMappingRule setClaimName(final String claimName) {
     claimNameProp.setValue(claimName);
     return this;
   }
@@ -60,7 +60,7 @@ public class PersistedMapping extends UnpackedObject
     return BufferUtil.bufferAsString(claimValueProp.getValue());
   }
 
-  public PersistedMapping setClaimValue(final String claimValue) {
+  public PersistedMappingRule setClaimValue(final String claimValue) {
     claimValueProp.setValue(claimValue);
     return this;
   }
@@ -69,23 +69,23 @@ public class PersistedMapping extends UnpackedObject
     return BufferUtil.bufferAsString(nameProp.getValue());
   }
 
-  public PersistedMapping setName(final String name) {
+  public PersistedMappingRule setName(final String name) {
     nameProp.setValue(name);
     return this;
   }
 
-  public String getMappingId() {
-    return BufferUtil.bufferAsString(mappingIdProp.getValue());
+  public String getMappingRuleId() {
+    return BufferUtil.bufferAsString(mappingRuleIdProp.getValue());
   }
 
-  public PersistedMapping setMappingId(final String mappingId) {
-    mappingIdProp.setValue(mappingId);
+  public PersistedMappingRule setMappingRuleId(final String mappingRuleId) {
+    mappingRuleIdProp.setValue(mappingRuleId);
     return this;
   }
 
   @Override
   public String mappingRuleId() {
-    return getMappingId();
+    return getMappingRuleId();
   }
 
   @Override

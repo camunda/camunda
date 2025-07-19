@@ -334,14 +334,14 @@ public class RemoveEntityTenantTest {
         .tenant()
         .addEntity(tenantId)
         .withEntityId(mappingId)
-        .withEntityType(EntityType.MAPPING)
+        .withEntityType(EntityType.MAPPING_RULE)
         .add();
     final var removedEntity =
         engine
             .tenant()
             .removeEntity(tenantId)
             .withEntityId(mappingId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .remove()
             .getValue();
 
@@ -349,7 +349,7 @@ public class RemoveEntityTenantTest {
         .isNotNull()
         .hasTenantId(tenantId)
         .hasEntityId(mappingId)
-        .hasEntityType(EntityType.MAPPING);
+        .hasEntityType(EntityType.MAPPING_RULE);
   }
 
   @Test
@@ -373,7 +373,7 @@ public class RemoveEntityTenantTest {
             .tenant()
             .removeEntity(tenantId)
             .withEntityId(mappingId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .expectRejection()
             .remove();
 
@@ -382,7 +382,7 @@ public class RemoveEntityTenantTest {
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
+            "Expected to remove mapping_rule with ID '%s' from tenant with ID '%s', but the mapping_rule is not assigned to this tenant."
                 .formatted(mappingId, tenantId));
   }
 
@@ -406,14 +406,14 @@ public class RemoveEntityTenantTest {
             .tenant()
             .removeEntity(tenantId)
             .withEntityId(mappingId)
-            .withEntityType(EntityType.MAPPING)
+            .withEntityType(EntityType.MAPPING_RULE)
             .expectRejection()
             .remove();
 
     assertThat(notAssignedUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to remove mapping with ID '%s' from tenant with ID '%s', but the mapping is not assigned to this tenant."
+            "Expected to remove mapping_rule with ID '%s' from tenant with ID '%s', but the mapping_rule is not assigned to this tenant."
                 .formatted(mappingId, tenantId));
   }
 

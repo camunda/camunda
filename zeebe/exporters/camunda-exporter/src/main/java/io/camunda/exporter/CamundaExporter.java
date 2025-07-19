@@ -19,7 +19,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.FORM;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB;
-import static io.camunda.zeebe.protocol.record.ValueType.MAPPING;
+import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
@@ -411,7 +411,7 @@ processing records from previous version
         Set.of(
             USER,
             GROUP,
-            MAPPING,
+            MAPPING_RULE,
             AUTHORIZATION,
             TENANT,
             DECISION,

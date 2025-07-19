@@ -13,7 +13,7 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -76,8 +76,8 @@ public class MappingUpdateAuthorizationTest {
 
     // then
     assertThat(
-            RecordingExporter.mappingRecords(MappingIntent.UPDATED)
-                .withMappingId(id)
+            RecordingExporter.mappingRuleRecords(MappingRuleIntent.UPDATED)
+                .withMappingRuleId(id)
                 .withClaimName(claimName)
                 .withClaimValue(claimValueNew)
                 .exists())
@@ -116,8 +116,8 @@ public class MappingUpdateAuthorizationTest {
 
     // then
     assertThat(
-            RecordingExporter.mappingRecords(MappingIntent.UPDATED)
-                .withMappingId(mappingId)
+            RecordingExporter.mappingRuleRecords(MappingRuleIntent.UPDATED)
+                .withMappingRuleId(mappingId)
                 .withClaimName(claimName)
                 .withClaimValue(claimValueNew)
                 .exists())

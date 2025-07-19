@@ -18,21 +18,20 @@ import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingUpdateRequest;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleDeleteRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingRuleUpdateRequest;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
-public class MappingServices
-    extends SearchQueryService<MappingServices, MappingRuleQuery, MappingRuleEntity> {
+public class MappingRuleServices
+    extends SearchQueryService<MappingRuleServices, MappingRuleQuery, MappingRuleEntity> {
 
   private final MappingRuleSearchClient mappingRuleSearchClient;
 
-  public MappingServices(
+  public MappingRuleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient,
@@ -53,58 +52,48 @@ public class MappingServices
   }
 
   @Override
-  public MappingServices withAuthentication(final CamundaAuthentication authentication) {
-    return new MappingServices(
+  public MappingRuleServices withAuthentication(final CamundaAuthentication authentication) {
+    return new MappingRuleServices(
         brokerClient, securityContextProvider, mappingRuleSearchClient, authentication);
   }
 
-  public CompletableFuture<MappingRecord> createMapping(final MappingDTO request) {
+  public CompletableFuture<MappingRuleRecord> createMappingRule(final MappingRuleDTO request) {
     return sendBrokerRequest(
-        new BrokerMappingCreateRequest()
+        new BrokerMappingRuleCreateRequest()
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setMappingId(request.mappingId()));
+            .setMappingRuleId(request.mappingRuleId()));
   }
 
-  public CompletableFuture<MappingRecord> updateMapping(final MappingDTO request) {
+  public CompletableFuture<MappingRuleRecord> updateMappingRule(final MappingRuleDTO request) {
     return sendBrokerRequest(
-        new BrokerMappingUpdateRequest()
+        new BrokerMappingRuleUpdateRequest()
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue())
             .setName(request.name())
-            .setMappingId(request.mappingId()));
+            .setMappingRuleId(request.mappingRuleId()));
   }
 
-  public MappingRuleEntity getMapping(final String mappingId) {
+  public MappingRuleEntity getMappingRule(final String mappingRuleId) {
     return search(
-            SearchQueryBuilders.mappingSearchQuery()
-                .filter(f -> f.mappingRuleId(mappingId))
+            SearchQueryBuilders.mappingRuleSearchQuery()
+                .filter(f -> f.mappingRuleId(mappingRuleId))
                 .singleResult()
                 .build())
         .items()
         .getFirst();
   }
 
-  public Optional<MappingRuleEntity> findMapping(final MappingDTO request) {
-    return search(
-            SearchQueryBuilders.mappingSearchQuery()
-                .filter(f -> f.claimName(request.claimName()).claimValue(request.claimValue()))
-                .page(p -> p.size(1))
-                .build())
-        .items()
-        .stream()
-        .findFirst();
+  public CompletableFuture<MappingRuleRecord> deleteMappingRule(final String mappingRuleId) {
+    return sendBrokerRequest(new BrokerMappingRuleDeleteRequest().setMappingRuleId(mappingRuleId));
   }
 
-  public CompletableFuture<MappingRecord> deleteMapping(final String mappingId) {
-    return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingId(mappingId));
-  }
-
-  public Stream<MappingRuleEntity> getMatchingMappings(final Map<String, Object> claims) {
+  public Stream<MappingRuleEntity> getMatchingMappingRules(final Map<String, Object> claims) {
     return MappingRuleMatcher.matchingRules(
         search(MappingRuleQuery.of(q -> q.unlimited())).items().stream(), claims);
   }
 
-  public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}
+  public record MappingRuleDTO(
+      String claimName, String claimValue, String name, String mappingRuleId) {}
 }

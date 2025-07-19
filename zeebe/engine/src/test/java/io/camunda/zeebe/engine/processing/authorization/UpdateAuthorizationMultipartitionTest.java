@@ -191,7 +191,7 @@ public class UpdateAuthorizationMultipartitionTest {
             .authorization()
             .updateAuthorization(existingKey)
             .withOwnerId(nonexistentMappingId)
-            .withOwnerType(AuthorizationOwnerType.MAPPING)
+            .withOwnerType(AuthorizationOwnerType.MAPPING_RULE)
             .withResourceId("res-id")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
