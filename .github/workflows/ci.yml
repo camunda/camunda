@@ -913,7 +913,7 @@ jobs:
     #if: needs.detect-changes.outputs.operate-backend-changes == 'true'
     name: "Operate"
     needs: [ detect-changes ]
-    uses: ./.github/workflows/operate-ci.yml
+    uses: ./.github/workflows/ci-operate.yml
     secrets: inherit
     permissions: { }
     with:

@@ -1,5 +1,5 @@
 # description: Reuseable workflow that executes the passed maven command
-# called by: operate-ci.yml
+# called by: ci-operate.yml
 # test location: operate
 # type: CI
 # owner: @camunda/data-layer
