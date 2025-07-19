@@ -14,7 +14,7 @@ on:
 
 jobs:
   run-backup-restore-tests:
-    name: "with '${{ inputs.database }}'"
+    name: "Run Backup Restore Test"
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions: {}  # GITHUB_TOKEN unused in this job
