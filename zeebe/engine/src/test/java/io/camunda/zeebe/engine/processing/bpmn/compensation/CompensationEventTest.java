@@ -39,7 +39,8 @@ public class CompensationEventTest {
     ProcessValidationUtil.validateProcess(
         process,
         ExpectedValidationResult.expect(
-            BoundaryEvent.class, "Must have at least one outgoing sequence flow or association"));
+            BoundaryEvent.class,
+            "Compensation boundary events must have a compensation association and no outgoing sequence flows"));
   }
 
   @Test
