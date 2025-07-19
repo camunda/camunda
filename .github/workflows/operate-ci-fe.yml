@@ -14,7 +14,7 @@ env:
 
 jobs:
   fe-unit-tests:
-    name: "[FE] Unit Tests"
+    name: "Unit Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { } # GITHUB_TOKEN unused in this job
