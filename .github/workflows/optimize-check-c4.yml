@@ -16,6 +16,7 @@ on:
     paths:
       - "optimize/c4/**"
       - ".github/workflows/optimize-check-c4.yml"
+      - "/**"
 
 jobs:
   build:

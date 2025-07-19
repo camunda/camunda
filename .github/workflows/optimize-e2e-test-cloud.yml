@@ -27,6 +27,7 @@ on:
       - "pom.xml"
       - "optimize/**"
       - "optimize.Dockerfile"
+      - "/**"
   workflow_dispatch:
 
 jobs:
