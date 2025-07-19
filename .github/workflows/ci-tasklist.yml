@@ -65,7 +65,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   elasticsearch:
-    name: "[BE] ElasticSearch Backup Restore"
+    name: "[BE] ElasticSearch Backup Restore / Data Layer"
     if: inputs.beChanges
     permissions: { }  # GITHUB_TOKEN unused in this job
     uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
@@ -74,7 +74,7 @@ jobs:
       database: elasticsearch
 
   opensearch:
-    name: "[BE] OpenSearch Backup Restore"
+    name: "[BE] OpenSearch Backup Restore / Data Layer"
     if: inputs.beChanges
     permissions: { }  # GITHUB_TOKEN unused in this job
     uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
@@ -84,7 +84,7 @@ jobs:
 
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
-    name: "[BE] Docker Tests"
+    name: "[BE] Docker Tests / Core Features"
     if: inputs.beChanges
     uses: ./.github/workflows/tasklist-docker-tests.yml
     secrets: inherit
