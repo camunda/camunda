@@ -148,8 +148,7 @@ jobs:
         with:
           parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -f optimize/pom.xml -pl upgrade -am -Dquickly  -DskipFrontendBuild -PrunAssembly -T1
       - name: Run Upgrade Tests
-        run: ./mvnw erify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }} | tee "${BUILD_OUTPUT_FILE_PATH}"
-
+        run: ./mvnw verify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }} | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/collect-test-artifacts
