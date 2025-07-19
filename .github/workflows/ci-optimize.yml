@@ -190,6 +190,7 @@ jobs:
     name: "Dockerfile Linting"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 4
     strategy:
       fail-fast: false
       matrix:
