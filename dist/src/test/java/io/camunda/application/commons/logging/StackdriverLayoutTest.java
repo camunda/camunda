@@ -165,13 +165,16 @@ final class StackdriverLayoutTest {
         {"timestampSeconds":%d,"timestampNanos":%d,"severity":"%s","message":"Hello World!",\
         "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
         "function":"Foo.Bar"},%s\
-        "staticContext":{"threadId":1,"threadName":"main","threadPriority":5,\
+        "staticContext":{"threadId":%d,"threadName":"%s","threadPriority":%d,\
         "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest"},\
         "serviceContext":{"service":"","version":""}}""",
             message.getInstant().getEpochSecond(),
             message.getInstant().getNanoOfSecond(),
             expectedSeverity,
-            expectedContext == null ? "" : expectedContext + ",");
+            expectedContext == null ? "" : expectedContext + ",",
+            message.getThreadId(),
+            message.getThreadName(),
+            message.getThreadPriority());
   }
 
   private void assertMessageMatchesWithReportLocation() {
@@ -184,12 +187,16 @@ final class StackdriverLayoutTest {
         {"timestampSeconds":%d,"timestampNanos":%d,"severity":"ERROR","message":"Hello World!",\
         "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
         "function":"Foo.Bar"},\
-        "staticContext":{"threadId":1,"threadName":"main","threadPriority":5,\
+        "staticContext":{"threadId":%d,"threadName":"%s","threadPriority":%d,\
         "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest"},\
         "serviceContext":{"service":"","version":""},\
         "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
         "reportLocation":{"filePath":"Foo.java","functionName":"Bar","lineNumber":1}}""",
-            message.getInstant().getEpochSecond(), message.getInstant().getNanoOfSecond());
+            message.getInstant().getEpochSecond(),
+            message.getInstant().getNanoOfSecond(),
+            message.getThreadId(),
+            message.getThreadName(),
+            message.getThreadPriority());
   }
 
   private void assertMessageMatchesWithException(final RuntimeException exception) {
@@ -205,14 +212,17 @@ final class StackdriverLayoutTest {
         {"timestampSeconds":%d,"timestampNanos":%d,"severity":"ERROR","message":"Hello World!",\
         "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
         "function":"Foo.Bar"},\
-        "staticContext":{"threadId":1,"threadName":"main","threadPriority":5,\
+        "staticContext":{"threadId":%d,"threadName":"%s","threadPriority":%d,\
         "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest"},\
         "serviceContext":{"service":"","version":""},\
         "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
         "exception":"""
                         .formatted(
                             message.getInstant().getEpochSecond(),
-                            message.getInstant().getNanoOfSecond()))
+                            message.getInstant().getNanoOfSecond(),
+                            message.getThreadId(),
+                            message.getThreadName(),
+                            message.getThreadPriority()))
                 + ".+\"}")
         .contains(exception.getMessage());
   }
