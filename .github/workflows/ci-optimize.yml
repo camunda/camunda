@@ -1,0 +1,183 @@
+# description:  tbd
+# test location: tbd
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: Operate CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      feChanges:
+        description: "Boolean variable for if there are front end changes to Optimize"
+        type: boolean
+        required: true
+      beChanges:
+        description: "Boolean variable for if there are back end changes to Optimize"
+        type: boolean
+        required: true
+  workflow_call:
+    inputs:
+      feChanges:
+        description: "Boolean variable for if there are front end changes to Optimize"
+        type: boolean
+        required: true
+      beChanges:
+        description: "Boolean variable for if there are back end changes to Optimize"
+        type: boolean
+        required: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  optimize-backend-unit-tests:
+    if: inputs.beChanges
+    name: "[UT] Optimize - ${{matrix.suiteName}}"
+    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ DataLayer, CoreFeatures ]
+        include:
+          - suite: DataLayer
+            suiteName: Data Layer
+          - suite: CoreFeatures
+            suiteName: Core Features
+    with:
+      componentName: "Optimize"
+      suite: ${{ matrix.suite }}
+
+  optimize-frontend-unit-tests:
+    if: inputs.feChanges
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    defaults:
+      run:
+        working-directory: optimize/client
+    env:
+      LIMITS_CPU: 4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.pom_info.outputs.x_version_node }}
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: optimize/client
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Unit tests
+        run: yarn test:ci
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: optimize-unit-tests-frontend-junit
+          path: |
+            **/jest-test-results.xml
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  upgrade-tests:
+    if: inputs.beChanges
+    name: "Database Upgrade ${{ matrix.database }}"
+    runs-on: gcp-core-8-default
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        database: [ elasticsearch, opensearch ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: optimize
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Read Java/version info
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+      - name: Start Database
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.${{ matrix.database }}.yml
+          project_name: ${{ matrix.database }}
+        env:
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
+          OPENSEARCH_JVM_MEMORY: 1
+          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+
+      - name: Install
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -f optimize/pom.xml -pl upgrade -am -Dquickly  -DskipFrontendBuild -PrunAssembly -T1
+      - name: Verify upgrade tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }}
+        env:
+          CAMUNDA_OPTIMIZE_DATABASE: ${{ matrix.database }}
+      - name: Upload Test Results
+        if: always()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: upgrade-${{ matrix.database }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+            **/*.log
+            **/*.json
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: upgrade-docker-${{ matrix.database }}
+
+  hadolint:
+    name: "Dockerfile Linting"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "optimize.Dockerfile",
+          ]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          ignore: DL3018,DL3008

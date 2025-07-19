@@ -2,7 +2,7 @@
 # test location: /optimize/client/e2e/sm-tests
 # type: CI
 # owner: @camunda/core-features
-name: Optimize E2E Self-Managed
+name: "[Legacy] Optimize E2E Self-Managed"
 
 on:
   pull_request:
