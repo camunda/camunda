@@ -39,7 +39,7 @@ env:
 
 jobs:
   tasklist-frontend-tests:
-    name: "[FE] Tests"
+    name: "[FE] Tests / Core Features"
     if: inputs.feChanges
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
     secrets: inherit
