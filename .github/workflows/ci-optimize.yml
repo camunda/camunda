@@ -116,6 +116,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
@@ -148,7 +150,7 @@ jobs:
       - name: Verify upgrade tests
         uses: ./.github/actions/run-maven
         with:
-          parameters: verify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }}
+          parameters: verify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }} | tee "${BUILD_OUTPUT_FILE_PATH}"
         env:
           CAMUNDA_OPTIMIZE_DATABASE: ${{ matrix.database }}
       - name: Upload Test Results
@@ -165,6 +167,28 @@ jobs:
         if: always()
         with:
           archive_name: upgrade-docker-${{ matrix.database }}
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+          # workaround to avoid https://github.com/camunda/camunda/issues/16604
+          skipSummary: true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "ci-optimize/upgrade-test-${{ matrix.database }}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
 
   hadolint:
     name: "Dockerfile Linting"
@@ -183,3 +207,13 @@ jobs:
         with:
           dockerfile: ${{ matrix.dockerfile }}
           ignore: DL3018,DL3008
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
