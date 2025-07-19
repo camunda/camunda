@@ -39,6 +39,7 @@ env:
 
 jobs:
   tasklist-frontend-tests:
+    name: "[FE] Tests"
     if: inputs.feChanges
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
     secrets: inherit
@@ -46,7 +47,7 @@ jobs:
 
   tasklist-backend-unit-tests:
     if: inputs.beChanges
-    name: "[UT] Tasklist - ${{matrix.suiteName}}"
+    name: "[BE] Unit Tests / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -83,6 +84,7 @@ jobs:
 
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
+    name: "[BE] Docker Tests"
     if: inputs.beChanges
     uses: ./.github/workflows/tasklist-docker-tests.yml
     secrets: inherit
