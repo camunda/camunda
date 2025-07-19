@@ -15,8 +15,6 @@ import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
-import org.apache.logging.log4j.core.pattern.PlainTextRenderer;
-import org.apache.logging.log4j.core.pattern.TextRenderer;
 import org.apache.logging.log4j.core.test.appender.EncodingListAppender;
 import org.apache.logging.log4j.core.test.appender.ListAppender;
 import org.apache.logging.log4j.layout.template.json.JsonTemplateLayout;
@@ -26,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @SuppressWarnings("LoggingSimilarMessage")
