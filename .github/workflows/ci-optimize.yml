@@ -147,12 +147,9 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -f optimize/pom.xml -pl upgrade -am -Dquickly  -DskipFrontendBuild -PrunAssembly -T1
-      - name: Verify upgrade tests
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: verify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }} | tee "${BUILD_OUTPUT_FILE_PATH}"
-        env:
-          CAMUNDA_OPTIMIZE_DATABASE: ${{ matrix.database }}
+      - name: Run Upgrade Tests
+        run: ./mvnw erify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }} | tee "${BUILD_OUTPUT_FILE_PATH}"
+
       - name: Upload Test Results
         if: always()
         uses: ./.github/actions/collect-test-artifacts
