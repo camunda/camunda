@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
+import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ElementInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
@@ -46,7 +46,7 @@ public class ElementInstanceSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private FlowNodeInstanceReader elementInstanceReader;
+  @Autowired private FlowNodeInstanceDbReader elementInstanceReader;
 
   private RdbmsWriter rdbmsWriter;
 

@@ -13,7 +13,7 @@ import static io.camunda.it.rdbms.db.fixtures.IncidentFixtures.createAndSaveRand
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.IncidentReader;
+import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
@@ -42,7 +42,7 @@ public class IncidentIT {
   public void shouldSaveAndFindIncidentByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentReader processInstanceReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader processInstanceReader = rdbmsService.getIncidentReader();
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriter, original);
@@ -56,7 +56,7 @@ public class IncidentIT {
   public void shouldSaveAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentReader processInstanceReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader processInstanceReader = rdbmsService.getIncidentReader();
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriter, original);
@@ -74,7 +74,7 @@ public class IncidentIT {
   public void shouldFindIncidentByBpmnProcessId(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentReader processInstanceReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader processInstanceReader = rdbmsService.getIncidentReader();
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriter, original);
@@ -100,7 +100,7 @@ public class IncidentIT {
   public void shouldFindAllIncidentPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentReader processInstanceReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader processInstanceReader = rdbmsService.getIncidentReader();
 
     final String processDefinitionId = IncidentFixtures.nextStringId();
     createAndSaveRandomIncidents(rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
@@ -122,7 +122,7 @@ public class IncidentIT {
   public void shouldFindIncidentWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentReader processInstanceReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader processInstanceReader = rdbmsService.getIncidentReader();
 
     final var original = IncidentFixtures.createRandomized(b -> b);
     createAndSaveIncident(rdbmsWriter, original);
@@ -161,7 +161,7 @@ public class IncidentIT {
   public void shouldFindIncidentWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentReader processInstanceReader = rdbmsService.getIncidentReader();
+    final IncidentDbReader processInstanceReader = rdbmsService.getIncidentReader();
 
     final var processDefinitionKey = nextKey();
     createAndSaveRandomIncidents(rdbmsWriter, b -> b.processDefinitionKey(processDefinitionKey));
@@ -211,7 +211,7 @@ public class IncidentIT {
   public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final IncidentReader reader = rdbmsService.getIncidentReader();
+    final IncidentDbReader reader = rdbmsService.getIncidentReader();
 
     final var cleanupDate = NOW.minusDays(1);
 

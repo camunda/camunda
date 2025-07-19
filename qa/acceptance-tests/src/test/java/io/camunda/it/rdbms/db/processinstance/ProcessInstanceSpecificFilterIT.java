@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
+import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
@@ -45,7 +45,7 @@ public class ProcessInstanceSpecificFilterIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private ProcessInstanceReader processInstanceReader;
+  @Autowired private ProcessInstanceDbReader processInstanceReader;
 
   private RdbmsWriter rdbmsWriter;
 

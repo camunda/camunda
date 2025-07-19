@@ -10,7 +10,7 @@ package io.camunda.it.rdbms.db.batchoperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.BatchOperationReader;
+import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -31,7 +31,7 @@ public class BatchOperationSortIT {
   @TestTemplate
   public void shouldSortIdAsc(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final BatchOperationReader batchOperationReader = rdbmsService.getBatchOperationReader();
+    final BatchOperationDbReader batchOperationReader = rdbmsService.getBatchOperationReader();
 
     BatchOperationFixtures.createAndSaveRandomBatchOperations(
         rdbmsService.createWriter(1L), b -> b);

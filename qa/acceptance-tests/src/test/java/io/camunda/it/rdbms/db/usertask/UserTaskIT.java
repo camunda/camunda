@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveUser
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.UserTaskReader;
+import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel;
 import io.camunda.db.rdbms.write.domain.UserTaskDbModel.UserTaskState;
@@ -566,7 +566,7 @@ public class UserTaskIT {
   @TestTemplate
   public void shouldFindUserTaskWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final UserTaskReader processInstanceReader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader processInstanceReader = rdbmsService.getUserTaskReader();
 
     createAndSaveRandomUserTasks(rdbmsService);
     final UserTaskDbModel userTask = UserTaskFixtures.createRandomized(b -> b);
@@ -601,7 +601,7 @@ public class UserTaskIT {
   @TestTemplate
   public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final UserTaskReader reader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
 
     createAndSaveRandomUserTasks(rdbmsService, b -> b.tenantId("tenant-1337"));
     final var sort = UserTaskSort.of(s -> s.priority().asc().completionDate().asc().desc());
@@ -676,7 +676,7 @@ public class UserTaskIT {
   public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final UserTaskReader reader = rdbmsService.getUserTaskReader();
+    final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
 
     final var cleanupDate = NOW.minusDays(1);
 

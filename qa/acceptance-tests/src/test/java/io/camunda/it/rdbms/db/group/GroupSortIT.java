@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.GroupFixtures.createAndSaveRandomG
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.GroupReader;
+import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -72,7 +72,7 @@ public class GroupSortIT {
       final Function<Builder, ObjectBuilder<GroupSort>> sortBuilder,
       final Comparator<GroupEntity> comparator) {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final GroupReader reader = rdbmsService.getGroupReader();
+    final GroupDbReader reader = rdbmsService.getGroupReader();
 
     final var name = nextStringId();
     createAndSaveRandomGroups(rdbmsWriter, b -> b.name(name));
