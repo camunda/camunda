@@ -5,19 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.exception;
+package io.camunda.service.exception;
 
-public class NoSecondaryStorageException extends CamundaSearchException {
-
+public class SecondaryStorageUnavailableException extends ServiceException {
   public static final String NO_SECONDARY_STORAGE_MESSAGE =
       "This endpoint requires a secondary storage, but none is set. Secondary storage can be configured using the 'camunda.database.type' property.";
-  private static final long serialVersionUID = 1L;
 
-  public NoSecondaryStorageException() {
-    super(NO_SECONDARY_STORAGE_MESSAGE, Reason.SECONDARY_STORAGE_NOT_SET);
-  }
-
-  public NoSecondaryStorageException(final String message) {
-    super(message);
+  public SecondaryStorageUnavailableException() {
+    super(NO_SECONDARY_STORAGE_MESSAGE, ServiceException.Status.FORBIDDEN);
   }
 }

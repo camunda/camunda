@@ -26,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
 
 @Configuration(proxyBeanMethods = false)
-@ComponentScan(basePackages = "io.camunda.zeebe.gateway.rest")
+@ComponentScan(basePackages = {"io.camunda.zeebe.gateway.rest", "io.camunda.service.validation"})
 @ConditionalOnRestGatewayEnabled
 @EnableConfigurationProperties(GatewayRestProperties.class)
 public class RestApiConfiguration {
