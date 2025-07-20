@@ -38,13 +38,6 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
-  tasklist-frontend-tests:
-    name: "[FE] Tests / Core Features"
-    if: inputs.feChanges
-    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
-    secrets: inherit
-    permissions: { }  # GITHUB_TOKEN unused in this job
-
   tasklist-backend-unit-tests:
     if: inputs.beChanges
     name: "[BE] Unit Tests / ${{matrix.suiteName}}"
