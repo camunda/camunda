@@ -121,7 +121,9 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: optimize-upgrade-tests
+          maven-cache-key-modifier: optimize
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -141,10 +143,15 @@ jobs:
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
 
+      - name: Install optimize dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f optimize/pom.xml -pl upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
+
       - name: Install
         uses: ./.github/actions/run-maven
         with:
-          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -f optimize/pom.xml -pl upgrade -am -Dquickly  -DskipFrontendBuild -PrunAssembly -T1
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -f optimize/pom.xml -pl upgrade -am
       - name: Run Upgrade Tests
         run: ./mvnw verify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }} | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Results
@@ -161,54 +168,33 @@ jobs:
         if: always()
         with:
           archive_name: upgrade-docker-${{ matrix.database }}
-      - name: Analyze Test Runs
-        id: analyze-test-run
-        if: always()
-        uses: ./.github/actions/analyze-test-runs
-        with:
-          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
-          # workaround to avoid https://github.com/camunda/camunda/issues/16604
-          skipSummary: true
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          job_name: "ci-optimize/upgrade-test-${{ matrix.database }}"
-          build_status: ${{ job.status }}
-          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
-          detailed_junit_flaky_tests: true
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
 
-  hadolint:
-    name: "Dockerfile Linting"
-    runs-on: ubuntu-latest
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    timeout-minutes: 4
-    strategy:
-      fail-fast: false
-      matrix:
-        dockerfile:
-          [
-            "optimize.Dockerfile",
-          ]
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: ${{ matrix.dockerfile }}
-          ignore: DL3018,DL3008
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+    hadolint:
+      name: "Dockerfile Linting"
+      runs-on: ubuntu-latest
+      permissions: { }  # GITHUB_TOKEN unused in this job
+      timeout-minutes: 4
+      strategy:
+        fail-fast: false
+        matrix:
+          dockerfile:
+            [
+              "optimize.Dockerfile",
+            ]
+      steps:
+        - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+          with:
+            dockerfile: ${{ matrix.dockerfile }}
+            ignore: DL3018,DL3008
+        - name: Observe build status
+          if: always()
+          continue-on-error: true
+          uses: ./.github/actions/observe-build-status
+          with:
+            build_status: ${{ job.status }}
+            secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+            secret_vault_address: ${{ secrets.VAULT_ADDR }}
+            secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
