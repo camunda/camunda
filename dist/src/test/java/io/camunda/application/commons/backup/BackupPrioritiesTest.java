@@ -118,14 +118,14 @@ class BackupPrioritiesTest {
             "operate-import-position-8.3.0_", "tasklist-import-position-8.2.0_");
     // PRIO 2
     assertThat(indices.get(1).allIndices())
-        .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.5.0_");
+        .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.5.1_");
     // PRIO 2 TEMPLATES
     assertThat(indices.get(2).allIndices())
         .containsExactlyInAnyOrder(
             "operate-list-view-8.3.0_*",
             "-operate-list-view-8.3.0_",
-            "tasklist-task-8.5.0_*",
-            "-tasklist-task-8.5.0_");
+            "tasklist-task-8.5.1_*",
+            "-tasklist-task-8.5.1_");
     // PRIO 3
     assertThat(indices.get(3).allIndices())
         .containsExactlyInAnyOrder("operate-batch-operation-1.0.0_", "operate-operation-8.4.1_");
@@ -183,7 +183,7 @@ class BackupPrioritiesTest {
             "camunda-authorization-8.8.0_",
             "camunda-group-8.8.0_",
             "camunda-mapping-rule-8.8.0_",
-            "camunda-web-session-8.8.0_",
+            "camunda-web-session-8.8.1_",
             "camunda-role-8.8.0_",
             "camunda-tenant-8.8.0_",
             "camunda-user-8.8.0_",

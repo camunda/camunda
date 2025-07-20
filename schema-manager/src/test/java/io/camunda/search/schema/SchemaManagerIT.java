@@ -877,7 +877,7 @@ public class SchemaManagerIT {
             newPrefix + "-camunda-tenant-8.8.0_",
             newPrefix + "-camunda-usage-metric-8.8.0_",
             newPrefix + "-camunda-user-8.8.0_",
-            newPrefix + "-camunda-web-session-8.8.0_",
+            newPrefix + "-camunda-web-session-8.8.1_",
             newPrefix + "-operate-batch-operation-1.0.0_",
             newPrefix + "-operate-decision-8.3.0_",
             newPrefix + "-operate-decision-instance-8.3.0_",
@@ -899,7 +899,7 @@ public class SchemaManagerIT {
             newPrefix + "-tasklist-draft-task-variable-8.3.0_",
             newPrefix + "-tasklist-form-8.4.0_",
             newPrefix + "-tasklist-metric-8.3.0_",
-            newPrefix + "-tasklist-task-8.5.0_",
+            newPrefix + "-tasklist-task-8.5.1_",
             newPrefix + "-tasklist-task-variable-8.3.0_",
             newPrefix + "-tasklist-import-position-8.2.0_");
   }

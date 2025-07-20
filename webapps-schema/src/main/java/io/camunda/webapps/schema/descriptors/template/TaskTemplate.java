@@ -18,7 +18,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
     implements Prio2Backup, ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "task";
-  public static final String INDEX_VERSION = "8.5.0";
+  public static final String INDEX_VERSION = "8.5.1";
 
   /* User Task Fields*/
   public static final String ID = "id";
