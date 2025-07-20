@@ -118,14 +118,14 @@ class BackupPrioritiesTest {
             "operate-import-position-8.3.0_", "tasklist-import-position-8.2.0_");
     // PRIO 2
     assertThat(indices.get(1).allIndices())
-        .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.5.1_");
+        .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.8.0_");
     // PRIO 2 TEMPLATES
     assertThat(indices.get(2).allIndices())
         .containsExactlyInAnyOrder(
             "operate-list-view-8.3.0_*",
             "-operate-list-view-8.3.0_",
-            "tasklist-task-8.5.1_*",
-            "-tasklist-task-8.5.1_");
+            "tasklist-task-8.8.0_*",
+            "-tasklist-task-8.8.0_");
     // PRIO 3
     assertThat(indices.get(3).allIndices())
         .containsExactlyInAnyOrder("operate-batch-operation-1.0.0_", "operate-operation-8.4.1_");

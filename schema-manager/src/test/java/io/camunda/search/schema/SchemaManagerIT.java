@@ -899,7 +899,7 @@ public class SchemaManagerIT {
             newPrefix + "-tasklist-draft-task-variable-8.3.0_",
             newPrefix + "-tasklist-form-8.4.0_",
             newPrefix + "-tasklist-metric-8.3.0_",
-            newPrefix + "-tasklist-task-8.5.1_",
+            newPrefix + "-tasklist-task-8.8.0_",
             newPrefix + "-tasklist-task-variable-8.3.0_",
             newPrefix + "-tasklist-import-position-8.2.0_");
   }
