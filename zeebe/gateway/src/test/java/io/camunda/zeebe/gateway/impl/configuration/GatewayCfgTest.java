@@ -182,9 +182,7 @@ public final class GatewayCfgTest {
         .getNetwork()
         .setHost("zeebe")
         .setPort(5432)
-        .setMinKeepAliveInterval(Duration.ofSeconds(30))
-        .setSocketReceiveBuffer(DataSize.ofMegabytes(3))
-        .setSocketSendBuffer(DataSize.ofMegabytes(3));
+        .setMinKeepAliveInterval(Duration.ofSeconds(30));
     expected
         .getCluster()
         .setInitialContactPoints(List.of("broker:432", "anotherBroker:789"))
@@ -195,6 +193,8 @@ public final class GatewayCfgTest {
         .setPort(12345);
     expected
         .getCluster()
+        .setSocketReceiveBuffer(DataSize.ofMegabytes(3))
+        .setSocketSendBuffer(DataSize.ofMegabytes(3))
         .setConfigManager(
             new ConfigManagerCfg(
                 new ClusterConfigurationGossiperConfig(
