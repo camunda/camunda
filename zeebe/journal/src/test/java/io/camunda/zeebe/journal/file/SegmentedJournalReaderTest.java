@@ -21,12 +21,9 @@ import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
-import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -44,15 +41,13 @@ class SegmentedJournalReaderTest {
   @TempDir Path directory;
 
   @AutoClose private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
-  private final UnsafeBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
-  private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
 
   private JournalReader reader;
   private SegmentedJournal journal;
 
   @BeforeEach
   void setup() {
-    final int entrySize = FrameUtil.getLength() + getSerializedSize(data);
+    final int entrySize = FrameUtil.getLength() + getSerializedSize(JournalTestHelper.DATA);
 
     journal =
         SegmentedJournal.builder(meterRegistry)
@@ -75,7 +70,7 @@ class SegmentedJournalReaderTest {
   void shouldReadAfterCompact() {
     // given
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 5; i++) {
-      assertThat(journal.append(i, recordDataWriter).index()).isEqualTo(i);
+      assertThat(journal.append(i, JournalTestHelper.RECORD_DATA_WRITER).index()).isEqualTo(i);
     }
     assertThat(reader.hasNext()).isTrue();
 
@@ -95,7 +90,7 @@ class SegmentedJournalReaderTest {
     long asqn = 1;
 
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
-      journal.append(asqn++, recordDataWriter).index();
+      journal.append(asqn++, JournalTestHelper.RECORD_DATA_WRITER).index();
     }
 
     for (int i = 1; i < ENTRIES_PER_SEGMENT * 2; i++) {
@@ -113,7 +108,7 @@ class SegmentedJournalReaderTest {
     // given
 
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
-      journal.append(i, recordDataWriter).index();
+      journal.append(i, JournalTestHelper.RECORD_DATA_WRITER).index();
     }
 
     for (int i = 1; i <= ENTRIES_PER_SEGMENT * 2; i++) {
@@ -129,7 +124,7 @@ class SegmentedJournalReaderTest {
   @Test
   void shouldNotReadWhenAccessingDeletedSegment() {
     // given
-    journal.append(recordDataWriter);
+    journal.append(JournalTestHelper.RECORD_DATA_WRITER);
     final var reader = journal.openReader();
 
     // when
@@ -142,11 +137,11 @@ class SegmentedJournalReaderTest {
   @Test
   void shouldReadAfterReset() {
     // given
-    journal.append(recordDataWriter);
+    journal.append(JournalTestHelper.RECORD_DATA_WRITER);
     final var reader = journal.openReader();
     final int resetIndex = 100;
     journal.reset(resetIndex);
-    journal.append(recordDataWriter);
+    journal.append(JournalTestHelper.RECORD_DATA_WRITER);
 
     // when
     reader.seekToFirst();
@@ -159,7 +154,7 @@ class SegmentedJournalReaderTest {
   void shouldBuiltIndexOnDemandWhileSeek() {
     // given
     for (int i = 1; i <= ENTRIES_PER_SEGMENT; i++) {
-      assertThat(journal.append(i, recordDataWriter).index()).isEqualTo(i);
+      assertThat(journal.append(i, JournalTestHelper.RECORD_DATA_WRITER).index()).isEqualTo(i);
     }
 
     // simulate restart with no index

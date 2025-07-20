@@ -16,10 +16,8 @@ import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -77,7 +75,7 @@ class SegmentsManagerTest {
   @Test
   void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
     // given
-    try (final var journal = openJournal()) {
+    try (final var journal = JournalTestHelper.openJournal(journalFactory, directory)) {
       journal.append(journalFactory.entry()).index();
     }
 
@@ -95,7 +93,7 @@ class SegmentsManagerTest {
   void shouldNotThrowExceptionWhenCorruptionAtNotAckEntries() throws Exception {
     // given
     final long index;
-    try (final var journal = openJournal()) {
+    try (final var journal = JournalTestHelper.openJournal(journalFactory, directory)) {
       index = journal.append(journalFactory.entry()).index();
       journal.append(journalFactory.entry());
     }
@@ -119,7 +117,7 @@ class SegmentsManagerTest {
   @Test
   void shouldNotThrowExceptionWhenCorruptionAtDescriptorWithoutAckedEntries() throws Exception {
     // given
-    final var journal = openJournal();
+    final var journal = JournalTestHelper.openJournal(journalFactory, directory);
     journal.close();
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
@@ -139,7 +137,7 @@ class SegmentsManagerTest {
   @Test
   void shouldDetectMissingEntryAsCorruption() {
     // given
-    final var journal = openJournal();
+    final var journal = JournalTestHelper.openJournal(journalFactory, directory);
     final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
     journal.close();
     journalFactory.metaStore().storeLastFlushedIndex(indexInFirstSegment + 1);
@@ -156,7 +154,7 @@ class SegmentsManagerTest {
   @Test
   void shouldDetectCorruptionInIntermediateSegments() throws Exception {
     // given
-    final var journal = openJournal();
+    final var journal = JournalTestHelper.openJournal(journalFactory, directory);
     final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
     journal.append(2, journalFactory.entry()).index();
     final var firstSegmentFile = journal.getFirstSegment().file().file();
@@ -176,7 +174,7 @@ class SegmentsManagerTest {
   @Test
   void shouldNotDetectCorruptionWithUnflushedIndexInIntermediateSegments() throws Exception {
     // given
-    final var journal = openJournal();
+    final var journal = JournalTestHelper.openJournal(journalFactory, directory);
     final var indexInFirstSegment = journal.append(1, journalFactory.entry()).index();
     journal.append(2, journalFactory.entry()).index();
     final var firstSegmentFile = journal.getFirstSegment().file().file();
@@ -213,7 +211,7 @@ class SegmentsManagerTest {
   @Test
   void shouldHandleCrashOnResetAfterDeletionBeforeSegmentIsCreated() throws IOException {
     // given
-    try (final var journal = openJournal()) {
+    try (final var journal = JournalTestHelper.openJournal(journalFactory, directory)) {
       journal.append(1, journalFactory.entry()).index();
       journal.append(2, journalFactory.entry()).index();
       journal.append(3, journalFactory.entry()).index();
@@ -234,7 +232,7 @@ class SegmentsManagerTest {
   @Test
   void shouldHandleCrashOnTruncateAfterDeletionBeforeSegmentIsCreated() {
     // given
-    try (final var journal = openJournal()) {
+    try (final var journal = JournalTestHelper.openJournal(journalFactory, directory)) {
       journal.append(1, journalFactory.entry()).index();
       final var index = journal.append(2, journalFactory.entry()).index();
       journal.append(3, journalFactory.entry()).index();
@@ -272,7 +270,7 @@ class SegmentsManagerTest {
     // given
     final var loader = Mockito.spy(journalFactory.segmentLoader());
     final var metaStore = Mockito.spy(journalFactory.metaStore());
-    try (final var journal = openJournal()) {
+    try (final var journal = JournalTestHelper.openJournal(journalFactory, directory)) {
       journal.append(1, journalFactory.entry()).index();
       journal.append(2, journalFactory.entry()).index();
       journal.append(3, journalFactory.entry()).index();
@@ -306,30 +304,27 @@ class SegmentsManagerTest {
   @Test
   void shouldBuildJournalWithLargestSegment() throws IOException {
     // given three journals, to simulate segments with different first and last index
-    final var journal = openJournal(directory, 3);
-    final var secondaryJournal = openJournal(directory.resolve("secondary"), 3);
-    final var thirdJournal = openJournal(directory.resolve("third"), 5);
+    var journalFactory = new TestJournalFactory(3);
+    final var journal = JournalTestHelper.openJournal(journalFactory, directory);
+    final var secondaryJournal =
+        JournalTestHelper.openJournal(journalFactory, directory.resolve("secondary"));
+    journalFactory = new TestJournalFactory(5);
+    final var thirdJournal =
+        JournalTestHelper.openJournal(journalFactory, directory.resolve("third"));
     closeables.addAll(List.of(journal, secondaryJournal, thirdJournal));
 
-    appendJournalEntries(journal, 1, 2);
+    JournalTestHelper.appendJournalEntries(journal, 1, 2);
     journal.getLastSegment().updateDescriptor();
 
-    appendJournalEntries(secondaryJournal, 1, 2, 3);
+    JournalTestHelper.appendJournalEntries(secondaryJournal, 1, 2, 3);
     secondaryJournal.getLastSegment().updateDescriptor();
     secondaryJournal.close();
 
-    appendJournalEntries(thirdJournal, 1, 2, 3, 4, 5);
+    JournalTestHelper.appendJournalEntries(thirdJournal, 1, 2, 3, 4, 5);
     thirdJournal.getLastSegment().updateDescriptor();
 
-    // move the segment file from the second journal to the first one, replacing the suffix to point
-    // to a segment further in time
-    Files.move(
-        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-2.log"));
-
-    Files.move(
-        directory.resolve("third").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-3.log"));
+    JournalTestHelper.mergeJournals(
+        directory, directory.resolve("secondary"), directory.resolve("third"));
 
     // when opening the journal
     segments = journalFactory.segmentsManager(directory);
@@ -348,33 +343,27 @@ class SegmentsManagerTest {
   @Test
   void shouldBuildJournalWithContinuousOverlaps() throws IOException {
     // given three journals, to simulate segments with different first and last index
-    final var journal = openJournal(directory, 3);
-    final var secondaryJournal = openJournal(directory.resolve("secondary"), 2);
-    final var thirdJournal = openJournal(directory.resolve("third"), 2);
+    final var journalFactory = new TestJournalFactory(3);
+    final var journal = JournalTestHelper.openJournal(journalFactory, directory);
+    final var secondaryJournal =
+        JournalTestHelper.openJournal(journalFactory, directory.resolve("secondary"));
+    final var thirdJournal =
+        JournalTestHelper.openJournal(journalFactory, directory.resolve("third"));
     closeables.addAll(List.of(journal, secondaryJournal, thirdJournal));
 
-    appendJournalEntries(journal, 1, 2);
+    JournalTestHelper.appendJournalEntries(journal, 1, 2);
     journal.getLastSegment().updateDescriptor();
 
     secondaryJournal.reset(2);
-    appendJournalEntries(secondaryJournal, 2, 3);
+    JournalTestHelper.appendJournalEntries(secondaryJournal, 2, 3);
     secondaryJournal.getLastSegment().updateDescriptor();
 
     thirdJournal.reset(3);
-    appendJournalEntries(thirdJournal, 3, 4);
+    JournalTestHelper.appendJournalEntries(thirdJournal, 3, 4);
     thirdJournal.getLastSegment().updateDescriptor();
 
-    // move segment with id 2 from the second journal to the first one, replacing the suffix to
-    // point to a segment further in time
-    Files.move(
-        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-2.log"));
-
-    // move segment with id 3 from the third journal to the first one, replacing the suffix to point
-    // to a segment further in time
-    Files.move(
-        directory.resolve("third").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-3.log"));
+    JournalTestHelper.mergeJournals(
+        directory, directory.resolve("secondary"), directory.resolve("third"));
 
     // when opening the journal
     segments = journalFactory.segmentsManager(directory);
@@ -410,22 +399,22 @@ class SegmentsManagerTest {
   @Test
   void shouldBuildJournalWithPartialOverlap() throws IOException {
     // given two journals, to simulate segments with different first and last index
-    final var journal = openJournal(directory, 5);
-    final var secondaryJournal = openJournal(directory.resolve("secondary"), 5);
-    closeables.addAll(List.of(journal, secondaryJournal));
+    journalFactory = new TestJournalFactory(5);
+    final var journal = JournalTestHelper.openJournal(journalFactory, directory);
+    closeables.add(journal);
 
-    appendJournalEntries(journal, 1, 2, 3, 4, 5);
+    JournalTestHelper.appendJournalEntries(journal, journalFactory.entry(), 1, 2, 3, 4, 5);
     journal.getLastSegment().updateDescriptor();
 
+    journalFactory = new TestJournalFactory(5);
+    final var secondaryJournal =
+        JournalTestHelper.openJournal(journalFactory, directory.resolve("secondary"));
+    closeables.add(secondaryJournal);
     secondaryJournal.reset(3);
-    appendJournalEntries(secondaryJournal, 3, 4, 5, 6, 7);
+    JournalTestHelper.appendJournalEntries(secondaryJournal, journalFactory.entry(), 3, 4, 5, 6, 7);
     secondaryJournal.getLastSegment().updateDescriptor();
 
-    // move segment with id 2 from the second journal to the first one, replacing the suffix to
-    // point to a segment further in time
-    Files.move(
-        directory.resolve("secondary").resolve("data").resolve("journal-1.log"),
-        directory.resolve("data").resolve("journal-2.log"));
+    JournalTestHelper.mergeJournals(directory, directory.resolve("secondary"));
 
     // when opening the journal
     segments = journalFactory.segmentsManager(directory);
@@ -452,20 +441,5 @@ class SegmentsManagerTest {
     assertThat(lastSegment.file().name()).isEqualTo("journal-2.log");
     assertThat(directory.resolve("data").resolve("journal-1.log")).exists();
     assertThat(directory.resolve("data").resolve("journal-2.log")).exists();
-  }
-
-  private void appendJournalEntries(final SegmentedJournal journal, final int... asqns) {
-    Arrays.stream(asqns).forEach(asqn -> journal.append(asqn, journalFactory.entry()));
-  }
-
-  private SegmentedJournal openJournal() {
-    return journalFactory.journal(journalFactory.segmentsManager(directory));
-  }
-
-  private SegmentedJournal openJournal(final Path directory, final int entriesPerSegment) {
-    journalFactory = new TestJournalFactory(entriesPerSegment);
-    final var journal = journalFactory.journal(journalFactory.segmentsManager(directory));
-    closeables.add(journal);
-    return journal;
   }
 }
