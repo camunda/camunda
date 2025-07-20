@@ -54,7 +54,6 @@ import org.testcontainers.utility.DockerImageName;
  * <p>The important part is that we should be aware whether rolling update is possible between
  * versions.
  */
-@Disabled
 final class RollingUpdateTest {
 
   private static final BpmnModelInstance PROCESS =
