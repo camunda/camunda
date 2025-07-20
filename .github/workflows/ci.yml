@@ -244,7 +244,7 @@ jobs:
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[BE] General Unit Tests"
+    name: "General / [UT]"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -1044,6 +1044,7 @@ jobs:
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
     needs: [ detect-changes ]
+    name: "Zeebe"
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
     with:
