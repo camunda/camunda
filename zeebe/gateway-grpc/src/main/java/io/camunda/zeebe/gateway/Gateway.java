@@ -272,9 +272,7 @@ public final class Gateway implements CloseableSilently {
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
         .maxInboundMessageSize(maxMessageSize)
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
-        .permitKeepAliveWithoutCalls(false)
-        .withOption(ChannelOption.SO_RCVBUF, (int) cfg.getSocketReceiveBuffer().toBytes())
-        .withChildOption(ChannelOption.SO_SNDBUF, (int) cfg.getSocketSendBuffer().toBytes());
+        .permitKeepAliveWithoutCalls(false);
   }
 
   private void setSecurityConfig(
