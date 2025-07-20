@@ -40,14 +40,14 @@ env:
 jobs:
   operate-frontend-tests:
     if: inputs.feChanges
-    name: "[FE] Tests / Core Features"
+    name: "[UT] Front End"
     uses: ./.github/workflows/operate-ci-fe.yml
     secrets: inherit
     permissions: { }  # GITHUB_TOKEN unused in this job
 
   operate-backend-unit-tests:
     if: inputs.beChanges
-    name: "[BE] Unit Tests / ${{matrix.suiteName}}"
+    name: "[UT] Back End / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -66,7 +66,7 @@ jobs:
 
   run-importer-tests:
     if: inputs.beChanges
-    name: "[BE] Importer Tests / Data Layer"
+    name: "[IT] Importer Tests / Data Layer"
     uses: ./.github/workflows/operate-run-tests.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     with:
@@ -76,7 +76,7 @@ jobs:
 
   run-backup-restore-tests:
     if: inputs.beChanges
-    name: "[BE] Backup Restore Tests / TEAM TBD"
+    name: "[IT] Backup Restore Tests / TEAM TBD"
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -139,7 +139,7 @@ jobs:
 
   docker-container-tests:
     if: inputs.beChanges
-    name: "[BE] Docker container tests"
+    name: "[IT] Docker Container Tests / Core Features"
     runs-on: gcp-core-4-default
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job

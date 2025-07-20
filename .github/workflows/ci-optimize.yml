@@ -3,7 +3,7 @@
 # called by: ci.yml
 # type: CI
 # owner: @camunda/core-features, @camunda/data-layer
-name: Operate CI
+name: Optimize CI
 
 on:
   workflow_dispatch:
@@ -40,7 +40,7 @@ env:
 jobs:
   optimize-backend-unit-tests:
     if: inputs.beChanges
-    name: "[UT] Optimize - ${{matrix.suiteName}}"
+    name: "[BE] Unit Test / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -58,6 +58,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   optimize-frontend-unit-tests:
+    name: "[FE] Unit Tests / Core Features"
     if: inputs.feChanges
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -105,7 +106,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   hadolint:
-    name: "Dockerfile Linting"
+    name: "Dockerfile Linting / Core Features"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
     timeout-minutes: 4
