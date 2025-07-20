@@ -170,31 +170,31 @@ jobs:
           archive_name: upgrade-docker-${{ matrix.database }}
 
 
-    hadolint:
-      name: "Dockerfile Linting"
-      runs-on: ubuntu-latest
-      permissions: { }  # GITHUB_TOKEN unused in this job
-      timeout-minutes: 4
-      strategy:
-        fail-fast: false
-        matrix:
-          dockerfile:
-            [
-              "optimize.Dockerfile",
-            ]
-      steps:
-        - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-          with:
-            dockerfile: ${{ matrix.dockerfile }}
-            ignore: DL3018,DL3008
-        - name: Observe build status
-          if: always()
-          continue-on-error: true
-          uses: ./.github/actions/observe-build-status
-          with:
-            build_status: ${{ job.status }}
-            secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-            secret_vault_address: ${{ secrets.VAULT_ADDR }}
-            secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+  hadolint:
+    name: "Dockerfile Linting"
+    runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          [
+            "optimize.Dockerfile",
+          ]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          ignore: DL3018,DL3008
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
