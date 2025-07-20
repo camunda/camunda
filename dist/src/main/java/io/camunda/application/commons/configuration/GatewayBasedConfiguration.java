@@ -157,12 +157,15 @@ public final class GatewayBasedConfiguration {
 
   private MessagingConfig messagingConfig(final GatewayCfg config) {
     final var cluster = config.getCluster();
+    final var network = config.getNetwork();
 
     final var messaging =
         new MessagingConfig()
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(cluster.getHost()))
-            .setPort(cluster.getPort());
+            .setPort(cluster.getPort())
+            .setSocketSendBuffer((int) network.getSocketSendBuffer().toBytes())
+            .setSocketReceiveBuffer((int) network.getSocketReceiveBuffer().toBytes());
 
     final var security = cluster.getSecurity();
     if (security.isEnabled()) {
