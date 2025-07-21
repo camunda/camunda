@@ -57,7 +57,7 @@ public class ReceivedSnapshotTest {
 
     // when
     assertThatThrownBy(() -> receiverSnapshotStore.newReceivedSnapshot("invalid").join())
-        .isInstanceOf(IllegalArgumentException.class);
+        .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
@@ -65,7 +65,7 @@ public class ReceivedSnapshotTest {
     // given
 
     // when
-    final var receivedSnapshot = receiverSnapshotStore.newReceivedSnapshot("1-0-123-121").join();
+    final var receivedSnapshot = receiverSnapshotStore.newReceivedSnapshot("1-0-123-121-1").join();
 
     // then
     assertThat(receivedSnapshot.index()).isEqualTo(1L);
@@ -128,7 +128,7 @@ public class ReceivedSnapshotTest {
     final var receivedSnapshot = receiveSnapshot(persistedSnapshot).persist().join();
 
     // when
-    receiverSnapshotStore.purgePendingSnapshots().join();
+    receiverSnapshotStore.abortPendingSnapshots().join();
 
     // then
     assertThat(receivedSnapshot.getPath()).as("the received snapshot still exists").exists();

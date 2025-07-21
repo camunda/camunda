@@ -99,7 +99,7 @@ public class PassiveRole extends InactiveRole {
 
     // as a safeguard, we clean up any orphaned pending snapshots
     try {
-      raft.getPersistedSnapshotStore().purgePendingSnapshots().join();
+      raft.getPersistedSnapshotStore().abortPendingSnapshots().join();
     } catch (final Exception e) {
       log.warn(
           "Failed to purge pending snapshots, which may result in unnecessary disk usage and should be monitored",

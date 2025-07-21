@@ -116,7 +116,7 @@ final class ContinuousBackupIT {
 
   private long getSnapshotIndex() {
     return FileBasedSnapshotId.ofFileName(partitionsActuator.query().get(1).snapshotId())
-        .orElseThrow()
+        .getOrThrow()
         .getIndex();
   }
 

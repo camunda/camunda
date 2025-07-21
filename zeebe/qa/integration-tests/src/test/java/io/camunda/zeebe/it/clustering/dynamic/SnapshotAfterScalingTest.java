@@ -138,7 +138,9 @@ final class SnapshotAfterScalingTest {
             statuses.stream()
                 .map(
                     status ->
-                        FileBasedSnapshotId.ofFileName(status.get(1).snapshotId()).get().getIndex())
+                        FileBasedSnapshotId.ofFileName(status.get(1).snapshotId())
+                            .getOrThrow()
+                            .getIndex())
                 .distinct()
                 .count())
         .describedAs(

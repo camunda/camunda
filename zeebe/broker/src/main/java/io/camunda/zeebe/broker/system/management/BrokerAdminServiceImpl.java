@@ -170,8 +170,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     final var snapshotId = getSnapshotId(partition);
     final var processedPositionInSnapshot =
         snapshotId
-            .flatMap(FileBasedSnapshotId::ofFileName)
-            .map(FileBasedSnapshotId::getProcessedPosition)
+            .map(id -> FileBasedSnapshotId.ofFileName(id).getOrThrow().getProcessedPosition())
             .orElse(null);
     final var clockFuture = streamProcessor.getClock();
 

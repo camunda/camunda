@@ -197,8 +197,8 @@ public final class StateControllerImplTest {
         .extracting(PersistedSnapshot::getCompactionBound)
         .isEqualTo(firstSnapshot.getCompactionBound());
     assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
-    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).orElseThrow();
-    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).orElseThrow();
+    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).getOrThrow();
+    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).getOrThrow();
     assertThat(firstSnapshotId).isLessThan(newSnapshotId);
   }
 
@@ -221,8 +221,8 @@ public final class StateControllerImplTest {
         .extracting(PersistedSnapshot::getCompactionBound)
         .isEqualTo(firstSnapshot.getCompactionBound());
     assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
-    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).orElseThrow();
-    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).orElseThrow();
+    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).getOrThrow();
+    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).getOrThrow();
     assertThat(newSnapshotId.getExportedPosition())
         .isEqualTo(firstSnapshotId.getExportedPosition());
     assertThat(newSnapshotId.getProcessedPosition())
@@ -248,8 +248,8 @@ public final class StateControllerImplTest {
         .extracting(PersistedSnapshot::getCompactionBound)
         .isEqualTo(firstSnapshot.getCompactionBound());
     assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
-    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).orElseThrow();
-    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).orElseThrow();
+    final var newSnapshotId = FileBasedSnapshotId.ofFileName(snapshot.getId()).getOrThrow();
+    final var firstSnapshotId = FileBasedSnapshotId.ofFileName(firstSnapshot.getId()).getOrThrow();
     assertThat(firstSnapshotId).isLessThan(newSnapshotId);
   }
 
