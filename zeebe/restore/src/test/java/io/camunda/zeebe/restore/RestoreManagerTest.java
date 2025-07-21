@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -33,12 +34,12 @@ final class RestoreManagerTest {
     Files.createDirectory(dir.resolve("other-data"));
 
     // then
-    assertThatThrownBy(() -> restoreManager.restore(1L, false))
+    assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of()))
         .isInstanceOf(DirectoryNotEmptyException.class);
   }
 
   @Test
-  void shouldNotFailOnLostAndFoundDirectory(@TempDir final Path dir) throws IOException {
+  void shouldIgnoreConfigurableFilesInTarget(@TempDir final Path dir) throws IOException {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
@@ -46,11 +47,33 @@ final class RestoreManagerTest {
         new RestoreManager(
             configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
-    // when
+    // when - create ignored files
     Files.createDirectory(dir.resolve("lost+found"));
+    Files.createFile(dir.resolve(".DS_Store"));
+    Files.createFile(dir.resolve("Thumbs.db"));
 
-    // then
-    assertThatThrownBy(() -> restoreManager.restore(1L, false))
+    // then - should not fail because all files are ignored
+    assertThatThrownBy(
+            () ->
+                restoreManager.restore(1L, false, List.of("lost+found", ".DS_Store", "Thumbs.db")))
         .hasRootCauseInstanceOf(BackupNotFoundException.class);
+  }
+
+  @Test
+  void shouldFailWhenNonIgnoredFileExists(@TempDir final Path dir) throws IOException {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    final var restoreManager =
+        new RestoreManager(
+            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+
+    // when - create ignored and non-ignored files
+    Files.createDirectory(dir.resolve("lost+found"));
+    Files.createFile(dir.resolve("some-data-file"));
+
+    // then - should fail because some-data-file is not ignored
+    assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of("lost+found")))
+        .isInstanceOf(DirectoryNotEmptyException.class);
   }
 }

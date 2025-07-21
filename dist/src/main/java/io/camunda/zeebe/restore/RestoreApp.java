@@ -73,7 +73,10 @@ public class RestoreApp implements ApplicationRunner {
       throws IOException, ExecutionException, InterruptedException {
     LOG.info("Starting to restore from backup {}", backupId);
     new RestoreManager(configuration, backupStore, meterRegistry)
-        .restore(backupId, restoreConfiguration.validateConfig());
+        .restore(
+            backupId,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget());
     LOG.info("Successfully restored broker from backup {}", backupId);
   }
 }
