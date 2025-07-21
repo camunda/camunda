@@ -306,26 +306,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  operate-backend-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[UT] Operate - ${{matrix.suiteName}}"
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    secrets: inherit
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [ DataLayer, CoreFeatures ]
-        include:
-          - suite: DataLayer
-            suiteName: Data Layer
-          - suite: CoreFeatures
-            suiteName: Core Features
-    with:
-      componentName: "Operate"
-      suite: ${{ matrix.suite }}
-
   optimize-backend-unit-tests:
     if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
     name: "[UT] Optimize - ${{matrix.suiteName}}"
@@ -1062,6 +1042,20 @@ jobs:
       runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes  == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
 
+  operate-ci:
+    # TODO renable the if, currently running for all for testing purposes
+    # todo this handles both FE and BE
+    #if: needs.detect-changes.outputs.operate-backend-changes == 'true'
+    name: "Operate"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-operate.yml
+    secrets: inherit
+    permissions: { }
+    with:
+      # TODO - change these inputs to things like  needs.detect-changes.outputs.operate-backend-changes == 'true'
+      feChanges: true
+      beChanges: true
+
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
     needs: [ detect-changes ]
@@ -1070,58 +1064,12 @@ jobs:
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
 
-  # Checks to see if Operate can properly build itself and a docker image
-  # owner: Core Features
-  build-operate-backend:
-    if: needs.detect-changes.outputs.operate-backend-changes == 'true'
-    name: "Operate Build Checks"
+  tasklist-docker-tests:
+    # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
+    if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
     needs: [ detect-changes ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    env:
-      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: ./.github/actions/setup-build
-        name: Build setup
-        with:
-          java-distribution: adopt
-          maven-cache-key-modifier: operate
-          maven-version: 3.8.6
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Build Maven
-        run: |
-          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-      # Build the docker image to verify the built artifacts and the Dockerfile
-      # It does NOT push the image to the registry
-      - name: Build Docker image
-        uses: ./.github/actions/build-platform-docker
-        with:
-          dockerfile: operate.Dockerfile
-          repository: 'registry.camunda.cloud/team-operate/camunda-operate'
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-  # Runs Operate's front end tests
-  # owner: Core Features
-  operate-frontend-tests:
-    if: needs.detect-changes.outputs.operate-frontend-changes == 'true'
-    needs: [ detect-changes ]
-    name: "[FE] Operate"
-    uses: ./.github/workflows/operate-ci-fe.yml
+    uses: ./.github/workflows/tasklist-docker-tests.yml
     secrets: inherit
-    permissions: { }  # GITHUB_TOKEN unused in this job
 
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
@@ -1269,7 +1217,6 @@ jobs:
       checks: read
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
-      - build-operate-backend
       - build-platform-frontend
       - commitlint
       - detect-changes
@@ -1282,8 +1229,7 @@ jobs:
       - maven-spotless-linter
       - openapi-lint
       - opensearch-integration-tests
-      - operate-backend-unit-tests
-      - operate-frontend-tests
+      - operate-ci
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks

@@ -1,0 +1,239 @@
+# description:  tbd
+# test location: tbd
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: Operate CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      feChanges:
+        description: "Boolean variable for if there are front end changes to Operate"
+        type: boolean
+        required: true
+      beChanges:
+        description: "Boolean variable for if there are back end changes to Operate"
+        type: boolean
+        required: true
+  workflow_call:
+    inputs:
+      feChanges:
+        description: "Boolean variable for if there are front end changes to Operate"
+        type: boolean
+        required: true
+      beChanges:
+        description: "Boolean variable for if there are back end changes to Operate"
+        type: boolean
+        required: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  # Checks to see if Operate can properly build itself and a docker image
+  # owner: Core Features
+  build-operate-backend:
+    if: inputs.beChanges
+    name: "Build Checks"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: ./.github/actions/setup-build
+        name: Build setup
+        with:
+          java-distribution: adopt
+          maven-cache-key-modifier: operate
+          maven-version: 3.8.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Build Maven
+        run: |
+          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      # Build the docker image to verify the built artifacts and the Dockerfile
+      # It does NOT push the image to the registry
+      - name: Build Docker image
+        uses: ./.github/actions/build-platform-docker
+        with:
+          dockerfile: operate.Dockerfile
+          repository: 'registry.camunda.cloud/team-operate/camunda-operate'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  operate-frontend-tests:
+    if: inputs.feChanges
+    name: "[UT] Front End"
+    uses: ./.github/workflows/operate-ci-fe.yml
+    secrets: inherit
+    permissions: { }  # GITHUB_TOKEN unused in this job
+
+  operate-backend-unit-tests:
+    if: inputs.beChanges
+    name: "[UT] Back End / ${{matrix.suiteName}}"
+    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ DataLayer, CoreFeatures ]
+        include:
+          - suite: DataLayer
+            suiteName: Data Layer
+          - suite: CoreFeatures
+            suiteName: Core Features
+    with:
+      componentName: "Operate"
+      suite: ${{ matrix.suite }}
+
+  run-importer-tests:
+    if: inputs.beChanges
+    name: "[IT] Importer Tests / Data Layer"
+    uses: ./.github/workflows/operate-run-tests.yml
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    with:
+      command: ./mvnw -pl operate -am verify -T1C -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2
+      testName: "Importer"
+    secrets: inherit
+
+  run-backup-restore-tests:
+    if: inputs.beChanges
+    name: "[IT] Backup Restore Tests / TEAM TBD"
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      DOCKER_IMAGE_TAG: current-test
+    services:
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-operate-docker
+        with:
+          repository: localhost:5000/camunda/operate
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: operate.Dockerfile
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Run Operate backup restore Tests
+        run: ./mvnw -B -pl operate/qa/backup-restore-tests -DskipChecks -P -docker,-skipTests verify | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Upload Test Report
+        if: failure()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: "Operate Test Backup Restore"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+          # workaround to avoid https://github.com/camunda/camunda/issues/16604
+          skipSummary: true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "operate-ci/backup-restore"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  docker-container-tests:
+    if: inputs.beChanges
+    name: "[IT] Docker Container Tests / Core Features"
+    runs-on: gcp-core-4-default
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    env:
+      OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
+    services:
+      registry:
+        image: registry:3
+        ports:
+          - 5000:5000
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          ignore: DL3018 # redundant when pinning the base image
+          dockerfile: operate.Dockerfile
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: operate-docker-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Build backend
+        run: ./mvnw clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: network=host
+      - name: Build and push to local registry
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          push: true
+          tags: ${{ env.OPERATE_TEST_DOCKER_IMAGE }}
+          file: operate.Dockerfile
+      - name: Run Docker tests
+        run: ./mvnw -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+      - name: Upload Test Report
+        if: failure()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: "docker tests"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "operate-ci/docker-tests"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
