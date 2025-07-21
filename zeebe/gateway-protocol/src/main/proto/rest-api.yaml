@@ -132,6 +132,8 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /jobs/search:
     post:
       tags:
@@ -203,6 +205,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /jobs/{jobKey}/error:
     post:
       tags:
@@ -246,6 +250,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /jobs/{jobKey}/completion:
     post:
       tags:
@@ -288,6 +294,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /jobs/{jobKey}:
     patch:
       tags:
@@ -329,6 +337,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /incidents/{incidentKey}/resolution:
     post:
@@ -365,6 +375,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /tenants:
     post:
@@ -398,6 +410,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /tenants/{tenantId}:
     get:
@@ -472,6 +486,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
     delete:
       tags:
@@ -501,6 +517,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /tenants/{tenantId}/users/{username}:
     put:
@@ -537,6 +555,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Tenant
@@ -571,6 +591,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /tenants/{tenantId}/users/search:
     post:
@@ -742,6 +764,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Tenant
@@ -776,6 +800,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /tenants/{tenantId}/mapping-rules/{mappingRuleId}:
     put:
       tags:
@@ -811,6 +837,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
     delete:
       tags:
@@ -846,6 +874,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /tenants/{tenantId}/mapping-rules/search:
     post:
       tags:
@@ -909,6 +939,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
     delete:
       tags:
@@ -944,6 +976,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /tenants/{tenantId}/roles/{roleId}:
     put:
@@ -980,6 +1014,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Tenant
@@ -1014,7 +1050,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /tenants/search:
     post:
@@ -1093,6 +1130,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /user-tasks/{userTaskKey}/assignment:
     post:
@@ -1135,6 +1174,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /user-tasks/{userTaskKey}:
     get:
@@ -1214,6 +1255,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /user-tasks/{userTaskKey}/form:
     get:
@@ -1293,6 +1336,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /user-tasks/search:
     post:
       tags:
@@ -1454,6 +1499,8 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /clock/reset:
     post:
@@ -1473,6 +1520,8 @@ paths:
           description: The clock was successfully reset to the system time.
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /process-definitions/search:
     post:
@@ -1714,6 +1763,8 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
         "504":
           description: |
             The process instance creation request timed out in the gateway.
@@ -1931,6 +1982,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /process-instances/cancellation:
     post:
@@ -2130,6 +2183,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /process-instances/{processInstanceKey}/modification:
     post:
@@ -2170,6 +2225,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /process-instances/{processInstanceKey}/call-hierarchy:
     get:
       tags:
@@ -2618,6 +2675,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /authorizations:
     post:
@@ -2655,6 +2714,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /authorizations/{authorizationKey}:
     put:
       tags:
@@ -2688,6 +2749,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     get:
       tags:
         - Authorization
@@ -2746,6 +2809,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /authorizations/search:
     post:
       tags:
@@ -2805,6 +2870,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /roles/{roleId}:
     get:
       tags:
@@ -2878,6 +2945,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Role
@@ -2905,6 +2974,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /roles/{roleId}/users/search:
     post:
       tags:
@@ -3031,6 +3102,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Role
@@ -3066,6 +3139,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /roles/{roleId}/clients/{clientId}:
     put:
       tags:
@@ -3108,6 +3183,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Role
@@ -3143,6 +3220,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /roles/search:
     post:
       tags:
@@ -3218,6 +3297,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Role
@@ -3253,6 +3334,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /roles/{roleId}/groups/search:
     post:
       tags:
@@ -3337,6 +3420,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Role
@@ -3372,6 +3457,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /roles/{roleId}/mapping-rules/search:
     post:
       tags:
@@ -3443,6 +3530,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /groups/{groupId}:
     get:
       tags:
@@ -3516,6 +3605,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Group
@@ -3543,6 +3634,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /groups/{groupId}/users/search:
     post:
       tags:
@@ -3753,6 +3846,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Group
@@ -3788,6 +3883,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /groups/{groupId}/clients/{clientId}:
     put:
       tags:
@@ -3830,6 +3927,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Group
@@ -3865,6 +3964,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /groups/{groupId}/mapping-rules/{mappingRuleId}:
     put:
       tags:
@@ -3907,6 +4008,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Group
@@ -3942,6 +4045,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /groups/search:
     post:
       tags:
@@ -4059,6 +4164,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       tags:
         - Mapping rule
@@ -4086,6 +4193,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     get:
       tags:
         - Mapping rule
@@ -4177,6 +4286,8 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /messages/correlation:
     post:
@@ -4214,6 +4325,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /message-subscriptions/search:
     post:
       tags:
@@ -4544,6 +4657,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /users/search:
     post:
@@ -4636,6 +4751,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     patch:
       tags:
         - User
@@ -4671,6 +4788,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /setup/user:
     post:
@@ -4699,7 +4818,8 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /incidents/search:
     post:
@@ -4846,6 +4966,8 @@ paths:
                 $ref: "#/components/schemas/DeploymentResult"
         "400":
           $ref: "#/components/responses/InvalidData"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /resources/{resourceKey}/deletion:
     post:
       tags:
@@ -4885,6 +5007,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /resources/{resourceKey}:
     get:
       tags:
@@ -4984,6 +5108,8 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
@@ -5027,6 +5153,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /signals/broadcast:
     post:
@@ -5058,6 +5186,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /batch-operations/{batchOperationKey}:
     get:
@@ -5206,6 +5336,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /batch-operations/{batchOperationKey}/resumption:
     put:
@@ -5247,6 +5379,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
   /batch-operation-items/search:
     post:
       tags:
@@ -10723,6 +10857,16 @@ components:
             $ref: "#/components/schemas/ProblemDetail"
     InvalidData:
       description: The provided data is not valid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    ServiceUnavailable:
+      description: >
+        The service is currently unavailable. This may happen only on some requests where the system
+        creates backpressure to prevent the server's compute resources from being exhausted, avoiding more severe failures.
+        Clients are recommended to eventually retry those requests after a backoff period.
+        You can learn more about the backpressure mechanism here: https://docs.camunda.io/docs/components/zeebe/technical-concepts/internal-processing/#handling-backpressure .
       content:
         application/problem+json:
           schema:

@@ -109,7 +109,7 @@ public class ErrorMapperTest extends RestControllerTest {
   }
 
   @Test
-  void shouldYieldTooManyRequestsWhenBrokerErrorExhausted() {
+  void shouldYieldServiceUnavailableWhenBrokerErrorExhausted() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
@@ -119,7 +119,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
-        ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS, "Just an error");
+        ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE, "Just an error");
     expectedBody.setTitle(ErrorCode.RESOURCE_EXHAUSTED.name());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
 
@@ -132,7 +132,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .body(Mono.just(request), UserTaskCompletionRequest.class)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
         .expectBody(ProblemDetail.class)
         .isEqualTo(expectedBody);
   }
@@ -605,7 +605,7 @@ public class ErrorMapperTest extends RestControllerTest {
   }
 
   @Test
-  public void shouldReturnTooManyRequestsOnRequestRetriesExhaustedException() {
+  public void shouldReturnServiceUnavailableOnRequestRetriesExhaustedException() {
     // given
     Mockito.when(userTaskServices.completeUserTask(anyLong(), any(), anyString()))
         .thenReturn(
@@ -615,7 +615,7 @@ public class ErrorMapperTest extends RestControllerTest {
     final var request = new UserTaskCompletionRequest();
     final var expectedBody =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.TOO_MANY_REQUESTS,
+            HttpStatus.SERVICE_UNAVAILABLE,
             "Expected to handle request, but all retries have been exhausted");
     expectedBody.setTitle(RESOURCE_EXHAUSTED.name());
     expectedBody.setInstance(URI.create(USER_TASKS_BASE_URL + "/1/completion"));
@@ -629,7 +629,7 @@ public class ErrorMapperTest extends RestControllerTest {
         .body(Mono.just(request), UserTaskCompletionRequest.class)
         .exchange()
         .expectStatus()
-        .isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
+        .isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody(ProblemDetail.class)
