@@ -13,6 +13,8 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
@@ -20,7 +22,10 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
+import java.nio.file.FileSystemException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -167,8 +172,46 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                   snapshotId.getProcessedPosition(),
                   snapshotId.getExportedPosition(),
                   lastFollowupEventPosition);
+
       writeMetadataAndUpdateChecksum(metadata);
-      snapshot = snapshotStore.persistNewSnapshot(directory, snapshotId, checksum, metadata);
+      // snapshot id and director were first provided without the checksum because we could only
+      // calculate it just now.
+      // Let's construct a new snapshot id with the checksum and move the snapshot to the final
+      // directory.
+      // Including the checksum ensures we can take new snapshots even if positions didn't change,
+      // for example after running data migrations.
+      final var idWithChecksum =
+          new FileBasedSnapshotId(
+              snapshotId.getIndex(),
+              snapshotId.getTerm(),
+              snapshotId.getProcessedPosition(),
+              snapshotId.getExportedPosition(),
+              snapshotId.getBrokerId(),
+              Long.toHexString(checksum.getCombinedChecksum()));
+      final var directoryWithChecksum =
+          directory.getParent().resolve(idWithChecksum.getSnapshotIdAsString());
+      try {
+        FileUtil.moveDurably(directory, directoryWithChecksum, StandardCopyOption.ATOMIC_MOVE);
+      } catch (final Exception e) {
+        // Due to atomic move, we only get a generic `FileSystemException` if the target already
+        // exists. Let's double-check that this is the case and throw a more specific exception in
+        // that case, this helps with logging.
+        if (e instanceof final FileSystemException ignored && Files.exists(directoryWithChecksum)) {
+          future.completeExceptionally(
+              new SnapshotAlreadyExistsException(
+                  "Snapshot %s already exists".formatted(idWithChecksum)));
+        } else {
+          future.completeExceptionally(
+              new SnapshotException(
+                  "Unable to move snapshot %s to target directory with checksum %s"
+                      .formatted(idWithChecksum, directoryWithChecksum),
+                  e));
+        }
+        return;
+      }
+      snapshot =
+          snapshotStore.persistNewSnapshot(
+              directoryWithChecksum, idWithChecksum, checksum, metadata);
       future.complete(snapshot);
     } catch (final Exception e) {
       future.completeExceptionally(e);
