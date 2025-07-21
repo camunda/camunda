@@ -90,6 +90,15 @@ public interface PartitionChangeExecutor {
   ActorFuture<Void> disableExporter(final int partitionId, final String exporterId);
 
   /**
+   * Delete the exporter for the given partition.
+   *
+   * @param partitionId id of the partition
+   * @param exporterId id of the exporter to delete
+   * @return a future that completes when the exporter is deleted
+   */
+  ActorFuture<Void> deleteExporter(final int partitionId, final String exporterId);
+
+  /**
    * Enables the exporter for the given partition.
    *
    * @param partitionId id of the partition
