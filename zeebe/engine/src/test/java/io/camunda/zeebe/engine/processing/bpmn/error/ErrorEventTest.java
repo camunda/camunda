@@ -62,6 +62,8 @@ public class ErrorEventTest {
     // given
     ENGINE.deployment().withXmlResource(SINGLE_BOUNDARY_EVENT).deploy();
 
+    System.out.println("modified for the sake of flakiness tests comment");
+
     final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when

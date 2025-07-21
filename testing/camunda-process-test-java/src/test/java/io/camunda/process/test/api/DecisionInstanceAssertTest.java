@@ -210,6 +210,8 @@ public class DecisionInstanceAssertTest {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers(STRING_RESULT));
 
+      // commenting for the sake of flaky tests notification enhancement
+
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputValue");
     }

@@ -310,6 +310,8 @@ public final class ProcessInstanceCommandRejectionTest {
                 .endEvent()
                 .done());
 
+    final var test = "modified for the sake of flakiness tests comment";
+
     final var jobCreated =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)

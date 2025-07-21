@@ -73,25 +73,119 @@ runs:
         const prNumber = context.issue.number;
         const owner = context.repo.owner;
         const repo = context.repo.repo;
-        const body = `
-          ### Oh! We’ve got ourselves flaky ones!
+
+        // New functionality: Map flaky tests to files and check for recent commits
+        let touchedFilesInfo = '';
+        let mentionedAuthors = new Set();
+
+        try {
+          // Get files changed in this PR
+          const { data: prFiles } = await github.rest.pulls.listFiles({
+            owner,
+            repo,
+            pull_number: prNumber,
+          });
+
+          const changedFiles = prFiles.map(file => file.filename);
+
+          // Process each flaky test to find corresponding files
+          const flakyTestLines = flakyTests.trim().split('\n').filter(line => line.trim());
+
+          for (const testLine of flakyTestLines) {
+            // Extract test class name (e.g., "io.camunda.search.SomeTest" from the flaky test output)
+            const testClassMatch = testLine.match(/([a-zA-Z][a-zA-Z0-9]*\.)+[a-zA-Z][a-zA-Z0-9]*\.[A-Z][a-zA-Z0-9]*Test/);
+
+            if (testClassMatch) {
+              const testClass = testClassMatch[0];
+
+              // Convert class name to potential file paths
+              const classPath = testClass.replace(/\./g, '/');
+              const possiblePaths = [
+                `${classPath}.java`,
+                `src/test/java/${classPath}.java`,
+                `src/main/java/${classPath}.java`
+              ];
+
+              // Check if any of these paths match changed files
+              for (const possiblePath of possiblePaths) {
+                const matchingFile = changedFiles.find(file =>
+                  file.endsWith(possiblePath) || file.includes(testClass.split('.').pop())
+                );
+
+                if (matchingFile) {
+                  // Get commit info for this file
+                  const { data: commits } = await github.rest.pulls.listCommits({
+                    owner,
+                    repo,
+                    pull_number: prNumber,
+                  });
+
+                  // Find the most recent commit that modified this file
+                  for (const commit of commits.reverse()) {
+                    const { data: commitFiles } = await github.rest.repos.getCommit({
+                      owner,
+                      repo,
+                      ref: commit.sha,
+                    });
+
+                    const modifiedThisFile = commitFiles.files?.some(file => file.filename === matchingFile);
+
+                    if (modifiedThisFile && commit.author?.login) {
+                      touchedFilesInfo += `\n- 📁 \`${matchingFile}\` (Test: \`${testClass}\`) - Last modified by @${commit.author.login} in [${commit.sha.substring(0, 7)}](${commit.html_url})`;
+                      mentionedAuthors.add(commit.author.login);
+                      break; // Found the most recent commit for this file
+                    }
+                  }
+                  break; // Found matching file, no need to check other paths
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.log(`Could not analyze file changes: ${error.message}`);
+        }
+
+        // Build the comment body (preserving original format and adding new info)
+        let body = `
+          ### Oh! We've got ourselves flaky ones!
           \`\`\`
           ${flakyTests}
-          \`\`\`
+          \`\`\``;
+
+        // Add personalized section if we found touched files
+        if (touchedFilesInfo) {
+          const authorsArray = Array.from(mentionedAuthors);
+          const authorMentions = authorsArray.length > 1
+            ? `Hey ${authorsArray.slice(0, -1).map(author => `@${author}`).join(', ')} and @${authorsArray[authorsArray.length - 1]}! 👋`
+            : `Hey @${authorsArray[0]}! 👋`;
+
+          body += `
+
+          ### 🎯 Heads up to recent contributors!
+          ${authorMentions}
+
+          I noticed some of these flaky tests are in files you recently modified:
+          ${touchedFilesInfo}
+
+          Since you've been working on these files, would you have a moment to take a look at the flaky tests? You might have insights into what could be causing the instability. No pressure though - flaky tests can be tricky! 🤔`;
+        }
+
+        body += `
+
           Related to your code? Maybe.
           Fixable now? Maybe not.
           Mind giving it a look? Or don't, but I will remember, and
           ![I'll be back](https://media.tenor.com/p2Ie017Zwu8AAAAM/exterminador-do.gif)
         `;
 
-        // Find existing comments
+        // Find existing comments (preserving original logic)
         const comments = await github.rest.issues.listComments({
           owner,
           repo,
           issue_number: prNumber,
         });
 
-        // Get comments about flakyness
+        // Get comments about flakyness (preserving original logic)
         const marker = `${flakyTests}`;
         const botComment = comments.data.find(comment =>
           comment.user.type === "Bot" && comment.body.includes(marker)

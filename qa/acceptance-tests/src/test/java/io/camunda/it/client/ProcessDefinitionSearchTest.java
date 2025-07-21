@@ -774,6 +774,9 @@ public class ProcessDefinitionSearchTest {
 
   @Test
   public void shouldValidateGetProcessForm() {
+
+    System.out.println("Running shouldValidateGetProcessForm test");
+
     final var resultProcess =
         camundaClient
             .newProcessDefinitionSearchRequest()

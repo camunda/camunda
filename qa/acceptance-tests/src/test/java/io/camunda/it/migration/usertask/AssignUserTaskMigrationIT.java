@@ -33,6 +33,8 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
   @Test
   void shouldAssign87ZeebeTaskV1(final CamundaMigrator migrator) {
 
+    System.out.println("Running shouldAssign87ZeebeTaskV1 test");
+
     final long taskKey = USER_TASK_KEYS.get("first");
     final var res =
         migrator
