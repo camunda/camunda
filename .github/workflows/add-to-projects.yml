@@ -12,31 +12,8 @@ jobs:
     name: Add issue to team projects if no project assigned and by corresponding component label
     runs-on: ubuntu-latest
     steps:
-      - id: get_project_count
-        uses: octokit/graphql-action@v2.3.2
-        with:
-          # API https://docs.github.com/en/graphql/reference/objects#issue
-          query: |
-            query getProjectCount($owner:String!, $repo:String!, $issue: Int!) {
-              repository(name: $repo, owner: $owner) {
-                issue: issue(number: $issue) {
-                  projectsV2 {
-                    totalCount
-                  }
-                }
-              }
-            }
-          variables: |
-            owner: "camunda"
-            repo: "zeebe"
-            issue: ${{ github.event.issue.number }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-      - id: has-project
-        run: echo "result=${{ fromJSON(steps.get_project_count.outputs.data).repository.issue.projectsV2.totalCount > 0 }}" >> "$GITHUB_OUTPUT"
       - id: add-to-zdp
         name: Add to ZDP project
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         uses: actions/add-to-project@v1.0.2
         with:
           project-url: https://github.com/orgs/camunda/projects/92
@@ -45,7 +22,6 @@ jobs:
       - id: add-operate-to-core-features
         name: Add Operate issues to Core Features project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -53,7 +29,6 @@ jobs:
       - id: add-tasklist-to-core-features
         name: Add Tasklist issues to Core Features project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -61,7 +36,6 @@ jobs:
       - id: add-optimize-to-core-features
         name: Add Optimize issues to Core Features project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -69,7 +43,6 @@ jobs:
       - id: add-to-data-layer
         name: Add to Data Layer project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/184
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -77,7 +50,6 @@ jobs:
       - id: add-to-api
         name: Add to C8 Rest API Proposals
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/111
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -86,7 +58,6 @@ jobs:
       - id: add-to-connectors
         name: Add to Connectors project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/23
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -94,7 +65,6 @@ jobs:
       - id: add-to-identity
         name: Add to Identity project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/120
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -102,7 +72,6 @@ jobs:
       - id: add-to-distribution
         name: Add to Distribution Team project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/33
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -110,7 +79,6 @@ jobs:
       - id: add-to-feel
         name: Add to Feel Team project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/79
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -118,7 +86,6 @@ jobs:
       - id: add-to-devops
         name: Add to Monorepo DevOps Team project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/115
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
@@ -127,15 +94,11 @@ jobs:
       - id: add-to-camunda-ex
         name: Add to CamundaEx Team project
         uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
           project-url: https://github.com/orgs/camunda/projects/182
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
           labeled: component/clients, component/spring-sdk, component/camunda-process-test, component/c8-api
-      - name: Wait
-        run: sleep 30s
-          # this steps needs to stay as last step to not interfer with other steps
       - id: add-to-qualityboard
         name: Add to Quality Board project
         uses: actions/add-to-project@v1.0.2
