@@ -115,7 +115,7 @@ public record VariableDbModel(
     while (len > 0) {
       try {
         return new String(bytes, 0, len, StandardCharsets.UTF_8);
-      } catch (final Exception e) {
+      } catch (final CharacterCodingException e) {
         len--;
       }
     }
