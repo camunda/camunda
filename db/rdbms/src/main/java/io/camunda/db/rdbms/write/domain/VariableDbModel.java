@@ -110,7 +110,7 @@ public record VariableDbModel(
       return original;
     }
 
-    // Finde letzte gültige Stelle (ohne kaputtes Zeichen)
+    // Find the last valid position (without broken character)
     int len = maxBytes;
     while (len > 0) {
       try {
