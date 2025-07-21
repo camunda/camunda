@@ -18,6 +18,7 @@ import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { Group } from "src/utility/api/groups";
+import { useNotifications } from "src/components/notifications";
 
 const SelectedUsers = styled.div`
   margin-top: 0;
@@ -30,6 +31,7 @@ const AssignMembersModal: FC<
   >
 > = ({ entity: { groupId }, assignedUsers, onSuccess, open, onClose }) => {
   const { t } = useTranslate("groups");
+  const { enqueueNotification } = useNotifications();
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
@@ -77,6 +79,19 @@ const AssignMembersModal: FC<
     setLoadingAssignUser(false);
 
     if (results.every(({ success }) => success)) {
+      if (selectedUsers.length === 1) {
+        enqueueNotification({
+          kind: "success",
+          title: t("userAssigned"),
+          subtitle: t("userAssignedSuccessfully"),
+        });
+      } else {
+        enqueueNotification({
+          kind: "success",
+          title: t("usersAssigned"),
+          subtitle: t("usersAssignedSuccessfully"),
+        });
+      }
       onSuccess();
     }
   };

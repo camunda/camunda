@@ -19,6 +19,7 @@ import {
   EqualSignContainer,
   MappingRuleContainer,
 } from "./components";
+import { useNotifications } from "src/components/notifications";
 
 const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
   open,
@@ -27,6 +28,7 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
   entity,
 }) => {
   const { t } = useTranslate("mappingRules");
+  const { enqueueNotification } = useNotifications();
   const [callUpdateMappingRule, { loading, error }] = useApiCall(
     updateMappingRule,
     {
@@ -38,6 +40,13 @@ const EditModal: FC<UseEntityModalProps<MappingRule>> = ({
   const handleSubmit = async () => {
     const { success } = await callUpdateMappingRule(mappingRule);
     if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("mappingRuleUpdated"),
+        subtitle: t("mappingRuleUpdatedSuccessfully", {
+          name: mappingRule.name,
+        }),
+      });
       onSuccess();
     }
   };

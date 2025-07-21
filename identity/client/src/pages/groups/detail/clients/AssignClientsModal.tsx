@@ -14,11 +14,13 @@ import FormModal from "src/components/modal/FormModal";
 import { assignGroupClient, Group } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
 import { UseEntityModalProps } from "src/components/modal";
+import { useNotifications } from "src/components/notifications";
 
 const AssignClientsModal: FC<
   UseEntityModalProps<{ groupId: Group["groupId"] }>
 > = ({ entity: { groupId }, onSuccess, open, onClose }) => {
   const { t } = useTranslate("groups");
+  const { enqueueNotification } = useNotifications();
   const [clientId, setClientId] = useState<Client["clientId"]>("");
   const [loadingAssignClient, setLoadingAssignClient] = useState(false);
 
@@ -37,6 +39,11 @@ const AssignClientsModal: FC<
     setLoadingAssignClient(false);
 
     if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("clientAssigned"),
+        subtitle: t("clientAssignedSuccessfully"),
+      });
       onSuccess();
     }
   };
