@@ -8,14 +8,17 @@
 
 import {useQuery} from '@tanstack/react-query';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
-import type {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {
+  QueryElementInstancesRequestBody,
+  ElementInstance,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const ELEMENT_INSTANCES_SEARCH_QUERY_KEY = 'elementInstancesSearch';
 
 const useElementInstancesSearch = (
   elementId: string,
   processInstanceKey: string,
-  isMultiInstance: boolean,
+  elementType: ElementInstance['type'],
   options: {enabled: boolean} = {enabled: true},
 ) => {
   return useQuery({
@@ -23,14 +26,14 @@ const useElementInstancesSearch = (
       ELEMENT_INSTANCES_SEARCH_QUERY_KEY,
       elementId,
       processInstanceKey,
-      isMultiInstance,
+      elementType,
     ],
     queryFn: async () => {
       const payload: QueryElementInstancesRequestBody = {
         filter: {
           elementId,
           processInstanceKey,
-          type: isMultiInstance ? 'MULTI_INSTANCE_BODY' : undefined,
+          type: elementType ?? undefined,
         },
         page: {limit: 1},
       };

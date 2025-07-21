@@ -9,6 +9,7 @@
 import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import type {
   ElementInstance,
+  ProcessInstance,
   UserTask,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 
@@ -72,7 +73,8 @@ type UserTaskSubset = Pick<
 function createV2InstanceMetadata(
   oldMetadata: MetaDataDto['instanceMetadata'],
   elementInstance: ElementInstance,
-  userTask: Partial<UserTaskSubset> = {},
+  calledProcess?: ProcessInstance,
+  userTask: Partial<UserTaskSubset> | null = {},
 ): V2InstanceMetadata {
   const {
     creationDate,
@@ -88,12 +90,11 @@ function createV2InstanceMetadata(
     candidateGroups,
     candidateUsers,
     externalFormReference,
-  } = userTask;
+  } = userTask ?? {};
 
   return {
-    calledProcessInstanceId: oldMetadata?.calledProcessInstanceId ?? null,
-    calledProcessDefinitionName:
-      oldMetadata?.calledProcessDefinitionName ?? null,
+    calledProcessInstanceId: calledProcess?.processInstanceKey ?? null,
+    calledProcessDefinitionName: calledProcess?.processDefinitionName ?? null,
     calledDecisionInstanceId: oldMetadata?.calledDecisionInstanceId ?? null,
     calledDecisionDefinitionName:
       oldMetadata?.calledDecisionDefinitionName ?? null,
