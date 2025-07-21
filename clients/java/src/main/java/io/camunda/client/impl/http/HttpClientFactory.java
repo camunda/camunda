@@ -63,12 +63,14 @@ import org.apache.hc.core5.net.URIBuilder;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpClientFactory {
 
   /** The versioned base REST API context path the client uses for requests */
   public static final String REST_API_PATH = "/v2";
-
+  private static final Logger LOG = LoggerFactory.getLogger(HttpClientFactory.class);
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -87,6 +89,9 @@ public class HttpClientFactory {
         config.getCredentialsProvider() != null
             ? config.getCredentialsProvider()
             : new NoopCredentialsProvider();
+
+
+    LOG.info("Creating HTTP client. Gateway address: {}", gatewayAddress);
 
     return new HttpClient(
         client,
@@ -111,6 +116,9 @@ public class HttpClientFactory {
       final URIBuilder builder = new URIBuilder(basePath).appendPath(REST_API_PATH);
       builder.setScheme(config.isPlaintextConnectionEnabled() ? "http" : "https");
 
+      final URI uri = new URI(basePath + REST_API_PATH);
+      LOG.info("Built gateway URI: {}", uri);
+
       return builder.build();
     } catch (final URISyntaxException e) {
       throw new RuntimeException(e);
@@ -128,9 +136,14 @@ public class HttpClientFactory {
 
     final HttpClientHostnameVerifier hostnameVerifier =
         new HostnameVerifier(config.getOverrideAuthority());
+
+    final SSLContext sslContext = createSslContext();
+    LOG.info("Initializing HTTP client with SSL context: {}", sslContext.getProtocol());
+
+
     final TlsStrategy tlsStrategy =
         ClientTlsStrategyBuilder.create()
-            .setSslContext(createSslContext())
+            .setSslContext(sslContext)
             .setHostnameVerifier(hostnameVerifier)
             .build();
     final PoolingAsyncClientConnectionManager connectionManager =
@@ -243,6 +256,7 @@ public class HttpClientFactory {
     public void verify(final String host, final X509Certificate cert) throws SSLException {
       final String hostname = "0.0.0.0".equals(host) ? "localhost" : host;
       if (overriddenAuthority != null) {
+        LOG.info("Verifying certificate for host={} override={}", hostname, overriddenAuthority);
         delegate.verify(overriddenAuthority, cert);
       } else {
 
@@ -253,6 +267,7 @@ public class HttpClientFactory {
     @Override
     public boolean verify(final String hostname, final SSLSession session) {
       final String host = "0.0.0.0".equals(hostname) ? "localhost" : hostname;
+      LOG.debug("Verifying session hostname={} override={}", host, overriddenAuthority);
       return delegate.verify(overriddenAuthority == null ? host : overriddenAuthority, session);
     }
   }

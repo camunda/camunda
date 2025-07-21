@@ -28,8 +28,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import org.apache.hc.core5.concurrent.FutureCallback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<HttpT>> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ApiCallback.class);
 
   private final CompletableFuture<RespT> response;
   private final JsonResponseTransformer<HttpT, RespT> transformer;
@@ -56,6 +60,9 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     final int code = result.getCode();
     final String reason = result.getReasonPhrase();
 
+    LOG.info("HTTP {} completed with status: {}, remainingRetries: {}",
+        result.getCode(), code, remainingRetries.get());
+
     if (wasSuccessful(code)) {
       handleSuccessResponse(body, code, reason);
       return;
@@ -66,6 +73,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
   @Override
   public void failed(final Exception ex) {
+    LOG.error("Request failed: {}", ex.getMessage(), ex);
     if (ex instanceof ClientException || ex.getCause() instanceof ClientException) {
       response.completeExceptionally(ex);
     } else {
@@ -86,6 +94,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     }
 
     if (body == null) {
+      LOG.error("Unexpected success response: body is null or a Problem: {}", body);
       response.completeExceptionally(new ClientHttpException(code, reason));
       return;
     }
@@ -127,6 +136,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
   private void handleSuccessResponse(
       final ApiEntity<HttpT> body, final int code, final String reason) {
     if (body == null) {
+      LOG.error("Unexpected success response: body is null or a Problem: {}", body);
       response.complete(null);
       return;
     }
@@ -153,6 +163,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     }
 
     try {
+      LOG.debug("Transforming successful response: {}", body);
       response.complete(transformer.transform(body.response()));
     } catch (final Exception e) {
       response.completeExceptionally(new MalformedResponseException(code, reason, e));
