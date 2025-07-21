@@ -43,6 +43,6 @@ jobs:
           github_token: ${{ secrets.STATUS_UPDATE_TOKEN }}
           organization: github
           project_number: 92
-          content_id: ${{ github.event.client_payload.command.resource.id }}
+          content_id: ${{ github.event.issue.id }}
           field: ${{ steps.set_field.outputs.field }}
           value: ${{ steps.set_field.outputs.value }}
