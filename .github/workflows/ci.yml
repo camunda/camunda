@@ -1060,6 +1060,20 @@ jobs:
       runFeTests: ${{ needs.detect-changes.outputs.operate-frontend-changes == 'true' }}
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true'}}
 
+  optimize-ci:
+    # TODO renable the if, currently running for all for testing purposes
+    # todo this handles both FE and BE
+    #if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
+    name: "Optimize"
+    needs: [ detect-changes ]
+    uses: ./.github/workflows/ci-optimize.yml
+    secrets: inherit
+    permissions: { }
+    with:
+      # TODO - change these inputs to things like  needs.detect-changes.outputs.optimize-backend-changes == 'true'
+      feChanges: true
+      beChanges: true
+
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
     name: "Zeebe"
@@ -1068,54 +1082,6 @@ jobs:
     secrets: inherit
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
-
-  optimize-frontend-unit-tests:
-    if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
-    needs: [ detect-changes ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    defaults:
-      run:
-        working-directory: optimize/client
-    env:
-      LIMITS_CPU: 4
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: "Parse pom.xml for versions"
-        id: "pom_info"
-        uses: YunaBraska/java-info-action@main
-        with:
-          work-dir: ./optimize
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: optimize/client
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      - name: Unit tests
-        run: yarn test:ci
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: optimize-unit-tests-frontend-junit
-          path: |
-            **/jest-test-results.xml
-          retention-days: 7
-          if-no-files-found: ignore
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
@@ -1228,8 +1194,7 @@ jobs:
       - openapi-lint
       - opensearch-integration-tests
       - operate-ci
-      - optimize-backend-unit-tests
-      - optimize-frontend-unit-tests
+      - optimize-ci
       - protobuf-checks
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
