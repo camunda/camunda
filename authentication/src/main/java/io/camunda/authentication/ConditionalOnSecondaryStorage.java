@@ -24,8 +24,8 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@Conditional(ConditionalOnNoSecondaryStorage.NoSecondaryStorageCondition.class)
-public @interface ConditionalOnNoSecondaryStorage {
+@Conditional(ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.class)
+public @interface ConditionalOnSecondaryStorage {
 
   class NoSecondaryStorageCondition implements Condition {
 
@@ -34,7 +34,7 @@ public @interface ConditionalOnNoSecondaryStorage {
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final String dbType = context.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
-      return "none".equalsIgnoreCase(dbType);
+      return !"none".equalsIgnoreCase(dbType);
     }
   }
 }

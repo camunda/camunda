@@ -45,13 +45,12 @@ public class CamundaOAuthPrincipalServiceNoDbImpl implements CamundaOAuthPrincip
   private final String clientIdClaim;
   private final String groupsClaim;
 
-  public CamundaOAuthPrincipalServiceNoDbImpl(
-      final SecurityConfiguration securityConfiguration) {
-    this.usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
-    this.clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
-    this.groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
-    this.oidcPrincipalLoader = new OidcPrincipalLoader(usernameClaim, clientIdClaim);
-    this.oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
+  public CamundaOAuthPrincipalServiceNoDbImpl(final SecurityConfiguration securityConfiguration) {
+    usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
+    clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
+    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+    oidcPrincipalLoader = new OidcPrincipalLoader(usernameClaim, clientIdClaim);
+    oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
   }
 
   @Override
@@ -85,10 +84,8 @@ public class CamundaOAuthPrincipalServiceNoDbImpl implements CamundaOAuthPrincip
     final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
     if (groupsClaimPresent) {
       groups = new HashSet<>(oidcGroupsLoader.load(claims));
-      LOG.debug("Loaded groups from claims: {}", groups);
     } else {
       groups = Collections.emptySet();
-      LOG.debug("No groups claim configured, using empty groups set");
     }
 
     // In no-db mode, we don't access secondary storage services:
@@ -97,7 +94,7 @@ public class CamundaOAuthPrincipalServiceNoDbImpl implements CamundaOAuthPrincip
     // - No tenant lookups from secondary storage
     // - No authorized applications from secondary storage
     authContextBuilder
-        .withAuthorizedApplications(Collections.emptySet())
+        .withAuthorizedApplications(Collections.emptyList())
         .withTenants(Collections.emptyList())
         .withGroups(groups.stream().toList())
         .withRoles(Collections.emptyList())
