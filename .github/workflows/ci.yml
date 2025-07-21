@@ -346,26 +346,6 @@ jobs:
       componentName: "Optimize"
       suite: ${{ matrix.suite }}
 
-  tasklist-backend-unit-tests:
-    if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[UT] Tasklist - ${{matrix.suiteName}}"
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    secrets: inherit
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [ DataLayer, CoreFeatures ]
-        include:
-          - suite: DataLayer
-            suiteName: Data Layer
-          - suite: CoreFeatures
-            suiteName: Core Features
-    with:
-      componentName: "Tasklist"
-      suite: ${{ matrix.suite }}
-
   zeebe-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[UT] Zeebe - ${{matrix.component}} - ${{matrix.suiteName}}"
@@ -1070,11 +1050,20 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  tasklist-frontend-tests:
-    if: needs.detect-changes.outputs.tasklist-frontend-changes == 'true'
+
+  tasklist-ci:
+    # TODO renable the if, currently running for all for testing purposes
+    # todo this handles both FE and BE
+    #if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
+    name: "Tasklist"
     needs: [ detect-changes ]
-    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+    uses: ./.github/workflows/ci-tasklist.yml
     secrets: inherit
+    permissions: { }
+    with:
+      # TODO - change these inputs to things like  needs.detect-changes.outputs.tasklist-backend-changes == 'true'
+      feChanges: true
+      beChanges: true
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
@@ -1136,13 +1125,6 @@ jobs:
     uses: ./.github/workflows/operate-ci-fe.yml
     secrets: inherit
     permissions: { }  # GITHUB_TOKEN unused in this job
-
-  tasklist-docker-tests:
-    # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
-    if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/tasklist-docker-tests.yml
-    secrets: inherit
 
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
@@ -1311,9 +1293,7 @@ jobs:
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
       - setup-unit-tests
-      - tasklist-backend-unit-tests
-      - tasklist-docker-tests
-      - tasklist-frontend-tests
+      - tasklist-ci
       - zeebe-ci
       - zeebe-unit-tests
     steps:

@@ -1,0 +1,83 @@
+# description:  tbd
+# test location: tbd
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: Operate CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      feChanges:
+        description: "Boolean variable for if there are front end changes to Tasklist"
+        type: boolean
+        required: true
+      beChanges:
+        description: "Boolean variable for if there are back end changes to Tasklist"
+        type: boolean
+        required: true
+  workflow_call:
+    inputs:
+      feChanges:
+        description: "Boolean variable for if there are front end changes to Tasklist"
+        type: boolean
+        required: true
+      beChanges:
+        description: "Boolean variable for if there are back end changes to Tasklist"
+        type: boolean
+        required: true
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  tasklist-backend-unit-tests:
+    if: inputs.beChanges
+    name: "[UT] ${{matrix.suiteName}}"
+    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ DataLayer, CoreFeatures ]
+        include:
+          - suite: DataLayer
+            suiteName: Data Layer
+          - suite: CoreFeatures
+            suiteName: Core Features
+    with:
+      componentName: "Tasklist"
+      suite: ${{ matrix.suite }}
+
+  elasticsearch:
+    name: "[IT] ElasticSearch Backup Restore / Data Layer"
+    if: inputs.beChanges
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
+    secrets: inherit
+    with:
+      database: elasticsearch
+
+  opensearch:
+    name: "[IT] OpenSearch Backup Restore / Data Layer"
+    if: inputs.beChanges
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
+    secrets: inherit
+    with:
+      database: opensearch
+
+  tasklist-docker-tests:
+    # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
+    name: "[IT] Docker Tests / Core Features"
+    if: inputs.beChanges
+    uses: ./.github/workflows/tasklist-docker-tests.yml
+    secrets: inherit
+    permissions: { }  # GITHUB_TOKEN unused in this job

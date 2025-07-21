@@ -3,7 +3,7 @@
 # type: CI
 # owner: @camunda/core-features
 ---
-name: Tasklist CI
+name: "[Legacy] Tasklist CI"
 on:
   workflow_dispatch:
   push:
@@ -43,7 +43,8 @@ jobs:
       branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
     if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
 
-  run-tests:
+  # Does not meet run time requirements for Unified CI
+  run-integration-tests:
     name: run-tests
     needs: [detect-changes]
     uses: ./.github/workflows/tasklist-ci-test-reusable.yml
@@ -51,3 +52,12 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }}
     if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
+
+  # Does not meet stability requirements for Unified CI
+  tasklist-frontend-tests:
+    name: "[FE] Tests / Core Features"
+    needs: [detect-changes]
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
+    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+    secrets: inherit
+    permissions: { }  # GITHUB_TOKEN unused in this job

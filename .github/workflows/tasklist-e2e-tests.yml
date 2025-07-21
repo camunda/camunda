@@ -3,7 +3,7 @@
 # type: CI
 # owner: @camunda/core-features
 ---
-name: Tasklist E2E Tests
+name: "[Legacy] Tasklist E2E Tests"
 on:
   push:
     branches:
