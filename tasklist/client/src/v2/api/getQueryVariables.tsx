@@ -82,7 +82,15 @@ const getQueryVariables = (
       return {
         ...BASE_QUERY_VARIABLES,
         filter: {
-          state: 'CREATED',
+          state: {
+            $in: [
+              'CREATED',
+              'ASSIGNING',
+              'UPDATING',
+              'COMPLETING',
+              'CANCELING',
+            ],
+          },
           ...parsedFilters,
         },
       };
