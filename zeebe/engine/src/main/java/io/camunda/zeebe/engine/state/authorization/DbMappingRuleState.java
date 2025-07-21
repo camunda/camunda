@@ -96,7 +96,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
             () -> {
               throw new IllegalStateException(
                   String.format(
-                      "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
+                      "Expected to update mapping rule with id '%s', but a mapping rule with this id does not exist.",
                       mappingRuleRecord.getMappingRuleId()));
             });
   }
@@ -115,7 +115,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
             () -> {
               throw new IllegalStateException(
                   String.format(
-                      "Expected to delete mapping with id '%s', but a mapping with this id does not exist.",
+                      "Expected to delete mapping rule with id '%s', but a mapping rule with this id does not exist.",
                       id));
             });
   }
