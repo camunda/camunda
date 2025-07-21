@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDeleteRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterDisableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ExporterEnableRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
@@ -117,6 +118,20 @@ final class ProtoBufSerializerTest {
     // then
     final var decodedRequest = protoBufSerializer.decodeExporterDisableRequest(encodedRequest);
     assertThat(decodedRequest).isEqualTo(exporterDisableRequest);
+  }
+
+  @Test
+  void shouldEncodeAndDecodeExporterDeleteRequest() {
+    // given
+    final var exporterDeleteRequest = new ExporterDeleteRequest("expId", false);
+
+    // when
+    final var encodedRequest =
+        protoBufSerializer.encodeExporterDeleteRequest(exporterDeleteRequest);
+
+    // then
+    final var decodedRequest = protoBufSerializer.decodeExporterDeleteRequest(encodedRequest);
+    assertThat(decodedRequest).isEqualTo(exporterDeleteRequest);
   }
 
   @Test

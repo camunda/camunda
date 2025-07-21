@@ -14,6 +14,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberJoinOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -60,6 +61,9 @@ final class ConfigurationChangeAppliersImplTest {
         Arguments.of(
             new PartitionDisableExporterOperation(localMemberId, 1, "expId"),
             PartitionDisableExporterApplier.class),
+        Arguments.of(
+            new PartitionDeleteExporterOperation(localMemberId, 1, "expId"),
+            PartitionDeleteExporterApplier.class),
         Arguments.of(
             new PartitionEnableExporterOperation(localMemberId, 1, "expId", Optional.empty()),
             PartitionEnableExporterApplier.class),
