@@ -18,8 +18,10 @@
     </Console>
 
     <Console name="Stackdriver" target="SYSTEM_OUT">
-      <StackdriverLayout serviceName="${log.stackdriver.serviceName}"
-        serviceVersion="${log.stackdriver.serviceVersion}"/>
+      <JsonTemplateLayout charset="UTF-8"
+        eventTemplateUri="classpath:logging/StackdriverLayout.json"
+        locationInfoEnabled="true"
+        stackTraceEnabled="true"/>
     </Console>
 
     <!--

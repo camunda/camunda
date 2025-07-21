@@ -10,7 +10,7 @@ package io.camunda.exporter.tasks.utils;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.tasks.util.ReschedulingTaskLogger;
-import io.camunda.zeebe.util.logging.RecordingAppender;
+import io.camunda.zeebe.test.util.logging.RecordingAppender;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
