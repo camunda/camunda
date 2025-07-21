@@ -145,6 +145,110 @@ runs:
           console.log(`Could not analyze file changes: ${error.message}`);
         }
 
+        // NEW: Create inline comments for files with flaky tests that were modified
+        if (touchedFilesInfo) {
+          try {
+            // Get PR details to get the commit SHA
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber,
+            });
+
+            // Process each flaky test again to create inline comments
+            const flakyTestLines = flakyTests.trim().split('\n').filter(line => line.trim());
+            const processedFiles = new Set(); // Avoid duplicate comments on same file
+
+            for (const testLine of flakyTestLines) {
+              const testClassMatch = testLine.match(/([a-zA-Z][a-zA-Z0-9]*\.)+[a-zA-Z][a-zA-Z0-9]*\.[A-Z][a-zA-Z0-9]*Test/);
+
+              if (testClassMatch) {
+                const testClass = testClassMatch[0];
+                const classPath = testClass.replace(/\./g, '/');
+                const possiblePaths = [
+                  `${classPath}.java`,
+                  `src/test/java/${classPath}.java`,
+                  `src/main/java/${classPath}.java`
+                ];
+
+                // Get files changed in this PR
+                const { data: prFiles } = await github.rest.pulls.listFiles({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                });
+
+                for (const possiblePath of possiblePaths) {
+                  const matchingFile = prFiles.find(file =>
+                    file.endsWith(possiblePath) || file.includes(testClass.split('.').pop())
+                  );
+
+                  if (matchingFile && !processedFiles.has(matchingFile.filename)) {
+                    processedFiles.add(matchingFile.filename);
+
+                    // Find the author who last modified this file
+                    const { data: commits } = await github.rest.pulls.listCommits({
+                      owner,
+                      repo,
+                      pull_number: prNumber,
+                    });
+
+                    let lastAuthor = null;
+                    for (const commit of commits.reverse()) {
+                      const { data: commitFiles } = await github.rest.repos.getCommit({
+                        owner,
+                        repo,
+                        ref: commit.sha,
+                      });
+
+                      if (commitFiles.files?.some(file => file.filename === matchingFile.filename)) {
+                        lastAuthor = commit.author?.login;
+                        break;
+                      }
+                    }
+
+                    // Create inline comment body
+                    const inlineBody = `🔍 **Flaky Test Alert**
+
+                    Hey ${lastAuthor ? `@${lastAuthor}` : 'there'}! 👋
+
+                    This file contains the flaky test: \`${testClass}\`
+
+                    Since you recently modified this file, would you mind taking a quick look? You might have insights into what could be causing the test instability.
+
+                    **What to check:**
+                    - Recent changes that might affect test timing
+                    - New dependencies or configurations
+                    - Race conditions or timing-sensitive code
+
+                    No pressure if you're busy - just thought you'd be the best person to investigate! 🕵️‍♂️`;
+
+                    try {
+                      // Try to create a review comment on the file
+                      await github.rest.pulls.createReviewComment({
+                        owner,
+                        repo,
+                        pull_number: prNumber,
+                        commit_id: pullRequest.head.sha,
+                        path: matchingFile.filename,
+                        line: 1, // Comment on the first line of the file
+                        body: inlineBody
+                      });
+
+                      console.log(`✅ Created inline comment for ${matchingFile.filename}`);
+                    } catch (reviewError) {
+                      console.log(`⚠️ Could not create inline comment for ${matchingFile.filename}: ${reviewError.message}`);
+                    }
+                    break; // Found the file, no need to check other paths
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.log(`Could not create inline comments: ${error.message}`);
+          }
+        }
+
         // Build the comment body (preserving original format and adding new info)
         let body = `
           ### Oh! We've got ourselves flaky ones!
@@ -167,7 +271,9 @@ runs:
           I noticed some of these flaky tests are in files you recently modified:
           ${touchedFilesInfo}
 
-          Since you've been working on these files, would you have a moment to take a look at the flaky tests? You might have insights into what could be causing the instability. No pressure though - flaky tests can be tricky! 🤔`;
+          Since you've been working on these files, would you have a moment to take a look at the flaky tests? You might have insights into what could be causing the instability. No pressure though - flaky tests can be tricky! 🤔
+
+          **💡 I've also left inline comments on the specific files for easier review!**`;
         }
 
         body += `
@@ -191,6 +297,7 @@ runs:
           comment.user.type === "Bot" && comment.body.includes(marker)
         );
 
+        // Create or update the main PR comment
         if (botComment) {
           await github.rest.issues.updateComment({
             owner,
