@@ -69,8 +69,11 @@ public class RestoreApp implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args) {
     LOG.info("Starting to restore from backup {}", backupId);
-    new RestoreManager(configuration, restoreConfiguration, backupStore, meterRegistry)
-        .restore(backupId, restoreConfiguration.validateConfig())
+    new RestoreManager(configuration, backupStore, meterRegistry)
+        .restore(
+            backupId,
+            restoreConfiguration.validateConfig(),
+            restoreConfiguration.ignoreFilesInTarget())
         .join();
     LOG.info("Successfully restored broker from backup {}", backupId);
   }
