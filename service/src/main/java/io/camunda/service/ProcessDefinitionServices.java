@@ -10,6 +10,7 @@ package io.camunda.service;
 import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
 
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
+import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
@@ -29,14 +30,17 @@ public class ProcessDefinitionServices
         ProcessDefinitionServices, ProcessDefinitionQuery, ProcessDefinitionEntity> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
+  private final FormServices formServices;
 
   public ProcessDefinitionServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final FormServices formServices,
       final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
+    this.formServices = formServices;
   }
 
   @Override
@@ -66,7 +70,11 @@ public class ProcessDefinitionServices
   @Override
   public ProcessDefinitionServices withAuthentication(final CamundaAuthentication authentication) {
     return new ProcessDefinitionServices(
-        brokerClient, securityContextProvider, processDefinitionSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        processDefinitionSearchClient,
+        formServices,
+        authentication);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {
@@ -89,6 +97,16 @@ public class ProcessDefinitionServices
       throw ErrorMapper.createForbiddenException(authorization);
     }
     return result;
+  }
+
+  public Optional<FormEntity> getProcessDefinitionStartForm(final long processDefinitionKey) {
+    return Optional.ofNullable(getByKey(processDefinitionKey))
+        .filter(p -> p.formId() != null && !p.formId().isEmpty())
+        .flatMap(
+            p ->
+                formServices
+                    .withAuthentication(authentication)
+                    .getLatestVersionByFormIdAndTenantId(p.formId(), p.tenantId()));
   }
 
   public Optional<String> getProcessDefinitionXml(final Long processDefinitionKey) {

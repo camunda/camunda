@@ -52,21 +52,15 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
         .getFirst();
   }
 
-  public Optional<FormEntity> getLatestVersionByFormId(final String formId) {
-    final Optional<FormEntity> result =
-        search(
-                SearchQueryBuilders.formSearchQuery()
-                    .filter(f -> f.formIds(formId))
-                    .sort(s -> s.version().desc())
-                    .build())
-            .items()
-            .stream()
-            .findFirst();
-
-    if (result.isPresent()) {
-      return result;
-    } else {
-      return Optional.empty();
-    }
+  public Optional<FormEntity> getLatestVersionByFormIdAndTenantId(
+      final String formId, final String tenantId) {
+    return search(
+            SearchQueryBuilders.formSearchQuery()
+                .filter(f -> f.formIds(formId).tenantId(tenantId))
+                .sort(s -> s.version().desc())
+                .build())
+        .items()
+        .stream()
+        .findFirst();
   }
 }
