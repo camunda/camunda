@@ -113,7 +113,8 @@ final class PartitionDeleteExporterApplierTest {
     EitherAssert.assertThat(result).isLeft();
     assertThat(result.getLeft())
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Expected to delete exporter, but partition '2' with exporter 'exporterA' is in state 'ENABLED' instead of 'CONFIG_NOT_FOUND'.");
+        .hasMessageContaining(
+            "Expected to delete exporter, but partition '2' with exporter 'exporterA' is in state 'ENABLED' instead of 'CONFIG_NOT_FOUND'.");
   }
 
   @Test
@@ -122,7 +123,8 @@ final class PartitionDeleteExporterApplierTest {
     final var configWithExporter =
         new DynamicPartitionConfig(
             new ExportersConfig(
-                Map.of(exporterId, new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty()))));
+                Map.of(
+                    exporterId, new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty()))));
     final var clusterConfiguration =
         ClusterConfiguration.init()
             .addMember(
@@ -162,7 +164,8 @@ final class PartitionDeleteExporterApplierTest {
     final var exporterState = new ExporterState(1, State.CONFIG_NOT_FOUND, Optional.empty());
     final var exporterConfig = new ExportersConfig(Map.of(exporterId, exporterState));
     final var partitionConfig = new DynamicPartitionConfig(exporterConfig);
-    final var memberState = MemberState.initializeAsActive(
+    final var memberState =
+        MemberState.initializeAsActive(
             Map.of(partitionId, PartitionState.active(1, partitionConfig)));
 
     when(partitionChangeExecutor.deleteExporter(partitionId, exporterId))
@@ -175,10 +178,7 @@ final class PartitionDeleteExporterApplierTest {
     assertThat(result).succeedsWithin(Duration.ofMillis(100));
 
     final var updatedExporter = result.join().apply(memberState);
-    assertThat(updatedExporter
-                .getPartition(partitionId)
-                .config()
-                .exporting()
-                .exporters()).isEmpty();
+    assertThat(updatedExporter.getPartition(partitionId).config().exporting().exporters())
+        .isEmpty();
   }
 }
