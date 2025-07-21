@@ -229,15 +229,15 @@
     "@codemirror/language" "^6.10.0"
     lezer-feel "^1.2.3"
 
-"@bpmn-io/form-js-carbon-styles@1.15.3":
-  version "1.15.3"
-  resolved "https://registry.npmjs.org/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.15.3.tgz"
-  integrity sha512-hel8qkcRPTwiTxsba/T+sjAOaJlR7GIU4VSEmsdMgoAjS+L1L9hO10f48aWz7umGKzuwr9+20YrwB6Il7eFeyA==
+"@bpmn-io/form-js-carbon-styles@1.16.0":
+  version "1.16.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-carbon-styles/-/form-js-carbon-styles-1.16.0.tgz#3d92702b9eda71f7f9394e79276bea3212680d9c"
+  integrity sha512-M2xzui7LTd3xSDGHqHGEQfOHJdpob9xV8xZ/GXdBiGUkOSPsFhLbsKOn8ONHLqtpAYwgBvAH718PExibPGBkvQ==
 
-"@bpmn-io/form-js-viewer@1.15.3":
-  version "1.15.3"
-  resolved "https://registry.npmjs.org/@bpmn-io/form-js-viewer/-/form-js-viewer-1.15.3.tgz"
-  integrity sha512-YDiAlUap9M2KzJxE8sDSax8a52NrGZ0JdThUuzi2HFguGP9BSMeFz+mbjwsJd8ooIpQsGdd3PIYTs2EUiWCG+Q==
+"@bpmn-io/form-js-viewer@1.16.0":
+  version "1.16.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-1.16.0.tgz#a4e3521e315365031362222ab1580e51175c1465"
+  integrity sha512-a7pTXfe/4AfeIOY9equz+goZ/2ZhOVNblphB/p1+wsaph+1CVtWpnnsF0rFwvS4va0LlEZdclRbkJB6Saw1thg==
   dependencies:
     "@carbon/grid" "^11.32.2"
     big.js "^6.2.2"
@@ -250,7 +250,7 @@
     ids "^1.0.5"
     lodash "^4.17.21"
     luxon "^3.5.0"
-    marked "^15.0.7"
+    marked "^16.0.0"
     min-dash "^4.2.3"
     preact "^10.5.14"
 
@@ -4122,10 +4122,10 @@ make-dir@^4.0.0:
   dependencies:
     semver "^7.5.3"
 
-marked@^15.0.7:
-  version "15.0.7"
-  resolved "https://registry.npmjs.org/marked/-/marked-15.0.7.tgz"
-  integrity sha512-dgLIeKGLx5FwziAnsk4ONoGwHwGPJzselimvlVskE9XLN4Orv9u2VA3GWw/lYUqjfA0rUT/6fqKwfZJapP9BEg==
+marked@^16.0.0:
+  version "16.1.1"
+  resolved "https://registry.yarnpkg.com/marked/-/marked-16.1.1.tgz#a7839dcf19fa5e349cad12c561f231320690acd4"
+  integrity sha512-ij/2lXfCRT71L6u0M29tJPhP0bM5shLL3u5BePhFwPELj2blMJ6GDtD7PfJhRLhJ/c2UwrK17ySVcDzy2YHjHQ==
 
 mathml-tag-names@^2.1.3:
   version "2.1.3"
