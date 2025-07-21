@@ -648,7 +648,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TenantClientSearchResult"
-  /tenants/{tenantId}/group-ids/search:
+  /tenants/{tenantId}/groups/search:
     post:
       tags:
         - Tenant
@@ -675,33 +675,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TenantGroupSearchResult"
-  /tenants/{tenantId}/groups/search:
-    post:
-      tags:
-        - Tenant
-      operationId: searchGroupsForTenant
-      summary: Search groups for tenant
-      description: Retrieves a filtered and sorted list of groups for a specified tenant.
-      parameters:
-        - name: tenantId
-          in: path
-          required: true
-          description: The unique identifier of the tenant.
-          schema:
-            type: string
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GroupSearchQueryRequest"
-      responses:
-        "200":
-          description: The search result of groups for the tenant.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GroupSearchQueryResult"
   /tenants/{tenantId}/roles/search:
     post:
       tags:
