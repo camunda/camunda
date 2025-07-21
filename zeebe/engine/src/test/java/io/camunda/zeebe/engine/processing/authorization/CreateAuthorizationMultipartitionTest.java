@@ -185,7 +185,7 @@ public class CreateAuthorizationMultipartitionTest {
         .isEqualTo(io.camunda.zeebe.protocol.record.RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected to create or update authorization with ownerId '%s', but a mapping with this ID does not exist."
+            "Expected to create or update authorization with ownerId '%s', but a mapping rule with this ID does not exist."
                 .formatted(nonexistentMappingId));
   }
 }
