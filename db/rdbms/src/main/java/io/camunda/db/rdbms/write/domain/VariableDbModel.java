@@ -14,8 +14,10 @@ import static io.camunda.util.ValueTypeUtil.mapLong;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
+import org.apache.commons.lang3.StringUtils;
 
 public record VariableDbModel(
     Long variableKey,
@@ -73,6 +75,51 @@ public record VariableDbModel(
     } else {
       return this;
     }
+  }
+
+  public VariableDbModel truncateBytes(final Integer byteLimit) {
+    if (byteLimit != null
+        && type == ValueTypeEnum.STRING
+        && value != null
+        && value.getBytes().length > byteLimit) {
+
+      return new VariableDbModel(
+          variableKey,
+          name,
+          type,
+          doubleValue,
+          longValue,
+          truncateBytes(value, byteLimit),
+          !StringUtils.isEmpty(fullValue) ? fullValue : value,
+          true,
+          scopeKey,
+          processInstanceKey,
+          processDefinitionId,
+          tenantId,
+          partitionId,
+          historyCleanupDate);
+    } else {
+      return this;
+    }
+  }
+
+  private String truncateBytes(final String original, final int maxBytes) {
+    final byte[] bytes = original.getBytes(StandardCharsets.UTF_8);
+
+    if (bytes.length <= maxBytes) {
+      return original;
+    }
+
+    // Finde letzte gültige Stelle (ohne kaputtes Zeichen)
+    int len = maxBytes;
+    while (len > 0) {
+      try {
+        return new String(bytes, 0, len, StandardCharsets.UTF_8);
+      } catch (final Exception e) {
+        len--;
+      }
+    }
+    return "";
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
