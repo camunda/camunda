@@ -22,7 +22,7 @@ public record MappingRuleFilter(
     String name,
     List<Claim> claims,
     String tenantId,
-    Set<String> mappingIds,
+    Set<String> mappingRuleIds,
     String groupId,
     String roleId)
     implements FilterBase {
@@ -37,7 +37,7 @@ public record MappingRuleFilter(
         .name(name)
         .claims(claims)
         .tenantId(tenantId)
-        .mappingIds(mappingIds)
+        .mappingRuleIds(mappingRuleIds)
         .groupId(groupId)
         .roleId(roleId);
   }
@@ -95,8 +95,8 @@ public record MappingRuleFilter(
       return this;
     }
 
-    public Builder mappingIds(final Set<String> mappingIds) {
-      mappingRuleIds = mappingIds;
+    public Builder mappingRuleIds(final Set<String> mappingRuleIds) {
+      this.mappingRuleIds = mappingRuleIds;
       return this;
     }
 

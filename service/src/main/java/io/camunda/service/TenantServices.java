@@ -123,9 +123,10 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return tenants.stream().distinct().toList();
   }
 
-  public List<TenantEntity> getTenantsByMappingsAndGroupsAndRoles(
-      final Set<String> mappings, final Set<String> groupIds, final Set<String> roleIds) {
-    final var tenants = new ArrayList<>(getTenantsByMemberIds(mappings, EntityType.MAPPING));
+  public List<TenantEntity> getTenantsByMappingRulesAndGroupsAndRoles(
+      final Set<String> mappingRules, final Set<String> groupIds, final Set<String> roleIds) {
+    final var tenants =
+        new ArrayList<>(getTenantsByMemberIds(mappingRules, EntityType.MAPPING_RULE));
     final var groupTenants = getTenantsByMemberIds(groupIds, EntityType.GROUP);
     final var roleTenants = getTenantsByMemberIds(roleIds, EntityType.ROLE);
 

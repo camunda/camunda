@@ -25,7 +25,7 @@ public record MappingRuleDbQuery(
 
   public static final class Builder implements ObjectBuilder<MappingRuleDbQuery> {
 
-    private static final MappingRuleFilter EMPTY_FILTER = FilterBuilders.mapping().build();
+    private static final MappingRuleFilter EMPTY_FILTER = FilterBuilders.mappingRule().build();
 
     private MappingRuleFilter filter;
     private DbQuerySorting<MappingRuleEntity> sort;
@@ -48,7 +48,7 @@ public record MappingRuleDbQuery(
 
     public Builder filter(
         final Function<MappingRuleFilter.Builder, ObjectBuilder<MappingRuleFilter>> fn) {
-      return filter(FilterBuilders.mapping(fn));
+      return filter(FilterBuilders.mappingRule(fn));
     }
 
     public Builder sort(

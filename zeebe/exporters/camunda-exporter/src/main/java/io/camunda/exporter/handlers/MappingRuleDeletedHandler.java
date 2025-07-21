@@ -12,12 +12,12 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import java.util.List;
 
 public class MappingRuleDeletedHandler
-    implements ExportHandler<MappingRuleEntity, MappingRecordValue> {
+    implements ExportHandler<MappingRuleEntity, MappingRuleRecordValue> {
   private final String indexName;
 
   public MappingRuleDeletedHandler(final String indexName) {
@@ -26,7 +26,7 @@ public class MappingRuleDeletedHandler
 
   @Override
   public ValueType getHandledValueType() {
-    return ValueType.MAPPING;
+    return ValueType.MAPPING_RULE;
   }
 
   @Override
@@ -35,14 +35,14 @@ public class MappingRuleDeletedHandler
   }
 
   @Override
-  public boolean handlesRecord(final Record<MappingRecordValue> record) {
+  public boolean handlesRecord(final Record<MappingRuleRecordValue> record) {
     return getHandledValueType().equals(record.getValueType())
-        && MappingIntent.DELETED.equals(record.getIntent());
+        && MappingRuleIntent.DELETED.equals(record.getIntent());
   }
 
   @Override
-  public List<String> generateIds(final Record<MappingRecordValue> record) {
-    return List.of(String.valueOf(record.getValue().getMappingId()));
+  public List<String> generateIds(final Record<MappingRuleRecordValue> record) {
+    return List.of(String.valueOf(record.getValue().getMappingRuleId()));
   }
 
   @Override
@@ -52,11 +52,11 @@ public class MappingRuleDeletedHandler
 
   @Override
   public void updateEntity(
-      final Record<MappingRecordValue> record, final MappingRuleEntity entity) {
-    final MappingRecordValue value = record.getValue();
+      final Record<MappingRuleRecordValue> record, final MappingRuleEntity entity) {
+    final MappingRuleRecordValue value = record.getValue();
     entity
-        .setKey(value.getMappingKey())
-        .setMappingRuleId(value.getMappingId())
+        .setKey(value.getMappingRuleKey())
+        .setMappingRuleId(value.getMappingRuleId())
         .setClaimName(value.getClaimName())
         .setClaimValue(value.getClaimValue());
   }

@@ -14,9 +14,9 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
-import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
+import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
-import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -50,7 +50,7 @@ public final class AuthorizationCheckBehavior {
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
   public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
-  private final MappingState mappingState;
+  private final MappingRuleState mappingRuleState;
   private final MembershipState membershipState;
 
   private final boolean authorizationsEnabled;
@@ -59,7 +59,7 @@ public final class AuthorizationCheckBehavior {
   public AuthorizationCheckBehavior(
       final ProcessingState processingState, final SecurityConfiguration securityConfig) {
     authorizationState = processingState.getAuthorizationState();
-    mappingState = processingState.getMappingState();
+    mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
@@ -120,9 +120,9 @@ public final class AuthorizationCheckBehavior {
     final var mappingAuthorized =
         isEntityAuthorized(
             request,
-            EntityType.MAPPING,
-            getPersistedMappings(request)
-                .map(PersistedMapping::getMappingId)
+            EntityType.MAPPING_RULE,
+            getPersistedMappingRules(request)
+                .map(PersistedMappingRule::getMappingRuleId)
                 .collect(Collectors.toSet()));
     if (mappingAuthorized.isRight()) {
       return Either.right(null);
@@ -333,13 +333,13 @@ public final class AuthorizationCheckBehavior {
     }
 
     // mappings can layer on top of username/client id
-    getPersistedMappings(request)
+    getPersistedMappingRules(request)
         .flatMap(
             mapping ->
                 getAuthorizedResourceIdentifiers(
                     request.command,
-                    EntityType.MAPPING,
-                    mapping.getMappingId(),
+                    EntityType.MAPPING_RULE,
+                    mapping.getMappingRuleId(),
                     request.getResourceType(),
                     request.getPermissionType()))
         .forEach(authorizedResourceIds::add);
@@ -372,7 +372,7 @@ public final class AuthorizationCheckBehavior {
           case GROUP -> AuthorizationOwnerType.GROUP;
           case ROLE -> AuthorizationOwnerType.ROLE;
           case USER -> AuthorizationOwnerType.USER;
-          case MAPPING -> AuthorizationOwnerType.MAPPING;
+          case MAPPING_RULE -> AuthorizationOwnerType.MAPPING_RULE;
           case CLIENT -> AuthorizationOwnerType.CLIENT;
           case UNSPECIFIED -> AuthorizationOwnerType.UNSPECIFIED;
         };
@@ -465,23 +465,25 @@ public final class AuthorizationCheckBehavior {
     }
 
     final var tenantsOfMapping =
-        getPersistedMappings(command)
+        getPersistedMappingRules(command)
             .flatMap(
                 mapping ->
-                    getAuthorizedTenantIds(command, EntityType.MAPPING, mapping.getMappingId()))
+                    getAuthorizedTenantIds(
+                        command, EntityType.MAPPING_RULE, mapping.getMappingRuleId()))
             .collect(Collectors.toSet());
     return new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
-  private Stream<PersistedMapping> getPersistedMappings(final AuthorizationRequest request) {
-    return getPersistedMappings(request.getCommand());
+  private Stream<PersistedMappingRule> getPersistedMappingRules(
+      final AuthorizationRequest request) {
+    return getPersistedMappingRules(request.getCommand());
   }
 
-  private Stream<PersistedMapping> getPersistedMappings(final TypedRecord<?> command) {
+  private Stream<PersistedMappingRule> getPersistedMappingRules(final TypedRecord<?> command) {
     final var claims =
         (Map<String, Object>)
             command.getAuthorizations().getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
-    return MappingRuleMatcher.matchingRules(mappingState.getAll().stream(), claims);
+    return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), claims);
   }
 
   public static final class AuthorizationRequest {

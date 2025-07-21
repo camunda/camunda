@@ -63,7 +63,7 @@ public class OidcAuthOverGrpcIT {
   @Container
   private static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
 
-  @AutoClose private static CamundaClient defaultMappingClient;
+  @AutoClose private static CamundaClient defaultMappingRuleClient;
   @AutoClose private static CamundaClient restrictedClient;
 
   @TestZeebe(awaitCompleteTopology = false)
@@ -134,7 +134,7 @@ public class OidcAuthOverGrpcIT {
 
   @BeforeEach
   void beforeEach(@TempDir final Path tempDir) {
-    defaultMappingClient =
+    defaultMappingRuleClient =
         CamundaClient.newClientBuilder()
             .grpcAddress(broker.grpcAddress())
             .restAddress(broker.restAddress())
@@ -184,7 +184,7 @@ public class OidcAuthOverGrpcIT {
 
     // when
     final var deploymentEvent =
-        defaultMappingClient
+        defaultMappingRuleClient
             .newDeployResourceCommand()
             .addProcessModel(
                 Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
@@ -202,7 +202,7 @@ public class OidcAuthOverGrpcIT {
     final var processId = Strings.newRandomValidBpmnId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    defaultMappingClient
+    defaultMappingRuleClient
         .newCreateMappingCommand()
         .mappingId(UUID.randomUUID().toString())
         .claimName(claimName)
@@ -232,7 +232,7 @@ public class OidcAuthOverGrpcIT {
   void shouldBeAuthorizedWithMappingThatIsGrantedPermissions() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
-    defaultMappingClient
+    defaultMappingRuleClient
         .newCreateMappingCommand()
         .mappingId(RESTRICTED_USER_ID)
         .claimName(USER_ID_CLAIM_NAME)
@@ -240,10 +240,10 @@ public class OidcAuthOverGrpcIT {
         .name(RESTRICTED_USER_ID)
         .send()
         .join();
-    defaultMappingClient
+    defaultMappingRuleClient
         .newCreateAuthorizationCommand()
         .ownerId(RESTRICTED_USER_ID)
-        .ownerType(OwnerType.MAPPING)
+        .ownerType(OwnerType.MAPPING_RULE)
         .resourceId("*")
         .resourceType(ResourceType.RESOURCE)
         .permissionTypes(PermissionType.CREATE)

@@ -11,7 +11,7 @@ public enum EntityType {
   UNSPECIFIED,
   USER,
   CLIENT,
-  MAPPING,
+  MAPPING_RULE,
   GROUP,
   ROLE
 }

@@ -9,7 +9,7 @@ package io.camunda.authentication;
 
 import static io.camunda.zeebe.protocol.record.value.EntityType.CLIENT;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
-import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
+import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
@@ -24,7 +24,7 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
@@ -48,7 +48,7 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalServiceImpl.class);
 
-  private final MappingServices mappingServices;
+  private final MappingRuleServices mappingRuleServices;
   private final TenantServices tenantServices;
   private final RoleServices roleServices;
   private final GroupServices groupServices;
@@ -60,13 +60,13 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
   private final String groupsClaim;
 
   public CamundaOAuthPrincipalServiceImpl(
-      final MappingServices mappingServices,
+      final MappingRuleServices mappingRuleServices,
       final TenantServices tenantServices,
       final RoleServices roleServices,
       final GroupServices groupServices,
       final AuthorizationServices authorizationServices,
       final SecurityConfiguration securityConfiguration) {
-    this.mappingServices = mappingServices;
+    this.mappingRuleServices = mappingRuleServices;
     this.tenantServices = tenantServices;
     this.roleServices = roleServices;
     this.groupServices = groupServices;
@@ -104,16 +104,16 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
       ownerTypeToIds.put(CLIENT, Set.of(clientId));
     }
 
-    final var mappings =
-        mappingServices
+    final var mappingRules =
+        mappingRuleServices
             .withAuthentication(CamundaAuthentication.anonymous())
-            .getMatchingMappings(claims);
+            .getMatchingMappingRules(claims);
     final Set<String> mappingIds =
-        mappings.map(MappingRuleEntity::mappingRuleId).collect(Collectors.toSet());
+        mappingRules.map(MappingRuleEntity::mappingRuleId).collect(Collectors.toSet());
     if (mappingIds.isEmpty()) {
-      LOG.debug("No mappings found for these claims: {}", claims);
+      LOG.debug("No mappingRules found for these claims: {}", claims);
     } else {
-      ownerTypeToIds.put(MAPPING, mappingIds);
+      ownerTypeToIds.put(MAPPING_RULE, mappingIds);
     }
 
     final Set<String> groups;

@@ -145,7 +145,7 @@ public class CreateAuthorizationTest {
             .authorization()
             .newAuthorization()
             .withOwnerId(nonexistentMappingId)
-            .withOwnerType(AuthorizationOwnerType.MAPPING)
+            .withOwnerType(AuthorizationOwnerType.MAPPING_RULE)
             .withResourceId("resourceId")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
@@ -156,7 +156,7 @@ public class CreateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to create or update authorization with ownerId '%s', but a mapping with this ID does not exist."
+            "Expected to create or update authorization with ownerId '%s', but a mapping rule with this ID does not exist."
                 .formatted(nonexistentMappingId));
   }
 }

@@ -17,7 +17,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
@@ -69,7 +69,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(ValueType.AUTHORIZATION, AuthorizationRecord::new);
     RECORDS_BY_TYPE.put(ValueType.ROLE, RoleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.TENANT, TenantRecord::new);
-    RECORDS_BY_TYPE.put(ValueType.MAPPING, MappingRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.MAPPING_RULE, MappingRuleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.GROUP, GroupRecord::new);
     RECORDS_BY_TYPE.put(ValueType.SCALE, ScaleRecord::new);
     RECORDS_BY_TYPE.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord::new);

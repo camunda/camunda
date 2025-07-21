@@ -61,7 +61,7 @@ public class AssignMappingToGroupCommandImpl
   @Override
   public CamundaFuture<AssignMappingToGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    ArgumentUtil.ensureNotNullNorEmpty("mappingId", mappingId);
+    ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingId);
     final HttpCamundaFuture<AssignMappingToGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
         "/groups/" + groupId + "/mapping-rules/" + mappingId,

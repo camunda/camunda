@@ -183,15 +183,15 @@ public class UpdateAuthorizationMultipartitionTest {
             .getValue()
             .getAuthorizationKey();
 
-    final var nonexistentMappingId = "nonexistent-mapping";
+    final var nonexistentMappingRuleId = "nonexistent-mapping-rule";
 
     // when
     final var rejection =
         engine
             .authorization()
             .updateAuthorization(existingKey)
-            .withOwnerId(nonexistentMappingId)
-            .withOwnerType(AuthorizationOwnerType.MAPPING)
+            .withOwnerId(nonexistentMappingRuleId)
+            .withOwnerType(AuthorizationOwnerType.MAPPING_RULE)
             .withResourceId("res-id")
             .withResourceType(AuthorizationResourceType.RESOURCE)
             .withPermissions(PermissionType.CREATE)
@@ -203,8 +203,8 @@ public class UpdateAuthorizationMultipartitionTest {
         .isEqualTo(io.camunda.zeebe.protocol.record.RejectionType.NOT_FOUND);
     assertThat(rejection.getRejectionReason())
         .isEqualTo(
-            "Expected to create or update authorization with ownerId '%s', but a mapping with this ID does not exist."
-                .formatted(nonexistentMappingId));
+            "Expected to create or update authorization with ownerId '%s', but a mapping rule with this ID does not exist."
+                .formatted(nonexistentMappingRuleId));
   }
 
   private void interceptAuthorizationCreateForPartition(final int partitionId) {

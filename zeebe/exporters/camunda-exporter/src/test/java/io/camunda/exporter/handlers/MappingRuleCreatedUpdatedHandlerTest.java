@@ -17,9 +17,9 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
-import io.camunda.zeebe.protocol.record.value.ImmutableMappingRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableMappingRuleRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,13 +28,13 @@ import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class MappingRuleCreatedUpdatedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-mapping";
+  private final String indexName = "test-mapping-rule";
   private final MappingRuleCreatedUpdatedHandler underTest =
       new MappingRuleCreatedUpdatedHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
-    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.MAPPING);
+    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.MAPPING_RULE);
   }
 
   @Test
@@ -44,33 +44,34 @@ public class MappingRuleCreatedUpdatedHandlerTest {
 
   @ParameterizedTest
   @EnumSource(
-      value = MappingIntent.class,
+      value = MappingRuleIntent.class,
       names = {"CREATED", "UPDATED"},
       mode = Mode.INCLUDE)
-  void shouldHandleRecord(final MappingIntent intent) {
+  void shouldHandleRecord(final MappingRuleIntent intent) {
     // given
-    final Record<MappingRecordValue> mappingRecord =
-        factory.generateRecordWithIntent(ValueType.MAPPING, intent);
+    final Record<MappingRuleRecordValue> mappingRuleRecord =
+        factory.generateRecordWithIntent(ValueType.MAPPING_RULE, intent);
 
     // when - then
-    assertThat(underTest.handlesRecord(mappingRecord)).isTrue();
+    assertThat(underTest.handlesRecord(mappingRuleRecord)).isTrue();
   }
 
   @ParameterizedTest
   @EnumSource(
-      value = MappingIntent.class,
+      value = MappingRuleIntent.class,
       names = {"CREATED", "UPDATED"},
       mode = Mode.INCLUDE)
-  void shouldGenerateIds(final MappingIntent intent) {
+  void shouldGenerateIds(final MappingRuleIntent intent) {
     // given
-    final Record<MappingRecordValue> mappingRecord =
-        factory.generateRecordWithIntent(ValueType.MAPPING, intent);
+    final Record<MappingRuleRecordValue> mappingRuleRecord =
+        factory.generateRecordWithIntent(ValueType.MAPPING_RULE, intent);
 
     // when
-    final var idList = underTest.generateIds(mappingRecord);
+    final var idList = underTest.generateIds(mappingRuleRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getMappingId()));
+    assertThat(idList)
+        .containsExactly(String.valueOf(mappingRuleRecord.getValue().getMappingRuleId()));
   }
 
   @Test
@@ -86,34 +87,34 @@ public class MappingRuleCreatedUpdatedHandlerTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    final MappingRecordValue mappingRecordValue =
-        ImmutableMappingRecordValue.builder()
-            .from(factory.generateObject(MappingRecordValue.class))
+    final MappingRuleRecordValue mappingRuleRecordValue =
+        ImmutableMappingRuleRecordValue.builder()
+            .from(factory.generateObject(MappingRuleRecordValue.class))
             .withClaimName("updated-claim")
             .withClaimValue("updated-value")
             .withName("updated-name")
-            .withMappingId("updated-id")
+            .withMappingRuleId("updated-id")
             .build();
 
-    final Record<MappingRecordValue> mappingRecord =
+    final Record<MappingRuleRecordValue> mappingRuleRecord =
         factory.generateRecord(
-            ValueType.MAPPING,
-            r -> r.withIntent(MappingIntent.UPDATED).withValue(mappingRecordValue));
+            ValueType.MAPPING_RULE,
+            r -> r.withIntent(MappingRuleIntent.UPDATED).withValue(mappingRuleRecordValue));
 
     // when
-    final MappingRuleEntity mappingEntity =
+    final MappingRuleEntity mappingRuleEntity =
         new MappingRuleEntity()
             .setClaimName("old-claim")
             .setClaimValue("old-value")
             .setName("old-name")
             .setId("old-id");
-    underTest.updateEntity(mappingRecord, mappingEntity);
+    underTest.updateEntity(mappingRuleRecord, mappingRuleEntity);
 
     // then
-    assertThat(mappingEntity.getClaimName()).isEqualTo("updated-claim");
-    assertThat(mappingEntity.getClaimValue()).isEqualTo("updated-value");
-    assertThat(mappingEntity.getName()).isEqualTo("updated-name");
-    assertThat(mappingEntity.getMappingRuleId()).isEqualTo("updated-id");
+    assertThat(mappingRuleEntity.getClaimName()).isEqualTo("updated-claim");
+    assertThat(mappingRuleEntity.getClaimValue()).isEqualTo("updated-value");
+    assertThat(mappingRuleEntity.getName()).isEqualTo("updated-name");
+    assertThat(mappingRuleEntity.getMappingRuleId()).isEqualTo("updated-id");
   }
 
   @Test

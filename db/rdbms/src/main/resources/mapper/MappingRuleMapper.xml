@@ -39,11 +39,11 @@
     FROM ${prefix}MAPPING_RULES m
     <if test="filter.groupId != null">
       JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
-      AND gm.ENTITY_TYPE = 'MAPPING'
+      AND gm.ENTITY_TYPE = 'MAPPING_RULE'
     </if>
     <if test="filter.roleId != null">
       JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
-      AND rm.ENTITY_TYPE = 'MAPPING'
+      AND rm.ENTITY_TYPE = 'MAPPING_RULE'
     </if>
     <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
   </select>
@@ -60,11 +60,11 @@
     FROM ${prefix}MAPPING_RULES m
     <if test="filter.groupId != null">
       JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
-      AND gm.ENTITY_TYPE = 'MAPPING'
+      AND gm.ENTITY_TYPE = 'MAPPING_RULE'
     </if>
     <if test="filter.roleId != null">
       JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
-      AND rm.ENTITY_TYPE = 'MAPPING'
+      AND rm.ENTITY_TYPE = 'MAPPING_RULE'
     </if>
     <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
     ) t

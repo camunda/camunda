@@ -25,7 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -70,7 +70,7 @@ import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -544,12 +544,13 @@ public final class RecordingExporter implements Exporter {
     return tenantRecords().withIntent(intent);
   }
 
-  public static MappingRecordStream mappingRecords() {
-    return new MappingRecordStream(records(ValueType.MAPPING, MappingRecordValue.class));
+  public static MappingRuleRecordStream mappingRuleRecords() {
+    return new MappingRuleRecordStream(
+        records(ValueType.MAPPING_RULE, MappingRuleRecordValue.class));
   }
 
-  public static MappingRecordStream mappingRecords(final MappingIntent intent) {
-    return mappingRecords().withIntent(intent);
+  public static MappingRuleRecordStream mappingRuleRecords(final MappingRuleIntent intent) {
+    return mappingRuleRecords().withIntent(intent);
   }
 
   public static GroupRecordStream groupRecords() {

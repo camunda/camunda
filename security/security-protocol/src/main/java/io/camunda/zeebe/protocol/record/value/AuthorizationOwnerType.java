@@ -12,7 +12,7 @@ public enum AuthorizationOwnerType {
   CLIENT,
   ROLE,
   GROUP,
-  MAPPING,
+  MAPPING_RULE,
   TENANT,
   UNSPECIFIED
 }

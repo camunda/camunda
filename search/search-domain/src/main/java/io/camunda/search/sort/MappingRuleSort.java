@@ -19,7 +19,7 @@ public record MappingRuleSort(List<FieldSorting> orderings) implements SortOptio
   }
 
   public static MappingRuleSort of(final Function<Builder, ObjectBuilder<MappingRuleSort>> fn) {
-    return SortOptionBuilders.mapping(fn);
+    return SortOptionBuilders.mappingRule(fn);
   }
 
   public static final class Builder extends AbstractBuilder<Builder>

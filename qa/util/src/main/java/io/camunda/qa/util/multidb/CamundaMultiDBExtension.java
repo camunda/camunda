@@ -16,7 +16,7 @@ import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.RoleDefinition;
 import io.camunda.qa.util.auth.TestGroup;
-import io.camunda.qa.util.auth.TestMapping;
+import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -508,10 +508,10 @@ public class CamundaMultiDBExtension
     return findFields(testClass, testInstance, predicate, TestRole.class, RoleDefinition.class);
   }
 
-  private List<TestMapping> findMappings(
+  private List<TestMappingRule> findMappings(
       final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
     return findFields(
-        testClass, testInstance, predicate, TestMapping.class, MappingRuleDefinition.class);
+        testClass, testInstance, predicate, TestMappingRule.class, MappingRuleDefinition.class);
   }
 
   private <T> List<T> findFields(

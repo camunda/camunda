@@ -30,9 +30,9 @@ import io.camunda.zeebe.engine.processing.identity.GroupCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupDeleteProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.GroupUpdateProcessor;
-import io.camunda.zeebe.engine.processing.identity.MappingCreateProcessor;
-import io.camunda.zeebe.engine.processing.identity.MappingDeleteProcessor;
-import io.camunda.zeebe.engine.processing.identity.MappingUpdateProcessor;
+import io.camunda.zeebe.engine.processing.identity.MappingRuleCreateProcessor;
+import io.camunda.zeebe.engine.processing.identity.MappingRuleDeleteProcessor;
+import io.camunda.zeebe.engine.processing.identity.MappingRuleUpdateProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleAddEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleDeleteProcessor;
@@ -67,7 +67,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -83,7 +83,7 @@ import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -422,38 +422,41 @@ public class CommandDistributionIdempotencyTest {
           {
             "Mapping.CREATE is idempotent",
             new Scenario(
-                ValueType.MAPPING,
-                MappingIntent.CREATE,
-                CommandDistributionIdempotencyTest::createMapping),
-            MappingCreateProcessor.class
+                ValueType.MAPPING_RULE,
+                MappingRuleIntent.CREATE,
+                CommandDistributionIdempotencyTest::createMappingRule),
+            MappingRuleCreateProcessor.class
           },
           {
             "Mapping.UPDATE is idempotent",
             new Scenario(
-                ValueType.MAPPING,
-                MappingIntent.UPDATE,
+                ValueType.MAPPING_RULE,
+                MappingRuleIntent.UPDATE,
                 () -> {
-                  final var mapping = createMapping();
+                  final var mappingRule = createMappingRule();
                   return ENGINE
-                      .mapping()
-                      .updateMapping(mapping.getValue().getMappingId())
-                      .withName(mapping.getValue().getName())
-                      .withClaimName(mapping.getValue().getClaimName())
-                      .withClaimValue(mapping.getValue().getClaimValue())
+                      .mappingRule()
+                      .updateMapping(mappingRule.getValue().getMappingRuleId())
+                      .withName(mappingRule.getValue().getName())
+                      .withClaimName(mappingRule.getValue().getClaimName())
+                      .withClaimValue(mappingRule.getValue().getClaimValue())
                       .update();
                 }),
-            MappingUpdateProcessor.class
+            MappingRuleUpdateProcessor.class
           },
           {
             "Mapping.DELETE is idempotent",
             new Scenario(
-                ValueType.MAPPING,
-                MappingIntent.DELETE,
+                ValueType.MAPPING_RULE,
+                MappingRuleIntent.DELETE,
                 () -> {
-                  final var mapping = createMapping();
-                  return ENGINE.mapping().deleteMapping(mapping.getValue().getMappingId()).delete();
+                  final var mappingRule = createMappingRule();
+                  return ENGINE
+                      .mappingRule()
+                      .deleteMapping(mappingRule.getValue().getMappingRuleId())
+                      .delete();
                 }),
-            MappingDeleteProcessor.class
+            MappingRuleDeleteProcessor.class
           },
           {
             "ResourceDeletion.DELETE is idempotent",
@@ -809,9 +812,9 @@ public class CommandDistributionIdempotencyTest {
         .create();
   }
 
-  private static Record<MappingRecordValue> createMapping() {
+  private static Record<MappingRuleRecordValue> createMappingRule() {
     return ENGINE
-        .mapping()
+        .mappingRule()
         .newMapping(UUID.randomUUID().toString())
         .withClaimName(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())

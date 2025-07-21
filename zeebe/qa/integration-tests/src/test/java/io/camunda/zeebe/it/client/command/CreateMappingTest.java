@@ -55,7 +55,7 @@ public class CreateMappingTest {
 
     // then
     assertThat(response.getMappingId()).isEqualTo(ID);
-    ZeebeAssertHelper.assertMappingCreated(
+    ZeebeAssertHelper.assertMappingRuleCreated(
         ID,
         CLAIM_NAME,
         CLAIM_VALUE,
@@ -136,7 +136,7 @@ public class CreateMappingTest {
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to create mapping with claimName 'claimName' and claimValue 'claimValue', but a mapping with this claim already exists.");
+            "Expected to create mapping rule with claimName 'claimName' and claimValue 'claimValue', but a mapping rule with this claim already exists.");
   }
 
   @Test
@@ -165,7 +165,7 @@ public class CreateMappingTest {
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
-            "Expected to create mapping with id '%s', but a mapping with this id already exists."
+            "Expected to create mapping rule with id '%s', but a mapping rule with this id already exists."
                 .formatted(ID));
   }
 }

@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.tenant;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
-import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
+import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
@@ -37,7 +37,7 @@ public class AddEntityTenantTest {
   @Test
   public void shouldAddMappingToTenant() {
     // given
-    final var entityType = MAPPING;
+    final var entityType = MAPPING_RULE;
     final var entityId = createMapping();
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
@@ -381,13 +381,13 @@ public class AddEntityTenantTest {
 
   private String createMapping() {
     return engine
-        .mapping()
+        .mappingRule()
         .newMapping(Strings.newRandomValidIdentityId())
         .withClaimName("claimName")
         .withClaimValue("claimValue")
         .withName("name")
         .create()
         .getValue()
-        .getMappingId();
+        .getMappingRuleId();
   }
 }

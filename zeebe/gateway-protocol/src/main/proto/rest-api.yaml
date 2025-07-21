@@ -7335,7 +7335,7 @@ components:
         - CLIENT
         - ROLE
         - GROUP
-        - MAPPING
+        - MAPPING_RULE
         - UNSPECIFIED
 
     AuthorizationRequest:

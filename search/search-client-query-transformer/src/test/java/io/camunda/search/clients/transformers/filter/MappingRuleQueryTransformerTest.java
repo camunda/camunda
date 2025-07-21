@@ -41,7 +41,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
   public void shouldQueryByField(
       final Function<Builder, ObjectBuilder<MappingRuleFilter>> fn, final SearchQuery expected) {
     // given
-    final var filter = FilterBuilders.mapping(fn);
+    final var filter = FilterBuilders.mappingRule(fn);
     // when
     final var searchRequest = transformQuery(filter);
 
@@ -66,7 +66,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
             SearchQuery.of(q -> q.term(t -> t.field("name").value("foobar")))),
         Arguments.of(
             (Function<Builder, ObjectBuilder<MappingRuleFilter>>)
-                f -> f.mappingIds(Set.of("id1", "id2")),
+                f -> f.mappingRuleIds(Set.of("id1", "id2")),
             SearchQuery.of(
                 q ->
                     q.terms(
@@ -98,7 +98,8 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
 
     // when
-    final var searchQuery = transformQuery(FilterBuilders.mapping(b -> b), resourceAccessChecks);
+    final var searchQuery =
+        transformQuery(FilterBuilders.mappingRule(b -> b), resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();
@@ -122,7 +123,8 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
 
     // when
-    final var searchQuery = transformQuery(FilterBuilders.mapping(b -> b), resourceAccessChecks);
+    final var searchQuery =
+        transformQuery(FilterBuilders.mappingRule(b -> b), resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();
@@ -137,7 +139,8 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
         ResourceAccessChecks.of(authorizationCheck, TenantCheck.disabled());
 
     // when
-    final var searchQuery = transformQuery(FilterBuilders.mapping(b -> b), resourceAccessChecks);
+    final var searchQuery =
+        transformQuery(FilterBuilders.mappingRule(b -> b), resourceAccessChecks);
 
     // then
     assertThat(searchQuery).isNull();
@@ -151,7 +154,8 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), tenantCheck);
 
     // when
-    final var searchQuery = transformQuery(FilterBuilders.mapping(b -> b), resourceAccessChecks);
+    final var searchQuery =
+        transformQuery(FilterBuilders.mappingRule(b -> b), resourceAccessChecks);
 
     // then
     assertThat(searchQuery).isNull();
@@ -168,7 +172,7 @@ public class MappingRuleQueryTransformerTest extends AbstractTransformerTest {
 
     // when
     final var searchQuery =
-        transformQuery(FilterBuilders.mapping(b -> b.claimName("a")), resourceAccessChecks);
+        transformQuery(FilterBuilders.mappingRule(b -> b.claimName("a")), resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();

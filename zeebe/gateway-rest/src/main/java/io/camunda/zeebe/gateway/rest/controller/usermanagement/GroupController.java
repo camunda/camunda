@@ -18,7 +18,7 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchResult;
@@ -55,17 +55,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class GroupController {
 
   private final GroupServices groupServices;
-  private final MappingServices mappingServices;
+  private final MappingRuleServices mappingRuleServices;
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public GroupController(
       final GroupServices groupServices,
-      final MappingServices mappingServices,
+      final MappingRuleServices mappingRuleServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.groupServices = groupServices;
-    this.mappingServices = mappingServices;
+    this.mappingRuleServices = mappingRuleServices;
     this.roleServices = roleServices;
     this.authenticationProvider = authenticationProvider;
   }
@@ -113,11 +113,11 @@ public class GroupController {
   }
 
   @CamundaPutMapping(
-      path = "/{groupId}/mapping-rules/{mappingId}",
+      path = "/{groupId}/mapping-rules/{mappingRuleId}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> assignMappingToGroup(
-      @PathVariable final String groupId, @PathVariable final String mappingId) {
-    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+  public CompletableFuture<ResponseEntity<Object>> assignMappingRuleToGroup(
+      @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::assignMember);
   }
 
@@ -136,11 +136,11 @@ public class GroupController {
   }
 
   @CamundaDeleteMapping(
-      path = "/{groupId}/mapping-rules/{mappingId}",
+      path = "/{groupId}/mapping-rules/{mappingRuleId}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> unassignMappingFromGroup(
-      @PathVariable final String groupId, @PathVariable final String mappingId) {
-    return RequestMapper.toGroupMemberRequest(groupId, mappingId, EntityType.MAPPING)
+  public CompletableFuture<ResponseEntity<Object>> unassignMappingRuleFromGroup(
+      @PathVariable final String groupId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toGroupMemberRequest(groupId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
@@ -155,13 +155,13 @@ public class GroupController {
   }
 
   @CamundaPostMapping(path = "/{groupId}/mapping-rules/search")
-  public ResponseEntity<MappingRuleSearchQueryResult> mappingsByGroup(
+  public ResponseEntity<MappingRuleSearchQueryResult> mappingRulesByGroup(
       @PathVariable final String groupId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toMappingQuery(query)
+    return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mappingQuery -> searchMappingsInGroup(groupId, mappingQuery));
+            mappingRuleQuery -> searchMappingsInGroup(groupId, mappingRuleQuery));
   }
 
   @CamundaPostMapping(path = "/{groupId}/roles/search")
@@ -277,10 +277,10 @@ public class GroupController {
     try {
       final var composedMappingQuery = buildMappingQuery(groupId, mappingRuleQuery);
       final var result =
-          mappingServices
+          mappingRuleServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedMappingQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

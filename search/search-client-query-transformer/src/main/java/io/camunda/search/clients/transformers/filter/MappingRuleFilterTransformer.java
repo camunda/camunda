@@ -44,11 +44,11 @@ public class MappingRuleFilterTransformer extends IndexFilterTransformer<Mapping
                         claim ->
                             and(term(CLAIM_NAME, claim.name()), term(CLAIM_VALUE, claim.value())))
                     .toList()),
-        filter.mappingIds() == null
+        filter.mappingRuleIds() == null
             ? null
-            : filter.mappingIds().isEmpty()
+            : filter.mappingRuleIds().isEmpty()
                 ? matchNone()
-                : stringTerms(MAPPING_RULE_ID, filter.mappingIds().stream().sorted().toList()));
+                : stringTerms(MAPPING_RULE_ID, filter.mappingRuleIds().stream().sorted().toList()));
   }
 
   @Override

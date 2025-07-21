@@ -37,7 +37,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -179,7 +179,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ROLE, this::summarizeRole);
     valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
-    valueLoggers.put(ValueType.MAPPING, this::summarizeMapping);
+    valueLoggers.put(ValueType.MAPPING_RULE, this::summarizeMappingRule);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
   }
 
@@ -1068,15 +1068,15 @@ public class CompactRecordLogger {
     return builder.toString();
   }
 
-  private String summarizeMapping(final Record<?> record) {
-    final var value = (MappingRecordValue) record.getValue();
+  private String summarizeMappingRule(final Record<?> record) {
+    final var value = (MappingRuleRecordValue) record.getValue();
 
-    final StringBuilder builder = new StringBuilder("Mapping[");
+    final StringBuilder builder = new StringBuilder("MappingRule[");
     builder
         .append("Key=")
-        .append(shortenKey(value.getMappingKey()))
-        .append(", mappingId=")
-        .append(formatId(value.getMappingId()))
+        .append(shortenKey(value.getMappingRuleKey()))
+        .append(", mappingRuleId=")
+        .append(formatId(value.getMappingRuleId()))
         .append(", claimName=")
         .append(value.getClaimName())
         .append(", claimValue=")

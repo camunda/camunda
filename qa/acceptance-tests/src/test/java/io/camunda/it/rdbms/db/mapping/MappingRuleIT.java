@@ -108,11 +108,11 @@ public class MappingRuleIT {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
 
-    // Create and save a mapping
+    // Create and save a mapping rule
     final MappingRuleDbModel randomizedMapping = MappingRuleFixtures.createRandomized();
     createAndSaveMapping(rdbmsWriter, randomizedMapping);
 
-    // Search for the mapping by claimValue
+    // Search for the mapping rule by claimValue
     final var searchResult =
         rdbmsService
             .getMappingRuleReader()

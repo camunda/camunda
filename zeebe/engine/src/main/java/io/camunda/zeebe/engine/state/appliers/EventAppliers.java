@@ -41,7 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -607,9 +607,9 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerMappingAppliers(final MutableProcessingState state) {
-    register(MappingIntent.CREATED, new MappingCreatedApplier(state.getMappingState()));
-    register(MappingIntent.DELETED, new MappingDeletedApplier(state.getMappingState()));
-    register(MappingIntent.UPDATED, new MappingUpdatedApplier(state.getMappingState()));
+    register(MappingRuleIntent.CREATED, new MappingRuleCreatedApplier(state.getMappingRuleState()));
+    register(MappingRuleIntent.DELETED, new MappingRuleDeletedApplier(state.getMappingRuleState()));
+    register(MappingRuleIntent.UPDATED, new MappingRuleUpdatedApplier(state.getMappingRuleState()));
   }
 
   private void registerBatchOperationAppliers(final MutableProcessingState state) {

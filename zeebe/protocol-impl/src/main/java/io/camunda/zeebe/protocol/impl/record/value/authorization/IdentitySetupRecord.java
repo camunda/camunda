@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -32,8 +32,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
       new ObjectProperty<>("defaultTenant", new TenantRecord());
   private final ArrayProperty<TenantRecord> tenantMembersProp =
       new ArrayProperty<>("tenantMembers", TenantRecord::new);
-  private final ArrayProperty<MappingRecord> mappingsProp =
-      new ArrayProperty<>("mappings", MappingRecord::new);
+  private final ArrayProperty<MappingRuleRecord> mappingRulesProp =
+      new ArrayProperty<>("mappingRules", MappingRuleRecord::new);
   private final ArrayProperty<AuthorizationRecord> authorizationsProp =
       new ArrayProperty<>("authorizations", AuthorizationRecord::new);
 
@@ -44,7 +44,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
         .declareProperty(usersProp)
         .declareProperty(defaultTenantProp)
         .declareProperty(tenantMembersProp)
-        .declareProperty(mappingsProp)
+        .declareProperty(mappingRulesProp)
         .declareProperty(authorizationsProp);
   }
 
@@ -76,8 +76,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   @Override
-  public List<MappingRecordValue> getMappings() {
-    return mappingsProp.stream().map(MappingRecordValue.class::cast).toList();
+  public List<MappingRuleRecordValue> getMappingRules() {
+    return mappingRulesProp.stream().map(MappingRuleRecordValue.class::cast).toList();
   }
 
   @Override
@@ -112,8 +112,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
     return this;
   }
 
-  public IdentitySetupRecord addMapping(final MappingRecord mapping) {
-    mappingsProp.add().copyFrom(mapping);
+  public IdentitySetupRecord addMappingRule(final MappingRuleRecord mappingRule) {
+    mappingRulesProp.add().copyFrom(mappingRule);
     return this;
   }
 

@@ -156,7 +156,7 @@ public class AuthorizationChecker {
 
     final var authenticatedMappingIds = authentication.authenticatedMappingIds();
     if (authenticatedMappingIds != null && !authenticatedMappingIds.isEmpty()) {
-      ownerTypeToOwnerIds.put(EntityType.MAPPING, new HashSet<>(authenticatedMappingIds));
+      ownerTypeToOwnerIds.put(EntityType.MAPPING_RULE, new HashSet<>(authenticatedMappingIds));
     }
 
     return ownerTypeToOwnerIds;

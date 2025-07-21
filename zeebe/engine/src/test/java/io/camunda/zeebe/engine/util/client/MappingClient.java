@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Function;
 
@@ -36,28 +36,28 @@ public class MappingClient {
 
   public static class MappingCreateClient {
 
-    private static final Function<Long, Record<MappingRecordValue>> SUCCESS_SUPPLIER =
+    private static final Function<Long, Record<MappingRuleRecordValue>> SUCCESS_SUPPLIER =
         (position) ->
-            RecordingExporter.mappingRecords()
-                .withIntent(MappingIntent.CREATED)
+            RecordingExporter.mappingRuleRecords()
+                .withIntent(MappingRuleIntent.CREATED)
                 .withSourceRecordPosition(position)
                 .getFirst();
 
-    private static final Function<Long, Record<MappingRecordValue>> REJECTION_SUPPLIER =
+    private static final Function<Long, Record<MappingRuleRecordValue>> REJECTION_SUPPLIER =
         (position) ->
-            RecordingExporter.mappingRecords()
+            RecordingExporter.mappingRuleRecords()
                 .onlyCommandRejections()
-                .withIntent(MappingIntent.CREATE)
+                .withIntent(MappingRuleIntent.CREATE)
                 .withSourceRecordPosition(position)
                 .getFirst();
     private final CommandWriter writer;
-    private final MappingRecord mappingRecord;
-    private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
+    private final MappingRuleRecord mappingRecord;
+    private Function<Long, Record<MappingRuleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public MappingCreateClient(final CommandWriter writer, final String mappingId) {
       this.writer = writer;
-      mappingRecord = new MappingRecord();
-      mappingRecord.setMappingId(mappingId);
+      mappingRecord = new MappingRuleRecord();
+      mappingRecord.setMappingRuleId(mappingId);
     }
 
     public MappingCreateClient withClaimName(final String claimName) {
@@ -75,13 +75,13 @@ public class MappingClient {
       return this;
     }
 
-    public Record<MappingRecordValue> create() {
-      final long position = writer.writeCommand(MappingIntent.CREATE, mappingRecord);
+    public Record<MappingRuleRecordValue> create() {
+      final long position = writer.writeCommand(MappingRuleIntent.CREATE, mappingRecord);
       return expectation.apply(position);
     }
 
-    public Record<MappingRecordValue> create(final String username) {
-      final long position = writer.writeCommand(MappingIntent.CREATE, username, mappingRecord);
+    public Record<MappingRuleRecordValue> create(final String username) {
+      final long position = writer.writeCommand(MappingRuleIntent.CREATE, username, mappingRecord);
       return expectation.apply(position);
     }
 
@@ -93,32 +93,32 @@ public class MappingClient {
 
   public static class MappingDeleteClient {
 
-    private static final Function<Long, Record<MappingRecordValue>> SUCCESS_SUPPLIER =
+    private static final Function<Long, Record<MappingRuleRecordValue>> SUCCESS_SUPPLIER =
         (position) ->
-            RecordingExporter.mappingRecords()
-                .withIntent(MappingIntent.DELETED)
+            RecordingExporter.mappingRuleRecords()
+                .withIntent(MappingRuleIntent.DELETED)
                 .withSourceRecordPosition(position)
                 .getFirst();
 
-    private static final Function<Long, Record<MappingRecordValue>> REJECTION_SUPPLIER =
+    private static final Function<Long, Record<MappingRuleRecordValue>> REJECTION_SUPPLIER =
         (position) ->
-            RecordingExporter.mappingRecords()
+            RecordingExporter.mappingRuleRecords()
                 .onlyCommandRejections()
-                .withIntent(MappingIntent.DELETE)
+                .withIntent(MappingRuleIntent.DELETE)
                 .withSourceRecordPosition(position)
                 .getFirst();
     private final CommandWriter writer;
-    private final MappingRecord mappingRecord;
-    private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
+    private final MappingRuleRecord mappingRecord;
+    private Function<Long, Record<MappingRuleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public MappingDeleteClient(final CommandWriter writer, final String mappingId) {
       this.writer = writer;
-      mappingRecord = new MappingRecord();
-      mappingRecord.setMappingId(mappingId);
+      mappingRecord = new MappingRuleRecord();
+      mappingRecord.setMappingRuleId(mappingId);
     }
 
-    public Record<MappingRecordValue> delete() {
-      final long position = writer.writeCommand(MappingIntent.DELETE, mappingRecord);
+    public Record<MappingRuleRecordValue> delete() {
+      final long position = writer.writeCommand(MappingRuleIntent.DELETE, mappingRecord);
       return expectation.apply(position);
     }
 
@@ -130,42 +130,42 @@ public class MappingClient {
 
   public static class MappingUpdateClient {
 
-    private static final Function<String, Record<MappingRecordValue>> SUCCESS_SUPPLIER =
+    private static final Function<String, Record<MappingRuleRecordValue>> SUCCESS_SUPPLIER =
         (position) ->
-            RecordingExporter.mappingRecords()
-                .withIntent(MappingIntent.UPDATED)
+            RecordingExporter.mappingRuleRecords()
+                .withIntent(MappingRuleIntent.UPDATED)
                 .filter(
                     mappingRecordValueRecord ->
-                        mappingRecordValueRecord.getValue().getMappingId().equals(position))
+                        mappingRecordValueRecord.getValue().getMappingRuleId().equals(position))
                 .getFirst();
 
-    private static final Function<String, Record<MappingRecordValue>> REJECTION_SUPPLIER =
+    private static final Function<String, Record<MappingRuleRecordValue>> REJECTION_SUPPLIER =
         (position) ->
-            RecordingExporter.mappingRecords()
+            RecordingExporter.mappingRuleRecords()
                 .onlyCommandRejections()
-                .withIntent(MappingIntent.UPDATE)
+                .withIntent(MappingRuleIntent.UPDATE)
                 .filter(
                     mappingRecordValueRecord ->
-                        mappingRecordValueRecord.getValue().getMappingId().equals(position))
+                        mappingRecordValueRecord.getValue().getMappingRuleId().equals(position))
                 .getFirst();
     private final CommandWriter writer;
-    private final MappingRecord mappingRecord;
-    private Function<String, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
+    private final MappingRuleRecord mappingRecord;
+    private Function<String, Record<MappingRuleRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public MappingUpdateClient(final CommandWriter writer, final String mappingId) {
       this.writer = writer;
-      mappingRecord = new MappingRecord();
-      mappingRecord.setMappingId(mappingId);
+      mappingRecord = new MappingRuleRecord();
+      mappingRecord.setMappingRuleId(mappingId);
     }
 
-    public Record<MappingRecordValue> update() {
-      writer.writeCommand(MappingIntent.UPDATE, mappingRecord);
-      return expectation.apply(mappingRecord.getMappingId());
+    public Record<MappingRuleRecordValue> update() {
+      writer.writeCommand(MappingRuleIntent.UPDATE, mappingRecord);
+      return expectation.apply(mappingRecord.getMappingRuleId());
     }
 
-    public Record<MappingRecordValue> update(final String username) {
-      writer.writeCommand(MappingIntent.UPDATE, username, mappingRecord);
-      return expectation.apply(mappingRecord.getMappingId());
+    public Record<MappingRuleRecordValue> update(final String username) {
+      writer.writeCommand(MappingRuleIntent.UPDATE, username, mappingRecord);
+      return expectation.apply(mappingRecord.getMappingRuleId());
     }
 
     public MappingUpdateClient withClaimName(final String claimName) {

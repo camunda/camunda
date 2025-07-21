@@ -17,7 +17,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getElementCompletedRec
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getIncidentRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRuleRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
@@ -46,7 +46,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -55,7 +55,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -593,24 +593,25 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportCreatedAndDeletedMapping() {
     // given
-    final var mappingCreatedRecord = getMappingRecord(1L, MappingIntent.CREATED);
+    final var mappingRuleCreatedRecord = getMappingRuleRecord(1L, MappingRuleIntent.CREATED);
 
     // when
-    exporter.export(mappingCreatedRecord);
+    exporter.export(mappingRuleCreatedRecord);
 
     // then
-    final var mappingId = ((MappingRecordValue) mappingCreatedRecord.getValue()).getMappingId();
-    final var mapping = rdbmsService.getMappingRuleReader().findOne(mappingId);
-    assertThat(mapping).isNotNull();
+    final var mappingRuleId =
+        ((MappingRuleRecordValue) mappingRuleCreatedRecord.getValue()).getMappingRuleId();
+    final var mappingRule = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
+    assertThat(mappingRule).isNotNull();
 
     // given
-    final var mappingDeletedRecord = mappingCreatedRecord.withIntent(MappingIntent.DELETED);
+    final var mappingDeletedRecord = mappingRuleCreatedRecord.withIntent(MappingRuleIntent.DELETED);
 
     // when
     exporter.export(mappingDeletedRecord);
 
     // then
-    final var deletedMapping = rdbmsService.getMappingRuleReader().findOne(mappingId);
+    final var deletedMapping = rdbmsService.getMappingRuleReader().findOne(mappingRuleId);
     assertThat(deletedMapping).isEmpty();
   }
 

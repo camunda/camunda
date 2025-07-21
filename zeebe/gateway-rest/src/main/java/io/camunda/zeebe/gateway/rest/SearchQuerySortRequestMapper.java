@@ -90,7 +90,8 @@ public class SearchQuerySortRequestMapper {
   }
 
   public static List<SearchQuerySortRequest<MappingRuleSearchQuerySortRequest.FieldEnum>>
-      fromMappingSearchQuerySortRequest(final List<MappingRuleSearchQuerySortRequest> requests) {
+      fromMappingRuleSearchQuerySortRequest(
+          final List<MappingRuleSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 

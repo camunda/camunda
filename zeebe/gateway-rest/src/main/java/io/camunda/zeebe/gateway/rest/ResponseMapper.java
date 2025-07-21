@@ -67,7 +67,7 @@ import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -630,22 +630,22 @@ public final class ResponseMapper {
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
-  public static ResponseEntity<Object> toMappingCreateResponse(final MappingRecord record) {
+  public static ResponseEntity<Object> toMappingRuleCreateResponse(final MappingRuleRecord record) {
     final var response =
         new MappingRuleCreateResult()
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
-            .mappingRuleId(record.getMappingId())
+            .mappingRuleId(record.getMappingRuleId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
-  public static ResponseEntity<Object> toMappingUpdateResponse(final MappingRecord record) {
+  public static ResponseEntity<Object> toMappingRuleUpdateResponse(final MappingRuleRecord record) {
     final var response =
         new MappingRuleUpdateResult()
             .claimName(record.getClaimName())
             .claimValue(record.getClaimValue())
-            .mappingRuleId(record.getMappingId())
+            .mappingRuleId(record.getMappingRuleId())
             .name(record.getName());
     return new ResponseEntity<>(response, HttpStatus.OK);
   }

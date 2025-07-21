@@ -13,7 +13,7 @@ import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
-import io.camunda.service.MappingServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
@@ -53,14 +53,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class RoleController {
   private final RoleServices roleServices;
   private final UserServices userServices;
-  private final MappingServices mappingServices;
+  private final MappingRuleServices mappingServices;
   private final GroupServices groupServices;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public RoleController(
       final RoleServices roleServices,
       final UserServices userServices,
-      final MappingServices mappingServices,
+      final MappingRuleServices mappingServices,
       final GroupServices groupServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.roleServices = roleServices;
@@ -203,7 +203,7 @@ public class RoleController {
   public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesByRole(
       @PathVariable final String roleId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toMappingQuery(query)
+    return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mappingQuery -> searchMappingRulesInRole(roleId, mappingQuery));
@@ -217,7 +217,7 @@ public class RoleController {
           mappingServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedMappingQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -271,14 +271,14 @@ public class RoleController {
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> addRoleToMappingRule(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING)
+    return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/mapping-rules/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> removeRoleFromMappingRule(
       @PathVariable final String roleId, @PathVariable final String mappingRuleId) {
-    return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING)
+    return RequestMapper.toRoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 

@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
-import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -3068,21 +3068,21 @@ final class JsonSerializableToJsonTest {
       //////////////////////////////////// MappingRecord //////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Mapping record",
-        (Supplier<MappingRecord>)
+        "Mapping rule record",
+        (Supplier<MappingRuleRecord>)
             () ->
-                new MappingRecord()
-                    .setMappingKey(1L)
+                new MappingRuleRecord()
+                    .setMappingRuleKey(1L)
                     .setClaimName("claimName")
                     .setClaimValue("claimValue")
-                    .setMappingId("id1")
+                    .setMappingRuleId("id1")
                     .setName("name"),
         """
       {
-        "mappingKey": 1,
+        "mappingRuleKey": 1,
         "claimName": "claimName",
         "claimValue": "claimValue",
-        "mappingId": "id1",
+        "mappingRuleId": "id1",
         "name": "name"
       }
       """
@@ -3091,12 +3091,13 @@ final class JsonSerializableToJsonTest {
       ///////////////////////////////// Empty MappingRecord ///////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Empty MappingRecord",
-        (Supplier<MappingRecord>) () -> new MappingRecord().setMappingId("mappingId"),
+        "Empty MappingRuleRecord",
+        (Supplier<MappingRuleRecord>)
+            () -> new MappingRuleRecord().setMappingRuleId("mappingRuleId"),
         """
       {
-        "mappingKey": -1,
-        "mappingId": "mappingId",
+        "mappingRuleKey": -1,
+        "mappingRuleId": "mappingRuleId",
         "claimName": "",
         "claimValue": "",
         "name": ""
@@ -3145,24 +3146,24 @@ final class JsonSerializableToJsonTest {
                             .setTenantId("id")
                             .setEntityType(EntityType.ROLE)
                             .setEntityId("id"))
-                    .addMapping(
-                        new MappingRecord()
-                            .setMappingKey(6)
-                            .setMappingId("id1")
+                    .addMappingRule(
+                        new MappingRuleRecord()
+                            .setMappingRuleKey(6)
+                            .setMappingRuleId("id1")
                             .setClaimName("claim1")
                             .setClaimValue("value1")
                             .setName("Claim 1"))
-                    .addMapping(
-                        new MappingRecord()
-                            .setMappingKey(7)
-                            .setMappingId("id2")
+                    .addMappingRule(
+                        new MappingRuleRecord()
+                            .setMappingRuleKey(7)
+                            .setMappingRuleId("id2")
                             .setClaimName("claim2")
                             .setClaimValue("value2")
                             .setName("Claim 2"))
                     .addAuthorization(
                         new AuthorizationRecord()
                             .setOwnerId("id2")
-                            .setOwnerType(AuthorizationOwnerType.MAPPING)
+                            .setOwnerType(AuthorizationOwnerType.MAPPING_RULE)
                             .setResourceType(AuthorizationResourceType.RESOURCE)
                             .setResourceId("resource-id")
                             .setPermissionTypes(Set.of(PermissionType.CREATE))),
@@ -3222,17 +3223,17 @@ final class JsonSerializableToJsonTest {
             "entityType": "ROLE"
           }
         ],
-        "mappings": [
+        "mappingRules": [
           {
-            "mappingKey": 6,
-            "mappingId": "id1",
+            "mappingRuleKey": 6,
+            "mappingRuleId": "id1",
             "claimName": "claim1",
             "claimValue": "value1",
             "name": "Claim 1"
           },
           {
-            "mappingKey": 7,
-            "mappingId": "id2",
+            "mappingRuleKey": 7,
+            "mappingRuleId": "id2",
             "claimName": "claim2",
             "claimValue": "value2",
             "name": "Claim 2"
@@ -3242,7 +3243,7 @@ final class JsonSerializableToJsonTest {
           {
             "authorizationKey": -1,
             "ownerId": "id2",
-            "ownerType": "MAPPING",
+            "ownerType": "MAPPING_RULE",
             "resourceId": "resource-id",
             "resourceType": "RESOURCE",
             "permissionTypes": ["CREATE"]
@@ -3272,7 +3273,7 @@ final class JsonSerializableToJsonTest {
               "entityId": "",
               "entityType": "UNSPECIFIED"
           },
-          "mappings": [],
+          "mappingRules": [],
           "roleMembers": [],
           "tenantMembers": [],
           "authorizations": []

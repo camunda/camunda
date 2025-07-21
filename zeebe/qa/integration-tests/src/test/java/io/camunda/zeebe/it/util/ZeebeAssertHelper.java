@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -30,7 +30,7 @@ import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -558,22 +558,22 @@ public final class ZeebeAssertHelper {
     consumer.accept(tenantRecordValue);
   }
 
-  public static void assertMappingCreated(
-      final String mappingId,
+  public static void assertMappingRuleCreated(
+      final String mappingRuleId,
       final String claimName,
       final String claimValue,
-      final Consumer<MappingRecordValue> consumer) {
-    final MappingRecordValue mapping =
-        RecordingExporter.mappingRecords()
-            .withIntent(MappingIntent.CREATED)
-            .withMappingId(mappingId)
+      final Consumer<MappingRuleRecordValue> consumer) {
+    final MappingRuleRecordValue mappingRule =
+        RecordingExporter.mappingRuleRecords()
+            .withIntent(MappingRuleIntent.CREATED)
+            .withMappingRuleId(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .getFirst()
             .getValue();
 
-    assertThat(mapping).isNotNull();
-    consumer.accept(mapping);
+    assertThat(mappingRule).isNotNull();
+    consumer.accept(mappingRule);
   }
 
   public static void assertGroupUnassignedFromTenant(

@@ -17,8 +17,8 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.MappingIntent;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +29,7 @@ public class MappingRuleDeletedHandlerTest {
 
   @Test
   void testGetHandledValueType() {
-    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.MAPPING);
+    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.MAPPING_RULE);
   }
 
   @Test
@@ -40,8 +40,8 @@ public class MappingRuleDeletedHandlerTest {
   @Test
   void shouldHandleRecord() {
     // given
-    final io.camunda.zeebe.protocol.record.Record<MappingRecordValue> mappingCreatedRecord =
-        factory.generateRecordWithIntent(ValueType.MAPPING, MappingIntent.DELETED);
+    final io.camunda.zeebe.protocol.record.Record<MappingRuleRecordValue> mappingCreatedRecord =
+        factory.generateRecordWithIntent(ValueType.MAPPING_RULE, MappingRuleIntent.DELETED);
 
     // when - then
     assertThat(underTest.handlesRecord(mappingCreatedRecord)).isTrue();
@@ -50,14 +50,14 @@ public class MappingRuleDeletedHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final Record<MappingRecordValue> mappingRecord =
-        factory.generateRecordWithIntent(ValueType.MAPPING, MappingIntent.DELETED);
+    final Record<MappingRuleRecordValue> mappingRecord =
+        factory.generateRecordWithIntent(ValueType.MAPPING_RULE, MappingRuleIntent.DELETED);
 
     // when
     final var idList = underTest.generateIds(mappingRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getMappingId()));
+    assertThat(idList).containsExactly(String.valueOf(mappingRecord.getValue().getMappingRuleId()));
   }
 
   @Test

@@ -517,19 +517,19 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
-  public static Either<ProblemDetail, MappingRuleQuery> toMappingQuery(
+  public static Either<ProblemDetail, MappingRuleQuery> toMappingRuleQuery(
       final MappingRuleSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.mappingSearchQuery().build());
+      return Either.right(SearchQueryBuilders.mappingRuleSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromMappingSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::mapping,
-            SearchQueryRequestMapper::applyMappingSortField);
-    final var filter = toMappingFilter(request.getFilter());
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingSearchQuery);
+            SearchQuerySortRequestMapper.fromMappingRuleSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::mappingRule,
+            SearchQueryRequestMapper::applyMappingRuleSortField);
+    final var filter = toMappingRuleFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::mappingRuleSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(
@@ -1064,9 +1064,9 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static MappingRuleFilter toMappingFilter(
+  private static MappingRuleFilter toMappingRuleFilter(
       final io.camunda.zeebe.gateway.protocol.rest.MappingRuleFilter filter) {
-    final var builder = FilterBuilders.mapping();
+    final var builder = FilterBuilders.mappingRule();
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
@@ -1534,7 +1534,7 @@ public final class SearchQueryRequestMapper {
     };
   }
 
-  private static List<String> applyMappingSortField(
+  private static List<String> applyMappingRuleSortField(
       final MappingRuleSearchQuerySortRequest.FieldEnum field,
       final MappingRuleSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
