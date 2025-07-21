@@ -24,13 +24,13 @@ jobs:
         run: |
           echo "Label: ${{ matrix.label }}"
           label="${{ matrix.label }}"
-          if [[ "${{ matrix.label }}" == 'severity/*' ]]; then
-            value="${label#severity/}}}"
+          if [[ "${{ matrix.label }}" =~ ^severity/ ]]; then
+            value="${label#severity/}"
             echo "field=Severity" >> $GITHUB_OUTPUT
             echo "value=${value[@]^}" >> $GITHUB_OUTPUT
-          else if [[ "${{ matrix.label }}" == 'likelihood/*' ]]; then
+          elif [[ "${{ matrix.label }}" =~ ^likelihood/ ]]; then
+            value="${label#likelihood/}"
             echo "field=Likelihood" >> $GITHUB_OUTPUT
-            value="${label#severity/}}}"
             echo "value=${value[@]^}" >> $GITHUB_OUTPUT
           else
             echo "skip=true" >> $GITHUB_OUTPUT
