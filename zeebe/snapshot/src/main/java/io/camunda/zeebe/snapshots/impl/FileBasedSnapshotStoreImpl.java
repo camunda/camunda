@@ -418,7 +418,7 @@ public final class FileBasedSnapshotStoreImpl {
   private boolean isCurrentSnapshotNewer(final FileBasedSnapshotId snapshotId) {
     final var persistedSnapshot = currentSnapshot.get();
     return (persistedSnapshot != null
-        && persistedSnapshot.getSnapshotId().compareTo(snapshotId) >= 0);
+        && persistedSnapshot.getSnapshotId().compareTo(snapshotId) > 0);
   }
 
   FileBasedSnapshot persistNewSnapshot(
