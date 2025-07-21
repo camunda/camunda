@@ -43,8 +43,12 @@ type V2InstanceMetadata = {
   jobId?: string | null;
 } & Partial<UserTask>;
 
-type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata'> & {
+type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata' | 'incident'> & {
   instanceMetadata: V2InstanceMetadata | null;
+  incident: {
+    errorType: {id: string; name: string};
+    errorMessage: string;
+  } | null;
 };
 
 type UserTaskSubset = Pick<

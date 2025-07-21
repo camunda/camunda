@@ -13,8 +13,8 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {flip, offset} from '@floating-ui/react-dom';
 import {Header} from '../Header';
-import {Stack} from '@carbon/react';
-import {Incident} from '../Incident';
+import {Loading, Stack} from '@carbon/react';
+import {Incident} from './Incident';
 import {MultiIncidents} from '../MultiIncidents';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useElementInstancesSearch} from 'modules/queries/elementInstances/useElementInstancesSearch';
@@ -23,7 +23,10 @@ import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesS
 import {useMemo} from 'react';
 import {Details} from './Details';
 import {createV2InstanceMetadata} from './types';
-import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useUserTasksSearch';
+import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
+import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
+import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition';
+import {resolveIncidentErrorType} from './Incident/resolveIncidentErrorType';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -31,11 +34,10 @@ type Props = {
 
 const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {data: processInstance} = useProcessInstance();
-  const elementId = flowNodeSelectionStore.state.selection?.flowNodeId;
-  const elementInstanceId =
-    flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
-  const isMultiInstance =
-    flowNodeSelectionStore.state.selection?.isMultiInstance ?? false;
+  const selection = flowNodeSelectionStore.state.selection;
+  const elementId = selection?.flowNodeId;
+  const elementInstanceId = selection?.flowNodeInstanceId;
+  const isMultiInstance = selection?.isMultiInstance ?? false;
   const {metaData} = flowNodeMetaDataStore.state;
 
   const {data: statistics} = useFlownodeInstancesStatistics();
@@ -107,6 +109,33 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       },
     );
 
+  const {
+    data: elementInstancesIncidentsSearchResult,
+    isLoading: isSearchingIncidents,
+  } = useGetIncidentsByProcessInstance(
+    processInstance?.processInstanceKey ?? '',
+    elementInstanceMetadata?.elementInstanceKey,
+    {
+      enabled: !!processInstance?.processInstanceKey,
+    },
+  );
+
+  const singleIncident =
+    elementInstancesIncidentsSearchResult?.length === 1
+      ? elementInstancesIncidentsSearchResult[0]
+      : null;
+
+  const {data: processDefinition, isLoading: isFetchingProcessDefinition} =
+    useProcessDefinition(
+      elementInstancesIncidentsSearchResult &&
+        elementInstancesIncidentsSearchResult?.length > 0
+        ? elementInstancesIncidentsSearchResult[0]?.processDefinitionKey
+        : '',
+      {
+        enabled: elementInstancesIncidentsSearchResult?.length === 1,
+      },
+    );
+
   if (
     elementId === undefined ||
     metaData === null ||
@@ -117,7 +146,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     return null;
   }
 
-  const {instanceMetadata, incident, incidentCount} = metaData;
+  const {instanceMetadata, incident} = metaData;
 
   return (
     <Popover
@@ -144,44 +173,54 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
         )}
 
         {elementInstanceMetadata && (
-          <>
-            <Details
-              metaData={{
-                ...metaData,
-                instanceMetadata: createV2InstanceMetadata(
-                  instanceMetadata,
-                  elementInstanceMetadata,
-                  elementInstanceMetadata.type === 'USER_TASK'
-                    ? userTask
-                    : undefined,
-                ),
-              }}
-              elementId={elementInstanceMetadata.elementId}
-            />
-            {incident !== null && (
-              <>
-                <Divider />
-                <Incident
-                  processInstanceId={processInstance?.processInstanceKey}
-                  incident={incident}
-                  onButtonClick={() => {
-                    incidentsStore.clearSelection();
-                    incidentsStore.toggleFlowNodeSelection(elementId);
-                    incidentsStore.toggleErrorTypeSelection(
-                      incident.errorType.id,
-                    );
-                    incidentsStore.setIncidentBarOpen(true);
-                  }}
-                />
-              </>
-            )}
-          </>
+          <Details
+            metaData={{
+              ...metaData,
+              instanceMetadata: createV2InstanceMetadata(
+                instanceMetadata,
+                elementInstanceMetadata,
+                elementInstanceMetadata.type === 'USER_TASK'
+                  ? userTask
+                  : undefined,
+              ),
+              incident: singleIncident
+                ? {
+                    errorType: resolveIncidentErrorType(
+                      singleIncident?.errorType,
+                    ),
+                    errorMessage: singleIncident.errorMessage,
+                  }
+                : null,
+            }}
+            elementId={elementInstanceMetadata.elementId}
+          />
         )}
-        {incidentCount > 1 && (
+        {isSearchingIncidents || isFetchingProcessDefinition ? (
+          <Loading small withOverlay={false} data-testid="incidents-loading" />
+        ) : singleIncident ? (
+          <>
+            <Divider />
+            <Incident
+              processInstanceId={processInstance?.processInstanceKey}
+              processDefinitionName={processDefinition?.name}
+              incidentV2={singleIncident}
+              incident={incident}
+              onButtonClick={() => {
+                incidentsStore.clearSelection();
+                incidentsStore.toggleFlowNodeSelection(elementId);
+                incidentsStore.toggleErrorTypeSelection(
+                  singleIncident.errorType,
+                );
+                incidentsStore.setIncidentBarOpen(true);
+              }}
+            />
+          </>
+        ) : elementInstancesIncidentsSearchResult &&
+          elementInstancesIncidentsSearchResult?.length > 1 ? (
           <>
             <Divider />
             <MultiIncidents
-              count={incidentCount}
+              count={elementInstancesIncidentsSearchResult?.length}
               onButtonClick={() => {
                 incidentsStore.clearSelection();
                 incidentsStore.toggleFlowNodeSelection(elementId);
@@ -189,7 +228,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               }}
             />
           </>
-        )}
+        ) : null}
       </Stack>
     </Popover>
   );

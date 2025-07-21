@@ -6,21 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {mockPostRequest} from '../../mockRequest';
 import {
   endpoints,
-  type QueryIncidentsRequestBody,
   type QueryIncidentsResponseBody,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
-import {requestWithThrow, type RequestResult} from 'modules/request';
 
-const searchIncidents = async (
-  payload: QueryIncidentsRequestBody,
-): RequestResult<QueryIncidentsResponseBody> => {
-  return requestWithThrow<QueryIncidentsResponseBody>({
-    url: endpoints.queryIncidents.getUrl(),
-    method: endpoints.queryIncidents.method,
-    body: payload,
-  });
-};
+const mockSearchIncidentsByProcessInstance = (processInstanceKey: string) =>
+  mockPostRequest<QueryIncidentsResponseBody>(
+    (
+      endpoints.queryProcessInstanceIncidents.getUrl as (payload: {
+        processInstanceKey: string;
+      }) => string
+    )({processInstanceKey}),
+  );
 
-export {searchIncidents};
+export {mockSearchIncidentsByProcessInstance};
