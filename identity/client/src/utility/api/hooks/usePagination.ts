@@ -39,16 +39,54 @@ export type SortConfig = {
   order: "ASC" | "DESC";
 };
 
-const useSorting = (defaultConfig?: SortConfig[]) => {
-  const [sort, setSort] = useState(defaultConfig);
+export type PaginationRequestParams = PageSearchParams & {
+  sort?: SortConfig[];
+  filter?: Record<string, string>;
+};
+
+export type SearchConfig = {
+  filter?: Record<string, string>;
+};
+
+const useSearch = (
+  reset = () => {},
+): [
+  Record<string, string> | undefined,
+  (newSearch: Record<string, string> | undefined) => void,
+] => {
+  const [search, setSearch] = useState<Record<string, string> | undefined>(
+    undefined,
+  );
+
+  const handleSearchChange = useCallback(
+    (newSearch: Record<string, string> | undefined) => {
+      setSearch(newSearch);
+      reset();
+    },
+    [reset],
+  );
+
+  return [search, handleSearchChange];
+};
+
+const useSorting = (
+  defaultConfig?: SortConfig[],
+): [SortConfig[] | undefined, (sort: SortConfig[] | undefined) => void] => {
+  const [sort, setSort] = useState<SortConfig[] | undefined>(defaultConfig);
 
   return [sort, setSort];
 };
 
 const usePagination = (config: Page = DEFAULT_PAGINATION_CONFIG) => {
+  const [pageState, setPageState] = useState<Page>(() => config);
+
+  const resetPageState = useCallback(() => {
+    setPageState(config);
+  }, [config]);
+
   const [sortParams, setSort] = useSorting();
 
-  const [pageState, setPageState] = useState<Page>(() => config);
+  const [searchParams, setSearch] = useSearch(resetPageState);
 
   const setPage = useCallback((newPage: number) => {
     setPageState((prevState) => ({
@@ -65,7 +103,7 @@ const usePagination = (config: Page = DEFAULT_PAGINATION_CONFIG) => {
   };
 
   const pageParams = useMemo(() => {
-    const result = {
+    const result: PaginationRequestParams = {
       page: {
         from: (pageState.page - 1) * pageState.pageSize,
         limit: pageState.pageSize,
@@ -74,10 +112,27 @@ const usePagination = (config: Page = DEFAULT_PAGINATION_CONFIG) => {
 
     if (sortParams) result.sort = sortParams;
 
-    return result;
-  }, [pageState, sortParams]);
+    if (searchParams) result.filter = searchParams;
 
-  return { pageParams, page: pageState, setPage, setPageSize, setSort };
+    return result;
+  }, [pageState, sortParams, searchParams]);
+
+  const reset = useCallback(() => {
+    resetPageState();
+    setSort(undefined);
+    setSearch(undefined);
+  }, [resetPageState, setSort, setSearch]);
+
+  return {
+    pageParams,
+    page: pageState,
+    setPage,
+    setPageSize,
+    setSort,
+    setSearch,
+    search: searchParams,
+    resetPagination: reset, // Needed to influence empty state
+  };
 };
 
 export default usePagination;

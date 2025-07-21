@@ -29,6 +29,7 @@ const List: FC = () => {
     loading,
     reload,
     success,
+    search,
     ...paginationProps
   } = usePaginatedApi(searchRoles);
 
@@ -41,7 +42,7 @@ const List: FC = () => {
     <PageHeader title={t("roles")} linkText="roles" linkUrl="" />
   );
 
-  if (success && !roles?.items.length) {
+  if (success && !search && !roles?.items.length) {
     return (
       <Page>
         {pageHeader}
@@ -83,6 +84,8 @@ const List: FC = () => {
             onClick: deleteRole,
           },
         ]}
+        searchPlaceholder="Search by Role ID"
+        searchKey="roleId"
         {...paginationProps}
       />
       {!loading && !success && (

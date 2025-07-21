@@ -19,8 +19,6 @@ const usePaginatedApiCall = (...props) => {
 
   const call = useCallback(
     (params) => {
-      console.log("pageParams", pageParams);
-
       return _call({
         ...pageParams,
         ...params,

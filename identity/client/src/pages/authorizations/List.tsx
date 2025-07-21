@@ -27,10 +27,17 @@ import AuthorizationList from "./AuthorizationsList";
 const List: FC = () => {
   const { t } = useTranslate("authorizations");
   const [activeTab, setActiveTab] = useState<string>(ResourceType.APPLICATION);
-  const { data, loading, reload, success, ...paginationProps } =
-    usePaginatedApi(searchAuthorization, {
-      filter: { resourceType: activeTab },
-    });
+
+  const {
+    data,
+    loading,
+    reload,
+    success,
+    resetPagination,
+    ...paginationProps
+  } = usePaginatedApi(searchAuthorization, {
+    filter: { resourceType: activeTab },
+  });
 
   const authorizationTabs = Object.values(ResourceType);
 
@@ -41,6 +48,7 @@ const List: FC = () => {
       <TabsContainer>
         <TabsVertical
           onChange={(tab: { selectedIndex: number }) => {
+            resetPagination();
             setActiveTab(authorizationTabs[tab.selectedIndex]);
           }}
         >

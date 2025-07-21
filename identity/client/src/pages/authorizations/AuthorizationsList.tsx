@@ -7,7 +7,6 @@
  */
 
 import { FC } from "react";
-import { Loading } from "@carbon/react";
 import { Add, TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { Authorization, ResourceType } from "src/utility/api/authorizations";
@@ -17,7 +16,6 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "./modals/AddModal";
 import DeleteModal from "./modals/DeleteModal";
-import { LoadingWrapper } from "./components";
 
 type AuthorizationListProps = {
   tab: ResourceType;
@@ -25,9 +23,12 @@ type AuthorizationListProps = {
   loading: boolean;
   reload: () => unknown;
   paginationProps: {
-    page?: { page: number; pageSize: number } & Partial<SearchResponse>;
+    page?: { page: number; pageSize: number } & Partial<
+      SearchResponse<Authorization>
+    >;
     setPage?: (page: number) => void;
     setPageSize?: (pageSize: number) => void;
+    search?: Record<string, string>;
   };
 };
 
@@ -49,16 +50,9 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
     reload,
   );
 
-  // if (loading)
-  //   return (
-  //     <LoadingWrapper>
-  //       <Loading withOverlay={false} />
-  //     </LoadingWrapper>
-  //   );
-
   return (
     <>
-      {data?.items?.length ? (
+      {data?.items?.length || paginationProps.search ? (
         <EntityList
           title={t(tab)}
           data={data.items}
@@ -82,6 +76,8 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
             },
           ]}
           maxDisplayCellLength={25}
+          searchPlaceholder={t("Search by Owner ID")}
+          searchKey="ownerId"
           {...paginationProps}
         />
       ) : (

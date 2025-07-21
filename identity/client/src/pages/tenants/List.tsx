@@ -29,6 +29,7 @@ const List: FC = () => {
     loading,
     reload,
     success,
+    search,
     ...paginationProps
   } = usePaginatedApi(searchTenant);
 
@@ -41,7 +42,7 @@ const List: FC = () => {
     <PageHeader title="Tenants" linkText="tenants" linkUrl="" />
   );
 
-  if (success && !tenantSearchResults?.items.length) {
+  if (success && !search && !tenantSearchResults?.items.length) {
     return (
       <Page>
         {pageHeader}
@@ -88,6 +89,8 @@ const List: FC = () => {
               }),
           },
         ]}
+        searchPlaceholder={t("Search by Tenant ID")}
+        searchKey="tenantId"
         {...paginationProps}
       />
       {!loading && !success && (

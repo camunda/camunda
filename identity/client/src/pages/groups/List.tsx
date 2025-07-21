@@ -31,10 +31,9 @@ const List: FC = () => {
     loading,
     reload,
     success,
+    search,
     ...paginationProps
   } = usePaginatedApi(searchGroups);
-
-  console.log("groupSearchResults", groupSearchResults);
 
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
@@ -43,7 +42,7 @@ const List: FC = () => {
 
   const pageHeader = <PageHeader title="Groups" linkText="groups" linkUrl="" />;
 
-  if (success && !groupSearchResults?.items.length) {
+  if (success && !search && !groupSearchResults?.items.length) {
     return (
       <Page>
         {pageHeader}
@@ -87,6 +86,7 @@ const List: FC = () => {
           },
         ]}
         searchPlaceholder={t("searchByGroupId")}
+        searchKey="groupId"
         {...paginationProps}
       />
       {!loading && !success && (

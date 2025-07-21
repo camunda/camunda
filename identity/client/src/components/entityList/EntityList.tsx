@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, ReactNode, useMemo, useState } from "react";
+import { FC, ReactNode, useEffect, useMemo, useState } from "react";
 import {
   Button,
   DataTable,
@@ -34,12 +34,10 @@ import styled from "styled-components";
 import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
 import { Add, CarbonIconType } from "@carbon/react/icons";
 import { DocumentationLink } from "src/components/documentation";
-import LateLoading from "src/components/layout/LateLoading";
 import Flex from "src/components/layout/Flex";
 import useTranslate from "src/utility/localization";
 import { StyledTableContainer } from "./components";
 import { PageResult, SortConfig } from "src/utility/api/hooks/usePagination";
-import { DataTableCustomHeaderProps, PropTypes } from "carbon-components-react";
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
@@ -69,6 +67,7 @@ export type DataTableHeader<D extends EntityData> = {
   header: string;
   key: Extract<keyof HeaderData<D>, string | ReactNode>;
   isSortable?: boolean;
+  isSearchable?: boolean;
 };
 
 export type EntityListHeader<D extends EntityData> = DataTableHeader<D> & {
@@ -91,6 +90,7 @@ type EntityListProps<D extends EntityData> = {
   description?: ReactNode | string;
   documentationPath?: string;
   searchPlaceholder?: string;
+  searchKey?: string;
   data: D[] | null | undefined;
   headers: DataTableHeader<D>[];
   addEntityLabel?: string | null;
@@ -114,7 +114,8 @@ type EntityListProps<D extends EntityData> = {
   setPage?: (page: number) => void;
   setPageSize?: (pageSize: number) => void;
   page?: ({ page: number; pageSize: number } & Partial<PageResult>) | undefined;
-  setSort?: (sort: null | SortConfig[]) => void;
+  setSort?: (sort: SortConfig[] | undefined) => void;
+  setSearch?: (search: Record<string, string> | undefined) => void;
 };
 
 const MAX_ICON_ACTIONS = 2;
@@ -135,14 +136,36 @@ const EntityList = <D extends EntityData>({
   loading,
   batchSelection,
   searchPlaceholder,
+  searchKey,
   maxDisplayCellLength = 50,
   setPage = () => {},
   setPageSize = () => {},
   page: pageData,
   setSort = () => {},
+  setSearch = () => {},
 }: EntityListProps<D>): ReturnType<FC> => {
   const debounce = useDebounce(300);
   const { t } = useTranslate("components");
+
+  // Search handling
+  const [search, setSearchState] = useState<string>();
+
+  useEffect(() => {
+    if (!searchKey) {
+      return;
+    }
+
+    if (typeof search !== "string") {
+      return;
+    }
+
+    if (search.length === 0) {
+      debounce(() => setSearch());
+      return;
+    }
+
+    debounce(() => setSearch({ [searchKey]: search }));
+  }, [debounce, search, searchKey]);
 
   const hasMenu = menuItems && menuItems.length > 0;
 
@@ -205,34 +228,18 @@ const EntityList = <D extends EntityData>({
         return 0;
       }}
     >
-      {({
-        rows,
-        getHeaderProps,
-        getToolbarProps,
-        getTableProps,
-        onInputChange,
-      }) => (
+      {({ rows, getHeaderProps, getToolbarProps, getTableProps }) => (
         <StyledTableContainer {...tableContainerProps}>
-          {loading ? (
-            <DataTableSkeleton
-              columnCount={headers.length}
-              headers={headers}
-              showHeader={false}
-              style={{ padding: 0 }}
-            />
-          ) : (
-            <>
-              <TableToolbar {...getToolbarProps()}>
-                <TableToolbarContent>
+          <>
+            <TableToolbar {...getToolbarProps()}>
+              <TableToolbarContent>
+                {searchKey && (
                   <TableToolbarSearch
                     placeholder={searchPlaceholder}
+                    value={search}
                     persistent
-                    onChange={(e) => {
-                      if (e) {
-                        debounce(() => {
-                          onInputChange(e);
-                        });
-                      }
+                    onChange={(e, value) => {
+                      setSearchState(value);
                     }}
                     onFocus={(event, handleExpand) => {
                       handleExpand(event, true);
@@ -244,17 +251,29 @@ const EntityList = <D extends EntityData>({
                       }
                     }}
                   />
-                  {addEntityLabel && (
-                    <Button
-                      renderIcon={Add}
-                      onClick={onAddEntity}
-                      disabled={addEntityDisabled}
-                    >
-                      {addEntityLabel}
-                    </Button>
-                  )}
-                </TableToolbarContent>
-              </TableToolbar>
+                )}
+                {addEntityLabel && (
+                  <Button
+                    renderIcon={Add}
+                    onClick={onAddEntity}
+                    disabled={addEntityDisabled}
+                  >
+                    {addEntityLabel}
+                  </Button>
+                )}
+              </TableToolbarContent>
+            </TableToolbar>
+            {loading && (
+              <DataTableSkeleton
+                columnCount={headers.length}
+                headers={headers}
+                showHeader={false}
+                showToolbar={false}
+                style={{ padding: 0 }}
+              />
+            )}
+
+            {!loading && (
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
@@ -306,6 +325,15 @@ const EntityList = <D extends EntityData>({
                     {hasMenu && <TableExpandHeader />}
                   </TableRow>
                 </TableHead>
+                {areRowsEmpty && !loading && (
+                  <TableBody>
+                    <TableRow>
+                      <StyledTableCell colSpan={headers.length + 1}>
+                        {t("No data available")}
+                      </StyledTableCell>
+                    </TableRow>
+                  </TableBody>
+                )}
                 {!areRowsEmpty && (
                   <TableBody>
                     {rows.map(({ id: rowId, cells }) => (
@@ -428,30 +456,31 @@ const EntityList = <D extends EntityData>({
                   </TableBody>
                 )}
               </Table>
-            </>
-          )}
-          {pageData && pageData.totalItems > Math.min(...PAGESIZES) && (
-            <Pagination
-              backwardText={t("Previous page")}
-              forwardText={t("Next page")}
-              itemsPerPageText={t("Items per page:")}
-              page={pageData.page}
-              pageNumberText={t("Page Number")}
-              pageSize={pageData.pageSize}
-              pageSizes={PAGESIZES}
-              totalItems={pageData.totalItems}
-              onChange={({
-                page,
-                pageSize,
-              }: {
-                page: number;
-                pageSize: number;
-              }) => {
-                setPage(page);
-                setPageSize(pageSize);
-              }}
-            />
-          )}
+            )}
+          </>
+          {!!pageData?.totalItems &&
+            pageData.totalItems > Math.min(...PAGESIZES) && (
+              <Pagination
+                backwardText={t("Previous page")}
+                forwardText={t("Next page")}
+                itemsPerPageText={t("Items per page:")}
+                page={pageData.page}
+                pageNumberText={t("Page Number")}
+                pageSize={pageData.pageSize}
+                pageSizes={PAGESIZES}
+                totalItems={pageData.totalItems}
+                onChange={({
+                  page,
+                  pageSize,
+                }: {
+                  page: number;
+                  pageSize: number;
+                }) => {
+                  setPage(page);
+                  setPageSize(pageSize);
+                }}
+              />
+            )}
         </StyledTableContainer>
       )}
     </DataTable>

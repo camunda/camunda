@@ -33,6 +33,7 @@ const List: FC = () => {
     loading,
     reload,
     success,
+    search,
     ...paginationProps
   } = usePaginatedApi(searchUser);
   const [addUser, addUserModal] = useModal(AddModal, reload);
@@ -45,7 +46,7 @@ const List: FC = () => {
     <PageHeader title={t("users")} linkText="users" linkUrl="" />
   );
 
-  if (success && !userSearchResults?.items.length) {
+  if (success && !search && !userSearchResults?.items.length) {
     return (
       <Page>
         {pageHeader}
@@ -81,7 +82,11 @@ const List: FC = () => {
       <EntityList
         data={userSearchResults == null ? [] : userSearchResults.items}
         headers={[
-          { header: t("username"), key: "username", isSortable: true },
+          {
+            header: t("username"),
+            key: "username",
+            isSortable: true,
+          },
           { header: t("name"), key: "name", isSortable: true },
           { header: t("email"), key: "email", isSortable: true },
         ]}
@@ -103,6 +108,7 @@ const List: FC = () => {
         onAddEntity={addUser}
         loading={loading}
         searchPlaceholder={t("searchByUsername")}
+        searchKey="username"
         {...paginationProps}
       />
       {!loading && !success && (
