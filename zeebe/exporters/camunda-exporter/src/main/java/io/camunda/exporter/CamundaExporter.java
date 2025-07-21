@@ -285,7 +285,7 @@ public class CamundaExporter implements Exporter {
 
     if (writer.getBatchSize() == configuration.getBulk().getSize()) {
       LOG.info(
-"""
+          """
 Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
 processing records from previous version
 """,
