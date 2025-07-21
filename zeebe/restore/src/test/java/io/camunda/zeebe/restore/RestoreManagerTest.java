@@ -16,6 +16,7 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -26,9 +27,10 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
+    final var restoreConfiguration = new RestoreConfiguration(true, List.of("lost+found"));
     final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, restoreConfiguration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when
     Files.createDirectory(dir.resolve("other-data"));
@@ -46,9 +48,10 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
+    final var restoreConfiguration = new RestoreConfiguration(true, List.of("lost+found"));
     final var restoreManager =
         new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, restoreConfiguration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when
     Files.createDirectory(dir.resolve("lost+found"));
@@ -59,5 +62,49 @@ final class RestoreManagerTest {
         .withThrowableThat()
         .withRootCauseInstanceOf(BackupNotFoundException.class)
         .isNotNull();
+  }
+
+  @Test
+  void shouldIgnoreConfigurableFilesInTarget(@TempDir final Path dir) throws IOException {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    final var restoreConfiguration = new RestoreConfiguration(true, List.of("lost+found", ".DS_Store", "Thumbs.db"));
+    final var restoreManager =
+        new RestoreManager(
+            configuration, restoreConfiguration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+
+    // when - create ignored files
+    Files.createDirectory(dir.resolve("lost+found"));
+    Files.createFile(dir.resolve(".DS_Store"));
+    Files.createFile(dir.resolve("Thumbs.db"));
+
+    // then - should not fail because all files are ignored
+    assertThat(restoreManager.restore(1L, false))
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(BackupNotFoundException.class);
+  }
+
+  @Test
+  void shouldFailWhenNonIgnoredFileExists(@TempDir final Path dir) throws IOException {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    final var restoreConfig = new RestoreCfg();
+    restoreConfig.setIgnoreFilesInTarget(List.of("lost+found"));
+    final var restoreManager =
+        new RestoreManager(
+            configuration, restoreConfig, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+
+    // when - create ignored and non-ignored files
+    Files.createDirectory(dir.resolve("lost+found"));
+    Files.createFile(dir.resolve("some-data-file"));
+
+    // then - should fail because some-data-file is not ignored
+    assertThat(restoreManager.restore(1L, false))
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableThat()
+        .withRootCauseInstanceOf(DirectoryNotEmptyException.class);
   }
 }

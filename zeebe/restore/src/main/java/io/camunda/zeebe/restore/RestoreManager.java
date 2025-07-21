@@ -37,14 +37,17 @@ import org.slf4j.LoggerFactory;
 public class RestoreManager {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
+  private final RestoreConfiguration restoreConfiguration;
   private final BackupStore backupStore;
   private final MeterRegistry meterRegistry;
 
   public RestoreManager(
       final BrokerCfg configuration,
+      final RestoreConfiguration restoreConfiguration,
       final BackupStore backupStore,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
+    this.restoreConfiguration = restoreConfiguration;
     this.backupStore = backupStore;
     this.meterRegistry = meterRegistry;
   }
@@ -146,18 +149,24 @@ public class RestoreManager {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private static boolean dataFolderIsEmpty(final Path dir) throws IOException {
+  private boolean dataFolderIsEmpty(final Path dir) throws IOException {
     if (!Files.exists(dir)) {
       return true;
     }
 
+    final var ignoreFiles = restoreConfiguration.ignoreFilesInTarget();
     try (final var entries = Files.list(dir)) {
       return entries
-          // ignore the well-known lost+found directory, we don't care that it's there.
-          .filter(path -> !path.endsWith("lost+found"))
+          // ignore configured files/directories that we don't care about
+          .filter(path -> !shouldIgnoreFile(path, ignoreFiles))
           .findFirst()
           .isEmpty();
     }
+  }
+
+  private static boolean shouldIgnoreFile(final Path path, final List<String> ignoreFiles) {
+    final String fileName = path.getFileName().toString();
+    return ignoreFiles.contains(fileName);
   }
 
   static final class ValidatePartitionCount implements BackupValidator {
