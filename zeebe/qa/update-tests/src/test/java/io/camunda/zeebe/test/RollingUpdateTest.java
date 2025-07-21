@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.test;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -77,6 +80,11 @@ final class RollingUpdateTest {
           .withBrokersCount(3)
           .withPartitionsCount(1)
           .withReplicationFactor(3)
+          .withNodeConfig(
+              node ->
+                  node.withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+                      .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false"))
           .build();
 
   @SuppressWarnings("unused")
