@@ -10,13 +10,12 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
-import io.camunda.application.commons.utils.DatabaseTypeUtils;
-import io.camunda.authentication.ConditionalOnNoSecondaryStorage;
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
+import io.camunda.authentication.ConditionalOnNoSecondaryStorage;
 import io.camunda.authentication.ConditionalOnProtectedApi;
+import io.camunda.authentication.ConditionalOnSecondaryStorage;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
@@ -730,35 +729,6 @@ public class WebSecurityConfig {
     }
   }
 
-  protected static class NoContentResponseHandler
-      implements AuthenticationSuccessHandler, LogoutSuccessHandler {
-
-    @Override
-    public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
-        throws IOException, ServletException {
-      response.setStatus(HttpStatus.NO_CONTENT.value());
-    }
-
-    @Override
-    public void onLogoutSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
-        throws IOException, ServletException {
-      onAuthenticationSuccess(request, response, authentication);
-    }
-  }
-
-  protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
-    @Override
-    public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
-        throws IOException, ServletException {
-      super.onAuthenticationSuccess(request, response, authentication);
-
-      addCsrfTokenWhenAvailable(request, response);
-    }
-  }
-
   /**
    * Configuration that provides fail-fast behavior when Basic Authentication is configured but
    * secondary storage is disabled (camunda.database.type=none). This prevents misleading security
@@ -782,8 +752,8 @@ public class WebSecurityConfig {
 
   /**
    * Configuration that provides fail-fast behavior when OIDC Authentication is configured but
-   * secondary storage is disabled (camunda.database.type=none). Unlike Basic Auth, OIDC can work
-   * in no-db mode with limited functionality, so this configuration provides warnings rather than
+   * secondary storage is disabled (camunda.database.type=none). Unlike Basic Auth, OIDC can work in
+   * no-db mode with limited functionality, so this configuration provides warnings rather than
    * errors.
    */
   @Configuration
@@ -791,7 +761,8 @@ public class WebSecurityConfig {
   @ConditionalOnNoSecondaryStorage
   public static class OidcAuthenticationNoDbConfiguration {
 
-    private static final Logger LOG = LoggerFactory.getLogger(OidcAuthenticationNoDbConfiguration.class);
+    private static final Logger LOG =
+        LoggerFactory.getLogger(OidcAuthenticationNoDbConfiguration.class);
 
     @Bean
     public OidcAuthenticationNoDbWarningBean oidcAuthenticationNoDbWarningBean() {
@@ -806,13 +777,44 @@ public class WebSecurityConfig {
     }
   }
 
-  /**
-   * Marker bean for Basic Auth no-db fail-fast configuration.
-   */
+  /** Marker bean for Basic Auth no-db fail-fast configuration. */
   public static class BasicAuthenticationNoDbFailFastBean {}
 
-  /**
-   * Marker bean for OIDC Auth no-db warning configuration.
-   */
+  /** Marker bean for OIDC Auth no-db warning configuration. */
   public static class OidcAuthenticationNoDbWarningBean {}
+
+  protected static class NoContentResponseHandler
+      implements AuthenticationSuccessHandler, LogoutSuccessHandler {
+
+    @Override
+    public void onAuthenticationSuccess(
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
+        throws IOException, ServletException {
+      response.setStatus(HttpStatus.NO_CONTENT.value());
+    }
+
+    @Override
+    public void onLogoutSuccess(
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
+        throws IOException, ServletException {
+      onAuthenticationSuccess(request, response, authentication);
+    }
+  }
+
+  protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
+    @Override
+    public void onAuthenticationSuccess(
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
+        throws IOException, ServletException {
+      super.onAuthenticationSuccess(request, response, authentication);
+
+      addCsrfTokenWhenAvailable(request, response);
+    }
+  }
 }
