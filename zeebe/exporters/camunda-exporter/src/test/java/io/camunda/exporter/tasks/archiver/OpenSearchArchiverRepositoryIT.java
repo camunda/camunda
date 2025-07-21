@@ -350,7 +350,7 @@ final class OpenSearchArchiverRepositoryIT {
   void shouldSetTheCorrectFinishDateWithRollover() throws IOException {
     Assumptions.assumeTrue(
         System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isEmpty(),
-        "Skipping test if AWS is used.");
+        "Skipping test if AWS is used. See https://github.com/camunda/camunda/pull/35591");
     // given a rollover of 3 days:
     config.setRolloverInterval("3d");
     final var dateFormatter =
@@ -435,7 +435,7 @@ final class OpenSearchArchiverRepositoryIT {
   void shouldFetchHistoricalDatesOnStart() throws IOException {
     Assumptions.assumeTrue(
         System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isEmpty(),
-        "Skipping test if AWS is used.");
+        "Skipping test if AWS is used. See https://github.com/camunda/camunda/pull/35591");
     final var dateFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     final var now = Instant.now();
@@ -470,7 +470,7 @@ final class OpenSearchArchiverRepositoryIT {
   void shouldFetchHistoricalDatesOnStartAndExcludeZeebePrefix() throws IOException {
     Assumptions.assumeTrue(
         System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isEmpty(),
-        "Skipping test if AWS is used.");
+        "Skipping test if AWS is used. See https://github.com/camunda/camunda/pull/35591");
 
     final var dateFormatter =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
