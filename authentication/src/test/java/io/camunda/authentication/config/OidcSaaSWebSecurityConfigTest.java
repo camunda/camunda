@@ -11,14 +11,16 @@ import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.authentication.config.controllers.OidcMockMvcTestHelper;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 /** See {@link OidcWebSecurityConfigTest} for scope and limitations of this test class. */
@@ -41,6 +43,8 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
     })
 public class OidcSaaSWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
+  @Autowired private OAuth2AuthorizedClientRepository authorizedClientRepository;
+
   @ParameterizedTest
   @MethodSource("getAllDummyEndpoints")
   public void shouldAddSecurityHeadersOnAllApiAndWebappRequests(final String endpoint) {
@@ -50,7 +54,7 @@ public class OidcSaaSWebSecurityConfigTest extends AbstractWebSecurityConfigTest
         mockMvcTester
             .get()
             .uri("https://localhost" + endpoint)
-            .with(SecurityMockMvcRequestPostProcessors.oidcLogin())
+            .with(OidcMockMvcTestHelper.oidcLogin(authorizedClientRepository))
             .exchange();
 
     // then
