@@ -78,7 +78,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     try (final var ignored = snapshotMetrics.startTimer(isBootstrap)) {
       try {
         takeSnapshot.accept(getPath());
-        if (!directory.toFile().exists() || directory.toFile().listFiles().length == 0) {
+        if (FileUtil.isEmpty(directory)) {
           // If no snapshot files are created, snapshot is not valid
           abortInternal();
           takenFuture.completeExceptionally(
