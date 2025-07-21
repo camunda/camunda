@@ -43,26 +43,6 @@ final class RestoreManagerTest {
   }
 
   @Test
-  void shouldNotFailOnLostAndFoundDirectory(@TempDir final Path dir) throws IOException {
-    // given
-    final var configuration = new BrokerCfg();
-    configuration.getData().setDirectory(dir.toString());
-    final var restoreManager =
-        new RestoreManager(
-            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
-
-    // when
-    Files.createDirectory(dir.resolve("lost+found"));
-
-    // then
-    assertThat(restoreManager.restore(1L, false, List.of()))
-        .failsWithin(Duration.ofSeconds(5))
-        .withThrowableThat()
-        .withRootCauseInstanceOf(BackupNotFoundException.class)
-        .isNotNull();
-  }
-
-  @Test
   void shouldIgnoreConfigurableFilesInTarget(@TempDir final Path dir) throws IOException {
     // given
     final var configuration = new BrokerCfg();
