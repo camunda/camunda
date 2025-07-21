@@ -1,0 +1,48 @@
+# description: Syncs custom fields to the Distributed Systems project based on labels
+# test location: /
+# type: CI
+# owner: @camunda/zeebe-distributed-platform-team
+name: Update Distributed Systems Project Fields
+on:
+  issues:
+    types:
+      - labeled
+
+jobs:
+  update_project:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        label: ${{ github.event.issue.labels.*.name }}
+    steps:
+      # Detects if the label is one of severity or likelihood, grabs the actual value past the first
+      # / separator, and capitalizes the first letter of the value (since the custom fields in the
+      # project are capitalized).
+      - name: Determine field from label
+        id: set_field
+        run: |
+          echo "Label: ${{ matrix.label }}"
+          label="${{ matrix.label }}"
+          if [[ "${{ matrix.label }}" == 'severity/*' ]]; then
+            value="${label#severity/}}}"
+            echo "field=Severity" >> $GITHUB_OUTPUT
+            echo "value=${value[@]^}" >> $GITHUB_OUTPUT
+          else if [[ "${{ matrix.label }}" == 'likelihood/*' ]]; then
+            echo "field=Likelihood" >> $GITHUB_OUTPUT
+            value="${label#severity/}}}"
+            echo "value=${value[@]^}" >> $GITHUB_OUTPUT
+          else
+            echo "skip=true" >> $GITHUB_OUTPUT
+          fi
+      - name: Update status
+        id: update_status
+        uses: github/update-project-action@v3
+        if: steps.set_field.outputs.skip != 'true'
+        with:
+          github_token: ${{ secrets.STATUS_UPDATE_TOKEN }}
+          organization: github
+          project_number: 92
+          content_id: ${{ github.event.client_payload.command.resource.id }}
+          field: ${{ steps.set_field.outputs.field }}
+          value: ${{ steps.set_field.outputs.value }}
