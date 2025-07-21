@@ -28,7 +28,7 @@ public class UsageMetricsExportedApplier
 
   @Override
   public void applyState(final long key, final UsageMetricRecord record) {
-    final var activeBucket = usageMetricState.getOrCreateActiveBucket();
+    final var activeBucket = usageMetricState.getActiveBucket();
 
     // uninitialized bucket created on-demand
     if (activeBucket != null && activeBucket.getFromTime() == -1) {

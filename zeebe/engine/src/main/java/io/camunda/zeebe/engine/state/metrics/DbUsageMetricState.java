@@ -41,6 +41,12 @@ public class DbUsageMetricState implements MutableUsageMetricState {
   }
 
   @Override
+  public PersistedUsageMetrics getActiveBucket() {
+    setActiveBucketKeys();
+    return metricsBucketColumnFamily.get(metricsBucketKey);
+  }
+
+  @Override
   public PersistedUsageMetrics getOrCreateActiveBucket() {
     setActiveBucketKeys();
 

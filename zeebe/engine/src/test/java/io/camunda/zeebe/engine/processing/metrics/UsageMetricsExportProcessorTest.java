@@ -62,13 +62,13 @@ class UsageMetricsExportProcessorTest {
   @Test
   void shouldAppendExportedNoneEventWhenBucketNull() {
     // given
-    when(state.getOrCreateActiveBucket()).thenReturn(null);
+    when(state.getActiveBucket()).thenReturn(null);
 
     // when
     processor.processRecord(record);
 
     // then
-    verify(state).getOrCreateActiveBucket();
+    verify(state).getActiveBucket();
     verify(stateWriter)
         .appendFollowUpEvent(
             eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
@@ -85,7 +85,7 @@ class UsageMetricsExportProcessorTest {
   @Test
   void shouldAppendExportedEventRPI() {
     // given
-    when(state.getOrCreateActiveBucket())
+    when(state.getActiveBucket())
         .thenReturn(
             new PersistedUsageMetrics()
                 .setFromTime(1)
@@ -96,7 +96,7 @@ class UsageMetricsExportProcessorTest {
     processor.processRecord(record);
 
     // then
-    verify(state).getOrCreateActiveBucket();
+    verify(state).getActiveBucket();
     verify(stateWriter)
         .appendFollowUpEvent(
             eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
@@ -113,7 +113,7 @@ class UsageMetricsExportProcessorTest {
   @Test
   void shouldAppendExportedEventEDI() {
     // given
-    when(state.getOrCreateActiveBucket())
+    when(state.getActiveBucket())
         .thenReturn(
             new PersistedUsageMetrics()
                 .setFromTime(1)
@@ -123,7 +123,7 @@ class UsageMetricsExportProcessorTest {
     processor.processRecord(record);
 
     // then
-    verify(state).getOrCreateActiveBucket();
+    verify(state).getActiveBucket();
     verify(stateWriter)
         .appendFollowUpEvent(
             eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
@@ -140,7 +140,7 @@ class UsageMetricsExportProcessorTest {
   @Test
   void shouldAppendExportedEventTU() {
     // given
-    when(state.getOrCreateActiveBucket())
+    when(state.getActiveBucket())
         .thenReturn(
             new PersistedUsageMetrics()
                 .setFromTime(1)
@@ -150,7 +150,7 @@ class UsageMetricsExportProcessorTest {
     processor.processRecord(record);
 
     // then
-    verify(state).getOrCreateActiveBucket();
+    verify(state).getActiveBucket();
     verify(stateWriter)
         .appendFollowUpEvent(
             eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
@@ -167,7 +167,7 @@ class UsageMetricsExportProcessorTest {
   @Test
   void shouldAppendMixedExportedEvents() {
     // given
-    when(state.getOrCreateActiveBucket())
+    when(state.getActiveBucket())
         .thenReturn(
             new PersistedUsageMetrics()
                 .setFromTime(1)
@@ -179,7 +179,7 @@ class UsageMetricsExportProcessorTest {
     processor.processRecord(record);
 
     // then
-    verify(state).getOrCreateActiveBucket();
+    verify(state).getActiveBucket();
     verify(stateWriter, times(3))
         .appendFollowUpEvent(
             eq(1L), eq(UsageMetricIntent.EXPORTED), recordArgumentCaptor.capture());
