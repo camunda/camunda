@@ -8023,7 +8023,7 @@ components:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
-          description: The matching users.
+          description: The matching groups.
           type: array
           items:
             $ref: "#/components/schemas/RoleGroupResult"
