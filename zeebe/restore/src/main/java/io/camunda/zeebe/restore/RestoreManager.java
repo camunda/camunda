@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -37,25 +38,23 @@ import org.slf4j.LoggerFactory;
 public class RestoreManager {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
-  private final RestoreConfiguration restoreConfiguration;
   private final BackupStore backupStore;
   private final MeterRegistry meterRegistry;
 
   public RestoreManager(
       final BrokerCfg configuration,
-      final RestoreConfiguration restoreConfiguration,
       final BackupStore backupStore,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration;
-    this.restoreConfiguration = restoreConfiguration;
     this.backupStore = backupStore;
     this.meterRegistry = meterRegistry;
   }
 
-  public CompletableFuture<Void> restore(final long backupId, final boolean validateConfig) {
+  public CompletableFuture<Void> restore(
+      final long backupId, final boolean validateConfig, final List<String> ignoreFilesInTarget) {
     final Path dataDirectory = Path.of(configuration.getData().getDirectory());
     try {
-      if (!dataFolderIsEmpty(dataDirectory)) {
+      if (!dataFolderIsEmpty(dataDirectory, ignoreFilesInTarget)) {
         LOG.error(
             "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
             dataDirectory);
@@ -150,24 +149,19 @@ public class RestoreManager {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private boolean dataFolderIsEmpty(final Path dir) throws IOException {
+  private boolean dataFolderIsEmpty(final Path dir, final List<String> ignoreFilesInTarget)
+      throws IOException {
     if (!Files.exists(dir)) {
       return true;
     }
 
-    final var ignoreFiles = restoreConfiguration.ignoreFilesInTarget();
     try (final var entries = Files.list(dir)) {
       return entries
-          // ignore configured files/directories that we don't care about
-          .filter(path -> !shouldIgnoreFile(path, ignoreFiles))
+          // ignore configured files/directories that we don't care about, e.g. `lost+found`.
+          .filter(path -> ignoreFilesInTarget.stream().noneMatch(path::endsWith))
           .findFirst()
           .isEmpty();
     }
-  }
-
-  private static boolean shouldIgnoreFile(final Path path, final List<String> ignoreFiles) {
-    final String fileName = path.getFileName().toString();
-    return ignoreFiles.contains(fileName);
   }
 
   static final class ValidatePartitionCount implements BackupValidator {
