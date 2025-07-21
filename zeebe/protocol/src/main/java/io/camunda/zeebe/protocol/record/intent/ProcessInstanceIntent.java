@@ -58,7 +58,9 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
    * `canceling` task listener was triggered - to resume and finalize the termination of the user
    * task element.
    */
-  CONTINUE_TERMINATING_ELEMENT((short) 14);
+  CONTINUE_TERMINATING_ELEMENT((short) 14),
+
+  SEQUENCE_FLOW_DELETED((short) 15);
 
   private static final Set<ProcessInstanceIntent> PROCESS_INSTANCE_COMMANDS = EnumSet.of(CANCEL);
   private static final Set<ProcessInstanceIntent> BPMN_ELEMENT_COMMANDS =
@@ -142,6 +144,7 @@ public enum ProcessInstanceIntent implements ProcessInstanceRelatedIntent {
       case ELEMENT_MIGRATED:
       case ANCESTOR_MIGRATED:
       case ELEMENT_SUSPENDED:
+      case SEQUENCE_FLOW_DELETED:
         return true;
       default:
         return false;

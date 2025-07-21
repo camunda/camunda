@@ -244,6 +244,9 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
     register(
+        ProcessInstanceIntent.SEQUENCE_FLOW_DELETED,
+        new ProcessInstanceSequenceFlowDeletedApplier(elementInstanceState, processState));
+    register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
         1,
         new ProcessInstanceElementMigratedV1Applier(elementInstanceState, processState));
