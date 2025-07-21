@@ -333,4 +333,31 @@ describe('MetadataPopover <Details />', () => {
       screen.getByText(/"calledProcessDefinitionName"/),
     ).toBeInTheDocument();
   });
+
+  it('should display job data fields', async () => {
+    const incidentMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        jobType: 'httpService',
+        jobWorker: 'worker-1',
+        jobDeadline: '2023-01-15T10:10:00.000Z',
+        jobCustomHeaders: {timeout: '30s'},
+        jobKey: '555666777',
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(screen.getByText(/"jobKey"/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobCustomHeaders"/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobDeadline"/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobType"/)).toBeInTheDocument();
+    expect(screen.getByText(/"jobWorker"/)).toBeInTheDocument();
+  });
 });

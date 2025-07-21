@@ -10,6 +10,7 @@ import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaDa
 import type {
   ElementInstance,
   ProcessInstance,
+  Job,
   UserTask,
 } from '@vzeta/camunda-api-zod-schemas/8.8';
 
@@ -40,8 +41,8 @@ type V2InstanceMetadata = {
   jobType?: string | null;
   jobWorker?: string | null;
   jobDeadline?: string | null;
-  jobCustomHeaders: {[key: string]: string} | null;
-  jobId?: string | null;
+  jobCustomHeaders: Record<string, unknown> | null;
+  jobKey?: string | null;
 } & Partial<UserTask>;
 
 type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata' | 'incident'> & {
@@ -73,6 +74,7 @@ type UserTaskSubset = Pick<
 function createV2InstanceMetadata(
   oldMetadata: MetaDataDto['instanceMetadata'],
   elementInstance: ElementInstance,
+  job?: Job,
   calledProcess?: ProcessInstance,
   userTask: Partial<UserTaskSubset> | null = {},
 ): V2InstanceMetadata {
@@ -98,12 +100,12 @@ function createV2InstanceMetadata(
     calledDecisionInstanceId: oldMetadata?.calledDecisionInstanceId ?? null,
     calledDecisionDefinitionName:
       oldMetadata?.calledDecisionDefinitionName ?? null,
-    jobRetries: oldMetadata?.jobRetries ?? null,
-    jobDeadline: oldMetadata?.jobDeadline ?? null,
-    jobId: oldMetadata?.jobId ?? null,
-    jobType: oldMetadata?.jobType ?? null,
-    jobWorker: oldMetadata?.jobWorker ?? null,
-    jobCustomHeaders: oldMetadata?.jobCustomHeaders ?? null,
+    jobRetries: job?.retries ?? null,
+    jobDeadline: job?.deadline ?? null,
+    jobKey: job?.jobKey ?? null,
+    jobType: job?.type ?? null,
+    jobWorker: job?.worker ?? null,
+    jobCustomHeaders: job?.customHeaders ?? null,
     elementInstanceKey: elementInstance.elementInstanceKey,
     elementId: elementInstance.elementId,
     elementName: elementInstance.elementName,

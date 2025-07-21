@@ -31,6 +31,7 @@ import {resolveIncidentErrorType} from './Incident/resolveIncidentErrorType';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
+import {useJobs} from 'modules/queries/jobs/useJobs';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -163,13 +164,25 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       },
     );
 
+  const {data: jobSearchResult, isLoading: isSearchingJob} = useJobs({
+    payload: {
+      filter: {
+        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
+        listenerEventType: 'UNSPECIFIED',
+      },
+    },
+    disabled: !elementInstanceMetadata?.elementInstanceKey,
+    select: (data) => data.pages?.flatMap((page) => page.items),
+  });
+
   if (
     elementId === undefined ||
     metaData === null ||
     (shouldFetchElementInstances && isSearchingElementInstances) ||
     (!!elementInstanceId && isFetchingInstance) ||
     isSearchingUserTasks ||
-    isSearchingProcessInstances
+    isSearchingProcessInstances ||
+    isSearchingJob
   ) {
     return null;
   }
@@ -207,6 +220,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               instanceMetadata: createV2InstanceMetadata(
                 instanceMetadata,
                 elementInstanceMetadata,
+                jobSearchResult?.[0],
                 processInstancesSearchResult?.items?.[0],
                 elementInstanceMetadata.type === 'USER_TASK'
                   ? userTask
