@@ -1173,6 +1173,9 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(filter.getEndDate())
                   .map(mapToOperations(OffsetDateTime.class))
                   .ifPresent(builder::endDateOperations);
+              Optional.ofNullable(filter.getScopeKey())
+                  .map(KeyUtil::keyToLong)
+                  .ifPresent(builder::scopeKeys);
             });
     return builder.build();
   }
