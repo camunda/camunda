@@ -16,9 +16,11 @@
 package io.camunda.client.group;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
 import io.camunda.client.api.search.sort.MappingSort;
@@ -125,5 +127,55 @@ public class GroupSearchTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/groups/groupId/roles/search");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  public void testClientsSearchByGroup() {
+    // when
+    final String groupId = "groupId";
+    client
+        .newClientsByGroupSearchRequest(groupId)
+        .sort(ClientSort::clientId)
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/groups/groupId/clients/search");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullGroupIdWhenSearchingClientsByGroupId() {
+    // when / then
+    assertThatThrownBy(() -> client.newClientsByGroupSearchRequest(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyGroupIdWhenSearchingClientsByGroupId() {
+    // when / then
+    assertThatThrownBy(() -> client.newClientsByGroupSearchRequest("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
+  }
+
+  @Test
+  void shouldIncludeSortInClientsByGroupSearchRequestBody() {
+    // when
+    client
+        .newClientsByGroupSearchRequest("groupId")
+        .sort(s -> s.clientId().desc())
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest lastRequest = gatewayService.getLastRequest();
+    final String requestBody = lastRequest.getBodyAsString();
+
+    assertThat(requestBody).contains("\"sort\":[{\"field\":\"clientId\",\"order\":\"DESC\"}]");
   }
 }
