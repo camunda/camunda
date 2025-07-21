@@ -59,7 +59,7 @@ import org.springframework.web.bind.annotation.*;
 public class TenantController {
   private final TenantServices tenantServices;
   private final UserServices userServices;
-  private final MappingRuleServices mappingServices;
+  private final MappingRuleServices mappingRuleServices;
   private final GroupServices groupServices;
   private final RoleServices roleServices;
   private final CamundaAuthenticationProvider authenticationProvider;
@@ -67,13 +67,13 @@ public class TenantController {
   public TenantController(
       final TenantServices tenantServices,
       final UserServices userServices,
-      final MappingRuleServices mappingServices,
+      final MappingRuleServices mappingRuleServices,
       final GroupServices groupServices,
       final RoleServices roleServices,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.tenantServices = tenantServices;
     this.userServices = userServices;
-    this.mappingServices = mappingServices;
+    this.mappingRuleServices = mappingRuleServices;
     this.groupServices = groupServices;
     this.roleServices = roleServices;
     this.authenticationProvider = authenticationProvider;
@@ -139,10 +139,10 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
-  @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingId}")
-  public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
-      @PathVariable final String tenantId, @PathVariable final String mappingId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE)
+  @CamundaPutMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
+  public CompletableFuture<ResponseEntity<Object>> assignMappingRuleToTenant(
+      @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
@@ -185,19 +185,19 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/{tenantId}/mapping-rules/search")
-  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInTenant(
+  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toMappingQuery(query)
+    return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            mappingQuery -> searchMappingsInTenant(tenantId, mappingQuery));
+            mappingRuleQuery -> searchMappingRulesInTenant(tenantId, mappingRuleQuery));
   }
 
-  @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingId}")
-  public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
-      @PathVariable final String tenantId, @PathVariable final String mappingId) {
-    return RequestMapper.toTenantMemberRequest(tenantId, mappingId, EntityType.MAPPING_RULE)
+  @CamundaDeleteMapping(path = "/{tenantId}/mapping-rules/{mappingRuleId}")
+  public CompletableFuture<ResponseEntity<Object>> removeMappingRuleFromTenant(
+      @PathVariable final String tenantId, @PathVariable final String mappingRuleId) {
+    return RequestMapper.toTenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
@@ -323,15 +323,15 @@ public class TenantController {
     }
   }
 
-  private ResponseEntity<MappingRuleSearchQueryResult> searchMappingsInTenant(
+  private ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInTenant(
       final String tenantId, final MappingRuleQuery mappingRuleQuery) {
     try {
-      final var composedMappingQuery = buildMappingQuery(tenantId, mappingRuleQuery);
+      final var composedMappingRuleQuery = buildMappingRuleQuery(tenantId, mappingRuleQuery);
       final var result =
-          mappingServices
+          mappingRuleServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .search(composedMappingQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
+              .search(composedMappingRuleQuery);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -386,7 +386,7 @@ public class TenantController {
         .build();
   }
 
-  private MappingRuleQuery buildMappingQuery(
+  private MappingRuleQuery buildMappingRuleQuery(
       final String tenantId, final MappingRuleQuery mappingRuleQuery) {
     return mappingRuleQuery.toBuilder()
         .filter(mappingRuleQuery.filter().toBuilder().tenantId(tenantId).build())

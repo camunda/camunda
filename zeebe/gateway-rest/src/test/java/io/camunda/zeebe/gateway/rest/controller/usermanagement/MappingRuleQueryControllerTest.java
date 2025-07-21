@@ -32,7 +32,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = MappingRuleController.class)
 public class MappingRuleQueryControllerTest extends RestControllerTest {
-  private static final String MAPPING_BASE_URL = "/v2/mapping-rules";
+  private static final String MAPPING_RULE_BASE_URL = "/v2/mapping-rules";
 
   @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
@@ -46,15 +46,16 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void getMappingShouldReturnOk() {
+  void getMappingRuleShouldReturnOk() {
     // given
-    final var mapping = new MappingRuleEntity("id", 100L, "Claim Name", "Claim Value", "Map Name");
-    when(mappingRuleServices.getMappingRule(mapping.mappingRuleId())).thenReturn(mapping);
+    final var mappingRule =
+        new MappingRuleEntity("id", 100L, "Claim Name", "Claim Value", "Map Name");
+    when(mappingRuleServices.getMappingRule(mappingRule.mappingRuleId())).thenReturn(mappingRule);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(MAPPING_BASE_URL, mapping.mappingRuleId()))
+        .uri("%s/%s".formatted(MAPPING_RULE_BASE_URL, mappingRule.mappingRuleId()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -69,19 +70,19 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                           }""");
 
     // then
-    verify(mappingRuleServices, times(1)).getMappingRule(mapping.mappingRuleId());
+    verify(mappingRuleServices, times(1)).getMappingRule(mappingRule.mappingRuleId());
   }
 
   @Test
-  void getNonExistingMappingShouldReturnNotFound() {
+  void getNonExistingMappingRuleShouldReturnNotFound() {
     // given
-    final var mappingId = "id";
-    final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingId);
-    when(mappingRuleServices.getMappingRule(mappingId))
+    final var mappingRuleId = "id";
+    final var path = "%s/%s".formatted(MAPPING_RULE_BASE_URL, mappingRuleId);
+    when(mappingRuleServices.getMappingRule(mappingRuleId))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
-                    "mapping not found", CamundaSearchException.Reason.NOT_FOUND)));
+                    "mapping rule not found", CamundaSearchException.Reason.NOT_FOUND)));
 
     // when
     webClient
@@ -98,17 +99,17 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
               "type": "about:blank",
               "title": "NOT_FOUND",
               "status": 404,
-              "detail": "mapping not found",
+              "detail": "mapping rule not found",
               "instance": "%s"
             }"""
                 .formatted(path));
 
     // then
-    verify(mappingRuleServices, times(1)).getMappingRule(mappingId);
+    verify(mappingRuleServices, times(1)).getMappingRule(mappingRuleId);
   }
 
   @Test
-  void shouldSearchMappingsWithEmptyQuery() {
+  void shouldSearchMappingRulesWithEmptyQuery() {
     // given
     when(mappingRuleServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
@@ -129,7 +130,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("%s/search".formatted(MAPPING_BASE_URL))
+        .uri("%s/search".formatted(MAPPING_RULE_BASE_URL))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue("{}")
@@ -189,7 +190,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("%s/search".formatted(MAPPING_BASE_URL))
+        .uri("%s/search".formatted(MAPPING_RULE_BASE_URL))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
@@ -231,7 +232,7 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("%s/search".formatted(MAPPING_BASE_URL))
+        .uri("%s/search".formatted(MAPPING_RULE_BASE_URL))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(

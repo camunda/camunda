@@ -321,7 +321,7 @@ public class RecordFixtures {
         .build();
   }
 
-  protected static ImmutableRecord<RecordValue> getMappingRecord(
+  protected static ImmutableRecord<RecordValue> getMappingRuleRecord(
       final Long position, final MappingRuleIntent intent) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.MAPPING_RULE);
 

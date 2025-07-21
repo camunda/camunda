@@ -10,7 +10,7 @@ package io.camunda.qa.util.multidb;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.TestMapping;
+import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -79,7 +79,7 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
     return cachedClients.get(mappingId);
   }
 
-  public void createClientForMapping(final TestGateway<?> gateway, final TestMapping mapping) {
+  public void createClientForMapping(final TestGateway<?> gateway, final TestMappingRule mapping) {
     final var client = createAuthenticatedClient(gateway, mapping.id(), mapping.claimValue());
     cachedClients.put(mapping.id(), client);
   }

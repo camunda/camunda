@@ -11,10 +11,10 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class MappingRuleRecord extends UnifiedRecordValue implements MappingRecordValue {
+public class MappingRuleRecord extends UnifiedRecordValue implements MappingRuleRecordValue {
 
   // Static StringValue keys for property names
   private static final StringValue MAPPING_RULE_KEY_KEY = new StringValue("mappingRuleKey");

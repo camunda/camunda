@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.mapping;
+package io.camunda.zeebe.engine.processing.mappingrule;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
@@ -23,28 +23,28 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MappingTest {
+public class MappingRuleTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCreateMapping() {
+  public void shouldCreateMappingRule() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var mappingRecord =
+    final var mappingRuleRecord =
         engine
-            .mapping()
+            .mappingRule()
             .newMapping(id)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .withName(name)
             .create();
 
-    final var createMapping = mappingRecord.getValue();
-    assertThat(createMapping)
+    final var createMappingRule = mappingRuleRecord.getValue();
+    assertThat(createMappingRule)
         .isNotNull()
         .hasClaimName(claimName)
         .hasClaimValue(claimValue)
@@ -55,13 +55,13 @@ public class MappingTest {
   @Test
   public void shouldNotDuplicateWithSameClaim() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     engine
-        .mapping()
-        .newMapping(mappingId)
+        .mappingRule()
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -70,8 +70,8 @@ public class MappingTest {
     // when
     final var duplicatedMappingRecord =
         engine
-            .mapping()
-            .newMapping(mappingId)
+            .mappingRule()
+            .newMapping(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .withName(name)
@@ -94,7 +94,7 @@ public class MappingTest {
     final var name = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
     engine
-        .mapping()
+        .mappingRule()
         .newMapping(id)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
@@ -102,9 +102,9 @@ public class MappingTest {
         .create();
 
     // when
-    final var duplicatedMappingRecord =
+    final var duplicatedMappingRuleRecord =
         engine
-            .mapping()
+            .mappingRule()
             .newMapping(id)
             .withClaimValue(UUID.randomUUID().toString())
             .withClaimName(UUID.randomUUID().toString())
@@ -112,7 +112,7 @@ public class MappingTest {
             .expectRejection()
             .create();
 
-    assertThat(duplicatedMappingRecord)
+    assertThat(duplicatedMappingRuleRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             String.format(
@@ -121,14 +121,14 @@ public class MappingTest {
   }
 
   @Test
-  public void shouldUpdateMapping() {
+  public void shouldUpdateMappingRule() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
     engine
-        .mapping()
+        .mappingRule()
         .newMapping(id)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
@@ -137,9 +137,9 @@ public class MappingTest {
         .getKey();
 
     // when
-    final var updatedMapping =
+    final var updatedMappingRule =
         engine
-            .mapping()
+            .mappingRule()
             .updateMapping(id)
             .withClaimName(claimName + "New")
             .withClaimValue(claimValue + "New")
@@ -148,7 +148,7 @@ public class MappingTest {
             .getValue();
 
     // then
-    assertThat(updatedMapping)
+    assertThat(updatedMappingRule)
         .isNotNull()
         .hasMappingRuleId(id)
         .hasName(name + "New")
@@ -165,9 +165,9 @@ public class MappingTest {
     final var id = UUID.randomUUID().toString();
 
     // when
-    final var updateMappingToExisting =
+    final var updateMappingRuleToExisting =
         engine
-            .mapping()
+            .mappingRule()
             .updateMapping(id)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
@@ -175,7 +175,7 @@ public class MappingTest {
             .expectRejection()
             .update();
 
-    assertThat(updateMappingToExisting)
+    assertThat(updateMappingRuleToExisting)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             String.format(
@@ -186,13 +186,13 @@ public class MappingTest {
   @Test
   public void shouldNotUpdateToExistingClaim() {
     // given
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var existingClaimName = UUID.randomUUID().toString();
     final var existingClaimValue = UUID.randomUUID().toString();
     final var existingName = UUID.randomUUID().toString();
     engine
-        .mapping()
-        .newMapping(mappingId)
+        .mappingRule()
+        .newMapping(mappingRuleId)
         .withClaimName(existingClaimName)
         .withClaimValue(existingClaimValue)
         .withName(existingName)
@@ -203,7 +203,7 @@ public class MappingTest {
     final var name = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
     engine
-        .mapping()
+        .mappingRule()
         .newMapping(id)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
@@ -213,7 +213,7 @@ public class MappingTest {
     // when
     final var updateMappingToExisting =
         engine
-            .mapping()
+            .mappingRule()
             .updateMapping(id)
             .withClaimName(existingClaimName)
             .withClaimValue(existingClaimValue)
@@ -235,11 +235,11 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var mappingId = UUID.randomUUID().toString();
+    final var mappingRuleId = UUID.randomUUID().toString();
 
     engine
-        .mapping()
-        .newMapping(mappingId)
+        .mappingRule()
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -247,10 +247,11 @@ public class MappingTest {
         .getValue();
 
     // when
-    final var deletedMapping = engine.mapping().deleteMapping(mappingId).delete().getValue();
+    final var deletedMappingRule =
+        engine.mappingRule().deleteMapping(mappingRuleId).delete().getValue();
 
     // then
-    assertThat(deletedMapping).isNotNull().hasMappingRuleId(mappingId);
+    assertThat(deletedMappingRule).isNotNull().hasMappingRuleId(mappingRuleId);
   }
 
   @Test
@@ -258,11 +259,11 @@ public class MappingTest {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var mappingRecord =
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var mappingRuleRecord =
         engine
-            .mapping()
-            .newMapping(mappingId)
+            .mappingRule()
+            .newMapping(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .withName(name)
@@ -274,45 +275,46 @@ public class MappingTest {
     engine
         .group()
         .addEntity(groupId)
-        .withEntityId(mappingId)
+        .withEntityId(mappingRuleId)
         .withEntityType(EntityType.MAPPING_RULE)
         .add();
     engine
         .role()
         .addEntity(roleId)
-        .withEntityId(mappingId)
+        .withEntityId(mappingRuleId)
         .withEntityType(EntityType.MAPPING_RULE)
         .add();
 
     // when
-    engine.mapping().deleteMapping(mappingRecord.getValue().getMappingRuleId()).delete();
+    engine.mappingRule().deleteMapping(mappingRuleRecord.getValue().getMappingRuleId()).delete();
 
     // then
     Assertions.assertThat(
             RecordingExporter.groupRecords(GroupIntent.ENTITY_REMOVED)
                 .withGroupId(groupId)
-                .withEntityId(mappingId)
+                .withEntityId(mappingRuleId)
                 .withEntityType(EntityType.MAPPING_RULE)
                 .exists())
         .isTrue();
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ENTITY_REMOVED)
                 .withRoleId(roleId)
-                .withEntityId(mappingId)
+                .withEntityId(mappingRuleId)
                 .withEntityType(EntityType.MAPPING_RULE)
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldRejectIfMappingIsNotPresent() {
+  public void shouldRejectIfMappingRuleIsNotPresent() {
     // when
-    final var deletedMapping = engine.mapping().deleteMapping("id").expectRejection().delete();
+    final var deletedMappingRule =
+        engine.mappingRule().deleteMapping("id").expectRejection().delete();
 
     // then
-    assertThat(deletedMapping)
+    assertThat(deletedMappingRule)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to delete mapping with id 'id', but a mapping with this id does not exist.");
+            "Expected to delete mapping rule with id 'id', but a mapping rule with this id does not exist.");
   }
 }

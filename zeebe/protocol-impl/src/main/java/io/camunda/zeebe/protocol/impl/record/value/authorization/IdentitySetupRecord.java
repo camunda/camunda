@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -76,8 +76,8 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   @Override
-  public List<MappingRecordValue> getMappingRules() {
-    return mappingRulesProp.stream().map(MappingRecordValue.class::cast).toList();
+  public List<MappingRuleRecordValue> getMappingRules() {
+    return mappingRulesProp.stream().map(MappingRuleRecordValue.class::cast).toList();
   }
 
   @Override

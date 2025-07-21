@@ -359,7 +359,7 @@ public class RoleTest {
   public void shouldRemoveMappingFromRole() {
     final var mappingId = Strings.newRandomValidIdentityId();
     engine
-        .mapping()
+        .mappingRule()
         .newMapping(mappingId)
         .withClaimName("claimName")
         .withClaimValue("claimValue")

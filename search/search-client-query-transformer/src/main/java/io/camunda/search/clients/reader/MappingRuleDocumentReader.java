@@ -42,39 +42,40 @@ public class MappingRuleDocumentReader extends DocumentBasedReader implements Ma
             resourceAccessChecks);
   }
 
-  private MappingRuleQuery applyFilters(final MappingRuleQuery mappingQuery) {
-    if (mappingQuery.filter().tenantId() != null) {
-      return expandTenantFilter(mappingQuery);
+  private MappingRuleQuery applyFilters(final MappingRuleQuery mappingRuleQuery) {
+    if (mappingRuleQuery.filter().tenantId() != null) {
+      return expandTenantFilter(mappingRuleQuery);
     }
-    if (mappingQuery.filter().groupId() != null) {
-      return expandGroupFilter(mappingQuery);
+    if (mappingRuleQuery.filter().groupId() != null) {
+      return expandGroupFilter(mappingRuleQuery);
     }
-    if (mappingQuery.filter().roleId() != null) {
-      return expandRoleFilter(mappingQuery);
+    if (mappingRuleQuery.filter().roleId() != null) {
+      return expandRoleFilter(mappingRuleQuery);
     }
-    return mappingQuery;
+    return mappingRuleQuery;
   }
 
   private MappingRuleQuery expandTenantFilter(final MappingRuleQuery query) {
-    final var mappingIds =
+    final var mappingRuleIds =
         tenantMemberReader.getTenantMembers(query.filter().tenantId(), MAPPING_RULE);
     return query.toBuilder()
-        .filter(query.filter().toBuilder().mappingIds(mappingIds).build())
+        .filter(query.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 
   private MappingRuleQuery expandGroupFilter(final MappingRuleQuery mappingQuery) {
-    final var mappingIds =
+    final var mappingRuleIds =
         groupMemberReader.getGroupMembers(mappingQuery.filter().groupId(), MAPPING_RULE);
     return mappingQuery.toBuilder()
-        .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .filter(mappingQuery.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 
   private MappingRuleQuery expandRoleFilter(final MappingRuleQuery query) {
-    final var mappingIds = roleMemberReader.getRoleMembers(query.filter().roleId(), MAPPING_RULE);
+    final var mappingRuleIds =
+        roleMemberReader.getRoleMembers(query.filter().roleId(), MAPPING_RULE);
     return query.toBuilder()
-        .filter(query.filter().toBuilder().mappingIds(mappingIds).build())
+        .filter(query.filter().toBuilder().mappingRuleIds(mappingRuleIds).build())
         .build();
   }
 }

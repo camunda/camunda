@@ -27,7 +27,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
   private final DbCompositeKey<DbString, DbString> claim;
   private final PersistedMappingRule persistedMappingRule = new PersistedMappingRule();
   private final ColumnFamily<DbCompositeKey<DbString, DbString>, PersistedMappingRule>
-      mappingColumnFamily;
+      mappingRuleColumnFamily;
 
   private final DbForeignKey<DbCompositeKey<DbString, DbString>> fkClaim;
 
@@ -41,7 +41,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     claimValue = new DbString();
     claim = new DbCompositeKey<>(claimName, claimValue);
     final PersistedMappingRule persistedMappingRule = new PersistedMappingRule();
-    mappingColumnFamily =
+    mappingRuleColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MAPPING_RULES, transactionContext, claim, persistedMappingRule);
 
@@ -54,11 +54,11 @@ public class DbMappingRuleState implements MutableMappingRuleState {
   }
 
   @Override
-  public void create(final MappingRuleRecord mappingRecord) {
-    final var mappingRuleId = mappingRecord.getMappingRuleId();
-    final var name = mappingRecord.getName();
-    final var claimName = mappingRecord.getClaimName();
-    final var value = mappingRecord.getClaimValue();
+  public void create(final MappingRuleRecord mappingRuleRecord) {
+    final var mappingRuleId = mappingRuleRecord.getMappingRuleId();
+    final var name = mappingRuleRecord.getName();
+    final var claimName = mappingRuleRecord.getClaimName();
+    final var value = mappingRuleRecord.getClaimValue();
 
     this.mappingRuleId.wrapString(mappingRuleId);
     this.claimName.wrapString(claimName);
@@ -66,38 +66,38 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     persistedMappingRule.setClaimName(claimName);
     persistedMappingRule.setClaimValue(value);
     persistedMappingRule.setName(name);
-    persistedMappingRule.setMappingRuleKey(mappingRecord.getMappingRuleKey());
+    persistedMappingRule.setMappingRuleKey(mappingRuleRecord.getMappingRuleKey());
     persistedMappingRule.setMappingRuleId(mappingRuleId);
 
-    mappingColumnFamily.insert(claim, persistedMappingRule);
+    mappingRuleColumnFamily.insert(claim, persistedMappingRule);
     claimByIdColumnFamily.insert(this.mappingRuleId, fkClaim);
   }
 
   @Override
-  public void update(final MappingRuleRecord mappingRecord) {
-    mappingRuleId.wrapString(mappingRecord.getMappingRuleId());
-    get(mappingRecord.getMappingRuleId())
+  public void update(final MappingRuleRecord mappingRuleRecord) {
+    mappingRuleId.wrapString(mappingRuleRecord.getMappingRuleId());
+    get(mappingRuleRecord.getMappingRuleId())
         .ifPresentOrElse(
             persistedMapping -> {
               // remove old record from mapping by claim
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
-              mappingColumnFamily.deleteExisting(claim);
+              mappingRuleColumnFamily.deleteExisting(claim);
 
-              persistedMapping.setName(mappingRecord.getName());
-              persistedMapping.setClaimName(mappingRecord.getClaimName());
-              persistedMapping.setClaimValue(mappingRecord.getClaimValue());
+              persistedMapping.setName(mappingRuleRecord.getName());
+              persistedMapping.setClaimName(mappingRuleRecord.getClaimName());
+              persistedMapping.setClaimValue(mappingRuleRecord.getClaimValue());
 
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
-              mappingColumnFamily.insert(claim, persistedMapping);
+              mappingRuleColumnFamily.insert(claim, persistedMapping);
               claimByIdColumnFamily.update(mappingRuleId, fkClaim);
             },
             () -> {
               throw new IllegalStateException(
                   String.format(
                       "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
-                      mappingRecord.getMappingRuleId()));
+                      mappingRuleRecord.getMappingRuleId()));
             });
   }
 
@@ -109,7 +109,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
               mappingRuleId.wrapString(persistedMapping.getMappingRuleId());
               claimName.wrapString(persistedMapping.getClaimName());
               claimValue.wrapString(persistedMapping.getClaimValue());
-              mappingColumnFamily.deleteExisting(claim);
+              mappingRuleColumnFamily.deleteExisting(claim);
               claimByIdColumnFamily.deleteExisting(mappingRuleId);
             },
             () -> {
@@ -125,7 +125,7 @@ public class DbMappingRuleState implements MutableMappingRuleState {
     mappingRuleId.wrapString(id);
     final var fk = claimByIdColumnFamily.get(mappingRuleId);
     if (fk != null) {
-      return Optional.of(mappingColumnFamily.get(fk.inner()));
+      return Optional.of(mappingRuleColumnFamily.get(fk.inner()));
     }
     return Optional.empty();
   }
@@ -134,19 +134,19 @@ public class DbMappingRuleState implements MutableMappingRuleState {
   public Optional<PersistedMappingRule> get(final String claimName, final String claimValue) {
     this.claimName.wrapString(claimName);
     this.claimValue.wrapString(claimValue);
-    final var persistedMapping = mappingColumnFamily.get(claim, PersistedMappingRule::new);
+    final var persistedMappingRule = mappingRuleColumnFamily.get(claim, PersistedMappingRule::new);
 
-    if (persistedMapping == null) {
+    if (persistedMappingRule == null) {
       return Optional.empty();
     }
 
-    return Optional.of(persistedMapping);
+    return Optional.of(persistedMappingRule);
   }
 
   @Override
   public Collection<PersistedMappingRule> getAll() {
     final var mappingRules = new LinkedList<PersistedMappingRule>();
-    mappingColumnFamily.forEach(mappingRule -> mappingRules.add(mappingRule.copy()));
+    mappingRuleColumnFamily.forEach(mappingRule -> mappingRules.add(mappingRule.copy()));
     return mappingRules;
   }
 }

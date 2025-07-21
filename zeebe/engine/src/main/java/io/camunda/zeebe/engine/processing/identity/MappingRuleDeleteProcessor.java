@@ -46,7 +46,7 @@ public class MappingRuleDeleteProcessor
     implements DistributedTypedRecordProcessor<MappingRuleRecord> {
 
   private static final String MAPPING_NOT_FOUND_ERROR_MESSAGE =
-      "Expected to delete mapping with id '%s', but a mapping with this id does not exist.";
+      "Expected to delete mapping rule with id '%s', but a mapping rule with this id does not exist.";
   private final MappingRuleState mappingRuleState;
   private final TenantState tenantState;
   private final RoleState roleState;

@@ -83,7 +83,7 @@ import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -424,7 +424,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.MAPPING_RULE,
                 MappingRuleIntent.CREATE,
-                CommandDistributionIdempotencyTest::createMapping),
+                CommandDistributionIdempotencyTest::createMappingRule),
             MappingRuleCreateProcessor.class
           },
           {
@@ -433,13 +433,13 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.MAPPING_RULE,
                 MappingRuleIntent.UPDATE,
                 () -> {
-                  final var mapping = createMapping();
+                  final var mappingRule = createMappingRule();
                   return ENGINE
-                      .mapping()
-                      .updateMapping(mapping.getValue().getMappingRuleId())
-                      .withName(mapping.getValue().getName())
-                      .withClaimName(mapping.getValue().getClaimName())
-                      .withClaimValue(mapping.getValue().getClaimValue())
+                      .mappingRule()
+                      .updateMapping(mappingRule.getValue().getMappingRuleId())
+                      .withName(mappingRule.getValue().getName())
+                      .withClaimName(mappingRule.getValue().getClaimName())
+                      .withClaimValue(mappingRule.getValue().getClaimValue())
                       .update();
                 }),
             MappingRuleUpdateProcessor.class
@@ -450,10 +450,10 @@ public class CommandDistributionIdempotencyTest {
                 ValueType.MAPPING_RULE,
                 MappingRuleIntent.DELETE,
                 () -> {
-                  final var mapping = createMapping();
+                  final var mappingRule = createMappingRule();
                   return ENGINE
-                      .mapping()
-                      .deleteMapping(mapping.getValue().getMappingRuleId())
+                      .mappingRule()
+                      .deleteMapping(mappingRule.getValue().getMappingRuleId())
                       .delete();
                 }),
             MappingRuleDeleteProcessor.class
@@ -812,9 +812,9 @@ public class CommandDistributionIdempotencyTest {
         .create();
   }
 
-  private static Record<MappingRecordValue> createMapping() {
+  private static Record<MappingRuleRecordValue> createMappingRule() {
     return ENGINE
-        .mapping()
+        .mappingRule()
         .newMapping(UUID.randomUUID().toString())
         .withClaimName(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())

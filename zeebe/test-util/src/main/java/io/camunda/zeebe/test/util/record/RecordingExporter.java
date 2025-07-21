@@ -70,7 +70,7 @@ import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -544,11 +544,12 @@ public final class RecordingExporter implements Exporter {
     return tenantRecords().withIntent(intent);
   }
 
-  public static MappingRecordStream mappingRuleRecords() {
-    return new MappingRecordStream(records(ValueType.MAPPING_RULE, MappingRecordValue.class));
+  public static MappingRuleRecordStream mappingRuleRecords() {
+    return new MappingRuleRecordStream(
+        records(ValueType.MAPPING_RULE, MappingRuleRecordValue.class));
   }
 
-  public static MappingRecordStream mappingRuleRecords(final MappingRuleIntent intent) {
+  public static MappingRuleRecordStream mappingRuleRecords(final MappingRuleIntent intent) {
     return mappingRuleRecords().withIntent(intent);
   }
 

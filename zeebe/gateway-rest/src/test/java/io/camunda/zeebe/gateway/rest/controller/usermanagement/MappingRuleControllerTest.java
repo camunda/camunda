@@ -50,9 +50,9 @@ public class MappingRuleControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
-  void createMappingRuleShouldReturnCreated(final String id) {
+  void createMappingRuleRuleShouldReturnCreated(final String id) {
     // given
-    final var dto = validCreateMappingRuleDTO();
+    final var dto = validCreateMappingRuleRuleDTO();
     final var request =
         new MappingRuleCreateRequest(
             dto.mappingRuleId(), dto.claimName(), dto.claimValue(), dto.name());
@@ -302,7 +302,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void deleteMappingRuleShouldReturnNoContent() {
+  void deleteMappingRuleRuleShouldReturnNoContent() {
     // given
     final String mappingId = "id";
 
@@ -326,9 +326,9 @@ public class MappingRuleControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
-  void updateMappingRuleShouldReturnOk(final String id) {
+  void updateMappingRuleRuleShouldReturnOk(final String id) {
     // given
-    final var dto = validUpdateMappingRuleRequest(id);
+    final var dto = validUpdateMappingRuleRuleRequest(id);
     final var mappingRecord =
         new MappingRuleRecord()
             .setMappingRuleKey(1L)
@@ -463,11 +463,11 @@ public class MappingRuleControllerTest extends RestControllerTest {
     verifyNoInteractions(mappingRuleServices);
   }
 
-  private MappingRuleDTO validCreateMappingRuleDTO() {
+  private MappingRuleDTO validCreateMappingRuleRuleDTO() {
     return new MappingRuleDTO("newClaimName", "newClaimValue", "mapName", "mapRuleId");
   }
 
-  private MappingRuleDTO validUpdateMappingRuleRequest(final String id) {
+  private MappingRuleDTO validUpdateMappingRuleRuleRequest(final String id) {
     return new MappingRuleDTO("newClaimName", "newClaimValue", "mapName", id);
   }
 

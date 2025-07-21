@@ -305,7 +305,7 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public MappingRuleServices mappingServices(
+  public MappingRuleServices mappingRuleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient) {

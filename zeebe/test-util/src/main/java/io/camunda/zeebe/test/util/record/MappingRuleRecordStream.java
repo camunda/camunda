@@ -8,30 +8,31 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import java.util.stream.Stream;
 
-public class MappingRecordStream
-    extends ExporterRecordStream<MappingRecordValue, MappingRecordStream> {
+public class MappingRuleRecordStream
+    extends ExporterRecordStream<MappingRuleRecordValue, MappingRuleRecordStream> {
 
-  public MappingRecordStream(final Stream<Record<MappingRecordValue>> wrappedStream) {
+  public MappingRuleRecordStream(final Stream<Record<MappingRuleRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected MappingRecordStream supply(final Stream<Record<MappingRecordValue>> wrappedStream) {
-    return new MappingRecordStream(wrappedStream);
+  protected MappingRuleRecordStream supply(
+      final Stream<Record<MappingRuleRecordValue>> wrappedStream) {
+    return new MappingRuleRecordStream(wrappedStream);
   }
 
-  public MappingRecordStream withMappingRuleId(final String mappingRuleId) {
+  public MappingRuleRecordStream withMappingRuleId(final String mappingRuleId) {
     return valueFilter(v -> v.getMappingRuleId().equals(mappingRuleId));
   }
 
-  public MappingRecordStream withClaimName(final String claimName) {
+  public MappingRuleRecordStream withClaimName(final String claimName) {
     return valueFilter(v -> v.getClaimName().equals(claimName));
   }
 
-  public MappingRecordStream withClaimValue(final String claimValue) {
+  public MappingRuleRecordStream withClaimValue(final String claimValue) {
     return valueFilter(v -> v.getClaimValue().equals(claimValue));
   }
 }

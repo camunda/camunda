@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public interface MappingRuleState {
 
-  Optional<PersistedMappingRule> get(final String mappingId);
+  Optional<PersistedMappingRule> get(final String mappingRuleId);
 
   Optional<PersistedMappingRule> get(final String claimName, final String claimValue);
 

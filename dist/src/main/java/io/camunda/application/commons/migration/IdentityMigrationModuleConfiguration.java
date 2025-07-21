@@ -93,7 +93,7 @@ public class IdentityMigrationModuleConfiguration {
   }
 
   @Bean
-  public MappingRuleServices mappingServices(
+  public MappingRuleServices mappingRuleServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient) {

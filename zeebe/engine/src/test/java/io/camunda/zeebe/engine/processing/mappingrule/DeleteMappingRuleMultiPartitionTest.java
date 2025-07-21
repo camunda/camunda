@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.mapping;
+package io.camunda.zeebe.engine.processing.mappingrule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class DeleteMappingMultiPartitionTest {
+public class DeleteMappingRuleMultiPartitionTest {
 
   private static final int PARTITION_COUNT = 3;
 
@@ -43,13 +43,13 @@ public class DeleteMappingMultiPartitionTest {
     final var name = UUID.randomUUID().toString();
     final var mappingId = UUID.randomUUID().toString();
     engine
-        .mapping()
+        .mappingRule()
         .newMapping(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .withName(name)
         .create();
-    engine.mapping().deleteMapping(mappingId).delete();
+    engine.mappingRule().deleteMapping(mappingId).delete();
 
     // then
     assertThat(
@@ -100,13 +100,13 @@ public class DeleteMappingMultiPartitionTest {
     final var name = UUID.randomUUID().toString();
     final var mappingId = UUID.randomUUID().toString();
     engine
-        .mapping()
+        .mappingRule()
         .newMapping(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .withName(name)
         .create();
-    engine.mapping().deleteMapping(mappingId).delete();
+    engine.mappingRule().deleteMapping(mappingId).delete();
 
     // then
     assertThat(
@@ -129,13 +129,13 @@ public class DeleteMappingMultiPartitionTest {
     final var mappingId = UUID.randomUUID().toString();
 
     engine
-        .mapping()
+        .mappingRule()
         .newMapping(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .withName(name)
         .create();
-    engine.mapping().deleteMapping(mappingId).delete();
+    engine.mappingRule().deleteMapping(mappingId).delete();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

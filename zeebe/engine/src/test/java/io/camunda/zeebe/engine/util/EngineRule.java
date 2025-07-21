@@ -462,7 +462,7 @@ public final class EngineRule extends ExternalResource {
     return new TenantClient(environmentRule);
   }
 
-  public MappingClient mapping() {
+  public MappingClient mappingRule() {
     return new MappingClient(environmentRule);
   }
 

@@ -3068,7 +3068,7 @@ final class JsonSerializableToJsonTest {
       //////////////////////////////////// MappingRecord //////////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Mapping record",
+        "Mapping rule record",
         (Supplier<MappingRuleRecord>)
             () ->
                 new MappingRuleRecord()
@@ -3091,7 +3091,7 @@ final class JsonSerializableToJsonTest {
       ///////////////////////////////// Empty MappingRecord ///////////////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "Empty MappingRecord",
+        "Empty MappingRuleRecord",
         (Supplier<MappingRuleRecord>)
             () -> new MappingRuleRecord().setMappingRuleId("mappingRuleId"),
         """

@@ -12,7 +12,7 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestGroup;
-import io.camunda.qa.util.auth.TestMapping;
+import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import java.util.List;
@@ -24,7 +24,7 @@ public final class EntityManager {
   final Map<String, TestUser> users = new ConcurrentHashMap<>();
   final Map<String, TestGroup> groups = new ConcurrentHashMap<>();
   final Map<String, TestRole> roles = new ConcurrentHashMap<>();
-  final Map<String, TestMapping> mappings = new ConcurrentHashMap<>();
+  final Map<String, TestMappingRule> mappings = new ConcurrentHashMap<>();
   private final CamundaClient defaultClient;
 
   public EntityManager(final CamundaClient defaultClient) {
@@ -88,7 +88,7 @@ public final class EntityManager {
     return this;
   }
 
-  public EntityManager withMappings(final List<TestMapping> mappings) {
+  public EntityManager withMappings(final List<TestMappingRule> mappings) {
     mappings.stream()
         .filter(mapping -> !this.mappings.containsKey(mapping.id()))
         .forEach(

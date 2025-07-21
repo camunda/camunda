@@ -381,7 +381,7 @@ public class AddEntityTenantTest {
 
   private String createMapping() {
     return engine
-        .mapping()
+        .mappingRule()
         .newMapping(Strings.newRandomValidIdentityId())
         .withClaimName("claimName")
         .withClaimValue("claimValue")

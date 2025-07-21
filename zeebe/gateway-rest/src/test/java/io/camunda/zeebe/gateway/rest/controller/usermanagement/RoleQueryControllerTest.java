@@ -44,7 +44,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private UserServices userServices;
-  @MockitoBean private MappingRuleServices mappingsServices;
+  @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
@@ -56,8 +56,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
         .thenReturn(roleServices);
     when(userServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userServices);
-    when(mappingsServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(mappingsServices);
+    when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingRuleServices);
     when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(groupServices);
   }
@@ -280,15 +280,15 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchMappingsByRole() {
     // given
     final var roleId = "roleId";
-    when(mappingsServices.search(any(MappingRuleQuery.class)))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
                 .items(
                     List.of(
-                        new MappingRuleEntity("mapping1", 1L, "claim1", "value1", "Mapping 1"),
-                        new MappingRuleEntity("mapping2", 2L, "claim2", "value2", "Mapping 2"),
-                        new MappingRuleEntity("mapping3", 3L, "claim3", "value3", "Mapping 3")))
+                        new MappingRuleEntity("mappingRule1", 1L, "claim1", "value1", "Mapping 1"),
+                        new MappingRuleEntity("mappingRule2", 2L, "claim2", "value2", "Mapping 2"),
+                        new MappingRuleEntity("mappingRule3", 3L, "claim3", "value3", "Mapping 3")))
                 .build());
 
     // when /then
@@ -309,19 +309,19 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "mappingRuleId": "mapping1",
+                 "mappingRuleId": "mappingRule1",
                  "claimName": "claim1",
                  "claimValue": "value1",
                  "name": "Mapping 1"
                },
                 {
-                  "mappingRuleId": "mapping2",
+                  "mappingRuleId": "mappingRule2",
                   "claimName": "claim2",
                   "claimValue": "value2",
                   "name": "Mapping 2"
                 },
                 {
-                  "mappingRuleId": "mapping3",
+                  "mappingRuleId": "mappingRule3",
                   "claimName": "claim3",
                   "claimValue": "value3",
                   "name": "Mapping 3"
@@ -332,7 +332,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
              }
            }""");
 
-    verify(mappingsServices)
+    verify(mappingRuleServices)
         .search(
             new MappingRuleQuery.Builder()
                 .filter(f -> f.roleId(roleId).claimNames(List.of()))

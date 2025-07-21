@@ -14,12 +14,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import java.util.List;
 import java.util.Set;
 
 public class MappingRuleCreatedUpdatedHandler
-    implements ExportHandler<MappingRuleEntity, MappingRecordValue> {
+    implements ExportHandler<MappingRuleEntity, MappingRuleRecordValue> {
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(MappingRuleIntent.CREATED, MappingRuleIntent.UPDATED);
 
@@ -40,13 +40,13 @@ public class MappingRuleCreatedUpdatedHandler
   }
 
   @Override
-  public boolean handlesRecord(final Record<MappingRecordValue> record) {
+  public boolean handlesRecord(final Record<MappingRuleRecordValue> record) {
     return getHandledValueType().equals(record.getValueType())
         && SUPPORTED_INTENTS.contains(record.getIntent());
   }
 
   @Override
-  public List<String> generateIds(final Record<MappingRecordValue> record) {
+  public List<String> generateIds(final Record<MappingRuleRecordValue> record) {
     return List.of(record.getValue().getMappingRuleId());
   }
 
@@ -57,8 +57,8 @@ public class MappingRuleCreatedUpdatedHandler
 
   @Override
   public void updateEntity(
-      final Record<MappingRecordValue> record, final MappingRuleEntity entity) {
-    final MappingRecordValue value = record.getValue();
+      final Record<MappingRuleRecordValue> record, final MappingRuleEntity entity) {
+    final MappingRuleRecordValue value = record.getValue();
     entity
         .setKey(value.getMappingRuleKey())
         .setMappingRuleId(value.getMappingRuleId())

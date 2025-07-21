@@ -144,14 +144,14 @@ public class UpdateAuthorizationTest {
             .getValue()
             .getAuthorizationKey();
 
-    final var nonexistentMappingId = "nonexistent-mapping-id";
+    final var nonexistentMappingRuleId = "nonexistent-mapping-rule-id";
 
     // when
     final var rejection =
         engine
             .authorization()
             .updateAuthorization(authorizationKey)
-            .withOwnerId(nonexistentMappingId)
+            .withOwnerId(nonexistentMappingRuleId)
             .withOwnerType(AuthorizationOwnerType.MAPPING_RULE)
             .withResourceId("resource-id")
             .withResourceType(AuthorizationResourceType.RESOURCE)
@@ -163,7 +163,7 @@ public class UpdateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to create or update authorization with ownerId '%s', but a mapping with this ID does not exist."
-                .formatted(nonexistentMappingId));
+            "Expected to create or update authorization with ownerId '%s', but a mapping rule with this ID does not exist."
+                .formatted(nonexistentMappingRuleId));
   }
 }

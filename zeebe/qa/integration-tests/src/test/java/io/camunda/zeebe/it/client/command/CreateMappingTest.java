@@ -55,7 +55,7 @@ public class CreateMappingTest {
 
     // then
     assertThat(response.getMappingId()).isEqualTo(ID);
-    ZeebeAssertHelper.assertMappingCreated(
+    ZeebeAssertHelper.assertMappingRuleCreated(
         ID,
         CLAIM_NAME,
         CLAIM_VALUE,

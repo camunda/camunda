@@ -21,7 +21,7 @@ import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.RoleDefinition;
 import io.camunda.qa.util.auth.TestGroup;
-import io.camunda.qa.util.auth.TestMapping;
+import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -56,23 +56,23 @@ public class InheritedOIDCAuthorizationIT {
   private static KeycloakContainer keycloak;
 
   @MappingRuleDefinition
-  private static final TestMapping MAPPING_THROUGH_AUTHORIZED_GROUP = createTestMapping();
+  private static final TestMappingRule MAPPING_THROUGH_AUTHORIZED_GROUP = createTestMapping();
 
   @MappingRuleDefinition
-  private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_GROUP = createTestMapping();
+  private static final TestMappingRule MAPPING_THROUGH_UNAUTHORIZED_GROUP = createTestMapping();
 
   @MappingRuleDefinition
-  private static final TestMapping MAPPING_THROUGH_AUTHORIZED_ROLE = createTestMapping();
+  private static final TestMappingRule MAPPING_THROUGH_AUTHORIZED_ROLE = createTestMapping();
 
   @MappingRuleDefinition
-  private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_ROLE = createTestMapping();
+  private static final TestMappingRule MAPPING_THROUGH_UNAUTHORIZED_ROLE = createTestMapping();
 
   @MappingRuleDefinition
-  private static final TestMapping MAPPING_THROUGH_GROUP_THROUGH_AUTHORIZED_ROLE =
+  private static final TestMappingRule MAPPING_THROUGH_GROUP_THROUGH_AUTHORIZED_ROLE =
       createTestMapping();
 
   @MappingRuleDefinition
-  private static final TestMapping MAPPING_THROUGH_GROUP_THROUGH_UNAUTHORIZED_ROLE =
+  private static final TestMappingRule MAPPING_THROUGH_GROUP_THROUGH_UNAUTHORIZED_ROLE =
       createTestMapping();
 
   @GroupDefinition
@@ -136,7 +136,7 @@ public class InheritedOIDCAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("provideAuthorizedMappings")
-  void shouldBeAuthorizedToDeploy(final TestMapping mapping, @TempDir final Path tempDir) {
+  void shouldBeAuthorizedToDeploy(final TestMappingRule mapping, @TempDir final Path tempDir) {
     // given
     try (final CamundaClient client = createClient(mapping, tempDir)) {
 
@@ -156,7 +156,7 @@ public class InheritedOIDCAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("provideUnauthorizedMappings")
-  void shouldBeUnauthorizedToDeploy(final TestMapping mapping, @TempDir final Path tempDir) {
+  void shouldBeUnauthorizedToDeploy(final TestMappingRule mapping, @TempDir final Path tempDir) {
     // given
     try (final CamundaClient client = createClient(mapping, tempDir)) {
 
@@ -177,7 +177,7 @@ public class InheritedOIDCAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("provideAuthorizedMappings")
-  void shouldBeAuthorizedToRead(final TestMapping mapping, @TempDir final Path tempDir) {
+  void shouldBeAuthorizedToRead(final TestMappingRule mapping, @TempDir final Path tempDir) {
     // given
     try (final CamundaClient client = createClient(mapping, tempDir)) {
 
@@ -195,7 +195,7 @@ public class InheritedOIDCAuthorizationIT {
 
   @ParameterizedTest
   @MethodSource("provideUnauthorizedMappings")
-  void shouldBeUnauthorizedToRead(final TestMapping mapping, @TempDir final Path tempDir) {
+  void shouldBeUnauthorizedToRead(final TestMappingRule mapping, @TempDir final Path tempDir) {
     // given
     try (final CamundaClient client = createClient(mapping, tempDir)) {
 
@@ -212,7 +212,7 @@ public class InheritedOIDCAuthorizationIT {
     }
   }
 
-  private CamundaClient createClient(final TestMapping mapping, final Path tempDir) {
+  private CamundaClient createClient(final TestMappingRule mapping, final Path tempDir) {
     return BROKER
         .newClientBuilder()
         .preferRestOverGrpc(true)
@@ -228,22 +228,22 @@ public class InheritedOIDCAuthorizationIT {
         .build();
   }
 
-  private static Stream<Named<TestMapping>> provideAuthorizedMappings() {
+  private static Stream<Named<TestMappingRule>> provideAuthorizedMappings() {
     return Stream.of(
         Named.of("#userThroughGroup", MAPPING_THROUGH_AUTHORIZED_GROUP),
         Named.of("#userThroughRole", MAPPING_THROUGH_AUTHORIZED_ROLE),
         Named.of("#userThroughGroupThroughRole", MAPPING_THROUGH_GROUP_THROUGH_AUTHORIZED_ROLE));
   }
 
-  private static Stream<Named<TestMapping>> provideUnauthorizedMappings() {
+  private static Stream<Named<TestMappingRule>> provideUnauthorizedMappings() {
     return Stream.of(
         Named.of("#userThroughGroup", MAPPING_THROUGH_UNAUTHORIZED_GROUP),
         Named.of("#userThroughRole", MAPPING_THROUGH_UNAUTHORIZED_ROLE),
         Named.of("#userThroughGroupThroughRole", MAPPING_THROUGH_GROUP_THROUGH_UNAUTHORIZED_ROLE));
   }
 
-  private static TestMapping createTestMapping() {
-    return new TestMapping(
+  private static TestMappingRule createTestMapping() {
+    return new TestMappingRule(
         Strings.newRandomValidIdentityId(),
         DEFAULT_MAPPING_CLAIM_NAME,
         Strings.newRandomValidIdentityId(),

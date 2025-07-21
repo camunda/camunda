@@ -20,8 +20,8 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableMappingRecordValue.Builder.class)
-public interface MappingRecordValue extends RecordValue {
+@ImmutableProtocol(builder = ImmutableMappingRuleRecordValue.Builder.class)
+public interface MappingRuleRecordValue extends RecordValue {
 
   /** The unique identifier of the mapping within our system. */
   long getMappingRuleKey();

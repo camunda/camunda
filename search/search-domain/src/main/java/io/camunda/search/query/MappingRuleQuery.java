@@ -29,8 +29,8 @@ public record MappingRuleQuery(MappingRuleFilter filter, MappingRuleSort sort, S
   public static final class Builder extends AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<
           MappingRuleQuery, MappingRuleQuery.Builder, MappingRuleFilter, MappingRuleSort> {
-    private static final MappingRuleFilter EMPTY_FILTER = FilterBuilders.mapping().build();
-    private static final MappingRuleSort EMPTY_SORT = SortOptionBuilders.mapping().build();
+    private static final MappingRuleFilter EMPTY_FILTER = FilterBuilders.mappingRule().build();
+    private static final MappingRuleSort EMPTY_SORT = SortOptionBuilders.mappingRule().build();
 
     private MappingRuleFilter filter;
     private MappingRuleSort sort;
@@ -49,12 +49,12 @@ public record MappingRuleQuery(MappingRuleFilter filter, MappingRuleSort sort, S
 
     public Builder filter(
         final Function<MappingRuleFilter.Builder, ObjectBuilder<MappingRuleFilter>> fn) {
-      return filter(FilterBuilders.mapping(fn));
+      return filter(FilterBuilders.mappingRule(fn));
     }
 
     public Builder sort(
         final Function<MappingRuleSort.Builder, ObjectBuilder<MappingRuleSort>> fn) {
-      return sort(SortOptionBuilders.mapping(fn));
+      return sort(SortOptionBuilders.mappingRule(fn));
     }
 
     @Override

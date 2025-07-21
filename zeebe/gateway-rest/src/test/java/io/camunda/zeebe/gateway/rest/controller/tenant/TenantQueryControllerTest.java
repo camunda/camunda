@@ -59,8 +59,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   private static final List<MappingRuleEntity> MAPPING_ENTITIES =
       List.of(
-          new MappingRuleEntity("mapping-id-1", 1L, "claim1", "value1", "cv1"),
-          new MappingRuleEntity("mapping-id-2", 2L, "claim2", "value2", "cv2"));
+          new MappingRuleEntity("mapping-rule-id-1", 1L, "claim1", "value1", "cv1"),
+          new MappingRuleEntity("mapping-rule-id-2", 2L, "claim2", "value2", "cv2"));
 
   private static final List<GroupEntity> GROUP_ENTITIES =
       List.of(
@@ -223,7 +223,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   @MockitoBean private TenantServices tenantServices;
   @MockitoBean private UserServices userServices;
-  @MockitoBean private MappingRuleServices mappingServices;
+  @MockitoBean private MappingRuleServices mappingRuleServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
@@ -236,8 +236,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .thenReturn(tenantServices);
     when(userServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userServices);
-    when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
-        .thenReturn(mappingServices);
+    when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingRuleServices);
     when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(groupServices);
     when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -384,7 +384,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchTenantMappingsWithSorting() {
     // given
-    when(mappingServices.search(any(MappingRuleQuery.class)))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPING_ENTITIES.size())
@@ -417,7 +417,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchTenantMappingsWithEmptyQuery() {
     // given
-    when(mappingServices.search(any(MappingRuleQuery.class)))
+    when(mappingRuleServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPING_ENTITIES.size())

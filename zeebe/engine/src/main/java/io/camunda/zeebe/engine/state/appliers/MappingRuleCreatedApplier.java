@@ -15,14 +15,14 @@ import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 public class MappingRuleCreatedApplier
     implements TypedEventApplier<MappingRuleIntent, MappingRuleRecord> {
 
-  private final MutableMappingRuleState mappingState;
+  private final MutableMappingRuleState mappingRuleState;
 
-  public MappingRuleCreatedApplier(final MutableMappingRuleState mappingState) {
-    this.mappingState = mappingState;
+  public MappingRuleCreatedApplier(final MutableMappingRuleState mappingRuleState) {
+    this.mappingRuleState = mappingRuleState;
   }
 
   @Override
   public void applyState(final long key, final MappingRuleRecord value) {
-    mappingState.create(value);
+    mappingRuleState.create(value);
   }
 }

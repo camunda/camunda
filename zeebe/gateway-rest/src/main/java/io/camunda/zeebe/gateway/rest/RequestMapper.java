@@ -17,7 +17,7 @@ import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestVal
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
-import static io.camunda.zeebe.gateway.rest.validator.MappingValidator.validateMappingRequest;
+import static io.camunda.zeebe.gateway.rest.validator.MappingRuleValidator.validateMappingRuleRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessageCorrelationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.validateMessagePublicationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
@@ -108,6 +108,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.validator.DocumentValidator;
 import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
+import io.camunda.zeebe.gateway.rest.validator.MappingRuleValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -482,10 +483,10 @@ public class RequestMapper {
                 request.getPassword()));
   }
 
-  public static Either<ProblemDetail, MappingRuleDTO> toMappingDTO(
+  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleDTO(
       final MappingRuleCreateRequest request) {
     return getResult(
-        validateMappingRequest(request),
+        MappingRuleValidator.validateMappingRuleRequest(request),
         () ->
             new MappingRuleDTO(
                 request.getClaimName(),
@@ -494,10 +495,10 @@ public class RequestMapper {
                 request.getMappingRuleId()));
   }
 
-  public static Either<ProblemDetail, MappingRuleDTO> toMappingDTO(
+  public static Either<ProblemDetail, MappingRuleDTO> toMappingRuleDTO(
       final String mappingId, final MappingRuleUpdateRequest request) {
     return getResult(
-        validateMappingRequest(request),
+        validateMappingRuleRequest(request),
         () ->
             new MappingRuleDTO(
                 request.getClaimName(), request.getClaimValue(), request.getName(), mappingId));

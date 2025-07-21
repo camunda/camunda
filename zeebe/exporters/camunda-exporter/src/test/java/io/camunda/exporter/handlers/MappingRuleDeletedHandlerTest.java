@@ -18,7 +18,7 @@ import io.camunda.webapps.schema.entities.usermanagement.MappingRuleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +40,7 @@ public class MappingRuleDeletedHandlerTest {
   @Test
   void shouldHandleRecord() {
     // given
-    final io.camunda.zeebe.protocol.record.Record<MappingRecordValue> mappingCreatedRecord =
+    final io.camunda.zeebe.protocol.record.Record<MappingRuleRecordValue> mappingCreatedRecord =
         factory.generateRecordWithIntent(ValueType.MAPPING_RULE, MappingRuleIntent.DELETED);
 
     // when - then
@@ -50,7 +50,7 @@ public class MappingRuleDeletedHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final Record<MappingRecordValue> mappingRecord =
+    final Record<MappingRuleRecordValue> mappingRecord =
         factory.generateRecordWithIntent(ValueType.MAPPING_RULE, MappingRuleIntent.DELETED);
 
     // when

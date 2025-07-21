@@ -27,7 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
@@ -387,12 +387,12 @@ public class IdentitySetupInitializeTest {
             .map(Record::getValue)
             .toList();
     Assertions.assertThat(createdMappings)
-        .extracting(MappingRecordValue::getClaimName, MappingRecordValue::getClaimValue)
+        .extracting(MappingRuleRecordValue::getClaimName, MappingRuleRecordValue::getClaimValue)
         .containsExactly(
             tuple(mapping1.getClaimName(), mapping1.getClaimValue()),
             tuple(mapping2.getClaimName(), mapping2.getClaimValue()));
     Assertions.assertThat(createdMappings)
-        .extracting(MappingRecordValue::getMappingRuleId)
+        .extracting(MappingRuleRecordValue::getMappingRuleId)
         .containsExactly(mapping1.getMappingRuleId(), mapping2.getMappingRuleId());
     Assertions.assertThat(createdMappings)
         .satisfiesExactly(

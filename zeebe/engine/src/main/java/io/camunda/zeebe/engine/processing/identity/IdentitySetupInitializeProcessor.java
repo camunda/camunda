@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
-import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -68,7 +68,7 @@ public final class IdentitySetupInitializeProcessor
     users.forEach(user -> commandWriter.appendFollowUpCommand(key, UserIntent.CREATE, user));
   }
 
-  private void createMappings(final long key, final List<MappingRecordValue> mappings) {
+  private void createMappings(final long key, final List<MappingRuleRecordValue> mappings) {
     mappings.forEach(
         mapping -> commandWriter.appendFollowUpCommand(key, MappingRuleIntent.CREATE, mapping));
   }

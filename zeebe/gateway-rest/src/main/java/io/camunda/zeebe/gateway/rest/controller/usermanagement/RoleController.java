@@ -203,7 +203,7 @@ public class RoleController {
   public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesByRole(
       @PathVariable final String roleId,
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toMappingQuery(query)
+    return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             mappingQuery -> searchMappingRulesInRole(roleId, mappingQuery));
@@ -217,7 +217,7 @@ public class RoleController {
           mappingServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedMappingQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

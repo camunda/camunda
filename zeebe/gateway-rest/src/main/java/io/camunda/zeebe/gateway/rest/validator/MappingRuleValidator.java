@@ -22,9 +22,9 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
-public class MappingValidator {
+public class MappingRuleValidator {
 
-  public static Optional<ProblemDetail> validateMappingRequest(
+  public static Optional<ProblemDetail> validateMappingRuleRequest(
       final MappingRuleUpdateRequest request) {
     return validate(
         violations -> {
@@ -33,7 +33,7 @@ public class MappingValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateMappingRequest(
+  public static Optional<ProblemDetail> validateMappingRuleRequest(
       final MappingRuleCreateRequest request) {
     return validate(
         violations -> {
@@ -43,13 +43,13 @@ public class MappingValidator {
         });
   }
 
-  private static List<String> validateId(final String mappingId) {
+  private static List<String> validateId(final String mappingRuleId) {
     final List<String> violations = new ArrayList<>();
-    if (mappingId == null || mappingId.isBlank()) {
+    if (mappingRuleId == null || mappingRuleId.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingRuleId"));
-    } else if (mappingId.length() > MAX_LENGTH) {
+    } else if (mappingRuleId.length() > MAX_LENGTH) {
       violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted("mappingRuleId", MAX_LENGTH));
-    } else if (!ID_PATTERN.matcher(mappingId).matches()) {
+    } else if (!ID_PATTERN.matcher(mappingRuleId).matches()) {
       violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted("mappingRuleId", ID_REGEX));
     }
     return violations;

@@ -337,7 +337,7 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(List::of));
   }
 
-  public static MappingRuleSearchQueryResult toMappingSearchQueryResponse(
+  public static MappingRuleSearchQueryResult toMappingRuleSearchQueryResponse(
       final SearchQueryResult<MappingRuleEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new MappingRuleSearchQueryResult()

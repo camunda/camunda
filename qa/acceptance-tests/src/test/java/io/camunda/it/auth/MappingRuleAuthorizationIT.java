@@ -18,7 +18,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.TestMapping;
+import io.camunda.qa.util.auth.TestMappingRule;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -72,12 +72,12 @@ class MappingRuleAuthorizationIT {
       new TestUser(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
 
   @MappingRuleDefinition
-  private static final TestMapping MAPPING_1 =
-      new TestMapping("mappingRule1", "test-name", "test-value");
+  private static final TestMappingRule MAPPING_RULE_1 =
+      new TestMappingRule("mappingRule1", "test-name", "test-value");
 
   @MappingRuleDefinition
-  private static final TestMapping MAPPING_2 =
-      new TestMapping("mappingRule2", "test-name2", "test-value2");
+  private static final TestMappingRule MAPPING_RULE_2 =
+      new TestMappingRule("mappingRule2", "test-name2", "test-value2");
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -96,10 +96,10 @@ class MappingRuleAuthorizationIT {
   @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
       @Authenticated(UNAUTHORIZED) final CamundaClient userClient) throws Exception {
-    final var mappingSearchResponse =
+    final var mappingRuleSearchResponse =
         searchMappingRules(userClient.getConfiguration().getRestAddress().toString(), UNAUTHORIZED);
 
-    assertThat(mappingSearchResponse.items()).isEmpty();
+    assertThat(mappingRuleSearchResponse.items()).isEmpty();
   }
 
   // TODO once available, this test should use the client to make the request

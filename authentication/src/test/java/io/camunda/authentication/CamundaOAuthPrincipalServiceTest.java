@@ -54,7 +54,7 @@ public class CamundaOAuthPrincipalServiceTest {
   @Nested
   class ClientIdClaimConfiguration {
     private static final String APPLICATION_ID_CLAIM = "client-id";
-    @Mock private MappingRuleServices mappingServices;
+    @Mock private MappingRuleServices mappingRuleServices;
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
     @Mock private GroupServices groupServices;
@@ -71,8 +71,8 @@ public class CamundaOAuthPrincipalServiceTest {
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
-      when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
-          .thenReturn(mappingServices);
+      when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(mappingRuleServices);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(tenantServices);
       when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -84,7 +84,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalServiceImpl(
-              mappingServices,
+              mappingRuleServices,
               tenantServices,
               roleServices,
               groupServices,

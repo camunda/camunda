@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.mapping;
+package io.camunda.zeebe.engine.processing.mappingrule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -27,7 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class MappingUpdateAuthorizationTest {
+public class MappingRuleCreateAuthorizationTest {
   private static final ConfiguredUser DEFAULT_USER =
       new ConfiguredUser(
           UUID.randomUUID().toString(),
@@ -50,116 +51,84 @@ public class MappingUpdateAuthorizationTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldBeAuthorizedToUpdateMappingWithDefaultUser() {
+  public void shouldBeAuthorizedToCreateMappingRuleWithDefaultUser() {
     // given
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var claimValueNew = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var id = UUID.randomUUID().toString();
+
+    // when
     engine
-        .mapping()
-        .newMapping(id)
+        .mappingRule()
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
         .create(DEFAULT_USER.getUsername());
 
-    // when
-    engine
-        .mapping()
-        .updateMapping(id)
-        .withClaimValue(claimValueNew)
-        .withName(name)
-        .withClaimName(claimName)
-        .update(DEFAULT_USER.getUsername());
-
     // then
     assertThat(
-            RecordingExporter.mappingRuleRecords(MappingRuleIntent.UPDATED)
-                .withMappingRuleId(id)
+            RecordingExporter.mappingRuleRecords(MappingRuleIntent.CREATED)
+                .withMappingRuleId(mappingRuleId)
                 .withClaimName(claimName)
-                .withClaimValue(claimValueNew)
+                .withClaimValue(claimValue)
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldBeAuthorizedToUpdateMappingWithPermissions() {
+  public void shouldBeAuthorizedToCreateMappingRuleWithPermissions() {
     // given
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var claimValueNew = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
-    final var mappingId = UUID.randomUUID().toString();
-
     final var user = createUser();
-    addPermissionsToUser(user, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE);
-
-    engine
-        .mapping()
-        .newMapping(mappingId)
-        .withClaimName(claimName)
-        .withClaimValue(claimValue)
-        .withName(name)
-        .create(DEFAULT_USER.getUsername());
+    addPermissionsToUser(user, AuthorizationResourceType.MAPPING_RULE, PermissionType.CREATE);
 
     // when
     engine
-        .mapping()
-        .updateMapping(mappingId)
-        .withClaimValue(claimValue)
-        .withClaimValue(claimValueNew)
-        .withName(name)
+        .mappingRule()
+        .newMapping(mappingRuleId)
         .withClaimName(claimName)
-        .update(user.getUsername());
+        .withClaimValue(claimValue)
+        .withName(name)
+        .create(user.getUsername());
 
     // then
     assertThat(
-            RecordingExporter.mappingRuleRecords(MappingRuleIntent.UPDATED)
-                .withMappingRuleId(mappingId)
+            RecordingExporter.mappingRuleRecords(MappingRuleIntent.CREATED)
+                .withMappingRuleId(mappingRuleId)
                 .withClaimName(claimName)
-                .withClaimValue(claimValueNew)
+                .withClaimValue(claimValue)
                 .exists())
         .isTrue();
   }
 
   @Test
-  public void shouldBeUnAuthorizedToUpdateMappingWithoutPermissions() {
+  public void shouldBeUnAuthorizedToCreateMappingRuleWithoutPermissions() {
     // given
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
-    final var claimValueNew = UUID.randomUUID().toString();
-    final var name = UUID.randomUUID().toString();
-    final var id = UUID.randomUUID().toString();
     final var user = createUser();
-    engine
-        .mapping()
-        .newMapping(id)
-        .withClaimName(claimName)
-        .withClaimValue(claimValue)
-        .withName(name)
-        .create(DEFAULT_USER.getUsername());
 
     // when
     final var rejection =
         engine
-            .mapping()
-            .updateMapping(id)
-            .withClaimValue(claimValue)
-            .withClaimValue(claimValueNew)
-            .withName(name)
+            .mappingRule()
+            .newMapping(mappingRuleId)
             .withClaimName(claimName)
+            .withClaimValue(claimValue)
             .expectRejection()
-            .update(user.getUsername());
+            .create(user.getUsername());
 
     // then
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
-            "Insufficient permissions to perform operation 'UPDATE' on resource 'MAPPING_RULE', required resource identifiers are one of '[*, "
-                + id
-                + "]'");
+            "Insufficient permissions to perform operation 'CREATE' on resource 'MAPPING_RULE'");
   }
 
   private UserRecordValue createUser() {

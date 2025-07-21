@@ -64,69 +64,70 @@ public class MappingRuleAppliersTest {
   }
 
   @Test
-  void shouldDeleteMapping() {
+  void shouldDeleteMappingRule() {
     // given
-    final var mappingRecord = createMappingRule();
+    final var mappingRuleRecord = createMappingRule();
 
     // when
-    mappingRuleDeletedApplier.applyState(mappingRecord.getMappingRuleKey(), mappingRecord);
+    mappingRuleDeletedApplier.applyState(mappingRuleRecord.getMappingRuleKey(), mappingRuleRecord);
 
     // then
-    assertThat(mappingRuleState.get(mappingRecord.getMappingRuleId())).isEmpty();
+    assertThat(mappingRuleState.get(mappingRuleRecord.getMappingRuleId())).isEmpty();
   }
 
   @Test
-  public void shouldThrowExceptionWhenDeleteNotExistingMapping() {
+  public void shouldThrowExceptionWhenDeleteNotExistingMappingRule() {
     // given
     final String id = "id";
-    final var mappingRecord = new MappingRuleRecord().setMappingRuleId(id);
+    final var mappingRuleRecord = new MappingRuleRecord().setMappingRuleId(id);
 
     // when + then
     assertThatThrownBy(
             () ->
                 mappingRuleDeletedApplier.applyState(
-                    mappingRecord.getMappingRuleKey(), mappingRecord))
+                    mappingRuleRecord.getMappingRuleKey(), mappingRuleRecord))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
-            "Expected to delete mapping with id 'id', but a mapping with this id does not exist.");
+            "Expected to delete mapping rule with id 'id', but a mapping rule with this id does not exist.");
   }
 
   @Test
   void shouldUpdateMapping() {
     // given
-    final var mappingRecord = createMappingRule();
+    final var mappingRuleRecord = createMappingRule();
     final var newClaimName = "new-claim";
     final var newClaimValue = "new-claim-value";
     final var newName = "new-name";
-    mappingRecord.setClaimName(newClaimName);
-    mappingRecord.setClaimValue(newClaimValue);
-    mappingRecord.setName(newName);
+    mappingRuleRecord.setClaimName(newClaimName);
+    mappingRuleRecord.setClaimValue(newClaimValue);
+    mappingRuleRecord.setName(newName);
     // when
-    mappingRuleUpdatedApplier.applyState(mappingRecord.getMappingRuleKey(), mappingRecord);
+    mappingRuleUpdatedApplier.applyState(mappingRuleRecord.getMappingRuleKey(), mappingRuleRecord);
 
     // then
-    assertThat(mappingRuleState.get(mappingRecord.getMappingRuleId())).isNotEmpty();
-    final var updatedMapping = mappingRuleState.get(mappingRecord.getMappingRuleId()).get();
-    assertThat(updatedMapping.getClaimName()).isEqualTo(newClaimName);
-    assertThat(updatedMapping.getClaimValue()).isEqualTo(newClaimValue);
-    assertThat(updatedMapping.getName()).isEqualTo(newName);
+    assertThat(mappingRuleState.get(mappingRuleRecord.getMappingRuleId())).isNotEmpty();
+    final var persistedMappingRule =
+        mappingRuleState.get(mappingRuleRecord.getMappingRuleId()).get();
+    assertThat(persistedMappingRule.getClaimName()).isEqualTo(newClaimName);
+    assertThat(persistedMappingRule.getClaimValue()).isEqualTo(newClaimValue);
+    assertThat(persistedMappingRule.getName()).isEqualTo(newName);
   }
 
   @Test
-  public void shouldThrowExceptionWhenUpdateNotExistingMappingId() {
+  public void shouldThrowExceptionWhenUpdateNotExistingMappingRuleId() {
     // given
-    final var mappingRecord = createMappingRule();
-    mappingRecord.setMappingRuleId(UUID.randomUUID().toString());
+    final var mappingRuleRecord = createMappingRule();
+    mappingRuleRecord.setMappingRuleId(UUID.randomUUID().toString());
     // when + then
     assertThatThrownBy(
             () ->
                 mappingRuleUpdatedApplier.applyState(
-                    mappingRecord.getMappingRuleKey(), mappingRecord))
+                    mappingRuleRecord.getMappingRuleKey(), mappingRuleRecord))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining(
             String.format(
-                "Expected to update mapping with id '%s', but a mapping with this id does not exist.",
-                mappingRecord.getMappingRuleId()));
+                "Expected to update mapping rule with id '%s', but a mapping rule with this id does not exist.",
+                mappingRuleRecord.getMappingRuleId()));
   }
 
   private MappingRuleRecord createMappingRule() {
@@ -134,14 +135,14 @@ public class MappingRuleAppliersTest {
     final String mappingRuleId = Strings.newRandomValidIdentityId();
     final String claimName = "foo";
     final String claimValue = "bar";
-    final var mappingRecord =
+    final var mappingRuleRecord =
         new MappingRuleRecord()
             .setMappingRuleKey(mappingRuleKey)
             .setMappingRuleId(mappingRuleId)
             .setClaimName(claimName)
             .setClaimValue(claimValue)
             .setName(claimName);
-    mappingRuleState.create(mappingRecord);
+    mappingRuleState.create(mappingRuleRecord);
     // create role
     final var role =
         new RoleRecord()
@@ -183,6 +184,6 @@ public class MappingRuleAppliersTest {
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setOwnerType(AuthorizationOwnerType.MAPPING_RULE)
             .setOwnerId(mappingRuleId));
-    return mappingRecord;
+    return mappingRuleRecord;
   }
 }

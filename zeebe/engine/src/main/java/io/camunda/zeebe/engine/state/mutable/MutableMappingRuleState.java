@@ -12,9 +12,9 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleReco
 
 public interface MutableMappingRuleState extends MappingRuleState {
 
-  void create(final MappingRuleRecord mappingRecord);
+  void create(final MappingRuleRecord mappingRuleRecord);
 
-  void update(MappingRuleRecord mappingRecord);
+  void update(MappingRuleRecord mappingRuleRecord);
 
   void delete(final String id);
 }

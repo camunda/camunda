@@ -9,10 +9,10 @@ package io.camunda.qa.util.auth;
 
 import java.util.List;
 
-public record TestMapping(
+public record TestMappingRule(
     String id, String claimName, String claimValue, List<Permissions> permissions) {
 
-  public TestMapping(final String id, final String claimName, final String claimValue) {
+  public TestMappingRule(final String id, final String claimName, final String claimValue) {
     this(id, claimName, claimValue, List.of());
   }
 }
