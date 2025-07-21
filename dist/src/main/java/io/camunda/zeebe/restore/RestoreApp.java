@@ -67,7 +67,10 @@ public class RestoreApp implements ApplicationRunner {
             .build();
 
     final String activeProfiles = System.getProperty("spring.profiles.active");
-    if (!Objects.equals(activeProfiles, Profile.RESTORE.getId())) {
+    final String springProfilesActive = System.getenv("SPRING_PROFILES_ACTIVE");
+    if (!Objects.equals(activeProfiles, Profile.RESTORE.getId())
+        || (springProfilesActive != null
+            && !springProfilesActive.equals(Profile.RESTORE.getId()))) {
       LOG.warn(
           "Additional profiles besides restore are set, which is not supported: {}. "
               + "The application will run only with the restore profile.",
