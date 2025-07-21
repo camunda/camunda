@@ -1249,6 +1249,7 @@ jobs:
       - opensearch-integration-tests
       - operate-backend-unit-tests
       - operate-frontend-tests
+      - optimize-ci
       - protobuf-checks
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
