@@ -25,7 +25,8 @@ public class OidcAuthenticationConfiguration {
   private String jwkSetUri;
   private String authorizationUri;
   private String tokenUri;
-  private AuthorizeRequestConfiguration authorizeRequestConfiguration;
+  private AuthorizeRequestConfiguration authorizeRequestConfiguration =
+      new AuthorizeRequestConfiguration();
   private Set<String> audiences;
   private String usernameClaim = "sub";
   private String clientIdClaim;
