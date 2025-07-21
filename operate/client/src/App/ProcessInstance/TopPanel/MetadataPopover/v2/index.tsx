@@ -26,7 +26,11 @@ import {createV2InstanceMetadata} from './types';
 import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
 import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition';
+import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {resolveIncidentErrorType} from './Incident/resolveIncidentErrorType';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -39,6 +43,12 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const elementInstanceId = selection?.flowNodeInstanceId;
   const isMultiInstance = selection?.isMultiInstance ?? false;
   const {metaData} = flowNodeMetaDataStore.state;
+
+  const processDefinitionKey = useProcessDefinitionKeyContext();
+  const {data} = useProcessInstanceXml({
+    processDefinitionKey,
+  });
+  const businessObject = elementId ? data?.businessObjects[elementId] : null;
 
   const {data: statistics} = useFlownodeInstancesStatistics();
 
@@ -68,15 +78,17 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       enabled: !!elementInstanceId && !!elementId,
     });
 
-  const {data: elementInstancesSearchResult, isLoading: isSearchingInstances} =
-    useElementInstancesSearch(
-      elementId ?? '',
-      processInstance?.processInstanceKey ?? '',
-      isMultiInstance,
-      {
-        enabled: shouldFetchElementInstances,
-      },
-    );
+  const {
+    data: elementInstancesSearchResult,
+    isLoading: isSearchingElementInstances,
+  } = useElementInstancesSearch(
+    elementId ?? '',
+    processInstance?.processInstanceKey ?? '',
+    convertBpmnJsTypeToAPIType(businessObject?.$type),
+    {
+      enabled: shouldFetchElementInstances,
+    },
+  );
 
   const elementInstanceMetadata = useMemo(() => {
     if (elementInstanceId && elementInstance) {
@@ -120,6 +132,21 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     },
   );
 
+  const {
+    data: processInstancesSearchResult,
+    isLoading: isSearchingProcessInstances,
+  } = useProcessInstancesSearch(
+    {
+      filter: {
+        parentElementInstanceKey:
+          elementInstanceMetadata?.elementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled: !!elementInstanceMetadata?.elementInstanceKey,
+    },
+  );
+
   const singleIncident =
     elementInstancesIncidentsSearchResult?.length === 1
       ? elementInstancesIncidentsSearchResult[0]
@@ -139,9 +166,10 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   if (
     elementId === undefined ||
     metaData === null ||
-    (shouldFetchElementInstances && isSearchingInstances) ||
+    (shouldFetchElementInstances && isSearchingElementInstances) ||
     (!!elementInstanceId && isFetchingInstance) ||
-    isSearchingUserTasks
+    isSearchingUserTasks ||
+    isSearchingProcessInstances
   ) {
     return null;
   }
@@ -179,6 +207,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               instanceMetadata: createV2InstanceMetadata(
                 instanceMetadata,
                 elementInstanceMetadata,
+                processInstancesSearchResult?.items?.[0],
                 elementInstanceMetadata.type === 'USER_TASK'
                   ? userTask
                   : undefined,
@@ -193,6 +222,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                 : null,
             }}
             elementId={elementInstanceMetadata.elementId}
+            businessObject={businessObject}
           />
         )}
         {isSearchingIncidents || isFetchingProcessDefinition ? (

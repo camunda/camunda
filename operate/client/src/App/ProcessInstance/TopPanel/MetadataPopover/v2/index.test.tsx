@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {screen, waitForElementToBeRemoved} from 'modules/testing-library';
+import {screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
@@ -48,6 +48,7 @@ import {waitFor} from '@testing-library/react';
 import {mockSearchIncidents} from 'modules/mocks/api/v2/incidents/searchIncidents';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
 import {mockFetchProcessDefinition} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinition';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -262,6 +263,17 @@ describe('MetadataPopover', () => {
     });
     flowNodeMetaDataStore.setMetaData(calledInstanceMetadata);
 
+    mockSearchProcessInstances().withSuccess({
+      items: [
+        {
+          ...mockProcessInstance,
+          processInstanceKey: '229843728748927482',
+          processDefinitionName: 'Called Process',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
@@ -418,10 +430,6 @@ describe('MetadataPopover', () => {
         /To view details for any of these, select one Instance in the Instance History./,
       ),
     ).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('incidents-loading'),
-    );
 
     expect(screen.getByText(/3 incidents occurred/)).toBeInTheDocument();
     expect(

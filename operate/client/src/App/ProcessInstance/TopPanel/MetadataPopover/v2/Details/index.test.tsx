@@ -310,4 +310,27 @@ describe('MetadataPopover <Details />', () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it('should display called process fields for called instances', async () => {
+    const incidentMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        calledProcessInstanceId: '229843728748927482',
+        calledProcessDefinitionName: 'Called Process',
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(screen.getByText(/"calledProcessInstanceKey"/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/"calledProcessDefinitionName"/),
+    ).toBeInTheDocument();
+  });
 });
