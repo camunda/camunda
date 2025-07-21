@@ -81,7 +81,10 @@ public final class NetworkCfg {
       return false;
     }
     final NetworkCfg that = (NetworkCfg) o;
-    return port == that.port && Objects.equals(host, that.host);
+    return port == that.port
+        && Objects.equals(host, that.host)
+        && Objects.equals(minKeepAliveInterval, that.minKeepAliveInterval)
+        && Objects.equals(maxMessageSize, that.maxMessageSize);
   }
 
   @Override
