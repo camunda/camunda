@@ -9,7 +9,6 @@ package io.camunda.application.commons.logging;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
