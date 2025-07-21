@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.MappingRuleMapper">
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.MappingRuleEntity">
+    <constructor>
+      <idArg column="MAPPING_RULE_ID" javaType="string"/>
+      <arg column="MAPPING_RULE_KEY" javaType="long"/>
+      <arg column="CLAIM_NAME" javaType="string"/>
+      <arg column="CLAIM_VALUE" javaType="string"/>
+      <arg column="NAME" javaType="string"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MappingRuleDbModel">
+    INSERT INTO ${prefix}MAPPING_RULES (MAPPING_RULE_ID, MAPPING_RULE_KEY, CLAIM_NAME, CLAIM_VALUE, NAME)
+    VALUES (#{mappingRuleId}, #{mappingRuleKey}, #{claimName}, #{claimValue}, #{name})
+  </insert>
+
+  <delete id="delete" parameterType="string">
+    DELETE
+    FROM ${prefix}MAPPING_RULES
+    WHERE MAPPING_RULE_ID = #{mappingRuleId}
+  </delete>
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"
+    resultType="long">
+    SELECT COUNT(*)
+    FROM ${prefix}MAPPING_RULES m
+    <if test="filter.groupId != null">
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
+      AND gm.ENTITY_TYPE = 'MAPPING'
+    </if>
+    <if test="filter.roleId != null">
+      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
+      AND rm.ENTITY_TYPE = 'MAPPING'
+    </if>
+    <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.MappingRuleMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT
+    MAPPING_RULE_ID,
+    MAPPING_RULE_KEY,
+    CLAIM_NAME,
+    CLAIM_VALUE,
+    NAME
+    FROM ${prefix}MAPPING_RULES m
+    <if test="filter.groupId != null">
+      JOIN ${prefix}GROUP_MEMBER gm ON m.MAPPING_RULE_ID = gm.ENTITY_ID
+      AND gm.ENTITY_TYPE = 'MAPPING'
+    </if>
+    <if test="filter.roleId != null">
+      JOIN ${prefix}ROLE_MEMBER rm ON m.MAPPING_RULE_ID = rm.ENTITY_ID
+      AND rm.ENTITY_TYPE = 'MAPPING'
+    </if>
+    <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <if test="filter.mappingRuleId != null">
+      AND MAPPING_RULE_ID = #{filter.mappingRuleId}
+    </if>
+    <if test="filter.mappingRuleKey != null">
+      AND MAPPING_RULE_KEY = #{filter.mappingRuleKey}
+    </if>
+    <if test="filter.claimName != null">
+      AND CLAIM_NAME = #{filter.claimName}
+    </if>
+    <if test="filter.claimValue">
+      AND CLAIM_VALUE = #{filter.claimValue}
+    </if>
+    <if test="filter.name != null">
+      AND NAME = #{filter.name}
+    </if>
+    <if test="filter.roleId != null">
+        AND rm.ROLE_ID = #{filter.roleId}
+    </if>
+    <if test="filter.groupId != null">
+      AND gm.GROUP_ID = #{filter.groupId}
+    </if>
+  </sql>
+
+</mapper>

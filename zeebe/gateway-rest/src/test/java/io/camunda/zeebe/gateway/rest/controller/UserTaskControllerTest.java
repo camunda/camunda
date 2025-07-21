@@ -40,6 +40,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(UserTaskController.class)
 public class UserTaskControllerTest extends RestControllerTest {
@@ -478,7 +479,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }
@@ -519,7 +520,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }
@@ -560,7 +561,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }
@@ -605,7 +606,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }
@@ -649,7 +650,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }
@@ -688,7 +689,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }
@@ -729,7 +730,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }
@@ -778,7 +779,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest()
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }
@@ -817,7 +818,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
   }
@@ -859,7 +860,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
   }
@@ -902,7 +903,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
   }
@@ -945,7 +946,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "");
   }
@@ -1161,7 +1162,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
 
     Mockito.verifyNoInteractions(userTaskServices);
   }

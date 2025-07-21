@@ -23,11 +23,15 @@ const SelectedGroups = styled.div`
 `;
 
 const AssignGroupsModal: FC<
-  UseEntityModalCustomProps<{ id: Role["roleId"] }, { assignedGroups: Group[] }>
-> = ({ entity: role, assignedGroups, onSuccess, open, onClose }) => {
-  const { t, Translate } = useTranslate("roles");
+  UseEntityModalCustomProps<
+    { roleId: Role["roleId"] },
+    { assignedGroups: Group[] }
+  >
+> = ({ entity: { roleId }, assignedGroups, onSuccess, open, onClose }) => {
+  const { t } = useTranslate("roles");
   const [selectedGroups, setSelectedGroups] = useState<Group[]>([]);
   const [loadingAssignGroup, setLoadingAssignGroup] = useState(false);
+  const [currentInputValue, setCurrentInputValue] = useState("");
 
   const {
     data: groupSearchResults,
@@ -42,11 +46,17 @@ const AssignGroupsModal: FC<
     groupSearchResults?.items.filter(
       ({ groupId }) =>
         !assignedGroups.some((group) => group.groupId === groupId) &&
-        !selectedGroups.some((group) => group.groupId === groupId),
+        !selectedGroups.some((group) => group.groupId === groupId) &&
+        groupId.toLowerCase().includes(currentInputValue.toLowerCase()),
     ) || [];
+
+  const handleDropdownChange = (value: string) => {
+    setCurrentInputValue(value);
+  };
 
   const onSelectGroup = (group: Group) => {
     setSelectedGroups([...selectedGroups, group]);
+    setCurrentInputValue("");
   };
 
   const onUnselectGroup =
@@ -57,7 +67,7 @@ const AssignGroupsModal: FC<
       );
     };
 
-  const canSubmit = role && selectedGroups.length;
+  const canSubmit = roleId && selectedGroups.length && !loadingAssignGroup;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -65,9 +75,7 @@ const AssignGroupsModal: FC<
     setLoadingAssignGroup(true);
 
     const results = await Promise.all(
-      selectedGroups.map(({ groupId }) =>
-        callAssignGroup({ groupId, roleId: role.id }),
-      ),
+      selectedGroups.map(({ groupId }) => callAssignGroup({ groupId, roleId })),
     );
 
     setLoadingAssignGroup(false);
@@ -80,6 +88,7 @@ const AssignGroupsModal: FC<
   useEffect(() => {
     if (open) {
       setSelectedGroups([]);
+      setCurrentInputValue("");
     }
   }, [open]);
 
@@ -95,11 +104,7 @@ const AssignGroupsModal: FC<
       onClose={onClose}
       overflowVisible
     >
-      <p>
-        <Translate i18nKey="searchAndAssignGroupToRole">
-          Search and assign group to role
-        </Translate>
-      </p>
+      <p>{t("searchAndAssignGroupToRole")}</p>
       {selectedGroups.length > 0 && (
         <SelectedGroups>
           {selectedGroups.map((group) => (
@@ -122,6 +127,7 @@ const AssignGroupsModal: FC<
         itemSubTitle={({ name }) => name}
         placeholder={t("searchByGroupId")}
         onSelect={onSelectGroup}
+        onChange={handleDropdownChange}
       />
       {!loading && error && (
         <TranslatedErrorInlineNotification

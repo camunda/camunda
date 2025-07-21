@@ -7,8 +7,9 @@
  */
 package io.camunda.security.auth;
 
-@FunctionalInterface
 public interface CamundaAuthenticationConverter<T> {
 
-  CamundaAuthentication convert(final T containerBasedAuthentication);
+  boolean supports(final T authentication);
+
+  CamundaAuthentication convert(final T authentication);
 }

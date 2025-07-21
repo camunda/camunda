@@ -13,7 +13,7 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.GroupDefinition;
-import io.camunda.qa.util.auth.MappingDefinition;
+import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.RoleDefinition;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestMapping;
@@ -511,7 +511,7 @@ public class CamundaMultiDBExtension
   private List<TestMapping> findMappings(
       final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
     return findFields(
-        testClass, testInstance, predicate, TestMapping.class, MappingDefinition.class);
+        testClass, testInstance, predicate, TestMapping.class, MappingRuleDefinition.class);
   }
 
   private <T> List<T> findFields(

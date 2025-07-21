@@ -27,7 +27,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.JobEntity;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -338,7 +338,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static MappingRuleSearchQueryResult toMappingSearchQueryResponse(
-      final SearchQueryResult<MappingEntity> result) {
+      final SearchQueryResult<MappingRuleEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new MappingRuleSearchQueryResult()
         .page(page)
@@ -691,16 +691,16 @@ public final class SearchQueryResponseMapper {
     return new RoleClientResult().clientId(roleMember.id());
   }
 
-  private static List<MappingRuleResult> toMappings(final List<MappingEntity> mappings) {
+  private static List<MappingRuleResult> toMappings(final List<MappingRuleEntity> mappings) {
     return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
   }
 
-  public static MappingRuleResult toMapping(final MappingEntity mappingEntity) {
+  public static MappingRuleResult toMapping(final MappingRuleEntity mappingRuleEntity) {
     return new MappingRuleResult()
-        .claimName(mappingEntity.claimName())
-        .claimValue(mappingEntity.claimValue())
-        .mappingRuleId(mappingEntity.mappingId())
-        .name(mappingEntity.name());
+        .claimName(mappingRuleEntity.claimName())
+        .claimValue(mappingRuleEntity.claimValue())
+        .mappingRuleId(mappingRuleEntity.mappingRuleId())
+        .name(mappingRuleEntity.name());
   }
 
   private static List<DecisionDefinitionResult> toDecisionDefinitions(
@@ -876,7 +876,8 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionName(entity.decisionDefinitionName())
         .decisionDefinitionVersion(entity.decisionDefinitionVersion())
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
-        .result(entity.result());
+        .result(entity.result())
+        .tenantId(entity.tenantId());
   }
 
   public static DecisionInstanceGetQueryResult toDecisionInstanceGetQueryResponse(
@@ -896,7 +897,8 @@ public final class SearchQueryResponseMapper {
         .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
         .result(entity.result())
         .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
-        .matchedRules(toMatchedRules(entity.evaluatedOutputs()));
+        .matchedRules(toMatchedRules(entity.evaluatedOutputs()))
+        .tenantId(entity.tenantId());
   }
 
   private static List<EvaluatedDecisionInputItem> toEvaluatedInputs(

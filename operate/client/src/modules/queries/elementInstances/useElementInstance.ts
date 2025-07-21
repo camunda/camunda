@@ -12,28 +12,27 @@ import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const ELEMENT_INSTANCE_QUERY_KEY = 'elementInstance';
 
-function getQueryKey(elementInstanceKey?: string) {
-  return [ELEMENT_INSTANCE_QUERY_KEY, elementInstanceKey];
-}
-
 const useElementInstance = <T = ElementInstance>(
   elementInstanceKey: string,
-  select?: (data: ElementInstance) => T,
+  options?: {
+    select?: (data: ElementInstance) => T;
+    enabled?: boolean;
+  },
 ) => {
   return useQuery({
-    queryKey: getQueryKey(elementInstanceKey),
+    queryKey: [ELEMENT_INSTANCE_QUERY_KEY, elementInstanceKey],
     queryFn: elementInstanceKey
       ? async () => {
           const {response, error} = await fetchElementInstance({
             elementInstanceKey,
           });
-
           if (response !== null) return response;
           throw error;
         }
       : skipToken,
-    select,
+    select: options?.select,
+    enabled: options?.enabled,
   });
 };
 
-export {ELEMENT_INSTANCE_QUERY_KEY, useElementInstance};
+export {useElementInstance};

@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Set;
 
 public class OidcAuthenticationConfiguration {
+  public static final String GROUPS_CLAIM_PROPERTY =
+      "camunda.security.authentication.oidc.groupsClaim";
+
   private String issuerUri;
   private String clientId;
   private String clientSecret;
@@ -22,6 +25,7 @@ public class OidcAuthenticationConfiguration {
   private String jwkSetUri;
   private String authorizationUri;
   private String tokenUri;
+  private AuthorizeRequestConfiguration authorizeRequestConfiguration;
   private Set<String> audiences;
   private String usernameClaim = "sub";
   private String clientIdClaim;
@@ -96,8 +100,17 @@ public class OidcAuthenticationConfiguration {
     return tokenUri;
   }
 
-  public void setTokenUri(String tokenUri) {
+  public void setTokenUri(final String tokenUri) {
     this.tokenUri = tokenUri;
+  }
+
+  public AuthorizeRequestConfiguration getAuthorizeRequest() {
+    return authorizeRequestConfiguration;
+  }
+
+  public void setAuthorizeRequest(
+      final AuthorizeRequestConfiguration authorizeRequestConfiguration) {
+    this.authorizeRequestConfiguration = authorizeRequestConfiguration;
   }
 
   public Set<String> getAudiences() {

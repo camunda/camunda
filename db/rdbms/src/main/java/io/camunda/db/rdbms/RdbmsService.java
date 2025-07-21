@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms;
 
-import io.camunda.db.rdbms.read.service.AuthorizationReader;
+import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemReader;
 import io.camunda.db.rdbms.read.service.BatchOperationReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
@@ -18,7 +18,7 @@ import io.camunda.db.rdbms.read.service.FormReader;
 import io.camunda.db.rdbms.read.service.GroupReader;
 import io.camunda.db.rdbms.read.service.IncidentReader;
 import io.camunda.db.rdbms.read.service.JobReader;
-import io.camunda.db.rdbms.read.service.MappingReader;
+import io.camunda.db.rdbms.read.service.MappingRuleReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.RoleReader;
@@ -38,7 +38,7 @@ import java.util.function.Consumer;
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
-  private final AuthorizationReader authorizationReader;
+  private final AuthorizationDbReader authorizationReader;
   private final DecisionDefinitionReader decisionDefinitionReader;
   private final DecisionInstanceReader decisionInstanceReader;
   private final DecisionRequirementsReader decisionRequirementsReader;
@@ -53,7 +53,7 @@ public class RdbmsService {
   private final UserReader userReader;
   private final UserTaskReader userTaskReader;
   private final FormReader formReader;
-  private final MappingReader mappingReader;
+  private final MappingRuleReader mappingRuleReader;
   private final BatchOperationReader batchOperationReader;
   private final SequenceFlowReader sequenceFlowReader;
   private final BatchOperationItemReader batchOperationItemReader;
@@ -62,7 +62,7 @@ public class RdbmsService {
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
-      final AuthorizationReader authorizationReader,
+      final AuthorizationDbReader authorizationReader,
       final DecisionDefinitionReader decisionDefinitionReader,
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
@@ -77,7 +77,7 @@ public class RdbmsService {
       final UserReader userReader,
       final UserTaskReader userTaskReader,
       final FormReader formReader,
-      final MappingReader mappingReader,
+      final MappingRuleReader mappingRuleReader,
       final BatchOperationReader batchOperationReader,
       final SequenceFlowReader sequenceFlowReader,
       final BatchOperationItemReader batchOperationItemReader,
@@ -99,7 +99,7 @@ public class RdbmsService {
     this.userReader = userReader;
     this.userTaskReader = userTaskReader;
     this.formReader = formReader;
-    this.mappingReader = mappingReader;
+    this.mappingRuleReader = mappingRuleReader;
     this.batchOperationReader = batchOperationReader;
     this.sequenceFlowReader = sequenceFlowReader;
     this.batchOperationItemReader = batchOperationItemReader;
@@ -107,7 +107,7 @@ public class RdbmsService {
     this.usageMetricReader = usageMetricReader;
   }
 
-  public AuthorizationReader getAuthorizationReader() {
+  public AuthorizationDbReader getAuthorizationReader() {
     return authorizationReader;
   }
 
@@ -167,8 +167,8 @@ public class RdbmsService {
     return formReader;
   }
 
-  public MappingReader getMappingReader() {
-    return mappingReader;
+  public MappingRuleReader getMappingReader() {
+    return mappingRuleReader;
   }
 
   public BatchOperationReader getBatchOperationReader() {

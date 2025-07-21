@@ -138,13 +138,17 @@ public final class ProcessInstanceServices
     final var resultsByKey =
         executeSearchRequest(
                 () ->
-                    processInstanceSearchClient.searchProcessInstances(
-                        processInstanceSearchQuery(
-                            q ->
-                                q.filter(
-                                    f ->
-                                        f.processInstanceKeyOperations(
-                                            Operation.in(orderedKeys))))))
+                    processInstanceSearchClient
+                        .withSecurityContext(
+                            securityContextProvider.provideSecurityContext(
+                                CamundaAuthentication.anonymous()))
+                        .searchProcessInstances(
+                            processInstanceSearchQuery(
+                                q ->
+                                    q.filter(
+                                        f ->
+                                            f.processInstanceKeyOperations(
+                                                Operation.in(orderedKeys))))))
             .items()
             .stream()
             .collect(
@@ -201,7 +205,7 @@ public final class ProcessInstanceServices
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
             .setStartInstructionsFromRecord(request.startInstructions())
-            .setRuntimeInstructions(request.runtimeInstructions());
+            .setRuntimeInstructionsFromRecord(request.runtimeInstructions());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());

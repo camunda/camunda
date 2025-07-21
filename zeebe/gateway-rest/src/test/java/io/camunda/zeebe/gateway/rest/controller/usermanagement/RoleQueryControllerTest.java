@@ -12,12 +12,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.RoleSort;
@@ -280,15 +280,15 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchMappingsByRole() {
     // given
     final var roleId = "roleId";
-    when(mappingsServices.search(any(MappingQuery.class)))
+    when(mappingsServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<MappingEntity>()
+            new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(3)
                 .items(
                     List.of(
-                        new MappingEntity("mapping1", 1L, "claim1", "value1", "Mapping 1"),
-                        new MappingEntity("mapping2", 2L, "claim2", "value2", "Mapping 2"),
-                        new MappingEntity("mapping3", 3L, "claim3", "value3", "Mapping 3")))
+                        new MappingRuleEntity("mapping1", 1L, "claim1", "value1", "Mapping 1"),
+                        new MappingRuleEntity("mapping2", 2L, "claim2", "value2", "Mapping 2"),
+                        new MappingRuleEntity("mapping3", 3L, "claim3", "value3", "Mapping 3")))
                 .build());
 
     // when /then
@@ -334,7 +334,9 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(mappingsServices)
         .search(
-            new MappingQuery.Builder().filter(f -> f.roleId(roleId).claimNames(List.of())).build());
+            new MappingRuleQuery.Builder()
+                .filter(f -> f.roleId(roleId).claimNames(List.of()))
+                .build());
   }
 
   @Test

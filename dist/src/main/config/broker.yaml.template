@@ -1313,9 +1313,11 @@
           # pauseCommandDistribution: false
 
         # batchOperation:
-          # for larger batch operations, the items to process are split into multiple records ("chunks") to avoid exceeding the maximum record size of 4MB.
-          # This means, that at most ~240000 batch operation items can be transported in a single record.
-          # chunkSize: 200000
+          # to avoid too large records, the set of executed items ina  batch operation is split into multiple chunks.
+          # smaller values lead to more records needed to transport the items and the more metadata overhead is created.
+          # larger values tend to overload the exporters as many rows need to be written per exported record.
+          # PS: Default value is 100 as reasonable tradeoff between number of records and exporter performance.
+          # chunkSize: 100
 
           # The items of a batch operation are stored in a separate column family in the RocksDB database.
           # To keep the single records/values of the RocksDb to a reasonable size, the items are split into multiple chunks.

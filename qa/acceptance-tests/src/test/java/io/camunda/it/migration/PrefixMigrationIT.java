@@ -79,7 +79,7 @@ public class PrefixMigrationIT {
 
   private GenericContainer<?> createCamundaContainer() {
     final var container =
-        new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7.0-SNAPSHOT"))
+        new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7-SNAPSHOT"))
             .waitingFor(
                 new HttpWaitStrategy()
                     .forPort(MONITORING.port())
@@ -169,14 +169,14 @@ public class PrefixMigrationIT {
   void shouldMigrateCorrectIndicesDuringPrefixMigration() {
     // given
     final var tasklistContainer =
-        new GenericContainer<>("camunda/zeebe:8.7.0-SNAPSHOT")
+        new GenericContainer<>("camunda/zeebe:8.7-SNAPSHOT")
             .withCreateContainerCmdModifier(
                 (final CreateContainerCmd cmd) ->
                     cmd.withEntrypoint("/usr/local/zeebe/bin/tasklist"))
             .withAccessToHost(true);
 
     final var operateContainer =
-        new GenericContainer<>("camunda/zeebe:8.7.0-SNAPSHOT")
+        new GenericContainer<>("camunda/zeebe:8.7-SNAPSHOT")
             .withCreateContainerCmdModifier(
                 (final CreateContainerCmd cmd) ->
                     cmd.withEntrypoint("/usr/local/zeebe/bin/operate"))

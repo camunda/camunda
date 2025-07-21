@@ -18,6 +18,7 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
@@ -38,7 +39,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      OperateProperties.class,
+      TestOperatePropertiesOverride.class,
       SecurityConfiguration.class
     },
     properties = {OperateProperties.PREFIX + ".identity.issuerUrl = http://some.issuer.url"})

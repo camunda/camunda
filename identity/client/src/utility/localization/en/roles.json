@@ -65,5 +65,7 @@
   "groupId": "Group ID",
   "groupName": "Group name",
   "roleMemberAccessDisclaimer": "Members of this Group will be given access to the data within the Role.",
-  "searchAndAssignGroupToRole": "Search and assign group to role"
+  "searchAndAssignGroupToRole": "Search and assign group to role",
+  "roleCreated": "Role created",
+  "createRoleSuccess": "You have successfully created role {{ roleName }}"
 }

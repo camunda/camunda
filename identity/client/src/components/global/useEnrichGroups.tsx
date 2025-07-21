@@ -7,7 +7,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { isInternalGroupsEnabled } from "src/configuration";
+import { isCamundaGroupsEnabled } from "src/configuration";
 import { SearchResponse } from "src/utility/api";
 import { useApiCall } from "src/utility/api/hooks";
 import { MemberGroup } from "src/utility/api/groups";
@@ -46,7 +46,7 @@ export function useEnrichedGroups<P>(
         return;
       }
 
-      if (!isInternalGroupsEnabled) {
+      if (!isCamundaGroupsEnabled) {
         setGroups(
           members.map(({ groupId }) => ({
             groupId,

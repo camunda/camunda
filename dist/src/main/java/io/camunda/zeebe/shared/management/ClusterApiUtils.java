@@ -297,6 +297,7 @@ final class ClusterApiUtils {
     return switch (state) {
       case DISABLED -> ExporterStateCode.DISABLED;
       case ENABLED -> ExporterStateCode.ENABLED;
+      case CONFIG_NOT_FOUND -> ExporterStateCode.CONFIG_NOT_FOUND;
     };
   }
 
@@ -532,6 +533,10 @@ final class ClusterApiUtils {
           new ExporterStatus().exporterId(exporterId).status(ExporterStatus.StatusEnum.ENABLED);
       case DISABLED ->
           new ExporterStatus().exporterId(exporterId).status(ExporterStatus.StatusEnum.DISABLED);
+      case CONFIG_NOT_FOUND ->
+          new ExporterStatus()
+              .exporterId(exporterId)
+              .status(ExporterStatus.StatusEnum.CONFIG_NOT_FOUND);
     };
   }
 }

@@ -7,12 +7,35 @@
  */
 package io.camunda.migration.identity.config;
 
+import jakarta.validation.constraints.NotBlank;
+
 public class ManagementIdentityProperties {
+
+  @NotBlank(
+      message =
+          "Base URL must be provided (camunda.migration.identity.managementIdentity.base-url)")
   private String baseUrl;
+
+  @NotBlank(
+      message =
+          "Issuer Backend URL must be provided (camunda.migration.identity.managementIdentity.issuer-backend-url)")
   private String issuerBackendUrl;
+
+  @NotBlank(
+      message =
+          "Client ID must be provided (camunda.migration.identity.managementIdentity.client-id)")
   private String clientId;
+
+  @NotBlank(
+      message =
+          "Client Secret must be provided (camunda.migration.identity.managementIdentity.client-secret)")
   private String clientSecret;
+
+  @NotBlank(
+      message =
+          "Audience must be provided (camunda.migration.identity.managementIdentity.audience)")
   private String audience;
+
   private String issuerType;
 
   public String getBaseUrl() {

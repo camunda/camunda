@@ -41,6 +41,21 @@ public final class TestStandaloneIdentityMigration
         .withAdditionalProfile(Profile.IDENTITY_MIGRATION);
 
     withProperty("camunda.migration.identity.mode", migrationProperties.getMode());
+    withProperty(
+        "camunda.migration.identity.managementIdentity.base-url",
+        migrationProperties.getManagementIdentity().getBaseUrl());
+    withProperty(
+        "camunda.migration.identity.managementIdentity.issuer-backend-url",
+        migrationProperties.getManagementIdentity().getIssuerBackendUrl());
+    withProperty(
+        "camunda.migration.identity.managementIdentity.client-id",
+        migrationProperties.getManagementIdentity().getClientId());
+    withProperty(
+        "camunda.migration.identity.managementIdentity.client-secret",
+        migrationProperties.getManagementIdentity().getClientSecret());
+    withProperty(
+        "camunda.migration.identity.managementIdentity.audience",
+        migrationProperties.getManagementIdentity().getAudience());
   }
 
   @Override

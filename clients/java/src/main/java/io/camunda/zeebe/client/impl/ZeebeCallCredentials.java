@@ -29,6 +29,7 @@ public final class ZeebeCallCredentials extends io.grpc.CallCredentials {
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeCallCredentials.class);
 
   private final CredentialsProvider credentialsProvider;
+  private boolean securityWarningIssued;
 
   ZeebeCallCredentials(final CredentialsProvider credentialsProvider) {
     this.credentialsProvider = credentialsProvider;
@@ -37,9 +38,12 @@ public final class ZeebeCallCredentials extends io.grpc.CallCredentials {
   @Override
   public void applyRequestMetadata(
       final RequestInfo requestInfo, final Executor appExecutor, final MetadataApplier applier) {
-    if (requestInfo.getSecurityLevel().ordinal() < SecurityLevel.PRIVACY_AND_INTEGRITY.ordinal()) {
+    if (!securityWarningIssued
+        && requestInfo.getSecurityLevel().ordinal()
+            < SecurityLevel.PRIVACY_AND_INTEGRITY.ordinal()) {
       LOG.warn(
           "The request's security level does not guarantee that the credentials will be confidential.");
+      securityWarningIssued = true;
     }
 
     appExecutor.execute(

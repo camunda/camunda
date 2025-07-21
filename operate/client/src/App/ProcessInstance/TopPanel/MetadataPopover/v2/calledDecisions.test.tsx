@@ -19,6 +19,9 @@ import {
   calledUnevaluatedDecisionMetadata,
   CALL_ACTIVITY_FLOW_NODE_ID,
   PROCESS_INSTANCE_ID,
+  FLOW_NODE_ID,
+  USER_TASK_FLOW_NODE_ID,
+  BUSSINESS_RULE_FLOW_NODE_ID,
 } from 'modules/mocks/metadata';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {
@@ -29,8 +32,31 @@ import {
 import {init} from 'modules/utils/flowNodeMetadata';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances.ts';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics.ts';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents.ts';
+import {mockIncidents} from 'modules/mocks/incidents.ts';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData.ts';
+import {incidentsStore} from 'modules/stores/incidents.ts';
+import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
+
+const mockElementInstance: ElementInstance = {
+  elementInstanceKey: '2251799813699889',
+  elementId: BUSSINESS_RULE_FLOW_NODE_ID,
+  elementName: 'Service Task',
+  type: 'SERVICE_TASK',
+  state: 'COMPLETED',
+  startDate: '2018-06-21T10:00:00.000Z',
+  endDate: '2018-06-21T10:00:00.000Z',
+  processDefinitionId: 'someKey',
+  processInstanceKey: PROCESS_INSTANCE_ID,
+  processDefinitionKey: '2',
+  hasIncident: false,
+  tenantId: '<default>',
+};
 
 vi.mock('date-fns', async () => {
   const actual = await vi.importActual('date-fns');
@@ -44,12 +70,71 @@ describe('MetadataPopover', () => {
   beforeEach(() => {
     init('process-instance', []);
     flowNodeSelectionStore.init();
+    mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockElementInstance,
+    );
+
+    mockSearchElementInstances().withSuccess({
+      items: [mockElementInstance],
+      page: {totalItems: 1},
+    });
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: FLOW_NODE_ID,
+          active: 1,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+        {
+          elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+          active: 1,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+        {
+          elementId: USER_TASK_FLOW_NODE_ID,
+          active: 1,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+      ],
+    });
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+  });
+
+  afterEach(() => {
+    processInstanceDetailsStore.reset();
+    flowNodeSelectionStore.reset();
+    flowNodeMetaDataStore.reset();
+    incidentsStore.reset();
   });
 
   it('should render meta data for completed flow node', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
+
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
     mockFetchProcessInstanceV2().withSuccess(createProcessInstance());
+
+    const mockCallActivityElementInstance: ElementInstance = {
+      ...mockElementInstance,
+      elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+    };
+
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockCallActivityElementInstance,
+    );
+
+    mockSearchElementInstances().withSuccess({
+      items: [mockCallActivityElementInstance],
+      page: {totalItems: 1},
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -57,17 +142,12 @@ describe('MetadataPopover', () => {
         state: 'ACTIVE',
       }),
     );
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
-      },
-    );
+    selectFlowNode({}, {flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID});
 
     renderPopover();
 
     expect(
-      await screen.findByText(labels.flowNodeInstanceKey),
+      await screen.findByText(labels.elementInstanceKey),
     ).toBeInTheDocument();
     expect(screen.getByText(labels.executionDuration)).toBeInTheDocument();
     expect(
@@ -88,10 +168,14 @@ describe('MetadataPopover', () => {
         calledInstanceMetadata.instanceMetadata!.calledProcessInstanceId
       }`,
     );
+
+    vi.clearAllTimers();
+    vi.useFakeTimers();
   });
 
   it('should render completed decision', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
+
     const {instanceMetadata} = calledDecisionMetadata;
 
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
@@ -105,7 +189,13 @@ describe('MetadataPopover', () => {
       }),
     );
 
-    selectFlowNode({}, {flowNodeId: 'BusinessRuleTask'});
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeInstanceId: '2251799813699889',
+      },
+    );
 
     const {user} = renderPopover();
 
@@ -154,7 +244,13 @@ describe('MetadataPopover', () => {
       }),
     );
 
-    selectFlowNode({}, {flowNodeId: 'BusinessRuleTask'});
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeInstanceId: '2251799813699889',
+      },
+    );
 
     const {user} = renderPopover();
 
@@ -209,7 +305,13 @@ describe('MetadataPopover', () => {
       }),
     );
 
-    selectFlowNode({}, {flowNodeId: 'BusinessRuleTask'});
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: BUSSINESS_RULE_FLOW_NODE_ID,
+        flowNodeInstanceId: '2251799813699889',
+      },
+    );
 
     renderPopover();
 

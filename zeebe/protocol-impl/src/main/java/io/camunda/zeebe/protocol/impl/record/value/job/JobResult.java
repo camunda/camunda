@@ -14,10 +14,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultActivateElementValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultValue;
+import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.StreamSupport;
@@ -31,12 +34,18 @@ import java.util.stream.StreamSupport;
 public class JobResult extends UnpackedObject implements JobResultValue {
 
   // Static StringValue keys to avoid memory waste
+  private static final StringValue TYPE_KEY = new StringValue("type");
   private static final StringValue DENIED_KEY = new StringValue("denied");
   private static final StringValue CORRECTED_ATTRIBUTES_KEY =
       new StringValue("correctedAttributes");
   private static final StringValue CORRECTIONS_KEY = new StringValue("corrections");
   private static final StringValue DENIED_REASON_KEY = new StringValue("deniedReason");
+  private static final StringValue ACTIVATE_ELEMENTS_KEY = new StringValue("activateElements");
 
+  private final EnumProperty<JobResultType> typeProp =
+      new EnumProperty<>(TYPE_KEY, JobResultType.class, JobResultType.USER_TASK);
+
+  // User task properties
   private final BooleanProperty deniedProp = new BooleanProperty(DENIED_KEY, false);
   private final ArrayProperty<StringValue> correctedAttributesProp =
       new ArrayProperty<>(CORRECTED_ATTRIBUTES_KEY, StringValue::new);
@@ -45,20 +54,38 @@ public class JobResult extends UnpackedObject implements JobResultValue {
   private final StringProperty deniedReasonProp =
       new StringProperty(DENIED_REASON_KEY, EMPTY_STRING);
 
+  // Ad-hoc subprocess properties
+  private final ArrayProperty<JobResultActivateElement> activateElementsProp =
+      new ArrayProperty<>(ACTIVATE_ELEMENTS_KEY, JobResultActivateElement::new);
+
   public JobResult() {
-    super(4);
-    declareProperty(deniedProp)
+    super(6);
+    declareProperty(typeProp)
+        .declareProperty(deniedProp)
         .declareProperty(correctionsProp)
         .declareProperty(correctedAttributesProp)
-        .declareProperty(deniedReasonProp);
+        .declareProperty(deniedReasonProp)
+        .declareProperty(activateElementsProp);
   }
 
   /** Sets all properties to current instance from provided user task job data */
   public void wrap(final JobResult result) {
+    typeProp.setValue(result.getType());
     deniedProp.setValue(result.isDenied());
     setCorrectedAttributes(result.getCorrectedAttributes());
     setCorrections(result.getCorrections());
     setDeniedReason(result.getDeniedReason());
+    setActivateElements(result.getActivateElements());
+  }
+
+  @Override
+  public JobResultType getType() {
+    return typeProp.getValue();
+  }
+
+  public JobResult setType(final JobResultType type) {
+    typeProp.setValue(type);
+    return this;
   }
 
   @Override
@@ -103,6 +130,25 @@ public class JobResult extends UnpackedObject implements JobResultValue {
 
   public JobResult setCorrections(final JobResultCorrections corrections) {
     correctionsProp.getValue().wrap(corrections);
+    return this;
+  }
+
+  @Override
+  public List<JobResultActivateElementValue> getActivateElements() {
+    return StreamSupport.stream(activateElementsProp.spliterator(), false)
+        .map(
+            activateElement -> {
+              final var copy = new JobResultActivateElement();
+              copy.copyFrom(activateElement);
+              return (JobResultActivateElementValue) copy;
+            })
+        .toList();
+  }
+
+  public JobResult setActivateElements(final List<JobResultActivateElementValue> elements) {
+    activateElementsProp.reset();
+    elements.forEach(
+        element -> activateElementsProp.add().copyFrom((JobResultActivateElement) element));
     return this;
   }
 }

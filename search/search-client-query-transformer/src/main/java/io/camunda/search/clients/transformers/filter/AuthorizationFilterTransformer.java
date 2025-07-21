@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -20,6 +21,7 @@ import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RES
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public final class AuthorizationFilterTransformer
@@ -39,6 +41,11 @@ public final class AuthorizationFilterTransformer
         buildCoreFilters(filter),
         stringTerms(OWNER_ID, filter.ownerIds()),
         filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()));
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+    return longTerms(ID, authorization.resourceIds().stream().map(Long::valueOf).toList());
   }
 
   private SearchQuery buildOwnerTypeToOwnerIdsQuery(final AuthorizationFilter filter) {

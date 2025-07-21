@@ -24,7 +24,7 @@ import io.camunda.exporter.rdbms.handlers.FormExportHandler;
 import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
-import io.camunda.exporter.rdbms.handlers.MappingExportHandler;
+import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
@@ -241,7 +241,7 @@ public class RdbmsExporterWrapper implements Exporter {
           ValueType.PROCESS,
           new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter(), processCache));
       builder.withHandler(
-          ValueType.MAPPING, new MappingExportHandler(rdbmsWriter.getMappingWriter()));
+          ValueType.MAPPING, new MappingRuleExportHandler(rdbmsWriter.getMappingRuleWriter()));
       builder.withHandler(ValueType.TENANT, new TenantExportHandler(rdbmsWriter.getTenantWriter()));
       builder.withHandler(ValueType.ROLE, new RoleExportHandler(rdbmsWriter.getRoleWriter()));
       builder.withHandler(ValueType.USER, new UserExportHandler(rdbmsWriter.getUserWriter()));

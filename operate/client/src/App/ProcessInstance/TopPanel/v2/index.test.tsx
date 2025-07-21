@@ -38,10 +38,16 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {
+  type ElementInstance,
+  type ProcessInstance,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {http, HttpResponse} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData.ts';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
 
 vi.mock('react-transition-group', () => {
   const FakeTransition = vi.fn(({children}) => children);
@@ -72,6 +78,20 @@ const mockProcessInstance: ProcessInstance = {
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: true,
+};
+
+const mockElementInstance: ElementInstance = {
+  elementInstanceKey: '2251799813699889',
+  elementId: 'service-task-1',
+  elementName: 'Service Task',
+  type: 'SERVICE_TASK',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionId: 'process-def-1',
+  processInstanceKey: 'instance_id',
+  processDefinitionKey: '2',
+  hasIncident: false,
+  tenantId: '<default>',
 };
 
 const getWrapper = (
@@ -148,6 +168,7 @@ describe('TopPanel', () => {
     processInstanceDetailsStore.reset();
     flowNodeSelectionStore.reset();
     modificationsStore.reset();
+    flowNodeMetaDataStore.reset();
   });
 
   it('should render spinner while loading', async () => {
@@ -237,11 +258,42 @@ describe('TopPanel', () => {
   });
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...calledInstanceMetadata,
+      flowNodeId: 'service-task-1',
+      flowNodeInstanceId: '2251799813699889',
+    });
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockElementInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockSearchElementInstances().withSuccess({
+      items: [mockElementInstance],
+      page: {totalItems: 1},
+    });
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: mockElementInstance.elementId,
+          active: 1,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+      ],
+    });
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
+    flowNodeMetaDataStore.setMetaData({
+      ...calledInstanceMetadata,
+      flowNodeId: 'service-task-1',
+      flowNodeInstanceId: '2251799813699889',
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
-        id: PROCESS_INSTANCE_ID,
+        id: 'instance_id',
         state: 'ACTIVE',
       }),
     );
@@ -253,22 +305,23 @@ describe('TopPanel', () => {
       {},
       {
         flowNodeId: 'service-task-1',
+        flowNodeInstanceId: '2251799813699889',
       },
     );
 
-    expect(
-      await screen.findByText(/Flow Node Instance Key/),
-    ).toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/Element Instance Key/),
+      ).not.toBeInTheDocument(),
+    );
 
     expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
-
-    await waitFor(() =>
-      expect(
-        screen.queryByText(/Flow Node Instance Key/),
-      ).not.toBeInTheDocument(),
-    );
 
     expect(screen.queryByText(/Start Date/)).not.toBeInTheDocument();
     expect(screen.queryByText(/End Date/)).not.toBeInTheDocument();

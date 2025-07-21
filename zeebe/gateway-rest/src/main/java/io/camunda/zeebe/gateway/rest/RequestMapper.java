@@ -81,6 +81,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobResultUserTask;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
@@ -123,6 +124,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
@@ -936,10 +938,14 @@ public class RequestMapper {
     }
 
     final JobResult jobResult = new JobResult();
-    jobResult.setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
-    jobResult.setDeniedReason(getStringOrEmpty(request, r -> r.getResult().getDeniedReason()));
+    final var jobResultUserTask = (JobResultUserTask) request.getResult();
+    jobResult.setType(JobResultType.from(jobResultUserTask.getType().getValue()));
+    jobResult.setDenied(
+        getBooleanOrDefault(request, r -> ((JobResultUserTask) r.getResult()).getDenied(), false));
+    jobResult.setDeniedReason(
+        getStringOrEmpty(request, r -> ((JobResultUserTask) r.getResult()).getDeniedReason()));
 
-    final var jobResultCorrections = request.getResult().getCorrections();
+    final var jobResultCorrections = jobResultUserTask.getCorrections();
     if (jobResultCorrections == null) {
       return jobResult;
     }

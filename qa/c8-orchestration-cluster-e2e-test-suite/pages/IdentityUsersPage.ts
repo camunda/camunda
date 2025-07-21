@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
+import {sleep} from 'utils/sleep';
 import {waitForItemInList} from 'utils/waitForItemInList';
 
 export class IdentityUsersPage {
@@ -148,10 +149,7 @@ export class IdentityUsersPage {
     );
     this.deleteUserModalDeleteButton = this.deleteUserModal.getByRole(
       'button',
-      {
-        name: 'Delete user',
-        exact: true,
-      },
+      {name: 'danger Delete user'},
     );
 
     this.emptyState = page.getByText('No users created yet', {exact: true});
@@ -186,14 +184,14 @@ export class IdentityUsersPage {
     });
   }
 
-  async deleteUser(name: string) {
-    await this.deleteUserButton(name).click();
+  async deleteUser(user: {username: string; email: string}) {
+    await this.deleteUserButton(user.username).click();
     await expect(this.deleteUserModal).toBeVisible();
     await this.deleteUserModalDeleteButton.click();
     await expect(this.deleteUserModal).not.toBeVisible();
 
     const item = this.usersList.getByRole('cell', {
-      name,
+      name: user.email,
     });
 
     await waitForItemInList(this.page, item, {

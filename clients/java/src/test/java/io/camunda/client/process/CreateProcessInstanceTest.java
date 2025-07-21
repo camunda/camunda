@@ -313,6 +313,52 @@ public final class CreateProcessInstanceTest extends ClientTest {
     assertThat(request.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
   }
 
+  @Test
+  public void shouldAddSuspendRuntimeInstruction() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .suspendAfterElement("elementId_A")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getRuntimeInstructionsList())
+        .hasSize(1)
+        .allSatisfy(
+            instruction ->
+                assertThat(instruction.getSuspend())
+                    .satisfies(
+                        suspend ->
+                            assertThat(suspend.getAfterElementId()).isEqualTo("elementId_A")));
+  }
+
+  @Test
+  public void shouldAddMultipleSuspendRuntimeInstructions() {
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .suspendAfterElement("elementId_A")
+        .suspendAfterElement("elementId_B")
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getRuntimeInstructionsList())
+        .hasSize(2)
+        .allSatisfy(
+            instruction ->
+                assertThat(instruction.getSuspend())
+                    .satisfies(
+                        suspend ->
+                            assertThat(suspend.getAfterElementId())
+                                .isIn("elementId_A", "elementId_B")));
+  }
+
   public static class VariableDocument {
 
     VariableDocument() {}

@@ -29,7 +29,7 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
-import io.camunda.search.filter.MappingFilter;
+import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -54,7 +54,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -76,7 +76,7 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
-import io.camunda.search.sort.MappingSort;
+import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -517,7 +517,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
-  public static Either<ProblemDetail, MappingQuery> toMappingQuery(
+  public static Either<ProblemDetail, MappingRuleQuery> toMappingQuery(
       final MappingRuleSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.mappingSearchQuery().build());
@@ -1064,14 +1064,14 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static MappingFilter toMappingFilter(
+  private static MappingRuleFilter toMappingFilter(
       final io.camunda.zeebe.gateway.protocol.rest.MappingRuleFilter filter) {
     final var builder = FilterBuilders.mapping();
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
       ofNullable(filter.getName()).ifPresent(builder::name);
-      ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingId);
+      ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingRuleId);
     }
     return builder.build();
   }
@@ -1535,13 +1535,14 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyMappingSortField(
-      final MappingRuleSearchQuerySortRequest.FieldEnum field, final MappingSort.Builder builder) {
+      final MappingRuleSearchQuerySortRequest.FieldEnum field,
+      final MappingRuleSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case MAPPING_RULE_ID -> builder.mappingId();
+        case MAPPING_RULE_ID -> builder.mappingRuleId();
         case CLAIM_NAME -> builder.claimName();
         case CLAIM_VALUE -> builder.claimValue();
         case NAME -> builder.name();

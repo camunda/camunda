@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.TestOperatePropertiesOverride;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       TestApplicationWithNoBeans.class,
       CCSaaSJwtAuthenticationTokenValidator.class,
       DatabaseInfo.class,
-      OperateProperties.class,
+      TestOperatePropertiesOverride.class,
     },
     properties = {
       OperateProperties.PREFIX + ".client.audience = test.operate.camunda.com",

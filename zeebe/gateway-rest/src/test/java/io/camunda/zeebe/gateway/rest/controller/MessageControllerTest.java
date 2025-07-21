@@ -33,6 +33,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(MessageController.class)
@@ -414,7 +415,7 @@ public class MessageControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_PUBLICATION_RESPONSE);
+        .json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
 
     Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
     final var capturedRequest = publicationRequestCaptor.getValue();
@@ -454,7 +455,7 @@ public class MessageControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_PUBLICATION_RESPONSE);
+        .json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
 
     Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
     final var capturedRequest = publicationRequestCaptor.getValue();
@@ -493,7 +494,7 @@ public class MessageControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_PUBLICATION_RESPONSE);
+        .json(EXPECTED_PUBLICATION_RESPONSE, JsonCompareMode.STRICT);
 
     Mockito.verify(messageServices).publishMessage(publicationRequestCaptor.capture());
     final var capturedRequest = publicationRequestCaptor.getValue();
@@ -542,7 +543,7 @@ public class MessageControllerTest extends RestControllerTest {
         .expectStatus()
         .isBadRequest()
         .expectBody()
-        .json(expectedBody);
+        .json(expectedBody, JsonCompareMode.STRICT);
   }
 
   private CompletableFuture<BrokerResponse<MessageRecord>> buildPublishResponse() {

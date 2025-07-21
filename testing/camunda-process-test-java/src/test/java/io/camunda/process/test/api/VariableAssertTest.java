@@ -518,4 +518,32 @@ public class VariableAssertTest {
           .hasMessage("No process instance [key: %d] found.", PROCESS_INSTANCE_KEY);
     }
   }
+
+  @Nested
+  class EdgeCase {
+
+    @Test
+    void shouldAssertOnTruncatedVariableIfFetchFails() {
+      // given
+      final Variable truncatedVariable =
+          VariableBuilder.newVariable("largeVar", "\"truncatedValue\"")
+              .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
+              .setTruncated(true)
+              .setVariableKey(100L)
+              .build();
+
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(truncatedVariable));
+
+      when(camundaDataSource.getVariable(100L)).thenThrow(RuntimeException.class);
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      final Map<String, Object> expectedVariables = new HashMap<>();
+      expectedVariables.put("largeVar", "truncatedValue");
+      CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
+    }
+  }
 }

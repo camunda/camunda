@@ -84,7 +84,7 @@ public class PersistedMapping extends UnpackedObject
   }
 
   @Override
-  public String mappingId() {
+  public String mappingRuleId() {
     return getMappingId();
   }
 

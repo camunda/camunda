@@ -126,10 +126,22 @@ public interface CreateProcessInstanceCommandStep1
      * than once to simultaneously start at different elements in different branches of the process.
      *
      * @param elementId the id of the BPMN element where to start the process instance
-     * @return the builder for this command. Call {@link #send()} to complete the command and send *
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
     CreateProcessInstanceCommandStep3 startBeforeElement(final String elementId);
+
+    /**
+     * Adds a runtime instruction to suspend the process instance after the given element is
+     * completed or terminated. This method can be called more than once to add multiple runtime
+     * instructions.
+     *
+     * @param elementId the id of the BPMN element after which the process instance should be
+     *     suspended
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateProcessInstanceCommandStep3 suspendAfterElement(final String elementId);
 
     /**
      * When this method is called, the response to the command will be received after the process is

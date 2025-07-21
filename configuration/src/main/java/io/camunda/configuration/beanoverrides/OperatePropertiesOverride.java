@@ -13,23 +13,22 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@EnableConfigurationProperties(OperateProperties.class)
+@EnableConfigurationProperties(LegacyOperateProperties.class)
 @PropertySource("classpath:operate-version.properties")
-@DependsOn("databaseInfo")
-@Profile("operate | test")
+@Profile("operate")
 public class OperatePropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final OperateProperties legacyOperateProperties;
+  private final LegacyOperateProperties legacyOperateProperties;
 
   public OperatePropertiesOverride(
-      UnifiedConfiguration unifiedConfiguration, OperateProperties legacyOperateProperties) {
+      final UnifiedConfiguration unifiedConfiguration,
+      final LegacyOperateProperties legacyOperateProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
     this.legacyOperateProperties = legacyOperateProperties;
   }

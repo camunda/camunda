@@ -16,12 +16,12 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
-import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.GroupSort;
@@ -44,6 +44,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = GroupController.class)
 public class GroupQueryControllerTest extends RestControllerTest {
@@ -71,7 +72,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":3,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -101,7 +103,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":3,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -129,7 +132,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":3,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -163,7 +167,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":3,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
@@ -186,11 +191,11 @@ public class GroupQueryControllerTest extends RestControllerTest {
           GROUP_CLIENT_ENTITIES.get(1).id(),
           GROUP_CLIENT_ENTITIES.get(2).id());
 
-  private static final List<MappingEntity> MAPPNING_ENTITIES =
+  private static final List<MappingRuleEntity> MAPPNING_ENTITIES =
       List.of(
-          new MappingEntity(
+          new MappingRuleEntity(
               Strings.newRandomValidIdentityId(), 1L, "claimName1", "claimValue1", "name"),
-          new MappingEntity(
+          new MappingRuleEntity(
               Strings.newRandomValidIdentityId(), 2L, "claimName2", "claimValue2", "name"));
 
   private static final String MAPPING_RESPONSE =
@@ -213,14 +218,15 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "page":{
           "totalItems":2,
           "startCursor":"f",
-          "endCursor":"v"
+          "endCursor":"v",
+          "hasMoreTotalItems": false
         }
       }
       """;
 
   private static final String EXPECTED_MAPPING_RESPONSE =
       MAPPING_RESPONSE.formatted(
-          MAPPNING_ENTITIES.get(0).mappingId(), MAPPNING_ENTITIES.get(1).mappingId());
+          MAPPNING_ENTITIES.get(0).mappingRuleId(), MAPPNING_ENTITIES.get(1).mappingRuleId());
 
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private MappingServices mappingServices;
@@ -519,7 +525,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectBody()
-        .json(EXPECTED_SEARCH_RESPONSE.formatted(groupId1, groupId2, groupId3));
+        .json(
+            EXPECTED_SEARCH_RESPONSE.formatted(groupId1, groupId2, groupId3),
+            JsonCompareMode.STRICT);
 
     verify(groupServices)
         .search(
@@ -559,7 +567,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_USER_RESPONSE);
+        .json(EXPECTED_USER_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -591,15 +599,15 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_USER_RESPONSE);
+        .json(EXPECTED_USER_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
   void shouldSearchGroupMappingsWithSorting() {
     // given
-    when(mappingServices.search(any(MappingQuery.class)))
+    when(mappingServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<MappingEntity>()
+            new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPNING_ENTITIES.size())
                 .items(MAPPNING_ENTITIES)
                 .startCursor("f")
@@ -624,15 +632,15 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_MAPPING_RESPONSE);
+        .json(EXPECTED_MAPPING_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
   void shouldSearchGroupMappingsWithEmptyQuery() {
     // given
-    when(mappingServices.search(any(MappingQuery.class)))
+    when(mappingServices.search(any(MappingRuleQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<MappingEntity>()
+            new SearchQueryResult.Builder<MappingRuleEntity>()
                 .total(MAPPNING_ENTITIES.size())
                 .items(MAPPNING_ENTITIES)
                 .startCursor("f")
@@ -656,7 +664,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_MAPPING_RESPONSE);
+        .json(EXPECTED_MAPPING_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -689,7 +697,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_ROLE_RESPONSE);
+        .json(EXPECTED_ROLE_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -721,7 +729,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_ROLE_RESPONSE);
+        .json(EXPECTED_ROLE_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -754,7 +762,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_CLIENT_RESPONSE);
+        .json(EXPECTED_CLIENT_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -786,7 +794,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(EXPECTED_CLIENT_RESPONSE);
+        .json(EXPECTED_CLIENT_RESPONSE, JsonCompareMode.STRICT);
   }
 
   @ParameterizedTest
@@ -806,7 +814,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
-        .json(expectedResponse);
+        .json(expectedResponse, JsonCompareMode.STRICT);
 
     verify(groupServices, never()).search(any(GroupQuery.class));
   }

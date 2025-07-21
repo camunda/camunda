@@ -438,14 +438,14 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldAssignMappingToRoleAndReturnAccepted() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
     when(roleServices.addMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
         .put()
-        .uri("%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -459,9 +459,9 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldReturnErrorForAddingMissingMappingToRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
-    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -489,9 +489,9 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldReturnErrorForAddingMappingToMissingRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
-    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
     when(roleServices.addMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -516,8 +516,8 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = "mappingId!";
-    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final var mappingRuleId = "mappingRuleId!";
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
 
     // when
     webClient
@@ -535,7 +535,7 @@ public class RoleControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "status": 400,
                 "title": "INVALID_ARGUMENT",
-                "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
                 .formatted(IdentifierPatterns.ID_PATTERN, path));
@@ -546,8 +546,8 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldReturnErrorForProvidingInvalidRoleIdWhenAddingMappingToRole() {
     // given
     final String roleId = "roleId!";
-    final String mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
+    final String mappingRuleId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
 
     // when
     webClient
@@ -576,15 +576,15 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldUnassignMappingFromRoleAndReturnAccepted() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
 
-    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
     when(roleServices.removeMember(request)).thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     webClient
         .delete()
-        .uri("%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId))
+        .uri("%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -598,9 +598,9 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldReturnErrorForRemovingMissingMappingFromRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
-    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(
@@ -628,9 +628,9 @@ public class RoleControllerTest extends RestControllerTest {
   void shouldReturnErrorForRemovingMappingFromMissingRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingId);
-    final var request = new RoleMemberRequest(roleId, mappingId, EntityType.MAPPING);
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s/mapping-rules/%s".formatted(ROLE_BASE_URL, roleId, mappingRuleId);
+    final var request = new RoleMemberRequest(roleId, mappingRuleId, EntityType.MAPPING);
     when(roleServices.removeMember(request))
         .thenReturn(
             CompletableFuture.failedFuture(

@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.webapp.security.TasklistProfileServiceImpl;
 import org.junit.jupiter.api.*;
@@ -36,7 +37,7 @@ import org.springframework.web.context.WebApplicationContext;
       TasklistProfileServiceImpl.class,
       ClientConfig.class,
       ClientConfigRestService.class,
-      TasklistProperties.class,
+      TestTasklistPropertiesOverride.class,
       SecurityConfiguration.class
     },
     properties = {

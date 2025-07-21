@@ -7,7 +7,16 @@
  */
 package io.camunda.zeebe.it.util;
 
-import io.camunda.search.clients.DocumentBasedSearchClients;
+import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.reader.AuthorizationDocumentReader;
+import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.GroupMemberDocumentReader;
+import io.camunda.search.clients.reader.RoleMemberDocumentReader;
+import io.camunda.search.clients.reader.TenantMemberDocumentReader;
+import io.camunda.search.clients.reader.UserDocumentReader;
+import io.camunda.search.clients.reader.UserReader;
+import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -25,9 +34,24 @@ public class SearchClientsUtil {
     return new ElasticsearchSearchClient(elasticsearchClient);
   }
 
-  public static DocumentBasedSearchClients createSearchClients(final String elasticsearchUrl) {
-    final var lowLevelSearchClient = createLowLevelSearchClient(elasticsearchUrl);
-    return new DocumentBasedSearchClients(lowLevelSearchClient, new IndexDescriptors("", true));
+  public static UserReader createUserReader(final DocumentBasedSearchClient client) {
+    final var indexDescriptors = new IndexDescriptors("", true);
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            client, ServiceTransformers.newInstance(indexDescriptors));
+    final var roleMemberReader = new RoleMemberDocumentReader(executor);
+    final var tenantMemberReader = new TenantMemberDocumentReader(executor);
+    final var groupMemberReader = new GroupMemberDocumentReader(executor);
+    return new UserDocumentReader(
+        executor, roleMemberReader, tenantMemberReader, groupMemberReader);
+  }
+
+  public static AuthorizationReader createAuthorizationReader(
+      final DocumentBasedSearchClient client) {
+    final var indexDescriptors = new IndexDescriptors("", true);
+    return new AuthorizationDocumentReader(
+        new SearchClientBasedQueryExecutor(
+            client, ServiceTransformers.newInstance(indexDescriptors)));
   }
 
   public static OpensearchSearchClient createLowLevelOpensearchSearchClient(

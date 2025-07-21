@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
@@ -112,7 +112,7 @@ public class MappingRuleController {
         ResponseMapper::toMappingUpdateResponse);
   }
 
-  private ResponseEntity<MappingRuleSearchQueryResult> search(final MappingQuery query) {
+  private ResponseEntity<MappingRuleSearchQueryResult> search(final MappingRuleQuery query) {
     try {
       final var result =
           mappingServices

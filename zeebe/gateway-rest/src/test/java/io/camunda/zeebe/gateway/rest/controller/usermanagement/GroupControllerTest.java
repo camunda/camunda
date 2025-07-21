@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration.GROUPS_API_DISABLED_ERROR_MESSAGE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -44,6 +45,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 public class GroupControllerTest {
 
@@ -61,9 +63,10 @@ public class GroupControllerTest {
           "type": "about:blank",
           "status": 403,
           "title": "Access issue",
-          "detail": "Due to security configuration, %s endpoint is not accessible",
-          "instance": "%s"
-        }""";
+          "detail": "%%s endpoint is not accessible: %s",
+          "instance": "%%s"
+        }"""
+            .formatted(GROUPS_API_DISABLED_ERROR_MESSAGE);
 
     @Test
     void shouldReturnErrorOnCreate() {
@@ -83,7 +86,8 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL));
+          .json(
+              FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -105,7 +109,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -122,7 +126,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -141,7 +145,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -159,7 +163,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -177,7 +181,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
 
     @Test
@@ -197,7 +201,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri), JsonCompareMode.STRICT);
     }
   }
 
@@ -749,7 +753,7 @@ public class GroupControllerTest {
     void shouldReturnErrorForProvidingInvalidMappingIdWhenAddingToGroup() {
       // given
       final String groupId = Strings.newRandomValidIdentityId();
-      final String mappingId = "mappingId!";
+      final String mappingId = "mappingRuleId!";
       final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
 
       // when
@@ -768,7 +772,7 @@ public class GroupControllerTest {
                 "type": "about:blank",
                 "status": 400,
                 "title": "INVALID_ARGUMENT",
-                "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
                   .formatted(IdentifierPatterns.ID_PATTERN, path));
@@ -969,7 +973,7 @@ public class GroupControllerTest {
     void shouldReturnErrorForProvidingInvalidMappingIdWhenRemovingFromGroup() {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
-      final var mappingId = "mappingId!";
+      final var mappingId = "mappingRuleId!";
       final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
 
       // when
@@ -987,7 +991,7 @@ public class GroupControllerTest {
                   "type": "about:blank",
                   "status": 400,
                   "title": "INVALID_ARGUMENT",
-                  "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+                  "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
                   .formatted(IdentifierPatterns.ID_PATTERN, path));

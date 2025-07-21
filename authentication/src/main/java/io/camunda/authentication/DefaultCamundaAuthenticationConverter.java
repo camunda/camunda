@@ -9,6 +9,7 @@ package io.camunda.authentication;
 
 import io.camunda.authentication.entity.CamundaOAuthPrincipal;
 import io.camunda.authentication.entity.CamundaPrincipal;
+import io.camunda.authentication.exception.CamundaAuthenticationException;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthentication.Builder;
@@ -18,19 +19,38 @@ import io.camunda.zeebe.auth.Authorization;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 
 public class DefaultCamundaAuthenticationConverter
     implements CamundaAuthenticationConverter<Authentication> {
 
+  private static final Logger LOG =
+      LoggerFactory.getLogger(DefaultCamundaAuthenticationConverter.class);
+
   @Override
-  public CamundaAuthentication convert(final Authentication springBasedAuthentication) {
-    return Optional.ofNullable(springBasedAuthentication)
+  public boolean supports(final Authentication authentication) {
+    return Optional.ofNullable(authentication)
         .map(Authentication::getPrincipal)
         .filter(CamundaPrincipal.class::isInstance)
+        .isPresent();
+  }
+
+  @Override
+  public CamundaAuthentication convert(final Authentication authentication) {
+    return Optional.of(authentication)
+        .map(Authentication::getPrincipal)
         .map(CamundaPrincipal.class::cast)
         .map(this::convertCamundaPrincipal)
-        .orElseGet(CamundaAuthentication::none);
+        .orElseThrow(
+            () -> {
+              final var message =
+                  "Failed to convert Spring Authentication '%s' authentication to a Camunda Authentication"
+                      .formatted(authentication.getClass().getSimpleName());
+              LOG.error(message);
+              return new CamundaAuthenticationException(message);
+            });
   }
 
   private CamundaAuthentication convertCamundaPrincipal(final CamundaPrincipal camundaPrincipal) {

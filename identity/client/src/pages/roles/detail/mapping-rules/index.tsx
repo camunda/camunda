@@ -65,7 +65,7 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
     return (
       <>
         <C3EmptyState
-          heading={t("assignMappingsToRole")}
+          heading={t("assignMappingRulesToRole")}
           description={t("accessDisclaimer")}
           button={{
             label: t("assignMapping"),

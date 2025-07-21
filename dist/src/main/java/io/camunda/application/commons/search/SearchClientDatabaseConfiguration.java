@@ -11,7 +11,19 @@ import io.camunda.application.commons.condition.ConditionalOnDatabaseNone;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
-import io.camunda.search.clients.impl.NoopSearchClientsProxy;
+import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.clients.auth.AnonymousResourceAccessController;
+import io.camunda.search.clients.auth.DefaultResourceAccessProvider;
+import io.camunda.search.clients.auth.DefaultTenantAccessProvider;
+import io.camunda.search.clients.auth.DisabledResourceAccessProvider;
+import io.camunda.search.clients.auth.DisabledTenantAccessProvider;
+import io.camunda.search.clients.auth.DocumentBasedResourceAccessController;
+import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
+import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
+import io.camunda.search.clients.reader.AuthorizationReader;
+import io.camunda.search.clients.reader.SearchClientReaders;
+import io.camunda.search.clients.reader.impl.NoopAuthorizationReader;
+import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -19,8 +31,13 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.search.rdbms.RdbmsSearchClient;
+import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.reader.ResourceAccessController;
+import io.camunda.security.reader.ResourceAccessProvider;
+import io.camunda.security.reader.TenantAccessProvider;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -65,19 +82,85 @@ public class SearchClientDatabaseConfiguration {
 
   @Bean
   @ConditionalOnBean(DocumentBasedSearchClient.class)
-  public DocumentBasedSearchClients documentBasedSearchClients(
+  public SearchClientBasedQueryExecutor searchClientBasedQueryExecutor(
       final DocumentBasedSearchClient searchClient,
       final ConnectConfiguration connectConfiguration) {
-    final IndexDescriptors indexDescriptors =
+    final var descriptors =
         new IndexDescriptors(
             connectConfiguration.getIndexPrefix(),
             connectConfiguration.getTypeEnum().isElasticSearch());
-    return new DocumentBasedSearchClients(searchClient, indexDescriptors);
+    final var transformers = ServiceTransformers.newInstance(descriptors);
+    return new SearchClientBasedQueryExecutor(searchClient, transformers);
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "camunda.security.authorizations",
+      name = "enabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  public ResourceAccessProvider resourceAccessProvider(final AuthorizationChecker checker) {
+    return new DefaultResourceAccessProvider(checker);
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "camunda.security.authorizations",
+      name = "enabled",
+      havingValue = "false")
+  public ResourceAccessProvider disabledResourceAccessProvider() {
+    return new DisabledResourceAccessProvider();
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "camunda.security.multiTenancy",
+      name = "enabled",
+      havingValue = "true")
+  public TenantAccessProvider tenantAccessProvider() {
+    return new DefaultTenantAccessProvider();
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      prefix = "camunda.security.multiTenancy",
+      name = "enabled",
+      havingValue = "false",
+      matchIfMissing = true)
+  public TenantAccessProvider disabledTenantAccessProvider() {
+    return new DisabledTenantAccessProvider();
+  }
+
+  @Bean
+  public ResourceAccessController anonymousResourceAccessController() {
+    return new AnonymousResourceAccessController();
+  }
+
+  @Bean
+  @ConditionalOnBean(DocumentBasedSearchClient.class)
+  public ResourceAccessController documentBasedResourceAccessController(
+      final ResourceAccessProvider resourceAccessProvider,
+      final TenantAccessProvider tenantAccessProvider) {
+    return new DocumentBasedResourceAccessController(resourceAccessProvider, tenantAccessProvider);
+  }
+
+  @Bean
+  @ConditionalOnBean(DocumentBasedSearchClient.class)
+  public DocumentBasedSearchClients documentBasedSearchClients(
+      final SearchClientReaders readers, final List<ResourceAccessController> controllers) {
+    return new DocumentBasedSearchClients(
+        readers, new ResourceAccessDelegatingController(controllers), null);
   }
 
   @Bean
   @ConditionalOnDatabaseNone
-  public NoopSearchClientsProxy noopSearchClientsProxy() {
-    return new NoopSearchClientsProxy();
+  public NoDBSearchClientsProxy noDBSearchClientsProxy() {
+    return new NoDBSearchClientsProxy();
+  }
+
+  @Bean
+  @ConditionalOnDatabaseNone
+  public AuthorizationReader authorizationReader() {
+    return new NoopAuthorizationReader();
   }
 }

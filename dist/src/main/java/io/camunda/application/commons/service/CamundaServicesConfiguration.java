@@ -19,7 +19,7 @@ import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.JobSearchClient;
-import io.camunda.search.clients.MappingSearchClient;
+import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.clients.MessageSubscriptionSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
@@ -30,6 +30,7 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AdHocSubProcessActivityServices;
@@ -306,8 +307,9 @@ public class CamundaServicesConfiguration {
   public MappingServices mappingServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final MappingSearchClient mappingSearchClient) {
-    return new MappingServices(brokerClient, securityContextProvider, mappingSearchClient, null);
+      final MappingRuleSearchClient mappingRuleSearchClient) {
+    return new MappingServices(
+        brokerClient, securityContextProvider, mappingRuleSearchClient, null);
   }
 
   @Bean
@@ -327,9 +329,8 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public AuthorizationChecker authorizationChecker(
-      final AuthorizationSearchClient authorizationSearchClient) {
-    return new AuthorizationChecker(authorizationSearchClient);
+  public AuthorizationChecker authorizationChecker(final AuthorizationReader authorizationReader) {
+    return new AuthorizationChecker(authorizationReader);
   }
 
   @Bean

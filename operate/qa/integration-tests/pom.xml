@@ -56,12 +56,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-services</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
       <scope>test</scope>
     </dependency>
@@ -505,13 +499,6 @@
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-annotations-api</artifactId>
       <version>11.0.9</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>configuration</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

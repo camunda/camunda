@@ -32,12 +32,14 @@ import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationSuspendInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SuspendProcessInstanceInstruction;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -129,6 +131,17 @@ public final class CreateProcessInstanceCommandImpl
     httpRequestObject.addStartInstructionsItem(
         new io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction()
             .elementId(elementId));
+    return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 suspendAfterElement(final String elementId) {
+    grpcRequestObjectBuilder.addRuntimeInstructions(
+        GatewayOuterClass.ProcessInstanceCreationRuntimeInstruction.newBuilder()
+            .setSuspend(
+                SuspendProcessInstanceInstruction.newBuilder().setAfterElementId(elementId)));
+    httpRequestObject.addRuntimeInstructionsItem(
+        new ProcessInstanceCreationSuspendInstruction().afterElementId(elementId));
     return this;
   }
 

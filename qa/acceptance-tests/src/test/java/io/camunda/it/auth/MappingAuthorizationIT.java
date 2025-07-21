@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.MappingDefinition;
+import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestMapping;
 import io.camunda.qa.util.auth.TestUser;
@@ -71,11 +71,11 @@ class MappingAuthorizationIT {
   private static final TestUser UNAUTHORIZED_USER =
       new TestUser(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
 
-  @MappingDefinition
+  @MappingRuleDefinition
   private static final TestMapping MAPPING_1 =
       new TestMapping("mapping1", "test-name", "test-value");
 
-  @MappingDefinition
+  @MappingRuleDefinition
   private static final TestMapping MAPPING_2 =
       new TestMapping("mapping2", "test-name2", "test-value2");
 

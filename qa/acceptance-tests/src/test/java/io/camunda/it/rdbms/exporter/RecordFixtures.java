@@ -249,12 +249,12 @@ public class RecordFixtures {
         .build();
   }
 
-  protected static ImmutableRecord<RecordValue> getUserTaskCreatedRecord(final Long position) {
+  protected static ImmutableRecord<RecordValue> getUserTaskCreatingRecord(final Long position) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.USER_TASK);
 
     return ImmutableRecord.builder()
         .from(recordValueRecord)
-        .withIntent(UserTaskIntent.CREATED)
+        .withIntent(UserTaskIntent.CREATING)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
         .withPartitionId(1)
