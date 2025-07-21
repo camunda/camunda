@@ -9,7 +9,9 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.prefix;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
@@ -46,11 +48,19 @@ public class FlownodeInstanceFilterTransformer
     ofNullable(stringTerms(FLOW_NODE_ID, filter.flowNodeIds())).ifPresent(queries::add);
     ofNullable(stringTerms(FLOW_NODE_NAME, filter.flowNodeNames())).ifPresent(queries::add);
     ofNullable(longTerms(INCIDENT_KEY, filter.incidentKeys())).ifPresent(queries::add);
-    ofNullable(stringTerms(TREE_PATH, filter.treePaths())).ifPresent(queries::add);
     ofNullable(filter.hasIncident()).ifPresent(f -> queries.add(term(INCIDENT, f)));
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
     queries.addAll(dateTimeOperations(START_DATE, filter.startDateOperations()));
     queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
+    ofNullable(intTerms(LEVEL, filter.levels())).ifPresent(queries::add);
+
+    // Using prefix query on treePath only when needed for scopeKey fallback.
+    // This can be removed once scopeKey is universally populated (post-8.8).
+    if (filter.useTreePathPrefix() != null && filter.useTreePathPrefix()) {
+      ofNullable(prefix(TREE_PATH, filter.treePaths().getFirst())).ifPresent(queries::add);
+    } else {
+      ofNullable(stringTerms(TREE_PATH, filter.treePaths())).ifPresent(queries::add);
+    }
     return and(queries);
   }
 
