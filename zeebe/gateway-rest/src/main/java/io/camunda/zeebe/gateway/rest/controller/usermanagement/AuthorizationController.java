@@ -35,7 +35,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/authorizations")
 public class AuthorizationController {
   private final AuthorizationServices authorizationServices;
@@ -55,6 +54,7 @@ public class AuthorizationController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{authorizationKey}")
   public ResponseEntity<Object> getAuthorization(@PathVariable final long authorizationKey) {
     try {
@@ -87,6 +87,7 @@ public class AuthorizationController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<AuthorizationSearchResult> searchAuthorizations(
       @RequestBody(required = false) final AuthorizationSearchQuery query) {
