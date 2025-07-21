@@ -19,6 +19,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
@@ -34,7 +35,14 @@ import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
@@ -128,31 +136,120 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             });
   }
 
-  @Test
-  public void shouldQueryByTaskStates() {
+  static Stream<Arguments> provideStateOperations() {
+    return Stream.of(
+        stateOperationCase(
+            "eq:CREATED",
+            Operation.eq("CREATED"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchTermQuery.class,
+                        term -> {
+                          assertThat(term.field()).isEqualTo("state");
+                          assertThat(term.value().stringValue()).isEqualTo("CREATED");
+                        })),
+        stateOperationCase(
+            "neq:COMPLETED",
+            Operation.neq("COMPLETED"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertThat(mustNotQuery)
+                                            .isInstanceOfSatisfying(
+                                                SearchTermQuery.class,
+                                                term -> {
+                                                  assertThat(term.field()).isEqualTo("state");
+                                                  assertThat(term.value().stringValue())
+                                                      .isEqualTo("COMPLETED");
+                                                })))),
+        stateOperationCase(
+            "exists:true",
+            Operation.exists(true),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchExistsQuery.class,
+                        existsQuery -> assertThat(existsQuery.field()).isEqualTo("state"))),
+        stateOperationCase(
+            "exists:false",
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertThat(mustNotQuery)
+                                            .isInstanceOfSatisfying(
+                                                SearchExistsQuery.class,
+                                                existsQuery ->
+                                                    assertThat(existsQuery.field())
+                                                        .isEqualTo("state"))))),
+        stateOperationCase(
+            "in:[CREATING,UPDATING]",
+            Operation.in("CREATING", "UPDATING"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchTermsQuery.class,
+                        term -> {
+                          assertThat(term.field()).isEqualTo("state");
+                          assertThat(term.values())
+                              .extracting(TypedValue::value)
+                              .containsExactly("CREATING", "UPDATING");
+                        })),
+        stateOperationCase(
+            "like:CREAT*",
+            Operation.like("CREAT*"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchWildcardQuery.class,
+                        wildcardQuery -> {
+                          assertThat(wildcardQuery.field()).isEqualTo("state");
+                          assertThat(wildcardQuery.value()).isEqualTo("CREAT*");
+                        })));
+  }
+
+  private static Arguments stateOperationCase(
+      final String description,
+      final Operation<String> operation,
+      final Consumer<SearchQueryOption> queryAssertion) {
+
+    return Arguments.of(
+        Named.of("state(" + description + ")", operation),
+        Named.of("assert " + description, queryAssertion));
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideStateOperations")
+  @DisplayName("Should transform state operations into correct search query")
+  void shouldTransformStateOperationsToSearchQuery(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+
     // given
-    final var filter =
-        FilterBuilders.userTask(
-            (f) -> f.stateOperations(Operation.in("CREATING", "UPDATING", "ASSIGNING")));
+    final var filter = FilterBuilders.userTask(f -> f.stateOperations(operation));
 
     // when
     final var searchRequest = transformQuery(filter);
 
     // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
+    assertThat(searchRequest.queryOption())
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
-            (t) ->
-                assertThat(t.must().getFirst().queryOption())
-                    .isInstanceOfSatisfying(
-                        SearchTermsQuery.class,
-                        (term) -> {
-                          assertThat(term.field()).isEqualTo("state");
-                          assertThat(term.values())
-                              .extracting(TypedValue::value)
-                              .containsExactly("CREATING", "UPDATING", "ASSIGNING");
-                        }));
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
   }
 
   @Test
