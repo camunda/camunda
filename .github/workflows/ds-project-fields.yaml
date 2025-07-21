@@ -3,6 +3,9 @@
 # type: CI
 # owner: @camunda/zeebe-distributed-platform-team
 name: Update Distributed Systems Project Fields
+permissions:
+  contents: read
+  issues: write
 on:
   issues:
     types:
