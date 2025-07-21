@@ -81,7 +81,7 @@ public record VariableDbModel(
     if (byteLimit != null
         && type == ValueTypeEnum.STRING
         && value != null
-        && value.getBytes().length > byteLimit) {
+        && value.getBytes(StandardCharsets.UTF_8).length > byteLimit) {
 
       return new VariableDbModel(
           variableKey,
