@@ -26,16 +26,15 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    final var restoreConfiguration = new RestoreConfiguration(true, List.of("lost+found"));
     final var restoreManager =
         new RestoreManager(
-            configuration, restoreConfiguration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when
     Files.createDirectory(dir.resolve("other-data"));
 
     // then
-    assertThatThrownBy(() -> restoreManager.restore(1L, false))
+    assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of()))
         .isInstanceOf(DirectoryNotEmptyException.class);
   }
 
@@ -44,16 +43,15 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    final var restoreConfiguration = new RestoreConfiguration(true, List.of("lost+found"));
     final var restoreManager =
         new RestoreManager(
-            configuration, restoreConfiguration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when
     Files.createDirectory(dir.resolve("lost+found"));
 
     // then
-    assertThatThrownBy(() -> restoreManager.restore(1L, false))
+    assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of()))
         .hasRootCauseInstanceOf(BackupNotFoundException.class);
   }
 
@@ -62,10 +60,9 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    final var restoreConfiguration = new RestoreConfiguration(true, List.of("lost+found", ".DS_Store", "Thumbs.db"));
     final var restoreManager =
         new RestoreManager(
-            configuration, restoreConfiguration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when - create ignored files
     Files.createDirectory(dir.resolve("lost+found"));
@@ -73,7 +70,9 @@ final class RestoreManagerTest {
     Files.createFile(dir.resolve("Thumbs.db"));
 
     // then - should not fail because all files are ignored
-    assertThatThrownBy(() -> restoreManager.restore(1L, false))
+    assertThatThrownBy(
+            () ->
+                restoreManager.restore(1L, false, List.of("lost+found", ".DS_Store", "Thumbs.db")))
         .hasRootCauseInstanceOf(BackupNotFoundException.class);
   }
 
@@ -82,18 +81,16 @@ final class RestoreManagerTest {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
-    final var restoreConfig = new RestoreCfg();
-    restoreConfig.setIgnoreFilesInTarget(List.of("lost+found"));
     final var restoreManager =
         new RestoreManager(
-            configuration, restoreConfig, new TestRestorableBackupStore(), new SimpleMeterRegistry());
+            configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
 
     // when - create ignored and non-ignored files
     Files.createDirectory(dir.resolve("lost+found"));
     Files.createFile(dir.resolve("some-data-file"));
 
     // then - should fail because some-data-file is not ignored
-    assertThatThrownBy(() -> restoreManager.restore(1L, false))
+    assertThatThrownBy(() -> restoreManager.restore(1L, false, List.of("lost+found")))
         .isInstanceOf(DirectoryNotEmptyException.class);
   }
 }
