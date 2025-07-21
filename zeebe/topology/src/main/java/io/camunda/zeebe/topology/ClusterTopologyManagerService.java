@@ -77,8 +77,8 @@ public final class ClusterTopologyManagerService implements TopologyUpdateNotifi
     topologyFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterTopology =
         PersistedClusterTopology.ofFile(topologyFile, new ProtoBufSerializer());
-    gossipActor = new Actor() {};
-    managerActor = new Actor() {};
+    gossipActor = Actor.newActor().name("ClusterConfigGossip").build();
+    managerActor = Actor.newActor().name("ClusterConfigManager").build();
     topologyMetrics = new TopologyMetrics(meterRegistry);
     topologyManagerMetrics = new TopologyManagerMetrics(meterRegistry);
     clusterTopologyManager =
