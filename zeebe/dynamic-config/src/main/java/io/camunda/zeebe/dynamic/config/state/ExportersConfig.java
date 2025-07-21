@@ -43,6 +43,14 @@ public record ExportersConfig(Map<String, ExporterState> exporters) {
             Optional.empty()));
   }
 
+  public ExportersConfig deleteExporter(final String exporterName) {
+    final var newExporters =
+        exporters.entrySet().stream()
+            .filter(entry -> !entry.getKey().equals(exporterName))
+            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+    return new ExportersConfig(newExporters);
+  }
+
   public ExportersConfig disableExporters(final Collection<String> exporterNames) {
     final var builder = ImmutableMap.<String, ExporterState>builder().putAll(exporters);
 
