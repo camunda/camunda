@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -115,11 +114,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   static Stream<Arguments> provideStateOperations() {
     return Stream.of(
         stateOperationCase(
-            "eq:CREATED",
-            Operation.eq("CREATED"),
-            query -> assertSearchTermQuery(query, "state", "CREATED")),
+            Operation.eq("CREATED"), query -> assertSearchTermQuery(query, "state", "CREATED")),
         stateOperationCase(
-            "neq:COMPLETED",
             Operation.neq("COMPLETED"),
             query ->
                 assertThat(query)
@@ -133,10 +129,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                                     mustNotQuery ->
                                         assertSearchTermQuery(
                                             mustNotQuery, "state", "COMPLETED")))),
+        stateOperationCase(Operation.exists(true), query -> assertExistsQuery(query, "state")),
         stateOperationCase(
-            "exists:true", Operation.exists(true), query -> assertExistsQuery(query, "state")),
-        stateOperationCase(
-            "exists:false",
             Operation.exists(false),
             query ->
                 assertThat(query)
@@ -149,11 +143,9 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                                 .satisfies(
                                     mustNotQuery -> assertExistsQuery(mustNotQuery, "state")))),
         stateOperationCase(
-            "in:[CREATING,UPDATING]",
             Operation.in("CREATING", "UPDATING"),
             query -> assertSearchTermsQuery(query, "state", "CREATING", "UPDATING")),
         stateOperationCase(
-            "like:CREAT*",
             Operation.like("CREAT*"),
             query ->
                 assertThat(query)
@@ -166,13 +158,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   private static Arguments stateOperationCase(
-      final String description,
-      final Operation<String> operation,
-      final Consumer<SearchQueryOption> queryAssertion) {
-
-    return Arguments.of(
-        Named.of("state(" + description + ")", operation),
-        Named.of("assert " + description, queryAssertion));
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
   }
 
   @ParameterizedTest(name = "[{index}] should map {0}")
