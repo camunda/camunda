@@ -30,15 +30,9 @@ public class FormDbReader extends AbstractEntityReader<FormEntity> implements Fo
     this.formMapper = formMapper;
   }
 
-  public Optional<FormEntity> findOne(final Long formKey) {
-    LOG.trace("[RDBMS DB] Search for form with form key {}", formKey);
-    final SearchQueryResult<FormEntity> queryResult =
-        search(FormQuery.of(b -> b.filter(f -> f.formKeys(formKey))));
-    return Optional.ofNullable(queryResult.items()).flatMap(hits -> hits.stream().findFirst());
-  }
-
-  public SearchQueryResult<FormEntity> search(final FormQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public FormEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
   }
 
   @Override
@@ -54,5 +48,16 @@ public class FormDbReader extends AbstractEntityReader<FormEntity> implements Fo
     final var hits = formMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<FormEntity> findOne(final Long formKey) {
+    LOG.trace("[RDBMS DB] Search for form with form key {}", formKey);
+    final SearchQueryResult<FormEntity> queryResult =
+        search(FormQuery.of(b -> b.filter(f -> f.formKeys(formKey))));
+    return Optional.ofNullable(queryResult.items()).flatMap(hits -> hits.stream().findFirst());
+  }
+
+  public SearchQueryResult<FormEntity> search(final FormQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

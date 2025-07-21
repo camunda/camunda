@@ -47,9 +47,11 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
   }
 
   public FormEntity getByKey(final Long key) {
-    return search(FormQuery.of(b -> b.filter(f -> f.formKeys(key)).singleResult()))
-        .items()
-        .getFirst();
+    return executeSearchRequest(
+        () ->
+            formSearchClient
+                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .getForm(key));
   }
 
   public Optional<FormEntity> getLatestVersionByFormIdAndTenantId(

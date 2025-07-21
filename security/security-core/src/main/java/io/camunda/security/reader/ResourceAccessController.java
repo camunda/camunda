@@ -51,7 +51,7 @@ public interface ResourceAccessController {
 
   /**
    * Returns true if the given {@link io.camunda.security.auth.CamundaAuthentication authentication}
-   * is anonymously. *
+   * is anonymous. *
    */
   default boolean isAnonymousAuthentication(final CamundaAuthentication authentication) {
     final var claims =

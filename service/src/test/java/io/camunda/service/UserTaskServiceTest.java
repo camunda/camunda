@@ -8,19 +8,18 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.flownodeInstanceSearchQuery;
-import static io.camunda.search.query.SearchQueryBuilders.formSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
-import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
@@ -52,7 +51,7 @@ public class UserTaskServiceTest {
 
   private UserTaskServices services;
   private UserTaskSearchClient client;
-  private FormSearchClient formSearchClient;
+  private FormServices formServices;
   private FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
   private VariableSearchClient variableSearchClient;
   private ProcessCache processCache;
@@ -62,7 +61,7 @@ public class UserTaskServiceTest {
   @BeforeEach
   public void before() {
     client = mock(UserTaskSearchClient.class);
-    formSearchClient = mock(FormSearchClient.class);
+    formServices = mock(FormServices.class);
     flowNodeInstanceSearchClient = mock(FlowNodeInstanceSearchClient.class);
     variableSearchClient = mock(VariableSearchClient.class);
     processCache = mock(ProcessCache.class);
@@ -73,14 +72,15 @@ public class UserTaskServiceTest {
             mock(BrokerClient.class),
             securityContextProvider,
             client,
-            formSearchClient,
+            formServices,
             flowNodeInstanceSearchClient,
             variableSearchClient,
             processCache,
             authentication);
 
     when(client.withSecurityContext(any())).thenReturn(client);
-    when(formSearchClient.withSecurityContext(any())).thenReturn(formSearchClient);
+    when(formServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(formServices);
     when(flowNodeInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(flowNodeInstanceSearchClient);
     when(variableSearchClient.withSecurityContext(any())).thenReturn(variableSearchClient);
@@ -161,10 +161,8 @@ public class UserTaskServiceTest {
       final var form =
           Instancio.of(FormEntity.class).set(field(FormEntity::formKey), entity.formKey()).create();
 
-      when(formSearchClient.searchForms(
-              formSearchQuery(q -> q.filter(f -> f.formKeys(entity.formKey())).singleResult())))
-          .thenReturn(SearchQueryResult.of(form));
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(formServices.getByKey(eq(entity.formKey()))).thenReturn(form);
 
       // when
       final var result = services.getUserTaskForm(entity.userTaskKey());

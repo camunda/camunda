@@ -140,6 +140,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public FormEntity getForm(final long key) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
     return SearchQueryResult.empty();
   }

@@ -216,7 +216,7 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
-      final FormSearchClient formSearchClient,
+      final FormServices formServices,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final VariableSearchClient variableSearchClient,
       final ProcessCache processCache) {
@@ -224,7 +224,7 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         userTaskSearchClient,
-        formSearchClient,
+        formServices,
         flowNodeInstanceSearchClient,
         variableSearchClient,
         processCache,

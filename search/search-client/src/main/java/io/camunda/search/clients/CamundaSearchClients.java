@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND;
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
 
 import io.camunda.search.clients.reader.SearchClientReaders;
@@ -129,13 +130,13 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public MappingRuleEntity getMappingRule(final String id) {
     return doGetWithReader(readers.mappingRuleReader(), id)
-        .orElseThrow(() -> entityByIdNotFoundException("Mapping", id));
+        .orElseThrow(() -> entityByIdNotFoundException("Mapping Rule", id));
   }
 
   @Override
   public SearchQueryResult<MappingRuleEntity> searchMappingRules(
-      final MappingRuleQuery mappingQuery) {
-    return doSearchWithReader(readers.mappingRuleReader(), mappingQuery);
+      final MappingRuleQuery mappingRuleQuery) {
+    return doSearchWithReader(readers.mappingRuleReader(), mappingRuleQuery);
   }
 
   @Override
@@ -185,6 +186,12 @@ public class CamundaSearchClients implements SearchClientsProxy {
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery query) {
     return doSearchWithReader(readers.flowNodeInstanceReader(), query);
+  }
+
+  @Override
+  public FormEntity getForm(final long key) {
+    return doGetWithReader(readers.formReader(), key)
+        .orElseThrow(() -> entityByKeyNotFoundException("Form", key));
   }
 
   @Override
@@ -446,6 +453,6 @@ public class CamundaSearchClients implements SearchClientsProxy {
   protected CamundaSearchException entityByIdNotFoundException(
       final String entityType, final String id) {
     return new CamundaSearchException(
-        ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(entityType, id), Reason.NOT_FOUND);
+        ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(entityType, id), Reason.NOT_FOUND);
   }
 }

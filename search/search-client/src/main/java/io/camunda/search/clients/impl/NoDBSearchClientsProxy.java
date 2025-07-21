@@ -138,6 +138,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public FormEntity getForm(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
     throw new NoSecondaryStorageException();
   }

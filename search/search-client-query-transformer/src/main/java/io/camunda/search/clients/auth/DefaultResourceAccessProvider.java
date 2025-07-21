@@ -78,7 +78,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
                         .orElseThrow(
                             () ->
                                 new CamundaSearchException(
-                                    "Expected one resource id to check resource access, but received no or more than one")));
+                                    "Expected one resource id to check resource access, but received none or more than one")));
 
     return hasResourceAccessByResourceId(authentication, requiredAuthorization, resourceId);
   }

@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -35,7 +34,6 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -119,11 +117,10 @@ public class UserTaskController {
   public ResponseEntity<FormResult> getFormByUserTaskKey(
       @PathVariable("userTaskKey") final long userTaskKey) {
     try {
-      final Optional<FormEntity> form =
-          userTaskServices
-              .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .getUserTaskForm(userTaskKey);
-      return form.map(SearchQueryResponseMapper::toFormItem)
+      return userTaskServices
+          .withAuthentication(authenticationProvider.getCamundaAuthentication())
+          .getUserTaskForm(userTaskKey)
+          .map(SearchQueryResponseMapper::toFormItem)
           .map(ResponseEntity::ok)
           .orElseGet(() -> ResponseEntity.noContent().build());
     } catch (final Exception e) {
