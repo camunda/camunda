@@ -141,14 +141,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         stateOperationCase(
             "eq:CREATED",
             Operation.eq("CREATED"),
-            query ->
-                assertThat(query)
-                    .isInstanceOfSatisfying(
-                        SearchTermQuery.class,
-                        term -> {
-                          assertThat(term.field()).isEqualTo("state");
-                          assertThat(term.value().stringValue()).isEqualTo("CREATED");
-                        })),
+            query -> assertSearchTermQuery(query, "state", "CREATED")),
         stateOperationCase(
             "neq:COMPLETED",
             Operation.neq("COMPLETED"),
@@ -162,22 +155,10 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                                 .extracting(SearchQuery::queryOption)
                                 .satisfies(
                                     mustNotQuery ->
-                                        assertThat(mustNotQuery)
-                                            .isInstanceOfSatisfying(
-                                                SearchTermQuery.class,
-                                                term -> {
-                                                  assertThat(term.field()).isEqualTo("state");
-                                                  assertThat(term.value().stringValue())
-                                                      .isEqualTo("COMPLETED");
-                                                })))),
+                                        assertSearchTermQuery(
+                                            mustNotQuery, "state", "COMPLETED")))),
         stateOperationCase(
-            "exists:true",
-            Operation.exists(true),
-            query ->
-                assertThat(query)
-                    .isInstanceOfSatisfying(
-                        SearchExistsQuery.class,
-                        existsQuery -> assertThat(existsQuery.field()).isEqualTo("state"))),
+            "exists:true", Operation.exists(true), query -> assertExistsQuery(query, "state")),
         stateOperationCase(
             "exists:false",
             Operation.exists(false),
@@ -190,26 +171,11 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                                 .singleElement()
                                 .extracting(SearchQuery::queryOption)
                                 .satisfies(
-                                    mustNotQuery ->
-                                        assertThat(mustNotQuery)
-                                            .isInstanceOfSatisfying(
-                                                SearchExistsQuery.class,
-                                                existsQuery ->
-                                                    assertThat(existsQuery.field())
-                                                        .isEqualTo("state"))))),
+                                    mustNotQuery -> assertExistsQuery(mustNotQuery, "state")))),
         stateOperationCase(
             "in:[CREATING,UPDATING]",
             Operation.in("CREATING", "UPDATING"),
-            query ->
-                assertThat(query)
-                    .isInstanceOfSatisfying(
-                        SearchTermsQuery.class,
-                        term -> {
-                          assertThat(term.field()).isEqualTo("state");
-                          assertThat(term.values())
-                              .extracting(TypedValue::value)
-                              .containsExactly("CREATING", "UPDATING");
-                        })),
+            query -> assertSearchTermsQuery(query, "state", "CREATING", "UPDATING")),
         stateOperationCase(
             "like:CREAT*",
             Operation.like("CREAT*"),
@@ -704,5 +670,33 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     final var queryVariant = searchQuery.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
+  }
+
+  private static void assertSearchTermQuery(
+      final SearchQueryOption query, final String field, final String expectedValue) {
+    assertThat(query)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            term -> {
+              assertThat(term.field()).isEqualTo(field);
+              assertThat(term.value().stringValue()).isEqualTo(expectedValue);
+            });
+  }
+
+  private static void assertSearchTermsQuery(
+      final SearchQueryOption query, final String field, final String... expected) {
+    assertThat(query)
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            terms -> {
+              assertThat(terms.field()).isEqualTo(field);
+              assertThat(terms.values()).extracting(TypedValue::value).containsExactly(expected);
+            });
+  }
+
+  private static void assertExistsQuery(final SearchQueryOption query, final String field) {
+    assertThat(query)
+        .isInstanceOfSatisfying(
+            SearchExistsQuery.class, exists -> assertThat(exists.field()).isEqualTo(field));
   }
 }
