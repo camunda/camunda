@@ -32,7 +32,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("v2/incidents")
 public class IncidentController {
 
@@ -61,6 +60,7 @@ public class IncidentController {
                 .resolveIncident(incidentKey, operationReference));
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
       @RequestBody(required = false) final IncidentSearchQuery query) {
@@ -68,6 +68,7 @@ public class IncidentController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{incidentKey}")
   public ResponseEntity<IncidentResult> getByKey(
       @PathVariable("incidentKey") final Long incidentKey) {

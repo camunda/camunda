@@ -36,7 +36,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/mapping-rules")
 public class MappingRuleController {
   private final MappingRuleServices mappingRuleServices;
@@ -74,6 +73,7 @@ public class MappingRuleController {
                 .deleteMappingRule(mappingRuleId));
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{mappingRuleId}")
   public ResponseEntity<MappingRuleResult> getMappingRule(
       @PathVariable final String mappingRuleId) {
@@ -89,6 +89,7 @@ public class MappingRuleController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRules(
       @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {

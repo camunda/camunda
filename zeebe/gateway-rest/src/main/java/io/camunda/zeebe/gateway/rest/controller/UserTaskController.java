@@ -43,7 +43,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping(path = {"/v1/user-tasks", "/v2/user-tasks"})
 public class UserTaskController {
 
@@ -91,6 +90,7 @@ public class UserTaskController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUserTask);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<UserTaskSearchQueryResult> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQuery query) {
@@ -98,6 +98,7 @@ public class UserTaskController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{userTaskKey}")
   public ResponseEntity<UserTaskResult> getByKey(
       @PathVariable("userTaskKey") final Long userTaskKey) {
@@ -113,6 +114,7 @@ public class UserTaskController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{userTaskKey}/form")
   public ResponseEntity<FormResult> getFormByUserTaskKey(
       @PathVariable("userTaskKey") final long userTaskKey) {
@@ -129,6 +131,7 @@ public class UserTaskController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{userTaskKey}/variables/search")
   public ResponseEntity<VariableSearchQueryResult> searchVariables(
       @PathVariable("userTaskKey") final long userTaskKey,

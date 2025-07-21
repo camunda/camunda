@@ -50,7 +50,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequiresSecondaryStorage
 @RequestMapping("/v2/roles")
 public class RoleController {
   private final RoleServices roleServices;
@@ -115,6 +114,7 @@ public class RoleController {
                 .deleteRole(roleId));
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{roleId}")
   public ResponseEntity<Object> getRole(@PathVariable final String roleId) {
     try {
@@ -129,6 +129,7 @@ public class RoleController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<RoleSearchQueryResult> searchRoles(
       @RequestBody(required = false) final RoleSearchQueryRequest query) {
@@ -148,6 +149,7 @@ public class RoleController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/users/search")
   public ResponseEntity<RoleUserSearchResult> searchUsersByRole(
       @PathVariable final String roleId,
@@ -171,6 +173,7 @@ public class RoleController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/clients/search")
   public ResponseEntity<RoleClientSearchResult> searchClientsByRole(
       @PathVariable final String roleId,
@@ -201,6 +204,7 @@ public class RoleController {
         .build();
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/mapping-rules/search")
   public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesByRole(
       @PathVariable final String roleId,
@@ -305,6 +309,7 @@ public class RoleController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/groups/search")
   public ResponseEntity<RoleGroupSearchResult> searchGroupsByRole(
       @PathVariable final String roleId,

@@ -7,6 +7,7 @@
  */
 package io.camunda.service.validation;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.service.exception.SecondaryStorageUnavailableException;
@@ -30,8 +31,8 @@ public class SecondaryStorageValidatorTest {
     // Given
     final SecondaryStorageValidator validator = new SecondaryStorageValidator("elasticsearch");
 
-    // When/Then - should not throw
-    validator.validateSecondaryStorageEnabled();
+    // When/Then
+    assertThatCode(validator::validateSecondaryStorageEnabled).doesNotThrowAnyException();
   }
 
   @Test
@@ -39,7 +40,7 @@ public class SecondaryStorageValidatorTest {
     // Given
     final SecondaryStorageValidator validator = new SecondaryStorageValidator("opensearch");
 
-    // When/Then - should not throw
-    validator.validateSecondaryStorageEnabled();
+    // When/Then
+    assertThatCode(validator::validateSecondaryStorageEnabled).doesNotThrowAnyException();
   }
 }
