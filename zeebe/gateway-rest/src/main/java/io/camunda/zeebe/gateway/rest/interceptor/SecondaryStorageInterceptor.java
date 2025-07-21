@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.gateway.rest.interceptor;
 
-import io.camunda.service.validation.SecondaryStorageValidator;
+import io.camunda.service.exception.SecondaryStorageUnavailableException;
 import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -24,11 +24,11 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class SecondaryStorageInterceptor implements HandlerInterceptor {
 
-  private final SecondaryStorageValidator secondaryStorageValidator;
+  private final boolean secondaryStorageDisabled;
 
-  @Autowired
-  public SecondaryStorageInterceptor(final SecondaryStorageValidator secondaryStorageValidator) {
-    this.secondaryStorageValidator = secondaryStorageValidator;
+  public SecondaryStorageInterceptor(
+      @Value("${camunda.database.type:elasticsearch}") final String databaseType) {
+    secondaryStorageDisabled = "none".equalsIgnoreCase(databaseType);
   }
 
   @Override
@@ -40,8 +40,8 @@ public class SecondaryStorageInterceptor implements HandlerInterceptor {
           handlerMethod.hasMethodAnnotation(RequiresSecondaryStorage.class)
               || handlerMethod.getBeanType().isAnnotationPresent(RequiresSecondaryStorage.class);
 
-      if (requiresSecondaryStorage) {
-        secondaryStorageValidator.validateSecondaryStorageEnabled();
+      if (requiresSecondaryStorage && secondaryStorageDisabled) {
+        throw new SecondaryStorageUnavailableException();
       }
     }
 
