@@ -15,24 +15,24 @@
  */
 package io.camunda.client.impl.search.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.groupSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.tenantGroupSort;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.GroupFilter;
+import io.camunda.client.api.search.filter.TenantGroupFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.sort.GroupSort;
+import io.camunda.client.api.search.response.TenantGroup;
+import io.camunda.client.api.search.sort.TenantGroupSort;
 import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.GroupSearchQueryResult;
 import io.camunda.client.protocol.rest.TenantGroupSearchQueryRequest;
+import io.camunda.client.protocol.rest.TenantGroupSearchResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -58,33 +58,33 @@ public class GroupsByTenantSearchRequestImpl
   }
 
   @Override
-  public FinalSearchRequestStep<Group> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<TenantGroup> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<SearchResponse<Group>> send() {
+  public CamundaFuture<SearchResponse<TenantGroup>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
-    final HttpCamundaFuture<SearchResponse<Group>> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<SearchResponse<TenantGroup>> result = new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/tenants/%s/groups/search", tenantId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        GroupSearchQueryResult.class,
-        SearchResponseMapper::toGroupsResponse,
+        TenantGroupSearchResult.class,
+        SearchResponseMapper::toTenantGroupsResponse,
         result);
     return result;
   }
 
   @Override
-  public GroupsByTenantSearchRequest filter(final GroupFilter value) {
+  public GroupsByTenantSearchRequest filter(final TenantGroupFilter value) {
     // this command does not support filtering
     return this;
   }
 
   @Override
-  public GroupsByTenantSearchRequest filter(final Consumer<GroupFilter> fn) {
+  public GroupsByTenantSearchRequest filter(final Consumer<TenantGroupFilter> fn) {
     // this command does not support filtering
     return this;
   }
@@ -101,7 +101,7 @@ public class GroupsByTenantSearchRequestImpl
   }
 
   @Override
-  public GroupsByTenantSearchRequest sort(final GroupSort value) {
+  public GroupsByTenantSearchRequest sort(final TenantGroupSort value) {
     request.setSort(
         SearchRequestSortMapper.toTenantGroupSearchQuerySortRequest(
             provideSearchRequestProperty(value)));
@@ -109,8 +109,8 @@ public class GroupsByTenantSearchRequestImpl
   }
 
   @Override
-  public GroupsByTenantSearchRequest sort(final Consumer<GroupSort> fn) {
-    return sort(groupSort(fn));
+  public GroupsByTenantSearchRequest sort(final Consumer<TenantGroupSort> fn) {
+    return sort(tenantGroupSort(fn));
   }
 
   @Override

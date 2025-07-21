@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.Group;
+import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -61,23 +61,25 @@ public class GroupsByTenantIntegrationTest {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final List<Group> groups =
+              final List<TenantGroup> groups =
                   camundaClient.newGroupsByTenantSearchRequest(TENANT_ID).send().join().items();
-              assertThat(groups).extracting(Group::getGroupId).contains(A_GROUP_ID, B_GROUP_ID);
+              assertThat(groups)
+                  .extracting(TenantGroup::getGroupId)
+                  .contains(A_GROUP_ID, B_GROUP_ID);
             });
   }
 
   @Test
   void shouldReturnGroupsByTenant() {
-    final List<Group> groups =
+    final List<TenantGroup> groups =
         camundaClient.newGroupsByTenantSearchRequest(TENANT_ID).send().join().items();
     assertThat(groups).hasSize(2);
-    assertThat(groups).extracting(Group::getGroupId).containsExactly(A_GROUP_ID, B_GROUP_ID);
+    assertThat(groups).extracting(TenantGroup::getGroupId).containsExactly(A_GROUP_ID, B_GROUP_ID);
   }
 
   @Test
   void shouldReturnGroupsByTenantSortedByTenantIdDesc() {
-    final List<Group> groups =
+    final List<TenantGroup> groups =
         camundaClient
             .newGroupsByTenantSearchRequest(TENANT_ID)
             .sort(s -> s.groupId().desc())
@@ -85,7 +87,7 @@ public class GroupsByTenantIntegrationTest {
             .join()
             .items();
     assertThat(groups).hasSize(2);
-    assertThat(groups).extracting(Group::getGroupId).containsExactly(B_GROUP_ID, A_GROUP_ID);
+    assertThat(groups).extracting(TenantGroup::getGroupId).containsExactly(B_GROUP_ID, A_GROUP_ID);
   }
 
   @Test

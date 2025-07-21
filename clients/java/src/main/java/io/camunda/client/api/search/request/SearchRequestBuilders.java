@@ -55,6 +55,7 @@ import io.camunda.client.api.search.sort.ProcessInstanceSort;
 import io.camunda.client.api.search.sort.RoleGroupSort;
 import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.api.search.sort.RoleUserSort;
+import io.camunda.client.api.search.sort.TenantGroupSort;
 import io.camunda.client.api.search.sort.TenantSort;
 import io.camunda.client.api.search.sort.TenantUserSort;
 import io.camunda.client.api.search.sort.UserSort;
@@ -102,6 +103,7 @@ import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
 import io.camunda.client.impl.search.sort.RoleGroupSortImpl;
 import io.camunda.client.impl.search.sort.RoleSortImpl;
 import io.camunda.client.impl.search.sort.RoleUserSortImpl;
+import io.camunda.client.impl.search.sort.TenantGroupSortImpl;
 import io.camunda.client.impl.search.sort.TenantSortImpl;
 import io.camunda.client.impl.search.sort.TenantUserSortImpl;
 import io.camunda.client.impl.search.sort.UserSortImpl;
@@ -375,6 +377,12 @@ public final class SearchRequestBuilders {
 
   public static TenantUserSort tenantUserSort(final Consumer<TenantUserSort> fn) {
     final TenantUserSort sort = new TenantUserSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static TenantGroupSort tenantGroupSort(final Consumer<TenantGroupSort> fn) {
+    final TenantGroupSort sort = new TenantGroupSortImpl();
     fn.accept(sort);
     return sort;
   }

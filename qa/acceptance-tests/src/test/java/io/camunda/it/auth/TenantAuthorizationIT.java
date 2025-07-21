@@ -24,6 +24,7 @@ import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
+import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -213,9 +214,9 @@ class TenantAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final SearchResponse<Group> response =
+              final SearchResponse<TenantGroup> response =
                   adminClient.newGroupsByTenantSearchRequest("tenant1").send().join();
-              Assertions.assertThat(response.items().stream().map(Group::getGroupId).toList())
+              Assertions.assertThat(response.items().stream().map(TenantGroup::getGroupId).toList())
                   .contains(groupId);
             });
   }
@@ -223,7 +224,7 @@ class TenantAuthorizationIT {
   @Test
   void searchGroupsByTenantShouldReturnEmptyListIfUnauthorized(
       @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
-    final SearchResponse<Group> response =
+    final SearchResponse<TenantGroup> response =
         camundaClient.newGroupsByTenantSearchRequest("tenant1").send().join();
     Assertions.assertThat(response.items()).isEmpty();
   }

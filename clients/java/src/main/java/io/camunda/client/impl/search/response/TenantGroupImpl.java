@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.request;
+package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.search.filter.TenantGroupFilter;
 import io.camunda.client.api.search.response.TenantGroup;
-import io.camunda.client.api.search.sort.TenantGroupSort;
 
-public interface GroupsByTenantSearchRequest
-    extends TypedSearchRequest<TenantGroupFilter, TenantGroupSort, GroupsByTenantSearchRequest>,
-        FinalSearchRequestStep<TenantGroup> {}
+public class TenantGroupImpl implements TenantGroup {
+
+  private final String groupId;
+
+  public TenantGroupImpl(final String groupId) {
+    this.groupId = groupId;
+  }
+
+  @Override
+  public String getGroupId() {
+    return groupId;
+  }
+}

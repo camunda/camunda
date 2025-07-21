@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.request;
+package io.camunda.client.impl.search.sort;
 
-import io.camunda.client.api.search.filter.TenantGroupFilter;
-import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.client.api.search.sort.TenantGroupSort;
+import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public interface GroupsByTenantSearchRequest
-    extends TypedSearchRequest<TenantGroupFilter, TenantGroupSort, GroupsByTenantSearchRequest>,
-        FinalSearchRequestStep<TenantGroup> {}
+public class TenantGroupSortImpl extends SearchRequestSortBase<TenantGroupSort>
+    implements TenantGroupSort {
+
+  @Override
+  public TenantGroupSort groupId() {
+    return field("groupId");
+  }
+
+  @Override
+  protected TenantGroupSort self() {
+    return this;
+  }
+}

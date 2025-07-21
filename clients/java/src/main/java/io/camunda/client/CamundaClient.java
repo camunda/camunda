@@ -2592,7 +2592,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *  .newGroupsByRoleSearchRequest("roleId")
-   *  .sort((s) -> s.name().asc())
+   *  .sort((s) -> s.groupdId().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
@@ -2608,7 +2608,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *  .newGroupsByTenantSearchRequest("tenantId")
-   *  .sort((s) -> s.name().asc())
+   *  .sort((s) -> s.groupId().desc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
