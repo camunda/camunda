@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
-import io.camunda.db.rdbms.read.service.BatchOperationReader;
+import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStatusUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
@@ -33,13 +33,13 @@ public class BatchOperationWriter {
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationWriter.class);
 
   private final ExecutionQueue executionQueue;
-  private final BatchOperationReader reader;
+  private final BatchOperationDbReader reader;
 
   private final int itemInsertBlockSize;
   private final boolean exportPendingBatchOperationItems;
 
   public BatchOperationWriter(
-      final BatchOperationReader reader,
+      final BatchOperationDbReader reader,
       final ExecutionQueue executionQueue,
       final RdbmsWriterConfig config) {
     this.reader = reader;

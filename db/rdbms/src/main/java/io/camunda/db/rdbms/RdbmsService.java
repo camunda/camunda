@@ -8,26 +8,26 @@
 package io.camunda.db.rdbms;
 
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
-import io.camunda.db.rdbms.read.service.BatchOperationItemReader;
-import io.camunda.db.rdbms.read.service.BatchOperationReader;
-import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
-import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
-import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
-import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
-import io.camunda.db.rdbms.read.service.FormReader;
-import io.camunda.db.rdbms.read.service.GroupReader;
-import io.camunda.db.rdbms.read.service.IncidentReader;
-import io.camunda.db.rdbms.read.service.JobReader;
-import io.camunda.db.rdbms.read.service.MappingRuleReader;
-import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
-import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
-import io.camunda.db.rdbms.read.service.RoleReader;
-import io.camunda.db.rdbms.read.service.SequenceFlowReader;
-import io.camunda.db.rdbms.read.service.TenantReader;
-import io.camunda.db.rdbms.read.service.UsageMetricReader;
-import io.camunda.db.rdbms.read.service.UserReader;
-import io.camunda.db.rdbms.read.service.UserTaskReader;
-import io.camunda.db.rdbms.read.service.VariableReader;
+import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
+import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
+import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
+import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
+import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
+import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
+import io.camunda.db.rdbms.read.service.FormDbReader;
+import io.camunda.db.rdbms.read.service.GroupDbReader;
+import io.camunda.db.rdbms.read.service.IncidentDbReader;
+import io.camunda.db.rdbms.read.service.JobDbReader;
+import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
+import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
+import io.camunda.db.rdbms.read.service.RoleDbReader;
+import io.camunda.db.rdbms.read.service.SequenceFlowDbReader;
+import io.camunda.db.rdbms.read.service.TenantDbReader;
+import io.camunda.db.rdbms.read.service.UsageMetricsDbReader;
+import io.camunda.db.rdbms.read.service.UserDbReader;
+import io.camunda.db.rdbms.read.service.UserTaskDbReader;
+import io.camunda.db.rdbms.read.service.VariableDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.Builder;
@@ -39,50 +39,50 @@ public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
   private final AuthorizationDbReader authorizationReader;
-  private final DecisionDefinitionReader decisionDefinitionReader;
-  private final DecisionInstanceReader decisionInstanceReader;
-  private final DecisionRequirementsReader decisionRequirementsReader;
-  private final FlowNodeInstanceReader flowNodeInstanceReader;
-  private final GroupReader groupReader;
-  private final IncidentReader incidentReader;
-  private final ProcessDefinitionReader processDefinitionReader;
-  private final ProcessInstanceReader processInstanceReader;
-  private final VariableReader variableReader;
-  private final RoleReader roleReader;
-  private final TenantReader tenantReader;
-  private final UserReader userReader;
-  private final UserTaskReader userTaskReader;
-  private final FormReader formReader;
-  private final MappingRuleReader mappingRuleReader;
-  private final BatchOperationReader batchOperationReader;
-  private final SequenceFlowReader sequenceFlowReader;
-  private final BatchOperationItemReader batchOperationItemReader;
-  private final JobReader jobReader;
-  private final UsageMetricReader usageMetricReader;
+  private final DecisionDefinitionDbReader decisionDefinitionReader;
+  private final DecisionInstanceDbReader decisionInstanceReader;
+  private final DecisionRequirementsDbReader decisionRequirementsReader;
+  private final FlowNodeInstanceDbReader flowNodeInstanceReader;
+  private final GroupDbReader groupReader;
+  private final IncidentDbReader incidentReader;
+  private final ProcessDefinitionDbReader processDefinitionReader;
+  private final ProcessInstanceDbReader processInstanceReader;
+  private final VariableDbReader variableReader;
+  private final RoleDbReader roleReader;
+  private final TenantDbReader tenantReader;
+  private final UserDbReader userReader;
+  private final UserTaskDbReader userTaskReader;
+  private final FormDbReader formReader;
+  private final MappingRuleDbReader mappingRuleReader;
+  private final BatchOperationDbReader batchOperationReader;
+  private final SequenceFlowDbReader sequenceFlowReader;
+  private final BatchOperationItemDbReader batchOperationItemReader;
+  private final JobDbReader jobReader;
+  private final UsageMetricsDbReader usageMetricReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
       final AuthorizationDbReader authorizationReader,
-      final DecisionDefinitionReader decisionDefinitionReader,
-      final DecisionInstanceReader decisionInstanceReader,
-      final DecisionRequirementsReader decisionRequirementsReader,
-      final FlowNodeInstanceReader flowNodeInstanceReader,
-      final GroupReader groupReader,
-      final IncidentReader incidentReader,
-      final ProcessDefinitionReader processDefinitionReader,
-      final ProcessInstanceReader processInstanceReader,
-      final VariableReader variableReader,
-      final RoleReader roleReader,
-      final TenantReader tenantReader,
-      final UserReader userReader,
-      final UserTaskReader userTaskReader,
-      final FormReader formReader,
-      final MappingRuleReader mappingRuleReader,
-      final BatchOperationReader batchOperationReader,
-      final SequenceFlowReader sequenceFlowReader,
-      final BatchOperationItemReader batchOperationItemReader,
-      final JobReader jobReader,
-      final UsageMetricReader usageMetricReader) {
+      final DecisionDefinitionDbReader decisionDefinitionReader,
+      final DecisionInstanceDbReader decisionInstanceReader,
+      final DecisionRequirementsDbReader decisionRequirementsReader,
+      final FlowNodeInstanceDbReader flowNodeInstanceReader,
+      final GroupDbReader groupReader,
+      final IncidentDbReader incidentReader,
+      final ProcessDefinitionDbReader processDefinitionReader,
+      final ProcessInstanceDbReader processInstanceReader,
+      final VariableDbReader variableReader,
+      final RoleDbReader roleReader,
+      final TenantDbReader tenantReader,
+      final UserDbReader userReader,
+      final UserTaskDbReader userTaskReader,
+      final FormDbReader formReader,
+      final MappingRuleDbReader mappingRuleReader,
+      final BatchOperationDbReader batchOperationReader,
+      final SequenceFlowDbReader sequenceFlowReader,
+      final BatchOperationItemDbReader batchOperationItemReader,
+      final JobDbReader jobReader,
+      final UsageMetricsDbReader usageMetricReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -111,83 +111,83 @@ public class RdbmsService {
     return authorizationReader;
   }
 
-  public DecisionDefinitionReader getDecisionDefinitionReader() {
+  public DecisionDefinitionDbReader getDecisionDefinitionReader() {
     return decisionDefinitionReader;
   }
 
-  public DecisionInstanceReader getDecisionInstanceReader() {
+  public DecisionInstanceDbReader getDecisionInstanceReader() {
     return decisionInstanceReader;
   }
 
-  public DecisionRequirementsReader getDecisionRequirementsReader() {
+  public DecisionRequirementsDbReader getDecisionRequirementsReader() {
     return decisionRequirementsReader;
   }
 
-  public FlowNodeInstanceReader getFlowNodeInstanceReader() {
+  public FlowNodeInstanceDbReader getFlowNodeInstanceReader() {
     return flowNodeInstanceReader;
   }
 
-  public GroupReader getGroupReader() {
+  public GroupDbReader getGroupReader() {
     return groupReader;
   }
 
-  public IncidentReader getIncidentReader() {
+  public IncidentDbReader getIncidentReader() {
     return incidentReader;
   }
 
-  public ProcessDefinitionReader getProcessDefinitionReader() {
+  public ProcessDefinitionDbReader getProcessDefinitionReader() {
     return processDefinitionReader;
   }
 
-  public ProcessInstanceReader getProcessInstanceReader() {
+  public ProcessInstanceDbReader getProcessInstanceReader() {
     return processInstanceReader;
   }
 
-  public TenantReader getTenantReader() {
+  public TenantDbReader getTenantReader() {
     return tenantReader;
   }
 
-  public VariableReader getVariableReader() {
+  public VariableDbReader getVariableReader() {
     return variableReader;
   }
 
-  public RoleReader getRoleReader() {
+  public RoleDbReader getRoleReader() {
     return roleReader;
   }
 
-  public UserReader getUserReader() {
+  public UserDbReader getUserReader() {
     return userReader;
   }
 
-  public UserTaskReader getUserTaskReader() {
+  public UserTaskDbReader getUserTaskReader() {
     return userTaskReader;
   }
 
-  public FormReader getFormReader() {
+  public FormDbReader getFormReader() {
     return formReader;
   }
 
-  public MappingRuleReader getMappingReader() {
+  public MappingRuleDbReader getMappingRuleReader() {
     return mappingRuleReader;
   }
 
-  public BatchOperationReader getBatchOperationReader() {
+  public BatchOperationDbReader getBatchOperationReader() {
     return batchOperationReader;
   }
 
-  public SequenceFlowReader getSequenceFlowReader() {
+  public SequenceFlowDbReader getSequenceFlowReader() {
     return sequenceFlowReader;
   }
 
-  public UsageMetricReader getUsageMetricReader() {
+  public UsageMetricsDbReader getUsageMetricReader() {
     return usageMetricReader;
   }
 
-  public BatchOperationItemReader getBatchOperationItemReader() {
+  public BatchOperationItemDbReader getBatchOperationItemReader() {
     return batchOperationItemReader;
   }
 
-  public JobReader getJobReader() {
+  public JobDbReader getJobReader() {
     return jobReader;
   }
 

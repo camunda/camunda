@@ -14,7 +14,7 @@ import static io.camunda.it.rdbms.db.fixtures.VariableFixtures.prepareRandomVari
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.VariableReader;
+import io.camunda.db.rdbms.read.service.VariableDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
@@ -166,7 +166,7 @@ public class VariableIT {
   @TestTemplate
   public void shouldFindVariableWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final VariableReader variableReader = rdbmsService.getVariableReader();
+    final VariableDbReader variableReader = rdbmsService.getVariableReader();
 
     final String varName =
         VariableFixtures.createAndSaveRandomVariablesWithFixedName(rdbmsService).getLast().name();
@@ -195,7 +195,7 @@ public class VariableIT {
   @TestTemplate
   public void shouldFindVariableWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final VariableReader variableReader = rdbmsService.getVariableReader();
+    final VariableDbReader variableReader = rdbmsService.getVariableReader();
 
     final String varName =
         VariableFixtures.createAndSaveRandomVariablesWithFixedName(rdbmsService).getLast().name();
@@ -229,7 +229,7 @@ public class VariableIT {
   public void shouldCleanup(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
-    final VariableReader reader = rdbmsService.getVariableReader();
+    final VariableDbReader reader = rdbmsService.getVariableReader();
 
     final var cleanupDate = NOW.minusDays(1);
 

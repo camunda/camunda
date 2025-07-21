@@ -600,7 +600,7 @@ class RdbmsExporterIT {
 
     // then
     final var mappingId = ((MappingRecordValue) mappingCreatedRecord.getValue()).getMappingId();
-    final var mapping = rdbmsService.getMappingReader().findOne(mappingId);
+    final var mapping = rdbmsService.getMappingRuleReader().findOne(mappingId);
     assertThat(mapping).isNotNull();
 
     // given
@@ -610,7 +610,7 @@ class RdbmsExporterIT {
     exporter.export(mappingDeletedRecord);
 
     // then
-    final var deletedMapping = rdbmsService.getMappingReader().findOne(mappingId);
+    final var deletedMapping = rdbmsService.getMappingRuleReader().findOne(mappingId);
     assertThat(deletedMapping).isEmpty();
   }
 

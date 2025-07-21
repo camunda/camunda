@@ -8,7 +8,7 @@
 package io.camunda.exporter.rdbms.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
+import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsProcessCacheLoader.class);
-  private final ProcessDefinitionReader reader;
+  private final ProcessDefinitionDbReader reader;
 
-  public RdbmsProcessCacheLoader(final ProcessDefinitionReader reader) {
+  public RdbmsProcessCacheLoader(final ProcessDefinitionDbReader reader) {
     this.reader = reader;
   }
 

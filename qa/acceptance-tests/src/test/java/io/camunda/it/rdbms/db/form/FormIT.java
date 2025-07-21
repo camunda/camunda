@@ -12,7 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.FormFixtures.createAndSaveRandomFo
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.service.FormReader;
+import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.write.domain.FormDbModel;
 import io.camunda.db.rdbms.write.domain.FormDbModel.FormDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.FormFixtures;
@@ -103,7 +103,7 @@ public class FormIT {
   @TestTemplate
   public void shouldFindFormWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final FormReader formReader = rdbmsService.getFormReader();
+    final FormDbReader formReader = rdbmsService.getFormReader();
 
     final String id = FormFixtures.nextStringId();
     createAndSaveRandomForms(rdbmsService, id);

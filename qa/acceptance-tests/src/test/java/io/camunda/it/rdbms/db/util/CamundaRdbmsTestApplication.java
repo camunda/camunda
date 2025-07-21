@@ -16,6 +16,7 @@ import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
@@ -69,6 +70,15 @@ public final class CamundaRdbmsTestApplication
     Awaitility.await("until spring context is started").until(this::isStarted);
     LOGGER.info("Spring application started");
     return this;
+  }
+
+  @Override
+  protected SpringApplicationBuilder createSpringBuilder() {
+    // because @ConditionalOnRestGatewayEnabled relies on the zeebe.broker.gateway.enable property,
+    // we need to hook in at the last minute and set the property as it won't resolve from the
+    // config bean
+    withProperty("zeebe.broker.gateway.enable", true);
+    return super.createSpringBuilder();
   }
 
   @Override

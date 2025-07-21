@@ -27,11 +27,11 @@ import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 class AbstractEntityReaderTest {
-  final AbstractEntityReader<ProcessInstanceEntity> reader = new ProcessInstanceReader(null);
+  final AbstractEntityReader<ProcessInstanceEntity> reader = new ProcessInstanceDbReader(null);
 
   @Test
   void shouldConvertSort() {
-    final var reader = new ProcessInstanceReader(null);
+    final var reader = new ProcessInstanceDbReader(null);
 
     final var convertedSort =
         reader.convertSort(
@@ -48,7 +48,7 @@ class AbstractEntityReaderTest {
 
   @Test
   void shouldThrowOnUnknownSortColumn() {
-    final var reader = new ProcessInstanceReader(null);
+    final var reader = new ProcessInstanceDbReader(null);
 
     assertThatThrownBy(
             () ->
