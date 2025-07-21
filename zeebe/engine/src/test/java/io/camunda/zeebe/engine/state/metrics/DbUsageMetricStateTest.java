@@ -49,7 +49,7 @@ public class DbUsageMetricStateTest {
     state.resetActiveBucket(1L);
 
     // then
-    final var actual = state.getActiveBucket();
+    final var actual = state.getOrCreateActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(1L);
     assertThat(actual.getToTime()).isEqualTo(1001L);
     assertThat(actual.getTenantRPIMap()).isEmpty();
@@ -73,7 +73,7 @@ public class DbUsageMetricStateTest {
     state.recordRPIMetric("tenant2");
 
     // then
-    final var actual = state.getActiveBucket();
+    final var actual = state.getOrCreateActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(1L);
     assertThat(actual.getToTime()).isEqualTo(1001L);
     assertThat(actual.getTenantRPIMap())
@@ -97,7 +97,7 @@ public class DbUsageMetricStateTest {
     state.recordEDIMetric("tenant2");
 
     // then
-    final var actual = state.getActiveBucket();
+    final var actual = state.getOrCreateActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(1L);
     assertThat(actual.getToTime()).isEqualTo(1001L);
     assertThat(actual.getTenantEDIMap())
@@ -122,7 +122,7 @@ public class DbUsageMetricStateTest {
     state.recordTUMetric("tenant2", "assignee1");
 
     // then
-    final var actual = state.getActiveBucket();
+    final var actual = state.getOrCreateActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(1L);
     assertThat(actual.getToTime()).isEqualTo(1001L);
     assertThat(actual.getTenantTUMap())

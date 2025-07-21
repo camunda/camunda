@@ -48,6 +48,8 @@ class UsageMetricsExportedApplierTest {
         .applyState(1L, new UsageMetricRecord().setResetTime(3L));
 
     // then
+    verify(mockUsageMetricsState).getActiveBucket();
+    verify(mockUsageMetricsState, never()).getOrCreateActiveBucket();
     verify(mockUsageMetricsState, never()).resetActiveBucket(1L);
   }
 

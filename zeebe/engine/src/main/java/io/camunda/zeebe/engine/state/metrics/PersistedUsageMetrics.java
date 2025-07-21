@@ -20,8 +20,8 @@ import org.agrona.DirectBuffer;
 
 public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
 
-  private final LongProperty fromTimeProp = new LongProperty("fromTime");
-  private final LongProperty toTimeProp = new LongProperty("toTime");
+  private final LongProperty fromTimeProp = new LongProperty("fromTime", -1L);
+  private final LongProperty toTimeProp = new LongProperty("toTime", -1L);
   private final DocumentProperty tenantRPIMapProp = new DocumentProperty("tenantRPI");
   private final DocumentProperty tenantEDIMapProp = new DocumentProperty("tenantEDI");
   private final DocumentProperty tenantTUMapProp = new DocumentProperty("tenantTU");

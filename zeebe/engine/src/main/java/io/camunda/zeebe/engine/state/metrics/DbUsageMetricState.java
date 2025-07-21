@@ -46,6 +46,20 @@ public class DbUsageMetricState implements MutableUsageMetricState {
     return metricsBucketColumnFamily.get(metricsBucketKey);
   }
 
+  @Override
+  public PersistedUsageMetrics getOrCreateActiveBucket() {
+    setActiveBucketKeys();
+
+    final var existingBucket = metricsBucketColumnFamily.get(metricsBucketKey);
+    if (existingBucket != null) {
+      return existingBucket;
+    }
+
+    final var bucket = new PersistedUsageMetrics();
+    metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
+    return bucket;
+  }
+
   public void updateActiveBucket(final PersistedUsageMetrics bucket) {
     setActiveBucketKeys();
     metricsBucketColumnFamily.update(metricsBucketKey, bucket);
@@ -57,17 +71,17 @@ public class DbUsageMetricState implements MutableUsageMetricState {
 
   @Override
   public void recordRPIMetric(final String tenantId) {
-    updateActiveBucket(getActiveBucket().recordRPI(tenantId));
+    updateActiveBucket(getOrCreateActiveBucket().recordRPI(tenantId));
   }
 
   @Override
   public void recordEDIMetric(final String tenantId) {
-    updateActiveBucket(getActiveBucket().recordEDI(tenantId));
+    updateActiveBucket(getOrCreateActiveBucket().recordEDI(tenantId));
   }
 
   @Override
   public void recordTUMetric(final String tenantId, final String assignee) {
-    updateActiveBucket(getActiveBucket().recordTU(tenantId, assignee));
+    updateActiveBucket(getOrCreateActiveBucket().recordTU(tenantId, assignee));
   }
 
   @Override
@@ -78,6 +92,17 @@ public class DbUsageMetricState implements MutableUsageMetricState {
         new PersistedUsageMetrics()
             .setFromTime(resetTime)
             .setToTime(resetTime + exportInterval.toMillis());
+
     metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
+  }
+
+  @Override
+  public void updateActiveBucketTime(final long resetTime) {
+    setActiveBucketKeys();
+    final var bucket =
+        getOrCreateActiveBucket()
+            .setFromTime(resetTime)
+            .setToTime(resetTime + exportInterval.toMillis());
+    metricsBucketColumnFamily.update(metricsBucketKey, bucket);
   }
 }
