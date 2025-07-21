@@ -63,9 +63,10 @@ public final class InclusiveGatewayProcessor
                   .thenDo(
                       completed ->
                           stateTransitionBehavior
-                              .suspendProcessInstanceIfNeeded(element, completed)
+                              .terminateProcessInstanceIfRuntimeInstructionExists(
+                                  element, completed)
                               .ifLeft(
-                                  notSuspended -> {
+                                  notTerminated -> {
                                     if (optFlows != null) {
                                       optFlows.forEach(
                                           flow ->
@@ -103,7 +104,7 @@ public final class InclusiveGatewayProcessor
   @Override
   public void finalizeTermination(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
   }
 
   private Either<Failure, List<ExecutableSequenceFlow>> findSequenceFlowsToTake(

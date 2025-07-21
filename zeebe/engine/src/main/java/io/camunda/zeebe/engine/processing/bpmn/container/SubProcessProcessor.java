@@ -92,9 +92,9 @@ public final class SubProcessProcessor
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
               stateTransitionBehavior
-                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
                   .ifLeft(
-                      notSuspended ->
+                      notTerminated ->
                           stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
@@ -121,7 +121,7 @@ public final class SubProcessProcessor
   @Override
   public void finalizeTermination(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
   }
 
   @Override

@@ -108,9 +108,9 @@ public final class ScriptTaskProcessor
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
               stateTransitionBehavior
-                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
                   .ifLeft(
-                      notSuspended ->
+                      notTerminated ->
                           stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
@@ -150,7 +150,7 @@ public final class ScriptTaskProcessor
   @Override
   public void finalizeTermination(
       final ExecutableScriptTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
   }
 
   private void triggerProcessEventWithResultVariable(

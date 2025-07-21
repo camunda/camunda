@@ -62,9 +62,10 @@ public final class ExclusiveGatewayProcessor
                   .thenDo(
                       completed ->
                           stateTransitionBehavior
-                              .suspendProcessInstanceIfNeeded(element, completed)
+                              .terminateProcessInstanceIfRuntimeInstructionExists(
+                                  element, completed)
                               .ifLeft(
-                                  notSuspended ->
+                                  notTerminated ->
                                       optFlow.ifPresent(
                                           flow ->
                                               stateTransitionBehavior.takeSequenceFlow(
@@ -99,7 +100,7 @@ public final class ExclusiveGatewayProcessor
   @Override
   public void finalizeTermination(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
   }
 
   private Either<Failure, Optional<ExecutableSequenceFlow>> findSequenceFlowToTake(
