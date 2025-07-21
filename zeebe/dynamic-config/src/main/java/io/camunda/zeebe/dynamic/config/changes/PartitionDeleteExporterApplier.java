@@ -66,11 +66,10 @@ final class PartitionDeleteExporterApplier implements MemberOperationApplier {
                   memberId, partitionId)));
     }
 
-    final Map<String, ExporterState> exporters = member.getPartition(partitionId).config()
-        .exporting().exporters();
+    final Map<String, ExporterState> exporters =
+        member.getPartition(partitionId).config().exporting().exporters();
 
-    final var partitionHasExporter =
-        exporters.containsKey(exporterId);
+    final var partitionHasExporter = exporters.containsKey(exporterId);
 
     if (!partitionHasExporter) {
       return Either.left(
