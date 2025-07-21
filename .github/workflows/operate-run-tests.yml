@@ -1,5 +1,5 @@
 # description: Reuseable workflow that executes the passed maven command
-# called by: operate-test-importer.yml, operate-test-backup-restore.yml
+# called by: ci-operate.yml
 # test location: operate
 # type: CI
 # owner: @camunda/data-layer
@@ -14,6 +14,10 @@ on:
         description: "Maven command to trigger the test"
         required: true
         type: string
+      testName:
+        description: "Name of the kind of test being run"
+        required: true
+        type: string
 jobs:
   run-test:
     runs-on: ubuntu-24.04
@@ -21,56 +25,24 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.4.0
+      - uses: ./.github/actions/setup-build
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-            secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: "adopt"
-          java-version: "21"
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven-dist
-        with:
-          maven-version: 3.8.8
-          set-mvnw: true
-      - name: Configure Maven
-        uses: ./.github/actions/setup-maven-cache
-        with:
-          maven-cache-key-modifier: operate-tests
-      - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.1.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-               "id": "camunda-nexus",
-               "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
-             }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+          maven-cache-key-modifier: operate-${{ inputs.testName }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Build Operate
         run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
       - name: Run Tests
         run: ${{ inputs.command }}
-      - name: Send Slack notification on failure
-        if: failure()
-        uses: slackapi/slack-github-action@v2.1.1
+      # Collect information about build status for central statistics with CI Analytics
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
         with:
-          webhook: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "workflow_name": "${{ github.workflow }}",
-              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
-              "branch": "${{ github.head_ref || github.ref_name }}"
-            }
+          job_name: "operate-${{ inputs.testName }}-test"
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
