@@ -11,7 +11,7 @@
   <artifactId>identity-parent</artifactId>
   <packaging>pom</packaging>
   <name>Identity Parent</name>
-  <!-- When adding modules here, keep in mind that the Management Identity 
+  <!-- When adding modules here, keep in mind that the Management Identity
     codebase (https://github.com/camunda-cloud/identity/) uses
     the same groupId; accordingly, do not pick conflicting artifactIds -->
   <modules>
@@ -109,5 +109,15 @@
       </plugin>
     </plugins>
   </build>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-web</artifactId>
+        <version>${version.spring}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
 </project>

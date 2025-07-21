@@ -98,4 +98,14 @@
     </profile>
   </profiles>
 
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework</groupId>
+        <artifactId>spring-web</artifactId>
+        <version>${version.spring}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
 </project>
