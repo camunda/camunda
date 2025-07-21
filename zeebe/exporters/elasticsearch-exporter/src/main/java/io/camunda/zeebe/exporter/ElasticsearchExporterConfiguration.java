@@ -107,6 +107,7 @@ public class ElasticsearchExporterConfiguration {
       case MESSAGE_CORRELATION -> index.messageCorrelation;
       case AD_HOC_SUB_PROCESS_INSTRUCTION -> index.adHocSubProcessInstruction;
       case ASYNC_REQUEST -> index.asyncRequest;
+      case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
       default -> false;
     };
   }
@@ -210,6 +211,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean messageCorrelation = true;
     public boolean user = true;
     public boolean authorization = true;
+    public boolean runtimeInstruction = true;
 
     public boolean batchOperationCreation = false;
     public boolean batchOperationChunk = false;

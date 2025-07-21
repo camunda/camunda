@@ -13,11 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.zeebe.protocol.record.value;
 
-public enum ElementInstanceState {
-  ACTIVE,
-  COMPLETED,
-  TERMINATED,
-  UNKNOWN_ENUM_VALUE;
+import io.camunda.zeebe.protocol.record.ImmutableProtocol;
+import io.camunda.zeebe.protocol.record.RecordValue;
+import org.immutables.value.Value;
+
+@Value.Immutable
+@ImmutableProtocol(builder = ImmutableRuntimeInstructionRecordValue.Builder.class)
+public interface RuntimeInstructionRecordValue
+    extends RecordValue, ProcessInstanceRelated, TenantOwned {
+
+  String getElementId();
 }

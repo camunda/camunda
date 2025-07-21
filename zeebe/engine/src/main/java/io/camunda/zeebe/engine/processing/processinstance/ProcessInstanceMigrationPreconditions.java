@@ -1173,21 +1173,6 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * This precondition checks whether the specified process instance is currently suspended.
-   *
-   * @param processInstance process instance to check
-   */
-  public static void requireProcessInstanceNotInSuspendedState(
-      final ElementInstance processInstance) {
-    if (processInstance.isSuspended()) {
-      final String reason =
-          String.format(ERROR_SUSPENDED_PROCESS_INSTANCE, processInstance.getKey());
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_STATE);
-    }
-  }
-
-  /**
    * Checks whether the target sequence flow id is not null. If it is null, it throws an exception.
    * This is used to ensure that the taken sequence flow id is mapped when migrating a process
    * instance.

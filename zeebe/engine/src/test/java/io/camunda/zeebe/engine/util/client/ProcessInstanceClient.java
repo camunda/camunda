@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -36,6 +35,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -132,11 +132,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
-    public ProcessInstanceCreationClient withRuntimeSuspendInstruction(
+    public ProcessInstanceCreationClient withRuntimeTerminateInstruction(
         final String afterElementId) {
       final var instruction =
           new ProcessInstanceCreationRuntimeInstruction()
-              .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
+              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
               .setAfterElementId(afterElementId);
       processInstanceCreationRecord.addRuntimeInstruction(instruction);
       return this;
