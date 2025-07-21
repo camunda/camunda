@@ -19,8 +19,10 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.query.SearchWildcardQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
@@ -33,7 +35,13 @@ import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
@@ -54,27 +62,15 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             (boolQuery) -> {
               assertThat(boolQuery.must())
                   .anySatisfy(
-                      query ->
-                          assertThat(query.queryOption())
-                              .isInstanceOfSatisfying(
-                                  SearchExistsQuery.class,
-                                  (existsQuery) -> {
-                                    assertThat(existsQuery.field())
-                                        .isEqualTo("flowNodeInstanceId"); // Validate the field
-                                  }));
+                      query -> assertExistsQuery(query.queryOption(), "flowNodeInstanceId"));
             });
 
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(1).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("implementation");
-                        assertThat(term.value().stringValue()).isEqualTo("ZEEBE_USER_TASK");
-                      });
+              assertSearchTermQuery(
+                  t.must().get(1).queryOption(), "implementation", "ZEEBE_USER_TASK");
             });
   }
 
@@ -93,13 +89,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("key");
-                        assertThat(term.value().longValue()).isEqualTo(4503599627370497L);
-                      });
+              assertSearchTermQuery(t.must().get(0).queryOption(), "key", 4503599627370497L);
             });
   }
 
@@ -117,14 +107,78 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("state");
-                        assertThat(term.value().stringValue()).isEqualTo("CREATED");
-                      });
+              assertSearchTermQuery(t.must().get(0).queryOption(), "state", "CREATED");
             });
+  }
+
+  static Stream<Arguments> provideStateOperations() {
+    return Stream.of(
+        stateOperationCase(
+            Operation.eq("CREATED"), query -> assertSearchTermQuery(query, "state", "CREATED")),
+        stateOperationCase(
+            Operation.neq("COMPLETED"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery ->
+                                        assertSearchTermQuery(
+                                            mustNotQuery, "state", "COMPLETED")))),
+        stateOperationCase(Operation.exists(true), query -> assertExistsQuery(query, "state")),
+        stateOperationCase(
+            Operation.exists(false),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchBoolQuery.class,
+                        boolQuery ->
+                            assertThat(boolQuery.mustNot())
+                                .singleElement()
+                                .extracting(SearchQuery::queryOption)
+                                .satisfies(
+                                    mustNotQuery -> assertExistsQuery(mustNotQuery, "state")))),
+        stateOperationCase(
+            Operation.in("CREATING", "UPDATING"),
+            query -> assertSearchTermsQuery(query, "state", "CREATING", "UPDATING")),
+        stateOperationCase(
+            Operation.like("CREAT*"),
+            query ->
+                assertThat(query)
+                    .isInstanceOfSatisfying(
+                        SearchWildcardQuery.class,
+                        wildcardQuery -> {
+                          assertThat(wildcardQuery.field()).isEqualTo("state");
+                          assertThat(wildcardQuery.value()).isEqualTo("CREAT*");
+                        })));
+  }
+
+  private static Arguments stateOperationCase(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+    return Arguments.of(operation, queryAssertion);
+  }
+
+  @ParameterizedTest(name = "[{index}] should map {0}")
+  @MethodSource("provideStateOperations")
+  @DisplayName("Should transform state operations into correct search query")
+  void shouldTransformStateOperationsToSearchQuery(
+      final Operation<String> operation, final Consumer<SearchQueryOption> queryAssertion) {
+
+    // given
+    final var filter = FilterBuilders.userTask(f -> f.stateOperations(operation));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> queryAssertion.accept(boolQuery.must().getFirst().queryOption()));
   }
 
   @Test
@@ -141,13 +195,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("assignee");
-                        assertThat(term.value().stringValue()).isEqualTo("assignee1");
-                      });
+              assertSearchTermQuery(t.must().get(0).queryOption(), "assignee", "assignee1");
             });
   }
 
@@ -167,13 +215,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("tenantId");
-                        assertThat(term.value().stringValue()).isEqualTo("tenant1");
-                      });
+              assertSearchTermQuery(t.must().get(0).queryOption(), "tenantId", "tenant1");
             });
   }
 
@@ -192,13 +234,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("processInstanceId");
-                        assertThat(term.value().longValue()).isEqualTo(12345L);
-                      });
+              assertSearchTermQuery(t.must().get(0).queryOption(), "processInstanceId", 12345L);
             });
   }
 
@@ -217,13 +253,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("processDefinitionId");
-                        assertThat(term.value().longValue()).isEqualTo(123L);
-                      });
+              assertSearchTermQuery(t.must().get(0).queryOption(), "processDefinitionId", 123L);
             });
   }
 
@@ -242,13 +272,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("bpmnProcessId");
-                        assertThat(term.value().stringValue()).isEqualTo("bpmnProcess1");
-                      });
+              assertSearchTermQuery(t.must().get(0).queryOption(), "bpmnProcessId", "bpmnProcess1");
             });
   }
 
@@ -267,13 +291,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("candidateUsers");
-                        assertThat(term.value().stringValue()).isEqualTo("candidateUser1");
-                      });
+              assertSearchTermQuery(
+                  t.must().get(0).queryOption(), "candidateUsers", "candidateUser1");
             });
   }
 
@@ -292,13 +311,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("flowNodeInstanceId");
-                        assertThat(term.value().longValue()).isEqualTo(12345L);
-                      });
+              assertSearchTermQuery(t.must().get(0).queryOption(), "flowNodeInstanceId", 12345L);
             });
   }
 
@@ -317,13 +330,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("candidateGroups");
-                        assertThat(term.value().stringValue()).isEqualTo("candidateGroup1");
-                      });
+              assertSearchTermQuery(
+                  t.must().get(0).queryOption(), "candidateGroups", "candidateGroup1");
             });
   }
 
@@ -372,21 +380,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
                   (SearchBoolQuery) childQuery.query().queryOption();
               assertThat(innerBoolQuery.must()).hasSize(2);
 
-              assertThat(innerBoolQuery.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("name");
-                        assertThat(termQuery.value().value()).isEqualTo("test");
-                      });
-
-              assertThat(innerBoolQuery.must().get(1).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      termQuery -> {
-                        assertThat(termQuery.field()).isEqualTo("value");
-                        assertThat(termQuery.value().value()).isEqualTo("test");
-                      });
+              assertSearchTermQuery(innerBoolQuery.must().get(0).queryOption(), "name", "test");
+              assertSearchTermQuery(innerBoolQuery.must().get(1).queryOption(), "value", "test");
             });
   }
 
@@ -411,18 +406,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
               assertThat(boolQuery.must())
                   .anySatisfy(
                       query ->
-                          assertThat(query.queryOption())
-                              .isInstanceOfSatisfying(
-                                  SearchTermsQuery.class,
-                                  (termsQuery) -> {
-                                    assertThat(termsQuery.field())
-                                        .isEqualTo(TaskTemplate.BPMN_PROCESS_ID);
-                                    assertThat(
-                                            termsQuery.values().stream()
-                                                .map(TypedValue::stringValue)
-                                                .toList())
-                                        .containsExactlyInAnyOrder("1", "2");
-                                  }));
+                          assertSearchTermsQuery(
+                              query.queryOption(), TaskTemplate.BPMN_PROCESS_ID, "1", "2"));
             });
   }
 
@@ -461,27 +446,15 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             (boolQuery) -> {
               assertThat(boolQuery.must())
                   .anySatisfy(
-                      query ->
-                          assertThat(query.queryOption())
-                              .isInstanceOfSatisfying(
-                                  SearchExistsQuery.class,
-                                  (existsQuery) -> {
-                                    assertThat(existsQuery.field())
-                                        .isEqualTo("flowNodeInstanceId"); // Validate the field
-                                  }));
+                      query -> assertExistsQuery(query.queryOption(), "flowNodeInstanceId"));
             });
 
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(1).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("implementation");
-                        assertThat(term.value().stringValue()).isEqualTo("ZEEBE_USER_TASK");
-                      });
+              assertSearchTermQuery(
+                  t.must().get(1).queryOption(), "implementation", "ZEEBE_USER_TASK");
             });
   }
 
@@ -504,18 +477,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
               assertThat(boolQuery.must())
                   .anySatisfy(
                       query ->
-                          assertThat(query.queryOption())
-                              .isInstanceOfSatisfying(
-                                  SearchTermsQuery.class,
-                                  (termsQuery) -> {
-                                    assertThat(termsQuery.field())
-                                        .isEqualTo(TaskTemplate.TENANT_ID);
-                                    assertThat(
-                                            termsQuery.values().stream()
-                                                .map(TypedValue::stringValue)
-                                                .toList())
-                                        .containsExactlyInAnyOrder("a", "b");
-                                  }));
+                          assertSearchTermsQuery(
+                              query.queryOption(), TaskTemplate.TENANT_ID, "a", "b"));
             });
   }
 
@@ -537,27 +500,15 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
             (boolQuery) -> {
               assertThat(boolQuery.must())
                   .anySatisfy(
-                      query ->
-                          assertThat(query.queryOption())
-                              .isInstanceOfSatisfying(
-                                  SearchExistsQuery.class,
-                                  (existsQuery) -> {
-                                    assertThat(existsQuery.field())
-                                        .isEqualTo("flowNodeInstanceId"); // Validate the field
-                                  }));
+                      query -> assertExistsQuery(query.queryOption(), "flowNodeInstanceId"));
             });
 
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             (t) -> {
-              assertThat(t.must().get(1).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (term) -> {
-                        assertThat(term.field()).isEqualTo("implementation");
-                        assertThat(term.value().stringValue()).isEqualTo("ZEEBE_USER_TASK");
-                      });
+              assertSearchTermQuery(
+                  t.must().get(1).queryOption(), "implementation", "ZEEBE_USER_TASK");
             });
   }
 
@@ -579,5 +530,33 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
     final var queryVariant = searchQuery.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(SearchBoolQuery.class, t -> assertThat(t.must()).hasSize(3));
+  }
+
+  private static void assertSearchTermQuery(
+      final SearchQueryOption query, final String field, final Object expectedValue) {
+    assertThat(query)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            term -> {
+              assertThat(term.field()).isEqualTo(field);
+              assertThat(term.value().value()).isEqualTo(expectedValue);
+            });
+  }
+
+  private static void assertSearchTermsQuery(
+      final SearchQueryOption query, final String field, final String... expected) {
+    assertThat(query)
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            terms -> {
+              assertThat(terms.field()).isEqualTo(field);
+              assertThat(terms.values()).extracting(TypedValue::value).containsExactly(expected);
+            });
+  }
+
+  private static void assertExistsQuery(final SearchQueryOption query, final String field) {
+    assertThat(query)
+        .isInstanceOfSatisfying(
+            SearchExistsQuery.class, exists -> assertThat(exists.field()).isEqualTo(field));
   }
 }

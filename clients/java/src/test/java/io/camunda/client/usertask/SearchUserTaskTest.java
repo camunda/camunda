@@ -20,16 +20,26 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
 import io.camunda.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskFilter;
 import io.camunda.client.protocol.rest.UserTaskSearchQuery;
+import io.camunda.client.protocol.rest.UserTaskStateEnum;
+import io.camunda.client.protocol.rest.UserTaskStateFilterProperty;
 import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public final class SearchUserTaskTest extends ClientRestTest {
 
@@ -70,7 +80,57 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getState()).isEqualTo(UserTaskFilter.StateEnum.COMPLETED);
+    assertThat(request.getFilter().getState().get$Eq()).isEqualTo(UserTaskStateEnum.COMPLETED);
+  }
+
+  static Stream<Arguments> provideStateFilters() {
+    return Stream.of(
+        stateFilterCase(
+            "eq:CANCELING",
+            f -> f.eq(UserTaskState.CANCELING),
+            f -> assertThat(f.get$Eq()).isEqualTo(UserTaskStateEnum.CANCELING)),
+        stateFilterCase(
+            "neq:COMPLETED",
+            f -> f.neq(UserTaskState.COMPLETED),
+            f -> assertThat(f.get$Neq()).isEqualTo(UserTaskStateEnum.COMPLETED)),
+        stateFilterCase(
+            "exists:true", f -> f.exists(true), f -> assertThat(f.get$Exists()).isTrue()),
+        stateFilterCase(
+            "exists:false", f -> f.exists(false), f -> assertThat(f.get$Exists()).isFalse()),
+        stateFilterCase(
+            "in:[ASSIGNING,UPDATING]",
+            f -> f.in(UserTaskState.ASSIGNING, UserTaskState.UPDATING),
+            f ->
+                assertThat(f.get$In())
+                    .containsExactly(UserTaskStateEnum.ASSIGNING, UserTaskStateEnum.UPDATING)),
+        stateFilterCase(
+            "like:CREAT*",
+            f -> f.like("CREAT*"),
+            f -> assertThat(f.get$Like()).isEqualTo("CREAT*")));
+  }
+
+  private static Arguments stateFilterCase(
+      final String filterLabel,
+      final Consumer<UserTaskStateProperty> filter,
+      final Consumer<UserTaskStateFilterProperty> assertion) {
+    return Arguments.of(
+        Named.of("state(" + filterLabel + ")", filter),
+        Named.of("assert " + filterLabel, assertion));
+  }
+
+  @ParameterizedTest(name = "[{index}] should apply {0}")
+  @MethodSource("provideStateFilters")
+  @DisplayName("Should search user tasks by state using advanced filters")
+  void shouldSearchUserTasksByStateUsingAdvancedFilter(
+      final Consumer<UserTaskStateProperty> filter,
+      final Consumer<UserTaskStateFilterProperty> assertion) {
+
+    // when
+    client.newUserTaskSearchRequest().filter(f -> f.state(filter)).send().join();
+
+    // then
+    final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
+    assertThat(request.getFilter().getState()).isNotNull().satisfies(assertion);
   }
 
   @Test

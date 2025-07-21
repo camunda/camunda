@@ -5594,18 +5594,9 @@ components:
       type: object
       properties:
         state:
-          type: string
-          description: The state of the user task.
-          enum:
-            - CREATING
-            - CREATED
-            - ASSIGNING
-            - UPDATING
-            - COMPLETING
-            - COMPLETED
-            - CANCELING
-            - CANCELED
-            - FAILED
+          description: The user task state.
+          allOf:
+            - $ref: "#/components/schemas/UserTaskStateFilterProperty"
         assignee:
           description: The assignee of the user task.
           allOf:
@@ -5674,6 +5665,39 @@ components:
         elementInstanceKey:
           type: string
           description: The key of the element instance.
+    UserTaskStateFilterProperty:
+      description: UserTaskStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/UserTaskStateEnum"
+        - $ref: "#/components/schemas/AdvancedUserTaskStateFilter"
+    AdvancedUserTaskStateFilter:
+      title: Advanced filter
+      description: Advanced UserTaskStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/UserTaskStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/UserTaskStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskStateEnum"
+        $like:
+          $ref: "#/components/schemas/LikeFilterProperty"
     VariableValueFilterProperty:
       type: object
       properties:
@@ -5702,18 +5726,7 @@ components:
           type: string
           description: The name for this user task.
         state:
-          type: string
-          description: The state of the user task.
-          enum:
-            - CREATING
-            - CREATED
-            - ASSIGNING
-            - UPDATING
-            - COMPLETING
-            - COMPLETED
-            - CANCELING
-            - CANCELED
-            - FAILED
+          $ref: "#/components/schemas/UserTaskStateEnum"
         assignee:
           description: The assignee of the user task.
           type: string
@@ -5785,6 +5798,19 @@ components:
         formKey:
           type: string
           description: The key of the form.
+    UserTaskStateEnum:
+      description: The state of the user task.
+      type: string
+      enum:
+        - CREATING
+        - CREATED
+        - ASSIGNING
+        - UPDATING
+        - COMPLETING
+        - COMPLETED
+        - CANCELING
+        - CANCELED
+        - FAILED
     VariableSearchQuerySortRequest:
       type: object
       properties:
