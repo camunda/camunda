@@ -67,7 +67,7 @@
     <version.identity>8.8.0-alpha3</version.identity>
     <version.instancio>5.4.1</version.instancio>
     <version.surefire>3.5.3</version.surefire>
-    <version.jackson>2.19.1</version.jackson>
+    <version.jackson>2.19.2</version.jackson>
     <version.junit>5.13.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.25.1</version.log4j>
