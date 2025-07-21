@@ -89,4 +89,14 @@ public class DbUsageMetricState implements MutableUsageMetricState {
 
     metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
   }
+
+  @Override
+  public void updateActiveBucketTime(final long resetTime) {
+    setActiveBucketKeys();
+    final var bucket =
+        getOrCreateActiveBucket()
+            .setFromTime(resetTime)
+            .setToTime(resetTime + exportInterval.toMillis());
+    metricsBucketColumnFamily.update(metricsBucketKey, bucket);
+  }
 }

@@ -29,7 +29,14 @@ public class UsageMetricsExportedApplier
   @Override
   public void applyState(final long key, final UsageMetricRecord record) {
     final var activeBucket = usageMetricState.getOrCreateActiveBucket();
-    if (activeBucket == null || activeBucket.getFromTime() != record.getResetTime()) {
+
+    // uninitialized bucket created on-demand
+    if (activeBucket != null && activeBucket.getFromTime() == -1) {
+      LOG.debug("Update active bucket time {}", record.getResetTime());
+      usageMetricState.updateActiveBucketTime(record.getResetTime());
+    }
+    // regular export interval
+    else if (activeBucket == null || activeBucket.getFromTime() != record.getResetTime()) {
       LOG.debug("Reset active bucket {}", record.getResetTime());
       usageMetricState.resetActiveBucket(record.getResetTime());
     }
