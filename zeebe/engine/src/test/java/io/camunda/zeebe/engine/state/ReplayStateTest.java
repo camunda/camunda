@@ -22,8 +22,6 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
-import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -395,12 +393,6 @@ public final class ReplayStateTest {
   @Test
   public void shouldRestoreState() {
     // given
-    engine
-        .usageMetrics()
-        .withEventType(EventType.NONE)
-        .withIntervalType(IntervalType.ACTIVE)
-        .withResetTime(engine.getClock().getCurrentTimeInMillis())
-        .export();
     testCase.processes.forEach(process -> engine.deployment().withXmlResource(process).deploy());
     testCase.forms.forEach(form -> engine.deployment().withJsonClasspathResource(form).deploy());
 
