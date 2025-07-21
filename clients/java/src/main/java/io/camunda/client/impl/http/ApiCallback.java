@@ -88,8 +88,16 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
   private void handleErrorResponse(
       final ApiEntity<HttpT> body, final int code, final String reason) {
-    if (remainingRetries.getAndDecrement() > 0 && retryPredicate.test(new HttpStatusCode(code))) {
-      retryAction.run();
+
+    if (remainingRetries.decrementAndGet() >= 0 && retryPredicate.test(new HttpStatusCode(code))) {
+      CompletableFuture.runAsync(() -> {
+        try {
+          Thread.sleep(500); // backoff
+          retryAction.run();
+        } catch (final InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      });
       return;
     }
 
