@@ -12,7 +12,6 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
