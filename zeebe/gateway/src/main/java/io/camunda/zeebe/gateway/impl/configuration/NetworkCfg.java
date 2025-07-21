@@ -69,7 +69,7 @@ public final class NetworkCfg {
 
   @Override
   public int hashCode() {
-    return Objects.hash(host, port);
+    return Objects.hash(host, port, minKeepAliveInterval, maxMessageSize);
   }
 
   @Override
