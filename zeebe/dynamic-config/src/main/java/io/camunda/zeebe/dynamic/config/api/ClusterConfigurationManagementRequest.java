@@ -70,6 +70,9 @@ public sealed interface ClusterConfigurationManagementRequest {
   record ExporterDisableRequest(String exporterId, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
+  record ExporterDeleteRequest(String exporterId, boolean dryRun)
+      implements ClusterConfigurationManagementRequest {}
+
   record ExporterEnableRequest(String exporterId, Optional<String> initializeFrom, boolean dryRun)
       implements ClusterConfigurationManagementRequest {}
 
