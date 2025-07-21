@@ -127,6 +127,7 @@
       <column name="TENANT_ID" type="VARCHAR(255)"/>
       <column name="INCIDENT_KEY" type="BIGINT" />
       <column name="NUM_SUBPROCESS_INCIDENTS" type="SMALLINT" />
+      <column name="INSTANCE_LEVEL" type="SMALLINT" />
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
     </createTable>

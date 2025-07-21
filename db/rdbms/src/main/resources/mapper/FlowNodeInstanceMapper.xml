@@ -34,6 +34,7 @@
     TENANT_ID,
     TREE_PATH,
     INCIDENT_KEY,
+    INSTANCE_LEVEL,
     CASE
     WHEN NUM_SUBPROCESS_INCIDENTS > 0 OR INCIDENT_KEY IS NOT NULL THEN TRUE
     ELSE FALSE
@@ -135,6 +136,7 @@
       <arg column="INCIDENT_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="INSTANCE_LEVEL" javaType="java.lang.Integer"/>
     </constructor>
   </resultMap>
 

@@ -6785,6 +6785,12 @@ components:
           description: The end date of this element instance.
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
+        scopeKey:
+          type: string
+          description: The scope key of this element instance. If provided with a process instance
+            key it will return element instances that are immediate children of the process
+            instance. If provided with an element instance key it will return element instances that
+            are immediate children of the element instance.
     ElementInstanceSearchQueryResult:
       type: object
       allOf:
