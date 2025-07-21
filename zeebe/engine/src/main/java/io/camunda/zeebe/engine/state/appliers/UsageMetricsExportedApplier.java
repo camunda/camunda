@@ -28,7 +28,7 @@ public class UsageMetricsExportedApplier
 
   @Override
   public void applyState(final long key, final UsageMetricRecord record) {
-    final var activeBucket = usageMetricState.getActiveBucket();
+    final var activeBucket = usageMetricState.getOrCreateActiveBucket();
     if (activeBucket == null || activeBucket.getFromTime() != record.getResetTime()) {
       LOG.debug("Reset active bucket {}", record.getResetTime());
       usageMetricState.resetActiveBucket(record.getResetTime());

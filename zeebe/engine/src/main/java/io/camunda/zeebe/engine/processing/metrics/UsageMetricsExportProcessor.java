@@ -50,7 +50,7 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
             .setEventType(EventType.NONE)
             .setResetTime(usageMetricRecord.getTimestamp());
 
-    final var bucket = usageMetricState.getActiveBucket();
+    final var bucket = usageMetricState.getOrCreateActiveBucket();
     if (bucket == null) {
       appendFollowUpEvent(eventRecord);
       return;

@@ -40,7 +40,7 @@ class UsageMetricsExportedApplierTest {
     final var mockProcessingState = mock(MutableProcessingState.class);
     final var mockUsageMetricsState = mock(MutableUsageMetricState.class);
     when(mockProcessingState.getUsageMetricState()).thenReturn(mockUsageMetricsState);
-    when(mockUsageMetricsState.getActiveBucket())
+    when(mockUsageMetricsState.getOrCreateActiveBucket())
         .thenReturn(new PersistedUsageMetrics().setFromTime(3L));
 
     // when
@@ -57,7 +57,7 @@ class UsageMetricsExportedApplierTest {
     usageMetricState.resetActiveBucket(1L);
     usageMetricState.recordRPIMetric("tenant1");
     usageMetricState.recordRPIMetric("tenant1");
-    final var bucket = usageMetricState.getActiveBucket();
+    final var bucket = usageMetricState.getOrCreateActiveBucket();
     assertThat(bucket).isNotNull();
     assertThat(bucket.getTenantRPIMap()).containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", 2L));
 
@@ -65,9 +65,9 @@ class UsageMetricsExportedApplierTest {
     usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
 
     // then
-    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
-    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
-    assertThat(usageMetricState.getActiveBucket().getTenantRPIMap()).isEmpty();
+    assertThat(usageMetricState.getOrCreateActiveBucket().getFromTime()).isEqualTo(2L);
+    assertThat(usageMetricState.getOrCreateActiveBucket().getToTime()).isEqualTo(300002L);
+    assertThat(usageMetricState.getOrCreateActiveBucket().getTenantRPIMap()).isEmpty();
   }
 
   @Test
@@ -76,7 +76,7 @@ class UsageMetricsExportedApplierTest {
     usageMetricState.resetActiveBucket(1L);
     usageMetricState.recordEDIMetric("tenant1");
     usageMetricState.recordEDIMetric("tenant1");
-    final var bucket = usageMetricState.getActiveBucket();
+    final var bucket = usageMetricState.getOrCreateActiveBucket();
     assertThat(bucket).isNotNull();
     assertThat(bucket.getTenantEDIMap()).containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", 2L));
 
@@ -84,9 +84,9 @@ class UsageMetricsExportedApplierTest {
     usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
 
     // then
-    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
-    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
-    assertThat(usageMetricState.getActiveBucket().getTenantEDIMap()).isEmpty();
+    assertThat(usageMetricState.getOrCreateActiveBucket().getFromTime()).isEqualTo(2L);
+    assertThat(usageMetricState.getOrCreateActiveBucket().getToTime()).isEqualTo(300002L);
+    assertThat(usageMetricState.getOrCreateActiveBucket().getTenantEDIMap()).isEmpty();
   }
 
   @Test
@@ -95,7 +95,7 @@ class UsageMetricsExportedApplierTest {
     usageMetricState.resetActiveBucket(1L);
     usageMetricState.recordTUMetric("tenant1", "assignee1");
     usageMetricState.recordTUMetric("tenant1", "assignee1");
-    final var bucket = usageMetricState.getActiveBucket();
+    final var bucket = usageMetricState.getOrCreateActiveBucket();
     assertThat(bucket).isNotNull();
     assertThat(bucket.getTenantTUMap())
         .containsExactlyInAnyOrderEntriesOf(Map.of("tenant1", Set.of("assignee1")));
@@ -104,8 +104,8 @@ class UsageMetricsExportedApplierTest {
     usageMetricsExportedApplier.applyState(1L, new UsageMetricRecord().setResetTime(2L));
 
     // then
-    assertThat(usageMetricState.getActiveBucket().getFromTime()).isEqualTo(2L);
-    assertThat(usageMetricState.getActiveBucket().getToTime()).isEqualTo(300002L);
-    assertThat(usageMetricState.getActiveBucket().getTenantTUMap()).isEmpty();
+    assertThat(usageMetricState.getOrCreateActiveBucket().getFromTime()).isEqualTo(2L);
+    assertThat(usageMetricState.getOrCreateActiveBucket().getToTime()).isEqualTo(300002L);
+    assertThat(usageMetricState.getOrCreateActiveBucket().getTenantTUMap()).isEmpty();
   }
 }
