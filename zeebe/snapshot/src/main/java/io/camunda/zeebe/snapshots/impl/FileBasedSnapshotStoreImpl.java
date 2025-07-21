@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -365,9 +366,14 @@ public final class FileBasedSnapshotStoreImpl {
               processedPosition, exportedPosition);
       return Either.left(new SnapshotAlreadyExistsException(error));
     }
-    // transient snapshots are directly written to our snapshot dir
-    // with the sfv checksum file they are marked as valid
-    final var directory = buildSnapshotDirectory(newSnapshotId, false);
+    // transient snapshots are first written to a temporary directory and then later moved to the
+    // final location once the snapshot checksum is known.
+    Path directory;
+    do {
+      directory =
+          snapshotsDirectory.resolve(
+              "transient-" + Long.toHexString(ThreadLocalRandom.current().nextLong()));
+    } while (Files.exists(directory));
     final var newPendingSnapshot =
         new FileBasedTransientSnapshot(
             newSnapshotId, directory, this, actor, checksumProvider, false);
