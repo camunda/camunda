@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
@@ -35,7 +34,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -169,35 +167,6 @@ public final class BpmnStateTransitionBehavior {
     }
 
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
-  }
-
-  public void transitionToSuspended(final BpmnElementContext context) {
-    resetTreePathProperties(context);
-
-    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
-
-    stateWriter.appendFollowUpEvent(
-        context.getProcessInstanceKey(),
-        ProcessInstanceIntent.ELEMENT_SUSPENDED,
-        processInstance.getValue());
-
-    final var dequeue = new ArrayDeque<BpmnElementContext>();
-    final var processInstanceContext = new BpmnElementContextImpl();
-    processInstanceContext.init(
-        processInstance.getKey(), processInstance.getValue(), processInstance.getState());
-    dequeue.add(processInstanceContext);
-
-    // recurse through the process instance tree without causing stack overflow
-    while (!dequeue.isEmpty()) {
-      final var elementInstanceContext = dequeue.pop();
-      jobBehavior.cancelJob(elementInstanceContext);
-      eventSubscriptionBehavior.unsubscribeFromEvents(elementInstanceContext);
-      incidentBehavior.resolveIncidents(elementInstanceContext);
-      userTaskBehavior.cancelUserTask(elementInstanceContext);
-
-      final var children = stateBehavior.getChildInstanceContexts(elementInstanceContext);
-      dequeue.addAll(children);
-    }
   }
 
   /**
@@ -484,28 +453,39 @@ public final class BpmnStateTransitionBehavior {
   }
 
   /**
-   * Suspends the process instance if the condition for suspension is met.
+   * Terminates the process instance if the condition for termination is met, i.e. if a runtime
+   * instruction exists that requires the process instance to be terminated after the given element
+   * is completed or terminated.
    *
    * @param element the flow node element that is being processed
    * @param context the context of the process instance
-   * @return an Either with the context (left) if the process instance is not suspended by this
-   *     call, or Void (right) if it is. If already suspended, returns the context (left) to allow
+   * @return an Either with the context (left) if the process instance is not terminated by this
+   *     call, or Void (right) if it is. If already terminating, returns the context (left) to allow
    *     the processors to finish terminating elements.
    */
   public <T extends ExecutableFlowNode>
-      Either<BpmnElementContext, Void> suspendProcessInstanceIfNeeded(
+      Either<BpmnElementContext, Void> terminateProcessInstanceIfRuntimeInstructionExists(
           final T element, BpmnElementContext context) {
 
-    if (!stateBehavior.shouldSuspendProcessInstance(
+    if (!stateBehavior.shouldTerminateProcessInstance(
         context.getProcessInstanceKey(), BufferUtil.bufferAsString(element.getId()))) {
       return Either.left(context);
     }
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
-    if (processInstance.isSuspended()) {
-      // if the process instance is already suspended, we don't need to suspend it again
+    if (processInstance.isTerminating()) {
+      // if the process instance is already terminating, we don't need to terminate it again
       return Either.left(context);
     }
-    transitionToSuspended(context);
+
+    stateWriter.appendFollowUpEvent(
+        processInstance.getKey(),
+        ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION,
+        processInstance.getValue());
+    commandWriter.appendFollowUpCommand(
+        processInstance.getKey(),
+        ProcessInstanceIntent.TERMINATE_ELEMENT,
+        processInstance.getValue());
+
     return Either.right(null);
   }
 

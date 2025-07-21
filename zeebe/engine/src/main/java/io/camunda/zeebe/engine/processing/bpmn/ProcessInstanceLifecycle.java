@@ -86,4 +86,9 @@ public final class ProcessInstanceLifecycle {
   public static boolean isTerminating(final ProcessInstanceIntent currentState) {
     return currentState == ELEMENT_TERMINATING;
   }
+
+  public static boolean isInterruptedByRuntimeInstruction(
+      final ProcessInstanceIntent currentState) {
+    return currentState == ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION;
+  }
 }

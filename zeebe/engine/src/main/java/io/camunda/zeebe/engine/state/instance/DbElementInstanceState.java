@@ -489,7 +489,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public boolean shouldSuspendElementInstance(
+  public boolean isRuntimeInstructionPresentToTerminateProcessInstance(
       final long processInstanceKey, final String elementId) {
 
     elementInstanceKey.wrapLong(processInstanceKey);

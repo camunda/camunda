@@ -258,16 +258,17 @@ public final class BpmnStateBehavior {
   }
 
   /**
-   * Verifies if the process instance needs to be suspended after the element with the given ID
+   * Verifies if the process instance needs to be terminated after the element with the given ID
    * completes or terminates, based on the runtime instructions of the process instance.
    *
    * @param processInstanceKey the key of the process instance
    * @param elementId the ID of the element that has completed or terminated
-   * @return a boolean indicating whether the process instance should be suspended
+   * @return a boolean indicating whether the process instance should be terminated
    */
-  public boolean shouldSuspendProcessInstance(
+  public boolean shouldTerminateProcessInstance(
       final long processInstanceKey, final String elementId) {
-    return elementInstanceState.shouldSuspendElementInstance(processInstanceKey, elementId);
+    return elementInstanceState.isRuntimeInstructionPresentToTerminateProcessInstance(
+        processInstanceKey, elementId);
   }
 
   private void copyVariablesToProcessInstance(

@@ -122,7 +122,8 @@ public class CompactRecordLogger {
           entry("ROLE", "RL"),
           entry("GROUP", "GR"),
           entry("MAPPING", "MAP"),
-          entry("ASYNC_REQUEST", "ASYNC"));
+          entry("ASYNC_REQUEST", "ASYNC"),
+          entry("INTERRUPTED_BY_RUNTIME_INSTRUCTION", "INTERRUPTED"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(

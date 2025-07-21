@@ -12,12 +12,12 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public final class SuspendProcessInstanceRuntimeInstruction extends UnpackedObject
+public final class TerminateProcessInstanceRuntimeInstruction extends UnpackedObject
     implements DbValue {
 
   private final StringProperty afterElementIdProp = new StringProperty("afterElementId", "");
 
-  public SuspendProcessInstanceRuntimeInstruction() {
+  public TerminateProcessInstanceRuntimeInstruction() {
     super(1);
     declareProperty(afterElementIdProp);
   }

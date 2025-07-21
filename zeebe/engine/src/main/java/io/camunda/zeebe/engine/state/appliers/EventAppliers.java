@@ -264,8 +264,8 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceIntent.ANCESTOR_MIGRATED,
         new ProcessInstanceAncestorMigratedApplier(elementInstanceState));
     register(
-        ProcessInstanceIntent.ELEMENT_SUSPENDED,
-        new ProcessInstanceElementSuspendedApplier(elementInstanceState));
+        ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION,
+        new ProcessInstanceElementInterruptedByRuntimeInstructionApplier(elementInstanceState));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {

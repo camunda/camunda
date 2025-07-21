@@ -16,15 +16,15 @@ import java.util.stream.StreamSupport;
 
 public class RuntimeInstructions extends UnpackedObject implements DbValue {
 
-  private final ArrayProperty<SuspendProcessInstanceRuntimeInstruction> runtimeInstructions =
-      new ArrayProperty<>("instructions", SuspendProcessInstanceRuntimeInstruction::new);
+  private final ArrayProperty<TerminateProcessInstanceRuntimeInstruction> runtimeInstructions =
+      new ArrayProperty<>("instructions", TerminateProcessInstanceRuntimeInstruction::new);
 
   public RuntimeInstructions() {
     super(1);
     declareProperty(runtimeInstructions);
   }
 
-  public List<SuspendProcessInstanceRuntimeInstruction> getRuntimeInstructions() {
+  public List<TerminateProcessInstanceRuntimeInstruction> getRuntimeInstructions() {
     return StreamSupport.stream(runtimeInstructions.spliterator(), false).toList();
   }
 
