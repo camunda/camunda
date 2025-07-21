@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
@@ -277,15 +278,19 @@ public final class AsyncSnapshotDirector extends Actor
             .persist();
     snapshotPersisted.onComplete(
         (snapshot, persistError) -> {
-          if (persistError != null) {
-            if (persistError instanceof SnapshotNotFoundException) {
-              LOG.warn(
-                  "Failed to persist transient snapshot {}. Nothing to worry if a newer snapshot exists.",
-                  inProgressSnapshot.pendingSnapshot,
-                  persistError);
-            } else {
-              LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
-            }
+          switch (persistError) {
+            case null -> {}
+            case final SnapshotNotFoundException notFoundException ->
+                LOG.warn(
+                    "Failed to persist transient snapshot {}. Nothing to worry if a newer snapshot exists.",
+                    inProgressSnapshot.pendingSnapshot,
+                    notFoundException);
+            case final SnapshotAlreadyExistsException alreadyExistsException ->
+                LOG.debug(
+                    "Failed to persist transient snapshot {}. Snapshot already exists.",
+                    inProgressSnapshot.pendingSnapshot,
+                    alreadyExistsException);
+            default -> LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
           }
         });
     return snapshotPersisted;
