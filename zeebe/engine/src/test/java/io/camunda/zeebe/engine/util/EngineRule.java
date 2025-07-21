@@ -61,9 +61,11 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
@@ -161,6 +163,8 @@ public final class EngineRule extends ExternalResource {
     if (awaitIdentitySetup) {
       awaitIdentitySetup();
     }
+    awaitUsageMetricsExported();
+    RecordingExporter.reset();
   }
 
   public void start() {
@@ -579,8 +583,12 @@ public final class EngineRule extends ExternalResource {
           .skip(totalAmountOfAuthorizationsCreated - 1)
           .await();
     }
+  }
 
-    RecordingExporter.reset();
+  private void awaitUsageMetricsExported() {
+    RecordingExporter.usageMetricsRecords(UsageMetricIntent.EXPORTED)
+        .withEventType(EventType.NONE)
+        .await();
   }
 
   public void awaitProcessingOf(final Record<?> record) {

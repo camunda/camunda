@@ -84,6 +84,8 @@ final class ZeebeIntegrationExtension
    */
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
+    RecordingExporter.reset();
+
     final var testInstance = extensionContext.getRequiredTestInstance();
     final var clusters =
         lookupClusters(extensionContext, testInstance, ModifierSupport::isNotStatic);
@@ -91,8 +93,6 @@ final class ZeebeIntegrationExtension
         lookupApplications(extensionContext, testInstance, ModifierSupport::isNotStatic);
     manageClusters(extensionContext, clusters);
     manageApplications(extensionContext, nodes);
-
-    RecordingExporter.reset();
   }
 
   @Override

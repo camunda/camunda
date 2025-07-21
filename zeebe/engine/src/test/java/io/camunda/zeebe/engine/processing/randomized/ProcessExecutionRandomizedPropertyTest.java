@@ -13,8 +13,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.ProcessExecutor;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
-import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
 import io.camunda.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.TestDataGenerator;
@@ -67,13 +65,6 @@ public class ProcessExecutionRandomizedPropertyTest {
    */
   @Test
   public void shouldExecuteProcessToEnd() {
-    engineRule
-        .usageMetrics()
-        .withEventType(EventType.NONE)
-        .withIntervalType(IntervalType.ACTIVE)
-        .withResetTime(engineRule.getClock().getCurrentTimeInMillis())
-        .export();
-
     final var deployment = engineRule.deployment();
     record.getBpmnModels().forEach(deployment::withXmlResource);
     deployment.deploy();
