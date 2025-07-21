@@ -273,4 +273,33 @@ describe('MetadataPopover <Details />', () => {
       screen.queryByText(/"externalFormReference"/),
     ).not.toBeInTheDocument();
   });
+
+  it('should display incident fields for when incident is occured', async () => {
+    const incidentMetaData: V2MetaDataDto = {
+      ...baseMetaData,
+      instanceMetadata: {
+        ...baseMetaData.instanceMetadata!,
+        incidentKey: '2251799813696584',
+      },
+      incident: {
+        errorType: {
+          id: 'EXTRACT_VALUE_ERROR',
+          name: 'Extract value error',
+        },
+        errorMessage:
+          "Expected result of the expression 'approverGroups' to be 'ARRAY', but was 'NULL'.",
+      },
+    };
+
+    const {user} = render(
+      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      {wrapper: TestWrapper},
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Show more metadata'}));
+
+    expect(screen.getByText(/"incidentKey"/)).toBeInTheDocument();
+    expect(screen.getByText(/"incidentErrorType"/)).toBeInTheDocument();
+    expect(screen.getByText(/"incidentErrorMessage"/)).toBeInTheDocument();
+  });
 });
