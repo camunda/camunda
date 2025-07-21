@@ -46,7 +46,6 @@ public class ProcessDefinitionSearchMultiTenantsTest {
       new TestCamundaApplication().withBasicAuth().withMultiTenancyEnabled();
 
   private static final String TENANT_ID_1 = "tenant1";
-  private static final String TENANT_ID_2 = "tenant2";
   private static final String USERNAME_1 = "user1";
   private static final String PROCESS_DEFINITION_WITH_START_FORM_ID = "Process_11hxie4";
 
