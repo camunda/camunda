@@ -37,26 +37,26 @@
       "stackTraceEnabled": false
     }
   },
-  "contextMap": {
+  "logging.googleapis.com/labels": {
     "$resolver": "mdc"
   },
-  "staticContext": {
-    "threadId": {
+  "threadContext": {
+    "id": {
       "$resolver": "thread",
       "field": "id"
     },
-    "threadName": {
+    "name": {
       "$resolver": "thread",
       "field": "name"
     },
-    "threadPriority": {
+    "priority": {
       "$resolver": "thread",
       "field": "priority"
-    },
-    "loggerName": {
-      "$resolver": "logger",
-      "field": "name"
     }
+  },
+  "loggerName": {
+    "$resolver": "logger",
+    "field": "name"
   },
   "serviceContext": {
     "service": "${env:ZEEBE_LOG_STACKDRIVER_SERVICENAME:-${env:OPERATE_LOG_STACKDRIVER_SERVICENAME:-${env:TASKLIST_LOG_STACKDRIVER_SERVICENAME:-}}}",

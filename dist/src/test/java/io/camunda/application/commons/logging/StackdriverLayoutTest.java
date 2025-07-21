@@ -38,7 +38,7 @@ final class StackdriverLayoutTest {
   private ListAppender encodingAppender;
 
   @BeforeEach
-  void beforeEach() throws IOException {
+  void beforeEach() {
     logger = (Logger) LogManager.getLogger();
 
     final var configuration = logger.getContext().getConfiguration();
@@ -128,7 +128,7 @@ final class StackdriverLayoutTest {
     assertMessageMatchesWithContext(
         "DEBUG",
         """
-        "contextMap":{"baz":"qux","foo":"bar"}""");
+        "logging.googleapis.com/labels":{"baz":"qux","foo":"bar"}""");
   }
 
   @Test
@@ -161,12 +161,13 @@ final class StackdriverLayoutTest {
 
     assertThat(jsonMessage)
         .isEqualTo(
+            // language=json
             """
         {"timestampSeconds":%d,"timestampNanos":%d,"severity":"%s","message":"Hello World!",\
         "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
         "function":"Foo.Bar"},%s\
-        "staticContext":{"threadId":%d,"threadName":"%s","threadPriority":%d,\
-        "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest"},\
+        "threadContext":{"id":%d,"name":"%s","priority":%d},\
+        "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest",\
         "serviceContext":{"service":"","version":""}}""",
             message.getInstant().getEpochSecond(),
             message.getInstant().getNanoOfSecond(),
@@ -183,12 +184,13 @@ final class StackdriverLayoutTest {
 
     assertThat(jsonMessage)
         .isEqualTo(
+            // language=json
             """
         {"timestampSeconds":%d,"timestampNanos":%d,"severity":"ERROR","message":"Hello World!",\
         "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
         "function":"Foo.Bar"},\
-        "staticContext":{"threadId":%d,"threadName":"%s","threadPriority":%d,\
-        "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest"},\
+        "threadContext":{"id":%d,"name":"%s","priority":%d},\
+        "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest",\
         "serviceContext":{"service":"","version":""},\
         "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
         "reportLocation":{"filePath":"Foo.java","functionName":"Bar","lineNumber":1}}""",
@@ -208,12 +210,13 @@ final class StackdriverLayoutTest {
     assertThat(jsonMessage)
         .matches(
             Pattern.quote(
+                    // language=json
                     """
         {"timestampSeconds":%d,"timestampNanos":%d,"severity":"ERROR","message":"Hello World!",\
         "logging.googleapis.com/sourceLocation":{"file":"Foo.java","line":1,\
         "function":"Foo.Bar"},\
-        "staticContext":{"threadId":%d,"threadName":"%s","threadPriority":%d,\
-        "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest"},\
+        "threadContext":{"id":%d,"name":"%s","priority":%d},\
+        "loggerName":"io.camunda.application.commons.logging.StackdriverLayoutTest",\
         "serviceContext":{"service":"","version":""},\
         "@type":"type.googleapis.com/google.devtools.clouderrorreporting.v1beta1.ReportedErrorEvent",\
         "exception":"""
