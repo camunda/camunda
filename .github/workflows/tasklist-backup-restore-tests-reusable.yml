@@ -2,7 +2,7 @@
 # test location: tasklist/qa/backup-restore-tests
 # type: CI
 # owner: @camunda/data-layer
-name: "[Legacy] Tasklist / Backup and restore tests (reusable)"
+name: "Tasklist Backup and restore tests (reusable)"
 
 on:
   workflow_call:
@@ -14,7 +14,7 @@ on:
 
 jobs:
   run-backup-restore-tests:
-    name: "with '${{ inputs.database }}'"
+    name: "Run Backup Restore Test"
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -27,6 +27,8 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -45,9 +47,30 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Tasklist backup restore Tests
-        run: ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -DskipTests=false verify
+        run: ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -DskipTests=false verify | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts
         with:
-          name: "[Legacy] Tasklist Test Backup Restore"
+          name: "Tasklist Test Backup Restore"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+          # workaround to avoid https://github.com/camunda/camunda/issues/16604
+          skipSummary: true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "tasklist-ci/backup-restore"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          detailed_junit_flaky_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
