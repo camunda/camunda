@@ -23,16 +23,15 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
-public class AssignMappingRuleToRoleTest extends ClientRestTest {
-
+public class UnassignRoleFromMappingRuleTest extends ClientRestTest {
   public static final String ROLE_ID = "roleId";
-  public static final String MAPPING_RULE_ID = "mappingId";
+  public static final String MAPPING_RULE_ID = "mappingRuleId";
 
   @Test
-  void shouldAssignMappingRuleToRole() {
+  void shouldUnassignRoleFromMappingRule() {
     // when
     client
-        .newAssignMappingRuleToRoleCommand()
+        .newUnassignRoleFromMappingRuleCommand()
         .roleId(ROLE_ID)
         .mappingRuleId(MAPPING_RULE_ID)
         .send()
@@ -50,7 +49,7 @@ public class AssignMappingRuleToRoleTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingRuleToRoleCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(null)
                     .mappingRuleId(MAPPING_RULE_ID)
                     .send()
@@ -65,7 +64,7 @@ public class AssignMappingRuleToRoleTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingRuleToRoleCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId("")
                     .mappingRuleId(MAPPING_RULE_ID)
                     .send()
@@ -80,7 +79,7 @@ public class AssignMappingRuleToRoleTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingRuleToRoleCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(ROLE_ID)
                     .mappingRuleId(null)
                     .send()
@@ -95,7 +94,7 @@ public class AssignMappingRuleToRoleTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingRuleToRoleCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(ROLE_ID)
                     .mappingRuleId("")
                     .send()

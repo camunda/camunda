@@ -15,28 +15,28 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.response.UnassignMappingRuleFromRoleResponse;
+import io.camunda.client.api.response.AssignRoleToMappingRuleResponse;
 
-public interface UnassignMappingRuleFromRoleCommandStep1 {
+/** Command to assign mapping rule to a role. */
+public interface AssignRoleToMappingRuleCommandStep1 {
 
   /**
    * Sets the role ID.
    *
-   * @param roleId the roleId of the role
-   * @return the builder for this command.
+   * @param roleId the id of the role
+   * @return the builder for this command
    */
-  UnassignMappingRuleFromRoleCommandStep2 roleId(String roleId);
+  AssignRoleToMappingRuleCommandStep2 roleId(String roleId);
 
-  interface UnassignMappingRuleFromRoleCommandStep2
-      extends FinalCommandStep<UnassignMappingRuleFromRoleResponse> {
-
+  interface AssignRoleToMappingRuleCommandStep2
+      extends FinalCommandStep<AssignRoleToMappingRuleResponse> {
     /**
      * Sets the mapping rule ID.
      *
-     * @param mappingRuleId the mappingRuleId of the mapping rule
+     * @param mappingRuleId the id of the mapping rule
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    UnassignMappingRuleFromRoleCommandStep2 mappingRuleId(String mappingRuleId);
+    AssignRoleToMappingRuleCommandStep2 mappingRuleId(String mappingRuleId);
   }
 }

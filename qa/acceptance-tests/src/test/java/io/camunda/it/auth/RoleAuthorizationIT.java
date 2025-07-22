@@ -264,7 +264,7 @@ class RoleAuthorizationIT {
         .join();
 
     adminClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
@@ -292,7 +292,7 @@ class RoleAuthorizationIT {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignMappingRuleToRoleCommand()
+                    .newAssignRoleToMappingRuleCommand()
                     .roleId(Strings.newRandomValidIdentityId())
                     .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
@@ -505,14 +505,14 @@ class RoleAuthorizationIT {
         .join();
 
     adminClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(ROLE_ID_1)
         .mappingRuleId(mappingId)
         .send()
         .join();
 
     adminClient
-        .newUnassignMappingRuleFromRoleCommand()
+        .newUnassignRoleFromMappingRuleCommand()
         .roleId(ROLE_ID_1)
         .mappingRuleId(mappingId)
         .send()
@@ -533,7 +533,7 @@ class RoleAuthorizationIT {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignMappingRuleFromRoleCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(Strings.newRandomValidIdentityId())
                     .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()

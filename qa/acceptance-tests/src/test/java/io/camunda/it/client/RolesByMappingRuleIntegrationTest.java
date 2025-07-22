@@ -54,7 +54,7 @@ public class RolesByMappingRuleIntegrationTest {
 
     // when
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
@@ -73,7 +73,7 @@ public class RolesByMappingRuleIntegrationTest {
     createMapping(mappingId, "someMappingName", "someTestClaimName", "someTestClaimValue");
 
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
@@ -83,7 +83,7 @@ public class RolesByMappingRuleIntegrationTest {
 
     // when
     camundaClient
-        .newUnassignMappingRuleFromRoleCommand()
+        .newUnassignRoleFromMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
@@ -105,7 +105,7 @@ public class RolesByMappingRuleIntegrationTest {
     createMapping(mappingId, "mappingName", "aClaimName", "aClaimValue");
 
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
@@ -130,7 +130,7 @@ public class RolesByMappingRuleIntegrationTest {
     createMapping(mappingId, "mappingName", "claimName", "claimValue");
 
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(EXISTING_ROLE_ID)
         .mappingRuleId(mappingId)
         .send()
@@ -140,7 +140,7 @@ public class RolesByMappingRuleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignMappingRuleToRoleCommand()
+                    .newAssignRoleToMappingRuleCommand()
                     .roleId(EXISTING_ROLE_ID)
                     .mappingRuleId(mappingId)
                     .send()
@@ -165,7 +165,7 @@ public class RolesByMappingRuleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignMappingRuleFromRoleCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(EXISTING_ROLE_ID)
                     .mappingRuleId(mappingId)
                     .send()
@@ -185,7 +185,7 @@ public class RolesByMappingRuleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignMappingRuleToRoleCommand()
+                    .newAssignRoleToMappingRuleCommand()
                     .roleId(Strings.newRandomValidIdentityId())
                     .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
@@ -204,7 +204,7 @@ public class RolesByMappingRuleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignMappingRuleToRoleCommand()
+                    .newAssignRoleToMappingRuleCommand()
                     .roleId(EXISTING_ROLE_ID)
                     .mappingRuleId(mappingId)
                     .send()
@@ -227,7 +227,7 @@ public class RolesByMappingRuleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignMappingRuleFromRoleCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(EXISTING_ROLE_ID)
                     .mappingRuleId(mappingId)
                     .send()
@@ -247,7 +247,7 @@ public class RolesByMappingRuleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignMappingRuleFromRoleCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(Strings.newRandomValidIdentityId())
                     .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
@@ -269,7 +269,7 @@ public class RolesByMappingRuleIntegrationTest {
     createRole(roleId, "SearchRole", "desc");
     createMapping(mappingId, mappingName, claimName, claimValue);
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
@@ -321,19 +321,19 @@ public class RolesByMappingRuleIntegrationTest {
         mappingC, nameC, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId());
 
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingA)
         .send()
         .join();
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingB)
         .send()
         .join();
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingC)
         .send()
@@ -372,13 +372,13 @@ public class RolesByMappingRuleIntegrationTest {
         mappingB, Strings.newRandomValidIdentityId(), claimB, Strings.newRandomValidIdentityId());
 
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingA)
         .send()
         .join();
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingB)
         .send()
@@ -417,13 +417,13 @@ public class RolesByMappingRuleIntegrationTest {
         mappingB, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId(), valueB);
 
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingA)
         .send()
         .join();
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingB)
         .send()
@@ -463,13 +463,13 @@ public class RolesByMappingRuleIntegrationTest {
         Strings.newRandomValidIdentityId());
 
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
         .join();
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(nonMatchingMappingId)
         .send()
@@ -512,13 +512,13 @@ public class RolesByMappingRuleIntegrationTest {
         Strings.newRandomValidIdentityId());
 
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
         .join();
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(nonMatchingMappingId)
         .send()
@@ -560,13 +560,13 @@ public class RolesByMappingRuleIntegrationTest {
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId());
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(mappingId)
         .send()
         .join();
     camundaClient
-        .newAssignMappingRuleToRoleCommand()
+        .newAssignRoleToMappingRuleCommand()
         .roleId(roleId)
         .mappingRuleId(nonMatchingMappingId)
         .send()

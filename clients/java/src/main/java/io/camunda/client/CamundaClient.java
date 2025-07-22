@@ -20,10 +20,10 @@ import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandSte
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
-import io.camunda.client.api.command.AssignMappingRuleToRoleCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
+import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToUserCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
@@ -69,9 +69,9 @@ import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
-import io.camunda.client.api.command.UnassignMappingRuleFromRoleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
@@ -1197,7 +1197,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    *
    * camundaClient
-   *  .newAssignMappingRuleToRoleCommand()
+   *  .newAssignRoleToMappingRuleCommand()
    *  .roleId("roleId")
    *  .mappingRuleId("mappingRuleId")
    *  .send();
@@ -1207,7 +1207,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder to configure and send the assign mapping rule to role command
    */
-  AssignMappingRuleToRoleCommandStep1 newAssignMappingRuleToRoleCommand();
+  AssignRoleToMappingRuleCommandStep1 newAssignRoleToMappingRuleCommand();
 
   /**
    * Command to delete a role by role ID.
@@ -1370,7 +1370,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUnassignMappingRuleFromRoleCommand()
+   *   .newUnassignRoleFromMappingRuleCommand()
    *   .roleId("roleId")
    *   .mappingRuleId("mappingRuleId")
    *   .send();
@@ -1380,7 +1380,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the unassign mapping rule from role command
    */
-  UnassignMappingRuleFromRoleCommandStep1 newUnassignMappingRuleFromRoleCommand();
+  UnassignRoleFromMappingRuleCommandStep1 newUnassignRoleFromMappingRuleCommand();
 
   /**
    * Command to unassign a role from a client.

@@ -175,7 +175,7 @@ public final class EntityManager {
               break;
             case MAPPING_RULE:
               defaultClient
-                  .newAssignMappingRuleToRoleCommand()
+                  .newAssignRoleToMappingRuleCommand()
                   .roleId(roleId)
                   .mappingRuleId(membership.memberId())
                   .send()

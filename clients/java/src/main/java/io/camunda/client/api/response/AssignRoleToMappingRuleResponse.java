@@ -15,4 +15,4 @@
  */
 package io.camunda.client.api.response;
 
-public interface AssignMappingRuleToRoleResponse {}
+public interface AssignRoleToMappingRuleResponse {}

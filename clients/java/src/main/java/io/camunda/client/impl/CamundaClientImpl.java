@@ -26,10 +26,10 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
-import io.camunda.client.api.command.AssignMappingRuleToRoleCommandStep1;
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
+import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToUserCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
@@ -80,9 +80,9 @@ import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
-import io.camunda.client.api.command.UnassignMappingRuleFromRoleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
@@ -159,10 +159,10 @@ import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandIm
 import io.camunda.client.impl.command.AssignClientToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToGroupCommandImpl;
-import io.camunda.client.impl.command.AssignMappingRuleToRoleCommandImpl;
 import io.camunda.client.impl.command.AssignMappingRuleToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToClientCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToGroupCommandImpl;
+import io.camunda.client.impl.command.AssignRoleToMappingRuleCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToUserCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
@@ -212,9 +212,9 @@ import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignClientFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignMappingRuleFromGroupCommandImpl;
-import io.camunda.client.impl.command.UnassignMappingRuleFromRoleCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromClientCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromGroupCommandImpl;
+import io.camunda.client.impl.command.UnassignRoleFromMappingRuleCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromUserCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
@@ -874,8 +874,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignMappingRuleToRoleCommandStep1 newAssignMappingRuleToRoleCommand() {
-    return new AssignMappingRuleToRoleCommandImpl(httpClient);
+  public AssignRoleToMappingRuleCommandStep1 newAssignRoleToMappingRuleCommand() {
+    return new AssignRoleToMappingRuleCommandImpl(httpClient);
   }
 
   @Override
@@ -924,8 +924,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UnassignMappingRuleFromRoleCommandStep1 newUnassignMappingRuleFromRoleCommand() {
-    return new UnassignMappingRuleFromRoleCommandImpl(httpClient);
+  public UnassignRoleFromMappingRuleCommandStep1 newUnassignRoleFromMappingRuleCommand() {
+    return new UnassignRoleFromMappingRuleCommandImpl(httpClient);
   }
 
   @Override

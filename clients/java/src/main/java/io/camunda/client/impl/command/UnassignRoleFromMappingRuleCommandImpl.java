@@ -17,52 +17,52 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.UnassignMappingRuleFromRoleCommandStep1;
-import io.camunda.client.api.command.UnassignMappingRuleFromRoleCommandStep1.UnassignMappingRuleFromRoleCommandStep2;
-import io.camunda.client.api.response.UnassignMappingRuleFromRoleResponse;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1.UnassignRoleFromMappingRuleCommandStep2;
+import io.camunda.client.api.response.UnassignRoleFromMappingRuleResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UnassignMappingRuleFromRoleCommandImpl
-    implements UnassignMappingRuleFromRoleCommandStep1, UnassignMappingRuleFromRoleCommandStep2 {
+public class UnassignRoleFromMappingRuleCommandImpl
+    implements UnassignRoleFromMappingRuleCommandStep1, UnassignRoleFromMappingRuleCommandStep2 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private String roleId;
   private String mappingRuleId;
 
-  public UnassignMappingRuleFromRoleCommandImpl(final HttpClient httpClient) {
+  public UnassignRoleFromMappingRuleCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public UnassignMappingRuleFromRoleCommandStep2 roleId(final String roleId) {
+  public UnassignRoleFromMappingRuleCommandStep2 roleId(final String roleId) {
     this.roleId = roleId;
     return this;
   }
 
   @Override
-  public UnassignMappingRuleFromRoleCommandStep2 mappingRuleId(final String mappingId) {
+  public UnassignRoleFromMappingRuleCommandStep2 mappingRuleId(final String mappingId) {
     mappingRuleId = mappingId;
     return this;
   }
 
   @Override
-  public FinalCommandStep<UnassignMappingRuleFromRoleResponse> requestTimeout(
+  public FinalCommandStep<UnassignRoleFromMappingRuleResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<UnassignMappingRuleFromRoleResponse> send() {
+  public CamundaFuture<UnassignRoleFromMappingRuleResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingRuleId);
-    final HttpCamundaFuture<UnassignMappingRuleFromRoleResponse> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<UnassignRoleFromMappingRuleResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
         "/roles/" + roleId + "/mapping-rules/" + mappingRuleId,
         null, // No request body needed
