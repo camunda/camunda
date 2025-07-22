@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
+import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
@@ -43,6 +44,7 @@ import org.springframework.util.StringUtils;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+@ConditionalOnSecondaryStorage
 public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalService {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalServiceImpl.class);
