@@ -918,13 +918,13 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(filter.getName())
+              Optional.ofNullable(f.getName())
                   .map(mapToOperations(String.class))
                   .ifPresent(builder::namesOperations);
               Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
               Optional.ofNullable(f.getVersionTag()).ifPresent(builder::versionTags);
-              Optional.ofNullable(filter.getProcessDefinitionId())
+              Optional.ofNullable(f.getProcessDefinitionId())
                   .map(mapToOperations(String.class))
                   .ifPresent(builder::processDefinitionIdsOperations);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
