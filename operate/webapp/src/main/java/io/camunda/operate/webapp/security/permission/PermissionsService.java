@@ -112,6 +112,45 @@ public class PermissionsService {
   }
 
   /**
+   * hasPermissionForDecisionRequirementsDefinition
+   *
+   * @return true if the user has the given permission for the decision requirements
+   */
+  public boolean hasPermissionForDecisionRequirementsDefinition(
+      final String decisionId, final PermissionType permissionType) {
+    return hasPermissionForResourceType(
+        decisionId, AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION, permissionType);
+  }
+
+  /**
+   * hasPermissionForProcess
+   *
+   * @return true if the user has the given permission for the process
+   */
+  public boolean hasPermissionForFlowNodeInstance(
+      final String flownodeId, final PermissionType permissionType) {
+    return hasPermissionForResourceType(
+        flownodeId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
+  }
+
+  /**
+   * hasPermissionForIncident
+   *
+   * @return true if the user has the given permission for the process
+   */
+  public boolean hasPermissionForIncident(
+      final String incidentId, final PermissionType permissionType) {
+    return hasPermissionForResourceType(
+        incidentId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
+  }
+
+  public boolean hasPermissionForVariable(
+      final String variableId, final PermissionType permissionType) {
+    return hasPermissionForResourceType(
+        variableId, AuthorizationResourceType.PROCESS_DEFINITION, permissionType);
+  }
+
+  /**
    * hasPermissionForResource
    *
    * @return true if the user has the given permission for the resource

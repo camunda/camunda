@@ -18,9 +18,13 @@ import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.QueryValidator.CustomQueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.security.auth.Authorization;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -59,6 +63,7 @@ public class IncidentController extends ErrorController implements SearchControl
       };
   private final QueryValidator<Incident> queryValidator = new QueryValidator<>();
   @Autowired private IncidentDao incidentDao;
+  @Autowired private PermissionsService permissionsService;
 
   @Operation(
       summary = "Search incidents",
@@ -85,7 +90,14 @@ public class IncidentController extends ErrorController implements SearchControl
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
       })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       description = "Search incidents",
@@ -149,6 +161,7 @@ public class IncidentController extends ErrorController implements SearchControl
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, Incident.class, MESSAGE_SORT_VALIDATOR);
+    checkIdentityReadPermission();
     return incidentDao.search(query);
   }
 
@@ -172,6 +185,13 @@ public class IncidentController extends ErrorController implements SearchControl
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -182,6 +202,15 @@ public class IncidentController extends ErrorController implements SearchControl
   @Override
   public Incident byKey(
       @Parameter(description = "Key of incident", required = true) @PathVariable final Long key) {
+    checkIdentityReadPermission();
     return incidentDao.byKey(key);
+  }
+
+  private void checkIdentityReadPermission() {
+    if (!permissionsService.hasPermissionForIncident(
+        Authorization.WILDCARD, PermissionType.READ_PROCESS_INSTANCE)) {
+      throw new ForbiddenException(
+          "No read permission for process instances and related resources");
+    }
   }
 }
