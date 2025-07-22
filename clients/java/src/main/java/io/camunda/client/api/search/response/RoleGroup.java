@@ -13,12 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.request;
+package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.filter.RoleGroupFilter;
-import io.camunda.client.api.search.response.RoleGroup;
-import io.camunda.client.api.search.sort.RoleGroupSort;
-
-public interface GroupsByRoleSearchRequest
-    extends TypedSearchRequest<RoleGroupFilter, RoleGroupSort, GroupsByRoleSearchRequest>,
-        FinalSearchRequestStep<RoleGroup> {}
+public interface RoleGroup {
+  String getGroupId();
+}
