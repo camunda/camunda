@@ -36,7 +36,7 @@ public class TenantAwareSignalEventTest {
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
+          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true))
           .withSecurityConfig(
               config ->
                   config

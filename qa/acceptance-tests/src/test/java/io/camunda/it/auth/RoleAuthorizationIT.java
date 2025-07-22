@@ -18,8 +18,8 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Client;
-import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.RoleGroup;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -684,7 +684,7 @@ class RoleAuthorizationIT {
   @Test
   void searchGroupsByRoleShouldReturnEmptyListIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    final SearchResponse<Group> response =
+    final SearchResponse<RoleGroup> response =
         camundaClient.newGroupsByRoleSearchRequest(ROLE_ID_1).send().join();
     assertThat(response.items()).isEmpty();
   }

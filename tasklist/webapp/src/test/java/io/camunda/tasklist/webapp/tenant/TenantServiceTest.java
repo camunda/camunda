@@ -43,7 +43,7 @@ public class TenantServiceTest {
   @Test
   void getAuthenticatedTenantsWhenMultiTenancyIsOn() {
     RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
-    securityConfiguration.getMultiTenancy().setEnabled(true);
+    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
     prepareMocksTenants();
 
     final List<String> expectedListOfTenants = new ArrayList<String>();
@@ -60,7 +60,7 @@ public class TenantServiceTest {
   void invalidTenant() {
     RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
     final String tenantId = "C";
-    securityConfiguration.getMultiTenancy().setEnabled(true);
+    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
     prepareMocksTenants();
     Assertions.assertThat(instance.isTenantValid(tenantId)).isFalse();
   }
@@ -69,7 +69,7 @@ public class TenantServiceTest {
   void validTenant() {
     RequestContextHolder.setRequestAttributes(mock(RequestAttributes.class));
     final String tenantId = "A";
-    securityConfiguration.getMultiTenancy().setEnabled(true);
+    securityConfiguration.getMultiTenancy().setChecksEnabled(true);
     prepareMocksTenants();
     Assertions.assertThat(instance.isTenantValid(tenantId)).isTrue();
   }

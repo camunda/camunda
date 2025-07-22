@@ -45,7 +45,7 @@ import org.springframework.test.web.servlet.MvcResult;
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      "camunda.security.multiTenancy.enabled = true",
+      "camunda.security.multiTenancy.checksEnabled = true",
       "camunda.security.authentication.unprotected-api=false"
     })
 public class DecisionIT extends OperateAbstractIT {

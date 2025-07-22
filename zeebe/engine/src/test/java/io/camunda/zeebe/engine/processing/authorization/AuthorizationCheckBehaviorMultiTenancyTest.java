@@ -81,7 +81,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     authConfig.setEnabled(true);
     securityConfig.setAuthorizations(authConfig);
     final var multiTenancyConfig = new MultiTenancyConfiguration();
-    multiTenancyConfig.setEnabled(true);
+    multiTenancyConfig.setChecksEnabled(true);
     securityConfig.setMultiTenancy(multiTenancyConfig);
     authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
 
