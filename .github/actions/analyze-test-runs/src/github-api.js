@@ -12,19 +12,31 @@
 
 /**
  * Fetches all PR data in parallel to minimize API calls
- * @param {object} github - GitHub API client
- * @param {string} owner - Repository owner
- * @param {string} repo - Repository name
- * @param {number} prNumber - Pull request number
+ * @param {object} githubConfig - GitHub configuration object containing API client, owner, and repo
+ * @param {object} githubConfig.github - GitHub API client
+ * @param {string} githubConfig.owner - Repository owner
+ * @param {string} githubConfig.repo - Repository name
+ * @param {number} githubConfig.prNumber - Pull request number
  * @returns {object} - Object containing files, commits, and PR data
  */
-async function fetchPRData(github, owner, repo, prNumber) {
+async function fetchPRData(githubConfig) {
   console.log('🔄 Making parallel API calls for PR files, commits, and details...');
 
   const [prFilesResponse, commitsResponse, pullRequestResponse] = await Promise.all([
-    github.rest.pulls.listFiles({ owner, repo, pull_number: prNumber }),
-    github.rest.pulls.listCommits({ owner, repo, pull_number: prNumber }),
-    github.rest.pulls.get({ owner, repo, pull_number: prNumber })
+    githubConfig.github.rest.pulls.listFiles({
+      owner: githubConfig.owner,
+      repo: githubConfig.repo,
+      pull_number: githubConfig.prNumber
+    }),
+    githubConfig.github.rest.pulls.listCommits({
+      owner: githubConfig.owner,
+      repo: githubConfig.repo,
+      pull_number: githubConfig.prNumber
+    }),
+    githubConfig.github.rest.pulls.get({
+      owner: githubConfig.owner,
+      repo: githubConfig.repo,
+      pull_number: githubConfig.prNumber})
   ]);
 
   const prData = {
@@ -46,21 +58,22 @@ async function fetchPRData(github, owner, repo, prNumber) {
 
 /**
  * Finds the last author who modified a specific file
- * @param {object} github - GitHub API client
- * @param {string} owner - Repository owner
- * @param {string} repo - Repository name
+ * @param {object} githubConfig - GitHub configuration object containing API client, owner, and repo
+ * @param {object} githubConfig.github - GitHub API client
+ * @param {string} githubConfig.owner - Repository owner
+ * @param {string} githubConfig.repo - Repository name
  * @param {array} commits - Array of commit objects
  * @param {string} filename - Name of the file to check
  * @returns {object} - Object containing author and commit info
  */
-async function findLastAuthor(github, owner, repo, commits, filename) {
+async function findLastAuthor(githubConfig, commits, filename) {
   console.log(`Finding last author for file: ${filename}`);
 
   for (const commit of [...commits].reverse()) {
     try {
-      const { data: commitFiles } = await github.rest.repos.getCommit({
-        owner,
-        repo,
+      const { data: commitFiles } = await githubConfig.github.rest.repos.getCommit({
+        owner: githubConfig.owner,
+        repo: githubConfig.repo,
         ref: commit.sha,
       });
 
@@ -82,17 +95,18 @@ async function findLastAuthor(github, owner, repo, commits, filename) {
 
 /**
  * Creates inline review comments for flaky tests
- * @param {object} github - GitHub API client
- * @param {string} owner - Repository owner
- * @param {string} repo - Repository name
- * @param {number} prNumber - Pull request number
+ * @param {object} githubConfig - GitHub configuration object containing API client, owner, and repo
+ * @param {object} githubConfig.github - GitHub API client
+ * @param {string} githubConfig.owner - Repository owner
+ * @param {string} githubConfig.repo - Repository name
+ * @param {number} githubConfig.prNumber - Pull request number
  * @param {string} headSha - Head commit SHA
  * @param {Map} inlineTargets - Map of filename to target info
  * @param {function} createInlineCommentBody - Function to create comment body
  * @param {string} flakyTests - Flaky tests string
  * @returns {object} - Summary of success/failure counts
  */
-async function createInlineComments(github, owner, repo, prNumber, headSha, inlineTargets, createInlineCommentBody, flakyTests) {
+async function createInlineComments(githubConfig, headSha, inlineTargets, createInlineCommentBody, flakyTests) {
   if (inlineTargets.size === 0) {
     console.log(`No inline comments to create`);
     return { successCount: 0, failCount: 0 };
@@ -107,10 +121,10 @@ async function createInlineComments(github, owner, repo, prNumber, headSha, inli
     const inlineBody = createInlineCommentBody(target.author, flakyTests);
 
     try {
-      await github.rest.pulls.createReviewComment({
-        owner,
-        repo,
-        pull_number: prNumber,
+      await githubConfig.github.rest.pulls.createReviewComment({
+        owner: githubConfig.owner,
+        repo: githubConfig.repo,
+        pull_number: githubConfig.prNumber,
         commit_id: headSha,
         path: target.file,
         line: 1,
@@ -130,22 +144,23 @@ async function createInlineComments(github, owner, repo, prNumber, headSha, inli
 
 /**
  * Creates or updates the main PR comment about flaky tests
- * @param {object} github - GitHub API client
- * @param {string} owner - Repository owner
- * @param {string} repo - Repository name
- * @param {number} prNumber - Pull request number
+ * @param {object} githubConfig - GitHub configuration object containing API client, owner, and repo
+ * @param {object} githubConfig.github - GitHub API client
+ * @param {string} githubConfig.owner - Repository owner
+ * @param {string} githubConfig.repo - Repository name
+ * @param {number} githubConfig.prNumber - Pull request number
  * @param {string} flakyTests - Flaky tests string
  * @param {function} createMainCommentBody - Function to create comment body
  */
-async function createOrUpdateMainComment(github, owner, repo, prNumber, flakyTests, createMainCommentBody) {
+async function createOrUpdateMainComment(githubConfig, flakyTests, createMainCommentBody) {
   console.log(`\n Creating main PR comment...`);
 
   const body = createMainCommentBody(flakyTests);
 
-  const comments = await github.rest.issues.listComments({
-    owner,
-    repo,
-    issue_number: prNumber,
+  const comments = await githubConfig.github.rest.issues.listComments({
+    owner: githubConfig.owner,
+    repo: githubConfig.repo,
+    issue_number: githubConfig.prNumber,
   });
 
   console.log(`Found ${comments.data.length} existing comments`);
@@ -157,18 +172,18 @@ async function createOrUpdateMainComment(github, owner, repo, prNumber, flakyTes
 
   if (botComment) {
     console.log(`Updating existing bot comment (ID: ${botComment.id})`);
-    await github.rest.issues.updateComment({
-      owner,
-      repo,
+    await githubConfig.github.rest.issues.updateComment({
+      owner: githubConfig.owner,
+      repo: githubConfig.repo,
       comment_id: botComment.id,
       body: body
     });
   } else {
     console.log(`Creating new bot comment`);
-    await github.rest.issues.createComment({
-      owner,
-      repo,
-      issue_number: prNumber,
+    await githubConfig.github.rest.issues.createComment({
+      owner: githubConfig.owner,
+      repo: githubConfig.repo,
+      issue_number: githubConfig.prNumber,
       body: body
     });
   }

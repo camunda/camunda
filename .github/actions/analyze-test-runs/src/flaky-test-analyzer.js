@@ -17,12 +17,13 @@ const githubApi = require('./github-api');
  * Searches for flaky tests that match files modified in the current PR
  * @param {string} flakyTests - The flaky tests string
  * @param {object} prData - PR data containing files and commits
- * @param {object} github - GitHub API client
- * @param {string} owner - Repository owner
- * @param {string} repo - Repository name
+ * @param {object} githubConfig - GitHub configuration object containing API client, owner, and repo
+ * @param {object} githubConfig.github - GitHub API client
+ * @param {string} githubConfig.owner - Repository owner
+ * @param {string} githubConfig.repo - Repository name
  * @returns {object} - Analysis results containing touched files, authors, and inline targets
  */
-async function searchFlakyTestsInModifiedFiles(flakyTests, prData, github, owner, repo) {
+async function searchFlakyTestsInModifiedFiles(flakyTests, prData, githubConfig) {
 
   const flakyTestLines = flakyTests.trim().split('\n').filter(line => line.trim());
   const changedFiles = prData.files.map(file => file.filename);
@@ -60,7 +61,7 @@ async function searchFlakyTestsInModifiedFiles(flakyTests, prData, github, owner
 
     // Find the author using the commits data we already fetched
     const { author: fileAuthor, commit: fileCommit } = await githubApi.findLastAuthor(
-      github, owner, repo, prData.commits, matchingFile
+      githubConfig, prData.commits, matchingFile
     );
 
     if (fileAuthor && fileCommit) {
@@ -102,9 +103,9 @@ async function searchFlakyTestsInModifiedFiles(flakyTests, prData, github, owner
  * @param {string} flakyTests - The flaky tests string
  */
 async function main(context, github, flakyTests) {
-  const prNumber = context.issue.number;
   const owner = context.repo.owner;
   const repo = context.repo.repo;
+  const githubConfig = { github, owner, repo, prNumber: Number(context.issue.number) };
 
   console.log('🚀 Starting flaky test analysis...');
   console.log(`🧪 Flaky tests found:\n${flakyTests}`);
@@ -112,24 +113,24 @@ async function main(context, github, flakyTests) {
   try {
     // Step 1: Fetch all required data upfront to minimize API calls
     console.log('\n📡 Step 1: Fetching all PR data...');
-    const prData = await githubApi.fetchPRData(github, owner, repo, prNumber);
+    const prData = await githubApi.fetchPRData(githubConfig);
 
     // Step 2: Process flaky tests and map to files/authors
     console.log('\n 🔍 Step 2: Analyzing flaky tests in modified files...');
-    const analysisResults = await searchFlakyTestsInModifiedFiles(flakyTests, prData, github, owner, repo);
+    const analysisResults = await searchFlakyTestsInModifiedFiles(flakyTests, prData, githubConfig);
 
     // Step 3: Execute all GitHub API interactions
     console.log('\n🚀 Step 3: Creating GitHub interactions...');
 
     // 3a. Create inline review comments
     await githubApi.createInlineComments(
-      github, owner, repo, prNumber, prData.pullRequest.head.sha,
+        githubConfig, prData.pullRequest.head.sha,
       analysisResults.inlineTargets, helpers.createInlineCommentBody, flakyTests
     );
 
     // 3b. Build and post/update the main PR comment
     await githubApi.createOrUpdateMainComment(
-      github, owner, repo, prNumber, flakyTests, helpers.createMainCommentBody
+        githubConfig, flakyTests, helpers.createMainCommentBody
     );
 
     console.log('\n🎉 Flaky test analysis completed successfully!');

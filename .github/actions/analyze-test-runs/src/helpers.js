@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+const path = require('path');
+
 /**
  * Helper functions for flaky test analysis
  */
@@ -16,7 +18,10 @@
  * @returns {string|null} - The extracted test class name or null if not found
  */
 function extractTestClass(testLine) {
-  const match = testLine.match(/([a-zA-Z][a-zA-Z0-9]*\.)+[a-zA-Z][a-zA-Z0-9]*\.[A-Z][a-zA-Z0-9]*(?:Test|IT)/);
+  // Matches the test class path
+  const TEST_CLASS_PATH_REGEX = /([a-zA-Z][a-zA-Z0-9]*\.)+[a-zA-Z][a-zA-Z0-9]*\.[A-Z][a-zA-Z0-9]*(?:Test|IT)/;
+
+  const match = testLine.match(TEST_CLASS_PATH_REGEX);
   const result = match ? match[0] : null;
   console.log(`Extracting test class from: "${testLine}" → ${result || 'NO MATCH'}`);
   return result;
@@ -50,7 +55,7 @@ function findMatchingFile(testClass, changedFiles) {
 
   for (const possiblePath of possiblePaths) {
     const matchingFile = changedFiles.find(file =>
-      file.endsWith(possiblePath) || file.includes(className)
+      file.endsWith(possiblePath) || path.basename(file) === `${className}.java`
     );
     if (matchingFile) {
       console.log(`Found matching file: ${matchingFile} for test class ${testClass}`);
