@@ -608,8 +608,6 @@ public class ProcessInstanceMigrationMigrateProcessor
                       .getProcess()
                       .getElementById(targetGatewayId, ExecutableFlowNode.class);
               requireValidTargetIncomingFlowCount(sourceGateway, targetGateway, processInstanceKey);
-              requireSequenceFlowExistsInTarget(
-                  activeFlow.getId(), sourceGateway, targetGateway, processInstanceKey);
 
               return activeFlow;
             })
