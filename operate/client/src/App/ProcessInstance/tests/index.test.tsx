@@ -8,7 +8,7 @@
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {testData} from './index.setup';
-import {ProcessInstance} from './index';
+import {ProcessInstance} from '../index';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';

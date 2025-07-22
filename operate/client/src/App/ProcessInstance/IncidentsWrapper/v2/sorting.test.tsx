@@ -11,11 +11,11 @@ import {IncidentsWrapper} from './index';
 import {Wrapper, mockIncidents} from '../tests/mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
-import {mockProcessInstance} from 'App/ProcessInstance/v2/mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {createInstance, createProcessInstance} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 
 describe('Sorting', () => {
   beforeEach(async () => {

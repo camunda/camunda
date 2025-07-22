@@ -42,28 +42,16 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {
-  type ProcessInstance,
-  type SequenceFlow,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type SequenceFlow} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
-const mockProcessInstance: ProcessInstance = {
-  processInstanceKey: '4294980768',
-  state: 'ACTIVE',
-  startDate: '2018-06-21',
-  processDefinitionKey: '2',
-  processDefinitionVersion: 1,
-  processDefinitionId: 'someKey',
-  tenantId: '<default>',
-  processDefinitionName: 'someProcessName',
-  hasIncident: true,
-};
+
 const mockSequenceFlowsV2: SequenceFlow[] = [
   {
     processInstanceKey: '2251799813693731',

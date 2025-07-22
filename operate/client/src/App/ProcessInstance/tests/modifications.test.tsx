@@ -13,7 +13,7 @@ import {
   waitFor,
   fireEvent,
 } from 'modules/testing-library';
-import {ProcessInstance} from './index';
+import {ProcessInstance} from '../index';
 import {
   createBatchOperation,
   createUser,

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '.';
+import {ProcessInstance} from '../index';
 import {getWrapper} from './mocks';
 import {Paths} from 'modules/Routes';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
