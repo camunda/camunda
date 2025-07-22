@@ -28,5 +28,7 @@
   "updatingMappingRule": "Updating mapping rule",
   "updateMappingRule": "Update Mapping rule",
   "enterClaimValue": "Enter claim value",
-  "valueForClaim": "Enter the value for the claim"
+  "valueForClaim": "Enter the value for the claim",
+  "mappingRuleIdRequired": "Mapping rule ID is required",
+  "mappingRuleNameRequired": "Mapping rule name is required"
 }

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ChangeEvent, FC, useId } from "react";
+import { ChangeEvent, FC, useId, useState } from "react";
 import { PasswordInput, TextArea, TextInput } from "@carbon/react";
 import useTranslate from "src/utility/localization";
 
@@ -38,19 +38,23 @@ export type TextFieldProps = {
   label: string;
   value: string;
   errors?: string[];
+  errorMessage?: string;
   helperText?: string;
   placeholder?: string;
   cols?: number;
   autoFocus?: boolean;
-  onBlur?: () => void;
+  onBlur?: (newValue: string) => void;
   readOnly?: boolean;
   onChange?: (newValue: string) => void;
+  validate?: (newValue: string) => boolean;
 } & (TextInputProps | TextAreaProps | PasswordInputProps);
 
 const TextField: FC<TextFieldProps> = ({
   onChange,
   onBlur,
+  validate,
   errors = [],
+  errorMessage = "",
   value,
   helperText,
   placeholder,
@@ -65,6 +69,7 @@ const TextField: FC<TextFieldProps> = ({
 }) => {
   const { t } = useTranslate();
   const fieldId = useId();
+  const [isValid, setIsValid] = useState(true);
 
   const commonProps = {
     labelText: label,
@@ -75,10 +80,22 @@ const TextField: FC<TextFieldProps> = ({
     placeholder: placeholder,
     onChange: (
       e: ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>,
-    ) => onChange?.(e.currentTarget.value),
-    invalid: errors && errors.length > 0,
-    invalidText: errors?.map((e) => t(e)).join(" "),
-    onBlur: onBlur,
+    ) => {
+      onChange?.(e.currentTarget.value);
+      if (validate) {
+        setIsValid(validate(e.currentTarget.value));
+      }
+    },
+    invalid: (errors && errors.length > 0) || !isValid,
+    invalidText: !isValid ? errorMessage : errors?.map((e) => t(e)).join(" "),
+    onBlur: (
+      e: ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>,
+    ) => {
+      onBlur?.(e.currentTarget.value);
+      if (validate) {
+        setIsValid(validate(e.currentTarget.value));
+      }
+    },
     readOnly: readOnly,
     ...(autoFocus && { "data-modal-primary-focus": true }),
   };
