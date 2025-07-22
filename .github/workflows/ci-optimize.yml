@@ -1,5 +1,5 @@
-# description:  tbd
-# test location: tbd
+# Unified CI for Optimize. Runs backend unit tests, front end unit tests, dockerfile linting (hadolint)
+# test location: /optimize, /optimize/client, optimize.Dockerfile
 # called by: ci.yml
 # type: CI
 # owner: @camunda/core-features
