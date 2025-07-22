@@ -14,6 +14,7 @@ import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,13 +49,13 @@ public class CamundaOAuthPrincipalServiceNoDbImplTest {
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getAuthenticationContext().getUsername()).isEqualTo("testuser");
-    assertThat(result.getAuthenticationContext().getClientId()).isNull();
-    assertThat(result.getAuthenticationContext().getGroups()).isEmpty();
-    assertThat(result.getAuthenticationContext().getRoles()).isEmpty();
-    assertThat(result.getAuthenticationContext().getTenants()).isEmpty();
-    assertThat(result.getAuthenticationContext().getAuthorizedApplications()).isEmpty();
-    assertThat(result.getMappingIds()).isEmpty();
+    assertThat(result.authenticationContext().username()).isEqualTo("testuser");
+    assertThat(result.authenticationContext().clientId()).isNull();
+    assertThat(result.authenticationContext().groups()).isEmpty();
+    assertThat(result.authenticationContext().roles()).isEmpty();
+    assertThat(result.authenticationContext().tenants()).isEmpty();
+    assertThat(result.authenticationContext().authorizedApplications()).isEmpty();
+    assertThat(result.mappingIds()).isEmpty();
   }
 
   @Test
@@ -67,50 +68,51 @@ public class CamundaOAuthPrincipalServiceNoDbImplTest {
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getAuthenticationContext().getUsername()).isNull();
-    assertThat(result.getAuthenticationContext().getClientId()).isEqualTo("test-client");
-    assertThat(result.getAuthenticationContext().getGroups()).isEmpty();
-    assertThat(result.getAuthenticationContext().getRoles()).isEmpty();
-    assertThat(result.getAuthenticationContext().getTenants()).isEmpty();
-    assertThat(result.getAuthenticationContext().getAuthorizedApplications()).isEmpty();
-    assertThat(result.getMappingIds()).isEmpty();
+    assertThat(result.authenticationContext().username()).isNull();
+    assertThat(result.authenticationContext().clientId()).isEqualTo("test-client");
+    assertThat(result.authenticationContext().groups()).isEmpty();
+    assertThat(result.authenticationContext().roles()).isEmpty();
+    assertThat(result.authenticationContext().tenants()).isEmpty();
+    assertThat(result.authenticationContext().authorizedApplications()).isEmpty();
+    assertThat(result.mappingIds()).isEmpty();
   }
 
   @Test
   void shouldLoadOAuthContextWithUsernameAndGroups() {
     // given
-    final Map<String, Object> claims = 
-        Map.of("preferred_username", "testuser", "groups", new String[]{"group1", "group2"});
+    final Map<String, Object> claims =
+        Map.of("preferred_username", "testuser", "groups", List.of("group1", "group2"));
 
     // when
     final OAuthContext result = service.loadOAuthContext(claims);
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getAuthenticationContext().getUsername()).isEqualTo("testuser");
-    assertThat(result.getAuthenticationContext().getGroups()).containsExactly("group1", "group2");
-    assertThat(result.getAuthenticationContext().isGroupsClaimEnabled()).isTrue();
+    assertThat(result.authenticationContext().username()).isEqualTo("testuser");
+    assertThat(result.authenticationContext().groups())
+        .containsExactlyInAnyOrder("group1", "group2");
+    assertThat(result.authenticationContext().groupsClaimEnabled()).isTrue();
     // In no-db mode, no secondary storage access, so these should be empty
-    assertThat(result.getAuthenticationContext().getRoles()).isEmpty();
-    assertThat(result.getAuthenticationContext().getTenants()).isEmpty();
-    assertThat(result.getAuthenticationContext().getAuthorizedApplications()).isEmpty();
-    assertThat(result.getMappingIds()).isEmpty();
+    assertThat(result.authenticationContext().roles()).isEmpty();
+    assertThat(result.authenticationContext().tenants()).isEmpty();
+    assertThat(result.authenticationContext().authorizedApplications()).isEmpty();
+    assertThat(result.mappingIds()).isEmpty();
   }
 
   @Test
   void shouldHandleEmptyGroupsClaim() {
     // given
-    final Map<String, Object> claims = 
-        Map.of("preferred_username", "testuser", "groups", new String[]{});
+    final Map<String, Object> claims =
+        Map.of("preferred_username", "testuser", "groups", List.of());
 
     // when
     final OAuthContext result = service.loadOAuthContext(claims);
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getAuthenticationContext().getUsername()).isEqualTo("testuser");
-    assertThat(result.getAuthenticationContext().getGroups()).isEmpty();
-    assertThat(result.getAuthenticationContext().isGroupsClaimEnabled()).isTrue();
+    assertThat(result.authenticationContext().username()).isEqualTo("testuser");
+    assertThat(result.authenticationContext().groups()).isEmpty();
+    assertThat(result.authenticationContext().groupsClaimEnabled()).isTrue();
   }
 
   @Test
@@ -119,10 +121,9 @@ public class CamundaOAuthPrincipalServiceNoDbImplTest {
     final Map<String, Object> claims = Map.of("some_other_claim", "value");
 
     // when & then
-    final OAuth2AuthenticationException exception = 
-        assertThrows(OAuth2AuthenticationException.class, 
-                     () -> service.loadOAuthContext(claims));
-    
+    final OAuth2AuthenticationException exception =
+        assertThrows(OAuth2AuthenticationException.class, () -> service.loadOAuthContext(claims));
+
     assertThat(exception.getError().getErrorCode()).isEqualTo("invalid_client");
     assertThat(exception.getMessage()).contains("Neither username claim");
     assertThat(exception.getMessage()).contains("nor clientId claim");
@@ -139,7 +140,7 @@ public class CamundaOAuthPrincipalServiceNoDbImplTest {
     authConfig.setOidc(oidcConfig);
     final var config = new SecurityConfiguration();
     config.setAuthentication(authConfig);
-    
+
     final var serviceNoGroups = new CamundaOAuthPrincipalServiceNoDbImpl(config);
     final Map<String, Object> claims = Map.of("preferred_username", "testuser");
 
@@ -148,8 +149,8 @@ public class CamundaOAuthPrincipalServiceNoDbImplTest {
 
     // then
     assertThat(result).isNotNull();
-    assertThat(result.getAuthenticationContext().getUsername()).isEqualTo("testuser");
-    assertThat(result.getAuthenticationContext().getGroups()).isEmpty();
-    assertThat(result.getAuthenticationContext().isGroupsClaimEnabled()).isFalse();
+    assertThat(result.authenticationContext().username()).isEqualTo("testuser");
+    assertThat(result.authenticationContext().groups()).isEmpty();
+    assertThat(result.authenticationContext().groupsClaimEnabled()).isFalse();
   }
 }
