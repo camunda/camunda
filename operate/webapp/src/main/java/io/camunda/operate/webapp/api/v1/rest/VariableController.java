@@ -16,9 +16,13 @@ import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
+import io.camunda.security.auth.Authorization;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -45,6 +49,7 @@ public class VariableController extends ErrorController implements SearchControl
   public static final String BY_PROCESS_INSTANCE_KEY = "/process-instance/{key}";
   private final QueryValidator<Variable> queryValidator = new QueryValidator<>();
   @Autowired private VariableDao variableDao;
+  @Autowired private PermissionsService permissionsService;
 
   @Operation(
       summary = "Search variables for process instances",
@@ -68,6 +73,13 @@ public class VariableController extends ErrorController implements SearchControl
         @ApiResponse(
             description = ValidationException.TYPE,
             responseCode = "400",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
@@ -118,6 +130,7 @@ public class VariableController extends ErrorController implements SearchControl
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, Variable.class);
+    checkIdentityReadPermission();
     return variableDao.search(query);
   }
 
@@ -141,6 +154,13 @@ public class VariableController extends ErrorController implements SearchControl
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -151,6 +171,15 @@ public class VariableController extends ErrorController implements SearchControl
   @Override
   public Variable byKey(
       @Parameter(description = "Key of variable", required = true) @PathVariable final Long key) {
+    checkIdentityReadPermission();
     return variableDao.byKey(key);
+  }
+
+  private void checkIdentityReadPermission() {
+    if (!permissionsService.hasPermissionForVariable(
+        Authorization.WILDCARD, PermissionType.READ_PROCESS_INSTANCE)) {
+      throw new ForbiddenException(
+          "No read permission for process instances and related resources");
+    }
   }
 }
