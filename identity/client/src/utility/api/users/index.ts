@@ -27,14 +27,14 @@ type SearchUserParams = {
 export const searchUser: ApiDefinition<
   SearchResponse<User>,
   Partial<SearchUserParams & PageSearchParams> | undefined
-> = (params) => {
-  const filters = params?.usernames
-    ? { filter: { username: { $in: params.usernames } } }
+> = (params = {}) => {
+  const { usernames, ...restParams } = params;
+
+  const filters = usernames
+    ? { filter: { username: { $in: usernames } } }
     : undefined;
 
-  delete params?.usernames;
-
-  return apiPost(`${USERS_ENDPOINT}/search`, { ...params, ...filters });
+  return apiPost(`${USERS_ENDPOINT}/search`, { ...restParams, ...filters });
 };
 
 type GetUserParams = {

@@ -10,25 +10,29 @@ import { useCallback, useEffect, useState } from "react";
 import useApiCall from "./useApiCall";
 import usePagination, { PageResult } from "./usePagination";
 
-const usePaginatedApiCall = (...props) => {
+const usePaginatedApiCall = <T extends { page?: PageResult }, P>(
+  ...props: Parameters<typeof useApiCall<T, P>>
+) => {
   const { pageParams, page, setPage, setPageSize, ...rest } = usePagination();
 
-  const [pageResult, setPageResult] = useState(() => ({}));
+  const [pageResult, setPageResult] = useState<Partial<PageResult>>({});
 
-  const [_call, result, reset] = useApiCall(...props);
+  const [_call, result, reset] = useApiCall<T, P>(...props);
 
   const call = useCallback(
-    (params) => {
+    (params: P) => {
       return _call({
         ...pageParams,
         ...params,
-      });
+      } as P);
     },
     [_call, pageParams],
   );
 
   useEffect(() => {
-    setPageResult(result.data?.page as PageResult);
+    if (result.data?.page) {
+      setPageResult(result.data.page);
+    }
   }, [result.data]);
 
   return [
@@ -36,7 +40,7 @@ const usePaginatedApiCall = (...props) => {
     { page: { ...page, ...pageResult }, setPage, setPageSize, ...rest },
     result,
     reset,
-  ];
+  ] as const;
 };
 
 export default usePaginatedApiCall;

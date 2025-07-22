@@ -74,7 +74,6 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
       <EntityList
         data={assignedClients}
         headers={[{ header: t("clientId"), key: "clientId" }]}
-        sortProperty="clientId"
         loading={loading}
         addEntityLabel={t("assignClient")}
         onAddEntity={openAssignModal}

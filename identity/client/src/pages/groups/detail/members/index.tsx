@@ -94,7 +94,6 @@ const Members: FC<MembersProps> = ({ groupId }) => {
       <EntityList
         data={users}
         headers={membersListHeaders}
-        sortProperty="username"
         loading={loading}
         addEntityLabel={t("assignUser")}
         onAddEntity={openAssignModal}

@@ -90,7 +90,6 @@ const MappingRules: FC<MappingRulesProps> = ({ tenantId }) => {
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
-        sortProperty="mappingRuleId"
         loading={loading}
         addEntityLabel={t("assignMappingRule")}
         onAddEntity={openAssignModal}

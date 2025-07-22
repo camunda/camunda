@@ -95,7 +95,6 @@ const Groups: FC<GroupsProps> = ({ tenantId }) => {
       <EntityList
         data={groups}
         headers={groupsListHeaders}
-        sortProperty="groupId"
         loading={loading}
         addEntityLabel={t("assignGroup")}
         onAddEntity={openAssignModal}

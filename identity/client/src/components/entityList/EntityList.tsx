@@ -119,7 +119,7 @@ type EntityListProps<D extends EntityData> = {
 };
 
 const MAX_ICON_ACTIONS = 2;
-const PAGESIZES = [1, 15, 20, 30, 40, 50];
+const PAGESIZES = [15, 20, 30, 40, 50];
 
 const EntityList = <D extends EntityData>({
   title,
@@ -160,7 +160,7 @@ const EntityList = <D extends EntityData>({
     }
 
     if (search.length === 0) {
-      debounce(() => setSearch());
+      debounce(() => setSearch(undefined));
       return;
     }
 
@@ -174,7 +174,7 @@ const EntityList = <D extends EntityData>({
     const entityTableData: (D & { id: string })[] = [];
 
     data?.forEach((dataset) => {
-      const id = dataset.id || crypto.randomUUID();
+      const id = dataset.id || (Date.now() + Math.random()).toString();
       entityIndex[id] = dataset;
       entityTableData.push({ ...dataset, id });
     });
@@ -238,7 +238,7 @@ const EntityList = <D extends EntityData>({
                     placeholder={searchPlaceholder}
                     value={search}
                     persistent
-                    onChange={(e, value) => {
+                    onChange={(_, value) => {
                       setSearchState(value);
                     }}
                     onFocus={(event, handleExpand) => {
@@ -304,7 +304,7 @@ const EntityList = <D extends EntityData>({
                             isSortable: !!header.isSortable,
                             onClick: (_, { sortHeaderKey, sortDirection }) => {
                               if (sortDirection === "NONE") {
-                                setSort(null);
+                                setSort(undefined);
                                 return;
                               }
 

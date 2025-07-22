@@ -28,7 +28,7 @@ export type Role = {
 
 export const searchRoles: ApiDefinition<
   SearchResponse<Role>,
-  PageSearchParams
+  PageSearchParams | undefined
 > = (params) => apiPost(`${ROLES_ENDPOINT}/search`, params);
 
 type GetRoleParams = {

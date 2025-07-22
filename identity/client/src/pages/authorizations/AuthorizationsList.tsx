@@ -16,26 +16,19 @@ import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "./modals/AddModal";
 import DeleteModal from "./modals/DeleteModal";
+import { usePaginatedApi } from "src/utility/api/hooks";
 
 type AuthorizationListProps = {
   tab: ResourceType;
   data: SearchResponse<Authorization> | null;
   loading: boolean;
   reload: () => unknown;
-  paginationProps: {
-    page?: { page: number; pageSize: number } & Partial<
-      SearchResponse<Authorization>
-    >;
-    setPage?: (page: number) => void;
-    setPageSize?: (pageSize: number) => void;
-    search?: Record<string, string>;
-  };
+  paginationProps: Partial<Omit<ReturnType<typeof usePaginatedApi>, "data">>;
 };
 
 const AuthorizationList: FC<AuthorizationListProps> = ({
   tab,
   data,
-  loading,
   reload,
   paginationProps,
 }) => {
@@ -55,7 +48,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
       {data?.items?.length || paginationProps.search ? (
         <EntityList
           title={t(tab)}
-          data={data.items}
+          data={data?.items}
           headers={[
             { header: t("ownerType"), key: "ownerType", isSortable: true },
             { header: t("ownerId"), key: "ownerId", isSortable: true },
@@ -66,7 +59,6 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
           onAddEntity={() => {
             addAuthorization(tab);
           }}
-          loading={loading}
           menuItems={[
             {
               label: t("delete"),

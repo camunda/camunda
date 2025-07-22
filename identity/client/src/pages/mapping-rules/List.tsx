@@ -83,7 +83,6 @@ const List: FC = () => {
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
-        sortProperty="claimName"
         addEntityLabel={t("createMappingRule")}
         onAddEntity={addMappingRule}
         loading={loading}

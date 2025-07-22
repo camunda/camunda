@@ -19,6 +19,7 @@ type UseEnrichedUsersResult = {
   loading: boolean;
   success: boolean;
   reload: () => void;
+  paginationProps: ReturnType<typeof usePaginatedApiCall>[1];
 };
 
 export function useEnrichedUsers<P>(
