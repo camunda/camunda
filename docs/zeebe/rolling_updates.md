@@ -96,5 +96,5 @@ We accept this cost because it is difficult to assess the potential impact on di
 
 ## Testing
 
-You can find a description of the rolling update tests in the [as part of our testing guide](/docs/testing/acceptance.md#rolling-update-tests).
+You can find a description of the rolling update tests in our testing guide [here](/docs/testing/acceptance.md#rolling-update-tests).
 
