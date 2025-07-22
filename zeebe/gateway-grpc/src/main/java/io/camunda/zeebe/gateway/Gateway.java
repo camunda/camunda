@@ -55,7 +55,6 @@ import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.grpc.MetricCollectingServerInterceptor;
-import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -277,9 +276,7 @@ public final class Gateway implements CloseableSilently {
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
         .maxInboundMessageSize(maxMessageSize)
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
-        .permitKeepAliveWithoutCalls(false)
-        .withOption(ChannelOption.SO_RCVBUF, (int) cfg.getSocketReceiveBuffer().toBytes())
-        .withChildOption(ChannelOption.SO_SNDBUF, (int) cfg.getSocketSendBuffer().toBytes());
+        .permitKeepAliveWithoutCalls(false);
   }
 
   private void setSecurityConfig(
