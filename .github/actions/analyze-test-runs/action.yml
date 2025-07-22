@@ -63,7 +63,16 @@ runs:
 
         echo "::warning::Found flaky tests!\n ${flakyTests}"
       fi
-
+  - name: Comment flaky tests on PR
+    if: steps.find-flakes.outputs.FLAKY_TESTS != ''
+    uses: actions/github-script@v7
+    with:
+      github-token: ${{ github.token }}
+      script: |
+        const { main } = require('./.github/actions/analyze-test-runs/src/flaky-test-analyzer');
+        const flakyTests = `${{ steps.find-flakes.outputs.FLAKY_TESTS }}`;
+        console.log('🚀 Starting flaky test analysis with modular script...');
+        await main(context, github, flakyTests);
   - name: Unfinished tests
     if: failure() || cancelled()
     shell: bash
