@@ -279,18 +279,24 @@ final class SegmentsManager implements AutoCloseable {
   void open() {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    loadSegments()
-        .forEach(
-            segment -> {
-              final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
-              if (replacedSegment != null) {
-                // The previous segment can be safely deleted to free resources.
-                replacedSegment.close();
-                replacedSegment.delete();
-              } else {
-                journalMetrics.incSegmentCount();
-              }
-            });
+    Segment previousSegment = null;
+    for (final Segment segment : loadSegments()) {
+      if (previousSegment != null) {
+        // Segments contain overlaps
+        if (previousSegment.lastIndex() >= segment.index()) {
+          reIndexOverlap(segment);
+        }
+      }
+      previousSegment = segment;
+      final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
+      if (replacedSegment != null) {
+        // The previous segment can be safely deleted to free resources.
+        replacedSegment.close();
+        replacedSegment.delete();
+      } else {
+        journalMetrics.incSegmentCount();
+      }
+    }
 
     // If a segment doesn't already exist, create an initial segment starting at index 1.
     if (!segments.isEmpty()) {
@@ -308,6 +314,21 @@ final class SegmentsManager implements AutoCloseable {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
+  }
+
+  /**
+   * When an overlap is detected, we must remove the journal index entries for segment's start index
+   * up to its last index - 1. Then we index the segment's first index in the {@link JournalIndex}.
+   * This is required to ensure that the {@link JournalIndex} points to the correct buffer positions
+   * in the overlapping segment. Any lookups on overlapping segments will point to the latest
+   * segment containing that index.
+   *
+   * @param segment the overlapping segment
+   */
+  private void reIndexOverlap(final Segment segment) {
+    final var reader = segment.createReader();
+    reader.truncateJournalIndex(segment.index(), segment.lastIndex() - 1);
+    reader.close();
   }
 
   private void prepareNextSegment() {

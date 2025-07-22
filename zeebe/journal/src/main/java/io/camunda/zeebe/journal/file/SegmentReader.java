@@ -109,6 +109,18 @@ final class SegmentReader implements Iterator<JournalRecord> {
     return currentIndex + 1;
   }
 
+  void truncateJournalIndex(final long fromIndexInclusive, final long toIndexInclusive) {
+    checkSegmentOpen();
+    index.deleteInRange(fromIndexInclusive, toIndexInclusive);
+
+    seek(fromIndexInclusive - 1);
+    if (hasNext()) {
+      final var position = buffer.position();
+      final var record = next();
+      index.index(record, position);
+    }
+  }
+
   private void checkSegmentOpen() {
     Preconditions.checkState(
         segment.isOpen(), "Segment is already closed. Reader must reset to a valid index.");
