@@ -311,7 +311,7 @@ You can do this by navigating to the last successful test run of the [zeebe-vers
 
 The `RollingUpdateTest` uses our own `CachedTestResultsExtension` JUnit extension.
 This extension allows to cache the test results of the parameterized test methods by storing them in a file.
-In the `zeebe-version-compatibility.yml` workflow merges the caches of all parallel test runs and stores the result as an artifact.
+In the `zeebe-version-compatibility.yml` workflow, the system merges the caches of all parallel test runs and stores the result as an artifact.
 The next run of the `RollingUpdateTest` restores the cache from the artifact of the last successful run.
 Then the `CachedTestResultsExtension` uses the cache to skip tests that already ran.
 
