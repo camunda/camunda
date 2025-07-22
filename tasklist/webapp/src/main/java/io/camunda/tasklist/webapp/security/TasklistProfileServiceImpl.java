@@ -40,7 +40,7 @@ public class TasklistProfileServiceImpl implements TasklistProfileService {
 
   @Override
   public boolean isLoginDelegated() {
-    return isIdentityProfile() || isSSOProfile() || isConsolidatedAuthOidc();
+    return isSSOProfile() || isConsolidatedAuthOidc();
   }
 
   private boolean isDevelopmentProfileActive() {
@@ -49,10 +49,6 @@ public class TasklistProfileServiceImpl implements TasklistProfileService {
 
   private boolean isSSOProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(SSO_AUTH_PROFILE);
-  }
-
-  private boolean isIdentityProfile() {
-    return Arrays.asList(environment.getActiveProfiles()).contains(IDENTITY_AUTH_PROFILE);
   }
 
   public boolean isConsolidatedAuthOidc() {

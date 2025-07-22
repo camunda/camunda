@@ -12,7 +12,6 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
-import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.zeebe.containers.ZeebeContainer;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -78,30 +77,8 @@ public abstract class TasklistZeebeExtension
 
   private void startZeebe() {
     Testcontainers.exposeHostPorts(getDatabasePort());
-    if (environment != null
-        && environment.matchesProfiles(TasklistProfileService.IDENTITY_AUTH_PROFILE)) {
-      LOGGER.info("Creating Zeebe container with identity enabled");
-      zeebeContainer =
-          createZeebeContainer()
-              .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
-              .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE", "keycloak")
-              .withEnv(
-                  "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL",
-                  IdentityTester.testContext.getInternalKeycloakBaseUrl()
-                      + "/auth/realms/camunda-platform")
-              .withEnv(
-                  "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE", "zeebe-api")
-              .withEnv(
-                  "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_BASEURL",
-                  IdentityTester.testContext.getInternalIdentityBaseUrl())
-              .withEnv(
-                  "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED",
-                  String.valueOf(securityConfiguration.getMultiTenancy().isChecksEnabled()));
-      zeebeContainer.start();
-    } else {
-      zeebeContainer = createZeebeContainer();
-      zeebeContainer.start();
-    }
+    zeebeContainer = createZeebeContainer();
+    zeebeContainer.start();
     prefix = zeebeContainer.getEnvMap().get(getZeebeExporterIndexPrefixConfigParameterName());
     LOGGER.info("Using Zeebe container with indexPrefix={}", prefix);
     setZeebeIndexesPrefix(prefix);
