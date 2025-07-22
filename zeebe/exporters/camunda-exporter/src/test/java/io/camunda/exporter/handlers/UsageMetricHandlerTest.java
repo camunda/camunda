@@ -18,6 +18,7 @@ import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
@@ -65,6 +66,16 @@ class UsageMetricHandlerTest {
 
     // when - then
     assertThat(underTest.handlesRecord(record)).isEqualTo(expected);
+  }
+
+  @Test
+  void shouldNotHandleWrongIntent() {
+    // when - then
+    assertThat(
+            underTest.handlesRecord(
+                factory.generateRecord(
+                    ValueType.PROCESS_INSTANCE, b -> b, ProcessInstanceIntent.ELEMENT_ACTIVATED)))
+        .isEqualTo(false);
   }
 
   @Test

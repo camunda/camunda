@@ -41,10 +41,8 @@ public record UsageMetricHandler(String indexName)
 
   @Override
   public boolean handlesRecord(final Record<UsageMetricRecordValue> record) {
-    return record.getIntent() != null
-        && record.getIntent() instanceof final UsageMetricIntent intent
-        && intent.equals(UsageMetricIntent.EXPORTED)
-        && !record.getValue().getEventType().equals(EventType.NONE);
+    return UsageMetricIntent.EXPORTED.equals(record.getIntent())
+        && !EventType.NONE.equals(record.getValue().getEventType());
   }
 
   @Override

@@ -42,11 +42,9 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
   }
 
   @Override
-  public boolean canExport(final Record<UsageMetricRecordValue> usageMetricRecordValue) {
-    return usageMetricRecordValue.getIntent() != null
-        && usageMetricRecordValue.getIntent() instanceof final UsageMetricIntent intent
-        && intent.equals(UsageMetricIntent.EXPORTED)
-        && !usageMetricRecordValue.getValue().getEventType().equals(EventType.NONE);
+  public boolean canExport(final Record<UsageMetricRecordValue> record) {
+    return UsageMetricIntent.EXPORTED.equals(record.getIntent())
+        && !EventType.NONE.equals(record.getValue().getEventType());
   }
 
   @Override
