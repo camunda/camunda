@@ -84,7 +84,6 @@ const useNonModifiableFlowNodes = () => {
 };
 
 export {
-  useFlowNodes,
   useAppendableFlowNodes,
   useCancellableFlowNodes,
   useModifiableFlowNodes,

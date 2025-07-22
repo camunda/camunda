@@ -46,4 +46,4 @@ function useProcessSequenceFlows(
   });
 }
 
-export {SEQUENCE_FLOWS_QUERY_KEY, useProcessSequenceFlows};
+export {useProcessSequenceFlows};

@@ -275,7 +275,6 @@ const appendExpandedFlowNodeInstanceIds = (
 };
 
 export {
-  getModificationPlaceholders,
   hasChildPlaceholders,
   appendExpandedFlowNodeInstanceIds,
   getVisibleChildPlaceholders,

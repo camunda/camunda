@@ -55,7 +55,4 @@ const useFlownodeInstancesStatistics = <
   });
 };
 
-export {
-  FLOWNODE_INSTANCES_STATISTICS_QUERY_KEY,
-  useFlownodeInstancesStatistics,
-};
+export {useFlownodeInstancesStatistics};

@@ -6,5 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export const OPERATIONS_LABEL = 'Operations';
 export const EMPTY_MESSAGE = 'No operations have been created yet.';

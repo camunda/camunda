@@ -37,4 +37,4 @@ function useDecisionDefinitionXmlOptions({
   );
 }
 
-export {DECISION_DEFINITION_XML_QUERY_KEY, useDecisionDefinitionXmlOptions};
+export {useDecisionDefinitionXmlOptions};

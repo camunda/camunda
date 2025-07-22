@@ -49,4 +49,4 @@ const useProcessInstance = <T = ProcessInstance>(
   });
 };
 
-export {PROCESS_INSTANCE_QUERY_KEY, useProcessInstance};
+export {useProcessInstance};

@@ -60,5 +60,5 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
   });
 }
 
-export {PROCESS_DEFINITION_XML_QUERY_KEY, useProcessDefinitionXml};
+export {useProcessDefinitionXml};
 export type {ParsedXmlData};

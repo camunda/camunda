@@ -27,14 +27,8 @@ const Details = styled.div`
   padding-top: var(--cds-spacing-07);
 `;
 
-const EntryDetails = styled.div`
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-`;
-
 const SkeletonText = styled(BaseSkeletonText)`
   margin: 0;
 `;
 
-export {Container, Header, EntryDetails, Details, SkeletonText};
+export {Container, Header, Details, SkeletonText};

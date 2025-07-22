@@ -72,7 +72,4 @@ function useProcessInstancesStatisticsOptions<
   };
 }
 
-export {
-  PROCESS_INSTANCES_STATISTICS_QUERY_KEY,
-  useProcessInstancesStatisticsOptions,
-};
+export {useProcessInstancesStatisticsOptions};

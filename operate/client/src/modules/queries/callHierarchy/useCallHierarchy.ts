@@ -42,4 +42,4 @@ const useCallHierarchy = <T = GetProcessInstanceCallHierarchyResponseBody>(
   });
 };
 
-export {CALL_HIERARCHY_QUERY_KEY, useCallHierarchy};
+export {useCallHierarchy};

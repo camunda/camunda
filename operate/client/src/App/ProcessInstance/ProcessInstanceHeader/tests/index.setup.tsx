@@ -63,7 +63,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 export {
   mockInstance,
   mockInstanceWithParentInstance,
-  mockInstanceWithIncident,
   mockInstanceDeprecated,
   mockOperationCreated,
   Wrapper,

@@ -242,7 +242,6 @@ export {
   validateNameComplete,
   validateNameCompleteDeprecated,
   validateNameNotDuplicate,
-  validateNameNotDuplicateDeprecated,
   validateValueComplete,
   validateValueValid,
   validateModifiedNameComplete,
