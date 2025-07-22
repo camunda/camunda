@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.impl.command.StreamUtil;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class TestUtil {
   public static byte[] getBytes(final String filename) {
