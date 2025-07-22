@@ -33,7 +33,7 @@ public class TenantAwareCallActivityTest {
   @ClassRule
   public static final EngineRule ENGINE =
       EngineRule.singlePartition()
-          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true));
+          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true));
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
