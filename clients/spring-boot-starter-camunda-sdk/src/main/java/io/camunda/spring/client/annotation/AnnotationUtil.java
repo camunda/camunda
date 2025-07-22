@@ -17,7 +17,6 @@ package io.camunda.spring.client.annotation;
 
 import static java.util.Optional.ofNullable;
 
-import com.google.common.collect.ImmutableMap;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue;
@@ -44,7 +43,7 @@ import org.slf4j.LoggerFactory;
 public class AnnotationUtil {
   private static final Logger LOG = LoggerFactory.getLogger(AnnotationUtil.class);
   private static final Map<String, ParameterType> DOCUMENT_PARAMETER_TYPES =
-      ImmutableMap.of(
+      Map.of(
           List.class.getName() + "<" + DocumentReferenceResponse.class.getName() + ">",
           ParameterType.LIST,
           DocumentReferenceResponse.class.getName(),
