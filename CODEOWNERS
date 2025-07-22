@@ -63,6 +63,11 @@
 /.github/workflows/operate-frontend.yml                   @camunda/core-features
 /.github/workflows/operate-playwright.yml                 @camunda/core-features
 /.github/workflows/operate-run-tests.yml                  @camunda/core-features
+/.github/workflows/ci-tasklist.yml                        @camunda/core-features
+/.github/workflows/tasklist-ci-fe-reusable.yml            @camunda/core-features
+/.github/workflows/tasklist-ci-test-reusable.yml          @camunda/core-features
+/.github/workflows/tasklist-ci.yml                        @camunda/core-features
+/.github/workflows/tasklist-e2e-tests.yml                 @camunda/core-features
 
 # Unit Test Suites
 /operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
@@ -73,10 +78,11 @@
 ################
 
 # CI Files
-/.github/workflows/operate-ci-data-layer.yml        @camunda/data-layer
-/.github/workflows/operate-test-backup-restore.yml  @camunda/data-layer
-/.github/workflows/operate-test-importer.yml        @camunda/data-layer
-/.github/workflows/operate-run-tests.yml            @camunda/data-layer
+/.github/workflows/operate-ci-data-layer.yml                      @camunda/data-layer
+/.github/workflows/operate-test-backup-restore.yml                @camunda/data-layer
+/.github/workflows/operate-test-importer.yml                      @camunda/data-layer
+/.github/workflows/operate-run-tests.yml                          @camunda/data-layer
+/.github/workflows/tasklist-backup-restore-tests-reusable.yml     @camunda/data-layer
 
 # Unit Test Suites
 /operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
