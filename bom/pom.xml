@@ -198,20 +198,24 @@
           <artifactId>license-maven-plugin</artifactId>
           <version>${plugin.version.license}</version>
           <configuration>
-            <header>${license.header}</header>
             <properties>
               <owner>camunda services GmbH</owner>
               <email>info@camunda.com</email>
             </properties>
-            <includes>
-              <include>**/*.java</include>
-              <include>**/*.scala</include>
-            </includes>
-            <excludes>
-              <exclude>zeebe/benchmarks/project/**/*</exclude>
-              <exclude>operate/**/*</exclude>
-              <exclude>tasklist/**/*</exclude>
-            </excludes>
+            <licenseSets>
+              <licenseSet>
+                <header>${license.header}</header>
+                <includes>
+                  <include>**/*.java</include>
+                  <include>**/*.scala</include>
+                </includes>
+                <excludes>
+                  <exclude>zeebe/benchmarks/project/**/*</exclude>
+                  <exclude>operate/**/*</exclude>
+                  <exclude>tasklist/**/*</exclude>
+                </excludes>
+              </licenseSet>
+            </licenseSets>
             <mapping>
               <java>SLASHSTAR_STYLE</java>
             </mapping>
