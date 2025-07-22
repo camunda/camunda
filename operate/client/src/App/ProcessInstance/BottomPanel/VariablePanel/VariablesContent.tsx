@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {variablesStore} from 'modules/stores/variables';
 import {observer} from 'mobx-react';
 import {Form as ReactFinalForm} from 'react-final-form';
-import type {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 
 import {Content, EmptyMessageContainer} from './styled';
 import arrayMutators from 'final-form-arrays';
@@ -18,13 +17,18 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Loading} from '@carbon/react';
 import {VariablesForm} from './VariablesForm';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useDisplayStatusFromVariablesStore} from 'modules/hooks/variables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
-import {getScopeId} from 'modules/utils/variables';
+import {addVariable, getScopeId, updateVariable} from 'modules/utils/variables';
+import {useQueryClient} from '@tanstack/react-query';
+import {
+  VARIABLES_SEARCH_QUERY_KEY,
+  useVariables,
+} from 'modules/queries/variables/useVariables';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const displayStatus = useDisplayStatusFromVariablesStore();
+  const queryClient = useQueryClient();
+  const {displayStatus} = useVariables();
 
   if (displayStatus === 'error') {
     return (
@@ -74,6 +78,11 @@ const VariablesContent: React.FC = observer(() => {
             id: processInstanceId,
             name,
             value,
+            invalidateQueries: () => {
+              queryClient.invalidateQueries({
+                queryKey: [VARIABLES_SEARCH_QUERY_KEY],
+              });
+            },
             onSuccess: () => {
               notificationsStore.displayNotification({
                 kind: 'success',
@@ -97,12 +106,12 @@ const VariablesContent: React.FC = observer(() => {
           };
 
           if (initialValues.name === '') {
-            const result = await variablesStore.addVariable(params);
+            const result = await addVariable(params);
             if (result === 'VALIDATION_ERROR') {
               return {name: 'Name should be unique'};
             }
           } else if (initialValues.name === name) {
-            variablesStore.updateVariable(params);
+            updateVariable(params);
             form.reset({});
           }
         }}

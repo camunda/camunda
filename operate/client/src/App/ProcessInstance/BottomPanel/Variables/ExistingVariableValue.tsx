@@ -8,30 +8,27 @@
 
 import {validateValueComplete, validateValueValid} from './validators';
 import {Field, useField, useForm, useFormState} from 'react-final-form';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createVariableFieldName} from './createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {variablesStore} from 'modules/stores/variables';
 import {Popup} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
-import {getSelectedFlowNodeName} from 'modules/utils/flowNodeSelection';
-import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
+import type {Variable} from '@vzeta/camunda-api-zod-schemas';
+import {useVariable} from 'modules/queries/variables/useVariable';
+import {notificationsStore} from 'modules/stores/notifications';
 
 type Props = {
   id?: string;
   variableName: string;
   variableValue: string;
-  pauseValidation?: boolean;
-  onFocus?: () => void;
+  isPreview?: boolean;
 };
 
 const createModification = ({
@@ -41,7 +38,7 @@ const createModification = ({
   name,
   oldValue,
   newValue,
-  businessObjects,
+  selectedFlowNodeName,
 }: {
   scopeId: string | null;
   isValid: boolean;
@@ -49,7 +46,7 @@ const createModification = ({
   name: string;
   oldValue: string;
   newValue: string;
-  businessObjects?: BusinessObjects;
+  selectedFlowNodeName: string;
 }) => {
   if (
     !modificationsStore.isModificationModeEnabled ||
@@ -78,12 +75,7 @@ const createModification = ({
         operation: 'EDIT_VARIABLE',
         id: name,
         scopeId,
-        flowNodeName: getSelectedFlowNodeName({
-          businessObjects,
-          processDefinitionName:
-            processInstanceDetailsStore.state.processInstance?.processName,
-          isRootNodeSelected: flowNodeSelectionStore.isRootNodeSelected,
-        }),
+        flowNodeName: selectedFlowNodeName,
         name,
         oldValue,
         newValue,
@@ -93,13 +85,29 @@ const createModification = ({
 };
 
 const ExistingVariableValue: React.FC<Props> = observer(
-  ({id, variableName, variableValue, pauseValidation = false, onFocus}) => {
+  ({id, variableName, variableValue, isPreview}) => {
     const {isModificationModeEnabled} = modificationsStore;
-    const {loadingItemId} = variablesStore.state;
     const formState = useFormState();
+    const selectedFlowNodeName = useSelectedFlowNodeName() || '';
     const [isModalVisible, setIsModalVisible] = useState(false);
     const form = useForm();
-    const {data: businessObjects} = useBusinessObjects();
+    const {
+      data: variable,
+      isLoading,
+      error,
+    } = useVariable(id!, {
+      enabled: isPreview && id !== undefined,
+    });
+
+    useEffect(() => {
+      if (error) {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Variable could not be fetched',
+          isDismissable: true,
+        });
+      }
+    }, [error]);
 
     const fieldName = isModificationModeEnabled
       ? createVariableFieldName(variableName)
@@ -111,22 +119,17 @@ const ExistingVariableValue: React.FC<Props> = observer(
 
     const isValid = !validating && valid;
 
-    const lastEditModification = modificationsStore.getLastVariableModification(
-      getScopeId(),
-      variableName,
-      'EDIT_VARIABLE',
-    );
+    const getInitialValue = (variable?: Variable) =>
+      variable?.value ?? variableValue;
 
-    const initialValue =
-      lastEditModification !== undefined
-        ? lastEditModification?.newValue
-        : variableValue;
+    const isVariableValueUndefined = variable?.value === undefined;
+    const pauseValidation = isPreview && isVariableValueUndefined;
 
     return (
       <Layer>
         <Field
           name={fieldName}
-          initialValue={initialValue}
+          initialValue={getInitialValue(variable)}
           validate={
             pauseValidation
               ? () => undefined
@@ -147,7 +150,6 @@ const ExistingVariableValue: React.FC<Props> = observer(
               buttonLabel="Open JSON editor modal"
               tooltipPosition="left"
               onIconClick={() => {
-                onFocus?.();
                 setIsModalVisible(true);
                 tracking.track({
                   eventName: 'json-editor-opened',
@@ -156,10 +158,9 @@ const ExistingVariableValue: React.FC<Props> = observer(
               }}
               Icon={Popup}
               autoFocus={!isModificationModeEnabled || meta.active}
-              isLoading={loadingItemId === id}
+              isLoading={isLoading}
               onFocus={(event) => {
                 if (!meta.active) {
-                  onFocus?.();
                   input.onFocus(event);
                 }
               }}
@@ -167,11 +168,11 @@ const ExistingVariableValue: React.FC<Props> = observer(
                 createModification({
                   scopeId: getScopeId(),
                   name: variableName,
-                  oldValue: variableValue,
+                  oldValue: getInitialValue(variable),
                   newValue: input.value ?? '',
-                  isDirty: variableValue !== input.value,
+                  isDirty: getInitialValue(variable) !== input.value,
                   isValid: isValid ?? false,
-                  businessObjects,
+                  selectedFlowNodeName,
                 });
 
                 input.onBlur(event);
@@ -202,10 +203,11 @@ const ExistingVariableValue: React.FC<Props> = observer(
               createModification({
                 scopeId: getScopeId(),
                 name: variableName,
-                oldValue: variableValue,
+                oldValue: getInitialValue(variable),
                 newValue: value ?? '',
-                isDirty: initialValue !== value,
+                isDirty: getInitialValue(variable) !== value,
                 isValid: isValid ?? false,
+                selectedFlowNodeName,
               });
             }}
           />

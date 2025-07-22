@@ -6,13 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {useEffect, useState} from 'react';
 import {variablesStore} from 'modules/stores/variables';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {VariablesContent, EmptyMessageWrapper} from './styled';
 import {observer} from 'mobx-react';
-import {computed, reaction} from 'mobx';
+import {reaction} from 'mobx';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useForm, useFormState} from 'react-final-form';
 import {Restricted} from 'modules/components/Restricted';
@@ -23,23 +21,34 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
-import {useDisplayStatusFromVariablesStore} from 'modules/hooks/variables';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
+import {usePermissions} from 'modules/queries/permissions/usePermissions';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
+import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
+import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
 };
 
+type FooterVariant = React.ComponentProps<typeof Footer>['variant'];
+
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
-    const displayStatus = useDisplayStatusFromVariablesStore();
+    const {displayStatus} = useVariables();
     const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );
+    const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+    const {data: permissions} = usePermissions();
+    const isRootNodeSelected = useIsRootNodeSelected();
     const {
-      state: {pendingItem, loadingItemId, status},
+      state: {pendingItem},
     } = variablesStore;
+    const [footerVariant, setFooterVariant] =
+      useState<FooterVariant>('initial');
 
     const scopeId = getScopeId() ?? newScopeIdForFlowNode;
 
@@ -70,31 +79,38 @@ const Variables: React.FC<Props> = observer(
       : initialValues === undefined ||
         Object.values(initialValues).length === 0;
 
-    const footerVariant = computed(() => {
-      if (!processInstanceDetailsStore.isRunning) {
-        return 'disabled';
+    useEffect(() => {
+      const isSelectedInstanceRunning =
+        flowNodeMetaDataStore.isSelectedInstanceRunning;
+
+      if (!isProcessInstanceRunning) {
+        setFooterVariant('disabled');
+        return;
       }
 
       if (pendingItem !== null) {
-        return 'pending-variable';
+        setFooterVariant('pending-variable');
+        return;
       }
 
       if (initialValues?.name === '' && initialValues?.value === '') {
-        return 'add-variable';
+        setFooterVariant('add-variable');
+        return;
       }
 
-      if (
-        status === 'first-fetch' ||
-        !isViewMode ||
-        (!flowNodeSelectionStore.isRootNodeSelected &&
-          !flowNodeMetaDataStore.isSelectedInstanceRunning) ||
-        loadingItemId !== null
-      ) {
-        return 'disabled';
+      if (!isViewMode || (!isRootNodeSelected && !isSelectedInstanceRunning)) {
+        setFooterVariant('disabled');
+        return;
       }
 
-      return 'initial';
-    });
+      setFooterVariant('initial');
+    }, [
+      isProcessInstanceRunning,
+      pendingItem,
+      initialValues,
+      isViewMode,
+      isRootNodeSelected,
+    ]);
 
     if (displayStatus === 'no-content') {
       return null;
@@ -119,10 +135,10 @@ const Variables: React.FC<Props> = observer(
           <Restricted
             resourceBasedRestrictions={{
               scopes: ['UPDATE_PROCESS_INSTANCE'],
-              permissions: processInstanceDetailsStore.getPermissions(),
+              permissions: permissions,
             }}
           >
-            <Footer variant={footerVariant.get()} />
+            <Footer variant={footerVariant} />
           </Restricted>
         )}
       </VariablesContent>

@@ -10,7 +10,7 @@ import {render, screen} from 'modules/testing-library';
 import {getWrapper, mockMetaData, mockProcessInstanceDeprecated} from './mocks';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
-import {VariablePanel} from '../../VariablePanel/v2';
+import {VariablePanel} from '../../VariablePanel';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';

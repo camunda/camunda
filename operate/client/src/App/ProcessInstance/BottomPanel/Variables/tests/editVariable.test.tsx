@@ -9,7 +9,7 @@
 import {render, screen, within, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from './index';
+import Variables from '../index';
 import {
   getWrapper,
   mockProcessInstance,
@@ -31,7 +31,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockVariablesV2} from '../index.setup';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
-import {VariablePanel} from '../../VariablePanel/v2';
+import {VariablePanel} from '../../VariablePanel';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 

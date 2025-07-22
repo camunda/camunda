@@ -29,7 +29,7 @@ import {ModalStateManager} from 'modules/components/ModalStateManager';
 import {ModificationSummaryModal} from './ModificationSummaryModal/v2';
 import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from './LastModification';
-import {VariablePanel} from './BottomPanel/VariablePanel/v2';
+import {VariablePanel} from './BottomPanel/VariablePanel';
 import {Forbidden} from 'modules/components/Forbidden';
 import {Frame} from 'modules/components/Frame';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';

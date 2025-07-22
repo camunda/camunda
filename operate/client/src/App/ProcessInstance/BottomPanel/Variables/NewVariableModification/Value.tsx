@@ -21,8 +21,7 @@ import {Popup} from '@carbon/react/icons';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
-import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
 
 type Props = {
   variableName: string;
@@ -34,7 +33,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
   const form = useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const valueFieldName = createNewVariableFieldName(variableName, 'value');
-  const {data: businessObjects} = useBusinessObjects();
+  const selectedFlowNodeName = useSelectedFlowNodeName() || '';
 
   const {
     currentName,
@@ -80,8 +79,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: currentValue,
-                businessObjects,
-                isRootNodeSelected: flowNodeSelectionStore.isRootNodeSelected,
+                selectedFlowNodeName,
               });
             }}
           />
@@ -109,7 +107,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: value,
-                isRootNodeSelected: flowNodeSelectionStore.isRootNodeSelected,
+                selectedFlowNodeName,
               });
             }
           }}

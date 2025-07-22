@@ -7,13 +7,13 @@
  */
 
 import {useField} from 'react-final-form';
-import {createNewVariableFieldName} from '../../createVariableFieldName';
+import {createNewVariableFieldName} from '../createVariableFieldName';
 
 import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Button} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
-import {Operations} from '../../Operations';
+import {Operations} from '../Operations';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
 import {getScopeId} from 'modules/utils/variables';
 

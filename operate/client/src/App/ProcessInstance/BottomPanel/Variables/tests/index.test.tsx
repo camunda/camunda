@@ -22,7 +22,7 @@ import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {VariablePanel} from '../../VariablePanel/v2';
+import {VariablePanel} from '../../VariablePanel';
 
 const instanceMock = createInstance({id: '1'});
 

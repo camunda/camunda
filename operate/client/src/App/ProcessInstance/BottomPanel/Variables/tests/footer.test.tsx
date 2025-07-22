@@ -30,7 +30,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockVariablesV2} from '../index.setup';
-import {VariablePanel} from '../../VariablePanel/v2';
+import {VariablePanel} from '../../VariablePanel';
 
 const instanceMock = createInstance({id: '1'});
 

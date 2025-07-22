@@ -11,17 +11,18 @@ import {observer} from 'mobx-react';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
-import type {VariableFormValues} from 'modules/types/variables';
+import {type VariableFormValues} from 'modules/types/variables';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import type {FormRenderProps} from 'react-final-form';
+import {type FormRenderProps} from 'react-final-form';
 
 import {AddVariableButton, Form, VariablesContainer} from './styled';
+import Variables from '../Variables';
 import {useWillAllFlowNodesBeCanceled} from 'modules/hooks/modifications';
 import {
   useHasPendingCancelOrMoveModification,
   useIsPlaceholderSelected,
+  useIsRootNodeSelected,
 } from 'modules/hooks/flowNodeSelection';
-import Variables from '../Variables';
 
 const VariablesForm: React.FC<
   FormRenderProps<VariableFormValues, Partial<VariableFormValues>>
@@ -30,6 +31,7 @@ const VariablesForm: React.FC<
   const hasPendingCancelOrMoveModification =
     useHasPendingCancelOrMoveModification();
   const isPlaceholderSelected = useIsPlaceholderSelected();
+  const isRootNodeSelected = useIsRootNodeSelected();
   const hasEmptyNewVariable = (values: VariableFormValues) =>
     values.newVariables?.some(
       (variable) =>
@@ -48,7 +50,7 @@ const VariablesForm: React.FC<
       return false;
     }
 
-    if (flowNodeSelectionStore.isRootNodeSelected) {
+    if (isRootNodeSelected) {
       return !willAllFlowNodesBeCanceled;
     }
 
