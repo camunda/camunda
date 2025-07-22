@@ -110,13 +110,13 @@ public record VariableDbModel(
       return original;
     }
 
-    // Find the last valid position (without broken character)
-    int len = maxBytes;
-    while (len > 0) {
-      try {
-        return new String(bytes, 0, len, StandardCharsets.UTF_8);
-      } catch (final CharacterCodingException e) {
-        len--;
+    var truncatedVariable = original;
+
+    while (truncatedVariable.getBytes().length > maxBytes) {
+      truncatedVariable = truncatedVariable.substring(0, truncatedVariable.length() - 1);
+
+      if (truncatedVariable.getBytes().length <= maxBytes) {
+        return truncatedVariable;
       }
     }
     return "";
