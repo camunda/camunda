@@ -68,7 +68,7 @@
     <elasticsearch.client.test.version>7.17.25</elasticsearch.client.test.version>
 
     <!--The least supported opensearch version we should test against-->
-    <opensearch.test.version>2.10.0</opensearch.test.version>
+    <opensearch.test.version>2.17.0</opensearch.test.version>
     <!--the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
     <!--The least supported elasticsearch version we should test against-->
