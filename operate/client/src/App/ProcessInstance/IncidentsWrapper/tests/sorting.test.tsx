@@ -15,9 +15,11 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {createInstance, createProcessInstance} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 
 describe('Sorting', () => {
   beforeEach(async () => {
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstance().withSuccess(createInstance());
@@ -32,9 +34,15 @@ describe('Sorting', () => {
   });
 
   it('should sort by incident type', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     let [, firstRow, secondRow] = screen.getAllByRole('row');
     expect(firstRow).toHaveTextContent(/Condition errortype/);
@@ -70,9 +78,15 @@ describe('Sorting', () => {
   });
 
   it('should sort by flow node', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     let [, firstRow, secondRow] = screen.getAllByRole('row');
     expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);
@@ -108,9 +122,15 @@ describe('Sorting', () => {
   });
 
   it('should sort by creation time', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     let [, firstRow, secondRow] = screen.getAllByRole('row');
     expect(firstRow).toHaveTextContent(/flowNodeId_exclusiveGateway/);

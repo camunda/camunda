@@ -7,8 +7,8 @@
  */
 
 import {render, screen, within} from 'modules/testing-library';
-import {IncidentsWrapper} from './index';
-import {mockIncidents, Wrapper} from '../tests/mocks';
+import {IncidentsWrapper} from '../index';
+import {mockIncidents, Wrapper} from './mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';

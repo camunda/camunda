@@ -16,9 +16,11 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {createInstance, createProcessInstance} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 
 describe('Filtering', () => {
   beforeEach(async () => {
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstance().withSuccess(createInstance());
@@ -34,9 +36,15 @@ describe('Filtering', () => {
   });
 
   it('should not have active filters by default', () => {
-    render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(
       screen.queryByRole('button', {
@@ -46,9 +54,15 @@ describe('Filtering', () => {
   });
 
   it('should filter the incidents when errorTypes are selected', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     const table = within(await screen.findByRole('table'));
 
@@ -74,9 +88,15 @@ describe('Filtering', () => {
   });
 
   it('should filter the incidents when flowNodes are selected', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     const table = within(await screen.findByRole('table'));
 
@@ -102,9 +122,15 @@ describe('Filtering', () => {
   });
 
   it('should filter the incidents when both errorTypes & flowNodes are selected', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(screen.getAllByRole('row')).toHaveLength(3);
     await user.click(
@@ -139,7 +165,10 @@ describe('Filtering', () => {
 
   it('should remove filter when only related incident gets resolved', async () => {
     const {user, rerender} = render(
-      <IncidentsWrapper setIsInTransition={vi.fn()} />,
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
       {
         wrapper: Wrapper,
       },
@@ -170,7 +199,12 @@ describe('Filtering', () => {
 
     await act(() => incidentsStore.fetchIncidents('1'));
 
-    rerender(<IncidentsWrapper setIsInTransition={vi.fn()} />);
+    rerender(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+    );
 
     expect(
       screen.queryByRole('option', {
@@ -188,9 +222,15 @@ describe('Filtering', () => {
   });
 
   it('should drop all filters when clicking the clear all button', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={vi.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={vi.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(screen.getAllByRole('row')).toHaveLength(3);
 

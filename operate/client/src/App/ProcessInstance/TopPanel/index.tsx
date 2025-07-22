@@ -16,7 +16,7 @@ import {IncidentsBanner} from './IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
-import {IncidentsWrapper} from '../IncidentsWrapper/v2';
+import {IncidentsWrapper} from '../IncidentsWrapper';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
