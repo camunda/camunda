@@ -85,11 +85,11 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
     return tenantTUMapProp.getValue();
   }
 
-  public Map<String, Set<String>> getTenantTUMap() {
-    return MsgPackConverter.convertToSetStringMap(tenantTUMapProp.getValue());
+  public Map<String, Set<Long>> getTenantTUMap() {
+    return MsgPackConverter.convertToSetLongMap(tenantTUMapProp.getValue());
   }
 
-  public PersistedUsageMetrics setTenantTUMap(final Map<String, Set<String>> tenantTUMap) {
+  public PersistedUsageMetrics setTenantTUMap(final Map<String, Set<Long>> tenantTUMap) {
     tenantTUMapProp.setValue(BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantTUMap)));
     return this;
   }
@@ -108,7 +108,7 @@ public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public PersistedUsageMetrics recordTU(final String tenantId, final String assignee) {
+  public PersistedUsageMetrics recordTU(final String tenantId, final Long assignee) {
     final var tenantTUMap = getTenantTUMap();
     final boolean added = tenantTUMap.computeIfAbsent(tenantId, k -> new HashSet<>()).add(assignee);
     if (added) {

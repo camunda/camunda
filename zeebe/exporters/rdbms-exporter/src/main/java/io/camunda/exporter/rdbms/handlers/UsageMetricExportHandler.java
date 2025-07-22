@@ -9,9 +9,12 @@ package io.camunda.exporter.rdbms.handlers;
 
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.EDI;
 import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.RPI;
+import static io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel.TU;
 
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel;
 import io.camunda.db.rdbms.write.domain.UsageMetricDbModel.EventTypeDbModel;
+import io.camunda.db.rdbms.write.domain.UsageMetricTUDbModel;
+import io.camunda.db.rdbms.write.service.UsageMetricTUWriter;
 import io.camunda.db.rdbms.write.service.UsageMetricWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
@@ -19,9 +22,9 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,50 +33,75 @@ public class UsageMetricExportHandler implements RdbmsExportHandler<UsageMetricR
   private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricExportHandler.class);
 
   private final UsageMetricWriter usageMetricWriter;
+  private final UsageMetricTUWriter usageMetricTUWriter;
 
-  public UsageMetricExportHandler(final UsageMetricWriter usageMetricWriter) {
+  public UsageMetricExportHandler(
+      final UsageMetricWriter usageMetricWriter, final UsageMetricTUWriter usageMetricTUWriter) {
     this.usageMetricWriter = usageMetricWriter;
+    this.usageMetricTUWriter = usageMetricTUWriter;
   }
 
   @Override
-  public boolean canExport(final Record<UsageMetricRecordValue> record) {
-    return record.getIntent() != null
-        && record.getIntent() instanceof final UsageMetricIntent intent
+  public boolean canExport(final Record<UsageMetricRecordValue> usageMetricRecordValue) {
+    return usageMetricRecordValue.getIntent() != null
+        && usageMetricRecordValue.getIntent() instanceof final UsageMetricIntent intent
         && intent.equals(UsageMetricIntent.EXPORTED)
-        && !record.getValue().getEventType().equals(EventType.NONE);
+        && !usageMetricRecordValue.getValue().getEventType().equals(EventType.NONE);
   }
 
   @Override
-  public void export(final Record<UsageMetricRecordValue> record) {
-    mapRecord(record).forEach(usageMetricWriter::create);
+  public void export(final Record<UsageMetricRecordValue> usageMetricRecordValue) {
+    final var dbModelTuple = mapRecord(usageMetricRecordValue);
+    dbModelTuple.getLeft().forEach(usageMetricWriter::create);
+    dbModelTuple.getRight().forEach(usageMetricTUWriter::create);
   }
 
-  private List<UsageMetricDbModel> mapRecord(final Record<UsageMetricRecordValue> record) {
-    final var value = record.getValue();
-    final List<UsageMetricDbModel> list = new ArrayList<>();
-    for (final Entry<String, Long> entry : value.getCounterValues().entrySet()) {
-      final var eventType = mapEventType(value.getEventType());
-      if (eventType != null) {
-        final UsageMetricDbModel usageMetricDbModel =
-            new UsageMetricDbModel(
-                record.getKey(),
-                DateUtil.toOffsetDateTime(value.getStartTime()),
-                entry.getKey(),
-                eventType,
-                entry.getValue(),
-                record.getPartitionId());
-        list.add(usageMetricDbModel);
-      } else {
-        LOGGER.warn("Unsupported event type: {}", value.getEventType());
-      }
+  private Tuple<List<UsageMetricDbModel>, List<UsageMetricTUDbModel>> mapRecord(
+      final Record<UsageMetricRecordValue> usageMetricRecordValue) {
+    final var value = usageMetricRecordValue.getValue();
+    final var eventType = mapEventType(value.getEventType());
+
+    if (eventType == null) {
+      LOGGER.warn("Unsupported event type: {}", value.getEventType());
+      return new Tuple<>(List.of(), List.of());
     }
-    return list;
+
+    final var startTime = DateUtil.toOffsetDateTime(value.getStartTime());
+    final var recordKey = usageMetricRecordValue.getKey();
+    final var partitionId = usageMetricRecordValue.getPartitionId();
+
+    final var usageMetricList = new ArrayList<UsageMetricDbModel>();
+    final var usageMetricTUList = new ArrayList<UsageMetricTUDbModel>();
+
+    value
+        .getCounterValues()
+        .forEach(
+            (key, val) ->
+                usageMetricList.add(
+                    new UsageMetricDbModel(
+                        recordKey, startTime, key, eventType, val, partitionId)));
+    value
+        .getSetValues()
+        .forEach(
+            (key, valSet) -> {
+              usageMetricList.add(
+                  new UsageMetricDbModel(
+                      recordKey, startTime, key, eventType, valSet.size(), partitionId));
+
+              valSet.forEach(
+                  val ->
+                      usageMetricTUList.add(
+                          new UsageMetricTUDbModel(recordKey, startTime, key, val, partitionId)));
+            });
+
+    return new Tuple<>(usageMetricList, usageMetricTUList);
   }
 
   private EventTypeDbModel mapEventType(final EventType eventType) {
     return switch (eventType) {
       case RPI -> RPI;
       case EDI -> EDI;
+      case TU -> TU;
       default -> null;
     };
   }

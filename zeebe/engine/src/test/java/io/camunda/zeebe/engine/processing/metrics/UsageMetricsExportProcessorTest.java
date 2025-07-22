@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.metrics;
 
+import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mock;
@@ -32,7 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 class UsageMetricsExportProcessorTest {
-
+  private static final long ASSIGNEE_HASH_1 = getStringHashValue("assignee1");
+  private static final String TENANT_1 = "tenant1";
   private MutableUsageMetricState state;
   private StateWriter stateWriter;
   private UsageMetricsExportProcessor processor;
@@ -90,7 +92,7 @@ class UsageMetricsExportProcessorTest {
             new PersistedUsageMetrics()
                 .setFromTime(1)
                 .setToTime(10)
-                .setTenantRPIMap(Map.of("tenant1", 10L)));
+                .setTenantRPIMap(Map.of(TENANT_1, 10L)));
 
     // when
     processor.processRecord(record);
@@ -106,7 +108,7 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getResetTime()).isEqualTo(2);
     assertThat(actual.getStartTime()).isEqualTo(1);
     assertThat(actual.getEndTime()).isEqualTo(10);
-    assertThat(actual.getCounterValues()).isEqualTo(Map.of("tenant1", 10L));
+    assertThat(actual.getCounterValues()).isEqualTo(Map.of(TENANT_1, 10L));
     assertThat(actual.getSetValues()).isEqualTo(Map.of());
   }
 
@@ -118,7 +120,7 @@ class UsageMetricsExportProcessorTest {
             new PersistedUsageMetrics()
                 .setFromTime(1)
                 .setToTime(10)
-                .setTenantEDIMap(Map.of("tenant1", 10L)));
+                .setTenantEDIMap(Map.of(TENANT_1, 10L)));
     // when
     processor.processRecord(record);
 
@@ -133,7 +135,7 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getResetTime()).isEqualTo(2);
     assertThat(actual.getStartTime()).isEqualTo(1);
     assertThat(actual.getEndTime()).isEqualTo(10);
-    assertThat(actual.getCounterValues()).isEqualTo(Map.of("tenant1", 10L));
+    assertThat(actual.getCounterValues()).isEqualTo(Map.of(TENANT_1, 10L));
     assertThat(actual.getSetValues()).isEqualTo(Map.of());
   }
 
@@ -145,7 +147,7 @@ class UsageMetricsExportProcessorTest {
             new PersistedUsageMetrics()
                 .setFromTime(1)
                 .setToTime(10)
-                .setTenantTUMap(Map.of("tenant1", Set.of("assignee1"))));
+                .setTenantTUMap(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1))));
     // when
     processor.processRecord(record);
 
@@ -161,7 +163,7 @@ class UsageMetricsExportProcessorTest {
     assertThat(actual.getStartTime()).isEqualTo(1);
     assertThat(actual.getEndTime()).isEqualTo(10);
     assertThat(actual.getCounterValues()).isEqualTo(Map.of());
-    assertThat(actual.getSetValues()).isEqualTo(Map.of("tenant1", Set.of("assignee1")));
+    assertThat(actual.getSetValues()).isEqualTo(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1)));
   }
 
   @Test
@@ -172,9 +174,9 @@ class UsageMetricsExportProcessorTest {
             new PersistedUsageMetrics()
                 .setFromTime(1)
                 .setToTime(10)
-                .setTenantRPIMap(Map.of("tenant1", 10L))
-                .setTenantEDIMap(Map.of("tenant1", 10L))
-                .setTenantTUMap(Map.of("tenant1", Set.of("assignee1"))));
+                .setTenantRPIMap(Map.of(TENANT_1, 10L))
+                .setTenantEDIMap(Map.of(TENANT_1, 10L))
+                .setTenantTUMap(Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1))));
     // when
     processor.processRecord(record);
 
@@ -196,9 +198,9 @@ class UsageMetricsExportProcessorTest {
         .contains(EventType.RPI, EventType.EDI, EventType.TU);
     assertThat(actual)
         .extracting(UsageMetricRecord::getCounterValues)
-        .contains(Map.of("tenant1", 10L), Map.of());
+        .contains(Map.of(TENANT_1, 10L), Map.of());
     assertThat(actual)
         .extracting(UsageMetricRecord::getSetValues)
-        .contains(Map.of(), Map.of("tenant1", Set.of("assignee1")));
+        .contains(Map.of(), Map.of(TENANT_1, Set.of(ASSIGNEE_HASH_1)));
   }
 }

@@ -37,7 +37,7 @@ public interface UsageMetricRecordValue extends RecordValue {
 
   Map<String, Long> getCounterValues();
 
-  Map<String, Set<String>> getSetValues();
+  Map<String, Set<Long>> getSetValues();
 
   enum EventType {
     NONE,
