@@ -1,0 +1,135 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.nodb;
+
+import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import io.camunda.authentication.CamundaOAuthPrincipalServiceNoDbImpl;
+import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
+import java.util.Map;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.BeanCreationException;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.test.context.TestPropertySource;
+
+/**
+ * Integration test for authentication behavior in no-database mode.
+ * This test validates that the authentication system properly handles
+ * the no-db scenario with appropriate fail-fast behavior and limited functionality.
+ */
+public class NoSecondaryStorageAuthenticationIT {
+
+  @Test
+  void shouldFailFastWhenBasicAuthenticationConfiguredInNoDbMode() {
+    // given - application context with no secondary storage and basic auth
+    final var context = new AnnotationConfigApplicationContext();
+    context.getEnvironment().getSystemProperties().put(PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
+    context.getEnvironment().getSystemProperties().put("camunda.security.authentication.method", "basic");
+    
+    // when - trying to start application with basic auth in no-db mode
+    context.register(TestBasicAuthConfiguration.class);
+    
+    // then - should fail fast with clear error message
+    final var exception = assertThrows(BeanCreationException.class, context::refresh);
+    assertThat(exception.getCause()).isInstanceOf(IllegalStateException.class);
+    final var rootCause = (IllegalStateException) exception.getCause();
+    assertThat(rootCause.getMessage())
+        .contains("Basic Authentication is not supported")
+        .contains("secondary storage is disabled")
+        .contains("camunda.database.type=none")
+        .contains("enable secondary storage")
+        .contains("disable authentication");
+  }
+
+  @Test
+  void shouldAllowOidcAuthenticationInNoDbModeWithLimitedFunctionality() {
+    // given - application context with no secondary storage and OIDC auth  
+    final var context = new AnnotationConfigApplicationContext();
+    context.getEnvironment().getSystemProperties().put(PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
+    context.getEnvironment().getSystemProperties().put("camunda.security.authentication.method", "oidc");
+    
+    // when - starting application with OIDC auth in no-db mode
+    context.register(TestOidcAuthConfiguration.class);
+    context.refresh();
+    
+    // then - should start successfully with warning bean
+    final var warningBean = context.getBean(WebSecurityConfig.OidcAuthenticationNoDbWarningBean.class);
+    assertThat(warningBean).isNotNull();
+    
+    // and - should have the no-db OIDC service implementation
+    final var oidcService = context.getBean(CamundaOAuthPrincipalServiceNoDbImpl.class);
+    assertThat(oidcService).isNotNull();
+    
+    // and - the service should work with limited functionality
+    final var claims = Map.of(
+        "preferred_username", "testuser",
+        "groups", new String[]{"group1", "group2"}
+    );
+    final var oauthContext = oidcService.loadOAuthContext(claims);
+    
+    assertThat(oauthContext.getAuthenticationContext().getUsername()).isEqualTo("testuser");
+    assertThat(oauthContext.getAuthenticationContext().getGroups()).containsExactly("group1", "group2");
+    // No secondary storage access, so these should be empty
+    assertThat(oauthContext.getAuthenticationContext().getRoles()).isEmpty();
+    assertThat(oauthContext.getAuthenticationContext().getTenants()).isEmpty();
+    assertThat(oauthContext.getAuthenticationContext().getAuthorizedApplications()).isEmpty();
+    assertThat(oauthContext.getMappingIds()).isEmpty();
+    
+    context.close();
+  }
+
+  @Configuration
+  static class TestBasicAuthConfiguration {
+    @Bean
+    public WebSecurityConfig.BasicAuthenticationNoDbFailFastBean basicAuthFailFast() {
+      throw new IllegalStateException(
+          "Basic Authentication is not supported when secondary storage is disabled "
+              + "(camunda.database.type=none). Basic Authentication requires access to user data "
+              + "stored in secondary storage. Please either enable secondary storage by configuring "
+              + "camunda.database.type to a supported database type, or disable authentication by "
+              + "removing camunda.security.authentication.method configuration.");
+    }
+  }
+
+  @Configuration
+  static class TestOidcAuthConfiguration {
+    @Bean
+    public WebSecurityConfig.OidcAuthenticationNoDbWarningBean oidcAuthWarning() {
+      return new WebSecurityConfig.OidcAuthenticationNoDbWarningBean();
+    }
+
+    @Bean
+    public SecurityConfiguration securityConfiguration() {
+      final var config = new SecurityConfiguration();
+      final var authConfig = new AuthenticationConfiguration();
+      final var oidcConfig = new OidcAuthenticationConfiguration();
+      oidcConfig.setUsernameClaim("preferred_username");
+      oidcConfig.setClientIdClaim("azp");
+      oidcConfig.setGroupsClaim("groups");
+      authConfig.setOidc(oidcConfig);
+      authConfig.setMethod(AuthenticationMethod.OIDC);
+      config.setAuthentication(authConfig);
+      return config;
+    }
+
+    @Bean
+    public CamundaOAuthPrincipalServiceNoDbImpl camundaOAuthPrincipalServiceNoDb(
+        final SecurityConfiguration securityConfiguration) {
+      return new CamundaOAuthPrincipalServiceNoDbImpl(securityConfiguration);
+    }
+  }
+}
