@@ -17,6 +17,7 @@ package io.camunda.spring.client.annotation;
 
 import static java.util.Optional.ofNullable;
 
+import com.google.common.collect.ImmutableMap;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue;
@@ -32,7 +33,6 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,16 +43,14 @@ import org.slf4j.LoggerFactory;
 
 public class AnnotationUtil {
   private static final Logger LOG = LoggerFactory.getLogger(AnnotationUtil.class);
-  private static final Map<String, ParameterType> DOCUMENT_PARAMETER_TYPES;
-
-  static {
-    DOCUMENT_PARAMETER_TYPES = new HashMap<>();
-    DOCUMENT_PARAMETER_TYPES.put(
-        List.class.getName() + "<" + DocumentReferenceResponse.class.getName() + ">",
-        ParameterType.LIST);
-    DOCUMENT_PARAMETER_TYPES.put(DocumentReferenceResponse.class.getName(), ParameterType.SINGLE);
-    DOCUMENT_PARAMETER_TYPES.put(DocumentContext.class.getName(), ParameterType.CONTEXT);
-  }
+  private static final Map<String, ParameterType> DOCUMENT_PARAMETER_TYPES =
+      ImmutableMap.of(
+          List.class.getName() + "<" + DocumentReferenceResponse.class.getName() + ">",
+          ParameterType.LIST,
+          DocumentReferenceResponse.class.getName(),
+          ParameterType.SINGLE,
+          DocumentContext.class.getName(),
+          ParameterType.CONTEXT);
 
   public static boolean isVariable(final ParameterInfo parameterInfo) {
     return parameterInfo.getParameterInfo().isAnnotationPresent(Variable.class)
