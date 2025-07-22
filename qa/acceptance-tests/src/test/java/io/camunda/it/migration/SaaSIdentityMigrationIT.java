@@ -333,6 +333,12 @@ public class SaaSIdentityMigrationIT {
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
                 Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
             tuple(
+                DEVELOPER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.BATCH_OPERATION,
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
+            tuple(
                 OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
@@ -365,6 +371,12 @@ public class SaaSIdentityMigrationIT {
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
                 Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
+            tuple(
+                OPERATIONS_ENGINEER_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.BATCH_OPERATION,
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
             tuple(
                 TASK_USER_ROLE_ID,
                 OwnerType.ROLE,
@@ -415,6 +427,12 @@ public class SaaSIdentityMigrationIT {
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.READ)),
+            tuple(
+                VISITOR_ROLE_ID,
+                OwnerType.ROLE,
+                "*",
+                ResourceType.BATCH_OPERATION,
                 Set.of(PermissionType.READ)));
   }
 
