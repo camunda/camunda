@@ -17,7 +17,6 @@ import io.camunda.util.ValueTypeUtil;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
-import org.apache.commons.lang3.StringUtils;
 
 public record VariableDbModel(
     Long variableKey,
@@ -90,7 +89,7 @@ public record VariableDbModel(
           doubleValue,
           longValue,
           truncateBytes(value, byteLimit),
-          !StringUtils.isEmpty(fullValue) ? fullValue : value,
+          fullValue != null && !fullValue.isEmpty() ? fullValue : value,
           true,
           scopeKey,
           processInstanceKey,
