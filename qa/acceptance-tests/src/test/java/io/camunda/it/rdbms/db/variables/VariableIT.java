@@ -88,7 +88,26 @@ public class VariableIT {
     assertThat(instance.isPreview()).isTrue();
     assertThat(instance.fullValue()).isEqualTo(bigValue);
     assertThat(instance.value()).hasSizeLessThan(instance.fullValue().length());
-    assertThat(instance.isPreview()).isTrue();
+  }
+
+  @TestTemplate
+  public void shouldSaveAndFindLargeByteVariableByKey(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final String bigValue = "ä".repeat(9000);
+    final VariableDbModel randomizedVariable =
+        VariableFixtures.createRandomized(b -> b.value(bigValue));
+    createAndSaveVariable(rdbmsService, randomizedVariable);
+
+    final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
+
+    assertThat(instance).as("variable is not null").isNotNull();
+    assertThat(instance.isPreview()).as("variable is preview").isTrue();
+    assertThat(instance.fullValue()).as("fullValue is equal to bigValue").isEqualTo(bigValue);
+    assertThat(instance.value())
+        .as("value length is less than fullValueLength")
+        .hasSizeLessThan(instance.fullValue().length());
   }
 
   @TestTemplate

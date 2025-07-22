@@ -14,6 +14,7 @@ import static io.camunda.util.ValueTypeUtil.mapLong;
 import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
@@ -53,26 +54,79 @@ public record VariableDbModel(
         .build();
   }
 
-  public VariableDbModel truncateValue(final int sizeLimit) {
-    if (type == ValueTypeEnum.STRING && value != null && value.length() > sizeLimit) {
-      return new VariableDbModel(
-          variableKey,
-          name,
-          type,
-          doubleValue,
-          longValue,
-          value.substring(0, sizeLimit),
-          value,
-          true,
-          scopeKey,
-          processInstanceKey,
-          processDefinitionId,
-          tenantId,
-          partitionId,
-          historyCleanupDate);
-    } else {
-      return this;
+  /**
+   * Truncates the value of the variable if it exceeds the specified size limit or byte limit.
+   * Truncate is done in two steps: First based on the character size limit, and then based on the
+   * (optional) byte size limit, if the byte size exceeds the specified limit.
+   *
+   * @param sizeLimit the maximum number of characters allowed for the variable value
+   * @param byteLimit the maximum number of bytes allowed for the variable value
+   * @return a new VariableDbModel with the truncated value
+   */
+  public VariableDbModel truncateValue(final int sizeLimit, final Integer byteLimit) {
+    var truncatedValue = value;
+    String fullValue = null;
+    var isPreview = false;
+
+    if (type == ValueTypeEnum.STRING && value != null) {
+      if (truncatedValue.length() > sizeLimit) {
+        truncatedValue = truncatedValue.substring(0, sizeLimit);
+        fullValue = value;
+        isPreview = true;
+      }
+
+      if ((byteLimit != null
+          && truncatedValue.getBytes(StandardCharsets.UTF_8).length > byteLimit)) {
+        truncatedValue = truncateBytes(truncatedValue, byteLimit);
+        fullValue = value;
+        isPreview = true;
+      }
     }
+
+    return new VariableDbModel(
+        variableKey,
+        name,
+        type,
+        doubleValue,
+        longValue,
+        truncatedValue,
+        fullValue,
+        isPreview,
+        scopeKey,
+        processInstanceKey,
+        processDefinitionId,
+        tenantId,
+        partitionId,
+        historyCleanupDate);
+  }
+
+  /**
+   * Truncates the given string to ensure that its byte representation does not exceed the specified
+   * maximum byte size. This is necessary for DB vendors, which have a limit on the byte size for
+   * char columns. Currently, this is needed for Oracle's varchar2 only.
+   *
+   * @param original the original string to truncate
+   * @param maxBytes the maximum allowed byte size
+   * @return the truncated string, or an empty string if it cannot be truncated to fit within the
+   *     limit
+   */
+  private String truncateBytes(final String original, final int maxBytes) {
+    final byte[] bytes = original.getBytes(StandardCharsets.UTF_8);
+
+    if (bytes.length <= maxBytes) {
+      return original;
+    }
+
+    var truncatedVariable = original;
+
+    while (truncatedVariable.getBytes().length > maxBytes) {
+      truncatedVariable = truncatedVariable.substring(0, truncatedVariable.length() - 1);
+
+      if (truncatedVariable.getBytes().length <= maxBytes) {
+        return truncatedVariable;
+      }
+    }
+    return "";
   }
 
   public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
