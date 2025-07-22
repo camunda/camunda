@@ -43,7 +43,7 @@ import {
   startPolling as startPollingFlowNodeInstance,
 } from 'modules/utils/flowNodeInstance';
 import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
-import {type ProcessInstance as ProcessInstanceT} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance as ProcessInstanceType} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {
   useIsRootNodeSelected,
   useRootNode,
@@ -52,7 +52,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 
-const startPolling = (processInstance?: ProcessInstanceT) => {
+const startPolling = (processInstance?: ProcessInstanceType) => {
   startPollingIncidents(processInstance, {
     runImmediately: true,
   });
