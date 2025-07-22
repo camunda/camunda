@@ -54,54 +54,53 @@ public record VariableDbModel(
         .build();
   }
 
-  public VariableDbModel truncateValue(final int sizeLimit) {
-    if (type == ValueTypeEnum.STRING && value != null && value.length() > sizeLimit) {
-      return new VariableDbModel(
-          variableKey,
-          name,
-          type,
-          doubleValue,
-          longValue,
-          value.substring(0, sizeLimit),
-          value,
-          true,
-          scopeKey,
-          processInstanceKey,
-          processDefinitionId,
-          tenantId,
-          partitionId,
-          historyCleanupDate);
-    } else {
-      return this;
+  public VariableDbModel truncateValue(final int sizeLimit, final Integer byteLimit) {
+    var truncatedValue = value;
+    String fullValue = null;
+    var isPreview = false;
+
+    if (type == ValueTypeEnum.STRING && value != null) {
+      if (truncatedValue.length() > sizeLimit) {
+        truncatedValue = truncatedValue.substring(0, sizeLimit);
+        fullValue = value;
+        isPreview = true;
+      }
+
+      if ((byteLimit != null
+          && truncatedValue.getBytes(StandardCharsets.UTF_8).length > byteLimit)) {
+        truncatedValue = truncateBytes(truncatedValue, byteLimit);
+        fullValue = value;
+        isPreview = true;
+      }
     }
+
+    return new VariableDbModel(
+        variableKey,
+        name,
+        type,
+        doubleValue,
+        longValue,
+        truncatedValue,
+        fullValue,
+        isPreview,
+        scopeKey,
+        processInstanceKey,
+        processDefinitionId,
+        tenantId,
+        partitionId,
+        historyCleanupDate);
   }
 
-  public VariableDbModel truncateBytes(final Integer byteLimit) {
-    if (byteLimit != null
-        && type == ValueTypeEnum.STRING
-        && value != null
-        && value.getBytes(StandardCharsets.UTF_8).length > byteLimit) {
-
-      return new VariableDbModel(
-          variableKey,
-          name,
-          type,
-          doubleValue,
-          longValue,
-          truncateBytes(value, byteLimit),
-          fullValue != null && !fullValue.isEmpty() ? fullValue : value,
-          true,
-          scopeKey,
-          processInstanceKey,
-          processDefinitionId,
-          tenantId,
-          partitionId,
-          historyCleanupDate);
-    } else {
-      return this;
-    }
-  }
-
+  /**
+   * Truncates the given string to ensure that its byte representation does not exceed the specified
+   * maximum byte size. This is necessary for DB vendors, which have a limit on the byte size for
+   * char columns. Currently, this is needed for Oracle's varchar2 only.
+   *
+   * @param original the original string to truncate
+   * @param maxBytes the maximum allowed byte size
+   * @return the truncated string, or an empty string if it cannot be truncated to fit within the
+   *     limit
+   */
   private String truncateBytes(final String original, final int maxBytes) {
     final byte[] bytes = original.getBytes(StandardCharsets.UTF_8);
 

@@ -187,7 +187,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .tenantId("tenant1")
             .build()
-            .truncateValue(variableSizeThreshold);
+            .truncateValue(variableSizeThreshold, null);
 
     // then
     assertThat(model.variableKey()).isEqualTo(1L);
@@ -206,6 +206,7 @@ public class VariableDbModelTest {
   @Test
   public void shouldSetCorrectTypeAndValueForLargeByteValue() {
     // given
+    final int variableSizeThreshold = 10;
     final int maxBytesThreshold = 10;
     final String largeValue = "ä".repeat(maxBytesThreshold);
     final VariableDbModel.VariableDbModelBuilder builder =
@@ -221,7 +222,7 @@ public class VariableDbModelTest {
             .processInstanceKey(3L)
             .tenantId("tenant1")
             .build()
-            .truncateBytes(maxBytesThreshold);
+            .truncateValue(variableSizeThreshold, maxBytesThreshold);
 
     // then
     assertThat(model.variableKey()).isEqualTo(1L);
