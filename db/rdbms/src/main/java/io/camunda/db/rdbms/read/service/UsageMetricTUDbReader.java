@@ -12,7 +12,8 @@ import static java.util.Optional.ofNullable;
 import io.camunda.db.rdbms.read.mapper.UsageMetricTUEntityMapper;
 import io.camunda.db.rdbms.sql.UsageMetricTUMapper;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
-import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.search.query.UsageMetricsQuery;
+import io.camunda.security.reader.ResourceAccessChecks;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +26,10 @@ public class UsageMetricTUDbReader {
     this.usageMetricTUMapper = usageMetricTUMapper;
   }
 
-  public UsageMetricTUStatisticsEntity usageMetricTUStatistics(final UsageMetricsFilter filter) {
-    LOG.trace("[RDBMS DB] Usage metrics assignees with {}", filter);
+  public UsageMetricTUStatisticsEntity usageMetricTUStatistics(
+      final UsageMetricsQuery query, final ResourceAccessChecks access) {
+    LOG.trace("[RDBMS DB] Usage metrics assignees with {}", query);
+    final var filter = query.filter();
 
     if (filter.withTenants()) {
       final var result = usageMetricTUMapper.usageMetricTUTenantsStatistics(filter);

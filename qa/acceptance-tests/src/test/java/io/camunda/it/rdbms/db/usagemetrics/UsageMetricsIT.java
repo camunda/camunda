@@ -31,6 +31,7 @@ import io.camunda.search.entities.UsageMetricTUStatisticsEntity;
 import io.camunda.search.entities.UsageMetricTUStatisticsEntity.UsageMetricTUStatisticsEntityTenant;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UsageMetricsFilter.Builder;
+import io.camunda.search.query.UsageMetricsQuery;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
@@ -126,7 +127,8 @@ public class UsageMetricsIT {
 
     // when
     final var actual =
-        usageMetricReader.usageMetricStatistics(new Builder().withTenants(true).build());
+        usageMetricReader.usageMetricStatistics(
+            UsageMetricsQuery.of(q -> q.filter(f -> f.withTenants(true))), null);
 
     // then
     assertThat(actual)
@@ -154,7 +156,8 @@ public class UsageMetricsIT {
 
     // when
     final var actualTU =
-        usageMetricTUDbReader.usageMetricTUStatistics(new Builder().withTenants(true).build());
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsQuery.of(q -> q.filter(f -> f.withTenants(true))), null);
 
     // then
     assertThat(actualTU)
@@ -181,7 +184,7 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final var actual = usageMetricReader.usageMetricStatistics(new Builder().build());
+    final var actual = usageMetricReader.usageMetricStatistics(UsageMetricsQuery.of(q -> q), null);
 
     // then
     assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(16, 14, 2, null));
@@ -198,7 +201,8 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final var actualTU = usageMetricTUDbReader.usageMetricTUStatistics(new Builder().build());
+    final var actualTU =
+        usageMetricTUDbReader.usageMetricTUStatistics(UsageMetricsQuery.of(q -> q), null);
 
     // then
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(3, null));
@@ -215,9 +219,10 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final UsageMetricsFilter umFilter =
+    final UsageMetricsFilter filter =
         new Builder().startTime(NOW.minusMinutes(6)).endTime(NOW.plusMinutes(6)).build();
-    final var actual = usageMetricReader.usageMetricStatistics(umFilter);
+    final var actual =
+        usageMetricReader.usageMetricStatistics(UsageMetricsQuery.of(q -> q.filter(filter)), null);
 
     // then
     assertThat(actual).isEqualTo(new UsageMetricStatisticsEntity(1, 1, 1, null));
@@ -233,9 +238,11 @@ public class UsageMetricsIT {
     rdbmsWriter.flush();
 
     // when
-    final UsageMetricsFilter umFilter =
+    final UsageMetricsFilter filter =
         new Builder().startTime(NOW.minusMinutes(6)).endTime(NOW.plusMinutes(6)).build();
-    final var actualTU = usageMetricTUDbReader.usageMetricTUStatistics(umFilter);
+    final var actualTU =
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsQuery.of(q -> q.filter(filter)), null);
 
     // then
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(2, null));
@@ -259,7 +266,8 @@ public class UsageMetricsIT {
             .endTime(NOW.plusMinutes(6))
             .withTenants(true)
             .build();
-    final var actual = usageMetricReader.usageMetricStatistics(filter);
+    final var actual =
+        usageMetricReader.usageMetricStatistics(UsageMetricsQuery.of(q -> q.filter(filter)), null);
 
     // then
     assertThat(actual)
@@ -287,7 +295,9 @@ public class UsageMetricsIT {
             .endTime(NOW.plusMinutes(6))
             .withTenants(true)
             .build();
-    final var actualTU = usageMetricTUDbReader.usageMetricTUStatistics(filter);
+    final var actualTU =
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsQuery.of(q -> q.filter(filter)), null);
 
     // then
     assertThat(actualTU)
