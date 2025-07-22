@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import java.util.Set;
 
 public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEntity> {
@@ -17,6 +18,7 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
   private Long authorizationKey;
   private String ownerId;
   private String ownerType;
+  private ResourceIdFormat resourceIdFormat;
   private String resourceType;
   private String resourceId;
   private Set<PermissionType> permissionTypes;
@@ -47,6 +49,15 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
 
   public AuthorizationEntity setOwnerType(final String ownerType) {
     this.ownerType = ownerType;
+    return this;
+  }
+
+  public ResourceIdFormat getResourceIdFormat() {
+    return resourceIdFormat;
+  }
+
+  public AuthorizationEntity setResourceIdFormat(final ResourceIdFormat resourceIdFormat) {
+    this.resourceIdFormat = resourceIdFormat;
     return this;
   }
 

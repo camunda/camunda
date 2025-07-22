@@ -24,6 +24,7 @@ public class AuthorizationEntityTransformer
         value.getOwnerId(),
         value.getOwnerType(),
         value.getResourceType(),
+        value.getResourceIdFormat(),
         value.getResourceId(),
         new HashSet<>(value.getPermissionTypes()));
   }

@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -17,5 +18,24 @@ public record AuthorizationEntity(
     String ownerId,
     String ownerType,
     String resourceType,
+    ResourceIdFormat resourceIdFormat,
     String resourceId,
-    Set<PermissionType> permissionTypes) {}
+    Set<PermissionType> permissionTypes) {
+
+  public AuthorizationEntity(
+      final Long authorizationKey,
+      final String ownerId,
+      final String ownerType,
+      final String resourceType,
+      final String resourceId,
+      final Set<PermissionType> permissionTypes) {
+    this(
+        authorizationKey,
+        ownerId,
+        ownerType,
+        resourceType,
+        ResourceIdFormat.ID,
+        resourceId,
+        permissionTypes);
+  }
+}
