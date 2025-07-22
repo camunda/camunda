@@ -90,7 +90,8 @@ public class UserControllerTest extends RestControllerTest {
             "email": "bar@baz.com"
           }
         """
-                .formatted(username));
+                .formatted(username),
+            JsonCompareMode.STRICT);
 
     // then
     verify(userServices, times(1)).createUser(dto);
@@ -234,7 +235,8 @@ public class UserControllerTest extends RestControllerTest {
             "email": ""
           }
         """
-                .formatted(dto.username()));
+                .formatted(dto.username()),
+            JsonCompareMode.STRICT);
 
     // then
     verify(userServices, times(1)).createUser(dto);

@@ -276,7 +276,8 @@ public class GroupControllerTest {
               "detail": "No name provided.",
               "instance": "%s"
             }"""
-                  .formatted(GROUP_BASE_URL));
+                  .formatted(GROUP_BASE_URL),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(groupServices);
@@ -304,7 +305,8 @@ public class GroupControllerTest {
               "detail": "No groupId provided.",
               "instance": "%s"
             }"""
-                  .formatted(GROUP_BASE_URL));
+                  .formatted(GROUP_BASE_URL),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(groupServices);
@@ -332,7 +334,8 @@ public class GroupControllerTest {
               "detail": "No groupId provided.",
               "instance": "%s"
             }"""
-                  .formatted(GROUP_BASE_URL));
+                  .formatted(GROUP_BASE_URL),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(groupServices);
@@ -363,7 +366,8 @@ public class GroupControllerTest {
               "detail": "The provided groupId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
-                  .formatted(GROUP_BASE_URL));
+                  .formatted(GROUP_BASE_URL),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(groupServices);
@@ -397,7 +401,8 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, GROUP_BASE_URL));
+                  .formatted(IdentifierPatterns.ID_PATTERN, GROUP_BASE_URL),
+              JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
 
@@ -436,7 +441,8 @@ public class GroupControllerTest {
               "description": "%s"
             }
             """
-                  .formatted(groupId, groupName, description));
+                  .formatted(groupId, groupName, description),
+              JsonCompareMode.STRICT);
 
       // then
       verify(groupServices, times(1)).updateGroup(groupId, groupName, description);
@@ -469,7 +475,8 @@ public class GroupControllerTest {
               "detail": "No name provided.",
               "instance": "%s"
             }"""
-                  .formatted(uri));
+                  .formatted(uri),
+              JsonCompareMode.STRICT);
 
       verifyNoInteractions(groupServices);
     }
@@ -501,7 +508,8 @@ public class GroupControllerTest {
               "detail": "No description provided.",
               "instance": "%s"
             }"""
-                  .formatted(uri));
+                  .formatted(uri),
+              JsonCompareMode.STRICT);
 
       verifyNoInteractions(groupServices);
     }
@@ -562,7 +570,8 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path));
+                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+              JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
 
@@ -775,7 +784,8 @@ public class GroupControllerTest {
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path));
+                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+              JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
 
@@ -805,7 +815,8 @@ public class GroupControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path));
+                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+              JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
 
@@ -994,7 +1005,8 @@ public class GroupControllerTest {
                   "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path));
+                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+              JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
 
@@ -1023,7 +1035,8 @@ public class GroupControllerTest {
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, path));
+                  .formatted(IdentifierPatterns.ID_PATTERN, path),
+              JsonCompareMode.STRICT);
       verifyNoInteractions(groupServices);
     }
   }

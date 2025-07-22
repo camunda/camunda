@@ -125,7 +125,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   "resourceId": "resourceId",
                   "resourceType": "PROCESS_DEFINITION",
                   "permissionTypes": ["CREATE"]
-                }""");
+                }""",
+            JsonCompareMode.STRICT);
 
     // then
     verify(authorizationServices, times(1)).getAuthorization(authorizationKey);
@@ -160,7 +161,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
               "detail": "authorization not found",
               "instance": "%s"
             }"""
-                .formatted(path));
+                .formatted(path),
+            JsonCompareMode.STRICT);
 
     // then
     verify(authorizationServices, times(1)).getAuthorization(authorizationKey);

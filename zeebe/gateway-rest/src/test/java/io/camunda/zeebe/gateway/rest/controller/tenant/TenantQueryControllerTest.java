@@ -271,7 +271,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
               "tenantId": "%s"
             }
             """
-                .formatted(tenant.key(), tenantName, tenantDescription, tenantId));
+                .formatted(tenant.key(), tenantName, tenantDescription, tenantId),
+            JsonCompareMode.STRICT);
 
     // then
     verify(tenantServices, times(1)).getById(tenant.tenantId());
@@ -306,7 +307,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
               "detail": "tenant not found",
               "instance": "%s"
             }"""
-                .formatted(path));
+                .formatted(path),
+            JsonCompareMode.STRICT);
 
     // then
     verify(tenantServices, times(1)).getById(tenantId);
@@ -562,8 +564,19 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(
             // language=json
             """
-                {"items":[{"clientId":"client1"},{"clientId":"client2"},{"clientId":"client3"}],"page":{"totalItems":3}}
-            """);
+                {
+                  "items": [
+                    { "clientId":"client1" },
+                    { "clientId":"client2" },
+                    { "clientId":"client3" }
+                  ],
+                  "page": {
+                    "totalItems":3,
+                    "hasMoreTotalItems": false
+                  }
+                }
+            """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -595,8 +608,19 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(
             // language=json
             """
-                {"items":[{"username":"user1"},{"username":"user2"},{"username":"user3"}],"page":{"totalItems":3}}
-            """);
+                {
+                  "items": [
+                    { "username":"user1" },
+                    { "username":"user2" },
+                    { "username":"user3" }
+                  ],
+                  "page": {
+                    "totalItems": 3,
+                    "hasMoreTotalItems": false
+                  }
+                }
+            """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -628,8 +652,19 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(
             // language=json
             """
-                {"items":[{"groupId":"group1"},{"groupId":"group2"},{"groupId":"group3"}],"page":{"totalItems":3}}
-            """);
+                {
+                  "items": [
+                    { "groupId":"group1" },
+                    { "groupId":"group2" },
+                    { "groupId":"group3" }
+                  ],
+                  "page": {
+                    "totalItems":3,
+                    "hasMoreTotalItems": false
+                  }
+                }
+            """,
+            JsonCompareMode.STRICT);
   }
 
   public static Stream<Arguments> invalidTenantSearchQueries() {

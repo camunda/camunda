@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = RoleController.class)
 public class RoleQueryControllerTest extends RestControllerTest {
@@ -83,7 +84,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
               "name": "Role Name",
               "roleId": "roleId",
               "description": "description"
-            }""");
+            }""",
+            JsonCompareMode.STRICT);
 
     // then
     verify(roleServices, times(1)).getRole(role.roleId());
@@ -118,7 +120,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
               "detail": "role not found",
               "instance": "%s"
             }"""
-                .formatted(path));
+                .formatted(path),
+            JsonCompareMode.STRICT);
 
     // then
     verify(roleServices, times(1)).getRole(roleId);
@@ -176,9 +179,11 @@ public class RoleQueryControllerTest extends RestControllerTest {
              "page": {
                "totalItems": 3,
                "startCursor": "f",
-               "endCursor": "v"
+               "endCursor": "v",
+               "hasMoreTotalItems": false
              }
-           }""");
+           }""",
+            JsonCompareMode.STRICT);
 
     verify(roleServices).search(new RoleQuery.Builder().build());
   }
@@ -265,9 +270,11 @@ public class RoleQueryControllerTest extends RestControllerTest {
                }
              ],
              "page": {
-               "totalItems": 3
+               "totalItems": 3,
+               "hasMoreTotalItems": false
              }
-           }""");
+           }""",
+            JsonCompareMode.STRICT);
 
     verify(roleServices)
         .searchMembers(
@@ -328,9 +335,11 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 }
              ],
              "page": {
-               "totalItems": 3
+               "totalItems": 3,
+               "hasMoreTotalItems": false
              }
-           }""");
+           }""",
+            JsonCompareMode.STRICT);
 
     verify(mappingRuleServices)
         .search(
@@ -382,9 +391,11 @@ public class RoleQueryControllerTest extends RestControllerTest {
                }
              ],
              "page": {
-               "totalItems": 3
+               "totalItems": 3,
+               "hasMoreTotalItems": false
              }
-           }""");
+           }""",
+            JsonCompareMode.STRICT);
 
     verify(roleServices)
         .searchMembers(
@@ -431,9 +442,11 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 }
               ],
               "page": {
-                "totalItems": 2
+                "totalItems": 2,
+                "hasMoreTotalItems": false
               }
-            }""");
+            }""",
+            JsonCompareMode.STRICT);
 
     verify(roleServices)
         .searchMembers(

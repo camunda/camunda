@@ -271,7 +271,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
               "name": "%s",
               "description": "%s"
             }"""
-                .formatted(groupId, groupName, groupDescription));
+                .formatted(groupId, groupName, groupDescription),
+            JsonCompareMode.STRICT);
 
     // then
     verify(groupServices, times(1)).getGroup(group.groupId());
@@ -306,7 +307,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
               "detail": "group not found",
               "instance": "%s"
             }"""
-                .formatted(path));
+                .formatted(path),
+            JsonCompareMode.STRICT);
 
     // then
     verify(groupServices, times(1)).getGroup(groupId);
@@ -376,7 +378,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
              "page": {
                "totalItems": 3,
                "startCursor": "f",
-               "endCursor": "v"
+               "endCursor": "v",
+               "hasMoreTotalItems": false
              }
            }"""
                 .formatted(
@@ -388,7 +391,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
                     description2,
                     groupId3,
                     groupName3,
-                    description3));
+                    description3),
+            JsonCompareMode.STRICT);
 
     verify(groupServices).search(new GroupQuery.Builder().build());
   }
@@ -462,7 +466,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
              "page": {
                "totalItems": 3,
                "startCursor": "f",
-               "endCursor": "v"
+               "endCursor": "v",
+               "hasMoreTotalItems": false
              }
            }"""
                 .formatted(
@@ -474,7 +479,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
                     description2,
                     groupId3,
                     groupName3,
-                    description3));
+                    description3),
+            JsonCompareMode.STRICT);
 
     verify(groupServices)
         .search(new GroupQuery.Builder().filter(fn -> fn.groupIds(groupId1, groupId2)).build());

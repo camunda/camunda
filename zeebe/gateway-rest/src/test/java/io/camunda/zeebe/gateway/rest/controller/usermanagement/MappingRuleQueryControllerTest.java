@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = MappingRuleController.class)
 public class MappingRuleQueryControllerTest extends RestControllerTest {
@@ -66,8 +67,10 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                           {
                             "claimName": "Claim Name",
                             "claimValue": "Claim Value",
-                            "name": "Map Name"
-                          }""");
+                            "name": "Map Name",
+                            "mappingRuleId": "id"
+                          }""",
+            JsonCompareMode.STRICT);
 
     // then
     verify(mappingRuleServices, times(1)).getMappingRule(mappingRule.mappingRuleId());
@@ -102,7 +105,8 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
               "detail": "mapping rule not found",
               "instance": "%s"
             }"""
-                .formatted(path));
+                .formatted(path),
+            JsonCompareMode.STRICT);
 
     // then
     verify(mappingRuleServices, times(1)).getMappingRule(mappingRuleId);
@@ -147,25 +151,30 @@ public class MappingRuleQueryControllerTest extends RestControllerTest {
                {
                  "claimName": "Claim Name1",
                  "claimValue": "Claim Value1",
-                 "name": "Map Name1"
+                 "name": "Map Name1",
+                 "mappingRuleId": "id1"
                },
                {
                  "claimName": "Claim Name2",
                  "claimValue": "Claim Value2",
-                 "name": "Map Name2"
+                 "name": "Map Name2",
+                 "mappingRuleId": "id2"
                },
                {
                  "claimName": "Claim Name3",
                  "claimValue": "Claim Value3",
-                 "name": "Map Name3"
+                 "name": "Map Name3",
+                 "mappingRuleId": "id3"
                }
              ],
              "page": {
                "totalItems": 3,
                "startCursor": "f",
-               "endCursor": "v"
+               "endCursor": "v",
+               "hasMoreTotalItems": false
              }
-           }""");
+           }""",
+            JsonCompareMode.STRICT);
 
     verify(mappingRuleServices).search(new MappingRuleQuery.Builder().build());
   }

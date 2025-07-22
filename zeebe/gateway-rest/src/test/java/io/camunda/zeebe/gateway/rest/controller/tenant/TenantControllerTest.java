@@ -151,7 +151,8 @@ public class TenantControllerTest {
               "description": "%s"
             }
             """
-                  .formatted(tenantKey, tenantId, tenantName, tenantDescription));
+                  .formatted(tenantKey, tenantId, tenantName, tenantDescription),
+              JsonCompareMode.STRICT);
 
       // then
       verify(tenantServices, times(1))
@@ -183,7 +184,8 @@ public class TenantControllerTest {
               "detail": "No tenantId provided.",
               "instance": "%s"
             }"""
-                  .formatted(TENANT_BASE_URL));
+                  .formatted(TENANT_BASE_URL),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(tenantServices);
@@ -221,7 +223,8 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, TENANT_BASE_URL));
+                  .formatted(IdentifierPatterns.ID_PATTERN, TENANT_BASE_URL),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(tenantServices);
@@ -253,7 +256,8 @@ public class TenantControllerTest {
               "detail": "The provided tenantId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
-                  .formatted(TENANT_BASE_URL));
+                  .formatted(TENANT_BASE_URL),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(tenantServices);
@@ -296,7 +300,8 @@ public class TenantControllerTest {
               "description": "%s"
             }
             """
-                  .formatted(tenantKey, tenantId, tenantName, tenantDescription));
+                  .formatted(tenantKey, tenantId, tenantName, tenantDescription),
+              JsonCompareMode.STRICT);
 
       // then
       verify(tenantServices, times(1))
@@ -330,7 +335,8 @@ public class TenantControllerTest {
               "detail": "No description provided.",
               "instance": "%s"
             }"""
-                  .formatted(uri));
+                  .formatted(uri),
+              JsonCompareMode.STRICT);
 
       verifyNoInteractions(tenantServices);
     }
@@ -362,7 +368,8 @@ public class TenantControllerTest {
               "detail": "No name provided.",
               "instance": "%s"
             }"""
-                  .formatted(uri));
+                  .formatted(uri),
+              JsonCompareMode.STRICT);
 
       verifyNoInteractions(tenantServices);
     }
@@ -477,7 +484,8 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, uri));
+                  .formatted(IdentifierPatterns.ID_PATTERN, uri),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(tenantServices);
@@ -513,7 +521,8 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri));
+                  .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(tenantServices);
@@ -574,7 +583,8 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(IdentifierPatterns.ID_PATTERN, uri));
+                  .formatted(IdentifierPatterns.ID_PATTERN, uri),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(tenantServices);
@@ -611,7 +621,8 @@ public class TenantControllerTest {
               "detail": "The provided %s contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri));
+                  .formatted(entityIdName, IdentifierPatterns.ID_PATTERN, uri),
+              JsonCompareMode.STRICT);
 
       // then
       verifyNoInteractions(tenantServices);
