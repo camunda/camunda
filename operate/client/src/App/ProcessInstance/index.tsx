@@ -19,7 +19,7 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
-import {ProcessInstanceHeader} from './ProcessInstanceHeader/v2';
+import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel/v2';
 import {BottomPanel, ModificationFooter, Buttons} from './styled';
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog/v2';

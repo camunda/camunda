@@ -15,7 +15,7 @@ import {OperationItem} from 'modules/components/OperationItem';
 import {Link} from 'modules/components/Link';
 import {useRootInstanceId} from 'modules/queries/callHierarchy/useRootInstanceId';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useProcessInstanceOperationsContext} from 'App/ProcessInstance/ProcessInstanceHeader/v2/processInstanceOperationsContext';
+import {useProcessInstanceOperationsContext} from 'App/ProcessInstance/ProcessInstanceHeader/processInstanceOperationsContext';
 
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];

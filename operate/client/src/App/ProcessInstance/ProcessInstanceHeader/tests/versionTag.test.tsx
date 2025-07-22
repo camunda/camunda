@@ -11,18 +11,14 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ProcessInstanceHeader} from './index';
-import {
-  mockInstanceDeprecated,
-  mockProcess,
-  mockInstance,
-  Wrapper,
-} from './index.setup';
+import {ProcessInstanceHeader} from '../index';
+import {mockInstanceDeprecated, mockInstance, Wrapper} from './index.setup';
 import {createUser, mockProcessXML} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('InstanceHeader', () => {

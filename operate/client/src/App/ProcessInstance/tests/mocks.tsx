@@ -33,7 +33,7 @@ import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
-import {mockProcess} from '../ProcessInstanceHeader/v2/index.setup';
+import {mockProcess} from 'modules/mocks/api/mocks/process';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';

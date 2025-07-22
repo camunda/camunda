@@ -11,7 +11,7 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ProcessInstanceHeader} from './index';
+import {ProcessInstanceHeader} from '../index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {operationsStore} from 'modules/stores/operations';
 import {mockInstanceDeprecated, mockInstance} from './index.setup';

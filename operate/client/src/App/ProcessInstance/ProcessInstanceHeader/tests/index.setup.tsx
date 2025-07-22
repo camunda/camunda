@@ -37,14 +37,6 @@ const mockInstanceWithIncident = createProcessInstance({
   hasIncident: true,
 });
 
-const mockProcess = {
-  id: '2251799813688076',
-  name: 'Complex Process',
-  version: 3,
-  bpmnProcessId: 'complexProcess',
-  versionTag: 'myVersionTag',
-};
-
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
@@ -74,6 +66,5 @@ export {
   mockInstanceWithIncident,
   mockInstanceDeprecated,
   mockOperationCreated,
-  mockProcess,
   Wrapper,
 };

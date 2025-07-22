@@ -13,7 +13,7 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {getProcessDefinitionName} from 'modules/utils/instance';
-import {ProcessInstanceHeader} from './index';
+import {ProcessInstanceHeader} from '../index';
 import {
   mockInstance,
   mockInstanceWithParentInstance,
