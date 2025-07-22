@@ -19,6 +19,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 import java.util.Map;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.stream.LongStream;
 
 final class SparseJournalIndex implements JournalIndex {
 
@@ -81,6 +82,19 @@ final class SparseJournalIndex implements JournalIndex {
       final boolean include = asqnEntryToDelete.getKey() > index;
       asqnToIndex.tailMap(asqnToDelete, include).clear();
     }
+  }
+
+  @Override
+  public void deleteInRange(final long fromIndexInclusive, final long toIndexInclusive) {
+    indexToPosition.subMap(fromIndexInclusive, true, toIndexInclusive, true).clear();
+    LongStream.rangeClosed(fromIndexInclusive, toIndexInclusive)
+        .forEach(
+            index -> {
+              final var asqnEntry = indexToAsqn.remove(index);
+              if (asqnEntry != null) {
+                asqnToIndex.remove(asqnEntry);
+              }
+            });
   }
 
   @Override
