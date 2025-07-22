@@ -100,9 +100,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     lenient().when(itemProviderFactory.fromBatchOperation(any())).thenReturn(itemProvider);
 
-    lenient()
-        .when(taskResultBuilder.canAppendCommandRecords(anyLong(), any(), any(), any()))
-        .thenReturn(true);
+    lenient().when(taskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
 
     scheduler =
         new BatchOperationExecutionScheduler(
@@ -171,8 +169,7 @@ public class BatchOperationExecutionSchedulerTest {
   public void shouldAppendFailedEventWhenFirstAppendFails() {
     // given
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
-    when(taskResultBuilder.canAppendCommandRecords(anyLong(), any(), any(), any()))
-        .thenReturn(false);
+    when(taskResultBuilder.canAppendRecords(any(), any())).thenReturn(false);
 
     // when our scheduler fires
     execute();
@@ -215,9 +212,7 @@ public class BatchOperationExecutionSchedulerTest {
     when(itemProvider.fetchItemPage(any(), anyInt()))
         .thenReturn(createItemPage(new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, "0", false))
         .thenReturn(createItemPage(new long[] {11, 12, 13, 14, 15, 16, 17, 18, 19, 20}, "1", true));
-    when(taskResultBuilder.canAppendCommandRecords(anyLong(), any(), any(), any()))
-        .thenReturn(true)
-        .thenReturn(false);
+    when(taskResultBuilder.canAppendRecords(any(), any())).thenReturn(true).thenReturn(false);
     // when our scheduler fires
     execute();
 
@@ -225,7 +220,7 @@ public class BatchOperationExecutionSchedulerTest {
     verify(taskResultBuilder)
         .appendCommandRecord(
             anyLong(),
-            eq(BatchOperationIntent.INITIALIZE),
+            eq(BatchOperationIntent.CONTINUE_INITIALIZATION),
             initializeRecordArgumentCaptor.capture(),
             any());
 
