@@ -239,12 +239,6 @@ const waitForPollingsToBeComplete = async () => {
   });
 };
 
-export {
-  getWrapper,
-  testData,
-  waitForPollingsToBeComplete,
-  mockProcessInstance,
-  processInstancesMock,
-};
+export {getWrapper, waitForPollingsToBeComplete, processInstancesMock};
 
 export {mockRequests};

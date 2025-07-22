@@ -841,7 +841,6 @@ export {
   nestedSubProcessesInstance,
   mockNestedSubProcessesInstance,
   adHocSubProcessesInstance,
-  processId,
   processInstanceId,
   flowNodeInstances,
   eventSubProcessFlowNodeInstances,

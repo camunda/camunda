@@ -402,16 +402,6 @@ export const createSequenceFlows = () => {
   ];
 };
 
-export const mockProcessStatistics = [
-  {
-    activityId: 'ServiceTask_0kt6c5i',
-    active: 1,
-    canceled: 0,
-    incidents: 0,
-    completed: 0,
-  },
-];
-
 export const mockProcessStatisticsV2 = {
   items: [
     {

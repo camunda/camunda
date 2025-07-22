@@ -7,7 +7,6 @@
  */
 
 import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
-import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import type {VariableEntity} from 'modules/types/operate';
 
 const mockVariables: VariableEntity[] = [
@@ -75,14 +74,4 @@ const mockVariablesV2: QueryVariablesResponseBody = {
   },
 };
 
-const mockMetaData: MetaDataDto = {
-  flowNodeId: null,
-  flowNodeInstanceId: '123',
-  flowNodeType: 'start-event',
-  instanceCount: null,
-  instanceMetadata: null,
-  incident: null,
-  incidentCount: 0,
-};
-
-export {mockVariables, mockVariablesV2, mockMetaData};
+export {mockVariables, mockVariablesV2};
