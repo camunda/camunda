@@ -67,8 +67,13 @@ public class OidcCamundaUserService implements CamundaUserService {
         .map(
             user -> {
               if (user instanceof final CamundaOidcUser camundaOAuthPrincipal) {
-                return Json.createValue(camundaOAuthPrincipal.getIdToken().getTokenValue())
-                    .toString();
+                // If the user has an access token, return it; otherwise, return the ID token to
+                // match the fallback behavior of CamundaOidcUserService#loadUser.
+                final var token =
+                    camundaOAuthPrincipal.getAccessToken() != null
+                        ? camundaOAuthPrincipal.getAccessToken()
+                        : camundaOAuthPrincipal.getIdToken().getTokenValue();
+                return Json.createValue(token).toString();
               }
 
               throw new UnsupportedOperationException(

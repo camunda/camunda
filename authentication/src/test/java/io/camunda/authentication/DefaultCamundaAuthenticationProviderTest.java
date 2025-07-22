@@ -136,6 +136,7 @@ public class DefaultCamundaAuthenticationProviderTest {
                     Instant.now(),
                     Instant.now().plusSeconds(3600),
                     Map.of("sub", username))),
+            null,
             Collections.emptySet(),
             authenticationContext);
 
@@ -167,6 +168,7 @@ public class DefaultCamundaAuthenticationProviderTest {
                     Instant.now(),
                     Instant.now().plusSeconds(3600),
                     Map.of("sub", username))),
+            null,
             Collections.emptySet(),
             authenticationContext);
 
@@ -197,6 +199,7 @@ public class DefaultCamundaAuthenticationProviderTest {
                     Instant.now(),
                     Instant.now().plusSeconds(3600),
                     Map.of("sub", clientId))),
+            null,
             Collections.emptySet(),
             authenticationContext);
 
@@ -284,6 +287,7 @@ public class DefaultCamundaAuthenticationProviderTest {
                         tokenIssuedAt,
                         tokenExpiresAt,
                         Map.of("aud", aud, usernameClaim, usernameValue))),
+                null,
                 Collections.emptySet(),
                 new AuthenticationContextBuilder().withUsername(usernameValue).build()),
             List.of(),

@@ -18,18 +18,23 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
 public class CamundaOidcUser implements OidcUser, CamundaOAuthPrincipal, Serializable {
   private final OidcUser user;
+  private final String accessToken;
   private final OAuthContext oAuthContext;
 
   public CamundaOidcUser(
       final OidcUser oidcUser,
+      final String accessToken,
       final Set<String> mappingIds,
       final AuthenticationContext authentication) {
     user = oidcUser;
+    this.accessToken = accessToken;
     oAuthContext = new OAuthContext(mappingIds, authentication);
   }
 
-  public CamundaOidcUser(final OidcUser user, final OAuthContext oAuthContext) {
+  public CamundaOidcUser(
+      final OidcUser user, final String accessToken, final OAuthContext oAuthContext) {
     this.user = user;
+    this.accessToken = accessToken;
     this.oAuthContext = oAuthContext;
   }
 
@@ -85,6 +90,10 @@ public class CamundaOidcUser implements OidcUser, CamundaOAuthPrincipal, Seriali
 
   public Set<String> getMappingIds() {
     return oAuthContext.mappingIds();
+  }
+
+  public String getAccessToken() {
+    return accessToken;
   }
 
   @Override
