@@ -6,36 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Link} from '@carbon/react';
 import {ActionableNotification, Text} from './styled';
-import type {ProcessInstanceEntity} from 'modules/types/operate';
+import {type CallHierarchy} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 
-function getParentAndRootProcessInformation(
-  processInstance: null | ProcessInstanceEntity,
-): {
-  parentProcessName?: string;
-  parentProcessId?: string;
-  rootProcessName?: string;
-  rootProcessId?: string;
-} {
+function getParentAndRootProcessInformation(callHierarchy?: CallHierarchy[]) {
   const parentProcess =
-    processInstance?.callHierarchy[processInstance.callHierarchy.length - 1];
-  const rootProcess = processInstance?.callHierarchy[0];
+    callHierarchy && callHierarchy[callHierarchy.length - 1];
+  const rootProcess = callHierarchy && callHierarchy[0];
 
   return {
     parentProcessName: parentProcess?.processDefinitionName,
-    parentProcessId: parentProcess?.instanceId,
+    parentProcessId: parentProcess?.processInstanceKey,
     rootProcessName: rootProcess?.processDefinitionName,
-    rootProcessId: rootProcess?.instanceId,
+    rootProcessId: rootProcess?.processInstanceKey,
   };
 }
 
 const Error: React.FC = () => {
+  const {data: callHierarchy} = useCallHierarchy();
   const {parentProcessId, parentProcessName, rootProcessId, rootProcessName} =
-    getParentAndRootProcessInformation(
-      processInstanceDetailsStore.state.processInstance,
-    );
+    getParentAndRootProcessInformation(callHierarchy);
 
   if (parentProcessId === undefined || rootProcessId === undefined) {
     return null;
