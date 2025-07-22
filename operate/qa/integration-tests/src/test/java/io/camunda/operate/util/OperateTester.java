@@ -43,7 +43,6 @@ import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -71,10 +70,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -101,9 +97,6 @@ public class OperateTester {
   private Long processInstanceKey;
   private Long jobKey;
   private JwtDecoder jwtDecoder;
-
-  @Autowired(required = false)
-  private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
 
   @Autowired(required = false)
   @Qualifier("importThreadPoolExecutor")
@@ -966,17 +959,6 @@ public class OperateTester {
     }
 
     assertTrue(format("Index %s was not deleted after %s ms!", index, maxWaitMillis), deleted);
-  }
-
-  public OperateTester withAuthenticationToken(final String token) {
-    final Jwt jwt;
-    try {
-      jwt = jwtDecoder.decode(token);
-    } catch (final JwtException e) {
-      throw new RuntimeException(e);
-    }
-    SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationConverter.convert(jwt));
-    return this;
   }
 
   public void performOneRoundOfImport() {
