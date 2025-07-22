@@ -9582,19 +9582,20 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - decisionInstanceKey
+            - decisionDefinitionId
+            - decisionDefinitionKey
+            - decisionDefinitionName
+            - decisionDefinitionType
+            - decisionDefinitionVersion
             - decisionInstanceId
-            - state
+            - decisionInstanceKey
+            - elementInstanceKey
             - evaluationDate
             - evaluationFailure
             - processDefinitionKey
-            - processInstanceKey
             - processInstanceId
-            - decisionDefinitionKey
-            - decisionDefinitionId
-            - decisionDefinitionName
-            - decisionDefinitionVersion
-            - decisionDefinitionType
+            - processInstanceKey
+            - state
             - tenantId
         order:
           $ref: "#/components/schemas/SortOrderEnum"
@@ -9659,6 +9660,10 @@ components:
           description: The key of the decision.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+        elementInstanceKey:
+          description: The key of the element instance this decision instance is linked to.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
     DecisionInstanceSearchQueryResult:
       type: object
       allOf:
@@ -9715,6 +9720,9 @@ components:
         decisionDefinitionKey:
           type: string
           description: The key of the decision.
+        elementInstanceKey:
+          type: string
+          description: The key of the element instance this decision instance is linked to.
 
     DecisionInstanceGetQueryResult:
       allOf:
