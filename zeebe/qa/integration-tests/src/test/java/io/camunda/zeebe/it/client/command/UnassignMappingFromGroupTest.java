@@ -40,14 +40,14 @@ public class UnassignMappingFromGroupTest {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     mappingId =
         client
-            .newCreateMappingCommand()
-            .mappingId(Strings.newRandomValidIdentityId())
+            .newCreateMappingRuleCommand()
+            .mappingRuleId(Strings.newRandomValidIdentityId())
             .name("mappingName")
             .claimName("name")
             .claimValue("value")
             .send()
             .join()
-            .getMappingId();
+            .getMappingRuleId();
 
     groupId =
         client
@@ -57,13 +57,23 @@ public class UnassignMappingFromGroupTest {
             .send()
             .join()
             .getGroupId();
-    client.newAssignMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
+    client
+        .newAssignMappingRuleToGroupCommand()
+        .mappingRuleId(mappingId)
+        .groupId(groupId)
+        .send()
+        .join();
   }
 
   @Test
   void shouldUnassignMappingFromGroup() {
     // when
-    client.newUnassignMappingFromGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
+    client
+        .newUnassignMappingRuleFromGroupCommand()
+        .mappingRuleId(mappingId)
+        .groupId(groupId)
+        .send()
+        .join();
 
     // then
     ZeebeAssertHelper.assertEntityUnassignedFromGroup(
@@ -83,8 +93,8 @@ public class UnassignMappingFromGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(mappingId)
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId(mappingId)
                     .groupId(nonExistentGroupId)
                     .send()
                     .join())
@@ -101,8 +111,8 @@ public class UnassignMappingFromGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(mappingId)
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId(mappingId)
                     .groupId(null)
                     .send()
                     .join())
@@ -116,8 +126,8 @@ public class UnassignMappingFromGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(mappingId)
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId(mappingId)
                     .groupId("")
                     .send()
                     .join())
@@ -131,8 +141,8 @@ public class UnassignMappingFromGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(null)
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId(null)
                     .groupId(groupId)
                     .send()
                     .join())
@@ -146,8 +156,8 @@ public class UnassignMappingFromGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId("")
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId("")
                     .groupId(groupId)
                     .send()
                     .join())

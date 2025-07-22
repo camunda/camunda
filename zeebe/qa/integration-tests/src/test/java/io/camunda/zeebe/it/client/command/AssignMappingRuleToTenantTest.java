@@ -49,11 +49,11 @@ class AssignMappingRuleToTenantTest {
     // Create Mapping
 
     client
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .mappingId(ID)
+        .mappingRuleId(ID)
         .send()
         .join();
     mappingId = ID;
@@ -62,7 +62,12 @@ class AssignMappingRuleToTenantTest {
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    client.newAssignMappingToTenantCommand().mappingId(ID).tenantId(TENANT_ID).send().join();
+    client
+        .newAssignMappingRuleToTenantCommand()
+        .mappingRuleId(ID)
+        .tenantId(TENANT_ID)
+        .send()
+        .join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
@@ -83,8 +88,8 @@ class AssignMappingRuleToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand()
-                    .mappingId(mappingId)
+                    .newAssignMappingRuleToTenantCommand()
+                    .mappingRuleId(mappingId)
                     .tenantId(invalidTenantId)
                     .send()
                     .join())
@@ -104,8 +109,8 @@ class AssignMappingRuleToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand()
-                    .mappingId(invalidMappingId)
+                    .newAssignMappingRuleToTenantCommand()
+                    .mappingRuleId(invalidMappingId)
                     .tenantId(TENANT_ID)
                     .send()
                     .join())
@@ -119,14 +124,19 @@ class AssignMappingRuleToTenantTest {
   @Test
   void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {
     // given
-    client.newAssignMappingToTenantCommand().mappingId(ID).tenantId(TENANT_ID).send().join();
+    client
+        .newAssignMappingRuleToTenantCommand()
+        .mappingRuleId(ID)
+        .tenantId(TENANT_ID)
+        .send()
+        .join();
 
     // When / Then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand()
-                    .mappingId(ID)
+                    .newAssignMappingRuleToTenantCommand()
+                    .mappingRuleId(ID)
                     .tenantId(TENANT_ID)
                     .send()
                     .join())

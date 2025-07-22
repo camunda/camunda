@@ -31,7 +31,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
   public static final String GROUP_ID = "groupId";
   public static final String USERNAME = "username";
   public static final String CLIENT_ID = "clientId";
-  public static final String MAPPING_ID = "mappingId";
+  public static final String MAPPING_RULE_ID = "mappingRuleId";
 
   @Test
   void shouldAssignUserToGroup() {
@@ -101,27 +101,32 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldAssignMappingToGroup() {
+  void shouldAssignMappingRuleToGroup() {
     // when
-    client.newAssignMappingToGroupCommand().mappingId(MAPPING_ID).groupId(GROUP_ID).send().join();
+    client
+        .newAssignMappingRuleToGroupCommand()
+        .mappingRuleId(MAPPING_RULE_ID)
+        .groupId(GROUP_ID)
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl().contains(GROUP_ID + "/mapping-rules/" + MAPPING_ID)).isTrue();
+    assertThat(request.getUrl().contains(GROUP_ID + "/mapping-rules/" + MAPPING_RULE_ID)).isTrue();
   }
 
   @Test
-  void shouldRaiseExceptionOnRequestErrorAssigningMapping() {
+  void shouldRaiseExceptionOnRequestErrorAssigningMappingRule() {
     // given
-    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_RULE_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(MAPPING_RULE_ID)
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -132,15 +137,15 @@ public class AssignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionIfGroupNotExistsAssigningMapping() {
     // given
-    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_RULE_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(MAPPING_RULE_ID)
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -151,15 +156,15 @@ public class AssignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldHandleValidationErrorResponseAssigningMapping() {
     // given
-    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_RULE_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(MAPPING_RULE_ID)
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -173,8 +178,8 @@ public class AssignMemberGroupTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(null)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(null)
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -183,13 +188,13 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnEmptyMappingIdWhenAssigningMappingToGroup() {
+  void shouldRaiseExceptionOnEmptyMappingIdWhenAssigningMappingRuleToGroup() {
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId("")
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId("")
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -198,13 +203,13 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNullGroupIdWhenAssigningMappingToGroup() {
+  void shouldRaiseExceptionOnNullGroupIdWhenAssigningMappingRuleToGroup() {
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(MAPPING_RULE_ID)
                     .groupId(null)
                     .send()
                     .join())
@@ -213,13 +218,13 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnEmptyGroupIdWhenAssigningMappingToGroup() {
+  void shouldRaiseExceptionOnEmptyGroupIdWhenAssigningMappingRuleToGroup() {
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(MAPPING_RULE_ID)
                     .groupId("")
                     .send()
                     .join())

@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -46,12 +46,15 @@ public class MappingRulesByGroupSearchTest {
 
   @Test
   void shouldReturnMappingsByGroup() {
-    final var mappings = camundaClient.newMappingsByGroupSearchRequest(GROUP_ID).send().join();
+    final var mappings = camundaClient.newMappingRulesByGroupSearchRequest(GROUP_ID).send().join();
 
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
         .extracting(
-            Mapping::getMappingId, Mapping::getClaimName, Mapping::getClaimValue, Mapping::getName)
+            MappingRule::getMappingRuleId,
+            MappingRule::getClaimName,
+            MappingRule::getClaimValue,
+            MappingRule::getName)
         .contains(
             tuple(
                 MAPPING_RULE_ID_1,
@@ -69,14 +72,14 @@ public class MappingRulesByGroupSearchTest {
   void shouldReturnMappingsByGroupFiltered() {
     final var mappings =
         camundaClient
-            .newMappingsByGroupSearchRequest(GROUP_ID)
-            .filter(fn -> fn.mappingId(MAPPING_RULE_ID_1))
+            .newMappingRulesByGroupSearchRequest(GROUP_ID)
+            .filter(fn -> fn.mappingRuleId(MAPPING_RULE_ID_1))
             .send()
             .join();
 
     assertThat(mappings.items().size()).isEqualTo(1);
     assertThat(mappings.items())
-        .extracting(Mapping::getMappingId)
+        .extracting(MappingRule::getMappingRuleId)
         .containsExactly(MAPPING_RULE_ID_1);
   }
 
@@ -84,21 +87,21 @@ public class MappingRulesByGroupSearchTest {
   void shouldReturnMappingByGroupSorted() {
     final var mappings =
         camundaClient
-            .newMappingsByGroupSearchRequest(GROUP_ID)
-            .sort(fn -> fn.mappingId().desc())
+            .newMappingRulesByGroupSearchRequest(GROUP_ID)
+            .sort(fn -> fn.mappingRuleId().desc())
             .send()
             .join();
 
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
-        .extracting(Mapping::getMappingId)
+        .extracting(MappingRule::getMappingRuleId)
         .containsExactly(MAPPING_RULE_ID_2, MAPPING_RULE_ID_1);
   }
 
   @Test
   void shouldRejectIfMissingGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newMappingsByGroupSearchRequest(null).send().join())
+    assertThatThrownBy(() -> camundaClient.newMappingRulesByGroupSearchRequest(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -106,15 +109,15 @@ public class MappingRulesByGroupSearchTest {
   @Test
   void shouldRejectIfEmptyGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newMappingsByGroupSearchRequest("").send().join())
+    assertThatThrownBy(() -> camundaClient.newMappingRulesByGroupSearchRequest("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
 
   private static void createMappingRule(final String mappingRuleId) {
     camundaClient
-        .newCreateMappingCommand()
-        .mappingId(mappingRuleId)
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingRuleId)
         .name("name")
         .claimName(mappingRuleId + "claimName")
         .claimValue(mappingRuleId + "claimValue")
@@ -128,8 +131,8 @@ public class MappingRulesByGroupSearchTest {
 
   private static void assignMappingRuleToGroup(final String mappingRuleId, final String groupId) {
     camundaClient
-        .newAssignMappingToGroupCommand()
-        .mappingId(mappingRuleId)
+        .newAssignMappingRuleToGroupCommand()
+        .mappingRuleId(mappingRuleId)
         .groupId(groupId)
         .send()
         .join();
@@ -142,7 +145,7 @@ public class MappingRulesByGroupSearchTest {
         .untilAsserted(
             () -> {
               final var mappings =
-                  camundaClient.newMappingsByGroupSearchRequest(GROUP_ID).send().join();
+                  camundaClient.newMappingRulesByGroupSearchRequest(GROUP_ID).send().join();
               assertThat(mappings.items().size()).isEqualTo(2);
             });
   }

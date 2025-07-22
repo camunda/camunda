@@ -23,7 +23,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
-import io.camunda.client.api.search.sort.MappingSort;
+import io.camunda.client.api.search.sort.MappingRuleSort;
 import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -98,9 +98,9 @@ public class GroupSearchTest extends ClientRestTest {
     // when
     final String groupId = "groupId";
     client
-        .newMappingsByGroupSearchRequest(groupId)
-        .filter(fn -> fn.mappingId("mappingId"))
-        .sort(MappingSort::name)
+        .newMappingRulesByGroupSearchRequest(groupId)
+        .filter(fn -> fn.mappingRuleId("mappingRuleId"))
+        .sort(MappingRuleSort::name)
         .page(fn -> fn.limit(5))
         .send()
         .join();

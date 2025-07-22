@@ -59,7 +59,7 @@ public class MappingRuleUpdateAuthorizationTest {
     final var id = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(id)
+        .newMappingRule(id)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -68,7 +68,7 @@ public class MappingRuleUpdateAuthorizationTest {
     // when
     engine
         .mappingRule()
-        .updateMapping(id)
+        .updateMappingRule(id)
         .withClaimValue(claimValueNew)
         .withName(name)
         .withClaimName(claimName)
@@ -98,7 +98,7 @@ public class MappingRuleUpdateAuthorizationTest {
 
     engine
         .mappingRule()
-        .newMapping(mappingRuleId)
+        .newMappingRule(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -107,7 +107,7 @@ public class MappingRuleUpdateAuthorizationTest {
     // when
     engine
         .mappingRule()
-        .updateMapping(mappingRuleId)
+        .updateMappingRule(mappingRuleId)
         .withClaimValue(claimValue)
         .withClaimValue(claimValueNew)
         .withName(name)
@@ -135,7 +135,7 @@ public class MappingRuleUpdateAuthorizationTest {
     final var user = createUser();
     engine
         .mappingRule()
-        .newMapping(id)
+        .newMappingRule(id)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -145,7 +145,7 @@ public class MappingRuleUpdateAuthorizationTest {
     final var rejection =
         engine
             .mappingRule()
-            .updateMapping(id)
+            .updateMappingRule(id)
             .withClaimValue(claimValue)
             .withClaimValue(claimValueNew)
             .withName(name)

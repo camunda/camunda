@@ -325,7 +325,7 @@ public class RemoveEntityTenantTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withName("name")
         .withClaimName("cn")
         .withClaimValue("cv")
@@ -360,7 +360,7 @@ public class RemoveEntityTenantTest {
     final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withName("name")
         .withClaimName("cn")
         .withClaimValue("cv")
@@ -396,7 +396,7 @@ public class RemoveEntityTenantTest {
     final var mappingId = "123";
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withName("name")
         .withClaimName("cn")
         .withClaimValue("cv")

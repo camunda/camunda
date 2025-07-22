@@ -436,7 +436,7 @@ public class CommandDistributionIdempotencyTest {
                   final var mappingRule = createMappingRule();
                   return ENGINE
                       .mappingRule()
-                      .updateMapping(mappingRule.getValue().getMappingRuleId())
+                      .updateMappingRule(mappingRule.getValue().getMappingRuleId())
                       .withName(mappingRule.getValue().getName())
                       .withClaimName(mappingRule.getValue().getClaimName())
                       .withClaimValue(mappingRule.getValue().getClaimValue())
@@ -453,7 +453,7 @@ public class CommandDistributionIdempotencyTest {
                   final var mappingRule = createMappingRule();
                   return ENGINE
                       .mappingRule()
-                      .deleteMapping(mappingRule.getValue().getMappingRuleId())
+                      .deleteMappingRule(mappingRule.getValue().getMappingRuleId())
                       .delete();
                 }),
             MappingRuleDeleteProcessor.class
@@ -815,7 +815,7 @@ public class CommandDistributionIdempotencyTest {
   private static Record<MappingRuleRecordValue> createMappingRule() {
     return ENGINE
         .mappingRule()
-        .newMapping(UUID.randomUUID().toString())
+        .newMappingRule(UUID.randomUUID().toString())
         .withClaimName(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())
         .withName(UUID.randomUUID().toString())

@@ -30,7 +30,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
 
   public static final String GROUP_ID = "groupId";
   public static final String USERNAME = "username";
-  public static final String MAPPING_ID = "mappingId";
+  public static final String MAPPING_RULE_ID = "mappingRuleId";
   public static final String CLIENT_ID = "clientId";
 
   @Test
@@ -161,32 +161,32 @@ public class UnassignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldUnassignMappingFromGroup() {
+  void shouldUnassignMappingRuleFromGroup() {
     // when
     client
-        .newUnassignMappingFromGroupCommand()
-        .mappingId(MAPPING_ID)
+        .newUnassignMappingRuleFromGroupCommand()
+        .mappingRuleId(MAPPING_RULE_ID)
         .groupId(GROUP_ID)
         .send()
         .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl().contains(GROUP_ID + "/mapping-rules/" + MAPPING_ID)).isTrue();
+    assertThat(request.getUrl().contains(GROUP_ID + "/mapping-rules/" + MAPPING_RULE_ID)).isTrue();
   }
 
   @Test
   void shouldRaiseExceptionOnRequestErrorUnassignMapping() {
     // given
-    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_RULE_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(MAPPING_ID)
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId(MAPPING_RULE_ID)
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -197,15 +197,15 @@ public class UnassignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnForbiddenRequestUnassignMapping() {
     // given
-    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_RULE_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(MAPPING_ID)
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId(MAPPING_RULE_ID)
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -216,15 +216,15 @@ public class UnassignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldHandleValidationErrorResponseUnassignMapping() {
     // given
-    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
+    final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_RULE_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(MAPPING_ID)
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId(MAPPING_RULE_ID)
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -238,8 +238,8 @@ public class UnassignMemberGroupTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(null)
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId(null)
                     .groupId(GROUP_ID)
                     .send()
                     .join())
@@ -253,8 +253,8 @@ public class UnassignMemberGroupTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId("")
+                    .newUnassignMappingRuleFromGroupCommand()
+                    .mappingRuleId("")
                     .groupId(GROUP_ID)
                     .send()
                     .join())

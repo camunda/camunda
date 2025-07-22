@@ -203,8 +203,8 @@ public class OidcAuthOverGrpcIT {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     defaultMappingRuleClient
-        .newCreateMappingCommand()
-        .mappingId(UUID.randomUUID().toString())
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(UUID.randomUUID().toString())
         .claimName(claimName)
         .claimValue(claimValue)
         .name(claimValue)
@@ -233,8 +233,8 @@ public class OidcAuthOverGrpcIT {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     defaultMappingRuleClient
-        .newCreateMappingCommand()
-        .mappingId(RESTRICTED_USER_ID)
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(RESTRICTED_USER_ID)
         .claimName(USER_ID_CLAIM_NAME)
         .claimValue(RESTRICTED_USER_ID)
         .name(RESTRICTED_USER_ID)

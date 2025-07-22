@@ -21,13 +21,13 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.MappingFilter;
+import io.camunda.client.api.search.filter.MappingRuleFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.MappingsByGroupSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.sort.MappingSort;
+import io.camunda.client.api.search.sort.MappingRuleSort;
 import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -41,7 +41,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public class MappingsByGroupSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<MappingRuleSearchQueryRequest>
-    implements MappingsByGroupSearchRequest {
+    implements MappingRulesByGroupSearchRequest {
 
   private final MappingRuleSearchQueryRequest request;
   private final String groupId;
@@ -59,15 +59,15 @@ public class MappingsByGroupSearchRequestImpl
   }
 
   @Override
-  public FinalSearchRequestStep<Mapping> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<MappingRule> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<SearchResponse<Mapping>> send() {
+  public CamundaFuture<SearchResponse<MappingRule>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    final HttpCamundaFuture<SearchResponse<Mapping>> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<SearchResponse<MappingRule>> result = new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/groups/%s/mapping-rules/search", groupId),
         jsonMapper.toJson(request),
@@ -79,18 +79,18 @@ public class MappingsByGroupSearchRequestImpl
   }
 
   @Override
-  public MappingsByGroupSearchRequest filter(final MappingFilter value) {
+  public MappingRulesByGroupSearchRequest filter(final MappingRuleFilter value) {
     request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public MappingsByGroupSearchRequest filter(final Consumer<MappingFilter> fn) {
+  public MappingRulesByGroupSearchRequest filter(final Consumer<MappingRuleFilter> fn) {
     return filter(mappingFilter(fn));
   }
 
   @Override
-  public MappingsByGroupSearchRequest sort(final MappingSort value) {
+  public MappingRulesByGroupSearchRequest sort(final MappingRuleSort value) {
     request.setSort(
         SearchRequestSortMapper.toMappingSearchQuerySortRequest(
             provideSearchRequestProperty(value)));
@@ -98,18 +98,18 @@ public class MappingsByGroupSearchRequestImpl
   }
 
   @Override
-  public MappingsByGroupSearchRequest sort(final Consumer<MappingSort> fn) {
+  public MappingRulesByGroupSearchRequest sort(final Consumer<MappingRuleSort> fn) {
     return sort(mappingSort(fn));
   }
 
   @Override
-  public MappingsByGroupSearchRequest page(final SearchRequestPage value) {
+  public MappingRulesByGroupSearchRequest page(final SearchRequestPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public MappingsByGroupSearchRequest page(final Consumer<SearchRequestPage> fn) {
+  public MappingRulesByGroupSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

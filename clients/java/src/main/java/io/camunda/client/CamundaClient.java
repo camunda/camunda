@@ -19,11 +19,11 @@ import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
-import io.camunda.client.api.command.AssignMappingToGroupStep1;
-import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingRuleToGroupStep1;
+import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
-import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
+import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToUserCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
@@ -42,7 +42,7 @@ import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
-import io.camunda.client.api.command.CreateMappingCommandStep1;
+import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
@@ -68,10 +68,10 @@ import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
-import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
+import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
-import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
@@ -124,8 +124,8 @@ import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.JobSearchRequest;
-import io.camunda.client.api.search.request.MappingsByGroupSearchRequest;
-import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
@@ -1192,22 +1192,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UpdateRoleCommandStep1 newUpdateRoleCommand(String roleId);
 
   /**
-   * Command to assign a role to a mapping.
+   * Command to assign a role to a mapping rule.
    *
    * <pre>
    *
    * camundaClient
-   *  .newAssignRoleToMappingCommand()
+   *  .newAssignRoleToMappingRuleCommand()
    *  .roleId("roleId")
-   *  .mappingId("mappingId")
+   *  .mappingRuleId("mappingRuleId")
    *  .send();
    * </pre>
    *
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    *
-   * @return a builder to configure and send the assign role to mapping command
+   * @return a builder to configure and send the assign role to mapping rule command
    */
-  AssignRoleToMappingCommandStep1 newAssignRoleToMappingCommand();
+  AssignRoleToMappingRuleCommandStep1 newAssignRoleToMappingRuleCommand();
 
   /**
    * Command to delete a role by role ID.
@@ -1364,23 +1364,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UnassignRoleFromGroupCommandStep1 newUnassignRoleFromGroupCommand();
 
   /**
-   * Command to unassign a role from a mapping.
+   * Command to unassign a role from a mapping rule.
    *
    * <p>Example usage:
    *
    * <pre>
    * camundaClient
-   *   .newUnassignRoleFromMappingCommand()
+   *   .newUnassignRoleFromMappingRuleCommand()
    *   .roleId("roleId")
-   *   .mappingId("mappingId")
+   *   .mappingRuleId("mappingRuleId")
    *   .send();
    * </pre>
    *
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    *
-   * @return a builder for the unassign role from mapping command
+   * @return a builder for the unassign role from mapping rule command
    */
-  UnassignRoleFromMappingCommandStep1 newUnassignRoleFromMappingCommand();
+  UnassignRoleFromMappingRuleCommandStep1 newUnassignRoleFromMappingRuleCommand();
 
   /**
    * Command to unassign a role from a client.
@@ -1650,10 +1650,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newCreateMappingCommand()
+   *  .newCreateMappingRuleCommand()
    *  .claimName(claimName)
    *  .claimValue(claimValue)
-   *  .mappingId(mappingId)
+   *  .mappingRuleId(mappingRuleId)
    *  .name(name)
    *  .send();
    * </pre>
@@ -1663,7 +1663,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  CreateMappingCommandStep1 newCreateMappingCommand();
+  CreateMappingRuleCommandStep1 newCreateMappingRuleCommand();
 
   /*
    * Retrieves the XML representation of a decision requirements.
@@ -2060,8 +2060,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignMappingToTenantCommand()
-   *   .mappingId("mappingId")
+   *   .newAssignMappingRuleToTenantCommand()
+   *   .mappingRuleId("mappingRuleId")
    *   .tenantId("tenantId")
    *   .send();
    * </pre>
@@ -2071,7 +2071,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the assign mapping rule to tenant command
    */
-  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand();
+  AssignMappingRuleToTenantCommandStep1 newAssignMappingRuleToTenantCommand();
 
   /**
    * Command to assign a user to a tenant.
@@ -2389,8 +2389,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newAssignMappingToGroupCommand()
-   *  .mappingId(mappingId)
+   *  .newAssignMappingRuleToGroupCommand()
+   *  .mappingRuleId(mappingRuleId)
    *  .groupId(groupId)
    *  .send();
    * </pre>
@@ -2399,7 +2399,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  AssignMappingToGroupStep1 newAssignMappingToGroupCommand();
+  AssignMappingRuleToGroupStep1 newAssignMappingRuleToGroupCommand();
 
   /**
    * Command to unassign a mapping rule from a group.
@@ -2408,8 +2408,8 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUnassignMappingFromGroupCommand()
-   *  .mappingId(mappingId)
+   *  .newUnassignMappingRuleFromGroupCommand()
+   *  .mappingRuleId(mappingRuleId)
    *  .groupId(groupId)
    *  .send();
    * </pre>
@@ -2418,7 +2418,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand();
+  UnassignMappingRuleFromGroupStep1 newUnassignMappingRuleFromGroupCommand();
 
   /**
    * Request to get a group by group ID.
@@ -2487,38 +2487,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       Long processInstanceKey);
 
   /**
-   * Executes a search request to query mappings by group.
+   * Executes a search request to query mapping rules by group.
    *
    * <pre>
    *   camundaClient
-   *    .newMappingsByGroupSearchRequest(groupId)
-   *    .filter((f) -> f.mappingId(mappingId))
-   *    .sort((s) -> s.mappingId().asc())
+   *    .newMappingRulesByGroupSearchRequest(groupId)
+   *    .filter((f) -> f.mappingRuleId(mappingRuleId))
+   *    .sort((s) -> s.mappingRuleId().asc())
    *    .page((p) -> p.limit(100))
    *    .send();
    * </pre>
    *
    * @param groupId the ID of the group
-   * @return a builder for the mappings by group search request
+   * @return a builder for the mapping rules by group search request
    */
-  MappingsByGroupSearchRequest newMappingsByGroupSearchRequest(String groupId);
+  MappingRulesByGroupSearchRequest newMappingRulesByGroupSearchRequest(String groupId);
 
   /**
-   * Executes a search request to query mappings by role.
+   * Executes a search request to query mapping rules by role.
    *
    * <pre>
    * camundaClient
-   *  .newMappingsByRoleSearchRequest("roleId")
-   *  .filter((f) -> f.mappingId("mapping-123"))
-   *  .sort((s) -> s.mappingId().asc())
+   *  .newMappingRulesByRoleSearchRequest("roleId")
+   *  .filter((f) -> f.mappingRuleId("mapping-rule-123"))
+   *  .sort((s) -> s.mappingRuleId().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
    * @param roleId the ID of the role
-   * @return a builder for the mappings by role search request
+   * @return a builder for the mapping rules by role search request
    */
-  MappingsByRoleSearchRequest newMappingsByRoleSearchRequest(String roleId);
+  MappingRulesByRoleSearchRequest newMappingRulesByRoleSearchRequest(String roleId);
 
   /**
    * Executes a search request to query roles by group.

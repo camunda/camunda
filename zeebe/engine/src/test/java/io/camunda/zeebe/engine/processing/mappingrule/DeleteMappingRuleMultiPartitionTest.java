@@ -44,12 +44,12 @@ public class DeleteMappingRuleMultiPartitionTest {
     final var mappingId = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .withName(name)
         .create();
-    engine.mappingRule().deleteMapping(mappingId).delete();
+    engine.mappingRule().deleteMappingRule(mappingId).delete();
 
     // then
     assertThat(
@@ -101,12 +101,12 @@ public class DeleteMappingRuleMultiPartitionTest {
     final var mappingId = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .withName(name)
         .create();
-    engine.mappingRule().deleteMapping(mappingId).delete();
+    engine.mappingRule().deleteMappingRule(mappingId).delete();
 
     // then
     assertThat(
@@ -130,12 +130,12 @@ public class DeleteMappingRuleMultiPartitionTest {
 
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withClaimValue(claimValue)
         .withClaimName(claimName)
         .withName(name)
         .create();
-    engine.mappingRule().deleteMapping(mappingId).delete();
+    engine.mappingRule().deleteMappingRule(mappingId).delete();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));

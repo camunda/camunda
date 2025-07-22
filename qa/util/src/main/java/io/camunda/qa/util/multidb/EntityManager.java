@@ -95,8 +95,8 @@ public final class EntityManager {
             mapping -> {
               this.mappings.put(mapping.id(), mapping);
               defaultClient
-                  .newCreateMappingCommand()
-                  .mappingId(mapping.id())
+                  .newCreateMappingRuleCommand()
+                  .mappingRuleId(mapping.id())
                   .claimName(mapping.claimName())
                   .claimValue(mapping.claimValue())
                   .name(mapping.id())
@@ -140,8 +140,8 @@ public final class EntityManager {
               break;
             case MAPPING_RULE:
               defaultClient
-                  .newAssignMappingToGroupCommand()
-                  .mappingId(membership.memberId())
+                  .newAssignMappingRuleToGroupCommand()
+                  .mappingRuleId(membership.memberId())
                   .groupId(groupId)
                   .send()
                   .join();
@@ -175,9 +175,9 @@ public final class EntityManager {
               break;
             case MAPPING_RULE:
               defaultClient
-                  .newAssignRoleToMappingCommand()
+                  .newAssignRoleToMappingRuleCommand()
                   .roleId(roleId)
-                  .mappingId(membership.memberId())
+                  .mappingRuleId(membership.memberId())
                   .send()
                   .join();
               break;

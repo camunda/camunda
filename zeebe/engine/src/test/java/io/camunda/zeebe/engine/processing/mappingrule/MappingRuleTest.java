@@ -37,7 +37,7 @@ public class MappingRuleTest {
     final var mappingRuleRecord =
         engine
             .mappingRule()
-            .newMapping(id)
+            .newMappingRule(id)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .withName(name)
@@ -61,7 +61,7 @@ public class MappingRuleTest {
     final var name = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(mappingRuleId)
+        .newMappingRule(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -71,7 +71,7 @@ public class MappingRuleTest {
     final var duplicatedMappingRecord =
         engine
             .mappingRule()
-            .newMapping(mappingRuleId)
+            .newMappingRule(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .withName(name)
@@ -95,7 +95,7 @@ public class MappingRuleTest {
     final var id = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(id)
+        .newMappingRule(id)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -105,7 +105,7 @@ public class MappingRuleTest {
     final var duplicatedMappingRuleRecord =
         engine
             .mappingRule()
-            .newMapping(id)
+            .newMappingRule(id)
             .withClaimValue(UUID.randomUUID().toString())
             .withClaimName(UUID.randomUUID().toString())
             .withName(UUID.randomUUID().toString())
@@ -129,7 +129,7 @@ public class MappingRuleTest {
     final var id = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(id)
+        .newMappingRule(id)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -140,7 +140,7 @@ public class MappingRuleTest {
     final var updatedMappingRule =
         engine
             .mappingRule()
-            .updateMapping(id)
+            .updateMappingRule(id)
             .withClaimName(claimName + "New")
             .withClaimValue(claimValue + "New")
             .withName(name + "New")
@@ -168,7 +168,7 @@ public class MappingRuleTest {
     final var updateMappingRuleToExisting =
         engine
             .mappingRule()
-            .updateMapping(id)
+            .updateMappingRule(id)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .withName(name)
@@ -192,7 +192,7 @@ public class MappingRuleTest {
     final var existingName = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(mappingRuleId)
+        .newMappingRule(mappingRuleId)
         .withClaimName(existingClaimName)
         .withClaimValue(existingClaimValue)
         .withName(existingName)
@@ -204,7 +204,7 @@ public class MappingRuleTest {
     final var id = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(id)
+        .newMappingRule(id)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -214,7 +214,7 @@ public class MappingRuleTest {
     final var updateMappingToExisting =
         engine
             .mappingRule()
-            .updateMapping(id)
+            .updateMappingRule(id)
             .withClaimName(existingClaimName)
             .withClaimValue(existingClaimValue)
             .withName(existingName)
@@ -239,7 +239,7 @@ public class MappingRuleTest {
 
     engine
         .mappingRule()
-        .newMapping(mappingRuleId)
+        .newMappingRule(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -248,7 +248,7 @@ public class MappingRuleTest {
 
     // when
     final var deletedMappingRule =
-        engine.mappingRule().deleteMapping(mappingRuleId).delete().getValue();
+        engine.mappingRule().deleteMappingRule(mappingRuleId).delete().getValue();
 
     // then
     assertThat(deletedMappingRule).isNotNull().hasMappingRuleId(mappingRuleId);
@@ -263,7 +263,7 @@ public class MappingRuleTest {
     final var mappingRuleRecord =
         engine
             .mappingRule()
-            .newMapping(mappingRuleId)
+            .newMappingRule(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .withName(name)
@@ -286,7 +286,10 @@ public class MappingRuleTest {
         .add();
 
     // when
-    engine.mappingRule().deleteMapping(mappingRuleRecord.getValue().getMappingRuleId()).delete();
+    engine
+        .mappingRule()
+        .deleteMappingRule(mappingRuleRecord.getValue().getMappingRuleId())
+        .delete();
 
     // then
     Assertions.assertThat(
@@ -309,7 +312,7 @@ public class MappingRuleTest {
   public void shouldRejectIfMappingRuleIsNotPresent() {
     // when
     final var deletedMappingRule =
-        engine.mappingRule().deleteMapping("id").expectRejection().delete();
+        engine.mappingRule().deleteMappingRule("id").expectRejection().delete();
 
     // then
     assertThat(deletedMappingRule)

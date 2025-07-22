@@ -45,7 +45,7 @@ public class CreateMappingRuleMultiPartitionTest {
     final var name = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withName(name)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
@@ -99,7 +99,7 @@ public class CreateMappingRuleMultiPartitionTest {
     final var name = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -129,7 +129,7 @@ public class CreateMappingRuleMultiPartitionTest {
     final var name = UUID.randomUUID().toString();
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
