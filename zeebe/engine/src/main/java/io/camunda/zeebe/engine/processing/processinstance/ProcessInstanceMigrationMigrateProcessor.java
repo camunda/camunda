@@ -313,10 +313,13 @@ public class ProcessInstanceMigrationMigrateProcessor
     requireNoConcurrentCommand(
         eventScopeInstanceState, elementInstanceState, elementInstance, processInstanceKey);
 
-    updateElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
+    final var updatedElementInstanceRecord =
+        getUpdatedElementInstanceRecord(elementInstance, targetProcessDefinition, targetElementId);
 
     stateWriter.appendFollowUpEvent(
-        elementInstance.getKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, elementInstanceRecord);
+        elementInstance.getKey(),
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        updatedElementInstanceRecord);
 
     final Set<ExecutableSequenceFlow> sequenceFlows =
         getSequenceFlowsToMigrate(
@@ -328,7 +331,7 @@ public class ProcessInstanceMigrationMigrateProcessor
     sequenceFlows.forEach(
         sequenceFlow -> {
           final var sequenceFlowRecord = new ProcessInstanceRecord();
-          sequenceFlowRecord.copyFrom(elementInstanceRecord);
+          sequenceFlowRecord.copyFrom(updatedElementInstanceRecord);
           sequenceFlowRecord
               .setElementId(sequenceFlow.getId())
               .setBpmnElementType(sequenceFlow.getElementType())
@@ -366,13 +369,16 @@ public class ProcessInstanceMigrationMigrateProcessor
         incidentState.getProcessInstanceIncidentKey(elementInstance.getKey());
     if (processIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
-          processIncidentKey, targetProcessDefinition, targetElementId, elementInstanceRecord);
+          processIncidentKey,
+          targetProcessDefinition,
+          targetElementId,
+          updatedElementInstanceRecord);
     }
 
     final var jobIncidentKey = incidentState.getJobIncidentKey(elementInstance.getJobKey());
     if (jobIncidentKey != MISSING_INCIDENT) {
       appendIncidentMigratedEvent(
-          jobIncidentKey, targetProcessDefinition, targetElementId, elementInstanceRecord);
+          jobIncidentKey, targetProcessDefinition, targetElementId, updatedElementInstanceRecord);
     }
 
     if (elementInstance.getUserTaskKey() > 0) {
@@ -422,13 +428,13 @@ public class ProcessInstanceMigrationMigrateProcessor
           targetProcessDefinition,
           sourceProcessDefinition,
           sourceElementIdToTargetElementId,
-          elementInstanceRecord,
+          updatedElementInstanceRecord,
           targetElementId,
           processInstanceKey,
           elementId);
     }
 
-    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
+    if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
       migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
     }
   }
@@ -440,12 +446,15 @@ public class ProcessInstanceMigrationMigrateProcessor
    * @param elementInstance the element instance to be updated
    * @param targetProcessDefinition the new process definition
    * @param targetElementId the new element id
+   * @return the updated element instance record
    */
-  private void updateElementInstanceRecord(
+  private ProcessInstanceRecord getUpdatedElementInstanceRecord(
       final ElementInstance elementInstance,
       final DeployedProcess targetProcessDefinition,
       final String targetElementId) {
-    final var elementInstanceRecord = elementInstance.getValue();
+    final var elementInstanceRecord = new ProcessInstanceRecord();
+    // copy all fields from the existing record and change the necessary ones only
+    elementInstanceRecord.copyFrom(elementInstance.getValue());
 
     elementInstanceRecord
         .setProcessDefinitionKey(targetProcessDefinition.getKey())
@@ -467,6 +476,8 @@ public class ProcessInstanceMigrationMigrateProcessor
         .setElementInstancePath(elementTreePath.elementInstancePath())
         .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
         .setCallingElementPath(elementTreePath.callingElementPath());
+
+    return elementInstanceRecord;
   }
 
   /**
