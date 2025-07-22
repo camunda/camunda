@@ -39,9 +39,10 @@ public class UsageMetricsController {
   public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
       @RequestParam(required = false) final String startTime,
       @RequestParam(required = false) final String endTime,
+      @RequestParam(required = false) final String tenantId,
       @RequestParam(required = false) final boolean withTenants) {
 
-    return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, withTenants)
+    return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, tenantId, withTenants)
         .fold(RestErrorMapper::mapProblemToResponse, this::getMetrics);
   }
 

@@ -4886,6 +4886,12 @@ paths:
           schema:
             type: string
             format: date
+        - name: tenantId
+          in: query
+          required: false
+          description: Restrict results to a specific tenant ID. If not provided, results for all tenants are returned.
+          schema:
+            type: string
         - name: withTenants
           in: query
           required: false

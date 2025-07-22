@@ -305,4 +305,44 @@ public class UsageMetricsIT {
             new UsageMetricTUStatisticsEntity(
                 1, Map.of(TENANT2, new UsageMetricTUStatisticsEntityTenant(1L))));
   }
+
+  @TestTemplate
+  public void shouldFilterMetricsWithTenantByTenantId() {
+    // given
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 1L);
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT2, 1L);
+    rdbmsWriter.flush();
+
+    // when
+    final UsageMetricsFilter filter = new Builder().tenantId(TENANT1).withTenants(true).build();
+    final var actual =
+        usageMetricReader.usageMetricStatistics(UsageMetricsQuery.of(q -> q.filter(filter)), null);
+
+    // then
+    assertThat(actual)
+        .isEqualTo(
+            new UsageMetricStatisticsEntity(
+                1, 0, 1, Map.of(TENANT1, new UsageMetricStatisticsEntityTenant(1L, 0L))));
+  }
+
+  @TestTemplate
+  public void shouldFilterTUMetricsWithTenantByTenantId() {
+    // given
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_1);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_10M, TENANT1, ASSIGNEE_HASH_2);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_5M, TENANT2, ASSIGNEE_HASH_3);
+    rdbmsWriter.flush();
+
+    // when
+    final UsageMetricsFilter filter = new Builder().tenantId(TENANT1).withTenants(true).build();
+    final var actualTU =
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsQuery.of(q -> q.filter(filter)), null);
+
+    // then
+    assertThat(actualTU)
+        .isEqualTo(
+            new UsageMetricTUStatisticsEntity(
+                2, Map.of(TENANT1, new UsageMetricTUStatisticsEntityTenant(2L))));
+  }
 }
