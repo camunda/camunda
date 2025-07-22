@@ -28,7 +28,7 @@ class RoleValidatorTest {
   private final RoleValidator validator = new RoleValidator(allowedRoles);
 
   @Test
-  void shouldSucceedWhenTokenHasNoOrganizationClaim() {
+  void shouldFailWhenTokenHasNoOrganizationClaim() {
     // given
     final Jwt token = mock(Jwt.class);
     final Map<String, Object> claims = new HashMap<>();
@@ -38,7 +38,7 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertFalse(result.hasErrors());
+    assertTrue(result.hasErrors());
   }
 
   @Test
@@ -66,10 +66,10 @@ class RoleValidatorTest {
     final Map<String, Object> claims = new HashMap<>();
     final Map<String, Object> org1 = new HashMap<>();
     org1.put("id", "org1");
-    org1.put("roles", Arrays.asList("developer"));
+    org1.put("roles", List.of("developer"));
     final Map<String, Object> org2 = new HashMap<>();
     org2.put("id", "org2");
-    org2.put("roles", Arrays.asList("analyst"));
+    org2.put("roles", List.of("analyst"));
     claims.put("https://camunda.com/orgs", Arrays.asList(org1, org2));
     when(token.getClaims()).thenReturn(claims);
 

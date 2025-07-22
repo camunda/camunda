@@ -34,8 +34,12 @@ public class RoleValidator implements OAuth2TokenValidator<Jwt> {
   public OAuth2TokenValidatorResult validate(final Jwt token) {
     final var claimValue = token.getClaims().get(ORGANIZATION_CLAIM_KEY);
     if (claimValue == null) {
-      // Not all tokens contain an organization claim, only validate those that do.
-      return OAuth2TokenValidatorResult.success();
+      LOG.debug("Rejected token: missing organization claim '{}'", ORGANIZATION_CLAIM_KEY);
+      return OAuth2TokenValidatorResult.failure(
+          new OAuth2Error(
+              OAuth2ErrorCodes.INVALID_TOKEN,
+              "Token does not contain required organization claim for Optimize access.",
+              null));
     }
 
     if (claimValue instanceof final Collection<?> claimedOrgs) {
