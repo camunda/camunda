@@ -10,6 +10,9 @@ package io.camunda.authentication.config;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 
+import io.camunda.application.commons.condition.ConditionalOnSecondaryStorage;
+import io.camunda.application.commons.utils.DatabaseTypeUtils;
+import io.camunda.authentication.ConditionalOnNoSecondaryStorage;
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
@@ -375,6 +378,7 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  @ConditionalOnSecondaryStorage
   public static class BasicConfiguration {
     @Bean
     @ConditionalOnMissingBean(UserDetailsService.class)
@@ -499,6 +503,7 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+  @ConditionalOnSecondaryStorage
   public static class OidcConfiguration {
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
@@ -753,4 +758,61 @@ public class WebSecurityConfig {
       addCsrfTokenWhenAvailable(request, response);
     }
   }
+
+  /**
+   * Configuration that provides fail-fast behavior when Basic Authentication is configured but
+   * secondary storage is disabled (camunda.database.type=none). This prevents misleading security
+   * flows and provides clear error messages.
+   */
+  @Configuration
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  @ConditionalOnNoSecondaryStorage
+  public static class BasicAuthenticationNoDbConfiguration {
+
+    @Bean
+    public BasicAuthenticationNoDbFailFastBean basicAuthenticationNoDbFailFastBean() {
+      throw new IllegalStateException(
+          "Basic Authentication is not supported when secondary storage is disabled "
+              + "(camunda.database.type=none). Basic Authentication requires access to user data "
+              + "stored in secondary storage. Please either enable secondary storage by configuring "
+              + "camunda.database.type to a supported database type, or disable authentication by "
+              + "removing camunda.security.authentication.method configuration.");
+    }
+  }
+
+  /**
+   * Configuration that provides fail-fast behavior when OIDC Authentication is configured but
+   * secondary storage is disabled (camunda.database.type=none). Unlike Basic Auth, OIDC can work
+   * in no-db mode with limited functionality, so this configuration provides warnings rather than
+   * errors.
+   */
+  @Configuration
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
+  @ConditionalOnNoSecondaryStorage
+  public static class OidcAuthenticationNoDbConfiguration {
+
+    private static final Logger LOG = LoggerFactory.getLogger(OidcAuthenticationNoDbConfiguration.class);
+
+    @Bean
+    public OidcAuthenticationNoDbWarningBean oidcAuthenticationNoDbWarningBean() {
+      LOG.warn(
+          "OIDC Authentication is configured with secondary storage disabled "
+              + "(camunda.database.type=none). This mode has limited functionality: "
+              + "group/role/tenant mappings from secondary storage are disabled, "
+              + "only groups from OIDC claims will be processed. "
+              + "For full OIDC functionality, enable secondary storage by configuring "
+              + "camunda.database.type to a supported database type.");
+      return new OidcAuthenticationNoDbWarningBean();
+    }
+  }
+
+  /**
+   * Marker bean for Basic Auth no-db fail-fast configuration.
+   */
+  public static class BasicAuthenticationNoDbFailFastBean {}
+
+  /**
+   * Marker bean for OIDC Auth no-db warning configuration.
+   */
+  public static class OidcAuthenticationNoDbWarningBean {}
 }
