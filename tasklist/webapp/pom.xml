@@ -20,11 +20,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>webapps-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-common</artifactId>
     </dependency>
 
@@ -184,12 +179,6 @@
       <artifactId>guava</artifactId>
     </dependency>
 
-    <!-- OAuth0 -->
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-mvc-auth-commons</artifactId>
-    </dependency>
-
     <!-- OAuth2 token authorization -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -312,18 +301,8 @@
     </dependency>
 
     <dependency>
-      <groupId>com.auth0</groupId>
-      <artifactId>java-jwt</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-crypto</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.auth0</groupId>
-      <artifactId>auth0</artifactId>
     </dependency>
 
     <dependency>
@@ -354,11 +333,6 @@
     <dependency>
       <groupId>org.springdoc</groupId>
       <artifactId>springdoc-openapi-starter-common</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>net.jodah</groupId>
-      <artifactId>failsafe</artifactId>
     </dependency>
 
     <dependency>

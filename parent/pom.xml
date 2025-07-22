@@ -765,12 +765,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-mvc-auth-commons</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>tasklist-qa-util</artifactId>
         <version>${project.version}</version>
       </dependency>
