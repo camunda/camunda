@@ -3,7 +3,7 @@ version: "3.6"
 
 services:
   opensearch:
-    image: opensearchproject/opensearch:2.19.2
+    image: opensearchproject/opensearch:2.19.3
     depends_on:
       - opensearch-init
     container_name: opensearch
