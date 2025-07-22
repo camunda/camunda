@@ -57,6 +57,7 @@ public class DecisionInstanceAssertTest {
   private static final String PROCESS_DEFINITION_KEY = "2";
   private static final String PROCESS_INSTANCE_KEY = "3";
   private static final String DECISION_DEFINITION_KEY = "4";
+  private static final String ELEMENT_INSTANCE_KEY = "5";
   private static final int DECISION_DEFINITION_VERSION = 1;
 
   private static final String STRING_RESULT = "\"outputValue\"";
@@ -92,7 +93,7 @@ public class DecisionInstanceAssertTest {
   }
 
   private DecisionInstance decisionInstance(
-      Function<DecisionInstanceResult, DecisionInstanceResult> resultBuilderFn) {
+      final Function<DecisionInstanceResult, DecisionInstanceResult> resultBuilderFn) {
     final DecisionInstanceResult basicResult =
         new DecisionInstanceResult()
             .decisionDefinitionName(NAME)
@@ -101,6 +102,7 @@ public class DecisionInstanceAssertTest {
             .processDefinitionKey(PROCESS_DEFINITION_KEY)
             .processInstanceKey(PROCESS_INSTANCE_KEY)
             .decisionDefinitionKey(DECISION_DEFINITION_KEY)
+            .elementInstanceKey(ELEMENT_INSTANCE_KEY)
             .decisionDefinitionVersion(DECISION_DEFINITION_VERSION);
 
     return new DecisionInstanceImpl(resultBuilderFn.apply(basicResult), null);
@@ -119,6 +121,7 @@ public class DecisionInstanceAssertTest {
         null,
         Long.parseLong(PROCESS_DEFINITION_KEY),
         Long.parseLong(PROCESS_INSTANCE_KEY),
+        Long.parseLong(ELEMENT_INSTANCE_KEY),
         Long.parseLong(DECISION_DEFINITION_KEY),
         "decisionDefinitionId",
         NAME,
@@ -130,7 +133,7 @@ public class DecisionInstanceAssertTest {
         result);
   }
 
-  private MatchedDecisionRule rule(MatchedDecisionRuleItem ruleItem) {
+  private MatchedDecisionRule rule(final MatchedDecisionRuleItem ruleItem) {
     return new MatchedDecisionRuleImpl(ruleItem, null);
   }
 
