@@ -38,7 +38,6 @@ env:
 
 jobs:
   tasklist-backend-unit-tests:
-    if: inputs.beChanges
     name: "[UT] ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -55,6 +54,13 @@ jobs:
     with:
       componentName: "Tasklist"
       suite: ${{ matrix.suite }}
+
+  tasklist-frontend-tests:
+    name: "[FE] Tests / Core Features"
+    if: inputs.feChanges
+    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
+    secrets: inherit
+    permissions: { }  # GITHUB_TOKEN unused in this job
 
   elasticsearch:
     name: "[IT] ElasticSearch Backup Restore / Data Layer"

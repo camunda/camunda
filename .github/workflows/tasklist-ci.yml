@@ -34,6 +34,7 @@ jobs:
       - name: Detect changes
         uses: ./.github/actions/paths-filter
         id: filter
+
   run-build:
     name: run-build
     needs: [detect-changes]
@@ -52,12 +53,3 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }}
     if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
-
-  # Does not meet stability requirements for Unified CI
-  tasklist-frontend-tests:
-    name: "[FE] Tests / Core Features"
-    needs: [detect-changes]
-    if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
-    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
-    secrets: inherit
-    permissions: { }  # GITHUB_TOKEN unused in this job
