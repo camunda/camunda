@@ -21,6 +21,7 @@ import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
@@ -29,6 +30,7 @@ import io.camunda.client.impl.search.filter.VariableFilterMapper;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ElementInstanceStatePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
@@ -248,7 +250,16 @@ public class ProcessDefinitionStatisticsFilterImpl
   @Override
   public ProcessDefinitionStatisticsFilter incidentErrorHashCode(
       final Integer incidentErrorHashCode) {
-    filter.setIncidentErrorHashCode(incidentErrorHashCode);
+    incidentErrorHashCode(b -> b.eq(incidentErrorHashCode));
+    return this;
+  }
+
+  @Override
+  public ProcessDefinitionStatisticsFilter incidentErrorHashCode(
+      final Consumer<IntegerProperty> fn) {
+    final IntegerProperty property = new IntegerPropertyImpl();
+    fn.accept(property);
+    filter.setIncidentErrorHashCode(provideSearchRequestProperty(property));
     return this;
   }
 

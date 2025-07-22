@@ -9,19 +9,12 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.IncidentEntity;
-import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
-import io.camunda.search.filter.Operator;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.util.FilterUtil;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class IncidentDocumentReader extends DocumentBasedReader implements IncidentReader {
 
@@ -39,38 +32,28 @@ public class IncidentDocumentReader extends DocumentBasedReader implements Incid
             resourceAccessChecks);
   }
 
-  public <R> R mapIncidentErrorHashCodesToProcessInstanceKeys(
-      final List<Integer> incidentErrorHashCodes,
-      final List<Operation<Long>> existingProcessInstanceKeyOperations,
-      final Supplier<R> fnEmptyResult,
-      final Function<Set<Long>, R> fnResult) {
+  public String findErrorMessageByErrorHashCodes(
+      final List<Operation<Integer>> hashCodeOperations,
+      final ResourceAccessChecks resourceAccessChecks) {
+    if (hashCodeOperations == null || hashCodeOperations.isEmpty()) {
+      return null;
+    }
 
-    // Search for active incidents that match the given error message hash codes
     final var incidentFilter =
-        FilterBuilders.incident(
-            f ->
-                f.errorMessageHashOperations(
-                        FilterUtil.mapDefaultToOperation(incidentErrorHashCodes))
-                    .states(IncidentState.ACTIVE.name()));
+        FilterBuilders.incident(f -> f.errorMessageHashOperations(hashCodeOperations));
 
     final var incidentResult =
-        search(IncidentQuery.of(f -> f.filter(incidentFilter)), ResourceAccessChecks.disabled());
+        search(IncidentQuery.of(f -> f.filter(incidentFilter)), resourceAccessChecks);
 
     if (incidentResult.items().isEmpty()) {
-      return fnEmptyResult.get();
+      return null;
     }
 
-    // Collect all relevant process instance keys (from both incidents and existing filter)
-    final Set<Long> processInstanceKeys = new HashSet<>();
-    incidentResult.items().forEach(i -> processInstanceKeys.add(i.processInstanceKey()));
+    final var incident = incidentResult.items().getFirst();
 
-    for (final var op : existingProcessInstanceKeyOperations) {
-      if (op.operator().equals(Operator.EQUALS)) {
-        processInstanceKeys.add(op.value());
-      } else if (op.operator().equals(Operator.IN)) {
-        processInstanceKeys.addAll(op.values());
-      }
+    if (incident.errorMessage() == null || incident.errorMessage().isBlank()) {
+      return null;
     }
-    return fnResult.apply(processInstanceKeys);
+    return incident.errorMessage();
   }
 }

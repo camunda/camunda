@@ -39,6 +39,7 @@ public class ProcessDefinitionStatisticsTest {
 
   public static final String INCIDENT_ERROR_MESSAGE_V1 =
       "Expected result of the expression 'retriesA' to be 'NUMBER', but was 'STRING'.";
+  public static final int INCIDENT_ERROR_HASH_CODE_V1 = -1932748810;
   public static final int INCIDENT_ERROR_HASH_CODE_V2 = 17551445;
   private static CamundaClient camundaClient;
 
@@ -197,6 +198,39 @@ public class ProcessDefinitionStatisticsTest {
                         List.of(
                             f1 -> f1.elementId(b -> b.neq("start")),
                             f2 -> f2.errorMessage(INCIDENT_ERROR_MESSAGE_V1))))
+            .send()
+            .join();
+
+    // then
+    assertThat(actual).hasSize(2);
+    assertThat(actual)
+        .containsExactlyInAnyOrder(
+            new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 2L),
+            new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 2L, 0L));
+  }
+
+  @Test
+  void shouldGetStatisticsAndFilterByIncidentHashCodeOrFilters() {
+    // given
+    final var processDefinitionKey =
+        TestHelper.deployResource(camundaClient, "process/incident_process_v1.bpmn")
+            .getProcesses()
+            .getFirst()
+            .getProcessDefinitionKey();
+    createInstance(processDefinitionKey);
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+
+    // when
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(
+                f ->
+                    f.orFilters(
+                        List.of(
+                            f1 -> f1.elementId(b -> b.eq("start")),
+                            f2 -> f2.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V1))))
             .send()
             .join();
 
@@ -801,6 +835,22 @@ public class ProcessDefinitionStatisticsTest {
         .containsExactlyInAnyOrder(
             new ProcessElementStatisticsImpl("start", 0L, 0L, 0L, 1L),
             new ProcessElementStatisticsImpl("taskAIncident", 0L, 0L, 1L, 0L));
+  }
+
+  @Test
+  void shouldReturnEmptyResultForIncorrectIncidentErrorHashCode() {
+    final var processDefinitionKey = deployIncidentBPMN();
+    createInstance(processDefinitionKey);
+    waitForProcessInstances(1, f -> f.processDefinitionKey(processDefinitionKey).hasIncident(true));
+
+    final var result =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .filter(f -> f.incidentErrorHashCode(123456))
+            .send()
+            .join();
+
+    assertThat(result).isEmpty();
   }
 
   private static void waitForIncidents(final long processDefinitionKey) {

@@ -39,7 +39,7 @@ public record ProcessInstanceFilter(
     List<Operation<String>> flowNodeIdOperations,
     Boolean hasFlowNodeInstanceIncident,
     List<Operation<String>> flowNodeInstanceStateOperations,
-    List<Integer> incidentErrorHashCodes,
+    List<Operation<Integer>> incidentErrorHashCodeOperations,
     Integer partitionId,
     List<ProcessInstanceFilter> orFilters)
     implements FilterBase {
@@ -61,7 +61,10 @@ public record ProcessInstanceFilter(
         .tenantIdOperations(tenantIdOperations)
         .variables(variableFilters)
         .batchOperationIdOperations(batchOperationIdOperations)
-        .partitionId(partitionId);
+        .errorMessageOperations(errorMessageOperations)
+        .incidentErrorHashCodeOperations(incidentErrorHashCodeOperations)
+        .partitionId(partitionId)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
@@ -86,7 +89,7 @@ public record ProcessInstanceFilter(
     private List<Operation<String>> flowNodeIdOperations;
     private Boolean hasFlowNodeInstanceIncident;
     private List<Operation<String>> flowNodeInstanceStateOperations;
-    private List<Integer> incidentErrorHashCodes;
+    private List<Operation<Integer>> incidentErrorHashCodeOperations;
     private Integer partitionId;
     private List<ProcessInstanceFilter> orFilters;
 
@@ -99,8 +102,8 @@ public record ProcessInstanceFilter(
       return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder replaceProcessInstanceKeyOperations(final List<Operation<Long>> operations) {
-      processInstanceKeyOperations = new ArrayList<>(operations);
+    public Builder replaceErrorMessageOperations(final List<Operation<String>> operations) {
+      errorMessageOperations = new ArrayList<>(operations);
       return this;
     }
 
@@ -354,13 +357,20 @@ public record ProcessInstanceFilter(
       return flowNodeInstanceStateOperations(collectValues(operation, operations));
     }
 
-    public Builder incidentErrorHashCodes(final Integer value, final Integer... values) {
-      return incidentErrorHashCodes(collectValues(value, values));
+    public Builder incidentErrorHashCodeOperations(final List<Operation<Integer>> operations) {
+      incidentErrorHashCodeOperations =
+          addValuesToList(incidentErrorHashCodeOperations, operations);
+      return this;
     }
 
-    public Builder incidentErrorHashCodes(final List<Integer> values) {
-      incidentErrorHashCodes = addValuesToList(incidentErrorHashCodes, values);
-      return this;
+    public Builder incidentErrorHashCode(final Integer value, final Integer... values) {
+      return incidentErrorHashCodeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder incidentErrorHashCodeOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return incidentErrorHashCodeOperations(collectValues(operation, operations));
     }
 
     public Builder partitionId(final Integer value) {
@@ -373,6 +383,11 @@ public record ProcessInstanceFilter(
         orFilters = new ArrayList<>();
       }
       orFilters.add(orOperation);
+      return this;
+    }
+
+    public Builder orFilters(final List<ProcessInstanceFilter> orFilters) {
+      this.orFilters = orFilters;
       return this;
     }
 
@@ -400,7 +415,7 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
           hasFlowNodeInstanceIncident,
           Objects.requireNonNullElse(flowNodeInstanceStateOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(incidentErrorHashCodes, Collections.emptyList()),
+          Objects.requireNonNullElse(incidentErrorHashCodeOperations, Collections.emptyList()),
           partitionId,
           orFilters);
     }

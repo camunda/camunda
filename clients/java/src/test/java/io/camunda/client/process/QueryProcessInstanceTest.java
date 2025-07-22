@@ -129,7 +129,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getElementInstanceState().get$Eq())
         .isEqualTo(ElementInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasElementInstanceIncident()).isEqualTo(true);
-    assertThat(filter.getIncidentErrorHashCode()).isEqualTo(123456789);
+    assertThat(filter.getIncidentErrorHashCode().get$Eq()).isEqualTo(123456789);
   }
 
   @Test

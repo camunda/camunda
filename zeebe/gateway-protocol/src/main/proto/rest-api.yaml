@@ -6356,8 +6356,8 @@ components:
           type: boolean
         incidentErrorHashCode:
           description: The incident error hash code, associated with this process.
-          type: integer
-          format: int32
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
     ProcessDefinitionStatisticsFilter:
       description: Process definition statistics search filter.
       allOf:

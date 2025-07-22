@@ -11,8 +11,10 @@ import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsA
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProcessDefinitionStatisticsDocumentReader extends DocumentBasedReader
@@ -31,26 +33,29 @@ public class ProcessDefinitionStatisticsDocumentReader extends DocumentBasedRead
       final ProcessDefinitionFlowNodeStatisticsQuery query,
       final ResourceAccessChecks resourceAccessChecks) {
 
-    final var filter = query.filter();
-    if (!filter.incidentErrorHashCodes().isEmpty()) {
-      return incidentReader.mapIncidentErrorHashCodesToProcessInstanceKeys(
-          filter.incidentErrorHashCodes(),
-          filter.processInstanceKeyOperations(),
-          List::of,
-          processInstanceKeys -> {
-            // Create a new filter that narrows the results to only process instances with
-            // matching incident error hashes and existing key filters
-            final var updatedFilter =
-                filter.toBuilder()
-                    .replaceProcessInstanceKeyOperations(
-                        List.of(Operation.in(List.copyOf(processInstanceKeys))))
-                    .hasIncident(true)
-                    .build();
-            return executeAggregate(
-                new ProcessDefinitionFlowNodeStatisticsQuery(updatedFilter), resourceAccessChecks);
-          });
+    var filter = query.filter();
+    if (filter.incidentErrorHashCodeOperations() != null
+        && !filter.incidentErrorHashCodeOperations().isEmpty()) {
+      filter = normalizePDTopLevelIncidentHashCodes(filter, resourceAccessChecks);
+      if (filter.incidentErrorHashCodeOperations() == null
+          || filter.errorMessageOperations().isEmpty()) {
+        // If the incidentErrorHashCodes were resolved to null, we can return an empty result
+        return List.of();
+      }
     }
-    return executeAggregate(query, resourceAccessChecks);
+
+    if (filter.orFilters() != null && !filter.orFilters().isEmpty()) {
+      final var normalizedOr =
+          normalizePDOrFilterErrorHashCodes(filter.orFilters(), resourceAccessChecks);
+      if (normalizedOr.isEmpty()) {
+        // If all OR filters was not resolved, we can return an empty result
+        return List.of();
+      }
+      filter = filter.toBuilder().orFilters(normalizedOr).build();
+    }
+
+    return executeAggregate(
+        new ProcessDefinitionFlowNodeStatisticsQuery(filter), resourceAccessChecks);
   }
 
   private List<ProcessFlowNodeStatisticsEntity> executeAggregate(
@@ -60,5 +65,71 @@ public class ProcessDefinitionStatisticsDocumentReader extends DocumentBasedRead
         .aggregate(
             query, ProcessDefinitionFlowNodeStatisticsAggregationResult.class, resourceAccessChecks)
         .items();
+  }
+
+  private ProcessDefinitionStatisticsFilter normalizePDTopLevelIncidentHashCodes(
+      final ProcessDefinitionStatisticsFilter filter,
+      final ResourceAccessChecks resourceAccessChecks) {
+    if (filter.incidentErrorHashCodeOperations() == null
+        || filter.incidentErrorHashCodeOperations().isEmpty()) {
+      return filter;
+    }
+
+    final var resolvedErrorMessage =
+        incidentReader.findErrorMessageByErrorHashCodes(
+            filter.incidentErrorHashCodeOperations(), resourceAccessChecks);
+
+    if (resolvedErrorMessage == null || resolvedErrorMessage.isEmpty()) {
+      return filter.toBuilder().incidentErrorHashCodeOperations(List.of()).build();
+    }
+    final var existingOps =
+        filter.errorMessageOperations() != null
+            ? new ArrayList<>(filter.errorMessageOperations())
+            : new ArrayList<Operation<String>>();
+
+    existingOps.add(Operation.eq(resolvedErrorMessage));
+
+    return filter.toBuilder()
+        .incidentErrorHashCodeOperations(null)
+        .replaceErrorMessageOperations(existingOps)
+        .build();
+  }
+
+  private List<ProcessDefinitionStatisticsFilter> normalizePDOrFilterErrorHashCodes(
+      final List<ProcessDefinitionStatisticsFilter> orFilters,
+      final ResourceAccessChecks resourceAccessChecks) {
+
+    final List<ProcessDefinitionStatisticsFilter> normalized = new ArrayList<>();
+    for (final var subFilter : orFilters) {
+      if (subFilter.incidentErrorHashCodeOperations() == null
+          || subFilter.incidentErrorHashCodeOperations().isEmpty()) {
+        normalized.add(subFilter);
+        continue;
+      }
+
+      final var resolvedErrorMessage =
+          incidentReader.findErrorMessageByErrorHashCodes(
+              subFilter.incidentErrorHashCodeOperations(), resourceAccessChecks);
+
+      if (resolvedErrorMessage == null || resolvedErrorMessage.isBlank()) {
+        continue;
+      }
+
+      final var existingOps =
+          subFilter.errorMessageOperations() != null
+              ? new ArrayList<>(subFilter.errorMessageOperations())
+              : new ArrayList<Operation<String>>();
+
+      existingOps.add(Operation.eq(resolvedErrorMessage));
+
+      final var updatedSubFilter =
+          subFilter.toBuilder()
+              .incidentErrorHashCodeOperations(null)
+              .replaceErrorMessageOperations(existingOps)
+              .build();
+
+      normalized.add(updatedSubFilter);
+    }
+    return normalized;
   }
 }

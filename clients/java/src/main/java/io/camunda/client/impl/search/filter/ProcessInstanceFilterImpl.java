@@ -313,7 +313,15 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter incidentErrorHashCode(final Integer incidentErrorHashCode) {
-    filter.setIncidentErrorHashCode(incidentErrorHashCode);
+    incidentErrorHashCode(b -> b.eq(incidentErrorHashCode));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter incidentErrorHashCode(final Consumer<IntegerProperty> fn) {
+    final IntegerProperty property = new IntegerPropertyImpl();
+    fn.accept(property);
+    filter.setIncidentErrorHashCode(provideSearchRequestProperty(property));
     return this;
   }
 

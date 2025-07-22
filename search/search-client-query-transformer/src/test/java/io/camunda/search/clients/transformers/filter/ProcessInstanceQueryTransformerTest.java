@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchHasChildQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
+import io.camunda.search.clients.query.SearchMatchPhraseQuery;
 import io.camunda.search.clients.query.SearchMatchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchRangeQuery;
@@ -410,7 +411,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
               // expected value.
               assertThat(hasChildQuery.query().queryOption())
                   .isInstanceOfSatisfying(
-                      SearchMatchQuery.class,
+                      SearchMatchPhraseQuery.class,
                       (searchMatchQuery) -> {
                         assertThat(searchMatchQuery.field()).isEqualTo("errorMessage");
                         assertThat(searchMatchQuery.query()).isEqualTo(expectedError);

@@ -30,6 +30,7 @@ import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchIdsQuery;
 import io.camunda.search.clients.query.SearchMatchAllQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
+import io.camunda.search.clients.query.SearchMatchPhraseQuery;
 import io.camunda.search.clients.query.SearchMatchQuery;
 import io.camunda.search.clients.query.SearchPrefixQuery;
 import io.camunda.search.clients.query.SearchQuery;
@@ -56,6 +57,7 @@ import io.camunda.search.os.transformers.query.HasParentQueryTransformer;
 import io.camunda.search.os.transformers.query.IdsQueryTransformer;
 import io.camunda.search.os.transformers.query.MatchAllQueryTransformer;
 import io.camunda.search.os.transformers.query.MatchNoneQueryTransformer;
+import io.camunda.search.os.transformers.query.MatchPhraseQueryTransformer;
 import io.camunda.search.os.transformers.query.MatchQueryTransformer;
 import io.camunda.search.os.transformers.query.PrefixQueryTransformer;
 import io.camunda.search.os.transformers.query.QueryTransformer;
@@ -135,6 +137,7 @@ public final class OpensearchTransformers {
     mappers.put(SearchTermsQuery.class, new TermsQueryTransformer(mappers));
     mappers.put(SearchWildcardQuery.class, new WildcardQueryTransformer(mappers));
     mappers.put(SearchHasParentQuery.class, new HasParentQueryTransformer(mappers));
+    mappers.put(SearchMatchPhraseQuery.class, new MatchPhraseQueryTransformer(mappers));
 
     // aggregations
     mappers.put(SearchFilterAggregator.class, new SearchFilterAggregatorTransformer(mappers));

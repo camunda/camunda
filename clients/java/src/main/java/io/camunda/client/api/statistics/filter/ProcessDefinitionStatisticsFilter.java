@@ -22,6 +22,7 @@ import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import java.time.OffsetDateTime;
@@ -145,6 +146,10 @@ public interface ProcessDefinitionStatisticsFilter extends ProcessDefinitionStat
   /** Filter by incidentErrorHashCode */
   @Override
   ProcessDefinitionStatisticsFilter incidentErrorHashCode(final Integer incidentErrorHashCode);
+
+  /** Filter by incidentErrorHashCode using {@link IntegerProperty} */
+  @Override
+  ProcessDefinitionStatisticsFilter incidentErrorHashCode(final Consumer<IntegerProperty> fn);
 
   /** Filter by or conjunction using {@link ProcessInstanceFilterBase} consumer */
   ProcessDefinitionStatisticsFilter orFilters(

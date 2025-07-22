@@ -32,7 +32,6 @@ import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.ST
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.STATE;
 import static java.util.Optional.ofNullable;
 
-import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -41,6 +40,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public final class ProcessInstanceFilterTransformer
@@ -71,7 +71,7 @@ public final class ProcessInstanceFilterTransformer
     queries.addAll(dateTimeOperations(START_DATE, filter.startDateOperations()));
     queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
     queries.addAll(stringOperations(STATE, filter.stateOperations()));
-    ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
+    Optional.ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
     queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
 
     if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
@@ -81,16 +81,13 @@ public final class ProcessInstanceFilterTransformer
 
     if (filter.errorMessageOperations() != null && !filter.errorMessageOperations().isEmpty()) {
       queries.addAll(
-          stringMatchWithHasChildOperations(
-              ERROR_MSG,
-              filter.errorMessageOperations(),
-              ACTIVITIES_JOIN_RELATION,
-              SearchMatchQueryOperator.AND));
+          stringMatchPhraseWithHasChildOperations(
+              ERROR_MSG, filter.errorMessageOperations(), ACTIVITIES_JOIN_RELATION));
     }
 
     queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
 
-    ofNullable(getHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
+    Optional.ofNullable(getHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
 
     if (filter.flowNodeIdOperations() != null && !filter.flowNodeIdOperations().isEmpty()) {
       queries.add(getFlowNodeInstanceQuery(filter));
@@ -127,9 +124,10 @@ public final class ProcessInstanceFilterTransformer
   private static SearchQuery getFlowNodeInstanceQuery(final ProcessInstanceFilter filter) {
     final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
 
-    flowNodeInstanceQueries.addAll(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()));
-    flowNodeInstanceQueries.addAll(
-        stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()));
+    Optional.of(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
+        .ifPresent(flowNodeInstanceQueries::addAll);
+    Optional.of(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
+        .ifPresent(flowNodeInstanceQueries::addAll);
     ofNullable(filter.hasFlowNodeInstanceIncident())
         .ifPresent(incident -> flowNodeInstanceQueries.add((term(INCIDENT, incident))));
 

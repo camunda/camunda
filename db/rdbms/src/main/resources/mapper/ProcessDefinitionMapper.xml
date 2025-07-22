@@ -275,13 +275,15 @@
           )
         </foreach>
       </if>
-      <if test="filter.incidentErrorHashCodes != null and !filter.incidentErrorHashCodes.isEmpty()">
+      <if test="filter.incidentErrorHashCodeOperations != null and !filter.incidentErrorHashCodeOperations.isEmpty()">
+        <foreach collection="filter.incidentErrorHashCodeOperations" item="operation">
           AND EXISTS (
           SELECT 1
           FROM INCIDENT i
           WHERE i.PROCESS_INSTANCE_KEY = pi.PROCESS_INSTANCE_KEY
-          AND i.ERROR_MESSAGE_HASH IN <foreach collection="filter.incidentErrorHashCodes" item="value" open="(" separator=", " close=")">#{value}</foreach>
+          AND i.ERROR_MESSAGE_HASH <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition" />
         )
+        </foreach>
       </if>
     </trim>
   </sql>
