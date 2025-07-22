@@ -89,7 +89,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationSuspendInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
@@ -711,9 +711,9 @@ public class RequestMapper {
                     .map(
                         instruction -> {
                           final var instructionCasted =
-                              (ProcessInstanceCreationSuspendInstruction) instruction;
+                              (ProcessInstanceCreationTerminateInstruction) instruction;
                           return new ProcessInstanceCreationRuntimeInstruction()
-                              .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
+                              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
                               .setAfterElementId(instructionCasted.getAfterElementId());
                         })
                     .toList(),
