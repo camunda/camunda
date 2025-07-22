@@ -52,7 +52,7 @@
     WHERE 1 = 1
     <if test="filter.roleId != null">AND r.ROLE_ID = #{filter.roleId}</if>
     <if test="filter.name != null">AND r.NAME = #{filter.name}</if>
-    <if test="filter.memberIds != null">
+    <if test="filter.memberIds != null and !filter.memberIds.isEmpty()">
       AND rm.ENTITY_ID IN
       <foreach collection="filter.memberIds" item="memberId" open="(" separator="," close=")">
         #{memberId}
