@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberRemoveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDeleteExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionDisableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionEnableExporterOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
@@ -290,6 +291,7 @@ final class ClusterApiUtilsTest {
         new PartitionReconfigurePriorityOperation(memberId1, 1, 2),
         new PartitionForceReconfigureOperation(memberId1, 1, memberCollection),
         new PartitionDisableExporterOperation(memberId1, 1, "test-exporter"),
+        new PartitionDeleteExporterOperation(memberId1, 1, "test-exporter"),
         new PartitionEnableExporterOperation(memberId1, 1, "test-exporter", emptyExporterId),
         new PartitionBootstrapOperation(memberId1, 1, 1, emptyConfig, false),
         new PartitionBootstrapOperation(memberId1, 2, 1, true) // Alternative constructor
