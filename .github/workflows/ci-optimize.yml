@@ -2,7 +2,7 @@
 # test location: tbd
 # called by: ci.yml
 # type: CI
-# owner: @camunda/core-features, @camunda/data-layer
+# owner: @camunda/core-features
 name: Optimize CI
 
 on:
