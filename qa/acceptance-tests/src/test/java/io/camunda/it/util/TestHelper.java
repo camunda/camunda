@@ -506,6 +506,35 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForStartFormsBeingExported(
+      final CamundaClient camundaClient,
+      final String processDefinitionId,
+      final String expectedFormId,
+      final long expectedFormVersion) {
+    Awaitility.await("should export start forms to secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var processDefinitionKey =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .filter(f -> f.processDefinitionId(processDefinitionId))
+                      .send()
+                      .join()
+                      .items()
+                      .getFirst()
+                      .getProcessDefinitionKey();
+              final var form =
+                  camundaClient
+                      .newProcessDefinitionGetFormRequest(processDefinitionKey)
+                      .send()
+                      .join();
+              assertThat(form.getFormId()).isEqualTo(expectedFormId);
+              assertThat(form.getVersion()).isEqualTo(expectedFormVersion);
+            });
+  }
+
   public static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient,
       final Consumer<ProcessDefinitionFilter> filter,

@@ -9,6 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitForStartFormsBeingExported;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
@@ -35,6 +36,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 public class ProcessDefinitionSearchTest {
+  private static final String PROCESS_ID_WITH_START_FORM = "Process_11hxie4";
+  private static final String FORM_ID = "test";
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   private static final List<ProcessDefinitionTestContext> PROCESSES_IN_DEFAULT_TENANT =
       List.of(
@@ -70,6 +73,7 @@ public class ProcessDefinitionSearchTest {
                 deployResource(camundaClient, process.resourceName()).getProcesses()));
 
     waitForProcessesToBeDeployed(camundaClient, PROCESSES_IN_DEFAULT_TENANT.size());
+    waitForStartFormsBeingExported(camundaClient, PROCESS_ID_WITH_START_FORM, FORM_ID, 2L);
   }
 
   @Test

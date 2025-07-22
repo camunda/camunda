@@ -11,6 +11,7 @@ import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitForStartFormsBeingExported;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -48,6 +49,7 @@ public class ProcessDefinitionSearchMultiTenantsTest {
   private static final String TENANT_ID_1 = "tenant1";
   private static final String USERNAME_1 = "user1";
   private static final String PROCESS_DEFINITION_WITH_START_FORM_ID = "Process_11hxie4";
+  private static final String FORM_ID = "test";
 
   private static final List<ProcessDefinitionTestContext> PROCESSES_IN_DEFAULT_TENANT =
       List.of(
@@ -105,6 +107,8 @@ public class ProcessDefinitionSearchMultiTenantsTest {
 
     waitForProcessesToBeDeployed(
         adminClient, PROCESSES_IN_DEFAULT_TENANT.size() + PROCESSES_IN_TENANT_1.size());
+    waitForStartFormsBeingExported(
+        camundaClient, PROCESS_DEFINITION_WITH_START_FORM_ID, FORM_ID, 2L);
   }
 
   @Test
