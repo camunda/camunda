@@ -7,7 +7,6 @@
  */
 package io.camunda.webapps.controllers;
 
-import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -27,28 +26,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletPath;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
 
-@WebMvcTest(controllers = IdentityClientConfigController.class)
-@Import(IdentityClientConfigControllerParameterizedTest.TestConfig.class)
 class IdentityClientConfigControllerParameterizedTest {
 
-  @Autowired private WebApplicationContext webApplicationContext;
   private MockMvc mockMvc;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @BeforeEach
   void setUp() {
-    mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+    // MockMvc will be setup for each test with specific controller configuration
   }
 
   static Stream<Arguments> configurationProvider() {
@@ -70,12 +58,12 @@ class IdentityClientConfigControllerParameterizedTest {
           "AuthMethod={0}, GroupsClaim={1}, MultiTenancy={2} -> OIDC={3}, InternalGroups={4}, TenantsApi={5}")
   @MethodSource("configurationProvider")
   void shouldReturnCorrectClientConfigForAllPermutations(
-      AuthenticationMethod authMethod,
-      String groupsClaim,
-      boolean multiTenancyEnabled,
-      String expectedIsOidc,
-      String expectedInternalGroups,
-      String expectedTenantsApi)
+      final AuthenticationMethod authMethod,
+      final String groupsClaim,
+      final boolean multiTenancyEnabled,
+      final String expectedIsOidc,
+      final String expectedInternalGroups,
+      final String expectedTenantsApi)
       throws Exception {
 
     // Create controller with specific configuration
@@ -83,7 +71,7 @@ class IdentityClientConfigControllerParameterizedTest {
         createSecurityConfiguration(authMethod, groupsClaim, multiTenancyEnabled);
     final var controller = new IdentityClientConfigController(securityConfiguration);
 
-    // Rebuild MockMvc with the new controller
+    // Setup MockMvc with the controller for this specific test
     mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
 
     final String response =
@@ -91,7 +79,7 @@ class IdentityClientConfigControllerParameterizedTest {
             .perform(get("/identity/config.js"))
             .andExpect(status().isOk())
             .andExpect(content().contentType("text/javascript;charset=UTF-8"))
-            .andExpect(header().doesNotExist(CONTENT_SECURITY_POLICY))
+            .andExpect(header().doesNotExist("Content-Security-Policy"))
             .andReturn()
             .getResponse()
             .getContentAsString();
@@ -107,7 +95,9 @@ class IdentityClientConfigControllerParameterizedTest {
   }
 
   private SecurityConfiguration createSecurityConfiguration(
-      AuthenticationMethod authMethod, String groupsClaim, boolean multiTenancyEnabled) {
+      final AuthenticationMethod authMethod,
+      final String groupsClaim,
+      final boolean multiTenancyEnabled) {
 
     final var securityConfiguration = new SecurityConfiguration();
 
@@ -131,7 +121,7 @@ class IdentityClientConfigControllerParameterizedTest {
     return securityConfiguration;
   }
 
-  private Map<String, String> extractConfigFromResponse(String response) throws Exception {
+  private Map<String, String> extractConfigFromResponse(final String response) throws Exception {
     final var jsonConfigBodyStartIdx = response.indexOf('{');
     assertThat(jsonConfigBodyStartIdx).isNotEqualTo(-1);
     final var jsonConfigBodyEndIdx = response.lastIndexOf('}');
@@ -139,16 +129,5 @@ class IdentityClientConfigControllerParameterizedTest {
 
     return objectMapper.readValue(
         response.substring(jsonConfigBodyStartIdx, jsonConfigBodyEndIdx + 1), Map.class);
-  }
-
-  @SpringBootApplication
-  static class TestApplication {}
-
-  @TestConfiguration
-  static class TestConfig {
-    @Bean
-    public DispatcherServletPath dispatcherServletPath() {
-      return () -> "";
-    }
   }
 }

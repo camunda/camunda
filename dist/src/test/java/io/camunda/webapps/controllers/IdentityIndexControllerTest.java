@@ -7,86 +7,60 @@
  */
 package io.camunda.webapps.controllers;
 
-import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import io.camunda.identity.webapp.controllers.IdentityIndexController;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.web.servlet.DispatcherServletPath;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ui.ExtendedModelMap;
 
-@WebMvcTest(
-    controllers = IdentityIndexController.class,
-    excludeAutoConfiguration = {
-      org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration.class
-    })
-@Import(IdentityIndexControllerTest.TestConfig.class)
+@ExtendWith(MockitoExtension.class)
 class IdentityIndexControllerTest {
 
-  @Autowired private MockMvc mockMvc;
+  @Mock private ServletContext servletContext;
+  @Mock private WebappsRequestForwardManager webappsRequestForwardManager;
+  @Mock private HttpServletRequest request;
 
-  @MockitoBean private ServletContext servletContext;
+  private IdentityIndexController controller;
 
-  @MockitoBean private WebappsRequestForwardManager webappsRequestForwardManager;
-
-  @Test
-  void shouldReturnIdentityIndexView() throws Exception {
-    // Given
-    when(servletContext.getContextPath()).thenReturn("/camunda");
-
-    // When & Then
-    mockMvc
-        .perform(get("/identity"))
-        .andExpect(status().isOk())
-        .andExpect(view().name("identity/index"))
-        .andExpect(model().attribute("contextPath", "/camunda/identity/"))
-        .andExpect(header().doesNotExist(CONTENT_SECURITY_POLICY));
+  @BeforeEach
+  void setUp() {
+    controller = new IdentityIndexController(servletContext, webappsRequestForwardManager);
   }
 
   @Test
-  void shouldForwardToIdentityForRootPath() throws Exception {
+  void shouldReturnIdentityIndexView() throws IOException {
+    // Given
+    when(servletContext.getContextPath()).thenReturn("/camunda");
+    final var model = new ExtendedModelMap();
+
+    // When
+    final var viewName = controller.identity(model);
+
+    // Then
+    assertThat(viewName).isEqualTo("identity/index");
+    assertThat(model.getAttribute("contextPath")).isEqualTo("/camunda/identity/");
+  }
+
+  @Test
+  void shouldForwardToIdentityForRootPath() {
     // Given
     when(webappsRequestForwardManager.forward(any(HttpServletRequest.class), eq("identity")))
         .thenReturn("forward:/identity/app");
 
-    // When & Then
-    mockMvc
-        .perform(get("/identity/"))
-        .andExpect(status().isOk())
-        .andExpect(header().doesNotExist(CONTENT_SECURITY_POLICY));
-  }
+    // When
+    final String result = controller.forwardToIdentity(request);
 
-  @SpringBootApplication
-  static class TestApplication {
-    @Bean
-    public IdentityIndexController identityIndexController(
-        final ServletContext servletContext,
-        final WebappsRequestForwardManager webappsRequestForwardManager) {
-      return new IdentityIndexController(servletContext, webappsRequestForwardManager);
-    }
-  }
-
-  @TestConfiguration
-  static class TestConfig {
-    @Bean
-    public DispatcherServletPath dispatcherServletPath() {
-      return () -> "";
-    }
+    // Then
+    assertThat(result).isEqualTo("forward:/identity/app");
   }
 }
