@@ -105,11 +105,11 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     final ProcessDefinitionFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("5");
-    assertThat(filter.getName()).isEqualTo("Order process");
+    assertThat(filter.getName().get$Eq()).isEqualTo("Order process");
     assertThat(filter.getResourceName()).isEqualTo("usertest/complex-process.bpmn");
     assertThat(filter.getVersion()).isEqualTo(2);
     assertThat(filter.getVersionTag()).isEqualTo("alpha");
-    assertThat(filter.getProcessDefinitionId()).isEqualTo("orderProcess");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("orderProcess");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
   }
 
