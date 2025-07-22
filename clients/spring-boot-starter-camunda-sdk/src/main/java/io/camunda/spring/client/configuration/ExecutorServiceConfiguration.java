@@ -20,6 +20,7 @@ import static io.camunda.spring.client.configuration.CamundaClientConfigurationI
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.jvm.ExecutorServiceMetrics;
 import java.util.Collections;
@@ -51,7 +52,9 @@ public class ExecutorServiceConfiguration {
     if (meterRegistry != null) {
       final MeterBinder threadPoolMetrics =
           new ExecutorServiceMetrics(
-              threadPool, "zeebe_client_thread_pool", Collections.emptyList());
+              threadPool,
+              "camundaClientExecutor",
+              Collections.singleton(Tag.of("name", "zeebe_client_thread_pool")));
       threadPoolMetrics.bindTo(meterRegistry);
     }
     return new CamundaClientExecutorService(threadPool, true);
