@@ -34,14 +34,13 @@ import java.io.IOException;
 @JsonSerialize(using = DocumentReferenceSerializer.class)
 @JsonDeserialize(using = DocumentReferenceDeserializer.class)
 public class DocumentReferenceResponseImpl implements DocumentReferenceResponse {
-  private final io.camunda.client.protocol.rest.DocumentReference documentReference;
+  private final DocumentReference documentReference;
   private final String documentId;
   private final String storeId;
   private final String contentHash;
   private final DocumentMetadata metadata;
 
-  public DocumentReferenceResponseImpl(
-      final io.camunda.client.protocol.rest.DocumentReference documentReference) {
+  public DocumentReferenceResponseImpl(final DocumentReference documentReference) {
     this.documentReference = documentReference;
     documentId = documentReference.getDocumentId();
     storeId = documentReference.getStoreId();
@@ -70,7 +69,7 @@ public class DocumentReferenceResponseImpl implements DocumentReferenceResponse 
     return metadata;
   }
 
-  public io.camunda.client.protocol.rest.DocumentReference getDocumentReference() {
+  public DocumentReference getDocumentReference() {
     return documentReference;
   }
 
