@@ -26,15 +26,17 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 
 public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBuilder<B>>
-    extends AbstractSubProcessBuilder<B> {
+    extends AbstractSubProcessBuilder<B> implements ZeebeJobWorkerElementBuilder<B> {
 
   protected boolean isDone = false;
+  private final ZeebeJobWorkerPropertiesBuilder<B> jobWorkerPropertiesBuilder;
 
   protected AbstractAdHocSubProcessBuilder(
       final BpmnModelInstance modelInstance,
       final AdHocSubProcess element,
       final Class<?> selfType) {
     super(modelInstance, element, selfType);
+    jobWorkerPropertiesBuilder = new ZeebeJobWorkerPropertiesBuilderImpl<>(myself);
   }
 
   /**
@@ -82,6 +84,31 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
     final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
     adHoc.setImplementationType(implementationType);
     return myself;
+  }
+
+  @Override
+  public B zeebeJobType(final String type) {
+    return jobWorkerPropertiesBuilder.zeebeJobType(type);
+  }
+
+  @Override
+  public B zeebeJobTypeExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobTypeExpression(expression);
+  }
+
+  @Override
+  public B zeebeJobRetries(final String retries) {
+    return jobWorkerPropertiesBuilder.zeebeJobRetries(retries);
+  }
+
+  @Override
+  public B zeebeJobRetriesExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobRetriesExpression(expression);
+  }
+
+  @Override
+  public B zeebeTaskHeader(final String key, final String value) {
+    return jobWorkerPropertiesBuilder.zeebeTaskHeader(key, value);
   }
 
   @Override
