@@ -28,7 +28,7 @@ public final class TestSearchContainers {
           .withTag(
               Objects.requireNonNullElse(
                   org.opensearch.client.RestClient.class.getPackage().getImplementationVersion(),
-                  "2.14.0"));
+                  "2.17.0"));
 
   private TestSearchContainers() {}
 
