@@ -78,8 +78,7 @@ public class CamundaOAuthPrincipalServiceNoDbImpl implements CamundaOAuthPrincip
       authContextBuilder.withClientId(clientId);
     }
 
-    // Only process groups from claims if groupsClaim is present - this is the critical
-    // groups check that must remain enabled for no-db mode
+    // group check must remain enabled for no-db mode
     final Set<String> groups;
     final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
     if (groupsClaimPresent) {

@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
-public class CamundaOAuthPrincipalServiceNoDbImplTest {
+public class CamundaOAuthPrincipalServiceNoDbTest {
 
   private CamundaOAuthPrincipalServiceNoDbImpl service;
   private SecurityConfiguration securityConfiguration;
