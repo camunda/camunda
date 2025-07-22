@@ -67,6 +67,10 @@
 /.github/workflows/tasklist-ci-test-reusable.yml          @camunda/core-features
 /.github/workflows/tasklist-ci.yml                        @camunda/core-features
 /.github/workflows/tasklist-e2e-tests.yml                 @camunda/core-features
+/.github/workflows/ci-optimize.yml                        @camunda/core-features
+/.github/workflows/optimize-check-c4.yml                  @camunda/core-features
+/.github/workflows/optimize-e2e-test-cloud.yml            @camunda/core-features
+/.github/workflows/optimize-e2e-tests-sm.yml              @camunda/core-features
 
 # Unit Test Suites
 /operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
