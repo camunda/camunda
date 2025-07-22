@@ -32,7 +32,7 @@ import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -302,8 +302,8 @@ public final class SearchResponseMapper {
     return new TenantUserImpl(response.getUsername());
   }
 
-  public static Mapping toMappingResponse(final MappingRuleResult response) {
-    return new MappingImpl(
+  public static MappingRule toMappingResponse(final MappingRuleResult response) {
+    return new MappingRuleImpl(
         response.getMappingRuleId(),
         response.getClaimName(),
         response.getClaimValue(),
@@ -336,10 +336,10 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
-  public static SearchResponse<Mapping> toMappingsResponse(
+  public static SearchResponse<MappingRule> toMappingsResponse(
       final MappingRuleSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
-    final List<Mapping> instances =
+    final List<MappingRule> instances =
         toSearchResponseInstances(response.getItems(), SearchResponseMapper::toMappingResponse);
     return new SearchResponseImpl<>(instances, page);
   }

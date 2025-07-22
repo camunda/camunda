@@ -61,7 +61,7 @@ public class MappingRuleCreateAuthorizationTest {
     // when
     engine
         .mappingRule()
-        .newMapping(mappingRuleId)
+        .newMappingRule(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -90,7 +90,7 @@ public class MappingRuleCreateAuthorizationTest {
     // when
     engine
         .mappingRule()
-        .newMapping(mappingRuleId)
+        .newMappingRule(mappingRuleId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .withName(name)
@@ -118,7 +118,7 @@ public class MappingRuleCreateAuthorizationTest {
     final var rejection =
         engine
             .mappingRule()
-            .newMapping(mappingRuleId)
+            .newMappingRule(mappingRuleId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
             .expectRejection()

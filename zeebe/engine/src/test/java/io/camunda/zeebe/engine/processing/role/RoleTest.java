@@ -360,7 +360,7 @@ public class RoleTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     engine
         .mappingRule()
-        .newMapping(mappingId)
+        .newMappingRule(mappingId)
         .withClaimName("claimName")
         .withClaimValue("claimValue")
         .withName("name")

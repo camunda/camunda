@@ -35,7 +35,7 @@ import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
-import io.camunda.zeebe.engine.util.client.MappingClient;
+import io.camunda.zeebe.engine.util.client.MappingRuleClient;
 import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
@@ -462,8 +462,8 @@ public final class EngineRule extends ExternalResource {
     return new TenantClient(environmentRule);
   }
 
-  public MappingClient mappingRule() {
-    return new MappingClient(environmentRule);
+  public MappingRuleClient mappingRule() {
+    return new MappingRuleClient(environmentRule);
   }
 
   public GroupClient group() {

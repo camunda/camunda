@@ -40,14 +40,14 @@ public class AssignMappingToGroupTest {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     mappingId =
         client
-            .newCreateMappingCommand()
-            .mappingId(Strings.newRandomValidIdentityId())
+            .newCreateMappingRuleCommand()
+            .mappingRuleId(Strings.newRandomValidIdentityId())
             .name("mappingName")
             .claimName("name")
             .claimValue("value")
             .send()
             .join()
-            .getMappingId();
+            .getMappingRuleId();
 
     groupId =
         client
@@ -62,7 +62,12 @@ public class AssignMappingToGroupTest {
   @Test
   void shouldAssignMappingToGroup() {
     // when
-    client.newAssignMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
+    client
+        .newAssignMappingRuleToGroupCommand()
+        .mappingRuleId(mappingId)
+        .groupId(groupId)
+        .send()
+        .join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToGroup(
@@ -82,8 +87,8 @@ public class AssignMappingToGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(mappingId)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(mappingId)
                     .groupId(nonExistentGroupId)
                     .send()
                     .join())
@@ -97,14 +102,19 @@ public class AssignMappingToGroupTest {
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
+    client
+        .newAssignMappingRuleToGroupCommand()
+        .mappingRuleId(mappingId)
+        .groupId(groupId)
+        .send()
+        .join();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(mappingId)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(mappingId)
                     .groupId(groupId)
                     .send()
                     .join())
@@ -121,8 +131,8 @@ public class AssignMappingToGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(mappingId)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(mappingId)
                     .groupId(null)
                     .send()
                     .join())
@@ -136,8 +146,8 @@ public class AssignMappingToGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(mappingId)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(mappingId)
                     .groupId("")
                     .send()
                     .join())
@@ -151,8 +161,8 @@ public class AssignMappingToGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId(null)
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId(null)
                     .groupId(groupId)
                     .send()
                     .join())
@@ -166,8 +176,8 @@ public class AssignMappingToGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToGroupCommand()
-                    .mappingId("")
+                    .newAssignMappingRuleToGroupCommand()
+                    .mappingRuleId("")
                     .groupId(groupId)
                     .send()
                     .join())

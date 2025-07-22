@@ -255,23 +255,33 @@ class RoleAuthorizationIT {
 
     createRole(adminClient, roleId, "roleName");
     adminClient
-        .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingId)
         .name("mappingName")
         .claimName("testClaimName")
         .claimValue("testClaimValue")
         .send()
         .join();
 
-    adminClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    adminClient
+        .newAssignMappingRuleToRoleCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingId)
+        .send()
+        .join();
 
     Awaitility.await("Mapping is assigned to the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(adminClient.newMappingsByRoleSearchRequest(roleId).send().join().items())
+                assertThat(
+                        adminClient
+                            .newMappingRulesByRoleSearchRequest(roleId)
+                            .send()
+                            .join()
+                            .items())
                     .hasSize(1)
-                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+                    .anyMatch(m -> mappingId.equals(m.getMappingRuleId())));
 
     adminClient.newDeleteRoleCommand(roleId).send().join();
   }
@@ -282,9 +292,9 @@ class RoleAuthorizationIT {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignRoleToMappingCommand()
+                    .newAssignMappingRuleToRoleCommand()
                     .roleId(Strings.newRandomValidIdentityId())
-                    .mappingId(Strings.newRandomValidIdentityId())
+                    .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -486,8 +496,8 @@ class RoleAuthorizationIT {
     final String mappingId = Strings.newRandomValidIdentityId();
 
     adminClient
-        .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingId)
         .name("mappingName")
         .claimName("claimName")
         .claimValue("claimValue")
@@ -495,16 +505,16 @@ class RoleAuthorizationIT {
         .join();
 
     adminClient
-        .newAssignRoleToMappingCommand()
+        .newAssignMappingRuleToRoleCommand()
         .roleId(ROLE_ID_1)
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .send()
         .join();
 
     adminClient
-        .newUnassignRoleFromMappingCommand()
+        .newUnassignMappingRuleFromRoleCommand()
         .roleId(ROLE_ID_1)
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .send()
         .join();
 
@@ -523,9 +533,9 @@ class RoleAuthorizationIT {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignRoleFromMappingCommand()
+                    .newUnassignMappingRuleFromRoleCommand()
                     .roleId(Strings.newRandomValidIdentityId())
-                    .mappingId(Strings.newRandomValidIdentityId())
+                    .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
