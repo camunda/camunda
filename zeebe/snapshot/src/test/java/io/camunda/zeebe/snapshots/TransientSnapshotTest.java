@@ -291,7 +291,7 @@ public class TransientSnapshotTest {
   }
 
   @Test
-  public void shouldNotTakeSnapshotIfIdAlreadyExists() {
+  public void shouldTakeSnapshotIfIdAlreadyExists() {
     // given
     final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).get();
     transientSnapshot.take(this::writeSnapshot).join();
@@ -301,9 +301,7 @@ public class TransientSnapshotTest {
     final var secondTransientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L);
 
     // then
-    assertThat(secondTransientSnapshot.getLeft())
-        .as("should have no value since there already exists a transient snapshot with the same ID")
-        .isInstanceOf(SnapshotAlreadyExistsException.class);
+    EitherAssert.assertThat(secondTransientSnapshot).isRight();
   }
 
   @Test
