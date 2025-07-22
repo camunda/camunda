@@ -91,6 +91,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -2826,6 +2827,7 @@ final class JsonSerializableToJsonTest {
                     .setAuthorizationKey(1L)
                     .setOwnerId("ownerId")
                     .setOwnerType(AuthorizationOwnerType.USER)
+                    .setResourceIdFormat(ResourceIdFormat.ID)
                     .setResourceId("resourceId")
                     .setResourceType(AuthorizationResourceType.RESOURCE)
                     .setPermissionTypes(Set.of(PermissionType.CREATE)),
@@ -2834,6 +2836,7 @@ final class JsonSerializableToJsonTest {
           "authorizationKey": 1,
           "ownerId": "ownerId",
           "ownerType": "USER",
+          "resourceIdFormat": "ID",
           "resourceId": "resourceId",
           "resourceType": "RESOURCE",
           "permissionTypes": [
@@ -2853,6 +2856,7 @@ final class JsonSerializableToJsonTest {
           "authorizationKey": -1,
           "ownerId": "",
           "ownerType": "UNSPECIFIED",
+          "resourceIdFormat": "ID",
           "resourceId": "",
           "resourceType": "UNSPECIFIED",
           "permissionTypes": []
@@ -3165,6 +3169,7 @@ final class JsonSerializableToJsonTest {
                             .setOwnerId("id2")
                             .setOwnerType(AuthorizationOwnerType.MAPPING_RULE)
                             .setResourceType(AuthorizationResourceType.RESOURCE)
+                            .setResourceIdFormat(ResourceIdFormat.ID)
                             .setResourceId("resource-id")
                             .setPermissionTypes(Set.of(PermissionType.CREATE))),
         """
@@ -3244,6 +3249,7 @@ final class JsonSerializableToJsonTest {
             "authorizationKey": -1,
             "ownerId": "id2",
             "ownerType": "MAPPING_RULE",
+            "resourceIdFormat": "ID",
             "resourceId": "resource-id",
             "resourceType": "RESOURCE",
             "permissionTypes": ["CREATE"]

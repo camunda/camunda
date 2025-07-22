@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +33,7 @@ public class AuthorizationStateTest {
     authorizationState = processingState.getAuthorizationState();
   }
 
-  @DisplayName("should return empty list if no authorization for owner and resource is not exist")
+  @DisplayName("should return empty list if no authorization for owner and resource doesn't exist")
   @Test
   void shouldReturnEmptyListIfNoAuthorizationForOwnerAndResourceExists() {
     // when
@@ -60,6 +61,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceIdFormat(ResourceIdFormat.ID)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -74,6 +76,7 @@ public class AuthorizationStateTest {
     assertThat(authorization.getAuthorizationKey()).isEqualTo(authorizationKey);
     assertThat(authorization.getOwnerId()).isEqualTo(ownerId);
     assertThat(authorization.getOwnerType()).isEqualTo(ownerType);
+    assertThat(authorization.getResourceIdFormat()).isEqualTo(ResourceIdFormat.ID);
     assertThat(authorization.getResourceId()).isEqualTo(resourceId);
     assertThat(authorization.getResourceType()).isEqualTo(resourceType);
     assertThat(authorization.getPermissionTypes()).containsExactlyInAnyOrderElementsOf(permissions);
@@ -309,6 +312,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceIdFormat(ResourceIdFormat.ID)
             .setResourceId(resourceId)
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -320,6 +324,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(2L)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceIdFormat(ResourceIdFormat.ID)
             .setResourceId("resourceId2")
             .setResourceType(resourceType)
             .setPermissionTypes(permissions);
@@ -332,6 +337,7 @@ public class AuthorizationStateTest {
             .setAuthorizationKey(authorizationKey)
             .setOwnerId(ownerId)
             .setOwnerType(ownerType)
+            .setResourceIdFormat(ResourceIdFormat.ID)
             .setResourceId(resourceId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setPermissionTypes(Set.of(PermissionType.READ_PROCESS_DEFINITION));

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
+import java.util.Objects;
+
 public class AuthorizationScope {
 
   private ResourceIdFormat format;
@@ -51,5 +53,19 @@ public class AuthorizationScope {
       return ResourceIdFormat.ANY;
     }
     return ResourceIdFormat.ID;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(format, value);
+  }
+
+  @Override
+  public boolean equals(final Object obj) {
+    final AuthorizationScope other = (AuthorizationScope) obj;
+    if (format.equals(other.format) && value.equals(other.value)) {
+      return true;
+    }
+    return false;
   }
 }
