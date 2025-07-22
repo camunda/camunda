@@ -134,7 +134,7 @@ const TopPanel: React.FC = observer(() => {
         flowNodeInstancesStatistics.items,
       );
     }
-  });
+  }, [flowNodeInstancesStatistics?.items, processInstance]);
 
   useEffect(() => {
     return () => {

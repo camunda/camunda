@@ -123,7 +123,7 @@ const TopPanel: React.FC = observer(() => {
     if (flowNodeInstancesStatistics?.items) {
       init(processInstanceId, flowNodeInstancesStatistics.items);
     }
-  });
+  }, [flowNodeInstancesStatistics?.items, processInstanceId]);
 
   useEffect(() => {
     sequenceFlowsStore.init();
