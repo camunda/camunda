@@ -41,7 +41,8 @@ public class ProcessDefinitionFilterTransformer
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(longTerms(KEY, filter.processDefinitionKeys())).ifPresent(queries::add);
     ofNullable(getNamesQuery(filter.namesOperations())).ifPresent(queries::addAll);
-    ofNullable(getProcessDefinitionIdsQuery(filter.processDefinitionIdsOperations())).ifPresent(queries::addAll);
+    ofNullable(getProcessDefinitionIdsQuery(filter.processDefinitionIdsOperations()))
+        .ifPresent(queries::addAll);
     ofNullable(stringTerms(RESOURCE_NAME, filter.resourceNames())).ifPresent(queries::add);
     ofNullable(intTerms(VERSION, filter.versions())).ifPresent(queries::add);
     ofNullable(stringTerms(VERSION_TAG, filter.versionTags())).ifPresent(queries::add);
@@ -54,7 +55,8 @@ public class ProcessDefinitionFilterTransformer
     return stringOperations(NAME, names);
   }
 
-  private List<SearchQuery> getProcessDefinitionIdsQuery(final List<Operation<String>> processDefinitionIds) {
+  private List<SearchQuery> getProcessDefinitionIdsQuery(
+      final List<Operation<String>> processDefinitionIds) {
     return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
   }
 

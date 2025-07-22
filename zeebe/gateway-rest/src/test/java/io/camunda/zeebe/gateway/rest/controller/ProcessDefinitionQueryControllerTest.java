@@ -483,7 +483,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("provideAdvancedSearchParameters")
-  void shouldSearchTasksWithAdvancedFilter(final String filterString, final ProcessDefinitionFilter filter) {
+  void shouldSearchTasksWithAdvancedFilter(
+      final String filterString, final ProcessDefinitionFilter filter) {
     // given
     final var request =
         """
@@ -492,7 +493,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient
@@ -509,6 +511,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(processDefinitionServices).search(new ProcessDefinitionQuery.Builder().filter(filter).build());
+    verify(processDefinitionServices)
+        .search(new ProcessDefinitionQuery.Builder().filter(filter).build());
   }
 }
