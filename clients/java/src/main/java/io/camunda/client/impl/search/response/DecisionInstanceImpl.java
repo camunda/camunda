@@ -43,6 +43,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final String evaluationFailure;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
+  private final Long elementInstanceKey;
   private final long decisionKey;
   private final String decisionDefinitionId;
   private final String decisionDefinitionName;
@@ -63,6 +64,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getEvaluationFailure(),
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
+        Long.parseLong(item.getElementInstanceKey()),
         Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionDefinitionId(),
         item.getDecisionDefinitionName(),
@@ -85,6 +87,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getEvaluationFailure(),
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
+        Long.parseLong(item.getElementInstanceKey()),
         Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionDefinitionId(),
         item.getDecisionDefinitionName(),
@@ -109,6 +112,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final String evaluationFailure,
       final Long processDefinitionKey,
       final Long processInstanceKey,
+      final Long elementInstanceKey,
       final long decisionKey,
       final String decisionDefinitionId,
       final String decisionDefinitionName,
@@ -126,6 +130,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this.evaluationFailure = evaluationFailure;
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceKey = processInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
     this.decisionKey = decisionKey;
     this.decisionDefinitionId = decisionDefinitionId;
     this.decisionDefinitionName = decisionDefinitionName;
@@ -217,6 +222,11 @@ public class DecisionInstanceImpl implements DecisionInstance {
   }
 
   @Override
+  public Long getElementInstanceKey() {
+    return elementInstanceKey;
+  }
+
+  @Override
   public long getDecisionDefinitionKey() {
     return decisionKey;
   }
@@ -276,6 +286,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         evaluationFailure,
         processDefinitionKey,
         processInstanceKey,
+        elementInstanceKey,
         decisionKey,
         decisionDefinitionId,
         decisionDefinitionName,
@@ -304,6 +315,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         && Objects.equals(evaluationFailure, that.evaluationFailure)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(elementInstanceKey, that.elementInstanceKey)
         && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
         && Objects.equals(decisionDefinitionName, that.decisionDefinitionName)
         && decisionDefinitionType == that.decisionDefinitionType
