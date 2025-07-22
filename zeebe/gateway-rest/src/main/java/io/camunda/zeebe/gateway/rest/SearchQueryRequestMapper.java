@@ -622,6 +622,12 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getProcessDefinitionKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::processDefinitionKeys);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(KeyUtil::keyToLong)
+          .ifPresent(builder::processInstanceKeys);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::elementInstanceKeyOperations);
       ofNullable(filter.getDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::decisionDefinitionKeyOperations);
