@@ -5,17 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.es.transformers.query;
+package io.camunda.search.os.transformers.query;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.MatchPhraseQuery;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import io.camunda.search.clients.query.SearchMatchPhraseQuery;
-import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.os.transformers.OpensearchTransformers;
+import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 
 public final class MatchPhraseQueryTransformer
     extends QueryOptionTransformer<SearchMatchPhraseQuery, MatchPhraseQuery> {
 
-  public MatchPhraseQueryTransformer(final ElasticsearchTransformers transformers) {
+  public MatchPhraseQueryTransformer(final OpensearchTransformers transformers) {
     super(transformers);
   }
 
