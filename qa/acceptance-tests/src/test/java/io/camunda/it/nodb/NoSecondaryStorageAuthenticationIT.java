@@ -17,19 +17,19 @@ import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.BeanInstantiationException;
 import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.TestPropertySource;
 
 /**
- * Integration test for authentication behavior in no-database mode.
- * This test validates that the authentication system properly handles
- * the no-db scenario with appropriate fail-fast behavior and limited functionality.
+ * Integration test for authentication behavior in no-database mode. This test validates that the
+ * authentication system properly handles the no-db scenario with appropriate fail-fast behavior and
+ * limited functionality.
  */
 public class NoSecondaryStorageAuthenticationIT {
 
@@ -38,15 +38,18 @@ public class NoSecondaryStorageAuthenticationIT {
     // given - application context with no secondary storage and basic auth
     final var context = new AnnotationConfigApplicationContext();
     context.getEnvironment().getSystemProperties().put(PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
-    context.getEnvironment().getSystemProperties().put("camunda.security.authentication.method", "basic");
-    
+    context
+        .getEnvironment()
+        .getSystemProperties()
+        .put("camunda.security.authentication.method", "basic");
+
     // when - trying to start application with basic auth in no-db mode
     context.register(TestBasicAuthConfiguration.class);
-    
+
     // then - should fail fast with clear error message
     final var exception = assertThrows(BeanCreationException.class, context::refresh);
-    assertThat(exception.getCause()).isInstanceOf(IllegalStateException.class);
-    final var rootCause = (IllegalStateException) exception.getCause();
+    assertThat(exception.getCause()).isInstanceOf(BeanInstantiationException.class);
+    final var rootCause = (BeanInstantiationException) exception.getCause();
     assertThat(rootCause.getMessage())
         .contains("Basic Authentication is not supported")
         .contains("secondary storage is disabled")
@@ -57,38 +60,41 @@ public class NoSecondaryStorageAuthenticationIT {
 
   @Test
   void shouldAllowOidcAuthenticationInNoDbModeWithLimitedFunctionality() {
-    // given - application context with no secondary storage and OIDC auth  
+    // given - application context with no secondary storage and OIDC auth
     final var context = new AnnotationConfigApplicationContext();
     context.getEnvironment().getSystemProperties().put(PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
-    context.getEnvironment().getSystemProperties().put("camunda.security.authentication.method", "oidc");
-    
+    context
+        .getEnvironment()
+        .getSystemProperties()
+        .put("camunda.security.authentication.method", "oidc");
+
     // when - starting application with OIDC auth in no-db mode
     context.register(TestOidcAuthConfiguration.class);
     context.refresh();
-    
+
     // then - should start successfully with warning bean
-    final var warningBean = context.getBean(WebSecurityConfig.OidcAuthenticationNoDbWarningBean.class);
+    final var warningBean =
+        context.getBean(WebSecurityConfig.OidcAuthenticationNoDbWarningBean.class);
     assertThat(warningBean).isNotNull();
-    
+
     // and - should have the no-db OIDC service implementation
     final var oidcService = context.getBean(CamundaOAuthPrincipalServiceNoDbImpl.class);
     assertThat(oidcService).isNotNull();
-    
+
     // and - the service should work with limited functionality
-    final var claims = Map.of(
-        "preferred_username", "testuser",
-        "groups", new String[]{"group1", "group2"}
-    );
+    final Map<String, Object> claims =
+        Map.of("preferred_username", "testuser", "groups", List.of("group1", "group2"));
     final var oauthContext = oidcService.loadOAuthContext(claims);
-    
-    assertThat(oauthContext.getAuthenticationContext().getUsername()).isEqualTo("testuser");
-    assertThat(oauthContext.getAuthenticationContext().getGroups()).containsExactly("group1", "group2");
+
+    assertThat(oauthContext.authenticationContext().username()).isEqualTo("testuser");
+    assertThat(oauthContext.authenticationContext().groups())
+        .containsExactlyInAnyOrder("group1", "group2");
     // No secondary storage access, so these should be empty
-    assertThat(oauthContext.getAuthenticationContext().getRoles()).isEmpty();
-    assertThat(oauthContext.getAuthenticationContext().getTenants()).isEmpty();
-    assertThat(oauthContext.getAuthenticationContext().getAuthorizedApplications()).isEmpty();
-    assertThat(oauthContext.getMappingIds()).isEmpty();
-    
+    assertThat(oauthContext.authenticationContext().roles()).isEmpty();
+    assertThat(oauthContext.authenticationContext().tenants()).isEmpty();
+    assertThat(oauthContext.authenticationContext().authorizedApplications()).isEmpty();
+    assertThat(oauthContext.mappingIds()).isEmpty();
+
     context.close();
   }
 
