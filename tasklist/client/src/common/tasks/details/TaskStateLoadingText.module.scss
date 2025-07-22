@@ -6,22 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+@use '@carbon/type';
+
 .container {
   width: 100%;
-  height: var(--cds-spacing-10);
-  border-top: 1px solid var(--cds-border-subtle);
-  padding-top: var(--cds-spacing-04);
-  padding-bottom: var(--cds-spacing-04);
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.row {
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: end;
-  text-align: right;
+  gap: var(--cds-spacing-03);
+}
+
+.message {
+  @include type.type-style('label-02');
+  color: var(--cds-text-secondary);
 }
