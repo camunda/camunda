@@ -8,7 +8,7 @@
 
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {InstanceDetail} from '../Layout/InstanceDetail';
-import {Breadcrumb} from './Breadcrumb/v2';
+import {Breadcrumb} from './Breadcrumb';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from './useProcessInstancePageParams';
 import {useEffect, useRef, useState} from 'react';
