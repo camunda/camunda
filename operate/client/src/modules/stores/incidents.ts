@@ -26,12 +26,6 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 type Incident = IncidentDto & {isSelected: boolean; flowNodeName: string};
-type ProcessInstanceIncidents = Omit<
-  ProcessInstanceIncidentsDto,
-  'incidents'
-> & {
-  incidents: Incident[];
-};
 
 type State = {
   response: null | ProcessInstanceIncidentsDto;
@@ -208,4 +202,4 @@ class Incidents extends NetworkReconnectionHandler {
 }
 
 export const incidentsStore = new Incidents();
-export type {ProcessInstanceIncidents, Incident};
+export type {Incident};

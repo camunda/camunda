@@ -22,4 +22,4 @@ const fetchProcessDefinitionXml = async (
 };
 
 export {fetchProcessDefinitionXml};
-export type {ProcessDefinitionKey, ProcessDefinitionXmlDto};
+export type {ProcessDefinitionKey};

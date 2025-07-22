@@ -22,4 +22,4 @@ const fetchDecisionDefinitionXml = async (
 };
 
 export {fetchDecisionDefinitionXml};
-export type {DecisionDefinitionKey, DecisionDefinitionXmlDto};
+export type {DecisionDefinitionKey};

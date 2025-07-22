@@ -25,4 +25,3 @@ const useProcessInstanceOperationsContext = () => {
 };
 
 export {ProcessInstanceOperationsContext, useProcessInstanceOperationsContext};
-export type {ProcessInstanceOperationsContextType};
