@@ -271,13 +271,13 @@ message ProcessInstanceCreationStartInstruction {
 
 message ProcessInstanceCreationRuntimeInstruction {
   oneof instruction {
-    SuspendProcessInstanceInstruction suspend = 1;
+    TerminateProcessInstanceInstruction terminate = 1;
   }
 }
 
-message SuspendProcessInstanceInstruction {
+message TerminateProcessInstanceInstruction {
   // the ID of the process element after which the process instance should be
-  // suspended
+  // terminated
   string afterElementId = 1;
 }
 
