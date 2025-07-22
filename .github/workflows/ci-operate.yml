@@ -86,8 +86,8 @@ jobs:
     secrets: inherit
     permissions: { }  # GITHUB_TOKEN unused in this job
 
+  # run every time this CI file is called
   operate-backend-unit-tests:
-    if: inputs.beChanges
     name: "[UT] Back End / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -117,7 +117,7 @@ jobs:
 
   run-backup-restore-tests:
     if: inputs.beChanges
-    name: "[IT] Backup Restore Tests / TEAM TBD"
+    name: "[IT] Backup Restore Tests / Data Layer"
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
