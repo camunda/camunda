@@ -57,6 +57,7 @@ import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
 import io.camunda.exporter.handlers.TenantDeletedHandler;
 import io.camunda.exporter.handlers.TenantEntityAddedHandler;
 import io.camunda.exporter.handlers.TenantEntityRemovedHandler;
+import io.camunda.exporter.handlers.UsageMetricHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
@@ -96,6 +97,7 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -317,7 +319,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 batchOperationCache),
             new ListViewFromIncidentResolutionOperationHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
-                batchOperationCache)));
+                batchOperationCache),
+            new UsageMetricHandler(
+                indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName())));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation

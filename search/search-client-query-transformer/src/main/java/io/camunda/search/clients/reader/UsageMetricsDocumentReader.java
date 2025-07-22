@@ -25,7 +25,7 @@ public class UsageMetricsDocumentReader extends DocumentBasedReader implements U
     return getSearchExecutor()
         .search(
             query,
-            io.camunda.webapps.schema.entities.UsageMetricsEntity.class,
+            io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity.class,
             resourceAccessChecks);
   }
 }

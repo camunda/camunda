@@ -187,7 +187,8 @@ class BackupPrioritiesTest {
             "camunda-web-session-8.8.0_",
             "camunda-role-8.8.0_",
             "camunda-tenant-8.8.0_",
-            "camunda-user-8.8.0_");
+            "camunda-user-8.8.0_",
+            "camunda-usage-metric-8.8.0_");
 
     for (final var indexList : indices) {
       assertThat(indexList.allIndices())
