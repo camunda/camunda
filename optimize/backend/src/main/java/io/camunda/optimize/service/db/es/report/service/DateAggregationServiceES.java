@@ -32,7 +32,6 @@ import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.aggregations.RangeBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.json.JsonData;
 import co.elastic.clients.util.NamedValue;
 import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
@@ -263,8 +262,10 @@ public class DateAggregationServiceES extends DateAggregationService {
                                   m ->
                                       m.range(
                                           r ->
-                                              r.field(context.getDateField())
-                                                  .lt(JsonData.of(endAsString))))
+                                              r.date(
+                                                  d ->
+                                                      d.field(context.getDateField())
+                                                          .lt(endAsString))))
                               .must(
                                   m ->
                                       m.bool(
@@ -273,12 +274,12 @@ public class DateAggregationServiceES extends DateAggregationService {
                                                       s ->
                                                           s.range(
                                                               r ->
-                                                                  r.field(
-                                                                          context
-                                                                              .getRunningDateReportEndDateField())
-                                                                      .gte(
-                                                                          JsonData.of(
-                                                                              startAsString))))
+                                                                  r.date(
+                                                                      d ->
+                                                                          d.field(
+                                                                                  context
+                                                                                      .getRunningDateReportEndDateField())
+                                                                              .gte(startAsString))))
                                                   .should(
                                                       s ->
                                                           s.bool(

@@ -38,45 +38,35 @@ public final class ElasticsearchWriterUtil {
       final String inlineUpdateScript, final Map<String, T> params) {
     return Script.of(
         b ->
-            b.inline(
-                i ->
-                    i.lang(ScriptLanguage.Painless)
-                        .source(inlineUpdateScript)
-                        .params(
-                            params.entrySet().stream()
-                                .collect(
-                                    Collectors.toMap(
-                                        Map.Entry::getKey, e -> JsonData.of(e.getValue()))))));
+            b.lang(ScriptLanguage.Painless)
+                .source(inlineUpdateScript)
+                .params(
+                    params.entrySet().stream()
+                        .collect(
+                            Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue())))));
   }
 
   public static Script createDefaultScriptWithJsonParams(
       final String inlineUpdateScript, final Map<String, JsonData> params) {
     return Script.of(
-        b ->
-            b.inline(
-                i -> i.lang(ScriptLanguage.Painless).source(inlineUpdateScript).params(params)));
+        b -> b.lang(ScriptLanguage.Painless).source(inlineUpdateScript).params(params));
   }
 
   public static Script createDefaultScriptWithSpecificDtoParams(
       final String inlineUpdateScript, final Map<String, Object> params) {
     return Script.of(
-        b ->
-            b.inline(
-                i -> {
-                  i.lang(ScriptLanguage.Painless).source(inlineUpdateScript);
-                  if (params != null) {
-                    i.params(
-                        params.entrySet().stream()
-                            .collect(
-                                Collectors.toMap(
-                                    Map.Entry::getKey, e -> JsonData.of(e.getValue()))));
-                  }
-                  return i;
-                }));
+        b -> {
+          b.lang(ScriptLanguage.Painless).source(inlineUpdateScript);
+          if (params != null) {
+            b.params(
+                params.entrySet().stream()
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> JsonData.of(e.getValue()))));
+          }
+          return b;
+        });
   }
 
   public static Script createDefaultScript(final String inlineUpdateScript) {
-    return Script.of(
-        b -> b.inline(i -> i.lang(ScriptLanguage.Painless).source(inlineUpdateScript)));
+    return Script.of(b -> b.lang(ScriptLanguage.Painless).source(inlineUpdateScript));
   }
 }

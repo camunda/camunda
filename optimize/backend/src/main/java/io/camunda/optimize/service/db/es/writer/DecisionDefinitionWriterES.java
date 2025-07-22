@@ -46,8 +46,7 @@ public class DecisionDefinitionWriterES implements DecisionDefinitionWriter {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(DecisionDefinitionWriterES.class);
   private static final Script MARK_AS_DELETED_SCRIPT =
-      Script.of(
-          s -> s.inline(i -> i.lang(ScriptLanguage.Painless).source("ctx._source.deleted = true")));
+      Script.of(s -> s.lang(ScriptLanguage.Painless).source("ctx._source.deleted = true"));
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;

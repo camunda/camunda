@@ -19,7 +19,6 @@ import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregate
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.aggregations.ReverseNestedAggregate;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.es.report.context.DateAggregationContextES;
 import io.camunda.optimize.service.db.es.report.context.VariableAggregationContextES;
@@ -100,9 +99,11 @@ public class VariableAggregationServiceES {
                       q ->
                           q.range(
                               r ->
-                                  r.field(context.getNestedVariableValueFieldLabel())
-                                      .lte(JsonData.of(context.getMaxVariableValue()))
-                                      .gte(JsonData.of(baseLineValue)))));
+                                  r.number(
+                                      nf ->
+                                          nf.field(context.getNestedVariableValueFieldLabel())
+                                              .lte(context.getMaxVariableValue())
+                                              .gte(baseLineValue)))));
     } else {
       return Optional.empty();
     }

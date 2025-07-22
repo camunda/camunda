@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInst
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -75,10 +74,12 @@ public class DecisionInstanceRepositoryES implements DecisionInstanceRepository 
                             f ->
                                 f.range(
                                     r ->
-                                        r.field(DecisionInstanceIndex.EVALUATION_DATE_TIME)
-                                            .lt(
-                                                JsonData.of(
-                                                    dateTimeFormatter.format(evaluationDate)))))));
+                                        r.date(
+                                            df ->
+                                                df.field(DecisionInstanceIndex.EVALUATION_DATE_TIME)
+                                                    .lt(
+                                                        dateTimeFormatter.format(
+                                                            evaluationDate)))))));
 
     taskRepositoryES.tryDeleteByQueryRequest(
         query,

@@ -44,14 +44,10 @@ public class ProcessDefinitionWriterES extends AbstractProcessDefinitionWriterES
     implements ProcessDefinitionWriter {
 
   private static final Script MARK_AS_DELETED_SCRIPT =
-      Script.of(
-          s -> s.inline(i -> i.lang(ScriptLanguage.Painless).source("ctx._source.deleted = true")));
+      Script.of(s -> s.lang(ScriptLanguage.Painless).source("ctx._source.deleted = true"));
 
   private static final Script MARK_AS_ONBOARDED_SCRIPT =
-      Script.of(
-          s ->
-              s.inline(
-                  i -> i.lang(ScriptLanguage.Painless).source("ctx._source.onboarded = true")));
+      Script.of(s -> s.lang(ScriptLanguage.Painless).source("ctx._source.onboarded = true"));
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(ProcessDefinitionWriterES.class);
 
