@@ -11,6 +11,7 @@ import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -30,36 +31,42 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.AUTHORIZATION,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ID,
                     IDENTITY_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.TENANT,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.GROUP,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.USER,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.ROLE,
                     Set.of(PermissionType.READ))),
@@ -68,18 +75,21 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ID,
                     IDENTITY_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.USER,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.ROLE,
                     Set.of(PermissionType.READ))),
@@ -88,36 +98,42 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.AUTHORIZATION,
                     AuthorizationResourceType.AUTHORIZATION.getSupportedPermissionTypes()),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ID,
                     IDENTITY_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.TENANT,
                     AuthorizationResourceType.TENANT.getSupportedPermissionTypes()),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.GROUP,
                     AuthorizationResourceType.GROUP.getSupportedPermissionTypes()),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.USER,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.ROLE,
                     AuthorizationResourceType.ROLE.getSupportedPermissionTypes())),
@@ -126,30 +142,35 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.MESSAGE,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.BATCH_OPERATION,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ID,
                     OPERATE_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.RESOURCE,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.PROCESS_DEFINITION,
                     Set.of(
@@ -158,12 +179,14 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.DECISION_DEFINITION,
                     Set.of(
@@ -174,30 +197,35 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.MESSAGE,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.BATCH_OPERATION,
                     Set.of(PermissionType.READ, PermissionType.CREATE)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ID,
                     OPERATE_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.RESOURCE,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.PROCESS_DEFINITION,
                     Set.of(
@@ -208,12 +236,14 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
                     Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.DECISION_DEFINITION,
                     Set.of(
@@ -226,18 +256,21 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ID,
                     TASKLIST_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.RESOURCE,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.PROCESS_DEFINITION,
                     Set.of(PermissionType.READ_PROCESS_DEFINITION, PermissionType.READ_USER_TASK))),
@@ -246,18 +279,21 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ID,
                     TASKLIST_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.RESOURCE,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.PROCESS_DEFINITION,
                     Set.of(
@@ -269,18 +305,21 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.MESSAGE,
                     Set.of(PermissionType.CREATE)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.SYSTEM,
                     Set.of(PermissionType.UPDATE, PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.RESOURCE,
                     Set.of(
@@ -292,6 +331,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.PROCESS_DEFINITION,
                     Set.of(
@@ -302,6 +342,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.DECISION_DEFINITION,
                     Set.of(
@@ -310,6 +351,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
+                    ResourceIdFormat.ANY,
                     "*",
                     AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
                     Set.of(PermissionType.UPDATE, PermissionType.DELETE))));

@@ -12,6 +12,7 @@ import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -51,6 +52,7 @@ public class MigrationUtil {
                 new CreateAuthorizationRequest(
                     entry.getKey().ownerId(),
                     entry.getKey().ownerType(),
+                    ResourceIdFormat.ID,
                     entry.getKey().resourceId(),
                     entry.getKey().resourceType(),
                     entry.getValue()))

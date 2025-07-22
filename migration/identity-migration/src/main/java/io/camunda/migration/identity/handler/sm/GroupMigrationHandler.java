@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -179,6 +180,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
               new CreateAuthorizationRequest(
                   targetGroupId,
                   AuthorizationOwnerType.GROUP,
+                  ResourceIdFormat.ID,
                   authorization.resourceKey(),
                   convertResourceType(authorization.resourceType()),
                   convertPermissions(authorization.permissions(), authorization.resourceType()));

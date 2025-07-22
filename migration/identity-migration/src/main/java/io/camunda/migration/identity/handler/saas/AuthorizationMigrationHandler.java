@@ -23,6 +23,7 @@ import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceIdFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
               new CreateAuthorizationRequest(
                   getOwnerId(authorization.entityId(), usersEmailByUsername),
                   convertOwnerType(authorization.entityType()),
+                  ResourceIdFormat.ID,
                   authorization.resourceKey(),
                   convertResourceType(authorization.resourceType()),
                   convertPermissions(authorization.permissions(), authorization.resourceType()));
