@@ -15,14 +15,13 @@
  */
 package io.camunda.spring.client.jobhandling.parameter;
 
-import static java.util.Optional.ofNullable;
-
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.InternalClientException;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
+import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,9 +76,15 @@ public class DocumentParameterResolver implements ParameterResolver {
 
   protected List<DocumentReferenceResponse> getDocumentReferences(final ActivatedJob job) {
     try {
-      return ofNullable(job.getDocumentReferences(variableName))
-          .orElseThrow(
-              () -> new InternalClientException("Document reference variable value is null"));
+      final List<DocumentReferenceResponse> documentReferences =
+          job.getDocumentReferences(variableName);
+      if (!optional && documentReferences == null) {
+        throw new InternalClientException("Document reference variable value is null");
+      }
+      if (documentReferences == null) {
+        return Collections.emptyList();
+      }
+      return documentReferences;
     } catch (final ClientException e) {
       if (!optional) {
         throw new IllegalStateException(
