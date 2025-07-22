@@ -1211,7 +1211,7 @@
         "type": "prometheus",
         "uid": "PBFA97CFB590B2093"
       },
-      "description": "For each exporter how far behind is it from exporting the records which have been committed.",
+      "description": "How far behind each exporter is from exporting the records which have been committed.",
       "fieldConfig": {
         "defaults": {
           "color": {
