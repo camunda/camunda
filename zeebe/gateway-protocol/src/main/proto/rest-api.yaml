@@ -6025,9 +6025,6 @@ components:
         processDefinitionKey:
           description: The key for this process definition.
           type: string
-        formKey:
-          type: string
-          description: The identifier of the form used to start the process, applicable when the process is initiated via a form.
     ProcessInstanceSearchQuerySortRequest:
       type: object
       properties:
