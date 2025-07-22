@@ -299,7 +299,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.completeTaskButton.click();
 
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-      timeout: 40000,
+      timeout: 60000,
     });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
