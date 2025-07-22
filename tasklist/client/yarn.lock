@@ -1591,20 +1591,22 @@
   dependencies:
     "@types/unist" "^2"
 
-"@types/mixpanel-browser@2.60.0":
-  version "2.60.0"
-  resolved "https://registry.npmjs.org/@types/mixpanel-browser/-/mixpanel-browser-2.60.0.tgz"
-  integrity sha512-70oe8T3KdxHwsSo5aZphALdoqcsIorQBrlisnouIn9Do4dmC2C6/D56978CmSE/BO2QHgb85ojPGa4R8OFvVHA==
+"@types/mixpanel-browser@2.66.0":
+  version "2.66.0"
+  resolved "https://registry.yarnpkg.com/@types/mixpanel-browser/-/mixpanel-browser-2.66.0.tgz#7c2ca33dbd4c40641eb51cc525b83343acee6c11"
+  integrity sha512-07zYZZ9ZVHc7R4ktM+3a2clZvKkj+EJcYZ/FevTs011Fr9tdp59lVgAskMf6ZQUp3lOHLqi7K3f+9QtmEsqh1w==
+  dependencies:
+    mixpanel-browser "*"
 
 "@types/ms@*":
   version "0.7.34"
   resolved "https://registry.npmjs.org/@types/ms/-/ms-0.7.34.tgz"
   integrity sha512-nG96G3Wp6acyAgJqGasjODb+acrI7KltPiRxzHPXnP3NgI28bpQDRv53olbqGXbfcgF5aiiHmO3xpwEpS5Ld9g==
 
-"@types/node@24.0.4":
-  version "24.0.4"
-  resolved "https://registry.npmjs.org/@types/node/-/node-24.0.4.tgz"
-  integrity sha512-ulyqAkrhnuNq9pB76DRBTkcS6YsmDALy6Ua63V8OhrOBgbcYt6IOdzpw5P1+dyRIyMerzLkeYWBeOXPpA9GMAA==
+"@types/node@24.1.0":
+  version "24.1.0"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-24.1.0.tgz#0993f7dc31ab5cc402d112315b463e383d68a49c"
+  integrity sha512-ut5FthK5moxFKH2T1CUOC6ctR67rQRvvHdFLCD2Ql6KXmMuCrjsSsRI9UsLCm9M18BMwClv4pn327UvB7eeO1w==
   dependencies:
     undici-types "~7.8.0"
 
@@ -4523,6 +4525,13 @@ mitt@^3.0.0:
   version "3.0.1"
   resolved "https://registry.npmjs.org/mitt/-/mitt-3.0.1.tgz"
   integrity sha512-vKivATfr97l2/QBCYAkXYDbrIWPM2IIKEl7YPhjCvKlG3kE2gm+uBo6nEXK3M5/Ffh/FLpKExzOQ3JJoJGFKBw==
+
+mixpanel-browser@*:
+  version "2.67.0"
+  resolved "https://registry.yarnpkg.com/mixpanel-browser/-/mixpanel-browser-2.67.0.tgz#74ac41eedec4ca3bdc63c22a91271584b17057f0"
+  integrity sha512-LudY4eRIkvjEpAlIAg10i2T2mbtiKZ4XlMGbTyF1kcAhEqMa9JhEEdEcjxYPwiKhuMVSBM3RVkNCZaNqcnE4ww==
+  dependencies:
+    rrweb "2.0.0-alpha.18"
 
 mixpanel-browser@2.66.0:
   version "2.66.0"
