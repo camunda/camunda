@@ -22,6 +22,8 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.function.Consumer;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
@@ -132,6 +134,60 @@ class AdHocSubProcessValidatorTest {
 
     // when/then
     ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void withTaskDefinitionOnBpmnImplementationType() {
+    // when
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess ->
+                adHocSubProcess
+                    .zeebeImplementation(ZeebeAdHocImplementationType.BPMN)
+                    .zeebeJobType("jobType")
+                    .task("A"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            AdHocSubProcess.class,
+            "Must not have a zeebe:taskDefinition extension element with implementation type BPMN."));
+  }
+
+  @Test
+  void withMissingTaskDefinition() {
+    // when
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess ->
+                adHocSubProcess
+                    .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
+                    .task("A"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            AdHocSubProcess.class,
+            "Must have exactly one zeebe:taskDefinition extension element with implementation type JOB_WORKER."));
+  }
+
+  @Test
+  void withEmptyJobType() {
+    // when
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess ->
+                adHocSubProcess
+                    .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
+                    .zeebeJobType("")
+                    .task("A"));
+
+    // then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(ZeebeTaskDefinition.class, "Attribute 'type' must be present and not empty"));
   }
 
   private BpmnModelInstance process(final Consumer<AdHocSubProcessBuilder> modifier) {
