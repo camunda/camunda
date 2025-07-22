@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.test;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 
@@ -138,7 +139,7 @@ final class ContainerState implements AutoCloseable {
             .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "64MB")
             .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
-            .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
+            .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
             .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
             .withZeebeData(volume)
@@ -179,7 +180,9 @@ final class ContainerState implements AutoCloseable {
           new ZeebeGatewayContainer(gatewayImage)
               .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress())
               .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-              .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
+              .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+              .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+              .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false")
               .withNetwork(network);
 
       Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.self().start());

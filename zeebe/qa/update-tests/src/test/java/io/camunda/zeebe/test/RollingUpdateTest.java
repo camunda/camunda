@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.test;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
@@ -39,7 +42,6 @@ import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -54,7 +56,6 @@ import org.testcontainers.utility.DockerImageName;
  * <p>The important part is that we should be aware whether rolling update is possible between
  * versions.
  */
-@Disabled
 final class RollingUpdateTest {
 
   private static final BpmnModelInstance PROCESS =
@@ -79,6 +80,11 @@ final class RollingUpdateTest {
           .withBrokersCount(3)
           .withPartitionsCount(1)
           .withReplicationFactor(3)
+          .withNodeConfig(
+              node ->
+                  node.withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+                      .withEnv(UNPROTECTED_API_ENV_VAR, "true")
+                      .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false"))
           .build();
 
   @SuppressWarnings("unused")
