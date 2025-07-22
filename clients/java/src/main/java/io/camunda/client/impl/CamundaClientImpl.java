@@ -1330,9 +1330,4 @@ public final class CamundaClientImpl implements CamundaClient {
       final DocumentReferenceResponse documentReference) {
     return jobClient.newDeleteDocumentCommand(documentReference);
   }
-
-  private JobClient newJobClient() {
-    return new JobClientImpl(
-        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
-  }
 }

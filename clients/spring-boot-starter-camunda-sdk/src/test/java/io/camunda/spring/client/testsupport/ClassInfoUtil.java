@@ -24,9 +24,9 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
-public class ClassInfoUtil {
+public final class ClassInfoUtil {
   private ClassInfoUtil() {}
-  
+
   public static ClassInfo classInfo(final Object bean) {
     return ClassInfo.builder()
         .bean(bean)
