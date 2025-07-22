@@ -428,7 +428,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                   "status": 404,
                   "detail": "Variable with key 99 not found",
                   "instance": "/v2/variables/99"
-                }""");
+                }""",
+            JsonCompareMode.STRICT);
 
     verify(variableServices).getByKey(INVALID_VARIABLE_KEY);
   }

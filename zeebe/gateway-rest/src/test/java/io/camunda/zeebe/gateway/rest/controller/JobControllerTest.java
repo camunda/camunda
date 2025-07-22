@@ -884,7 +884,8 @@ public class JobControllerTest extends RestControllerTest {
               "detail": "Expected to handle request Activate Jobs with tenant identifiers [], but no tenant identifier was provided.",
               "instance": "%s"
             }"""
-                .formatted(JOBS_BASE_URL + "/activation"));
+                .formatted(JOBS_BASE_URL + "/activation"),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(jobServices);
   }
 
@@ -930,7 +931,8 @@ public class JobControllerTest extends RestControllerTest {
                     tenantIds.size() == 1
                         ? "identifier '" + tenantIds.getFirst() + "'"
                         : "identifiers " + tenantIds,
-                    JOBS_BASE_URL + "/activation"));
+                    JOBS_BASE_URL + "/activation"),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(jobServices);
   }
 

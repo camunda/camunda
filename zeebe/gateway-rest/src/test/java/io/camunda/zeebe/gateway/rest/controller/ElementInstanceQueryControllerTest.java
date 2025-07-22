@@ -363,7 +363,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       "status":404,
                       "instance":"/v2/element-instances/5"
                   }
-                """);
+                """,
+            JsonCompareMode.STRICT);
 
     verify(elementInstanceServices).getByKey(5L);
   }

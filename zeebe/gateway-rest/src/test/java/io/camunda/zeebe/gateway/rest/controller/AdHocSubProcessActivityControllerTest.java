@@ -33,6 +33,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = AdHocSubProcessActivityController.class)
 class AdHocSubProcessActivityControllerTest extends RestControllerTest {
@@ -115,12 +116,12 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                 "type": "about:blank",
                 "title": "INVALID_ARGUMENT",
                 "status": 400,
+                "detail": "%s",
                 "instance": "/v2/element-instances/ad-hoc-activities/%s/activation"
             }
             """
-                  .formatted(AD_HOC_SUBPROCESS_INSTANCE_KEY))
-          .jsonPath(".detail")
-          .isEqualTo(expectedErrorDetail);
+                  .formatted(expectedErrorDetail, AD_HOC_SUBPROCESS_INSTANCE_KEY),
+              JsonCompareMode.STRICT);
 
       verifyNoInteractions(adHocSubProcessActivityServices);
     }

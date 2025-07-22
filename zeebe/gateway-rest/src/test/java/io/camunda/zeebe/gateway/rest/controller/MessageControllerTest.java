@@ -112,7 +112,8 @@ public class MessageControllerTest extends RestControllerTest {
                   "messageKey": "123",
                   "tenantId": "<default>",
                   "processInstanceKey": "321"
-                }""");
+                }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -167,7 +168,8 @@ public class MessageControllerTest extends RestControllerTest {
                   "messageKey": "123",
                   "tenantId": "tenantId",
                   "processInstanceKey": "321"
-                }""");
+                }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -202,7 +204,8 @@ public class MessageControllerTest extends RestControllerTest {
                   "detail": "No messageName provided.",
                   "instance": "%s"
                 }"""
-                .formatted(CORRELATION_ENDPOINT));
+                .formatted(CORRELATION_ENDPOINT),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(messageServices);
   }
 
@@ -239,7 +242,8 @@ public class MessageControllerTest extends RestControllerTest {
                   "detail": "No messageName provided.",
                   "instance": "%s"
                 }"""
-                .formatted(CORRELATION_ENDPOINT));
+                .formatted(CORRELATION_ENDPOINT),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(messageServices);
   }
 
@@ -274,7 +278,8 @@ public class MessageControllerTest extends RestControllerTest {
               "detail": "Expected to handle request Correlate Message with tenant identifiers [], but no tenant identifier was provided.",
               "instance": "%s"
             }"""
-                .formatted(CORRELATION_ENDPOINT));
+                .formatted(CORRELATION_ENDPOINT),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(messageServices);
   }
 
@@ -310,7 +315,8 @@ public class MessageControllerTest extends RestControllerTest {
                   "detail": "Expected to handle request Correlate Message with tenant identifier 'tenant', but multi-tenancy is disabled",
                   "instance": "%s"
                 }"""
-                .formatted(CORRELATION_ENDPOINT));
+                .formatted(CORRELATION_ENDPOINT),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(messageServices);
   }
 
@@ -346,7 +352,8 @@ public class MessageControllerTest extends RestControllerTest {
                   "detail": "Expected to handle request Correlate Message with tenant identifier 'tenanttenanttenanttenanttenanttenanttenanttenanttenant', but tenant identifier is longer than 31 characters.",
                   "instance": "%s"
                 }"""
-                .formatted(CORRELATION_ENDPOINT));
+                .formatted(CORRELATION_ENDPOINT),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(messageServices);
   }
 
@@ -382,7 +389,8 @@ public class MessageControllerTest extends RestControllerTest {
               "detail": "Expected to handle request Correlate Message with tenant identifier '<invalid>', but tenant identifier contains illegal characters.",
               "instance": "%s"
             }"""
-                .formatted(CORRELATION_ENDPOINT));
+                .formatted(CORRELATION_ENDPOINT),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(messageServices);
   }
 

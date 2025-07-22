@@ -328,11 +328,10 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
 
   @Test
   public void shouldReturn404ForInvalidDecisionRequirementsKey() throws Exception {
+    final String uri = "/v2/decision-requirements/" + INVALID_DECISION_REQUIREMENTS_KEY;
     webClient
         .get()
-        .uri(
-            "/v2/decision-requirements/{decisionRequirementsKey}",
-            INVALID_DECISION_REQUIREMENTS_KEY)
+        .uri(uri)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -344,9 +343,12 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                   "type": "about:blank",
                   "title": "NOT_FOUND",
                   "status": 404,
-                  "detail": "Decision requirements with key 999 not found"
+                  "detail": "Decision requirements with key 999 not found",
+                  "instance": "%s"
                 }
-                """);
+                """
+                .formatted(uri),
+            JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, times(1)).getByKey(INVALID_DECISION_REQUIREMENTS_KEY);
   }
@@ -364,9 +366,10 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionRequirementsDefinition().read())));
     // when / then
+    final String formattedUrl = url.formatted(decisionRequirementsKey);
     webClient
         .get()
-        .uri(url.formatted(decisionRequirementsKey))
+        .uri(formattedUrl)
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -377,9 +380,12 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                       "type": "about:blank",
                       "status": 403,
                       "title": "FORBIDDEN",
-                      "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'"
+                      "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'",
+                      "instance": "%s"
                     }
-                """);
+                """
+                .formatted(formattedUrl),
+            JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid key
     service.apply(verify(decisionRequirementsServices), decisionRequirementsKey);
@@ -416,7 +422,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                   "detail": "Unexpected error occurred during the request processing: Unexpected error",
                   "instance": "/v2/decision-requirements/1"
                 }
-                """);
+                """,
+            JsonCompareMode.STRICT);
 
     verify(decisionRequirementsServices, times(1)).getByKey(VALID_DECISION_REQUIREMENTS_KEY);
   }

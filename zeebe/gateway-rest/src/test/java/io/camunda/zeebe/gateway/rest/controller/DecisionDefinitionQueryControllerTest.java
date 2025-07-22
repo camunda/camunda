@@ -519,9 +519,10 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.decisionDefinition().read())));
     // when / then
+    final String formattedUrl = url.formatted(decisionDefinitionKey);
     webClient
         .get()
-        .uri(url.formatted(decisionDefinitionKey))
+        .uri(formattedUrl)
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -532,9 +533,12 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "status": 403,
                       "title": "FORBIDDEN",
-                      "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'"
+                      "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'",
+                      "instance": "%s"
                     }
-                """);
+                """
+                .formatted(formattedUrl),
+            JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid key
     service.apply(verify(decisionDefinitionServices), decisionDefinitionKey);

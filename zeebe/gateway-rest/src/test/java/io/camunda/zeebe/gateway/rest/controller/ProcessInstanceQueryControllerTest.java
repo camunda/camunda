@@ -542,9 +542,12 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "status": 404,
                       "title": "NOT_FOUND",
-                      "detail": "Process Instance with key 100 not found"
+                      "detail": "Process Instance with key 100 not found",
+                      "instance": "/v2/process-instances/%s"
                     }
-                """);
+                """
+                .formatted(invalidProcesInstanceKey),
+            JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid key
     verify(processInstanceServices).getByKey(invalidProcesInstanceKey);

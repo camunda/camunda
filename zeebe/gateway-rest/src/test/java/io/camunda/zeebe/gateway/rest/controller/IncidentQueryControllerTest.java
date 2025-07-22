@@ -316,7 +316,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "status":404,
                       "instance":"/v2/incidents/5"
                   }
-                """);
+                """,
+            JsonCompareMode.STRICT);
 
     verify(incidentServices).getByKey(5L);
   }

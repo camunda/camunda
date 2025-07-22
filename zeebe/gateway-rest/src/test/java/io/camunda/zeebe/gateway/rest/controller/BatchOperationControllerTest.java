@@ -36,6 +36,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = BatchOperationController.class)
 class BatchOperationControllerTest extends RestControllerTest {
@@ -76,8 +77,10 @@ class BatchOperationControllerTest extends RestControllerTest {
               "endDate":"2025-03-18T10:57:45.000+01:00",
               "operationsTotalCount":10,
               "operationsFailedCount":0,
-              "operationsCompletedCount":10
-          }""");
+              "operationsCompletedCount":10,
+              "errors": []
+          }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -118,7 +121,8 @@ class BatchOperationControllerTest extends RestControllerTest {
                   "message":"Stack Trace"
                 }
               ]
-          }""");
+          }""",
+            JsonCompareMode.STRICT);
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {
@@ -195,19 +199,26 @@ class BatchOperationControllerTest extends RestControllerTest {
         .expectBody()
         .json(
             """
-          {"items":[
           {
-            "batchOperationKey":"1",
-            "state":"COMPLETED",
-            "batchOperationType":"CANCEL_PROCESS_INSTANCE",
-            "startDate":"2025-03-18T10:57:44.000+01:00",
-            "endDate":"2025-03-18T10:57:45.000+01:00",
-            "operationsTotalCount":10,
-            "operationsFailedCount":0,
-            "operationsCompletedCount":10
-            }],
-            "page":{"totalItems":1}
-           }""");
+            "items":[
+              {
+                "batchOperationKey": "1",
+                "state": "COMPLETED",
+                "batchOperationType": "CANCEL_PROCESS_INSTANCE",
+                "startDate": "2025-03-18T10:57:44.000+01:00",
+                "endDate": "2025-03-18T10:57:45.000+01:00",
+                "operationsTotalCount": 10,
+                "operationsFailedCount": 0,
+                "operationsCompletedCount": 10,
+                "errors": []
+              }
+            ],
+            "page":{
+              "totalItems": 1,
+              "hasMoreTotalItems": false
+             }
+           }""",
+            JsonCompareMode.STRICT);
 
     verify(batchOperationServices).search(new BatchOperationQuery.Builder().filter(filter).build());
   }

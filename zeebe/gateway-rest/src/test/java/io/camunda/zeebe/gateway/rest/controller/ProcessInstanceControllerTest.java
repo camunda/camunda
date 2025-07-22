@@ -1346,7 +1346,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(
             """
           {"batchOperationKey":"123","batchOperationType":"CANCEL_PROCESS_INSTANCE"}
-        """);
+        """,
+            JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .cancelProcessInstanceBatchOperationWithResult(any(ProcessInstanceFilter.class));
@@ -1394,7 +1395,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(
             """
           {"batchOperationKey":"123","batchOperationType":"MODIFY_PROCESS_INSTANCE"}
-        """);
+        """,
+            JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .modifyProcessInstancesBatchOperation(
@@ -1470,7 +1472,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(
             """
           {"batchOperationKey":"123","batchOperationType":"RESOLVE_INCIDENT"}
-        """);
+        """,
+            JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .resolveIncidentsBatchOperationWithResult(any(ProcessInstanceFilter.class));
@@ -1520,7 +1523,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(
             """
           {"batchOperationKey":"123","batchOperationType":"MIGRATE_PROCESS_INSTANCE"}
-        """);
+        """,
+            JsonCompareMode.STRICT);
 
     verify(processInstanceServices)
         .migrateProcessInstancesBatchOperation(
