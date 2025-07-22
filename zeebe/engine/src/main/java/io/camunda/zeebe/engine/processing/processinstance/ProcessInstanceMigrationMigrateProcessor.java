@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -330,19 +331,18 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     sequenceFlows.forEach(
         sequenceFlow -> {
-          final var sequenceFlowRecord = new ProcessInstanceRecord();
-          sequenceFlowRecord.copyFrom(updatedElementInstanceRecord);
-          sequenceFlowRecord
-              .setElementId(sequenceFlow.getId())
-              .setBpmnElementType(sequenceFlow.getElementType())
-              .setBpmnEventType(sequenceFlow.getEventType())
-              .setFlowScopeKey(elementInstance.getKey())
-              .resetElementInstancePath()
-              .resetCallingElementPath()
-              .resetProcessDefinitionPath();
+          // use the original element instance record to fill existing sequence flow data
+          deleteTakenSequenceFlow(elementInstanceRecord, sequenceFlow, elementInstance.getKey());
 
-          stateWriter.appendFollowUpEvent(
-              keyGenerator.nextKey(), ProcessInstanceIntent.ELEMENT_MIGRATED, sequenceFlowRecord);
+          final var targetSequenceFlowId =
+              getTargetSequenceFlowId(
+                  sourceElementIdToTargetElementId, sequenceFlow, processInstanceKey);
+          // use updated element instance record to fill new sequence flow data
+          takeNewSequenceFlow(
+              updatedElementInstanceRecord,
+              sequenceFlow,
+              elementInstance.getKey(),
+              targetSequenceFlowId);
         });
 
     if (elementInstance.getJobKey() > 0) {
@@ -437,6 +437,20 @@ public class ProcessInstanceMigrationMigrateProcessor
     if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {
       migrateCalledSubProcessElements(elementInstance.getCalledChildInstanceKey());
     }
+  }
+
+  private static DirectBuffer getTargetSequenceFlowId(
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final ExecutableSequenceFlow sequenceFlow,
+      final long processInstanceKey) {
+    final String sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
+    final String targetSequenceFlowId = sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
+
+    final String sourceGatewayElementId =
+        BufferUtil.bufferAsString(sequenceFlow.getTarget().getId());
+    requireNonNullTargetSequenceFlowId(
+        targetSequenceFlowId, sourceSequenceFlowId, sourceGatewayElementId, processInstanceKey);
+    return BufferUtil.wrapString(targetSequenceFlowId);
   }
 
   /**
@@ -612,6 +626,51 @@ public class ProcessInstanceMigrationMigrateProcessor
               return activeFlow;
             })
         .collect(Collectors.toSet());
+  }
+
+  private void deleteTakenSequenceFlow(
+      final ProcessInstanceRecord elementInstanceRecord,
+      final ExecutableSequenceFlow sequenceFlow,
+      final long elementInstanceKey) {
+    handleSequenceFlow(
+        elementInstanceRecord,
+        sequenceFlow,
+        elementInstanceKey,
+        sequenceFlow.getId(),
+        ProcessInstanceIntent.SEQUENCE_FLOW_DELETED);
+  }
+
+  private void takeNewSequenceFlow(
+      final ProcessInstanceRecord elementInstanceRecord,
+      final ExecutableSequenceFlow sequenceFlow,
+      final long elementInstanceKey,
+      final DirectBuffer sequenceFlowId) {
+    handleSequenceFlow(
+        elementInstanceRecord,
+        sequenceFlow,
+        elementInstanceKey,
+        sequenceFlowId,
+        ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
+  }
+
+  private void handleSequenceFlow(
+      final ProcessInstanceRecord elementInstanceRecord,
+      final ExecutableSequenceFlow sequenceFlow,
+      final long elementInstanceKey,
+      final DirectBuffer sequenceFlowId,
+      final ProcessInstanceIntent intent) {
+    final var sequenceFlowRecord = new ProcessInstanceRecord();
+    sequenceFlowRecord.copyFrom(elementInstanceRecord);
+    sequenceFlowRecord
+        .setElementId(sequenceFlowId)
+        .setBpmnElementType(sequenceFlow.getElementType())
+        .setBpmnEventType(sequenceFlow.getEventType())
+        .setFlowScopeKey(elementInstanceKey)
+        .resetElementInstancePath()
+        .resetCallingElementPath()
+        .resetProcessDefinitionPath();
+
+    stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), intent, sequenceFlowRecord);
   }
 
   /**
