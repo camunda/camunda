@@ -42,7 +42,6 @@ import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
@@ -79,7 +78,6 @@ class TaskServiceTest {
   @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
   @Mock private Metrics metrics;
   @Mock private TaskMetricsStore taskMetricsStore;
-  @Mock private AssigneeMigrator assigneeMigrator;
   @Mock private TaskValidator taskValidator;
   @Mock private TasklistServicesAdapter tasklistServicesAdapter;
 

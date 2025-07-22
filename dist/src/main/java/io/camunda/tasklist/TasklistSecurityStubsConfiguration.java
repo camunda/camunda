@@ -9,8 +9,6 @@ package io.camunda.tasklist;
 
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.tasklist.webapp.dto.UserDTO;
-import io.camunda.tasklist.webapp.security.AssigneeMigrator;
-import io.camunda.tasklist.webapp.security.AssigneeMigratorNoImpl;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import io.camunda.tasklist.webapp.security.UserReader;
@@ -78,11 +76,6 @@ public class TasklistSecurityStubsConfiguration {
         return Optional.empty();
       }
     };
-  }
-
-  @Bean
-  public AssigneeMigrator stubAssigneeMigrator() {
-    return new AssigneeMigratorNoImpl();
   }
 
   @Bean
