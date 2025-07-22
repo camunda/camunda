@@ -132,6 +132,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 
 public final class SearchQueryResponseMapper {
 
@@ -502,7 +503,8 @@ public final class SearchQueryResponseMapper {
         .version(entity.version())
         .versionTag(entity.versionTag())
         .processDefinitionId(entity.processDefinitionId())
-        .tenantId(entity.tenantId());
+        .tenantId(entity.tenantId())
+        .hasFormKey(StringUtils.isNotBlank(entity.formId()));
   }
 
   private static List<ProcessInstanceResult> toProcessInstances(

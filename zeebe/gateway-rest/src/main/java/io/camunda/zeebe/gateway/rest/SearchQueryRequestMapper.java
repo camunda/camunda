@@ -942,6 +942,7 @@ public final class SearchQueryRequestMapper {
                   .map(mapToOperations(String.class))
                   .ifPresent(builder::processDefinitionIdOperations);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+              Optional.ofNullable(f.getHasFormKey()).ifPresent(builder::hasFormKey);
             });
     return builder.build();
   }

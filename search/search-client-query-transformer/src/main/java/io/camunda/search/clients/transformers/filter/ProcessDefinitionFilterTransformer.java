@@ -12,8 +12,11 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.FORM_ID;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.FORM_KEY;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.RESOURCE_NAME;
@@ -40,6 +43,7 @@ public class ProcessDefinitionFilterTransformer
   public SearchQuery toSearchQuery(final ProcessDefinitionFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(longTerms(KEY, filter.processDefinitionKeys())).ifPresent(queries::add);
+
     ofNullable(getNamesQuery(filter.nameOperations())).ifPresent(queries::addAll);
     ofNullable(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()))
         .ifPresent(queries::addAll);
@@ -47,7 +51,7 @@ public class ProcessDefinitionFilterTransformer
     ofNullable(intTerms(VERSION, filter.versions())).ifPresent(queries::add);
     ofNullable(stringTerms(VERSION_TAG, filter.versionTags())).ifPresent(queries::add);
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
-
+    ofNullable(getFormKeyQuery(filter.hasFormKey())).ifPresent(queries::add);
     return and(queries);
   }
 
@@ -58,6 +62,13 @@ public class ProcessDefinitionFilterTransformer
   private List<SearchQuery> getProcessDefinitionIdsQuery(
       final List<Operation<String>> processDefinitionIds) {
     return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
+  }
+
+  private SearchQuery getFormKeyQuery(final Boolean hasFormKey) {
+    if (hasFormKey != null) {
+      return term(FORM_KEY, hasFormKey);
+    }
+    return null;
   }
 
   @Override

@@ -94,6 +94,12 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
+  public ProcessDefinitionFilter hasFormKey(final boolean formKey) {
+    filter.hasFormKey(formKey);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ProcessDefinitionFilter getSearchRequestProperty() {
     return filter;
   }

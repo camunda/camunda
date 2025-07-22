@@ -24,7 +24,8 @@ public record ProcessDefinitionFilter(
     List<String> resourceNames,
     List<Integer> versions,
     List<String> versionTags,
-    List<String> tenantIds)
+    List<String> tenantIds,
+    Boolean hasFormKey)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionFilter> {
@@ -37,6 +38,7 @@ public record ProcessDefinitionFilter(
     private List<String> resourceNames;
     private List<Integer> versions;
     private List<String> versionTags;
+    private Boolean hasFormKey;
 
     public Builder processDefinitionKeys(final List<Long> values) {
       processDefinitionKeys = addValuesToList(processDefinitionKeys, values);
@@ -119,6 +121,11 @@ public record ProcessDefinitionFilter(
       return this;
     }
 
+    public Builder hasFormKey(final Boolean hasFormKey){
+      this.hasFormKey = hasFormKey;
+      return this;
+    }
+
     @Override
     public ProcessDefinitionFilter build() {
       return new ProcessDefinitionFilter(
@@ -129,7 +136,10 @@ public record ProcessDefinitionFilter(
           Objects.requireNonNullElse(resourceNames, Collections.emptyList()),
           Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(versionTags, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+          hasFormKey);
     }
+
+
   }
 }
