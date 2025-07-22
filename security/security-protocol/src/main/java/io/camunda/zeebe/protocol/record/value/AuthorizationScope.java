@@ -12,6 +12,8 @@ public class AuthorizationScope {
   private ResourceIdFormat format;
   private String value;
 
+  public AuthorizationScope() {}
+
   public AuthorizationScope(final ResourceIdFormat format, final String value) {
     this.format = format;
     this.value = value;
