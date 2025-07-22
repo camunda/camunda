@@ -268,7 +268,7 @@ new BPMN symbols).
 
 ### Rolling update tests
 
-Rolling updates are testing mainly through [RollingUpdateTest](/zeebe/qa/update-tests/src/test/java/io/camunda/zeebe/test/RollingUpdateTest.java)
+Rolling updates are tested mainly through [RollingUpdateTest](/zeebe/qa/update-tests/src/test/java/io/camunda/zeebe/test/RollingUpdateTest.java)
 in the `qa/update-tests` module. These tests run in three different modes, depending on the environment:
 
 1. **Local**: Checks compatibility between the current version and the first patch of the previous minor.
