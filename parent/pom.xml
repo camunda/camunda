@@ -137,7 +137,7 @@
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-    <version.jackson-annotations>2.19.1</version.jackson-annotations>
+    <version.jackson-annotations>2.19.2</version.jackson-annotations>
     <version.json-path>2.9.0</version.json-path>
     <version.swagger-annotations>2.2.34</version.swagger-annotations>
     <version.checker-qual>3.49.5</version.checker-qual>
