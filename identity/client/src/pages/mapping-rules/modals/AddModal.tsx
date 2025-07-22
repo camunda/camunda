@@ -75,7 +75,7 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
         onChange={setMappingRuleId}
         value={mappingRuleId}
         helperText={t("uniqueIdForMappingRule")}
-        validate={(value) => value.length > 0}
+        validate={(value) => value.trim().length > 0}
         errorMessage={t("mappingRuleIdRequired")}
         autoFocus
       />
@@ -85,7 +85,7 @@ const AddMappingRuleModal: FC<UseModalProps> = ({
         onChange={setMappingRuleName}
         value={mappingRuleName}
         helperText={t("uniqueNameForMappingRule")}
-        validate={(value) => value.length > 0}
+        validate={(value) => value.trim().length > 0}
         errorMessage={t("mappingRuleNameRequired")}
       />
       <MappingRuleContainer>
