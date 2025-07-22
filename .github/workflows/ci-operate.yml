@@ -1,8 +1,8 @@
-# description:  tbd
-# test location: tbd
+# Unified CI for Operate. Runs backend unit tests, front end unit tests, checks if operate can build, importer integration tests, backup integration tests, and docker tests
+# test location: /operate, /operate/client, /operate/qa/backup-restore-tests, /operate/qa/integration-tests
 # called by: ci.yml
 # type: CI
-# owner: @camunda/core-features, @camunda/data-layer
+# owner: @camunda/core-features
 name: Operate CI
 
 on:
@@ -38,7 +38,6 @@ env:
 
 jobs:
   # Checks to see if Operate can properly build itself and a docker image
-  # owner: Core Features
   build-operate-backend:
     if: inputs.beChanges
     name: "Build Checks"
