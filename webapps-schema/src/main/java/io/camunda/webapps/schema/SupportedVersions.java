@@ -14,7 +14,7 @@ public final class SupportedVersions {
    *
    * <p>To be used for client and server dependencies (e.g. in test container tests).
    */
-  public static final String SUPPORTED_ELASTICSEARCH_VERSION = "8.16.4";
+  public static final String SUPPORTED_ELASTICSEARCH_VERSION = "8.16.6";
 
   private SupportedVersions() {}
 }

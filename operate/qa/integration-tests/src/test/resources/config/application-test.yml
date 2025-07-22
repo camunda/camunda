@@ -1,5 +1,5 @@
 testcontainers:
-  elasticsearch: "docker.elastic.co/elasticsearch/elasticsearch:8.16.4"
+  elasticsearch: "docker.elastic.co/elasticsearch/elasticsearch:8.16.6"
   opensearch: "opensearchproject/opensearch:2.5.0"
 
 camunda.operate:
