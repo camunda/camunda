@@ -16,10 +16,7 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
-import io.camunda.client.api.search.filter.UserTaskFilter;
-import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
-import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
