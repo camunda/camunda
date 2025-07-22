@@ -7,8 +7,37 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "VAR_CONTAINER",
+      "type": "constant",
+      "label": "container",
+      "value": ".*",
+      "description": ""
+    },
+    {
+      "name": "VAR_REGION",
+      "type": "constant",
+      "label": "region",
+      "value": ".*",
+      "description": ""
+    },
+    {
+      "name": "VAR_URI",
+      "type": "constant",
+      "label": "uri",
+      "value": ".*",
+      "description": ""
+    },
+    {
+      "name": "VAR_GRPC_METHOD",
+      "type": "constant",
+      "label": "grpc_method",
+      "value": ".*",
+      "description": ""
     }
   ],
+  "__elements": {},
   "__requires": [
     {
       "type": "panel",
@@ -1762,7 +1791,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 24
+            "y": 72
           },
           "id": 622,
           "maxPerRow": 3,
@@ -2393,7 +2422,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 25
+            "y": 73
           },
           "id": 194,
           "options": {
@@ -2525,7 +2554,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 25
+            "y": 73
           },
           "id": 199,
           "options": {
@@ -2664,7 +2693,7 @@
             "h": 4,
             "w": 7,
             "x": 12,
-            "y": 25
+            "y": 73
           },
           "id": 196,
           "options": {
@@ -2803,7 +2832,7 @@
             "h": 4,
             "w": 5,
             "x": 19,
-            "y": 25
+            "y": 73
           },
           "id": 200,
           "options": {
@@ -2942,7 +2971,7 @@
             "h": 8,
             "w": 5,
             "x": 12,
-            "y": 29
+            "y": 77
           },
           "id": 198,
           "options": {
@@ -3081,7 +3110,7 @@
             "h": 8,
             "w": 7,
             "x": 17,
-            "y": 29
+            "y": 77
           },
           "id": 268,
           "options": {
@@ -3185,7 +3214,7 @@
             "h": 6,
             "w": 5,
             "x": 0,
-            "y": 31
+            "y": 79
           },
           "id": 189,
           "options": {
@@ -3319,7 +3348,7 @@
             "h": 6,
             "w": 7,
             "x": 5,
-            "y": 31
+            "y": 79
           },
           "id": 201,
           "options": {
@@ -3442,7 +3471,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 85
           },
           "id": 604,
           "interval": "1s",
@@ -3571,7 +3600,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 85
           },
           "id": 605,
           "interval": "1s",
@@ -3691,7 +3720,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 43
+            "y": 91
           },
           "id": 543,
           "options": {
@@ -3785,7 +3814,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 49
+            "y": 97
           },
           "id": 561,
           "options": {
@@ -3883,7 +3912,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 49
+            "y": 97
           },
           "id": 594,
           "options": {
@@ -5101,7 +5130,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 44
+            "y": 92
           },
           "id": 102,
           "options": {
@@ -5157,7 +5186,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 44
+            "y": 92
           },
           "id": 112,
           "options": {
@@ -5295,7 +5324,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 52
+            "y": 100
           },
           "id": 105,
           "options": {
@@ -5350,7 +5379,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 52
+            "y": 100
           },
           "id": 106,
           "options": {
@@ -5472,7 +5501,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 87
+            "y": 135
           },
           "id": 182,
           "options": {
@@ -6354,7 +6383,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 78
           },
           "id": 285,
           "options": {
@@ -6463,7 +6492,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 78
           },
           "id": 286,
           "options": {
@@ -6942,7 +6971,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 115
+            "y": 163
           },
           "id": 260,
           "options": {
@@ -7034,7 +7063,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 120
+            "y": 168
           },
           "id": 379,
           "options": {
@@ -7129,7 +7158,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 120
+            "y": 168
           },
           "id": 381,
           "options": {
@@ -7250,7 +7279,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 128
+            "y": 176
           },
           "id": 37,
           "options": {
@@ -7358,7 +7387,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 128
+            "y": 176
           },
           "id": 40,
           "options": {
@@ -7456,7 +7485,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 136
+            "y": 184
           },
           "id": 122,
           "options": {
@@ -7555,7 +7584,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 136
+            "y": 184
           },
           "id": 124,
           "options": {
@@ -7653,7 +7682,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 144
+            "y": 192
           },
           "id": 126,
           "options": {
@@ -7751,7 +7780,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 144
+            "y": 192
           },
           "id": 127,
           "options": {
@@ -7823,7 +7852,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 153
+            "y": 201
           },
           "id": 339,
           "options": {
@@ -7921,7 +7950,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 153
+            "y": 201
           },
           "id": 341,
           "options": {
@@ -8058,7 +8087,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 161
+            "y": 209
           },
           "id": 343,
           "options": {
@@ -8182,7 +8211,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 161
+            "y": 209
           },
           "id": 345,
           "options": {
@@ -8304,7 +8333,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 171
+            "y": 219
           },
           "id": 347,
           "options": {
@@ -8399,7 +8428,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 171
+            "y": 219
           },
           "id": 349,
           "options": {
@@ -8494,7 +8523,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 179
+            "y": 227
           },
           "id": 353,
           "options": {
@@ -8590,7 +8619,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 179
+            "y": 227
           },
           "id": 351,
           "options": {
@@ -9098,7 +9127,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 73
           },
           "id": 28,
           "options": {
@@ -9222,7 +9251,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 32
+            "y": 80
           },
           "id": 593,
           "options": {
@@ -9311,7 +9340,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 42
+            "y": 90
           },
           "id": 233,
           "options": {
@@ -9396,7 +9425,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 42
+            "y": 90
           },
           "id": 269,
           "options": {
@@ -9480,7 +9509,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 49
+            "y": 97
           },
           "id": 420,
           "options": {
@@ -9562,7 +9591,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 49
+            "y": 97
           },
           "id": 419,
           "options": {
@@ -9682,7 +9711,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 56
+            "y": 104
           },
           "id": 310,
           "options": {
@@ -9810,7 +9839,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 56
+            "y": 104
           },
           "id": 311,
           "options": {
@@ -9898,7 +9927,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 63
+            "y": 111
           },
           "id": 235,
           "options": {
@@ -9981,7 +10010,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 63
+            "y": 111
           },
           "id": 234,
           "options": {
@@ -10118,7 +10147,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1271
+            "y": 1319
           },
           "id": 26,
           "options": {
@@ -10214,7 +10243,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1271
+            "y": 1319
           },
           "id": 27,
           "options": {
@@ -10281,7 +10310,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 1278
+            "y": 1326
           },
           "id": 22,
           "options": {
@@ -10375,7 +10404,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 1278
+            "y": 1326
           },
           "id": 23,
           "options": {
@@ -10469,7 +10498,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 1278
+            "y": 1326
           },
           "id": 24,
           "options": {
@@ -10549,7 +10578,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 10
       },
       "id": 162,
       "panels": [
@@ -10578,7 +10607,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1272
+            "y": 1320
           },
           "id": 164,
           "options": {
@@ -10734,7 +10763,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1280
+            "y": 1328
           },
           "id": 166,
           "options": {
@@ -10852,7 +10881,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1280
+            "y": 1328
           },
           "id": 168,
           "options": {
@@ -10892,7 +10921,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 11
       },
       "id": 76,
       "panels": [
@@ -11002,7 +11031,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1273
+            "y": 1321
           },
           "id": 278,
           "options": {
@@ -11141,7 +11170,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1273
+            "y": 1321
           },
           "id": 283,
           "options": {
@@ -11237,7 +11266,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 1280
+            "y": 1328
           },
           "id": 373,
           "options": {
@@ -11334,7 +11363,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1288
+            "y": 1336
           },
           "id": 363,
           "options": {
@@ -11431,7 +11460,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1288
+            "y": 1336
           },
           "id": 406,
           "options": {
@@ -11528,7 +11557,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1295
+            "y": 1343
           },
           "id": 79,
           "options": {
@@ -11625,7 +11654,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1295
+            "y": 1343
           },
           "id": 114,
           "options": {
@@ -11679,7 +11708,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1302
+            "y": 1350
           },
           "id": 86,
           "options": {
@@ -11800,7 +11829,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1302
+            "y": 1350
           },
           "id": 305,
           "options": {
@@ -11865,7 +11894,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1309
+            "y": 1357
           },
           "id": 70,
           "options": {
@@ -12009,7 +12038,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1309
+            "y": 1357
           },
           "id": 72,
           "options": {
@@ -12108,7 +12137,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1317
+            "y": 1365
           },
           "id": 432,
           "interval": "1s",
@@ -12250,7 +12279,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1317
+            "y": 1365
           },
           "id": 95,
           "interval": "1s",
@@ -12369,7 +12398,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 1325
+            "y": 1373
           },
           "id": 205,
           "options": {
@@ -12496,7 +12525,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 1390
+            "y": 1438
           },
           "id": 209,
           "options": {
@@ -12571,7 +12600,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 1445
+            "y": 1493
           },
           "id": 396,
           "options": {
@@ -12636,7 +12665,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 1455
+            "y": 1503
           },
           "id": 215,
           "options": {
@@ -12683,7 +12712,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 12
       },
       "id": 554,
       "panels": [
@@ -12752,7 +12781,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 44
+            "y": 92
           },
           "id": 180,
           "options": {
@@ -12848,7 +12877,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 52
+            "y": 100
           },
           "id": 368,
           "options": {
@@ -12945,7 +12974,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 52
+            "y": 100
           },
           "id": 411,
           "options": {
@@ -13041,7 +13070,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 59
+            "y": 107
           },
           "id": 300,
           "options": {
@@ -13112,7 +13141,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 59
+            "y": 107
           },
           "id": 89,
           "options": {
@@ -13196,7 +13225,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 66
+            "y": 114
           },
           "id": 401,
           "options": {
@@ -13319,7 +13348,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 66
+            "y": 114
           },
           "id": 416,
           "options": {
@@ -13412,7 +13441,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 73
+            "y": 121
           },
           "id": 386,
           "options": {
@@ -13495,7 +13524,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 73
+            "y": 121
           },
           "id": 81,
           "options": {
@@ -13580,7 +13609,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 79
+            "y": 127
           },
           "id": 426,
           "options": {
@@ -13702,7 +13731,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 79
+            "y": 127
           },
           "id": 427,
           "options": {
@@ -13768,7 +13797,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 86
+            "y": 134
           },
           "id": 78,
           "options": {
@@ -13850,7 +13879,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 86
+            "y": 134
           },
           "id": 391,
           "options": {
@@ -13934,7 +13963,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 92
+            "y": 140
           },
           "id": 559,
           "options": {
@@ -14053,7 +14082,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 92
+            "y": 140
           },
           "id": 560,
           "options": {
@@ -14096,7 +14125,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 13
       },
       "id": 355,
       "panels": [
@@ -14162,7 +14191,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 45
+            "y": 93
           },
           "id": 356,
           "options": {
@@ -14222,7 +14251,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 51
+            "y": 99
           },
           "id": 357,
           "options": {
@@ -14306,7 +14335,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 51
+            "y": 99
           },
           "id": 358,
           "options": {
@@ -14428,7 +14457,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 59
+            "y": 107
           },
           "id": 586,
           "options": {
@@ -14524,7 +14553,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 59
+            "y": 107
           },
           "id": 589,
           "options": {
@@ -14620,7 +14649,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 59
+            "y": 107
           },
           "id": 590,
           "options": {
@@ -14716,7 +14745,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 68
+            "y": 116
           },
           "id": 606,
           "options": {
@@ -14815,7 +14844,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 68
+            "y": 116
           },
           "id": 607,
           "options": {
@@ -14924,7 +14953,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 76
+            "y": 124
           },
           "id": 608,
           "options": {
@@ -15016,7 +15045,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 76
+            "y": 124
           },
           "id": 609,
           "options": {
@@ -15112,7 +15141,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 84
+            "y": 132
           },
           "id": 610,
           "options": {
@@ -15222,7 +15251,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 84
+            "y": 132
           },
           "id": 611,
           "options": {
@@ -15284,7 +15313,7 @@
             "h": 9,
             "w": 6,
             "x": 0,
-            "y": 92
+            "y": 140
           },
           "id": 588,
           "options": {
@@ -15354,7 +15383,7 @@
             "h": 9,
             "w": 6,
             "x": 6,
-            "y": 92
+            "y": 140
           },
           "id": 591,
           "options": {
@@ -15425,7 +15454,7 @@
             "h": 9,
             "w": 5,
             "x": 12,
-            "y": 92
+            "y": 140
           },
           "id": 592,
           "options": {
@@ -15502,7 +15531,7 @@
             "h": 9,
             "w": 7,
             "x": 17,
-            "y": 92
+            "y": 140
           },
           "id": 613,
           "options": {
@@ -15549,7 +15578,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 14
       },
       "id": 140,
       "panels": [
@@ -15619,7 +15648,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 48
+            "y": 96
           },
           "id": 154,
           "options": {
@@ -15716,7 +15745,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 48
+            "y": 96
           },
           "id": 144,
           "options": {
@@ -15812,7 +15841,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 54
+            "y": 102
           },
           "id": 142,
           "options": {
@@ -15909,7 +15938,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 60
+            "y": 108
           },
           "id": 151,
           "options": {
@@ -16006,7 +16035,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 60
+            "y": 108
           },
           "id": 152,
           "options": {
@@ -16103,7 +16132,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 66
+            "y": 114
           },
           "id": 150,
           "options": {
@@ -16200,7 +16229,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 72
+            "y": 120
           },
           "id": 147,
           "options": {
@@ -16297,7 +16326,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 72
+            "y": 120
           },
           "id": 149,
           "options": {
@@ -16393,7 +16422,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 79
+            "y": 127
           },
           "id": 148,
           "options": {
@@ -16489,7 +16518,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 85
+            "y": 133
           },
           "id": 155,
           "options": {
@@ -16585,7 +16614,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 85
+            "y": 133
           },
           "id": 156,
           "options": {
@@ -16679,7 +16708,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 93
+            "y": 141
           },
           "id": 158,
           "options": {
@@ -16776,7 +16805,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 93
+            "y": 141
           },
           "id": 157,
           "options": {
@@ -16872,7 +16901,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 93
+            "y": 141
           },
           "id": 146,
           "options": {
@@ -16968,7 +16997,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 99
+            "y": 147
           },
           "id": 159,
           "options": {
@@ -17064,7 +17093,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 99
+            "y": 147
           },
           "id": 160,
           "options": {
@@ -17161,7 +17190,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 99
+            "y": 147
           },
           "id": 153,
           "options": {
@@ -17260,7 +17289,7 @@
             "h": 11,
             "w": 24,
             "x": 0,
-            "y": 106
+            "y": 154
           },
           "id": 603,
           "options": {
@@ -17306,1040 +17335,1131 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 15
       },
       "id": 671,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 4,
-            "x": 0,
-            "y": 16
-          },
-          "id": 675,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "sizing": "auto"
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "sum(zeebe_batchoperations_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"COMPLETED\"})",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Total Completed",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                }
-              },
-              "mappings": []
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 4,
-            "y": 16
-          },
-          "id": 676,
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true,
-              "values": [
-                "value",
-                "percent"
-              ]
-            },
-            "pieType": "pie",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "sum by(type) (zeebe_batchoperations_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"COMPLETED\"})",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Total completed by Type",
-          "type": "piechart"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                }
-              },
-              "mappings": []
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 14,
-            "y": 16
-          },
-          "id": 677,
-          "options": {
-            "legend": {
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": true,
-              "values": [
-                "value",
-                "percent"
-              ]
-            },
-            "pieType": "pie",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "sum by(type) (zeebe_batchoperations_items_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Total Items by Type",
-          "type": "piechart"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 24
-          },
-          "id": 669,
-          "maxDataPoints": 494,
-          "options": {
-            "calculate": false,
-            "cellGap": 2,
-            "cellValues": {
-              "unit": ""
-            },
-            "color": {
-              "exponent": 0.5,
-              "fill": "dark-orange",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": false
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "tooltip": {
-              "mode": "single",
-              "showColorScale": false,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "dtdurations"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "sum by(le) (increase(zeebe_batchoperations_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
-              "format": "heatmap",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "interval": "",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Total Duration",
-          "type": "heatmap"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "bars",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "always",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "dtdurations"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 24
-          },
-          "id": 674,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "code",
-              "expr": "sum by(type) (increase(zeebe_batchoperations_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
-              "format": "time_series",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Total Duration per Type",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Time needed for execution all items",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 32
-          },
-          "id": 673,
-          "options": {
-            "calculate": false,
-            "cellGap": 1,
-            "color": {
-              "exponent": 0.5,
-              "fill": "dark-orange",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": true
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "tooltip": {
-              "mode": "single",
-              "showColorScale": false,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "dtdurations"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(zeebe_batchoperations_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", batchOperationLatency=\"TOTAL_EXECUTION_LATENCY\"}[$__rate_interval])) by (le)",
-              "format": "heatmap",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Total Execution Latency",
-          "type": "heatmap"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 32
-          },
-          "id": 668,
-          "options": {
-            "calculate": false,
-            "cellGap": 1,
-            "color": {
-              "exponent": 0.5,
-              "fill": "dark-orange",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Oranges",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": false
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "tooltip": {
-              "mode": "single",
-              "showColorScale": false,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "exemplar": false,
-              "expr": "sum by(le) (increase(zeebe_batchoperations_items_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
-              "format": "heatmap",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "instant": false,
-              "interval": "",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Items",
-          "type": "heatmap"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 40
-          },
-          "id": 670,
-          "options": {
-            "calculate": false,
-            "cellGap": 2,
-            "color": {
-              "exponent": 0.5,
-              "fill": "dark-orange",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": true
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "tooltip": {
-              "mode": "single",
-              "showColorScale": false,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "dtdurations"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "code",
-              "expr": "sum(increase(zeebe_batchoperations_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", batchOperationLatency=\"TOTAL_QUERY_LATENCY\"}[$__rate_interval])) by (le)",
-              "format": "heatmap",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Total Query Latency",
-          "type": "heatmap"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Number of executed queries to the secondary database for batch operation.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 40
-          },
-          "id": 667,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "sum by(partition, pod) (rate(zeebe_batchoperations_queries_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]))",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "{{pod}} Partition {{partition}}",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Executed Queries against 2nd Database",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "The Latency when creating the first execute command until it gets executed",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 48
-          },
-          "id": 671,
-          "options": {
-            "calculate": false,
-            "cellGap": 2,
-            "color": {
-              "exponent": 0.5,
-              "fill": "dark-orange",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": true
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "tooltip": {
-              "mode": "single",
-              "showColorScale": false,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "dtdurations"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "code",
-              "expr": "sum(increase(zeebe_batchoperations_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", batchOperationLatency=\"START_EXECUTE_LATENCY\"}[$__rate_interval])) by (le)",
-              "format": "heatmap",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Start - Execute Latency",
-          "type": "heatmap"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "Total number of executed batch operation lifecycle events (created, started, executed, completed, failed, cancelled, suspended, resumed) per partition and batch operation type",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 48
-          },
-          "id": 665,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "sum by(action) (rate(zeebe_batchoperations_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]))",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Batch Operation Lifecycle Events",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "scaleDistribution": {
-                  "type": "linear"
-                }
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 56
-          },
-          "id": 672,
-          "options": {
-            "calculate": false,
-            "cellGap": 2,
-            "color": {
-              "exponent": 0.5,
-              "fill": "dark-orange",
-              "mode": "scheme",
-              "reverse": false,
-              "scale": "exponential",
-              "scheme": "Spectral",
-              "steps": 128
-            },
-            "exemplars": {
-              "color": "rgba(255,0,255,0.7)"
-            },
-            "filterValues": {
-              "le": 1e-9
-            },
-            "legend": {
-              "show": true
-            },
-            "rowsFrame": {
-              "layout": "auto"
-            },
-            "tooltip": {
-              "mode": "single",
-              "showColorScale": false,
-              "yHistogram": false
-            },
-            "yAxis": {
-              "axisPlacement": "left",
-              "reverse": false,
-              "unit": "dtdurations"
-            }
-          },
-          "pluginVersion": "12.0.2",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(zeebe_batchoperations_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", batchOperationLatency=\"EXECUTE_CYCLE_LATENCY\"}[$__rate_interval])) by (le)",
-              "format": "heatmap",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Execution Cycle Latency",
-          "type": "heatmap"
-        }
-      ],
+      "panels": [],
       "title": "Batch Operations",
       "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 0,
+        "y": 16
+      },
+      "id": 675,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum(zeebe_batchoperations_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"COMPLETED\"})",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Total Completed",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 4,
+        "y": 16
+      },
+      "id": 676,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum by(type) (zeebe_batchoperations_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", action=\"COMPLETED\"})",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Total completed by Type",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 10,
+        "x": 14,
+        "y": 16
+      },
+      "id": 677,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value",
+            "percent"
+          ]
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum by(type) (zeebe_batchoperations_items_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"})",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Total Items by Type",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Number of executed queries to the secondary database for batch operation.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "id": 667,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum by(partition, pod) (increase(zeebe_batchoperations_queries_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]))",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "{{pod}} Partition {{partition}}",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Executed Queries against 2nd Database",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "continuous-GrYlRd"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "pointSize": 10,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "id": 683,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "right",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum by(partition, pod) (increase(zeebe_batchoperations_queries_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\", queryStatus=\"failed\"}[$__rate_interval]))",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Total Failed Queries",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "id": 670,
+      "options": {
+        "calculate": false,
+        "cellGap": 2,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Spectral",
+          "steps": 128
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": true
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "dtdurations"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum(increase(zeebe_batchoperations_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", batchOperationLatency=\"TOTAL_QUERY_LATENCY\"}[$__rate_interval])) by (le)",
+          "format": "heatmap",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Total Query Latency",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Time needed for execution all items",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "id": 673,
+      "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Spectral",
+          "steps": 128
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": true
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "dtdurations"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum(increase(zeebe_batchoperations_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", batchOperationLatency=\"TOTAL_EXECUTION_LATENCY\"}[$__rate_interval])) by (le)",
+          "format": "heatmap",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Total Execution Latency",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "id": 669,
+      "maxDataPoints": 494,
+      "options": {
+        "calculate": false,
+        "cellGap": 2,
+        "cellValues": {
+          "unit": ""
+        },
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Spectral",
+          "steps": 128
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": false
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "dtdurations"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "expr": "sum by(le) (increase(zeebe_batchoperations_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
+          "format": "heatmap",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "interval": "",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Total Duration",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "id": 674,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "right",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum by(type) (increase(zeebe_batchoperations_duration_seconds_sum{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
+          "format": "time_series",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Total Duration per Type",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "The Latency when creating the first execute command until it gets executed",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "id": 678,
+      "options": {
+        "calculate": false,
+        "cellGap": 2,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Spectral",
+          "steps": 128
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": true
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "dtdurations"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum(increase(zeebe_batchoperations_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", batchOperationLatency=\"START_EXECUTE_LATENCY\"}[$__rate_interval])) by (le)",
+          "format": "heatmap",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Start - Execute Latency",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "id": 668,
+      "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Oranges",
+          "steps": 128
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": false
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "builder",
+          "exemplar": false,
+          "expr": "sum by(le) (increase(zeebe_batchoperations_items_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval]))",
+          "format": "heatmap",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Items",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "id": 672,
+      "options": {
+        "calculate": false,
+        "cellGap": 2,
+        "color": {
+          "exponent": 0.5,
+          "fill": "dark-orange",
+          "mode": "scheme",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "Spectral",
+          "steps": 128
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": true
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "dtdurations"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum(increase(zeebe_batchoperations_execution_latency_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", batchOperationLatency=\"EXECUTE_CYCLE_LATENCY\"}[$__rate_interval])) by (le)",
+          "format": "heatmap",
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Execution Cycle Latency",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "Total number of executed batch operation lifecycle events (created, started, executed, completed, failed, cancelled, suspended, resumed) per partition and batch operation type",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "barWidthFactor": 0.6,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "id": 665,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "12.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "disableTextWrap": false,
+          "editorMode": "code",
+          "expr": "sum by(action) (increase(zeebe_batchoperations_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"}[$__rate_interval]))",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "A",
+          "useBackend": false
+        }
+      ],
+      "title": "Batch Operation Lifecycle Events",
+      "type": "timeseries"
     },
     {
       "collapsed": true,
@@ -18347,7 +18467,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 64
       },
       "id": 50,
       "panels": [
@@ -18375,7 +18495,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 227
+            "y": 275
           },
           "id": 20,
           "options": {
@@ -18498,7 +18618,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 227
+            "y": 275
           },
           "id": 255,
           "options": {
@@ -18553,7 +18673,7 @@
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 237
+            "y": 285
           },
           "id": 21,
           "options": {
@@ -18675,7 +18795,7 @@
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 237
+            "y": 285
           },
           "id": 185,
           "options": {
@@ -18776,7 +18896,7 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 247
+            "y": 295
           },
           "id": 52,
           "options": {
@@ -18822,7 +18942,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 65
       },
       "id": 615,
       "panels": [
@@ -19103,7 +19223,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 26
+            "y": 74
           },
           "id": 618,
           "options": {
@@ -19226,7 +19346,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 79
           },
           "id": 628,
           "options": {
@@ -19338,7 +19458,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 31
+            "y": 79
           },
           "id": 623,
           "options": {
@@ -19396,7 +19516,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 38
+            "y": 86
           },
           "id": 626,
           "options": {
@@ -19538,7 +19658,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 38
+            "y": 86
           },
           "id": 627,
           "options": {
@@ -19649,7 +19769,7 @@
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 44
+            "y": 92
           },
           "id": 643,
           "options": {
@@ -19723,7 +19843,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 53
+            "y": 101
           },
           "id": 647,
           "options": {
@@ -19808,7 +19928,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 61
+            "y": 109
           },
           "id": 646,
           "options": {
@@ -19907,7 +20027,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 61
+            "y": 109
           },
           "id": 645,
           "options": {
@@ -19990,7 +20110,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 61
+            "y": 109
           },
           "id": 658,
           "options": {
@@ -20058,7 +20178,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 66
       },
       "id": 629,
       "panels": [
@@ -20086,7 +20206,7 @@
             "h": 9,
             "w": 10,
             "x": 0,
-            "y": 79
+            "y": 127
           },
           "id": 630,
           "options": {
@@ -20172,7 +20292,7 @@
             "h": 9,
             "w": 11,
             "x": 10,
-            "y": 79
+            "y": 127
           },
           "id": 636,
           "options": {
@@ -20273,7 +20393,7 @@
             "h": 9,
             "w": 3,
             "x": 21,
-            "y": 79
+            "y": 127
           },
           "id": 631,
           "options": {
@@ -20333,7 +20453,7 @@
             "h": 10,
             "w": 10,
             "x": 0,
-            "y": 88
+            "y": 136
           },
           "id": 633,
           "options": {
@@ -20459,7 +20579,7 @@
             "h": 10,
             "w": 9,
             "x": 10,
-            "y": 88
+            "y": 136
           },
           "id": 634,
           "options": {
@@ -20535,7 +20655,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 88
+            "y": 136
           },
           "id": 635,
           "options": {
@@ -20587,7 +20707,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 67
       },
       "id": 176,
       "panels": [
@@ -20625,7 +20745,7 @@
             "h": 6,
             "w": 24,
             "x": 0,
-            "y": 670
+            "y": 718
           },
           "id": 170,
           "maxPerRow": 6,
@@ -20709,7 +20829,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 682
+            "y": 730
           },
           "id": 174,
           "options": {
@@ -20785,7 +20905,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 682
+            "y": 730
           },
           "id": 265,
           "options": {
@@ -20839,7 +20959,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 68
       },
       "id": 315,
       "panels": [
@@ -20865,7 +20985,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1279
+            "y": 1327
           },
           "id": 329,
           "options": {
@@ -20931,7 +21051,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1279
+            "y": 1327
           },
           "id": 319,
           "options": {
@@ -20991,7 +21111,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1287
+            "y": 1335
           },
           "id": 323,
           "maxDataPoints": 25,
@@ -21082,7 +21202,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1287
+            "y": 1335
           },
           "id": 325,
           "options": {
@@ -21180,7 +21300,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1295
+            "y": 1343
           },
           "id": 313,
           "options": {
@@ -21239,7 +21359,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1295
+            "y": 1343
           },
           "id": 321,
           "options": {
@@ -21335,7 +21455,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1303
+            "y": 1351
           },
           "id": 335,
           "options": {
@@ -21393,7 +21513,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1303
+            "y": 1351
           },
           "id": 317,
           "options": {
@@ -21455,7 +21575,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1311
+            "y": 1359
           },
           "id": 327,
           "options": {
@@ -21501,7 +21621,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 69
       },
       "id": 434,
       "panels": [
@@ -21530,7 +21650,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 232
+            "y": 280
           },
           "id": 538,
           "options": {
@@ -21615,7 +21735,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 232
+            "y": 280
           },
           "id": 540,
           "options": {
@@ -21740,7 +21860,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 240
+            "y": 288
           },
           "id": 444,
           "options": {
@@ -21850,7 +21970,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 240
+            "y": 288
           },
           "id": 446,
           "options": {
@@ -21959,7 +22079,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 248
+            "y": 296
           },
           "id": 440,
           "options": {
@@ -22054,7 +22174,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 248
+            "y": 296
           },
           "id": 442,
           "options": {
@@ -22096,7 +22216,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 70
       },
       "id": 545,
       "panels": [
@@ -22125,7 +22245,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 233
+            "y": 281
           },
           "id": 547,
           "options": {
@@ -22248,7 +22368,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 233
+            "y": 281
           },
           "id": 549,
           "options": {
@@ -22291,7 +22411,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 71
       },
       "id": 565,
       "panels": [
@@ -22360,7 +22480,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 234
+            "y": 282
           },
           "id": 562,
           "options": {
@@ -22459,7 +22579,7 @@
             "h": 6,
             "w": 9,
             "x": 8,
-            "y": 234
+            "y": 282
           },
           "id": 563,
           "options": {
@@ -22558,7 +22678,7 @@
             "h": 6,
             "w": 7,
             "x": 17,
-            "y": 234
+            "y": 282
           },
           "id": 564,
           "options": {
@@ -22610,7 +22730,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 72
       },
       "id": 569,
       "panels": [
@@ -22679,7 +22799,7 @@
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 235
+            "y": 283
           },
           "id": 566,
           "options": {
@@ -22777,7 +22897,7 @@
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 235
+            "y": 283
           },
           "id": 567,
           "options": {
@@ -22875,7 +22995,7 @@
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 235
+            "y": 283
           },
           "id": 568,
           "options": {
@@ -22918,7 +23038,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 73
       },
       "id": 572,
       "panels": [
@@ -23005,7 +23125,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 236
+            "y": 284
           },
           "id": 573,
           "options": {
@@ -23131,7 +23251,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 236
+            "y": 284
           },
           "id": 574,
           "options": {
@@ -23245,7 +23365,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 244
+            "y": 292
           },
           "id": 600,
           "options": {
@@ -23348,7 +23468,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 244
+            "y": 292
           },
           "id": 601,
           "options": {
@@ -23444,7 +23564,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 252
+            "y": 300
           },
           "id": 575,
           "options": {
@@ -23485,7 +23605,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 74
       },
       "id": 576,
       "panels": [
@@ -23553,7 +23673,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 695
+            "y": 743
           },
           "id": 570,
           "options": {
@@ -23659,7 +23779,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 695
+            "y": 743
           },
           "id": 577,
           "options": {
@@ -23764,7 +23884,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 703
+            "y": 751
           },
           "id": 578,
           "options": {
@@ -23860,7 +23980,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 703
+            "y": 751
           },
           "id": 571,
           "options": {
@@ -23902,7 +24022,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 75
       },
       "id": 581,
       "panels": [
@@ -23966,7 +24086,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 1302
+            "y": 1350
           },
           "id": 582,
           "options": {
@@ -24057,7 +24177,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 1302
+            "y": 1350
           },
           "id": 583,
           "options": {
@@ -24149,7 +24269,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 1302
+            "y": 1350
           },
           "id": 584,
           "options": {
@@ -24191,7 +24311,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 76
       },
       "id": 595,
       "panels": [
@@ -24254,7 +24374,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 239
+            "y": 287
           },
           "id": 596,
           "options": {
@@ -24351,7 +24471,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 239
+            "y": 287
           },
           "id": 597,
           "options": {
@@ -24413,7 +24533,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 247
+            "y": 295
           },
           "id": 598,
           "options": {
@@ -24538,7 +24658,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 247
+            "y": 295
           },
           "id": 599,
           "options": {
@@ -24591,9 +24711,9 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 77
       },
-      "id": 665,
+      "id": 679,
       "panels": [
         {
           "datasource": {
@@ -24660,9 +24780,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 29
+            "y": 77
           },
-          "id": 669,
+          "id": 680,
           "options": {
             "legend": {
               "calcs": [],
@@ -24758,7 +24878,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 29
+            "y": 77
           },
           "id": 666,
           "options": {
@@ -24815,9 +24935,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 85
           },
-          "id": 668,
+          "id": 681,
           "options": {
             "calculate": false,
             "calculation": {},
@@ -24913,9 +25033,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 85
           },
-          "id": 670,
+          "id": 682,
           "options": {
             "calculate": false,
             "calculation": {},
@@ -24995,7 +25115,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 78
       },
       "id": 662,
       "panels": [
@@ -25067,7 +25187,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 240
+            "y": 288
           },
           "id": 664,
           "maxPerRow": 6,
@@ -25239,49 +25359,81 @@
         "hide": 2,
         "label": "container",
         "name": "container",
-        "query": ".*",
+        "query": "${VAR_CONTAINER}",
         "skipUrlSync": true,
         "type": "constant",
         "current": {
-          "value": ".*",
-          "text": ".*"
-        }
+          "value": "${VAR_CONTAINER}",
+          "text": "${VAR_CONTAINER}",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "${VAR_CONTAINER}",
+            "text": "${VAR_CONTAINER}",
+            "selected": false
+          }
+        ]
       },
       {
         "hide": 2,
         "label": "region",
         "name": "region",
-        "query": ".*",
+        "query": "${VAR_REGION}",
         "skipUrlSync": true,
         "type": "constant",
         "current": {
-          "value": ".*",
-          "text": ".*"
-        }
+          "value": "${VAR_REGION}",
+          "text": "${VAR_REGION}",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "${VAR_REGION}",
+            "text": "${VAR_REGION}",
+            "selected": false
+          }
+        ]
       },
       {
         "hide": 2,
         "label": "uri",
         "name": "uri",
-        "query": ".*",
+        "query": "${VAR_URI}",
         "skipUrlSync": true,
         "type": "constant",
         "current": {
-          "value": ".*",
-          "text": ".*"
-        }
+          "value": "${VAR_URI}",
+          "text": "${VAR_URI}",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "${VAR_URI}",
+            "text": "${VAR_URI}",
+            "selected": false
+          }
+        ]
       },
       {
         "hide": 2,
         "label": "grpc_method",
         "name": "grpc_method",
-        "query": ".*",
+        "query": "${VAR_GRPC_METHOD}",
         "skipUrlSync": true,
         "type": "constant",
         "current": {
-          "value": ".*",
-          "text": ".*"
-        }
+          "value": "${VAR_GRPC_METHOD}",
+          "text": "${VAR_GRPC_METHOD}",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "${VAR_GRPC_METHOD}",
+            "text": "${VAR_GRPC_METHOD}",
+            "selected": false
+          }
+        ]
       }
     ]
   },
@@ -25303,6 +25455,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 37,
+  "version": 38,
   "weekStart": ""
 }
