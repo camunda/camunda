@@ -7,6 +7,9 @@
  */
 package io.camunda.authentication;
 
+import static io.camunda.authentication.ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.authentication.ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.PROPERTY_CAMUNDA_DATABASE_TYPE;
+
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -29,12 +32,10 @@ public @interface ConditionalOnNoSecondaryStorage {
 
   class NoSecondaryStorageCondition implements Condition {
 
-    public static final String PROPERTY_CAMUNDA_DATABASE_TYPE = "camunda.database.type";
-
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final String dbType = context.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
-      return "none".equalsIgnoreCase(dbType);
+      return CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
     }
   }
 }

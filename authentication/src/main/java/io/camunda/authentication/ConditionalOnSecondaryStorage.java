@@ -30,11 +30,12 @@ public @interface ConditionalOnSecondaryStorage {
   class NoSecondaryStorageCondition implements Condition {
 
     public static final String PROPERTY_CAMUNDA_DATABASE_TYPE = "camunda.database.type";
+    public static final String CAMUNDA_DATABASE_TYPE_NONE = "none";
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final String dbType = context.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
-      return !"none".equalsIgnoreCase(dbType);
+      return !CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
     }
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.it.nodb;
 
 import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.authentication.ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -37,7 +38,10 @@ public class NoSecondaryStorageAuthenticationIT {
   void shouldFailFastWhenBasicAuthenticationConfiguredInNoDbMode() {
     // given - application context with no secondary storage and basic auth
     final var context = new AnnotationConfigApplicationContext();
-    context.getEnvironment().getSystemProperties().put(PROPERTY_CAMUNDA_DATABASE_TYPE, "none");
+    context
+        .getEnvironment()
+        .getSystemProperties()
+        .put(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
     context
         .getEnvironment()
         .getSystemProperties()
@@ -53,7 +57,7 @@ public class NoSecondaryStorageAuthenticationIT {
     assertThat(rootCause.getMessage())
         .contains("Basic Authentication is not supported")
         .contains("secondary storage is disabled")
-        .contains("camunda.database.type=none")
+        .contains(PROPERTY_CAMUNDA_DATABASE_TYPE + "=" + CAMUNDA_DATABASE_TYPE_NONE)
         .contains("enable secondary storage")
         .contains("disable authentication");
   }
@@ -72,12 +76,7 @@ public class NoSecondaryStorageAuthenticationIT {
     context.register(TestOidcAuthConfiguration.class);
     context.refresh();
 
-    // then - should start successfully with warning bean
-    final var warningBean =
-        context.getBean(WebSecurityConfig.OidcAuthenticationNoDbWarningBean.class);
-    assertThat(warningBean).isNotNull();
-
-    // and - should have the no-db OIDC service implementation
+    // then - should have the no-db OIDC service implementation
     final var oidcService = context.getBean(CamundaOAuthPrincipalServiceNoDbImpl.class);
     assertThat(oidcService).isNotNull();
 
@@ -103,21 +102,20 @@ public class NoSecondaryStorageAuthenticationIT {
     @Bean
     public WebSecurityConfig.BasicAuthenticationNoDbFailFastBean basicAuthFailFast() {
       throw new IllegalStateException(
-          "Basic Authentication is not supported when secondary storage is disabled "
-              + "(camunda.database.type=none). Basic Authentication requires access to user data "
+          "Basic Authentication is not supported when secondary storage is disabled ("
+              + PROPERTY_CAMUNDA_DATABASE_TYPE
+              + "="
+              + CAMUNDA_DATABASE_TYPE_NONE
+              + "). Basic Authentication requires access to user data "
               + "stored in secondary storage. Please either enable secondary storage by configuring "
-              + "camunda.database.type to a supported database type, or disable authentication by "
+              + PROPERTY_CAMUNDA_DATABASE_TYPE
+              + "to a supported database type, or disable authentication by "
               + "removing camunda.security.authentication.method configuration.");
     }
   }
 
   @Configuration
   static class TestOidcAuthConfiguration {
-    @Bean
-    public WebSecurityConfig.OidcAuthenticationNoDbWarningBean oidcAuthWarning() {
-      return new WebSecurityConfig.OidcAuthenticationNoDbWarningBean();
-    }
-
     @Bean
     public SecurityConfiguration securityConfiguration() {
       final var config = new SecurityConfiguration();
