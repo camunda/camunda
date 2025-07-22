@@ -20,7 +20,7 @@ import io.camunda.client.api.response.CreateMappingRuleResponse;
 public interface CreateMappingRuleCommandStep1 extends FinalCommandStep<CreateMappingRuleResponse> {
 
   /**
-   * Set the claim name to create mapping with.
+   * Set the claim name to create a mapping rule with.
    *
    * @param claimName the claimName value
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -29,7 +29,7 @@ public interface CreateMappingRuleCommandStep1 extends FinalCommandStep<CreateMa
   CreateMappingRuleCommandStep1 claimName(final String claimName);
 
   /**
-   * Set the claim value to create mapping with.
+   * Set the claim value to create a mapping rule with.
    *
    * @param claimValue the claimValue value
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -38,7 +38,7 @@ public interface CreateMappingRuleCommandStep1 extends FinalCommandStep<CreateMa
   CreateMappingRuleCommandStep1 claimValue(final String claimValue);
 
   /**
-   * Set the name to create mapping with.
+   * Set the name to create a mapping rule with.
    *
    * @param name the name value
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
@@ -47,7 +47,7 @@ public interface CreateMappingRuleCommandStep1 extends FinalCommandStep<CreateMa
   CreateMappingRuleCommandStep1 name(final String name);
 
   /**
-   * Set the id to create mapping with.
+   * Set the id to create a mapping rule with.
    *
    * @param mappingRuleId the mapping rule id value
    * @return the builder for this command. Call {@link #send()} to complete the command and send it

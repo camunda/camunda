@@ -20,15 +20,15 @@ import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequest
 public interface MappingRuleFilter extends SearchRequestFilter {
 
   /**
-   * Filter mappings by the specified mapping id.
+   * Filter mapping rules by the specified mapping rule id.
    *
-   * @param mappingRuleId the id of the mapping
+   * @param mappingRuleId the id of the mapping rule
    * @return the updated filter
    */
   MappingRuleFilter mappingRuleId(final String mappingRuleId);
 
   /**
-   * Filter mappings by the specified claim name.
+   * Filter mapping rules by the specified claim name.
    *
    * @param claimName the name of the claim
    * @return the updated filter
@@ -36,7 +36,7 @@ public interface MappingRuleFilter extends SearchRequestFilter {
   MappingRuleFilter claimName(final String claimName);
 
   /**
-   * Filter mappings by the specified claim value.
+   * Filter mapping rules by the specified claim value.
    *
    * @param claimValue the value of the claim
    * @return the updated filter
@@ -44,9 +44,9 @@ public interface MappingRuleFilter extends SearchRequestFilter {
   MappingRuleFilter claimValue(final String claimValue);
 
   /**
-   * Filter mappings by the specified name.
+   * Filter mapping rules by the specified name.
    *
-   * @param name the name of the mapping
+   * @param name the name of the mapping rule
    * @return the updated filter
    */
   MappingRuleFilter name(final String name);

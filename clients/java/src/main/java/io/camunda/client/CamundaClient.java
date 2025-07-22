@@ -1192,7 +1192,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UpdateRoleCommandStep1 newUpdateRoleCommand(String roleId);
 
   /**
-   * Command to assign a mapping role to a role.
+   * Command to assign a role to a mapping rule.
    *
    * <pre>
    *
@@ -1205,7 +1205,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    *
-   * @return a builder to configure and send the assign mapping rule to role command
+   * @return a builder to configure and send the assign role to mapping rule command
    */
   AssignRoleToMappingRuleCommandStep1 newAssignRoleToMappingRuleCommand();
 
@@ -1364,7 +1364,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UnassignRoleFromGroupCommandStep1 newUnassignRoleFromGroupCommand();
 
   /**
-   * Command to unassign a role from a mapping.
+   * Command to unassign a role from a mapping rule.
    *
    * <p>Example usage:
    *
@@ -1378,7 +1378,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <p>This command is only sent via REST over HTTP, not via gRPC <br>
    *
-   * @return a builder for the unassign mapping rule from role command
+   * @return a builder for the unassign role from mapping rule command
    */
   UnassignRoleFromMappingRuleCommandStep1 newUnassignRoleFromMappingRuleCommand();
 
@@ -2487,7 +2487,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       Long processInstanceKey);
 
   /**
-   * Executes a search request to query mappings by group.
+   * Executes a search request to query mapping rules by group.
    *
    * <pre>
    *   camundaClient
@@ -2499,12 +2499,12 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * </pre>
    *
    * @param groupId the ID of the group
-   * @return a builder for the mappings by group search request
+   * @return a builder for the mapping rules by group search request
    */
   MappingRulesByGroupSearchRequest newMappingRulesByGroupSearchRequest(String groupId);
 
   /**
-   * Executes a search request to query mappings by role.
+   * Executes a search request to query mapping rules by role.
    *
    * <pre>
    * camundaClient
@@ -2516,7 +2516,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * </pre>
    *
    * @param roleId the ID of the role
-   * @return a builder for the mappings by role search request
+   * @return a builder for the mapping rules by role search request
    */
   MappingRulesByRoleSearchRequest newMappingRulesByRoleSearchRequest(String roleId);
 
