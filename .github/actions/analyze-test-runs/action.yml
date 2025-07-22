@@ -74,247 +74,290 @@ runs:
         const owner = context.repo.owner;
         const repo = context.repo.repo;
 
-        // New functionality: Map flaky tests to files and check for recent commits
-        let touchedFilesInfo = '';
-        let mentionedAuthors = new Set();
+        console.log('🚀 Starting flaky test analysis...');
+        console.log(`📋 PR Number: ${prNumber}`);
+        console.log(`📦 Repository: ${owner}/${repo}`);
+        console.log(`🧪 Flaky tests found:\n${flakyTests}`);
 
-        try {
-          // Get files changed in this PR
-          const { data: prFiles } = await github.rest.pulls.listFiles({
-            owner,
-            repo,
-            pull_number: prNumber,
-          });
+        // Helper functions for better code organization and reusability
+        const helpers = {
+          extractTestClass(testLine) {
+            const match = testLine.match(/([a-zA-Z][a-zA-Z0-9]*\.)+[a-zA-Z][a-zA-Z0-9]*\.[A-Z][a-zA-Z0-9]*(?:Test|IT)/);
+            const result = match ? match[0] : null;
+            console.log(`🔍 Extracting test class from: "${testLine}" → ${result || 'NO MATCH'}`);
+            return result;
+          },
 
-          const changedFiles = prFiles.map(file => file.filename);
+          generatePossiblePaths(testClass) {
+            const classPath = testClass.replace(/\./g, '/');
+            const paths = [
+              `${classPath}.java`,
+              `src/test/java/${classPath}.java`,
+              `src/main/java/${classPath}.java`
+            ];
+            console.log(`📁 Generated possible paths for ${testClass}:`, paths);
+            return paths;
+          },
 
-          // Process each flaky test to find corresponding files
-          const flakyTestLines = flakyTests.trim().split('\n').filter(line => line.trim());
+          findMatchingFile(testClass, changedFiles) {
+          const possiblePaths = this.generatePossiblePaths(testClass);
+          const className = testClass.split('.').pop();
 
-          for (const testLine of flakyTestLines) {
-            // Extract test class name (e.g., "io.camunda.search.SomeTest" from the flaky test output)
-            const testClassMatch = testLine.match(/([a-zA-Z][a-zA-Z0-9]*\.)+[a-zA-Z][a-zA-Z0-9]*\.[A-Z][a-zA-Z0-9]*Test/);
-
-            if (testClassMatch) {
-              const testClass = testClassMatch[0];
-
-              // Convert class name to potential file paths
-              const classPath = testClass.replace(/\./g, '/');
-              const possiblePaths = [
-                `${classPath}.java`,
-                `src/test/java/${classPath}.java`,
-                `src/main/java/${classPath}.java`
-              ];
-
-              // Check if any of these paths match changed files
-              for (const possiblePath of possiblePaths) {
-                const matchingFile = changedFiles.find(file =>
-                  file.endsWith(possiblePath) || file.includes(testClass.split('.').pop())
-                );
-
-                if (matchingFile) {
-                  // Get commit info for this file
-                  const { data: commits } = await github.rest.pulls.listCommits({
-                    owner,
-                    repo,
-                    pull_number: prNumber,
-                  });
-
-                  // Find the most recent commit that modified this file
-                  for (const commit of commits.reverse()) {
-                    const { data: commitFiles } = await github.rest.repos.getCommit({
-                      owner,
-                      repo,
-                      ref: commit.sha,
-                    });
-
-                    const modifiedThisFile = commitFiles.files?.some(file => file.filename === matchingFile);
-
-                    if (modifiedThisFile && commit.author?.login) {
-                      touchedFilesInfo += `\n- 📁 \`${matchingFile}\` (Test: \`${testClass}\`) - Last modified by @${commit.author.login} in [${commit.sha.substring(0, 7)}](${commit.html_url})`;
-                      mentionedAuthors.add(commit.author.login);
-                      break; // Found the most recent commit for this file
-                    }
-                  }
-                  break; // Found matching file, no need to check other paths
-                }
-              }
+          for (const possiblePath of possiblePaths) {
+            const matchingFile = changedFiles.find(file =>
+            file.endsWith(possiblePath) || file.includes(className)
+            );
+            if (matchingFile) {
+              console.log(`✅ Found matching file: ${matchingFile} for test class ${testClass}`);
+              return matchingFile;
             }
           }
-        } catch (error) {
-          console.log(`Could not analyze file changes: ${error.message}`);
-        }
+            console.log(`❌ No matching file found for test class ${testClass}`);
+            return null;
+          },
 
-        // NEW: Create inline comments for files with flaky tests that were modified
-        if (touchedFilesInfo) {
-          try {
-            // Get PR details to get the commit SHA
-            const { data: pullRequest } = await github.rest.pulls.get({
-              owner,
-              repo,
-              pull_number: prNumber,
-            });
+          async findLastAuthor(commits, filename) {
+            console.log(`🔎 Finding last author for file: ${filename}`);
 
-            // Process each flaky test again to create inline comments
-            const flakyTestLines = flakyTests.trim().split('\n').filter(line => line.trim());
-            const processedFiles = new Set(); // Avoid duplicate comments on same file
+            for (const commit of [...commits].reverse()) {
+              try {
+                console.log(`📝 Checking commit ${commit.sha.substring(0, 7)} by ${commit.author?.login || 'unknown'}`);
 
-            for (const testLine of flakyTestLines) {
-              const testClassMatch = testLine.match(/([a-zA-Z][a-zA-Z0-9]*\.)+[a-zA-Z][a-zA-Z0-9]*\.[A-Z][a-zA-Z0-9]*Test/);
-
-              if (testClassMatch) {
-                const testClass = testClassMatch[0];
-                const classPath = testClass.replace(/\./g, '/');
-                const possiblePaths = [
-                  `${classPath}.java`,
-                  `src/test/java/${classPath}.java`,
-                  `src/main/java/${classPath}.java`
-                ];
-
-                // Get files changed in this PR
-                const { data: prFiles } = await github.rest.pulls.listFiles({
+                const { data: commitFiles } = await github.rest.repos.getCommit({
                   owner,
                   repo,
-                  pull_number: prNumber,
+                  ref: commit.sha,
                 });
 
-                for (const possiblePath of possiblePaths) {
-                  const matchingFile = prFiles.find(file =>
-                    file.endsWith(possiblePath) || file.includes(testClass.split('.').pop())
-                  );
+                const modifiedFile = commitFiles.files?.find(file => file.filename === filename);
+                if (modifiedFile) {
+                  const author = commit.author?.login;
+                  console.log(`✅ Found last author for ${filename}: @${author} in commit ${commit.sha.substring(0, 7)}`);
+                  return { author, commit };
+                }
+              } catch (error) {
+                console.log(`⚠️ Could not fetch commit ${commit.sha.substring(0, 7)}: ${error.message}`);
+                continue;
+              }
+            }
 
-                  if (matchingFile && !processedFiles.has(matchingFile.filename)) {
-                    processedFiles.add(matchingFile.filename);
+            console.log(`❌ No author found for file: ${filename}`);
+            return { author: null, commit: null };
+          }
+        };
 
-                    // Find the author who last modified this file
-                    const { data: commits } = await github.rest.pulls.listCommits({
+        // Step 1: Fetch all required data upfront to minimize API calls
+        console.log('\n📡 Step 1: Fetching all PR data...');
+          let prData = {};
+          try {
+            console.log('🔄 Making parallel API calls for PR files, commits, and details...');
+
+            const [prFilesResponse, commitsResponse, pullRequestResponse] = await Promise.all([
+              github.rest.pulls.listFiles({ owner, repo, pull_number: prNumber }),
+              github.rest.pulls.listCommits({ owner, repo, pull_number: prNumber }),
+              github.rest.pulls.get({ owner, repo, pull_number: prNumber })
+            ]);
+
+            prData = {
+              files: prFilesResponse.data,
+              commits: commitsResponse.data,
+              pullRequest: pullRequestResponse.data
+            };
+
+            console.log(`✅ Successfully fetched:`);
+            console.log(`   📄 ${prData.files.length} changed files`);
+            console.log(`   📝 ${prData.commits.length} commits`);
+            console.log(`   🔗 PR head SHA: ${prData.pullRequest.head.sha.substring(0, 7)}`);
+
+            const changedFiles = prData.files.map(file => file.filename);
+            console.log(`📋 Changed files in this PR:`, changedFiles);
+
+          } catch (error) {
+            console.log(`❌ Failed to fetch PR data: ${error.message}`);
+            console.log('🛑 Aborting flaky test analysis');
+            return;
+          }
+
+        // Step 2: Process flaky tests and map to files/authors (reusing fetched data)
+          console.log('\n🔍 Step 2: Analyzing flaky tests and mapping to files...');
+
+          const flakyTestLines = flakyTests.trim().split('\n').filter(line => line.trim());
+          const changedFiles = prData.files.map(file => file.filename);
+
+          console.log(`🧪 Processing ${flakyTestLines.length} flaky test lines...`);
+
+          // Centralized data structure to avoid duplication
+          const analysisResults = {
+            touchedFiles: [],
+            mentionedAuthors: new Set(),
+            inlineTargets: new Map(), // Use Map to prevent duplicates by filename
+            processedTestClasses: new Set()
+          };
+
+          for (let i = 0; i < flakyTestLines.length; i++) {
+            const testLine = flakyTestLines[i];
+            console.log(`\n🔬 Processing test ${i + 1}/${flakyTestLines.length}: ${testLine}`);
+
+            const testClass = helpers.extractTestClass(testLine);
+            if (!testClass) {
+              console.log(`⏭️ Skipping - no test class found`);
+              continue;
+            }
+
+            // Skip if we've already processed this test class
+            if (analysisResults.processedTestClasses.has(testClass)) {
+              console.log(`⏭️ Skipping - already processed test class: ${testClass}`);
+              continue;
+            }
+            analysisResults.processedTestClasses.add(testClass);
+
+            const matchingFile = helpers.findMatchingFile(testClass, changedFiles);
+            if (!matchingFile) {
+              console.log(`⏭️ Skipping - no matching file found for test class: ${testClass}`);
+              continue;
+            }
+
+            // Reuse the commits data we already fetched
+            console.log(`🔎 Finding author for file: ${matchingFile} (reusing fetched commit data)`);
+            const { author: fileAuthor, commit: fileCommit } = await helpers.findLastAuthor(prData.commits, matchingFile);
+
+            if (fileAuthor && fileCommit) {
+              const fileInfo = {
+                file: matchingFile,
+                testClass,
+                author: fileAuthor,
+                commit: fileCommit
+              };
+
+              analysisResults.touchedFiles.push(fileInfo);
+              analysisResults.mentionedAuthors.add(fileAuthor);
+
+              // Store for inline comments (Map prevents duplicates by filename)
+              if (!analysisResults.inlineTargets.has(matchingFile)) {
+                analysisResults.inlineTargets.set(matchingFile, fileInfo);
+                console.log(`📌 Added to inline targets: ${matchingFile} → @${fileAuthor}`);
+              } else {
+                console.log(`⏭️ File already in inline targets: ${matchingFile}`);
+              }
+            } else {
+              console.log(`❌ Could not find author for file: ${matchingFile}`);
+            }
+        }
+
+          console.log(`\n📊 Analysis Results Summary:`);
+          console.log(`   📁 ${analysisResults.touchedFiles.length} files with flaky tests`);
+          console.log(`   👥 ${analysisResults.mentionedAuthors.size} unique authors mentioned`);
+          console.log(`   💬 ${analysisResults.inlineTargets.size} inline comments to create`);
+          console.log(`   🧪 ${analysisResults.processedTestClasses.size} unique test classes processed`);
+
+          // Step 3: Execute all GitHub API interactions in organized blocks
+          console.log('\n🚀 Step 3: Creating GitHub interactions...');
+          try{
+              // 3a. Create inline review comments
+              if (analysisResults.inlineTargets.size > 0) {
+                console.log(`\n📝 Creating ${analysisResults.inlineTargets.size} inline review comments...`);
+
+                let successCount = 0;
+                let failCount = 0;
+
+                for (const [filename, target] of analysisResults.inlineTargets.entries()) {
+                  console.log(`📝 Creating inline comment ${successCount + failCount + 1}/${analysisResults.inlineTargets.size} for: ${filename}`);
+
+                  const inlineBody = `### Oh! We've got ourselves flaky ones!
+
+        Hey @${target.author}! 👋
+
+        This file contains the flaky test:
+        \`\`\`
+        ${flakyTests}
+        \`\`\`
+
+        Since you recently modified this file, would you mind taking a quick look?
+        You might have insights into what could be causing the test instability.
+
+        **What to check:**
+        - Recent changes that might affect test timing
+        - New dependencies or configurations
+        - Race conditions or timing-sensitive code
+
+        No pressure if you're busy, just thought you'd be the best person to investigate! 🕵️‍♂️`;
+
+                  try {
+                    await github.rest.pulls.createReviewComment({
                       owner,
                       repo,
                       pull_number: prNumber,
+                      commit_id: prData.pullRequest.head.sha, // Reusing fetched data
+                      path: target.file,
+                      line: 1,
+                      body: inlineBody
                     });
-
-                    let lastAuthor = null;
-                    for (const commit of commits.reverse()) {
-                      const { data: commitFiles } = await github.rest.repos.getCommit({
-                        owner,
-                        repo,
-                        ref: commit.sha,
-                      });
-
-                      if (commitFiles.files?.some(file => file.filename === matchingFile.filename)) {
-                        lastAuthor = commit.author?.login;
-                        break;
-                      }
-                    }
-
-                    // Create inline comment body
-                    const inlineBody = `🔍 **Flaky Test Alert**
-
-                    Hey ${lastAuthor ? `@${lastAuthor}` : 'there'}! 👋
-
-                    This file contains the flaky test: \`${testClass}\`
-
-                    Since you recently modified this file, would you mind taking a quick look? You might have insights into what could be causing the test instability.
-
-                    **What to check:**
-                    - Recent changes that might affect test timing
-                    - New dependencies or configurations
-                    - Race conditions or timing-sensitive code
-
-                    No pressure if you're busy - just thought you'd be the best person to investigate! 🕵️‍♂️`;
-
-                    try {
-                      // Try to create a review comment on the file
-                      await github.rest.pulls.createReviewComment({
-                        owner,
-                        repo,
-                        pull_number: prNumber,
-                        commit_id: pullRequest.head.sha,
-                        path: matchingFile.filename,
-                        line: 1, // Comment on the first line of the file
-                        body: inlineBody
-                      });
-
-                      console.log(`✅ Created inline comment for ${matchingFile.filename}`);
-                    } catch (reviewError) {
-                      console.log(`⚠️ Could not create inline comment for ${matchingFile.filename}: ${reviewError.message}`);
-                    }
-                    break; // Found the file, no need to check other paths
+                    successCount++;
+                    console.log(`✅ Successfully created inline comment for ${filename}`);
+                  } catch (reviewError) {
+                    failCount++;
+                  console.log(`❌ Failed to create inline comment for ${filename}: ${reviewError.message}`);
                   }
                 }
-              }
+              console.log(`📊 Inline comments summary: ${successCount} successful, ${failCount} failed`);
+            } else {
+              console.log(`⏭️ No inline comments to create`);
             }
-          } catch (error) {
-            console.log(`Could not create inline comments: ${error.message}`);
-          }
-        }
 
-        // Build the comment body (preserving original format and adding new info)
-        let body = `
-          ### Oh! We've got ourselves flaky ones!
+              // 3b. Build and post/update the main PR comment
+              console.log(`\n💬 Creating main PR comment...`);
+              let body = `### Oh! We've got ourselves flaky ones!
+
           \`\`\`
           ${flakyTests}
-          \`\`\``;
-
-        // Add personalized section if we found touched files
-        if (touchedFilesInfo) {
-          const authorsArray = Array.from(mentionedAuthors);
-          const authorMentions = authorsArray.length > 1
-            ? `Hey ${authorsArray.slice(0, -1).map(author => `@${author}`).join(', ')} and @${authorsArray[authorsArray.length - 1]}! 👋`
-            : `Hey @${authorsArray[0]}! 👋`;
-
-          body += `
-
-          ### 🎯 Heads up to recent contributors!
-          ${authorMentions}
-
-          I noticed some of these flaky tests are in files you recently modified:
-          ${touchedFilesInfo}
-
-          Since you've been working on these files, would you have a moment to take a look at the flaky tests? You might have insights into what could be causing the instability. No pressure though - flaky tests can be tricky! 🤔
-
-          **💡 I've also left inline comments on the specific files for easier review!**`;
-        }
-
-        body += `
+          \`\`\`
 
           Related to your code? Maybe.
+
           Fixable now? Maybe not.
-          Mind giving it a look? Or don't, but I will remember, and
-          ![I'll be back](https://media.tenor.com/p2Ie017Zwu8AAAAM/exterminador-do.gif)
-        `;
 
-        // Find existing comments (preserving original logic)
-        const comments = await github.rest.issues.listComments({
-          owner,
-          repo,
-          issue_number: prNumber,
-        });
+          Please consider investigating if you have time. These tests might return, and
 
-        // Get comments about flakyness (preserving original logic)
-        const marker = `${flakyTests}`;
-        const botComment = comments.data.find(comment =>
-          comment.user.type === "Bot" && comment.body.includes(marker)
-        );
+          ![I'll be back](https://media.tenor.com/p2Ie017Zwu8AAAAM/exterminador-do.gif)`;
 
-        // Create or update the main PR comment
-        if (botComment) {
-          await github.rest.issues.updateComment({
-            owner,
-            repo,
-            comment_id: botComment.id,
-            body: body
-          });
-          console.log("✅ Updated existing flaky test comment");
-        } else {
-          await github.rest.issues.createComment({
-            owner,
-            repo,
-            issue_number: prNumber,
-            body: body
-          });
-          console.log("✅ Created new flaky test comment");
-        }
+                const comments = await github.rest.issues.listComments({
+                    owner,
+                    repo,
+                    issue_number: prNumber,
+                });
+
+                  console.log(`📋 Found ${comments.data.length} existing comments`);
+
+                  const marker = `${flakyTests}`;
+                  const botComment = comments.data.find(comment =>
+                    comment.user.type === "Bot" && comment.body.includes(marker)
+                  );
+
+                  if (botComment) {
+                    console.log(`🔄 Updating existing bot comment (ID: ${botComment.id})`);
+                      await github.rest.issues.updateComment({
+                      owner,
+                      repo,
+                      comment_id: botComment.id,
+                      body: body
+                    });
+                    console.log("✅ Successfully updated existing flaky test comment");
+                  } else {
+                    console.log(`📝 Creating new bot comment`);
+                    await github.rest.issues.createComment({
+                      owner,
+                      repo,
+                      issue_number: prNumber,
+                      body: body
+                    });
+                    console.log("✅ Successfully created new flaky test comment");
+                }
+          } catch (error) {
+            console.log(`❌ Failed to create GitHub interactions: ${error.message}`);
+            console.log('🛑 Aborting flaky test analysis');
+            return;
+          }
+
 
   - name: Unfinished tests
     if: failure() || cancelled()
