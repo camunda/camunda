@@ -233,9 +233,7 @@ public class FileBasedReceivedSnapshotTest {
       assertThatCode(() -> receivedSnapshot.apply(corruptedChunk).join())
           .hasCauseInstanceOf(SnapshotWriteException.class)
           .hasMessageContaining(
-              "Expected to have checksum "
-                  + 0xCAFEL
-                  + " for snapshot chunk file1 (1-0-1-0-0), but calculated 3806033162");
+              "Expected to have checksum " + 0xCAFEL + " for snapshot chunk file1");
     }
   }
 

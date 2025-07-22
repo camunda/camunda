@@ -14,9 +14,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
-import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
@@ -158,8 +158,9 @@ public class TransientSnapshotTest {
 
     // then
     assertThat(persistedSnapshot.getId())
-        .as("the persisted snapshot as the same ID as the transient snapshot")
-        .isEqualTo(transientSnapshot.snapshotId().getSnapshotIdAsString());
+        .as(
+            "the persisted snapshot as the same ID as the transient snapshot, except for the checksum at the end")
+        .startsWith(transientSnapshot.snapshotId().getSnapshotIdAsString());
   }
 
   @Test
