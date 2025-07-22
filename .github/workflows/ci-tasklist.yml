@@ -1,8 +1,8 @@
-# description:  tbd
-# test location: tbd
+# Unified CI for Tasklist. Runs backend unit tests, front end unit tests, backup restore tests on ES and OS, and docker tests
+# test location: /tasklist, tasklist/qa/backup-restore-tests, tasklist/qa/integration-tests
 # called by: ci.yml
 # type: CI
-# owner: @camunda/core-features, @camunda/data-layer
+# owner: @camunda/core-features
 name: Operate CI
 
 on:
