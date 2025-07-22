@@ -75,6 +75,7 @@
       <validValue name="USAGE_METRIC">57</validValue>
       <validValue name="MULTI_INSTANCE">58</validValue>
       <validValue name="RUNTIME_INSTRUCTION">59</validValue>
+      <validValue name="BATCH_OPERATION_INITIALIZATION">60</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->

@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
@@ -135,6 +136,8 @@ public final class TypedEventRegistry {
     registry.put(
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
         BatchOperationPartitionLifecycleRecord.class);
+    registry.put(
+        ValueType.BATCH_OPERATION_INITIALIZATION, BatchOperationInitializationRecord.class);
     registry.put(ValueType.ASYNC_REQUEST, AsyncRequestRecord.class);
     registry.put(ValueType.MULTI_INSTANCE, MultiInstanceRecord.class);
     registry.put(ValueType.RUNTIME_INSTRUCTION, RuntimeInstructionRecord.class);

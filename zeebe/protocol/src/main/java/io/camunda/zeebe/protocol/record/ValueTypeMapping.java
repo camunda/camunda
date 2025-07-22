@@ -75,6 +75,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
@@ -304,6 +305,9 @@ public final class ValueTypeMapping {
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
         new Mapping<>(
             BatchOperationPartitionLifecycleRecordValue.class, BatchOperationIntent.class));
+    mapping.put(
+        ValueType.BATCH_OPERATION_INITIALIZATION,
+        new Mapping<>(BatchOperationInitializationRecordValue.class, BatchOperationIntent.class));
     mapping.put(
         ValueType.ASYNC_REQUEST,
         new Mapping<>(AsyncRequestRecordValue.class, AsyncRequestIntent.class));
