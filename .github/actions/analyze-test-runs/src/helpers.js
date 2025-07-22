@@ -18,7 +18,7 @@
 function extractTestClass(testLine) {
   const match = testLine.match(/([a-zA-Z][a-zA-Z0-9]*\.)+[a-zA-Z][a-zA-Z0-9]*\.[A-Z][a-zA-Z0-9]*(?:Test|IT)/);
   const result = match ? match[0] : null;
-  console.log(`🔍 Extracting test class from: "${testLine}" → ${result || 'NO MATCH'}`);
+  console.log(`Extracting test class from: "${testLine}" → ${result || 'NO MATCH'}`);
   return result;
 }
 
@@ -34,7 +34,7 @@ function generatePossiblePaths(testClass) {
     `src/test/java/${classPath}.java`,
     `src/main/java/${classPath}.java`
   ];
-  console.log(`📁 Generated possible paths for ${testClass}:`, paths);
+  console.log(`Generated possible paths for ${testClass}:`, paths);
   return paths;
 }
 
@@ -53,11 +53,11 @@ function findMatchingFile(testClass, changedFiles) {
       file.endsWith(possiblePath) || file.includes(className)
     );
     if (matchingFile) {
-      console.log(`✅ Found matching file: ${matchingFile} for test class ${testClass}`);
+      console.log(`Found matching file: ${matchingFile} for test class ${testClass}`);
       return matchingFile;
     }
   }
-  console.log(`❌ No matching file found for test class ${testClass}`);
+  console.log(`No matching file found for test class ${testClass}`);
   return null;
 }
 

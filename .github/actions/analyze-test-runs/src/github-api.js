@@ -33,13 +33,13 @@ async function fetchPRData(github, owner, repo, prNumber) {
     pullRequest: pullRequestResponse.data
   };
 
-  console.log(`✅ Successfully fetched:`);
+  console.log(`Successfully fetched:`);
   console.log(`   📄 ${prData.files.length} changed files`);
   console.log(`   📝 ${prData.commits.length} commits`);
   console.log(`   🔗 PR head SHA: ${prData.pullRequest.head.sha.substring(0, 7)}`);
 
   const changedFiles = prData.files.map(file => file.filename);
-  console.log(`📋 Changed files in this PR:`, changedFiles);
+  console.log(`Changed files in this PR:`, changedFiles);
 
   return prData;
 }
@@ -54,12 +54,10 @@ async function fetchPRData(github, owner, repo, prNumber) {
  * @returns {object} - Object containing author and commit info
  */
 async function findLastAuthor(github, owner, repo, commits, filename) {
-  console.log(`🔎 Finding last author for file: ${filename}`);
+  console.log(`Finding last author for file: ${filename}`);
 
   for (const commit of [...commits].reverse()) {
     try {
-      console.log(`📝 Checking commit ${commit.sha.substring(0, 7)} by ${commit.author?.login || 'unknown'}`);
-
       const { data: commitFiles } = await github.rest.repos.getCommit({
         owner,
         repo,
@@ -69,16 +67,16 @@ async function findLastAuthor(github, owner, repo, commits, filename) {
       const modifiedFile = commitFiles.files?.find(file => file.filename === filename);
       if (modifiedFile) {
         const author = commit.author?.login;
-        console.log(`✅ Found last author for ${filename}: @${author} in commit ${commit.sha.substring(0, 7)}`);
+        console.log(`Found last author for ${filename}: @${author} in commit ${commit.sha.substring(0, 7)}`);
         return { author, commit };
       }
     } catch (error) {
-      console.log(`⚠️ Could not fetch commit ${commit.sha.substring(0, 7)}: ${error.message}`);
+      console.log(`Could not fetch commit ${commit.sha.substring(0, 7)}: ${error.message}`);
       continue;
     }
   }
 
-  console.log(`❌ No author found for file: ${filename}`);
+  console.log(`No author found for file: ${filename}`);
   return { author: null, commit: null };
 }
 
@@ -96,17 +94,15 @@ async function findLastAuthor(github, owner, repo, commits, filename) {
  */
 async function createInlineComments(github, owner, repo, prNumber, headSha, inlineTargets, createInlineCommentBody, flakyTests) {
   if (inlineTargets.size === 0) {
-    console.log(`⏭️ No inline comments to create`);
+    console.log(`No inline comments to create`);
     return { successCount: 0, failCount: 0 };
   }
-
-  console.log(`\n📝 Creating ${inlineTargets.size} inline review comments...`);
 
   let successCount = 0;
   let failCount = 0;
 
   for (const [filename, target] of inlineTargets.entries()) {
-    console.log(`📝 Creating inline comment ${successCount + failCount + 1}/${inlineTargets.size} for: ${filename}`);
+    console.log(`Creating inline comment ${successCount + failCount + 1}/${inlineTargets.size} for: ${filename}`);
 
     const inlineBody = createInlineCommentBody(target.author, flakyTests);
 
@@ -121,14 +117,14 @@ async function createInlineComments(github, owner, repo, prNumber, headSha, inli
         body: inlineBody
       });
       successCount++;
-      console.log(`✅ Successfully created inline comment for ${filename}`);
+      console.log(`Successfully created inline comment for ${filename}`);
     } catch (reviewError) {
       failCount++;
-      console.log(`❌ Failed to create inline comment for ${filename}: ${reviewError.message}`);
+      console.log(`Failed to create inline comment for ${filename}: ${reviewError.message}`);
     }
   }
 
-  console.log(`📊 Inline comments summary: ${successCount} successful, ${failCount} failed`);
+  console.log(`Inline comments summary: ${successCount} successful, ${failCount} failed`);
   return { successCount, failCount };
 }
 
@@ -142,7 +138,7 @@ async function createInlineComments(github, owner, repo, prNumber, headSha, inli
  * @param {function} createMainCommentBody - Function to create comment body
  */
 async function createOrUpdateMainComment(github, owner, repo, prNumber, flakyTests, createMainCommentBody) {
-  console.log(`\n💬 Creating main PR comment...`);
+  console.log(`\n Creating main PR comment...`);
 
   const body = createMainCommentBody(flakyTests);
 
@@ -152,7 +148,7 @@ async function createOrUpdateMainComment(github, owner, repo, prNumber, flakyTes
     issue_number: prNumber,
   });
 
-  console.log(`📋 Found ${comments.data.length} existing comments`);
+  console.log(`Found ${comments.data.length} existing comments`);
 
   const marker = `${flakyTests}`;
   const botComment = comments.data.find(comment =>
@@ -160,23 +156,21 @@ async function createOrUpdateMainComment(github, owner, repo, prNumber, flakyTes
   );
 
   if (botComment) {
-    console.log(`🔄 Updating existing bot comment (ID: ${botComment.id})`);
+    console.log(`Updating existing bot comment (ID: ${botComment.id})`);
     await github.rest.issues.updateComment({
       owner,
       repo,
       comment_id: botComment.id,
       body: body
     });
-    console.log("✅ Successfully updated existing flaky test comment");
   } else {
-    console.log(`📝 Creating new bot comment`);
+    console.log(`Creating new bot comment`);
     await github.rest.issues.createComment({
       owner,
       repo,
       issue_number: prNumber,
       body: body
     });
-    console.log("✅ Successfully created new flaky test comment");
   }
 }
 

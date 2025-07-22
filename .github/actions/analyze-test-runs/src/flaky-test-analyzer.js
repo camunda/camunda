@@ -23,12 +23,9 @@ const githubApi = require('./github-api');
  * @returns {object} - Analysis results containing touched files, authors, and inline targets
  */
 async function searchFlakyTestsInModifiedFiles(flakyTests, prData, github, owner, repo) {
-  console.log('\n🔍 Step 2: Searching for flaky tests in modified files...');
 
   const flakyTestLines = flakyTests.trim().split('\n').filter(line => line.trim());
   const changedFiles = prData.files.map(file => file.filename);
-
-  console.log(`🧪 Processing ${flakyTestLines.length} flaky test lines...`);
 
   // Centralized data structure to avoid duplication
   const analysisResults = {
@@ -40,29 +37,28 @@ async function searchFlakyTestsInModifiedFiles(flakyTests, prData, github, owner
 
   for (let i = 0; i < flakyTestLines.length; i++) {
     const testLine = flakyTestLines[i];
-    console.log(`\n🔬 Processing test ${i + 1}/${flakyTestLines.length}: ${testLine}`);
+    console.log(`\n Processing test ${i + 1}/${flakyTestLines.length}: ${testLine}`);
 
     const testClass = helpers.extractTestClass(testLine);
     if (!testClass) {
-      console.log(`⏭️ Skipping - no test class found`);
+      console.log(`Skipping - no test class found`);
       continue;
     }
 
     // Skip if we've already processed this test class
     if (analysisResults.processedTestClasses.has(testClass)) {
-      console.log(`⏭️ Skipping - already processed test class: ${testClass}`);
+      console.log(`Skipping - already processed test class: ${testClass}`);
       continue;
     }
     analysisResults.processedTestClasses.add(testClass);
 
     const matchingFile = helpers.findMatchingFile(testClass, changedFiles);
     if (!matchingFile) {
-      console.log(`⏭️ Skipping - no matching file found for test class: ${testClass}`);
+      console.log(`Skipping - no matching file found for test class: ${testClass}`);
       continue;
     }
 
     // Find the author using the commits data we already fetched
-    console.log(`🔎 Finding author for file: ${matchingFile} (reusing fetched commit data)`);
     const { author: fileAuthor, commit: fileCommit } = await githubApi.findLastAuthor(
       github, owner, repo, prData.commits, matchingFile
     );
@@ -81,16 +77,16 @@ async function searchFlakyTestsInModifiedFiles(flakyTests, prData, github, owner
       // Store for inline comments (Map prevents duplicates by filename)
       if (!analysisResults.inlineTargets.has(matchingFile)) {
         analysisResults.inlineTargets.set(matchingFile, fileInfo);
-        console.log(`📌 Added to inline targets: ${matchingFile} → @${fileAuthor}`);
+        console.log(`Added to inline targets: ${matchingFile} → @${fileAuthor}`);
       } else {
-        console.log(`⏭️ File already in inline targets: ${matchingFile}`);
+        console.log(`File already in inline targets: ${matchingFile}`);
       }
     } else {
-      console.log(`❌ Could not find author for file: ${matchingFile}`);
+      console.log(`Could not find author for file: ${matchingFile}`);
     }
   }
 
-  console.log(`\n📊 Analysis Results Summary:`);
+  console.log(`\n Analysis Results Summary:`);
   console.log(`   📁 ${analysisResults.touchedFiles.length} files with flaky tests`);
   console.log(`   👥 ${analysisResults.mentionedAuthors.size} unique authors mentioned`);
   console.log(`   💬 ${analysisResults.inlineTargets.size} inline comments to create`);
@@ -111,8 +107,6 @@ async function main(context, github, flakyTests) {
   const repo = context.repo.repo;
 
   console.log('🚀 Starting flaky test analysis...');
-  console.log(`📋 PR Number: ${prNumber}`);
-  console.log(`📦 Repository: ${owner}/${repo}`);
   console.log(`🧪 Flaky tests found:\n${flakyTests}`);
 
   try {
