@@ -54,6 +54,15 @@ public record VariableDbModel(
         .build();
   }
 
+  /**
+   * Truncates the value of the variable if it exceeds the specified size limit or byte limit.
+   * Truncate is done in two steps: First based on the character size limit, and then based on the
+   * (optional) byte size limit, if the byte size exceeds the specified limit.
+   *
+   * @param sizeLimit the maximum number of characters allowed for the variable value
+   * @param byteLimit the maximum number of bytes allowed for the variable value
+   * @return a new VariableDbModel with the truncated value
+   */
   public VariableDbModel truncateValue(final int sizeLimit, final Integer byteLimit) {
     var truncatedValue = value;
     String fullValue = null;
