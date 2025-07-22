@@ -286,7 +286,10 @@ public class MappingRuleTest {
         .add();
 
     // when
-    engine.mappingRule().deleteMappingRule(mappingRuleRecord.getValue().getMappingRuleId()).delete();
+    engine
+        .mappingRule()
+        .deleteMappingRule(mappingRuleRecord.getValue().getMappingRuleId())
+        .delete();
 
     // then
     Assertions.assertThat(
