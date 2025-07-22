@@ -33,10 +33,6 @@ const mockInstanceWithParentInstance = createProcessInstance({
   parentProcessInstanceKey: '8724390842390124',
 });
 
-const mockInstanceWithIncident = createProcessInstance({
-  hasIncident: true,
-});
-
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
