@@ -8,13 +8,18 @@
 package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATED;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
+import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,5 +90,40 @@ public class StreamProcessorHealthTest {
     // then
     Awaitility.await("wait to become healthy again")
         .until(() -> streamProcessor.getHealthReport().isHealthy());
+  }
+
+  @Test
+  void shouldMarkUnhealthyWhenReplayFails() {
+    // given
+    final AtomicReference<HealthReport> healthReport = new AtomicReference<>();
+    streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
+    streamProcessor.addFailureListener(
+        new FailureListener() {
+          @Override
+          public void onFailure(final HealthReport report) {
+            healthReport.set(report);
+          }
+
+          @Override
+          public void onRecovered(final HealthReport report) {
+            healthReport.set(report);
+          }
+
+          @Override
+          public void onUnrecoverableFailure(final HealthReport report) {
+            healthReport.set(report);
+          }
+        });
+
+    final var mockProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    doThrow(new RuntimeException("expected")).when(mockProcessor).replay(any());
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.event().processInstance(ELEMENT_ACTIVATED, Records.processInstance(1)));
+
+    // then
+    Awaitility.await("wait to become unhealthy")
+        .until(() -> healthReport.get() != null && healthReport.get().isUnhealthy());
   }
 }
