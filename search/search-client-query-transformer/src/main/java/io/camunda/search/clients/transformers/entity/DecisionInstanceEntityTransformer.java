@@ -34,6 +34,7 @@ public class DecisionInstanceEntityTransformer
         source.getEvaluationFailureMessage(),
         source.getProcessDefinitionKey(),
         source.getProcessInstanceKey(),
+        source.getElementInstanceKey(),
         source.getTenantId(),
         source.getDecisionId(),
         ofNullable(source.getDecisionDefinitionId()).map(Long::valueOf).orElse(null),

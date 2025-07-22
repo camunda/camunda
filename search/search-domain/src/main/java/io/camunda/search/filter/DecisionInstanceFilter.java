@@ -30,6 +30,7 @@ public record DecisionInstanceFilter(
     List<Long> processDefinitionKeys,
     List<Long> processInstanceKeys,
     List<Operation<Long>> decisionDefinitionKeyOperations,
+    List<Operation<Long>> elementInstanceKeyOperations,
     List<String> decisionDefinitionIds,
     List<String> decisionDefinitionNames,
     List<Integer> decisionDefinitionVersions,
@@ -52,6 +53,7 @@ public record DecisionInstanceFilter(
     private List<Long> processDefinitionKeys;
     private List<Long> processInstanceKeys;
     private List<Operation<Long>> decisionDefinitionKeyOperations;
+    private List<Operation<Long>> elementInstanceKeyOperations;
     private List<String> decisionDefinitionIds;
     private List<String> decisionDefinitionNames;
     private List<Integer> decisionDefinitionVersions;
@@ -139,6 +141,21 @@ public record DecisionInstanceFilter(
       return decisionDefinitionKeyOperations(collectValues(operation, operations));
     }
 
+    public Builder elementInstanceKeyOperations(final List<Operation<Long>> operations) {
+      elementInstanceKeyOperations = addValuesToList(elementInstanceKeyOperations, operations);
+      return this;
+    }
+
+    public Builder elementInstanceKeys(final Long value, final Long... values) {
+      return elementInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder elementInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return elementInstanceKeyOperations(collectValues(operation, operations));
+    }
+
     public Builder decisionDefinitionIds(final List<String> values) {
       decisionDefinitionIds = addValuesToList(decisionDefinitionIds, values);
       return this;
@@ -195,6 +212,7 @@ public record DecisionInstanceFilter(
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionNames, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionVersions, Collections.emptyList()),
