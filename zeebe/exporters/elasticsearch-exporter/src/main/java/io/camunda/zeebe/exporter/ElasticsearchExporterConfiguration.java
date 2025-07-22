@@ -216,6 +216,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean batchOperationExecution = false;
     public boolean batchOperationLifecycleManagement = false;
     public boolean batchOperationPartitionLifecycle = false;
+    public boolean batchOperationInitialization = false;
 
     public boolean asyncRequest = false;
 

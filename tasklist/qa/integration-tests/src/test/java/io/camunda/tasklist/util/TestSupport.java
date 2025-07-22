@@ -69,6 +69,7 @@ public final class TestSupport {
       case BATCH_OPERATION_EXECUTION -> config.batchOperationExecution = value;
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> config.batchOperationLifecycleManagement = value;
       case BATCH_OPERATION_PARTITION_LIFECYCLE -> config.batchOperationPartitionLifecycle = value;
+      case BATCH_OPERATION_INITIALIZATION -> config.batchOperationInitialization = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
       case ASYNC_REQUEST -> config.asyncRequest = value;
@@ -126,6 +127,7 @@ public final class TestSupport {
       case BATCH_OPERATION_EXECUTION -> config.batchOperationExecution = value;
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> config.batchOperationLifecycleManagement = value;
       case BATCH_OPERATION_PARTITION_LIFECYCLE -> config.batchOperationPartitionLifecycle = value;
+      case BATCH_OPERATION_INITIALIZATION -> config.batchOperationInitialization = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
       case ASYNC_REQUEST -> config.asyncRequest = value;
