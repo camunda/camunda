@@ -8,6 +8,7 @@
 package io.camunda.migration.identity.config;
 
 import io.camunda.migration.identity.config.cluster.ClusterProperties;
+import io.camunda.migration.identity.config.oidc.OidcProperties;
 import jakarta.validation.Valid;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -28,6 +29,7 @@ public class IdentityMigrationProperties {
   private Mode mode = Mode.CLOUD;
   private ConsoleProperties console = new ConsoleProperties();
   private ClusterProperties cluster = new ClusterProperties();
+  private OidcProperties oidc = new OidcProperties();
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;
@@ -67,6 +69,14 @@ public class IdentityMigrationProperties {
 
   public void setCluster(final ClusterProperties cluster) {
     this.cluster = cluster;
+  }
+
+  public OidcProperties getOidc() {
+    return oidc;
+  }
+
+  public void setOidc(final OidcProperties oidc) {
+    this.oidc = oidc;
   }
 
   public enum Mode {
