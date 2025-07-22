@@ -28,6 +28,7 @@ import {useSelectedVariables} from 'v2/api/useSelectedVariables.query';
 import {useRemoveFormReference} from 'v2/api/useTask.query';
 import {useUserTaskForm} from 'v2/api/useUserTaskForm.query';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
+import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
 
 type Props = {
   task: UserTask;
@@ -75,10 +76,18 @@ const FormJS: React.FC<Props> = ({
     () => formatVariablesToFormData(variablesData ?? []),
     [variablesData],
   );
+
   const hasFetchedVariables =
     extractedVariables.length === 0 || status === 'success';
+
   const canCompleteTask =
     user.userId === assignee && state === 'CREATED' && hasFetchedVariables;
+
+  const shouldHideBottomPanel =
+    state === 'ASSIGNING' ||
+    (state === 'UPDATING' && assignee === null) ||
+    (state === 'CANCELING' && assignee === null);
+
   const {removeFormReference} = useRemoveFormReference(task);
 
   return (
@@ -149,24 +158,27 @@ const FormJS: React.FC<Props> = ({
             )
             .otherwise(() => null)}
         </Layer>
-        <DetailsFooter>
-          <CompleteTaskButton
-            submissionState={submissionState}
-            onClick={() => {
-              setSubmissionState('active');
-              formManagerRef.current?.submit();
-            }}
-            onSuccess={() => {
-              onSubmitSuccess();
-              setSubmissionState('inactive');
-            }}
-            onError={() => {
-              setSubmissionState('inactive');
-            }}
-            isHidden={state === 'COMPLETED'}
-            isDisabled={!canCompleteTask}
-          />
-        </DetailsFooter>
+        {!shouldHideBottomPanel && (
+          <DetailsFooter>
+            <CompleteTaskButton
+              submissionState={submissionState}
+              onClick={() => {
+                setSubmissionState('active');
+                formManagerRef.current?.submit();
+              }}
+              onSuccess={() => {
+                onSubmitSuccess();
+                setSubmissionState('inactive');
+              }}
+              onError={() => {
+                setSubmissionState('inactive');
+              }}
+              isHidden={state === 'COMPLETED'}
+              isDisabled={!canCompleteTask}
+            />
+            <TaskStateLoadingText taskState={state} />
+          </DetailsFooter>
+        )}
       </TaskDetailsContainer>
     </ScrollableContent>
   );
