@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.FlowNodeInstanceController.URI;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.Error;
@@ -16,9 +18,11 @@ import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
+import io.camunda.operate.webapp.api.v1.exceptions.ForbiddenException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -43,6 +47,7 @@ public class FlowNodeInstanceController extends ErrorController
     implements SearchController<FlowNodeInstance> {
 
   public static final String URI = "/v1/flownode-instances";
+  @Autowired private PermissionsService permissionsService;
   private final QueryValidator<FlowNodeInstance> queryValidator = new QueryValidator<>();
   @Autowired private FlowNodeInstanceDao flowNodeInstanceDao;
 
@@ -71,7 +76,14 @@ public class FlowNodeInstanceController extends ErrorController
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
-                    schema = @Schema(implementation = Error.class)))
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
       })
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       description = "Search flownode-instances",
@@ -138,6 +150,7 @@ public class FlowNodeInstanceController extends ErrorController
     logger.debug("search for query {}", query);
     query = (query == null) ? new Query<>() : query;
     queryValidator.validate(query, FlowNodeInstance.class);
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return flowNodeInstanceDao.search(query);
   }
 
@@ -161,6 +174,13 @@ public class FlowNodeInstanceController extends ErrorController
                     mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
                     schema = @Schema(implementation = Error.class))),
         @ApiResponse(
+            description = ForbiddenException.TYPE,
+            responseCode = "403",
+            content =
+                @Content(
+                    mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE,
+                    schema = @Schema(implementation = Error.class))),
+        @ApiResponse(
             description = ResourceNotFoundException.TYPE,
             responseCode = "404",
             content =
@@ -172,6 +192,7 @@ public class FlowNodeInstanceController extends ErrorController
   public FlowNodeInstance byKey(
       @Parameter(description = "Key of flownode instance", required = true) @PathVariable
           final Long key) {
+    permissionsService.verifyWildcardResourcePermission(PROCESS_DEFINITION, READ_PROCESS_INSTANCE);
     return flowNodeInstanceDao.byKey(key);
   }
 }
