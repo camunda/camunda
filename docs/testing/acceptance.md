@@ -297,8 +297,8 @@ The specific version combination should appear multiple times, once for each tes
 Set the following environment variables:
 - `ZEEBE_CI_CHECK_VERSION_COMPATIBILITY=true`
 - `ZEEBE_CI_CHECK_VERSION_COMPATIBILITY_REPORT=~/zeebe-version-compatibility.csv`
-  Then run the `RollingUpdateTest`s: with `mvn verify -D it.test=io.camunda.zeebe.test.RollingUpdateTest`
-  If you keep the report file around, another run of this test will continue from where the previous run stopped and only test version combinations that weren't tested successfully yet.
+Then run the `RollingUpdateTest`s: with `mvn verify -D it.test=io.camunda.zeebe.test.RollingUpdateTest`
+If you keep the report file around, another run of this test will continue from where the previous run stopped and only test version combinations that weren't tested successfully yet.
 
 ###### I changed the `RollingUpdateTest`, do I need to do anything?
 
@@ -326,3 +326,4 @@ You may want to increase parallelism after a reset of the coverage report to spe
 Once the report is complete, you can reduce the parallelism to save resources.
 
 [zeebe-version-compatibility.yml workflow]: https://github.com/camunda/camunda/actions/workflows/zeebe-version-compatibility.yml
+
