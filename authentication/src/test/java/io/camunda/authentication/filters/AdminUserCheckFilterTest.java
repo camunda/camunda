@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import jakarta.servlet.FilterChain;
@@ -42,6 +43,8 @@ class AdminUserCheckFilterTest {
     // given
     final var securityConfig = new SecurityConfiguration();
     securityConfig.getAuthentication().setUnprotectedApi(false);
+    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(roleServices);
     when(roleServices.hasMembersOfType(any(), any())).thenReturn(false);
     when(request.getContextPath()).thenReturn("localhost:8080");
     final AdminUserCheckFilter adminUserCheckFilter =
@@ -78,6 +81,8 @@ class AdminUserCheckFilterTest {
     // given
     final var securityConfig = new SecurityConfiguration();
     securityConfig.getAuthentication().setUnprotectedApi(false);
+    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(roleServices);
     when(roleServices.hasMembersOfType(any(), any())).thenReturn(true);
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
