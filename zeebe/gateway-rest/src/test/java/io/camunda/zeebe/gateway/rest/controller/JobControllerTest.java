@@ -851,7 +851,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldRejectActivateJobWithoutTenantsWhenMultiTenancyEnabled() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var request =
         """
         {
@@ -892,7 +892,7 @@ public class JobControllerTest extends RestControllerTest {
   @MethodSource("tenantLists")
   void shouldRejectActivateJobWithTenantsWhenMultiTenancyDisabled(final List<String> tenantIds) {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
+    when(multiTenancyCfg.isEnabled()).thenReturn(false);
     final var request =
         """
         {

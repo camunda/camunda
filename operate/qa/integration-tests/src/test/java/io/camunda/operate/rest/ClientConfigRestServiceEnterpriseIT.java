@@ -45,7 +45,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       OperateProperties.PREFIX + ".cloud.organizationid=organizationId",
       OperateProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
       OperateProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
-      "camunda.security.multiTenancy.checksEnabled=true",
+      "camunda.security.multiTenancy.enabled=true",
       "camunda.security.authorizations.enabled=false"
       // CAMUNDA_OPERATE_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
     })

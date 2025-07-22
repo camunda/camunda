@@ -96,7 +96,7 @@ public abstract class TasklistZeebeExtension
                   IdentityTester.testContext.getInternalIdentityBaseUrl())
               .withEnv(
                   "ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED",
-                  String.valueOf(securityConfiguration.getMultiTenancy().isChecksEnabled()));
+                  String.valueOf(securityConfiguration.getMultiTenancy().isEnabled()));
       zeebeContainer.start();
     } else {
       zeebeContainer = createZeebeContainer();

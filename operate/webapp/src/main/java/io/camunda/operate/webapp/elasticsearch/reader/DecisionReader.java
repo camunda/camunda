@@ -239,7 +239,7 @@ public class DecisionReader extends AbstractReader
       }
     }
     QueryBuilder tenantIdQ = null;
-    if (securityConfiguration.getMultiTenancy().isChecksEnabled()) {
+    if (securityConfiguration.getMultiTenancy().isEnabled()) {
       tenantIdQ = tenantId != null ? termQuery(DecisionIndex.TENANT_ID, tenantId) : null;
     }
     QueryBuilder q = joinWithAnd(decisionIdQ, tenantIdQ);

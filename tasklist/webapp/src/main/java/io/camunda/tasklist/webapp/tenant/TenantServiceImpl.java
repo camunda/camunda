@@ -66,6 +66,6 @@ public class TenantServiceImpl implements TenantService {
 
   @Override
   public boolean isMultiTenancyEnabled() {
-    return securityConfiguration.getMultiTenancy().isChecksEnabled();
+    return securityConfiguration.getMultiTenancy().isEnabled();
   }
 }

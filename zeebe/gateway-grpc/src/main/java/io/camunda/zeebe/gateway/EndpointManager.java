@@ -97,7 +97,7 @@ public final class EndpointManager {
     this.streamJobsHandler = streamJobsHandler;
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
-    RequestMapper.setMultiTenancyEnabled(multiTenancy.isChecksEnabled());
+    RequestMapper.setMultiTenancyEnabled(multiTenancy.isEnabled());
   }
 
   private void addBrokerInfo(

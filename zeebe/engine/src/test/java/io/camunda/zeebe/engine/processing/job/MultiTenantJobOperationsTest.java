@@ -49,7 +49,7 @@ public class MultiTenantJobOperationsTest {
           .withSecurityConfig(
               config -> {
                 config.getAuthorizations().setEnabled(true);
-                config.getMultiTenancy().setChecksEnabled(true);
+                config.getMultiTenancy().setEnabled(true);
               });
 
   private static final int NEW_RETRIES = 20;

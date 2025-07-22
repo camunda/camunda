@@ -62,7 +62,7 @@ public final class AuthorizationCheckBehavior {
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
-    multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
+    multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
   }
 
   /**

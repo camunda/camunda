@@ -40,7 +40,7 @@ public class TenantAwareTimerStartEventTest {
   public final EngineRule engine =
       EngineRule.singlePartition()
           .withIdentitySetup()
-          .withSecurityConfig(config -> config.getMultiTenancy().setChecksEnabled(true))
+          .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
           .withSecurityConfig(
               config ->
                   config

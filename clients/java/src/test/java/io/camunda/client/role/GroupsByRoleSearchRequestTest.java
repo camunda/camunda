@@ -38,18 +38,6 @@ public class GroupsByRoleSearchRequestTest extends ClientRestTest {
   }
 
   @Test
-  void shouldIncludedSortInSearchRequestBody() {
-    // when
-    client.newGroupsByRoleSearchRequest(ROLE_ID).sort(s -> s.groupId().desc()).send().join();
-
-    // then
-    final LoggedRequest lastRequest = gatewayService.getLastRequest();
-    final String requestBody = lastRequest.getBodyAsString();
-
-    assertThat(requestBody).contains("\"sort\":[{\"field\":\"groupId\",\"order\":\"DESC\"}]");
-  }
-
-  @Test
   void shouldFailOnEmptyRoleId() {
     assertThatThrownBy(() -> client.newGroupsByRoleSearchRequest("").send().join())
         .isInstanceOf(IllegalArgumentException.class)

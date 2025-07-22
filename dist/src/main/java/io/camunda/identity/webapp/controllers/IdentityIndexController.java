@@ -57,9 +57,7 @@ public class IdentityIndexController {
             String.valueOf(
                 securityConfiguration.getAuthentication().getOidc() == null
                     || securityConfiguration.getAuthentication().getOidc().getGroupsClaim()
-                        == null),
-            "VITE_TENANTS_API_ENABLED",
-            String.valueOf(securityConfiguration.getMultiTenancy().isApiEnabled()));
+                        == null));
 
     model.addAttribute("clientConfig", clientConfigMap);
     setContentSecurePolicyHeader(response, envJsNonce);

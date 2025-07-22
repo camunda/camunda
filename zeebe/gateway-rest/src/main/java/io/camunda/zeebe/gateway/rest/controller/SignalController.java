@@ -43,7 +43,7 @@ public class SignalController {
   @CamundaPostMapping(path = "/broadcast")
   public CompletableFuture<ResponseEntity<Object>> broadcastSignal(
       @RequestBody final SignalBroadcastRequest request) {
-    return RequestMapper.toBroadcastSignalRequest(request, multiTenancyCfg.isChecksEnabled())
+    return RequestMapper.toBroadcastSignalRequest(request, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::broadcastSignal);
   }
 

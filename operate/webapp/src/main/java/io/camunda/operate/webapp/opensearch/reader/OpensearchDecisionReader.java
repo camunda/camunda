@@ -180,7 +180,7 @@ public class OpensearchDecisionReader implements DecisionReader {
       }
     }
     Query tenantIdQuery = null;
-    if (securityConfiguration.getMultiTenancy().isChecksEnabled()) {
+    if (securityConfiguration.getMultiTenancy().isEnabled()) {
       tenantIdQuery = tenantId != null ? term(DecisionIndex.TENANT_ID, tenantId) : null;
     }
     final var query = and(decisionIdQuery, tenantIdQuery);

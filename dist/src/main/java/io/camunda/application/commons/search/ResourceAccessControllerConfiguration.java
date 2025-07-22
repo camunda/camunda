@@ -53,7 +53,7 @@ public class ResourceAccessControllerConfiguration {
   @Bean
   @ConditionalOnProperty(
       prefix = "camunda.security.multiTenancy",
-      name = "checksEnabled",
+      name = "enabled",
       havingValue = "true")
   public TenantAccessProvider tenantAccessProvider() {
     return new DefaultTenantAccessProvider();
@@ -62,7 +62,7 @@ public class ResourceAccessControllerConfiguration {
   @Bean
   @ConditionalOnProperty(
       prefix = "camunda.security.multiTenancy",
-      name = "checksEnabled",
+      name = "enabled",
       havingValue = "false",
       matchIfMissing = true)
   public TenantAccessProvider disabledTenantAccessProvider() {

@@ -55,7 +55,7 @@ public class TenantAwareResourceFetchTest {
           .withIdentitySetup()
           .withSecurityConfig(
               config -> {
-                config.getMultiTenancy().setChecksEnabled(true);
+                config.getMultiTenancy().setEnabled(true);
                 config
                     .getInitialization()
                     .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email")));

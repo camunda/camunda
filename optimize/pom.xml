@@ -90,8 +90,8 @@
     <!-- testing config -->
     <mockito.version>5.18.0</mockito.version>
     <mockito-inline.version>5.2.0</mockito-inline.version>
-    <junit.jupiter.version>5.13.4</junit.jupiter.version>
-    <junit.platform.version>1.13.4</junit.platform.version>
+    <junit.jupiter.version>5.13.3</junit.jupiter.version>
+    <junit.platform.version>1.13.3</junit.platform.version>
     <mockserver.version>5.15.0</mockserver.version>
     <assertj.version>3.27.3</assertj.version>
     <google-java-format.plugin.version>1.28.0</google-java-format.plugin.version>

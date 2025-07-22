@@ -15,7 +15,6 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,18 +64,6 @@ public class RestoreApp implements ApplicationRunner {
             .sources(RestoreApp.class)
             .profiles(Profile.RESTORE.getId())
             .build();
-
-    final String activeProfiles = System.getProperty("spring.profiles.active");
-    final String springProfilesActive = System.getenv("SPRING_PROFILES_ACTIVE");
-    if (!Objects.equals(activeProfiles, Profile.RESTORE.getId())
-        || (springProfilesActive != null
-            && !springProfilesActive.equals(Profile.RESTORE.getId()))) {
-      LOG.warn(
-          "Additional profiles besides restore are set, which is not supported: {}. "
-              + "The application will run only with the restore profile.",
-          activeProfiles);
-      System.setProperty("spring.profiles.active", Profile.RESTORE.getId());
-    }
 
     application.run(args);
   }

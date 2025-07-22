@@ -52,7 +52,7 @@ public class JobWorkerElementMultiTenantTest {
           .withSecurityConfig(
               config -> {
                 config.getAuthorizations().setEnabled(true);
-                config.getMultiTenancy().setChecksEnabled(true);
+                config.getMultiTenancy().setEnabled(true);
               });
 
   private static final String PROCESS_ID = "process";

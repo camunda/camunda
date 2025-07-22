@@ -199,8 +199,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   /** Enables multi-tenancy in the security configuration. */
   public TestStandaloneBroker withMultiTenancyEnabled() {
-    withProperty("camunda.security.multiTenancy.checksEnabled", "true");
-    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(true));
+    withProperty("camunda.security.multiTenancy.enabled", "true");
+    return withSecurityConfig(cfg -> cfg.getMultiTenancy().setEnabled(true));
   }
 
   /**

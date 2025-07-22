@@ -65,7 +65,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldCorrelateMessageWithMultiTenancyDisabled() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
+    when(multiTenancyCfg.isEnabled()).thenReturn(false);
     when(messageServices.correlateMessage(any()))
         .thenReturn(
             CompletableFuture.completedFuture(
@@ -120,7 +120,7 @@ public class MessageControllerTest extends RestControllerTest {
     // given
     when(authenticationProvider.getCamundaAuthentication())
         .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     when(messageServices.correlateMessage(any()))
         .thenReturn(
             CompletableFuture.completedFuture(
@@ -246,7 +246,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMessageCorrelationWithoutTenantWhenMultiTenancyEnabled() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
 
     final var request =
         """
@@ -281,7 +281,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMessageCorrelationWithTenantWhenMultiTenancyDisabled() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(false);
+    when(multiTenancyCfg.isEnabled()).thenReturn(false);
 
     final var request =
         """
@@ -317,7 +317,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMessageCorrelationWithTooLongTenantWhenMultiTenancyEnabled() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
 
     final var request =
         """
@@ -353,7 +353,7 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldRejectMessageCorrelationWithInvalidTenantWhenMultiTenancyEnabled() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
 
     final var request =
         """

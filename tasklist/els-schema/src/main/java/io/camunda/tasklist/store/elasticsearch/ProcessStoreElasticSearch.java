@@ -113,8 +113,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   public ProcessEntity getProcessByBpmnProcessId(
       final String bpmnProcessId, final String tenantId) {
     final QueryBuilder qb;
-    if (securityConfiguration.getMultiTenancy().isChecksEnabled()
-        && StringUtils.isNotBlank(tenantId)) {
+    if (securityConfiguration.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       qb =
           ElasticsearchUtil.joinWithAnd(
               QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, bpmnProcessId),
@@ -263,8 +262,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   }
 
   private QueryBuilder enhanceQueryByTenantIdCheck(final QueryBuilder qb, final String tenantId) {
-    if (securityConfiguration.getMultiTenancy().isChecksEnabled()
-        && StringUtils.isNotBlank(tenantId)) {
+    if (securityConfiguration.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       return ElasticsearchUtil.joinWithAnd(
           QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId), qb);
     }

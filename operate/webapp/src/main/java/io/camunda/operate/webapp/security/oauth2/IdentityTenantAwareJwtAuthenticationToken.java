@@ -67,6 +67,6 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
   }
 
   private boolean isMultiTenancyEnabled() {
-    return getSecurityConfiguration().getMultiTenancy().isChecksEnabled();
+    return getSecurityConfiguration().getMultiTenancy().isEnabled();
   }
 }

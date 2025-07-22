@@ -54,7 +54,7 @@ public class DecisionDefinitionController {
   public CompletableFuture<ResponseEntity<Object>> evaluateDecision(
       @RequestBody final DecisionEvaluationInstruction evaluateDecisionRequest) {
     return RequestMapper.toEvaluateDecisionRequest(
-            evaluateDecisionRequest, multiTenancyCfg.isChecksEnabled())
+            evaluateDecisionRequest, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateDecision);
   }
 

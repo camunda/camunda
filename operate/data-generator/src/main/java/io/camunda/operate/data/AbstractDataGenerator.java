@@ -158,7 +158,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
   }
 
   protected String getTenant(final String tenantId) {
-    if (securityConfiguration.getMultiTenancy().isChecksEnabled()) {
+    if (securityConfiguration.getMultiTenancy().isEnabled()) {
       return tenantId;
     }
     return DEFAULT_TENANT_ID;

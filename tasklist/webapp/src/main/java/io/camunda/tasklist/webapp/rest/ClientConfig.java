@@ -66,7 +66,7 @@ public class ClientConfig {
   @PostConstruct
   public void init() {
     isEnterprise = tasklistProperties.isEnterprise();
-    isMultiTenancyEnabled = securityConfiguration.getMultiTenancy().isChecksEnabled();
+    isMultiTenancyEnabled = securityConfiguration.getMultiTenancy().isEnabled();
     contextPath = context.getContextPath();
     baseName = context.getContextPath() + "/tasklist";
     canLogout = profileService.currentProfileCanLogout();

@@ -15,24 +15,25 @@
  */
 package io.camunda.client.impl.search.request;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.roleGroupSort;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.groupFilter;
+import static io.camunda.client.api.search.request.SearchRequestBuilders.groupSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.RoleGroupFilter;
+import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.response.RoleGroup;
+import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.sort.RoleGroupSort;
+import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
+import io.camunda.client.protocol.rest.GroupSearchQueryResult;
 import io.camunda.client.protocol.rest.RoleGroupSearchQueryRequest;
-import io.camunda.client.protocol.rest.RoleGroupSearchResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -58,37 +59,37 @@ public class GroupsByRoleSearchRequestImpl
   }
 
   @Override
-  public FinalSearchRequestStep<RoleGroup> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<Group> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<SearchResponse<RoleGroup>> send() {
+  public CamundaFuture<SearchResponse<Group>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-    final HttpCamundaFuture<SearchResponse<RoleGroup>> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<SearchResponse<Group>> result = new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/roles/%s/groups/search", roleId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        RoleGroupSearchResult.class,
-        SearchResponseMapper::toRoleGroupsResponse,
+        GroupSearchQueryResult.class,
+        SearchResponseMapper::toGroupsResponse,
         result);
     return result;
   }
 
   @Override
-  public GroupsByRoleSearchRequest filter(final RoleGroupFilter value) {
+  public GroupsByRoleSearchRequest filter(final GroupFilter value) {
     return this;
   }
 
   @Override
-  public GroupsByRoleSearchRequest filter(final Consumer<RoleGroupFilter> fn) {
-    return this;
+  public GroupsByRoleSearchRequest filter(final Consumer<GroupFilter> fn) {
+    return filter(groupFilter(fn));
   }
 
   @Override
-  public GroupsByRoleSearchRequest sort(final RoleGroupSort value) {
+  public GroupsByRoleSearchRequest sort(final GroupSort value) {
     request.setSort(
         SearchRequestSortMapper.toRoleGroupSearchQuerySortRequest(
             provideSearchRequestProperty(value)));
@@ -96,8 +97,8 @@ public class GroupsByRoleSearchRequestImpl
   }
 
   @Override
-  public GroupsByRoleSearchRequest sort(final Consumer<RoleGroupSort> fn) {
-    return sort(roleGroupSort(fn));
+  public GroupsByRoleSearchRequest sort(final Consumer<GroupSort> fn) {
+    return sort(groupSort(fn));
   }
 
   @Override

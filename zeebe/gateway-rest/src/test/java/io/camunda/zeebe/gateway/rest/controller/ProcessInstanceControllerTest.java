@@ -89,7 +89,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithProcessDefinitionKey() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceCreationRecord()
             .setProcessDefinitionKey(123L)
@@ -186,7 +186,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithBpmnProcessIdAndVersion() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceCreationRecord()
             .setProcessDefinitionKey(123L)
@@ -234,7 +234,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithBpmnProcessIdWithoutVersion() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceCreationRecord()
             .setProcessDefinitionKey(123L)
@@ -281,7 +281,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithResultWithProcessDefinitionKey() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceResultRecord()
             .setProcessDefinitionKey(123L)
@@ -330,7 +330,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithResultWithBpmnProcessIdAndVersion() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceResultRecord()
             .setProcessDefinitionKey(123L)
@@ -380,7 +380,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithResultWithBpmnProcessIdWithoutVersion() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceResultRecord()
             .setProcessDefinitionKey(123L)

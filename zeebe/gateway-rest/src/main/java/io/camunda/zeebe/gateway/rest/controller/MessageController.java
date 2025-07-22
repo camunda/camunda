@@ -44,7 +44,7 @@ public class MessageController {
   public CompletableFuture<ResponseEntity<Object>> publishMessage(
       @RequestBody final MessagePublicationRequest publicationRequest) {
     return RequestMapper.toMessagePublicationRequest(
-            publicationRequest, multiTenancyCfg.isChecksEnabled())
+            publicationRequest, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::publishMessage);
   }
 
@@ -52,7 +52,7 @@ public class MessageController {
   public CompletableFuture<ResponseEntity<Object>> correlateMessage(
       @RequestBody final MessageCorrelationRequest correlationRequest) {
     return RequestMapper.toMessageCorrelationRequest(
-            correlationRequest, multiTenancyCfg.isChecksEnabled())
+            correlationRequest, multiTenancyCfg.isEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::correlateMessage);
   }
 

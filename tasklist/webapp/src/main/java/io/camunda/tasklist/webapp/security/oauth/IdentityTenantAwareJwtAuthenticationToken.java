@@ -63,8 +63,6 @@ public class IdentityTenantAwareJwtAuthenticationToken extends JwtAuthentication
   }
 
   private boolean isMultiTenancyEnabled() {
-    return SpringContextHolder.getBean(SecurityConfiguration.class)
-        .getMultiTenancy()
-        .isChecksEnabled();
+    return SpringContextHolder.getBean(SecurityConfiguration.class).getMultiTenancy().isEnabled();
   }
 }

@@ -165,7 +165,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   @Override
   public boolean isMultitTenancyEnabled() {
-    return securityConfiguration.getMultiTenancy().isChecksEnabled();
+    return securityConfiguration.getMultiTenancy().isEnabled();
   }
 
   private void testZeebeIsReady() {

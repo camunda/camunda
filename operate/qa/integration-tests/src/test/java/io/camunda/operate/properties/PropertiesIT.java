@@ -68,7 +68,7 @@ public class PropertiesIT {
     // assert that it can be set from ${camunda.operate.identity.resourcePermissionsEnabled}
     assertThat(securityConfiguration.getAuthorizations().isEnabled()).isTrue();
     // assert that it can be set from ${camunda.operate.multiTenancy.enabled}
-    assertThat(securityConfiguration.getMultiTenancy().isChecksEnabled()).isTrue();
+    assertThat(securityConfiguration.getMultiTenancy().isEnabled()).isTrue();
     assertThat(operateProperties.getImporter().getCompletedReaderMinEmptyBatches()).isEqualTo(10);
   }
 }

@@ -88,7 +88,7 @@ public class IdentityAuthenticationIT {
   public void shouldReturnTenantsWhenMultiTenancyIsEnabled() throws IOException {
     // given
     final var multiTenancyConfiguration = new MultiTenancyConfiguration();
-    multiTenancyConfiguration.setChecksEnabled(true);
+    multiTenancyConfiguration.setEnabled(true);
     when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final List<Tenant> tenants =
@@ -113,7 +113,7 @@ public class IdentityAuthenticationIT {
   public void shouldReturnEmptyListOfTenantsWhenMultiTenancyIsDisabled() {
     // given
     final var multiTenancyConfiguration = new MultiTenancyConfiguration();
-    multiTenancyConfiguration.setChecksEnabled(false);
+    multiTenancyConfiguration.setEnabled(false);
     when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     // when
@@ -129,7 +129,7 @@ public class IdentityAuthenticationIT {
   public void shouldReturnEmptyListOfTenantsWhenIdentityThrowsException() {
     // given
     final var multiTenancyConfiguration = new MultiTenancyConfiguration();
-    multiTenancyConfiguration.setChecksEnabled(true);
+    multiTenancyConfiguration.setEnabled(true);
     when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
     when(tenants.forToken(any())).thenThrow(new RestException("smth went wrong"));
 

@@ -45,14 +45,14 @@ public class CamundaSecurityConfiguration {
 
   @PostConstruct
   public void validate() {
-    final var multiTenancyEnabled = camundaSecurityProperties.getMultiTenancy().isChecksEnabled();
+    final var multiTenancyEnabled = camundaSecurityProperties.getMultiTenancy().isEnabled();
     final var apiUnprotected = camundaSecurityProperties.getAuthentication().getUnprotectedApi();
 
     if (multiTenancyEnabled && apiUnprotected) {
       throw new IllegalStateException(
           "Multi-tenancy is enabled (%s=%b), but the API is unprotected (%s=%b). Please enable API protection if you want to make use of multi-tenancy."
               .formatted(
-                  "camunda.security.multiTenancy.checksEnabled",
+                  "camunda.security.multi-tenancy.enabled",
                   true,
                   "camunda.security.authentication.unprotected-api",
                   true));

@@ -144,7 +144,7 @@ jobs:
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=${{ inputs.authorizations }} && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
-          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=${{ inputs.multi-tenancy }} && \
+          export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=${{ inputs.multi-tenancy }} && \
           export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo && \
           export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo && \
           export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo && \
@@ -170,7 +170,7 @@ jobs:
           export INITIAL_CLAIM_VALUE=${{ steps.secrets.outputs.INITIAL_CLAIM_VALUE}}  && \
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
-          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED=${{ inputs.multi-tenancy }} && \
+          export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=${{ inputs.multi-tenancy }} && \
           export SPRING_PROFILES_ACTIVE=identity,broker,consolidated-auth && \
           ./bin/camunda &
           sleep 60

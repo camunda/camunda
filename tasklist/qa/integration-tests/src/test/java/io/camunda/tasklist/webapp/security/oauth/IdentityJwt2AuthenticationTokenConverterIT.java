@@ -107,7 +107,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(identity.tenants()).thenReturn(tenants);
 
     final var multiTenancyConfiguration = new MultiTenancyConfiguration();
-    multiTenancyConfiguration.setChecksEnabled(true);
+    multiTenancyConfiguration.setEnabled(true);
     when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final List<Tenant> tenants =
@@ -141,7 +141,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(identity.tenants()).thenReturn(tenants);
 
     final var multiTenancyConfiguration = new MultiTenancyConfiguration();
-    multiTenancyConfiguration.setChecksEnabled(false);
+    multiTenancyConfiguration.setEnabled(false);
     when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final Jwt token = createJwtTokenWith();
@@ -164,7 +164,7 @@ public class IdentityJwt2AuthenticationTokenConverterIT {
     when(identity.tenants()).thenReturn(tenants);
 
     final var multiTenancyConfiguration = new MultiTenancyConfiguration();
-    multiTenancyConfiguration.setChecksEnabled(true);
+    multiTenancyConfiguration.setEnabled(true);
     when(securityConfiguration.getMultiTenancy()).thenReturn(multiTenancyConfiguration);
 
     final Jwt token = createJwtTokenWith();

@@ -50,7 +50,7 @@ public class MultiTenantDeploymentCreateAuthorizationTest {
                 cfg.getInitialization()
                     .getDefaultRoles()
                     .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername())));
-                cfg.getMultiTenancy().setChecksEnabled(true);
+                cfg.getMultiTenancy().setEnabled(true);
               });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();

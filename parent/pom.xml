@@ -68,13 +68,13 @@
     <version.instancio>5.4.1</version.instancio>
     <version.surefire>3.5.3</version.surefire>
     <version.jackson>2.19.2</version.jackson>
-    <version.junit>5.13.4</version.junit>
+    <version.junit>5.13.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.25.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
     <version.mockito>5.18.0</version.mockito>
     <version.model>7.7.0</version.model>
-    <version.msgpack>0.9.10</version.msgpack>
+    <version.msgpack>0.9.9</version.msgpack>
     <version.netty>4.1.119.Final</version.netty>
     <version.objenesis>3.4</version.objenesis>
     <version.opensearch>2.14.0</version.opensearch>
@@ -103,7 +103,7 @@
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.5</version.rest-assured>
     <version.spring>6.2.8</version.spring>
-    <version.spring-security>6.5.2</version.spring-security>
+    <version.spring-security>6.5.1</version.spring-security>
     <version.spring-boot>3.4.7</version.spring-boot>
     <version.tomcat>10.1.43</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
@@ -137,7 +137,7 @@
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-    <version.jackson-annotations>2.19.2</version.jackson-annotations>
+    <version.jackson-annotations>2.19.1</version.jackson-annotations>
     <version.json-path>2.9.0</version.json-path>
     <version.swagger-annotations>2.2.34</version.swagger-annotations>
     <version.checker-qual>3.49.5</version.checker-qual>
