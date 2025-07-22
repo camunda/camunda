@@ -33,8 +33,7 @@ test.beforeAll(async () => {
         .processInstanceKey,
     ),
   };
-
-  await sleep(1000);
+  await sleep(500);
   {
     processB_v_1 = {
       processInstanceKey: Number(
@@ -51,8 +50,6 @@ test.beforeAll(async () => {
       ),
     };
   }
-  await sleep(1000);
-
   const createdInstances = await createInstances(
     'instancesTableProcessForInfiniteScroll',
     1,
@@ -61,17 +58,16 @@ test.beforeAll(async () => {
   scrollingInstances = createdInstances.map((instance) => ({
     processInstanceKey: Number(instance.processInstanceKey),
   }));
-  await sleep(1000);
-});
-
-test.beforeEach(async ({page, loginPage, operateHomePage}) => {
-  await navigateToApp(page, 'operate');
-  await loginPage.login('demo', 'demo');
-  await expect(operateHomePage.operateBanner).toBeVisible();
-  await operateHomePage.clickProcessesTab();
 });
 
 test.describe('Process Instances Table', () => {
+  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+    await navigateToApp(page, 'operate');
+    await loginPage.login('demo', 'demo');
+    await expect(operateHomePage.operateBanner).toBeVisible();
+    await operateHomePage.clickProcessesTab();
+  });
+
   test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
