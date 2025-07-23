@@ -660,7 +660,7 @@ final class NettyMessagingServiceTest {
           .sendAndReceive(
               netty2.address(), subject, "get channel".getBytes(), true, timeoutOnCreate)
           .join();
-      final var originalChannel = channelPool.getChannel(netty2.address(), subject).join();
+      final var originalChannel = channelPool.getChannel(netty2.address(), subject, false).join();
 
       // set up handler which will always cause timeouts
       netty2.unregisterHandler(subject);
@@ -682,7 +682,7 @@ final class NettyMessagingServiceTest {
       netty1.sendAndReceive(netty2.address(), subject, "success".getBytes(), true, timeoutOnCreate);
 
       // then
-      final var currentChannel = channelPool.getChannel(netty2.address(), subject).join();
+      final var currentChannel = channelPool.getChannel(netty2.address(), subject, false).join();
       assertThat(currentChannel).isEqualTo(originalChannel);
     }
 
@@ -726,7 +726,7 @@ final class NettyMessagingServiceTest {
             return CompletableFuture.completedFuture(null);
           });
       final var clientChannel =
-          netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+          netty1.getChannelPool().getChannel(netty2.address(), subject, false).join();
 
       Awaitility.await("Until first heartbeat has been received on the server")
           .until(receivedHeartbeat::get);
@@ -754,7 +754,8 @@ final class NettyMessagingServiceTest {
       // heartbeats are not sent from the client
       netty1.disableHeartbeats();
       // a client channel
-      final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+      final var channel =
+          netty1.getChannelPool().getChannel(netty2.address(), subject, false).join();
 
       // when
       // a request is made without heartbeats
@@ -784,7 +785,7 @@ final class NettyMessagingServiceTest {
         startMessagingServices(netty3);
         // when
         final var clientChannel =
-            netty1.getChannelPool().getChannel(netty3.address(), subject).join();
+            netty1.getChannelPool().getChannel(netty3.address(), subject, false).join();
         // then
         // the channel stays open because netty3's config are ignored
         assertThatThrownBy(() -> clientChannel.closeFuture().get(1, TimeUnit.SECONDS))
@@ -800,7 +801,8 @@ final class NettyMessagingServiceTest {
       // the server does not support heartbeats
       netty2.disableHeartbeats();
       // a client channel
-      final var channel = netty1.getChannelPool().getChannel(netty2.address(), subject).join();
+      final var channel =
+          netty1.getChannelPool().getChannel(netty2.address(), subject, false).join();
 
       // a Handler that does not forward back replies to heartbeats to simulate a server with an old
       // version that does not support heartbeats

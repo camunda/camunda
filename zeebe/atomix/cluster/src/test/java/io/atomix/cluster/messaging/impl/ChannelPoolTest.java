@@ -34,12 +34,13 @@ class ChannelPoolTest {
     // given
     final Address addressWithOldIP =
         new Address("foo.bar", 1234, InetAddress.getByName("10.1.1.1"));
-    final var channelForOldIP = channelPool.getChannel(addressWithOldIP, MESSAGE_TYPE).join();
+    final var channelForOldIP =
+        channelPool.getChannel(addressWithOldIP, MESSAGE_TYPE, false).join();
 
     // when
     final Address addressWithNewIP =
         new Address("foo.bar", 1234, InetAddress.getByName("10.1.1.2"));
-    final var channelForNewIP = channelPool.getChannel(addressWithNewIP, "test").join();
+    final var channelForNewIP = channelPool.getChannel(addressWithNewIP, "test", false).join();
 
     // then
     assertThat(channelForOldIP).isNotEqualTo(channelForNewIP);
@@ -49,12 +50,14 @@ class ChannelPoolTest {
   void shouldNotUseIncorrectChannelWhenIPReused() throws UnknownHostException {
     // given
     final Address nodeWithSameIP = new Address("foo.bar", 1234, InetAddress.getByName("10.1.1.1"));
-    final var channelForOldNode = channelPool.getChannel(nodeWithSameIP, MESSAGE_TYPE).join();
+    final var channelForOldNode =
+        channelPool.getChannel(nodeWithSameIP, MESSAGE_TYPE, false).join();
 
     // when
     final Address newNodeWithSameIP =
         new Address("foo.foo", 1234, InetAddress.getByName("10.1.1.1"));
-    final var channelForNewNode = channelPool.getChannel(newNodeWithSameIP, MESSAGE_TYPE).join();
+    final var channelForNewNode =
+        channelPool.getChannel(newNodeWithSameIP, MESSAGE_TYPE, false).join();
 
     // then
     assertThat(channelForOldNode).isNotEqualTo(channelForNewNode);

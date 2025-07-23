@@ -172,6 +172,13 @@ public enum MessagingMetricsDoc implements ExtendedMeterDocumentation {
       public String asString() {
         return "outcome";
       }
-    };
+    },
+
+    CHANNEL_ID {
+      @Override
+      public String asString() {
+        return "channelId";
+      }
+    }
   }
 }

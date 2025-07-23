@@ -16,6 +16,8 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import static io.atomix.cluster.messaging.impl.MessagingMetrics.CHANNEL_ID_ATTRIBUTE;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.atomix.utils.net.Address;
@@ -36,7 +38,7 @@ class ChannelPool {
 
   private final Function<Address, CompletableFuture<Channel>> factory;
   private final int size;
-  private final Map<Tuple<Address, InetAddress>, List<CompletableFuture<Channel>>> channels =
+  private final Map<Tuple<Address, InetAddress>, ChannelsForAddress> channels =
       Maps.newConcurrentMap();
 
   ChannelPool(final Function<Address, CompletableFuture<Channel>> factory, final int size) {
@@ -50,11 +52,10 @@ class ChannelPool {
    * @param address the address for which to return the channel pool
    * @return the channel pool for the given address
    */
-  private List<CompletableFuture<Channel>> getChannelPool(
-      final Address address, final InetAddress inetAddress) {
+  private ChannelsForAddress getChannelPool(final Address address, final InetAddress inetAddress) {
     final Tuple<Address, InetAddress> channelPoolIdentifier = new Tuple<>(address, inetAddress);
 
-    final List<CompletableFuture<Channel>> channelPool = channels.get(channelPoolIdentifier);
+    final ChannelsForAddress channelPool = channels.get(channelPoolIdentifier);
     if (channelPool != null) {
       return channelPool;
     }
@@ -65,7 +66,8 @@ class ChannelPool {
           for (int i = 0; i < size; i++) {
             defaultList.add(null);
           }
-          return Lists.newCopyOnWriteArrayList(defaultList);
+          return new ChannelsForAddress(
+              Lists.newCopyOnWriteArrayList(defaultList), Maps.newConcurrentMap());
         });
   }
 
@@ -79,6 +81,42 @@ class ChannelPool {
     return Math.abs(messageType.hashCode() % size);
   }
 
+  private CompletableFuture<Channel> lookupChannel(
+      final ChannelsForAddress channelsForAddress,
+      final String messageType,
+      final boolean dedicatedChannel) {
+    if (dedicatedChannel) {
+      return channelsForAddress.dedicatedChannels.get(messageType);
+    }
+    final var offset = getChannelOffset(messageType);
+    return channelsForAddress.channels.get(offset);
+  }
+
+  private void setChannel(
+      final ChannelsForAddress channelsForAddress,
+      final String messageType,
+      final boolean dedicatedChannel,
+      final CompletableFuture<Channel> channelFuture) {
+    if (dedicatedChannel) {
+      channelsForAddress.dedicatedChannels.put(messageType, channelFuture);
+      channelFuture.whenComplete(
+          (channel, error) -> {
+            if (error == null) {
+              channel.attr(CHANNEL_ID_ATTRIBUTE).set("dedicated-" + messageType);
+            }
+          });
+    } else {
+      final var offset = getChannelOffset(messageType);
+      channelsForAddress.channels.set(offset, channelFuture);
+      channelFuture.whenComplete(
+          (channel, error) -> {
+            if (error == null) {
+              channel.attr(CHANNEL_ID_ATTRIBUTE).set("shared-" + offset);
+            }
+          });
+    }
+  }
+
   /**
    * Gets or creates a pooled channel to the given address for the given message type.
    *
@@ -86,16 +124,17 @@ class ChannelPool {
    * @param messageType the message type for which to get the channel
    * @return a future to be completed with a channel from the pool
    */
-  CompletableFuture<Channel> getChannel(final Address address, final String messageType) {
+  CompletableFuture<Channel> getChannel(
+      final Address address, final String messageType, final boolean dedicatedChannel) {
     final InetAddress inetAddress = address.getAddress();
 
-    final List<CompletableFuture<Channel>> channelPool = getChannelPool(address, inetAddress);
-    final int offset = getChannelOffset(messageType);
+    final ChannelsForAddress channelPool = getChannelPool(address, inetAddress);
 
-    CompletableFuture<Channel> channelFuture = channelPool.get(offset);
+    CompletableFuture<Channel> channelFuture =
+        lookupChannel(channelPool, messageType, dedicatedChannel);
     if (channelFuture == null || channelFuture.isCompletedExceptionally()) {
       synchronized (channelPool) {
-        channelFuture = channelPool.get(offset);
+        channelFuture = lookupChannel(channelPool, messageType, dedicatedChannel);
         if (channelFuture == null || channelFuture.isCompletedExceptionally()) {
           LOGGER.debug("Connecting to {}", address);
           channelFuture = factory.apply(address);
@@ -111,14 +150,15 @@ class ChannelPool {
                           closed -> {
                             synchronized (channelPool) {
                               // Remove channel from the pool after it is closed.
-                              removeChannel(channelPool, offset, finalFuture);
+                              removeChannel(
+                                  channelPool, messageType, dedicatedChannel, finalFuture);
                             }
                           });
                 } else {
                   LOGGER.debug("Failed to connect to {}", address, error);
                 }
               });
-          channelPool.set(offset, channelFuture);
+          setChannel(channelPool, messageType, dedicatedChannel, channelFuture);
         }
       }
     }
@@ -131,18 +171,18 @@ class ChannelPool {
             if (!channel.isActive()) {
               CompletableFuture<Channel> currentFuture;
               synchronized (channelPool) {
-                currentFuture = channelPool.get(offset);
+                currentFuture = lookupChannel(channelPool, messageType, dedicatedChannel);
                 if (currentFuture == finalFuture) {
-                  channelPool.set(offset, null);
+                  setChannel(channelPool, messageType, dedicatedChannel, null);
                 } else if (currentFuture == null) {
                   currentFuture = factory.apply(address);
                   currentFuture.whenComplete(this::logConnection);
-                  channelPool.set(offset, currentFuture);
+                  setChannel(channelPool, messageType, dedicatedChannel, currentFuture);
                 }
               }
 
               if (currentFuture == finalFuture) {
-                getChannel(address, messageType)
+                getChannel(address, messageType, dedicatedChannel)
                     .whenComplete(
                         (recursiveResult, recursiveError) -> {
                           completeFuture(future, recursiveResult, recursiveError);
@@ -164,14 +204,15 @@ class ChannelPool {
     return future;
   }
 
-  private static void removeChannel(
-      final List<CompletableFuture<Channel>> channelPool,
-      final int offset,
+  private void removeChannel(
+      final ChannelsForAddress channelPool,
+      final String messageType,
+      final boolean dedicatedChannel,
       final CompletableFuture<Channel> finalFuture) {
-    final var currentFuture = channelPool.get(offset);
+    final var currentFuture = lookupChannel(channelPool, messageType, dedicatedChannel);
     // check if new channel is already replaced before removing it.
     if (finalFuture == currentFuture) {
-      channelPool.set(offset, null);
+      setChannel(channelPool, messageType, dedicatedChannel, null);
     }
   }
 
@@ -193,4 +234,8 @@ class ChannelPool {
       LOGGER.debug("Failed to connect to {}", channel.remoteAddress(), e);
     }
   }
+
+  record ChannelsForAddress(
+      List<CompletableFuture<Channel>> channels,
+      Map<String, CompletableFuture<Channel>> dedicatedChannels) {}
 }

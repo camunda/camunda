@@ -166,14 +166,14 @@ public class RemoteClientConnectionTest {
     }
 
     @Override
-    public void countMessage(final String to, final String name) {
+    public void countMessage(final String to, final String name, final String channelId) {
       final String key = computeKey(to, name);
       final Integer integer = messageCount.computeIfAbsent(key, s -> 0);
       messageCount.put(key, integer + 1);
     }
 
     @Override
-    public void countRequestResponse(final String to, final String name) {
+    public void countRequestResponse(final String to, final String name, final String channelId) {
       final String key = computeKey(to, name);
       final Integer integer = reqRespCount.computeIfAbsent(key, k -> 0);
       reqRespCount.put(key, integer + 1);

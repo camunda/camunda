@@ -16,6 +16,8 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import static io.atomix.cluster.messaging.impl.MessagingMetrics.CHANNEL_ID_ATTRIBUTE;
+
 import io.netty.channel.Channel;
 import java.util.concurrent.CompletableFuture;
 
@@ -64,16 +66,19 @@ final class RemoteClientConnection extends AbstractClientConnection {
   private void countMessageMetrics(final ProtocolRequest message) {
     final String toAddress = channel.remoteAddress().toString();
     final String subject = message.subject();
-    messagingMetrics.countMessage(channel.remoteAddress().toString(), message.subject());
+    final String channelId = channel.attr(CHANNEL_ID_ATTRIBUTE).get();
+    messagingMetrics.countMessage(channel.remoteAddress().toString(), message.subject(), channelId);
     final byte[] payload = message.payload();
     messagingMetrics.observeRequestSize(toAddress, subject, payload == null ? 0 : payload.length);
   }
 
   private void countReqResponseMetrics(
       final ProtocolRequest message, final CompletableFuture<byte[]> responseFuture) {
+    // TODO: Read our own channel id and use it to mark the metric
+    final String channelId = channel.attr(CHANNEL_ID_ATTRIBUTE).get();
     final String toAddress = channel.remoteAddress().toString();
     final String subject = message.subject();
-    messagingMetrics.countRequestResponse(toAddress, subject);
+    messagingMetrics.countRequestResponse(toAddress, subject, channelId);
     messagingMetrics.incInFlightRequests(toAddress, subject);
     final var timer = messagingMetrics.startRequestTimer(subject);
     final byte[] payload = message.payload();

@@ -107,8 +107,8 @@ public interface ClusterCommunicationService {
    * as:
    *
    * <ul>
-   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoSuchMemberException} - indicates
-   *       that the local membership protocol cannot resolve the given member ID to a node address
+   *   <li>{@link MessagingException.NoSuchMemberException} - indicates that the local membership
+   *       protocol cannot resolve the given member ID to a node address
    * </ul>
    *
    * @param subject message subject
@@ -121,13 +121,46 @@ public interface ClusterCommunicationService {
    * @param <R> reply type
    * @return reply future
    */
+  default <M, R> CompletableFuture<R> send(
+      final String subject,
+      final M message,
+      final Function<M, byte[]> encoder,
+      final Function<byte[], R> decoder,
+      final MemberId toMemberId,
+      final Duration timeout) {
+    return send(subject, message, encoder, decoder, toMemberId, timeout, false);
+  }
+
+  /**
+   * Sends a message and expects a reply.
+   *
+   * <p>The returned future may be completed exceptionally with any exceptions listed by {@link
+   * MessagingService#sendAndReceive(Address, String, byte[], boolean, Duration, Executor)}, as well
+   * as:
+   *
+   * <ul>
+   *   <li>{@link io.atomix.cluster.messaging.MessagingException.NoSuchMemberException} - indicates
+   *       that the local membership protocol cannot resolve the given member ID to a node address
+   * </ul>
+   *
+   * @param <M> request type
+   * @param <R> reply type
+   * @param subject message subject
+   * @param message message to send
+   * @param encoder function for encoding request to byte[]
+   * @param decoder function for decoding response from byte[]
+   * @param toMemberId recipient node identifier
+   * @param timeout response timeout
+   * @return reply future
+   */
   <M, R> CompletableFuture<R> send(
       String subject,
       M message,
       Function<M, byte[]> encoder,
       Function<byte[], R> decoder,
       MemberId toMemberId,
-      Duration timeout);
+      Duration timeout,
+      final boolean dedicatedConnection);
 
   /**
    * Adds a new subscriber for the specified message subject, which must return a reply.

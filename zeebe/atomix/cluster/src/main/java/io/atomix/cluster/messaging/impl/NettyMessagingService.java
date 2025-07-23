@@ -234,12 +234,16 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
   @Override
   public CompletableFuture<Void> sendAsync(
-      final Address address, final String type, final byte[] payload, final boolean keepAlive) {
+      final Address address,
+      final String type,
+      final byte[] payload,
+      final boolean keepAlive,
+      final boolean dedicatedChannel) {
     final long messageId = messageIdGenerator.incrementAndGet();
     final ProtocolRequest message =
         new ProtocolRequest(messageId, advertisedAddress, type, payload);
     return executeOnPooledConnection(
-        address, type, c -> c.sendAsync(message), MoreExecutors.directExecutor());
+        address, type, dedicatedChannel, c -> c.sendAsync(message), MoreExecutors.directExecutor());
   }
 
   @Override
@@ -263,6 +267,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   public CompletableFuture<byte[]> sendAndReceive(
       final Address address,
       final String type,
+      final boolean dedicatedChannel,
       final byte[] payload,
       final boolean keepAlive,
       final Duration timeout) {
@@ -274,6 +279,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   public CompletableFuture<byte[]> sendAndReceive(
       final Address address,
       final String type,
+      final boolean dedicatedChannel,
       final byte[] payload,
       final boolean keepAlive,
       final Duration timeout,
@@ -289,7 +295,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
     final CompletableFuture<byte[]> responseFuture;
     if (keepAlive) {
       responseFuture =
-          executeOnPooledConnection(address, type, c -> c.sendAndReceive(message), executor);
+          executeOnPooledConnection(
+              address, type, dedicatedChannel, c -> c.sendAndReceive(message), executor);
     } else {
       responseFuture =
           executeOnTransientConnection(address, c -> c.sendAndReceive(message), executor);
@@ -641,10 +648,11 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private <T> CompletableFuture<T> executeOnPooledConnection(
       final Address address,
       final String type,
+      final boolean dedicatedChannel,
       final Function<ClientConnection, CompletableFuture<T>> callback,
       final Executor executor) {
     final CompletableFuture<T> future = new CompletableFuture<>();
-    executeOnPooledConnection(address, type, callback, executor, future);
+    executeOnPooledConnection(address, type, dedicatedChannel, callback, executor, future);
     return future;
   }
 
@@ -661,6 +669,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private <T> void executeOnPooledConnection(
       final Address address,
       final String type,
+      final boolean dedicatedChannel,
       final Function<ClientConnection, CompletableFuture<T>> callback,
       final Executor executor,
       final CompletableFuture<T> responseFuture) {
@@ -680,7 +689,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
 
     openFutures.add(responseFuture);
     channelPool
-        .getChannel(address, type)
+        .getChannel(address, type, dedicatedChannel)
         .whenComplete(
             (channel, channelError) -> {
               if (channelError == null) {
