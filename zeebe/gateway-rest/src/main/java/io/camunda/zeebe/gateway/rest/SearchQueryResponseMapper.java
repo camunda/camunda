@@ -37,7 +37,7 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
-import io.camunda.search.entities.UsageMetricsCount;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -117,6 +117,7 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponseItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
@@ -129,6 +130,7 @@ import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
@@ -136,12 +138,31 @@ public final class SearchQueryResponseMapper {
   private SearchQueryResponseMapper() {}
 
   public static UsageMetricsResponse toUsageMetricsResponse(
-      final SearchQueryResult<UsageMetricsCount> usageMetricsCountResult) {
-    final UsageMetricsCount usageMetricsCount = usageMetricsCountResult.items().getFirst();
-    return new UsageMetricsResponse()
-        .assignees(usageMetricsCount.assignees())
-        .processInstances(usageMetricsCount.processInstances())
-        .decisionInstances(usageMetricsCount.decisionInstances());
+      final SearchQueryResult<UsageMetricStatisticsEntity> result, final boolean tenants) {
+
+    final var statistics = result.items().getFirst();
+
+    final var response =
+        new UsageMetricsResponse()
+            .assignees(0L)
+            .processInstances(statistics.totalRpi())
+            .decisionInstances(statistics.totalEdi())
+            .activeTenants(statistics.at());
+
+    if (tenants && !statistics.tenants().isEmpty()) {
+      response.tenants(
+          statistics.tenants().entrySet().stream()
+              .collect(
+                  Collectors.toMap(
+                      Entry::getKey,
+                      e ->
+                          new UsageMetricsResponseItem()
+                              .processInstances(e.getValue().rpi())
+                              .decisionInstances(e.getValue().edi())
+                              .assignees(0L))));
+    }
+
+    return response;
   }
 
   public static ProcessDefinitionSearchQueryResult toProcessDefinitionSearchQueryResponse(

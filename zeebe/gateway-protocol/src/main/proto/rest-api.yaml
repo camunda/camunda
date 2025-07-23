@@ -4870,7 +4870,7 @@ paths:
         - Usage metrics
       operationId: getUsageMetrics
       summary: Get usage metrics
-      description: Retrieve the usage metrics by given start and end date.
+      description: Retrieve the usage metrics based on given criteria.
       parameters:
         - name: startTime
           in: query
@@ -4878,14 +4878,27 @@ paths:
           description: The start date for usage metrics, including this date.
           schema:
             type: string
-            format: date-time
+            format: date
         - name: endTime
           in: query
           required: true
           description: The end date for usage metrics, including this date.
           schema:
             type: string
-            format: date-time
+            format: date
+        - name: tenantId
+          in: query
+          required: false
+          description: Restrict results to a specific tenant ID. If not provided, results for all tenants are returned.
+          schema:
+            type: string
+        - name: withTenants
+          in: query
+          required: false
+          description: Whether to return tenant metrics in addition to the total metrics or not. Default false.
+          schema:
+            type: boolean
+            default: false
       responses:
         "200":
           description: >
@@ -7291,17 +7304,33 @@ components:
           description: The assigned key of the decision requirements graph that the decision definition is part of.
     UsageMetricsResponse:
       type: object
+      allOf:
+        - $ref: "#/components/schemas/UsageMetricsResponseItem"
       properties:
-        assignees:
-          description: The amount of unique active users.
+        activeTenants:
+          description: The amount of active tenants.
           type: integer
           format: int64
+        tenants:
+          description: The usage metrics by tenants. Only available if request `withTenants` query parameter was `true`.
+          type: object
+          additionalProperties:
+            type: object
+            allOf:
+              - $ref: "#/components/schemas/UsageMetricsResponseItem"
+    UsageMetricsResponseItem:
+      type: object
+      properties:
         processInstances:
           description: The amount of created root process instances.
           type: integer
           format: int64
         decisionInstances:
           description: The amount of executed decision instances.
+          type: integer
+          format: int64
+        assignees:
+          description: The amount of unique active task users.
           type: integer
           format: int64
 

@@ -11,8 +11,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.UsageMetricsCount;
-import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
+import io.camunda.search.entities.UsageMetricStatisticsEntity.UsageMetricStatisticsEntityTenant;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -21,6 +21,7 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -35,13 +36,33 @@ public class UsageMetricsControllerTest extends RestControllerTest {
   static final String EXPECTED_SEARCH_RESPONSE =
       """
       {
-         "assignees": 5,
-         "processInstances": 23,
-         "decisionInstances": 17
+         "processInstances": 5,
+         "decisionInstances": 23,
+         "activeTenants": 2,
+         "assignees": 0,
+         "tenants": {}
       }""";
 
-  static final SearchQueryResult<UsageMetricsCount> USAGE_METRICS_COUNT_ENTITY =
-      SearchQueryResult.of(new UsageMetricsCount(5L, 23L, 17L));
+  static final String EXPECTED_TENANTS_SEARCH_RESPONSE =
+      """
+      {
+         "processInstances": 5,
+         "decisionInstances": 23,
+         "activeTenants": 2,
+         "assignees": 0,
+         "tenants": {
+           "tenant1": {
+             "processInstances": 1,
+             "decisionInstances": 2,
+             "assignees": 0
+           },
+           "tenant2": {
+             "processInstances": 4,
+             "decisionInstances": 21,
+             "assignees": 0
+           }
+         }
+      }""";
 
   @MockitoBean UsageMetricsServices usageMetricsServices;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
@@ -57,8 +78,8 @@ public class UsageMetricsControllerTest extends RestControllerTest {
   @Test
   void shouldSearchWithStartTimeAndEndTime() {
     // given
-    when(usageMetricsServices.search(any(UsageMetricsQuery.class)))
-        .thenReturn(USAGE_METRICS_COUNT_ENTITY);
+    when(usageMetricsServices.search(any()))
+        .thenReturn(SearchQueryResult.of(new UsageMetricStatisticsEntity(5L, 23L, 2L, null)));
     // when/then
     webClient
         .get()
@@ -78,11 +99,42 @@ public class UsageMetricsControllerTest extends RestControllerTest {
     final var endTime = OffsetDateTime.of(2024, 12, 31, 10, 50, 26, 0, ZoneOffset.UTC);
 
     verify(usageMetricsServices)
+        .search(UsageMetricsQuery.of(q -> q.filter(f -> f.startTime(startTime).endTime(endTime))));
+  }
+
+  @Test
+  void shouldSearchWithStartTimeAndEndTimeAndTenants() {
+    // given
+    final var tenants =
+        Map.of(
+            "tenant1",
+            new UsageMetricStatisticsEntityTenant(1L, 2L),
+            "tenant2",
+            new UsageMetricStatisticsEntityTenant(4L, 21L));
+    when(usageMetricsServices.search(any()))
+        .thenReturn(SearchQueryResult.of(new UsageMetricStatisticsEntity(5L, 23L, 2L, tenants)));
+    // when/then
+    webClient
+        .get()
+        .uri(
+            USAGE_METRICS_URL
+                + "?startTime=1970-11-14T10:50:26.000Z&endTime=2024-12-31T10:50:26.000Z&withTenants=true")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_TENANTS_SEARCH_RESPONSE, JsonCompareMode.STRICT);
+
+    final var startTime = OffsetDateTime.of(1970, 11, 14, 10, 50, 26, 0, ZoneOffset.UTC);
+    final var endTime = OffsetDateTime.of(2024, 12, 31, 10, 50, 26, 0, ZoneOffset.UTC);
+
+    verify(usageMetricsServices)
         .search(
-            new UsageMetricsQuery.Builder()
-                .filter(
-                    new UsageMetricsFilter.Builder().startTime(startTime).endTime(endTime).build())
-                .build());
+            UsageMetricsQuery.of(
+                q -> q.filter(f -> f.startTime(startTime).endTime(endTime).withTenants(true))));
   }
 
   @Test

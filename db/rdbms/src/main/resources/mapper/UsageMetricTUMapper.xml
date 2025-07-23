@@ -57,6 +57,9 @@
       <if test="filter.endTime != null">
         AND EVENT_TIME &lt; #{filter.endTime}
       </if>
+      <if test="filter.tenantId != null">
+        AND TENANT_ID = #{filter.tenantId}
+      </if>
     </where>
   </sql>
 

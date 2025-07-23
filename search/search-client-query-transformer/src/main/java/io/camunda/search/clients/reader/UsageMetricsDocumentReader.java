@@ -8,6 +8,7 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
+import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
@@ -27,5 +28,12 @@ public class UsageMetricsDocumentReader extends DocumentBasedReader implements U
             query,
             io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity.class,
             resourceAccessChecks);
+  }
+
+  @Override
+  public UsageMetricStatisticsEntity usageMetricStatistics(
+      final UsageMetricsQuery query, final ResourceAccessChecks access) {
+    // TODO not implemented yet
+    return null;
   }
 }
