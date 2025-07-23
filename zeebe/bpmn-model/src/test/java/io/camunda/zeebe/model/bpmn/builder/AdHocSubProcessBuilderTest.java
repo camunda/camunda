@@ -16,6 +16,7 @@
 package io.camunda.zeebe.model.bpmn.builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -25,6 +26,9 @@ import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -182,5 +186,104 @@ class AdHocSubProcessBuilderTest {
         .first()
         .extracting(ZeebeAdHoc::getImplementationType)
         .isEqualTo(implementationType);
+  }
+
+  @Test
+  void shouldSetTaskDefinition() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
+                        .zeebeJobType("jobType")
+                        .zeebeJobRetries("3")
+                        .task("A"))
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeTaskDefinition.class))
+        .hasSize(1)
+        .first()
+        .extracting(ZeebeTaskDefinition::getType, ZeebeTaskDefinition::getRetries)
+        .containsExactly("jobType", "3");
+  }
+
+  @Test
+  void shouldSetTaskDefinitionAsExpressions() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
+                        .zeebeJobTypeExpression("jobType")
+                        .zeebeJobRetriesExpression("3")
+                        .task("A"))
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeTaskDefinition.class))
+        .hasSize(1)
+        .first()
+        .extracting(ZeebeTaskDefinition::getType, ZeebeTaskDefinition::getRetries)
+        .containsExactly("=jobType", "=3");
+  }
+
+  @Test
+  void shouldSetTaskHeaders() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .zeebeImplementation(ZeebeAdHocImplementationType.JOB_WORKER)
+                        .zeebeJobType("jobType")
+                        .zeebeTaskHeader("headerKey1", "headerValue1")
+                        .zeebeTaskHeader("headerKey2", "headerValue2")
+                        .task("A"))
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeTaskHeaders.class))
+        .hasSize(1)
+        .first()
+        .extracting(ZeebeTaskHeaders::getHeaders)
+        .satisfies(
+            headers ->
+                assertThat(headers)
+                    .extracting(ZeebeHeader::getKey, ZeebeHeader::getValue)
+                    .containsExactly(
+                        tuple("headerKey1", "headerValue1"), tuple("headerKey2", "headerValue2")));
   }
 }
