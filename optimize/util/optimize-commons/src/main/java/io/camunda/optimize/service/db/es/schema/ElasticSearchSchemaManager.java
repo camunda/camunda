@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.es.schema;
 
 import static io.camunda.optimize.service.db.DatabaseClient.convertToPrefixedAliasNames;
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_ALREADY_EXISTS_EXCEPTION_TYPE;
-import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static java.util.stream.Collectors.toSet;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -22,11 +21,7 @@ import co.elastic.clients.elasticsearch.indices.IndexSettings;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.PutTemplateRequest;
-import co.elastic.clients.json.JsonData;
-import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.util.Pair;
-import com.fasterxml.jackson.core.JsonFactory;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import io.camunda.optimize.service.db.es.MappingMetadataUtilES;
@@ -60,16 +55,12 @@ import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -187,7 +178,6 @@ public class ElasticSearchSchemaManager
         indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
     final String suffixedIndexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
     final IndexSettings indexSettings = createIndexSettings(mapping);
-    final Map<String, JsonData> indexSettingsMap = convertToMap(indexSettings);
 
     try {
       if (mapping.isCreateFromTemplate()) {
@@ -195,7 +185,7 @@ public class ElasticSearchSchemaManager
         // template to
         // ensure correct alias handling on rollover
         createOrUpdateTemplateWithAliases(
-            esClient, mapping, defaultAliasName, prefixedReadOnlyAliases, indexSettingsMap);
+            esClient, mapping, defaultAliasName, prefixedReadOnlyAliases, indexSettings);
         createOptimizeIndexWithWriteAliasFromTemplate(
             esClient, suffixedIndexName, defaultAliasName);
       } else {
@@ -244,7 +234,6 @@ public class ElasticSearchSchemaManager
     final String templateName =
         indexNameService.getOptimizeIndexTemplateNameWithVersion(mappingCreator);
     final IndexSettings indexSettings = createIndexSettings(mappingCreator);
-    final Map<String, JsonData> indexSettingsMap = convertToMap(indexSettings);
     LOG.debug("Creating or updating template with name {}.", templateName);
     try {
       esClient.createTemplate(
@@ -253,7 +242,7 @@ public class ElasticSearchSchemaManager
                   b.name(templateName)
                       .version((long) mappingCreator.getVersion())
                       .mappings(mappingCreator.getSource())
-                      .settings(indexSettingsMap)
+                      .settings(indexSettings)
                       .indexPatterns(
                           Collections.singletonList(
                               indexNameService.getOptimizeIndexNameWithVersionWithWildcardSuffix(
@@ -356,7 +345,7 @@ public class ElasticSearchSchemaManager
       final IndexMappingCreator<IndexSettings.Builder> mappingCreator,
       final String defaultAliasName,
       final Set<String> additionalAliases,
-      final Map<String, JsonData> indexSettings) {
+      final IndexSettings indexSettings) {
     final String templateName =
         indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
     LOG.info("Creating or updating template with name {}", templateName);
@@ -441,9 +430,8 @@ public class ElasticSearchSchemaManager
     final String defaultAliasName =
         indexNameService.getOptimizeIndexAliasForIndex(mappingCreator.getIndexName());
     final IndexSettings indexSettings = createIndexSettings(mappingCreator);
-    final Map<String, JsonData> indexSettingsMap = convertToMap(indexSettings);
     createOrUpdateTemplateWithAliases(
-        esClient, mappingCreator, defaultAliasName, Sets.newHashSet(), indexSettingsMap);
+        esClient, mappingCreator, defaultAliasName, Sets.newHashSet(), indexSettings);
   }
 
   private void updateIndexDynamicSettingsAndMappings(
@@ -492,24 +480,6 @@ public class ElasticSearchSchemaManager
     try {
       return ElasticSearchIndexSettingsBuilder.buildAllSettings(
           configurationService, indexMappingCreator);
-    } catch (final IOException e) {
-      LOG.error("Could not create settings!", e);
-      throw new OptimizeRuntimeException("Could not create index settings");
-    }
-  }
-
-  private Map<String, JsonData> convertToMap(final IndexSettings indexSettings) {
-    try {
-      final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
-      final StringWriter writer = new StringWriter();
-      final JacksonJsonpGenerator generator =
-          new JacksonJsonpGenerator(new JsonFactory().createGenerator(writer));
-      indexSettings.serialize(generator, jsonpMapper);
-      generator.flush();
-      return ((Map<String, Object>)
-              JsonData.from(new StringReader(writer.toString())).to(Map.class))
-          .entrySet().stream()
-              .collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonData.of(entry.getValue())));
     } catch (final IOException e) {
       LOG.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");

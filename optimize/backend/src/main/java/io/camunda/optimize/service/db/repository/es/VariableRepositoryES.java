@@ -59,7 +59,6 @@ import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.elasticsearch.core.bulk.IndexOperation;
 import co.elastic.clients.elasticsearch.core.mget.MultiGetOperation;
 import co.elastic.clients.elasticsearch.core.mget.MultiGetResponseItem;
-import co.elastic.clients.json.JsonData;
 import co.elastic.clients.util.NamedValue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
@@ -174,11 +173,9 @@ public class VariableRepositoryES implements VariableRepository {
                                                       a.script(
                                                           Script.of(
                                                               s ->
-                                                                  s.inline(
-                                                                      i ->
-                                                                          i.source(
-                                                                              ProcessInstanceScriptFactory
-                                                                                  .createVariableClearScript())))))
+                                                                  s.source(
+                                                                      ProcessInstanceScriptFactory
+                                                                          .createVariableClearScript()))))
                                               .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT)))));
               return b;
             });
@@ -392,12 +389,12 @@ public class VariableRepositoryES implements VariableRepository {
                             f ->
                                 f.range(
                                     r ->
-                                        r.field(
-                                                ExternalProcessVariableDto.Fields
-                                                    .ingestionTimestamp)
-                                            .lt(
-                                                JsonData.of(
-                                                    dateTimeFormatter.format(timestamp))))))),
+                                        r.date(
+                                            d ->
+                                                d.field(
+                                                        ExternalProcessVariableDto.Fields
+                                                            .ingestionTimestamp)
+                                                    .lt(dateTimeFormatter.format(timestamp))))))),
         deletedItemIdentifier,
         false,
         // use wildcarded index name to catch all indices that exist after potential rollover
@@ -411,7 +408,13 @@ public class VariableRepositoryES implements VariableRepository {
   public List<ExternalProcessVariableDto> getVariableUpdatesIngestedAfter(
       final Long ingestTimestamp, final int limit) {
     return getPageOfVariablesSortedByIngestionTimestamp(
-        Query.of(q -> q.range(r -> r.field(INGESTION_TIMESTAMP).gt(JsonData.of(ingestTimestamp)))),
+        Query.of(
+            q ->
+                q.range(
+                    r ->
+                        r.date(
+                            d ->
+                                d.field(INGESTION_TIMESTAMP).gt(String.valueOf(ingestTimestamp))))),
         limit);
   }
 
@@ -422,9 +425,11 @@ public class VariableRepositoryES implements VariableRepository {
             q ->
                 q.range(
                     r ->
-                        r.field(INGESTION_TIMESTAMP)
-                            .lte(JsonData.of(ingestTimestamp))
-                            .gte(JsonData.of(ingestTimestamp)))),
+                        r.date(
+                            d ->
+                                d.field(INGESTION_TIMESTAMP)
+                                    .lte(String.valueOf(ingestTimestamp))
+                                    .gte(String.valueOf(ingestTimestamp))))),
         MAX_RESPONSE_SIZE_LIMIT);
   }
 

@@ -11,8 +11,9 @@ import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.d
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery;
+import co.elastic.clients.elasticsearch._types.query_dsl.DateRangeQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
-import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
@@ -77,19 +78,21 @@ public final class DateFilterQueryUtilES {
       return Optional.empty();
     }
 
-    final RangeQuery.Builder builder = new RangeQuery.Builder();
-    builder.field(dateField);
+    final Builder db = new Builder();
+    db.field(dateField);
     if (end != null) {
       final OffsetDateTime endDateWithCorrectTimezone =
           end.atZoneSameInstant(timezone).toOffsetDateTime();
-      builder.lte(JsonData.of(FORMATTER.format(endDateWithCorrectTimezone)));
+      db.lte(FORMATTER.format(endDateWithCorrectTimezone));
     }
     if (start != null) {
       final OffsetDateTime startDateWithCorrectTimezone =
           start.atZoneSameInstant(timezone).toOffsetDateTime();
-      builder.gte(JsonData.of(FORMATTER.format(startDateWithCorrectTimezone)));
+      db.gte(FORMATTER.format(startDateWithCorrectTimezone));
     }
-    builder.format(OPTIMIZE_DATE_FORMAT);
+    db.format(OPTIMIZE_DATE_FORMAT);
+    final RangeQuery.Builder builder = new RangeQuery.Builder();
+    builder.date(db.build());
     return Optional.of(builder.build());
   }
 
@@ -99,10 +102,10 @@ public final class DateFilterQueryUtilES {
       return Optional.empty();
     }
 
-    final RangeQuery.Builder queryDate = new RangeQuery.Builder();
-    queryDate.field(dateField);
+    final DateRangeQuery.Builder builder = new DateRangeQuery.Builder();
+    builder.field(dateField);
     final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
-    queryDate.lte(JsonData.of(FORMATTER.format(now)));
+    builder.lte(FORMATTER.format(now));
 
     if (QUARTERS.equals(startDto.getUnit())) {
       LOG.warn(
@@ -115,8 +118,10 @@ public final class DateFilterQueryUtilES {
     final OffsetDateTime dateBeforeGivenFilter =
         now.minus(
             startDto.getValue(), ChronoUnit.valueOf(startDto.getUnit().getId().toUpperCase()));
-    queryDate.gte(JsonData.of(FORMATTER.format(dateBeforeGivenFilter)));
-    queryDate.format(OPTIMIZE_DATE_FORMAT);
+    builder.gte(FORMATTER.format(dateBeforeGivenFilter));
+    builder.format(OPTIMIZE_DATE_FORMAT);
+    final RangeQuery.Builder queryDate = new RangeQuery.Builder();
+    queryDate.date(builder.build());
     return Optional.of(queryDate);
   }
 
@@ -127,23 +132,24 @@ public final class DateFilterQueryUtilES {
     }
 
     final RangeQuery.Builder queryDate = new RangeQuery.Builder();
-    queryDate.field(dateField);
+    final DateRangeQuery.Builder builder = new DateRangeQuery.Builder();
+    builder.field(dateField);
     final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
     if (startDto.getValue() == 0) {
-      queryDate.lte(JsonData.of(FORMATTER.format(now)));
-      queryDate.gte(
-          JsonData.of(
-              FORMATTER.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit()))));
+      builder.lte(FORMATTER.format(now));
+      builder.gte(
+          FORMATTER.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit())));
     } else {
       final OffsetDateTime startOfCurrentInterval =
           DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit());
       final OffsetDateTime startOfPreviousInterval =
           DateFilterUtil.getStartOfPreviousInterval(
               startOfCurrentInterval, startDto.getUnit(), startDto.getValue());
-      queryDate.lt(JsonData.of(FORMATTER.format(startOfCurrentInterval)));
-      queryDate.gte(JsonData.of(FORMATTER.format(startOfPreviousInterval)));
+      builder.lt(FORMATTER.format(startOfCurrentInterval));
+      builder.gte(FORMATTER.format(startOfPreviousInterval));
     }
-    queryDate.format(OPTIMIZE_DATE_FORMAT);
+    builder.format(OPTIMIZE_DATE_FORMAT);
+    queryDate.date(builder.build());
     return Optional.of(queryDate);
   }
 }

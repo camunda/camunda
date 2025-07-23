@@ -89,16 +89,14 @@ public class ElasticSearchMetadataService
                       .id(MetadataIndex.ID)
                       .script(
                           sb ->
-                              sb.inline(
-                                  ib ->
-                                      ib.lang(ScriptLanguage.Painless)
-                                          .source(scriptData.scriptString())
-                                          .params(
-                                              scriptData.params().entrySet().stream()
-                                                  .collect(
-                                                      Collectors.toMap(
-                                                          Map.Entry::getKey,
-                                                          e -> JsonData.of(e.getValue()))))))
+                              sb.lang(ScriptLanguage.Painless)
+                                  .source(scriptData.scriptString())
+                                  .params(
+                                      scriptData.params().entrySet().stream()
+                                          .collect(
+                                              Collectors.toMap(
+                                                  Map.Entry::getKey,
+                                                  e -> JsonData.of(e.getValue())))))
                       .upsert(newMetadataIfAbsent)
                       .refresh(Refresh.True)
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));

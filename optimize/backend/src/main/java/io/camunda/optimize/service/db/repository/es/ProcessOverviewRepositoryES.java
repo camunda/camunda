@@ -53,6 +53,42 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
   }
 
   @Override
+  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
+    final BulkRequest bulkRequest =
+        processOverviewDtos.isEmpty()
+            ? null
+            : BulkRequest.of(
+                b -> {
+                  processOverviewDtos.forEach(
+                      processOverviewDto ->
+                          b.operations(
+                              o ->
+                                  o.update(
+                                      OptimizeUpdateOperationBuilderES.of(
+                                          u ->
+                                              u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
+                                                  .id(processOverviewDto.getProcessDefinitionKey())
+                                                  .action(
+                                                      a ->
+                                                          a.upsert(processOverviewDto)
+                                                              .script(
+                                                                  ElasticsearchWriterUtil
+                                                                      .createDefaultScriptWithPrimitiveParams(
+                                                                          ProcessOverviewScriptFactory
+                                                                              .createUpdateKpisScript(),
+                                                                          Map.of(
+                                                                              "lastKpiEvaluationResults",
+                                                                              processOverviewDto
+                                                                                  .getLastKpiEvaluationResults()))))
+                                                  .retryOnConflict(
+                                                      NUMBER_OF_RETRIES_ON_CONFLICT)))));
+                  return b;
+                });
+
+    esClient.doBulkRequest(bulkRequest, new ProcessOverviewIndexES().getIndexName(), false);
+  }
+
+  @Override
   public void updateProcessConfiguration(
       final String processDefinitionKey, final ProcessOverviewDto overviewDto) {
     try {
@@ -70,13 +106,10 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
                       .script(
                           Script.of(
                               s ->
-                                  s.inline(
-                                      i ->
-                                          i.lang(ScriptLanguage.Painless)
-                                              .source(
-                                                  ProcessOverviewScriptFactory
-                                                      .createUpdateOverviewScript())
-                                              .params(paramMap))))
+                                  s.lang(ScriptLanguage.Painless)
+                                      .source(
+                                          ProcessOverviewScriptFactory.createUpdateOverviewScript())
+                                      .params(paramMap)))
                       .upsert(overviewDto)
                       .refresh(Refresh.True)
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
@@ -101,18 +134,15 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
                       .script(
                           Script.of(
                               s ->
-                                  s.inline(
-                                      i ->
-                                          i.lang(ScriptLanguage.Painless)
-                                              .source(
-                                                  ProcessOverviewScriptFactory
-                                                      .createUpdateProcessDigestScript())
-                                              .params(
-                                                  Map.of(
-                                                      "kpiReportResults",
-                                                      JsonData.of(
-                                                          processDigestDto
-                                                              .getKpiReportResults()))))))
+                                  s.lang(ScriptLanguage.Painless)
+                                      .source(
+                                          ProcessOverviewScriptFactory
+                                              .createUpdateProcessDigestScript())
+                                      .params(
+                                          Map.of(
+                                              "kpiReportResults",
+                                              JsonData.of(
+                                                  processDigestDto.getKpiReportResults())))))
                       .refresh(Refresh.True)
                       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT));
       esClient.update(updateRequest, ProcessDigestDto.class);
@@ -154,42 +184,6 @@ public class ProcessOverviewRepositoryES implements ProcessOverviewRepository {
       LOG.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-  }
-
-  @Override
-  public void updateKpisForProcessDefinitions(final List<ProcessOverviewDto> processOverviewDtos) {
-    final BulkRequest bulkRequest =
-        processOverviewDtos.isEmpty()
-            ? null
-            : BulkRequest.of(
-                b -> {
-                  processOverviewDtos.forEach(
-                      processOverviewDto ->
-                          b.operations(
-                              o ->
-                                  o.update(
-                                      OptimizeUpdateOperationBuilderES.of(
-                                          u ->
-                                              u.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
-                                                  .id(processOverviewDto.getProcessDefinitionKey())
-                                                  .action(
-                                                      a ->
-                                                          a.upsert(processOverviewDto)
-                                                              .script(
-                                                                  ElasticsearchWriterUtil
-                                                                      .createDefaultScriptWithPrimitiveParams(
-                                                                          ProcessOverviewScriptFactory
-                                                                              .createUpdateKpisScript(),
-                                                                          Map.of(
-                                                                              "lastKpiEvaluationResults",
-                                                                              processOverviewDto
-                                                                                  .getLastKpiEvaluationResults()))))
-                                                  .retryOnConflict(
-                                                      NUMBER_OF_RETRIES_ON_CONFLICT)))));
-                  return b;
-                });
-
-    esClient.doBulkRequest(bulkRequest, new ProcessOverviewIndexES().getIndexName(), false);
   }
 
   @Override

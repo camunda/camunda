@@ -27,7 +27,6 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -182,8 +181,10 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
                         q ->
                             q.range(
                                 r ->
-                                    r.field(END_DATE)
-                                        .lt(JsonData.of(dateTimeFormatter.format(endDate)))))
+                                    r.date(
+                                        df ->
+                                            df.field(END_DATE)
+                                                .lt(dateTimeFormatter.format(endDate)))))
                     .filter(
                         f ->
                             f.nested(
@@ -209,8 +210,10 @@ class ProcessInstanceRepositoryES implements ProcessInstanceRepository {
                     q ->
                         q.range(
                             r ->
-                                r.field(END_DATE)
-                                    .lt(JsonData.of(dateTimeFormatter.format(endDate)))))),
+                                r.date(
+                                    df ->
+                                        df.field(END_DATE)
+                                            .lt(dateTimeFormatter.format(endDate)))))),
         limit);
   }
 

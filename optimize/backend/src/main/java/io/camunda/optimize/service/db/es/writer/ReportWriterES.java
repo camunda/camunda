@@ -275,14 +275,11 @@ public class ReportWriterES implements ReportWriter {
     final Script updateDefinitionXmlScript =
         Script.of(
             s ->
-                s.inline(
-                    i ->
-                        i.lang(ScriptLanguage.Painless)
-                            // this script is deliberately not updating the modified date as this is
-                            // no user operation
-                            .source("ctx._source.data.configuration.xml = params.newXml;")
-                            .params(
-                                Collections.singletonMap("newXml", JsonData.of(definitionXml)))));
+                s.lang(ScriptLanguage.Painless)
+                    // this script is deliberately not updating the modified date as this is
+                    // no user operation
+                    .source("ctx._source.data.configuration.xml = params.newXml;")
+                    .params(Collections.singletonMap("newXml", JsonData.of(definitionXml))));
 
     taskRepositoryES.tryUpdateByQueryRequest(
         updateItem,
@@ -318,15 +315,13 @@ public class ReportWriterES implements ReportWriter {
     final Script removeReportIdFromCombinedReportsScript =
         Script.of(
             s ->
-                s.inline(
-                    i ->
-                        i.lang(ScriptLanguage.Painless)
-                            .source(
-                                "def reports = ctx._source.data.reports;"
-                                    + "if(reports != null) {"
-                                    + "  reports.removeIf(r -> r.id.equals(params.idToRemove));"
-                                    + "}")
-                            .params(Map.of("idToRemove", JsonData.of(reportId)))));
+                s.lang(ScriptLanguage.Painless)
+                    .source(
+                        "def reports = ctx._source.data.reports;"
+                            + "if(reports != null) {"
+                            + "  reports.removeIf(r -> r.id.equals(params.idToRemove));"
+                            + "}")
+                    .params(Map.of("idToRemove", JsonData.of(reportId))));
 
     taskRepositoryES.tryUpdateByQueryRequest(
         updateItemName,

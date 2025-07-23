@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
@@ -48,6 +47,14 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
   }
 
   @Override
+  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
+    if (e instanceof ElasticsearchException) {
+      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
+    }
+    return false;
+  }
+
+  @Override
   protected List<T> fetchZeebeRecordsForPrefixAndPartitionFrom(
       final PositionBasedImportPage positionBasedImportPage) throws Exception {
     final SearchResponse<T> searchResponse =
@@ -74,14 +81,6 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
     }
     return ElasticsearchReaderUtil.mapHits(
         searchResponse.hits(), getRecordDtoClass(), objectMapper);
-  }
-
-  @Override
-  protected boolean isZeebeInstanceIndexNotFoundException(final Exception e) {
-    if (e instanceof ElasticsearchException) {
-      return e.getMessage().contains(INDEX_NOT_FOUND_EXCEPTION_TYPE);
-    }
-    return false;
   }
 
   private Query getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
@@ -158,10 +157,13 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                             u ->
                                 u.range(
                                     r ->
-                                        r.field(ZeebeRecordDto.Fields.position)
-                                            .gt(
-                                                JsonData.of(
-                                                    positionBasedImportPage.getPosition()))))
+                                        r.number(
+                                            nf ->
+                                                nf.field(ZeebeRecordDto.Fields.position)
+                                                    .gt(
+                                                        positionBasedImportPage
+                                                            .getPosition()
+                                                            .doubleValue()))))
                         .must(
                             u ->
                                 u.term(
@@ -183,11 +185,17 @@ public abstract class AbstractZeebeRecordFetcherES<T> extends AbstractZeebeRecor
                         u ->
                             u.range(
                                 r ->
-                                    r.field(ZeebeRecordDto.Fields.sequence)
-                                        .gt(JsonData.of(positionBasedImportPage.getSequence()))
-                                        .lte(
-                                            JsonData.of(
-                                                positionBasedImportPage.getSequence()
-                                                    + getDynamicBatchSize()))))));
+                                    r.number(
+                                        nf ->
+                                            nf.field(ZeebeRecordDto.Fields.sequence)
+                                                .gt(
+                                                    positionBasedImportPage
+                                                        .getSequence()
+                                                        .doubleValue())
+                                                .lte(
+                                                    (positionBasedImportPage
+                                                            .getSequence()
+                                                            .doubleValue()
+                                                        + getDynamicBatchSize())))))));
   }
 }

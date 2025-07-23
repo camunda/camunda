@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_S
 
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.json.JsonData;
 import io.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import io.camunda.optimize.service.db.es.OptimizeElasticsearchClient;
 import io.camunda.optimize.service.db.es.builders.OptimizeIndexRequestBuilderES;
@@ -22,6 +21,7 @@ import io.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +29,8 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
 
+  private static final DateTimeFormatter FORMATTER =
+      DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
   private final OptimizeElasticsearchClient esClient;
   private final TaskRepositoryES taskRepositoryES;
 
@@ -61,9 +63,12 @@ public class TerminatedUserSessionWriterES extends TerminatedUserSessionWriter {
                             f ->
                                 f.range(
                                     r ->
-                                        r.field(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP)
-                                            .lt(JsonData.of(timestamp))
-                                            .format(OPTIMIZE_DATE_FORMAT)))));
+                                        r.date(
+                                            df ->
+                                                df.field(
+                                                        TerminatedUserSessionIndex
+                                                            .TERMINATION_TIMESTAMP)
+                                                    .lt(FORMATTER.format(timestamp)))))));
 
     taskRepositoryES.tryDeleteByQueryRequest(
         filterQuery,

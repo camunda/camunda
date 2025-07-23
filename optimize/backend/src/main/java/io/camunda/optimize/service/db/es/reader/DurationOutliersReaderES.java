@@ -40,7 +40,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.ChildScoreMode;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.json.JsonData;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import io.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
@@ -499,16 +498,20 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           s ->
               s.range(
                   r ->
-                      r.gt(JsonData.of(outlierParams.getHigherOutlierBound()))
-                          .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)));
+                      r.number(
+                          nf ->
+                              nf.gt(outlierParams.getHigherOutlierBound().doubleValue())
+                                  .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION))));
     }
     if (outlierParams.getLowerOutlierBound() != null) {
       flowNodeFilterQuery.should(
           s ->
               s.range(
                   r ->
-                      r.lt(JsonData.of(outlierParams.getLowerOutlierBound()))
-                          .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)));
+                      r.number(
+                          nf ->
+                              nf.lt(outlierParams.getLowerOutlierBound().doubleValue())
+                                  .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION))));
     }
     return flowNodeFilterQuery;
   }
@@ -627,16 +630,20 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           s ->
               s.range(
                   r ->
-                      r.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
-                          .lte(JsonData.of(outlierParams.getHigherOutlierBound()))));
+                      r.number(
+                          nf ->
+                              nf.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
+                                  .lte(outlierParams.getHigherOutlierBound().doubleValue()))));
     }
     if (outlierParams.getLowerOutlierBound() != null) {
       flowNodeFilterQuery.should(
           s ->
               s.range(
                   r ->
-                      r.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
-                          .gte(JsonData.of(outlierParams.getLowerOutlierBound()))));
+                      r.number(
+                          nf ->
+                              nf.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
+                                  .gte(outlierParams.getLowerOutlierBound().doubleValue()))));
     }
     final Aggregation nestedVariableAggregation =
         Aggregation.of(
@@ -780,13 +787,13 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                                       f ->
                                           f.range(
                                               r ->
-                                                  r.field(
-                                                          FLOW_NODE_INSTANCES
-                                                              + "."
-                                                              + FLOW_NODE_TOTAL_DURATION)
-                                                      .lte(
-                                                          JsonData.of(
-                                                              finalStdDeviationBoundLower)))));
+                                                  r.number(
+                                                      nf ->
+                                                          nf.field(
+                                                                  FLOW_NODE_INSTANCES
+                                                                      + "."
+                                                                      + FLOW_NODE_TOTAL_DURATION)
+                                                              .lte(finalStdDeviationBoundLower)))));
 
                       final double finalStdDeviationBoundHigher = stdDeviationBoundHigher;
                       final Aggregation higherOutlierEventFilter =
@@ -796,13 +803,14 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                                       f ->
                                           f.range(
                                               r ->
-                                                  r.field(
-                                                          FLOW_NODE_INSTANCES
-                                                              + "."
-                                                              + FLOW_NODE_TOTAL_DURATION)
-                                                      .gte(
-                                                          JsonData.of(
-                                                              finalStdDeviationBoundHigher)))));
+                                                  r.number(
+                                                      nf ->
+                                                          nf.field(
+                                                                  FLOW_NODE_INSTANCES
+                                                                      + "."
+                                                                      + FLOW_NODE_TOTAL_DURATION)
+                                                              .gte(
+                                                                  finalStdDeviationBoundHigher)))));
 
                       final TermQuery terms =
                           TermQuery.of(
