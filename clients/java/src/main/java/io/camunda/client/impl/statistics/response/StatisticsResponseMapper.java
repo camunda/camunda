@@ -16,9 +16,15 @@
 package io.camunda.client.impl.statistics.response;
 
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
+import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
+import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.client.protocol.rest.UsageMetricsResponse;
+import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 public class StatisticsResponseMapper {
@@ -31,5 +37,29 @@ public class StatisticsResponseMapper {
           .collect(Collectors.toList());
     }
     return Collections.emptyList();
+  }
+
+  public static UsageMetricsStatistics toUsageMetricsResponse(final UsageMetricsResponse response) {
+
+    Map<String, UsageMetricsStatisticsItem> tenants = null;
+    if (response.getTenants() != null && !response.getTenants().isEmpty()) {
+      tenants =
+          response.getTenants().entrySet().stream()
+              .collect(
+                  Collectors.toMap(Entry::getKey, e -> toUsageMetricsResponseItem(e.getValue())));
+    }
+
+    return new UsageMetricsStatisticsImpl(
+        response.getProcessInstances(),
+        response.getDecisionInstances(),
+        response.getAssignees(),
+        response.getActiveTenants(),
+        tenants);
+  }
+
+  public static UsageMetricsStatisticsItem toUsageMetricsResponseItem(
+      final UsageMetricsResponseItem response) {
+    return new UsageMetricsStatisticsItemImpl(
+        response.getProcessInstances(), response.getDecisionInstances(), response.getAssignees());
   }
 }

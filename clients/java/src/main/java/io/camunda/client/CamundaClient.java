@@ -142,11 +142,13 @@ import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.client.impl.CamundaClientImpl;
+import java.time.OffsetDateTime;
 
 /** The client to communicate with a Camunda broker/cluster. */
 public interface CamundaClient extends AutoCloseable, JobClient {
@@ -869,6 +871,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
       final long processInstanceKey);
+
+  /**
+   * Executes a search request to query usage metrics statistics.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUsageMetricsRequest(OffsetDateTime.now().minusYears(1), OffsetDateTime.now())
+   *  .withTenants(true)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the usage metrics statistics request
+   */
+  UsageMetricsStatisticsRequest newUsageMetricsRequest(
+      final OffsetDateTime startTime, final OffsetDateTime endTime);
 
   /**
    * Executes a search request to query process instance sequence flows.

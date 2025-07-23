@@ -153,6 +153,7 @@ import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
+import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
@@ -282,6 +283,7 @@ import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -299,6 +301,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -771,6 +774,12 @@ public final class CamundaClientImpl implements CamundaClient {
   public ProcessInstanceElementStatisticsRequest newProcessInstanceElementStatisticsRequest(
       final long processInstanceKey) {
     return new ProcessInstanceElementStatisticsRequestImpl(httpClient, processInstanceKey);
+  }
+
+  @Override
+  public UsageMetricsStatisticsRequest newUsageMetricsRequest(
+      final OffsetDateTime startTime, final OffsetDateTime endTime) {
+    return new UsageMetricsStatisticsRequestImpl(httpClient, startTime, endTime);
   }
 
   @Override
