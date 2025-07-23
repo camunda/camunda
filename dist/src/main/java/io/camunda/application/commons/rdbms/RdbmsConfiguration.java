@@ -50,6 +50,7 @@ import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
+import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -189,8 +190,9 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public MessageSubscriptionDbReader messageSubscriptionDbReader() {
-    return new MessageSubscriptionDbReader();
+  public MessageSubscriptionDbReader messageSubscriptionDbReader(
+      final MessageSubscriptionMapper messageSubscriptionMapper) {
+    return new MessageSubscriptionDbReader(messageSubscriptionMapper);
   }
 
   @Bean
@@ -248,7 +250,8 @@ public class RdbmsConfiguration {
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
-      final BatchOperationMapper batchOperationMapper) {
+      final BatchOperationMapper batchOperationMapper,
+      final MessageSubscriptionMapper messageSubscriptionMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -266,7 +269,8 @@ public class RdbmsConfiguration {
         sequenceFlowMapper,
         usageMetricMapper,
         usageMetricTUMapper,
-        batchOperationMapper);
+        batchOperationMapper,
+        messageSubscriptionMapper);
   }
 
   @Bean
@@ -293,7 +297,8 @@ public class RdbmsConfiguration {
       final BatchOperationItemDbReader batchOperationItemReader,
       final JobDbReader jobReader,
       final UsageMetricsDbReader usageMetricReader,
-      final UsageMetricTUDbReader usageMetricTUDbReader) {
+      final UsageMetricTUDbReader usageMetricTUDbReader,
+      final MessageSubscriptionDbReader messageSubscriptionReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         authorizationReader,
@@ -317,6 +322,7 @@ public class RdbmsConfiguration {
         batchOperationItemReader,
         jobReader,
         usageMetricReader,
-        usageMetricTUDbReader);
+        usageMetricTUDbReader,
+        messageSubscriptionReader);
   }
 }
