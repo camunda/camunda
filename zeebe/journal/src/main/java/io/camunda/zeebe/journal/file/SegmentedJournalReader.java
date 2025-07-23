@@ -21,8 +21,11 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.util.NoSuchElementException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class SegmentedJournalReader implements JournalReader {
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentedJournalReader.class);
 
   private final SegmentedJournal journal;
   private Segment currentSegment;
@@ -223,21 +226,33 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   private boolean unsafeHasNext() {
-    if (!currentReader.hasNext()) {
-      if (!currentSegment.isOpen()) {
-        // When the segment has been deleted concurrently, we do not want to allow the readers to
-        // read further until the reader is reset.
-        return false;
-      }
+    if (currentReader.hasNext()) {
+      return true;
+    }
 
-      final Segment nextSegment = journal.getNextSegment(currentSegment.index());
-      if (nextSegment != null && nextSegment.index() == getNextIndex()) {
-        replaceCurrentSegment(nextSegment);
-        return currentReader.hasNext();
-      }
+    if (!currentSegment.isOpen()) {
+      // When the segment has been deleted concurrently, we do not want to allow the readers to
+      // read further until the reader is reset.
       return false;
     }
-    return true;
+    final long nextIndex = getNextIndex();
+    while (true) {
+      final Segment nextSegment = journal.getNextSegment(currentSegment.index());
+      LOG.trace("Segment {} is done, rolling over to {}", currentSegment, nextSegment);
+      if (nextSegment != null) {
+        final boolean segmentsOverlapping = nextSegment.index() <= currentSegment.lastIndex();
+        replaceCurrentSegment(nextSegment);
+        // If segments are overlapping we need to seek past the new segment's first index to the
+        // previous segment's expected next index to avoid reading the same entries again
+        final var expectedIndex = segmentsOverlapping ? nextIndex : getNextIndex();
+        currentReader.seek(expectedIndex);
+        if (expectedIndex == currentReader.getNextIndex()) {
+          return currentReader.hasNext();
+        }
+      } else {
+        return false;
+      }
+    }
   }
 
   private void replaceCurrentSegment(final Segment nextSegment) {
