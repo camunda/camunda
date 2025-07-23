@@ -9,7 +9,7 @@
 import {t as _t} from 'i18next';
 import {useEffect, useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import type {UserTaskState} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {AsyncActionButton} from 'common/components/AsyncActionButton';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {tracking} from 'common/tracking';
@@ -37,7 +37,7 @@ const getAssignmentToggleLabels = () =>
 type Props = {
   id: string;
   assignee: string | undefined;
-  taskState: UserTaskState;
+  taskState: UserTask['state'];
   currentUser: string;
 };
 
