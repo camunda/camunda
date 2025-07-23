@@ -471,12 +471,12 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     stringOperationTestCases(
         streamBuilder,
         "name",
-        ops -> new ProcessDefinitionFilter.Builder().namesOperations(ops).build());
+        ops -> new ProcessDefinitionFilter.Builder().nameOperations(ops).build());
 
     stringOperationTestCases(
         streamBuilder,
         "processDefinitionId",
-        ops -> new ProcessDefinitionFilter.Builder().processDefinitionIdsOperations(ops).build());
+        ops -> new ProcessDefinitionFilter.Builder().processDefinitionIdOperations(ops).build());
 
     return streamBuilder.build();
   }
@@ -492,7 +492,6 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                 "filter": %s
             }"""
             .formatted(filterString);
-    System.out.println("request = " + request);
     when(processDefinitionServices.search(any(ProcessDefinitionQuery.class)))
         .thenReturn(SEARCH_QUERY_RESULT);
 

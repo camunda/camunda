@@ -920,13 +920,13 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processDefinitionKeys);
               Optional.ofNullable(f.getName())
                   .map(mapToOperations(String.class))
-                  .ifPresent(builder::namesOperations);
+                  .ifPresent(builder::nameOperations);
               Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
               Optional.ofNullable(f.getVersionTag()).ifPresent(builder::versionTags);
               Optional.ofNullable(f.getProcessDefinitionId())
                   .map(mapToOperations(String.class))
-                  .ifPresent(builder::processDefinitionIdsOperations);
+                  .ifPresent(builder::processDefinitionIdOperations);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
     return builder.build();

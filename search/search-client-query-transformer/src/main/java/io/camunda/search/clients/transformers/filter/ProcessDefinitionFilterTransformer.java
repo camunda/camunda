@@ -40,8 +40,8 @@ public class ProcessDefinitionFilterTransformer
   public SearchQuery toSearchQuery(final ProcessDefinitionFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(longTerms(KEY, filter.processDefinitionKeys())).ifPresent(queries::add);
-    ofNullable(getNamesQuery(filter.namesOperations())).ifPresent(queries::addAll);
-    ofNullable(getProcessDefinitionIdsQuery(filter.processDefinitionIdsOperations()))
+    ofNullable(getNamesQuery(filter.nameOperations())).ifPresent(queries::addAll);
+    ofNullable(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()))
         .ifPresent(queries::addAll);
     ofNullable(stringTerms(RESOURCE_NAME, filter.resourceNames())).ifPresent(queries::add);
     ofNullable(intTerms(VERSION, filter.versions())).ifPresent(queries::add);

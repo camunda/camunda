@@ -47,8 +47,7 @@ public class ProcessDefinitionFilterImpl
 
   @Override
   public ProcessDefinitionFilter name(final String name) {
-    name(b -> b.eq(name));
-    return this;
+    return name(b -> b.eq(name));
   }
 
   @Override
@@ -71,8 +70,7 @@ public class ProcessDefinitionFilterImpl
 
   @Override
   public ProcessDefinitionFilter processDefinitionId(final String processDefinitionId) {
-    processDefinitionId(b -> b.eq(processDefinitionId));
-    return this;
+    return processDefinitionId(b -> b.eq(processDefinitionId));
   }
 
   @Override

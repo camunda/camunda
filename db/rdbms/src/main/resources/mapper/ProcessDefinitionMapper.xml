@@ -60,13 +60,13 @@
         close=")">#{value}
       </foreach>
     </if>
-    <if test="filter.processDefinitionIdsOperations != null and !filter.processDefinitionIdsOperations.isEmpty()">
-      <foreach collection="filter.processDefinitionIdsOperations" item="operation">
+    <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionIdOperations" item="operation">
         AND PROCESS_DEFINITION_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.namesOperations != null and !filter.namesOperations.isEmpty()">
-      <foreach collection="filter.namesOperations" item="operation">
+    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+      <foreach collection="filter.nameOperations" item="operation">
         AND NAME <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
