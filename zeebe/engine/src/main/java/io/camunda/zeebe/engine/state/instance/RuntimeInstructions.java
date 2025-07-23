@@ -16,15 +16,15 @@ import java.util.stream.StreamSupport;
 
 public class RuntimeInstructions extends UnpackedObject implements DbValue {
 
-  private final ArrayProperty<TerminateProcessInstanceRuntimeInstruction> runtimeInstructions =
-      new ArrayProperty<>("instructions", TerminateProcessInstanceRuntimeInstruction::new);
+  private final ArrayProperty<RuntimeInstructionValue> runtimeInstructions =
+      new ArrayProperty<>("instructions", RuntimeInstructionValue::new);
 
   public RuntimeInstructions() {
     super(1);
     declareProperty(runtimeInstructions);
   }
 
-  public List<TerminateProcessInstanceRuntimeInstruction> getRuntimeInstructions() {
+  public List<RuntimeInstructionValue> getRuntimeInstructions() {
     return StreamSupport.stream(runtimeInstructions.spliterator(), false).toList();
   }
 
@@ -32,7 +32,10 @@ public class RuntimeInstructions extends UnpackedObject implements DbValue {
       final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
     runtimeInstructions.reset();
     instructions.forEach(
-        instruction ->
-            runtimeInstructions.add().setAfterElementId(instruction.getAfterElementId()));
+        instruction -> {
+          final var newInstruction = runtimeInstructions.add();
+          newInstruction.setType(instruction.getType());
+          newInstruction.setAfterElementId(instruction.getAfterElementId());
+        });
   }
 }

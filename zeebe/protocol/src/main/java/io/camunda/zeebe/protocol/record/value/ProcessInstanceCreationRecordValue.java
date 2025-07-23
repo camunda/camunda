@@ -55,7 +55,7 @@ public interface ProcessInstanceCreationRecordValue
   @ImmutableProtocol(
       builder = ImmutableProcessInstanceCreationRuntimeInstructionValue.Builder.class)
   interface ProcessInstanceCreationRuntimeInstructionValue {
-    String getType();
+    RuntimeInstructionType getType();
 
     String getAfterElementId();
   }
