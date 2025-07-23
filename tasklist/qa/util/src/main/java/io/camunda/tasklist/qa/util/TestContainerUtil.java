@@ -91,7 +91,7 @@ public class TestContainerUtil {
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
   private static final String DOCKER_OPENSEARCH_IMAGE_NAME = "opensearchproject/opensearch";
-  private static final String DOCKER_OPENSEARCH_IMAGE_VERSION = "2.9.0";
+  private static final String DOCKER_OPENSEARCH_IMAGE_VERSION = "2.17.0";
   private static final String ZEEBE = "zeebe";
   private static final String KEYCLOAK_ZEEBE_SECRET = "zecret";
   private static final String USER_MEMBER_TYPE = "USER";

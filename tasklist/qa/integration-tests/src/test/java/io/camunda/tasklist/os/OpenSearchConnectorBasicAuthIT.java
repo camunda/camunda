@@ -52,7 +52,7 @@ public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   static OpensearchContainer opensearch =
       (OpensearchContainer)
-          new OpensearchContainer("opensearchproject/opensearch:2.9.0")
+          new OpensearchContainer("opensearchproject/opensearch:2.17.0")
               .withEnv(
                   Map.of(
                       // "plugins.security.disabled", "false",

@@ -21,14 +21,14 @@ public final class TestSearchContainers {
           .withTag(
               Objects.requireNonNullElse(
                   org.elasticsearch.client.RestClient.class.getPackage().getImplementationVersion(),
-                  "8.16.6"));
+                  "8.16.0"));
 
   private static final DockerImageName OPENSEARCH_IMAGE =
       DockerImageName.parse("opensearchproject/opensearch")
           .withTag(
               Objects.requireNonNullElse(
                   org.opensearch.client.RestClient.class.getPackage().getImplementationVersion(),
-                  "2.14.0"));
+                  "2.17.0"));
 
   private TestSearchContainers() {}
 

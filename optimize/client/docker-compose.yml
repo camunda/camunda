@@ -30,7 +30,7 @@ services:
       timeout: 5s
       retries: 3
   opensearch:
-    image: opensearchproject/opensearch:${OS_VERSION:-2.11.1}
+    image: opensearchproject/opensearch:${OS_VERSION:-2.17.0}
     container_name: opensearch
     profiles: ['cloud:opensearch', 'self-managed:opensearch']
     environment:
@@ -41,7 +41,7 @@ services:
       - cluster.initial_cluster_manager_nodes=opensearch
       - bootstrap.memory_lock=true # along with the memlock settings below, disables swapping
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m # minimum and maximum Java heap size, recommend setting both to 50% of system RAM
-      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD:-ThisIsAStrongOptimizePassword79!} # Required for OS 2.12+
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=${CAMUNDA_OPTIMIZE_OPENSEARCH_SECURITY_PASSWORD:-ThisIsAStrongOptimizePassword79!}
     ulimits:
       memlock:
         soft: -1
