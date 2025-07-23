@@ -8,10 +8,11 @@
 package io.camunda.migration.identity.config.sm;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import io.camunda.migration.identity.handler.RoleMigrationHandler;
 import io.camunda.migration.identity.handler.sm.AuthorizationMigrationHandler;
 import io.camunda.migration.identity.handler.sm.ClientMigrationHandler;
 import io.camunda.migration.identity.handler.sm.GroupMigrationHandler;
-import io.camunda.migration.identity.handler.sm.RoleMigrationHandler;
 import io.camunda.migration.identity.handler.sm.TenantMigrationHandler;
 import io.camunda.migration.identity.handler.sm.UserRoleMigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -31,9 +32,14 @@ public class SMKeycloakMigrationHandlerConfig {
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final RoleServices roleServices,
-      final AuthorizationServices authorizationServices) {
+      final AuthorizationServices authorizationServices,
+      final IdentityMigrationProperties migrationProperties) {
     return new RoleMigrationHandler(
-        authentication, managementIdentityClient, roleServices, authorizationServices);
+        authentication,
+        managementIdentityClient,
+        roleServices,
+        authorizationServices,
+        migrationProperties);
   }
 
   @Bean
@@ -61,9 +67,10 @@ public class SMKeycloakMigrationHandlerConfig {
   public ClientMigrationHandler clientMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
-      final AuthorizationServices authorizationService) {
+      final AuthorizationServices authorizationService,
+      final IdentityMigrationProperties migrationProperties) {
     return new ClientMigrationHandler(
-        authentication, managementIdentityClient, authorizationService);
+        authentication, managementIdentityClient, authorizationService, migrationProperties);
   }
 
   @Bean

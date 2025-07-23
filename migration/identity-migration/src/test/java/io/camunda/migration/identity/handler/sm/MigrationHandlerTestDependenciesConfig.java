@@ -10,10 +10,12 @@ package io.camunda.migration.identity.handler.sm;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
+import io.camunda.service.TenantServices;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
@@ -46,7 +48,12 @@ public class MigrationHandlerTestDependenciesConfig {
   }
 
   @Bean
-  public io.camunda.service.TenantServices tenantServices() {
-    return mock(io.camunda.service.TenantServices.class);
+  public TenantServices tenantServices() {
+    return mock(TenantServices.class);
+  }
+
+  @Bean
+  public IdentityMigrationProperties identityMigrationProperties() {
+    return mock(IdentityMigrationProperties.class);
   }
 }

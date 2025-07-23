@@ -18,6 +18,7 @@ import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Permission;
 import io.camunda.migration.identity.dto.Role;
+import io.camunda.migration.identity.handler.RoleMigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
@@ -147,7 +148,7 @@ public class RoleMigrationHandlerTest {
                 "role_1",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.BATCH_OPERATION,
-                Set.of(PermissionType.CREATE, PermissionType.READ)),
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,

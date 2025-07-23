@@ -9,17 +9,17 @@ package io.camunda.migration.identity.config.oidc;
 
 public class OidcProperties {
 
-  private Audience audience = new Audience();
+  private Audiences audience = new Audiences();
 
-  public Audience getAudience() {
+  public Audiences getAudience() {
     return audience;
   }
 
-  public void setAudience(final Audience audience) {
+  public void setAudience(final Audiences audience) {
     this.audience = audience;
   }
 
-  public static class Audience {
+  public static class Audiences {
 
     private String identity = "camunda-identity-resource-server";
     private String operate = "operate-api";

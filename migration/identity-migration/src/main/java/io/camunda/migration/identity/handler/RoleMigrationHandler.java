@@ -5,18 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.handler.oidc;
+package io.camunda.migration.identity.handler;
 
 import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
-import static io.camunda.migration.identity.config.oidc.StaticEntities.getAuthorizationsByAudience;
+import static io.camunda.migration.identity.config.StaticEntities.getAuthorizationsByAudience;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
-import io.camunda.migration.identity.config.oidc.OidcProperties.Audience;
+import io.camunda.migration.identity.config.oidc.OidcProperties.Audiences;
 import io.camunda.migration.identity.dto.Role;
-import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
@@ -59,7 +58,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
     totalRoleCount.set(roles.size());
 
     logger.debug(
-        "Running role migration with this default audience: {}",
+        "Running role migration with this default audiences: {}",
         migrationProperties.getOidc().getAudience());
 
     roles.forEach(
@@ -92,7 +91,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
   }
 
   private void createAuthorizationsForRole(
-      final Audience properties, final String roleId, final String roleName) {
+      final Audiences audiences, final String roleId, final String roleName) {
     final List<String> permissions = getFormattedPermissions(roleName);
 
     if (permissions.isEmpty()) {
@@ -106,7 +105,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
             .map(
                 permission ->
                     getAuthorizationsByAudience(
-                        properties, permission, roleId, AuthorizationOwnerType.ROLE))
+                        audiences, permission, roleId, AuthorizationOwnerType.ROLE))
             .flatMap(List::stream)
             .toList();
 

@@ -9,7 +9,7 @@ package io.camunda.migration.identity.config.oidc;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
-import io.camunda.migration.identity.handler.oidc.RoleMigrationHandler;
+import io.camunda.migration.identity.handler.RoleMigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
