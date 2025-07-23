@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBeh
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceInputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -63,6 +64,7 @@ public final class MultiInstanceBodyProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final MultiInstanceInputCollectionBehavior multiInstanceInputCollectionBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
@@ -74,6 +76,7 @@ public final class MultiInstanceBodyProcessor
     stateBehavior = bpmnBehaviors.stateBehavior();
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    multiInstanceInputCollectionBehavior = bpmnBehaviors.inputCollectionBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
@@ -87,7 +90,8 @@ public final class MultiInstanceBodyProcessor
   public Either<Failure, ?> onActivate(
       final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
     // verify that the input collection variable is present and valid
-    return readInputCollectionVariable(element, context)
+    return multiInstanceInputCollectionBehavior
+        .initializeInputCollection(element, context)
         .flatMap(
             inputCollection ->
                 eventSubscriptionBehavior
