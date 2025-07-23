@@ -35,6 +35,17 @@ RUN mkdir camunda-zeebe && \
     tar xfvz camunda.tar.gz --strip 1 -C camunda-zeebe
 
 
+FROM camundaservicesgmbhdhi/dhi-eclipse-temurin:21-jdk-debian12-dev AS setup
+RUN groupadd --gid 1001 camunda
+ENV CAMUNDA_HOME=/usr/local/camunda
+RUN useradd --system --gid 1001 --uid 1001 --home ${CAMUNDA_HOME} camunda
+RUN chmod g=u /etc/passwd
+RUN mkdir -p ${CAMUNDA_HOME}/data
+RUN mkdir ${CAMUNDA_HOME}/logs
+RUN chown -R 1001:0 ${CAMUNDA_HOME}
+RUN chmod -R 0775 ${CAMUNDA_HOME}
+
+
 ### Image containing the camunda distribution ###
 # hadolint ignore=DL3006
 FROM ${DIST} AS dist
@@ -90,16 +101,9 @@ VOLUME /tmp
 VOLUME ${CAMUNDA_HOME}/data
 VOLUME ${CAMUNDA_HOME}/logs
 
-RUN groupadd --gid 1001 camunda && \
-    useradd --system --gid 1001 --uid 1001 --home ${CAMUNDA_HOME} camunda && \
-    chmod g=u /etc/passwd && \
-    # These directories are to be mounted by users, eagerly creating them and setting ownership
-    # helps to avoid potential permission issues due to default volume ownership.
-    mkdir ${CAMUNDA_HOME}/data && \
-    mkdir ${CAMUNDA_HOME}/logs && \
-    chown -R 1001:0 ${CAMUNDA_HOME} && \
-    chmod -R 0775 ${CAMUNDA_HOME}
-
+COPY --from=setup /etc/passwd /etc/passwd
+COPY --from=setup /etc/group /etc/group
+COPY --from=setup ${CAMUNDA_HOME} ${CAMUNDA_HOME}
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
 USER 1001:1001
