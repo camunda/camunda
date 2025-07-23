@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -223,6 +225,9 @@ public final class ValueTypeMapping {
         ValueType.COMPENSATION_SUBSCRIPTION,
         new Mapping<>(
             CompensationSubscriptionRecordValue.class, CompensationSubscriptionIntent.class));
+    mapping.put(
+        ValueType.MULTI_INSTANCE,
+        new Mapping<>(MultiInstanceRecordValue.class, MultiInstanceIntent.class));
 
     return mapping;
   }
