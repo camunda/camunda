@@ -64,6 +64,11 @@ public final class BpmnTransformer {
    */
   private final TransformationVisitor step4Visitor;
 
+  /*
+   * Step 5: Modify elements based on containing container elements
+   */
+  private final TransformationVisitor step5Visitor;
+
   private final ExpressionLanguage expressionLanguage;
 
   public BpmnTransformer(final ExpressionLanguage expressionLanguage) {
@@ -94,7 +99,6 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new UserTaskTransformer(expressionLanguage));
 
     step3Visitor = new TransformationVisitor();
-    step3Visitor.registerHandler(new AdHocSubProcessTransformer());
     step3Visitor.registerHandler(new ContextProcessTransformer());
     step3Visitor.registerHandler(new EventBasedGatewayTransformer());
     step3Visitor.registerHandler(new ExclusiveGatewayTransformer());
@@ -105,7 +109,11 @@ public final class BpmnTransformer {
     step4Visitor = new TransformationVisitor();
     step4Visitor.registerHandler(new ContextProcessTransformer());
     step4Visitor.registerHandler(new IntermediateThrowEventTransformer());
-    step4Visitor.registerHandler(new MultiInstanceActivityTransformer());
+    step4Visitor.registerHandler(new AdHocSubProcessTransformer());
+
+    step5Visitor = new TransformationVisitor();
+    step5Visitor.registerHandler(new ContextProcessTransformer());
+    step5Visitor.registerHandler(new MultiInstanceActivityTransformer());
   }
 
   public List<ExecutableProcess> transformDefinitions(final BpmnModelInstance modelInstance) {
@@ -124,6 +132,9 @@ public final class BpmnTransformer {
 
     step4Visitor.setContext(context);
     walker.walk(step4Visitor);
+
+    step5Visitor.setContext(context);
+    walker.walk(step5Visitor);
 
     return context.getProcesses();
   }
