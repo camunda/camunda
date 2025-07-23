@@ -134,7 +134,7 @@ public class ClientMigrationHandlerTest {
             tuple(
                 "client-id",
                 AuthorizationOwnerType.CLIENT,
-                AuthorizationResourceType.BATCH_OPERATION,
+                AuthorizationResourceType.BATCH,
                 Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
             tuple(
                 "tasklist-client-id",

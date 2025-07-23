@@ -14,7 +14,7 @@ import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE_PROCESS_INSTANCE;
-import static io.camunda.client.api.search.enums.ResourceType.BATCH_OPERATION;
+import static io.camunda.client.api.search.enums.ResourceType.BATCH;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static io.camunda.it.util.TestHelper.getScopedVariables;
@@ -76,9 +76,8 @@ class BatchOperationAuthorizationIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(
-                  BATCH_OPERATION, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(BATCH_OPERATION, READ, List.of("*"))));
+              new Permissions(BATCH, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(BATCH, READ, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
@@ -86,9 +85,8 @@ class BatchOperationAuthorizationIT {
           RESTRICTED,
           "password",
           List.of(
-              new Permissions(
-                  BATCH_OPERATION, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(BATCH_OPERATION, READ, List.of("*")),
+              new Permissions(BATCH, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(BATCH, READ, List.of("*")),
               new Permissions(
                   PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(SERVICE_TASKS_V_1)),
               new Permissions(
@@ -100,9 +98,8 @@ class BatchOperationAuthorizationIT {
           RESTRICTED_CANCEL,
           "password",
           List.of(
-              new Permissions(
-                  BATCH_OPERATION, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(BATCH_OPERATION, READ, List.of("*")),
+              new Permissions(BATCH, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(BATCH, READ, List.of("*")),
               new Permissions(
                   PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(SERVICE_TASKS_V_1))));
 
@@ -113,7 +110,7 @@ class BatchOperationAuthorizationIT {
           "password",
           List.of(
               new Permissions(
-                  BATCH_OPERATION, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*"))));
+                  BATCH, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser FORBIDDEN_USER = new TestUser(FORBIDDEN, "password", List.of());

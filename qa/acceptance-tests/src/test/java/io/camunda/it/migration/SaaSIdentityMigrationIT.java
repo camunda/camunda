@@ -336,7 +336,7 @@ public class SaaSIdentityMigrationIT {
                 DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
-                ResourceType.BATCH_OPERATION,
+                ResourceType.BATCH,
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
             tuple(
                 OPERATIONS_ENGINEER_ROLE_ID,
@@ -375,7 +375,7 @@ public class SaaSIdentityMigrationIT {
                 OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
-                ResourceType.BATCH_OPERATION,
+                ResourceType.BATCH,
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
             tuple(
                 TASK_USER_ROLE_ID,
@@ -432,7 +432,7 @@ public class SaaSIdentityMigrationIT {
                 VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
-                ResourceType.BATCH_OPERATION,
+                ResourceType.BATCH,
                 Set.of(PermissionType.READ)));
   }
 
@@ -572,7 +572,7 @@ public class SaaSIdentityMigrationIT {
             tuple(
                 "client123",
                 OwnerType.CLIENT,
-                ResourceType.BATCH_OPERATION,
+                ResourceType.BATCH,
                 Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
             tuple(
                 "tasklist-client",

@@ -46,7 +46,7 @@ public enum AuthorizationResourceType {
   GROUP(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   ROLE(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
-  BATCH_OPERATION(
+  BATCH(
       PermissionType.CREATE,
       PermissionType.CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE,
       PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE,
