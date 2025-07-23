@@ -17,6 +17,7 @@ import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignGroupMappingRule, Group } from "src/utility/api/groups";
+import { useNotifications } from "src/components/notifications";
 
 const SelectedMappingRules = styled.div`
   margin-top: 0;
@@ -29,6 +30,7 @@ const AssignMappingRulesModal: FC<
   >
 > = ({ entity: group, assignedMappingRules, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate("groups");
+  const { enqueueNotification } = useNotifications();
   const [selectedMappingRules, setSelectedMappingRules] = useState<
     MappingRule[]
   >([]);
@@ -88,6 +90,19 @@ const AssignMappingRulesModal: FC<
     setLoadingAssignMappingRule(false);
 
     if (results.every(({ success }) => success)) {
+      if (selectedMappingRules.length === 1) {
+        enqueueNotification({
+          kind: "success",
+          title: t("mappingRuleAssigned"),
+          subtitle: t("mappingRuleAssignedSuccessfully"),
+        });
+      } else {
+        enqueueNotification({
+          kind: "success",
+          title: t("mappingRulesAssigned"),
+          subtitle: t("mappingRulesAssignedSuccessfully"),
+        });
+      }
       onSuccess();
     }
   };

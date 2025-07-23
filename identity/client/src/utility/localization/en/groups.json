@@ -68,5 +68,21 @@
   "assignClientToGroup": "Assign client to group",
   "groupClientRemoved": "Group client removed",
   "removeClientFromGroup": "Are you sure you want to remove <strong>{{clientId}}</strong> from this group?",
-  "assignClientsToGroup": "Assign clients to this Group"
+  "assignClientsToGroup": "Assign clients to this Group",
+  "groupCreated": "Group created",
+  "groupCreatedSuccessfully": "You have successfully created group {{ groupName }}",
+  "userAssigned": "User assigned",
+  "userAssignedSuccessfully": "You have successfully assigned user to the group",
+  "usersAssigned": "Users assigned",
+  "usersAssignedSuccessfully": "You have successfully assigned users to the group",
+  "roleAssigned": "Role assigned",
+  "roleAssignedSuccessfully": "You have successfully assigned role to the group",
+  "rolesAssigned": "Roles assigned",
+  "rolesAssignedSuccessfully": "You have successfully assigned roles to the group",
+  "clientAssigned": "Client assigned",
+  "clientAssignedSuccessfully": "You have successfully assigned client to the group",
+  "mappingRuleAssigned": "Mapping rule assigned",
+  "mappingRuleAssignedSuccessfully": "You have successfully assigned mapping rule to the group",
+  "mappingRulesAssigned": "Mapping rules assigned",
+  "mappingRulesAssignedSuccessfully": "You have successfully assigned mapping rules to the group"
 }

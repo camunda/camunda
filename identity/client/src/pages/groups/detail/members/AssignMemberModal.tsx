@@ -15,6 +15,7 @@ import { User } from "src/utility/api/users";
 import FormModal from "src/components/modal/FormModal";
 import { Group } from "src/utility/api/groups";
 import TextField from "src/components/form/TextField";
+import { useNotifications } from "src/components/notifications";
 
 const AssignMemberModal: FC<
   UseEntityModalCustomProps<
@@ -23,6 +24,7 @@ const AssignMemberModal: FC<
   >
 > = ({ entity: { groupId }, onSuccess, open, onClose }) => {
   const { t } = useTranslate("groups");
+  const { enqueueNotification } = useNotifications();
   const [username, setUsername] = useState("");
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
 
@@ -38,6 +40,11 @@ const AssignMemberModal: FC<
     setLoadingAssignUser(false);
 
     if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("userAssigned"),
+        subtitle: t("userAssignedSuccessfully"),
+      });
       onSuccess();
     }
   };

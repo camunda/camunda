@@ -17,6 +17,7 @@ import styled from "styled-components";
 import DropdownSearch from "src/components/form/DropdownSearch";
 import FormModal from "src/components/modal/FormModal";
 import { assignGroupRole, Group } from "src/utility/api/groups";
+import { useNotifications } from "src/components/notifications";
 
 const SelectedRoles = styled.div`
   margin-top: 0;
@@ -26,6 +27,7 @@ const AssignRolesModal: FC<
   UseEntityModalCustomProps<{ id: Group["groupId"] }, { assignedRoles: Role[] }>
 > = ({ entity: group, assignedRoles, onSuccess, open, onClose }) => {
   const { t, Translate } = useTranslate("groups");
+  const { enqueueNotification } = useNotifications();
   const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
   const [loadingAssignRole, setLoadingAssignRole] = useState(false);
 
@@ -71,6 +73,19 @@ const AssignRolesModal: FC<
     setLoadingAssignRole(false);
 
     if (results.every(({ success }) => success)) {
+      if (selectedRoles.length === 1) {
+        enqueueNotification({
+          kind: "success",
+          title: t("roleAssigned"),
+          subtitle: t("roleAssignedSuccessfully"),
+        });
+      } else {
+        enqueueNotification({
+          kind: "success",
+          title: t("rolesAssigned"),
+          subtitle: t("rolesAssignedSuccessfully"),
+        });
+      }
       onSuccess();
     }
   };

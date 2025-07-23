@@ -13,10 +13,11 @@ import { useApiCall } from "src/utility/api/hooks";
 import TextField from "src/components/form/TextField";
 import { createGroup } from "src/utility/api/groups";
 import { isValidGroupId } from "./isValidGroupId";
+import { useNotifications } from "src/components/notifications";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("groups");
-
+  const { enqueueNotification } = useNotifications();
   const [callAddGroup, { loading, error }] = useApiCall(createGroup, {
     suppressErrorNotification: true,
   });
@@ -34,6 +35,13 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     });
 
     if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("groupCreated"),
+        subtitle: t("groupCreatedSuccessfully", {
+          groupName,
+        }),
+      });
       onSuccess();
     }
   };
