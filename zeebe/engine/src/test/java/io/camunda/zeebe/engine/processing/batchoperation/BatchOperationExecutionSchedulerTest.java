@@ -68,6 +68,7 @@ public class BatchOperationExecutionSchedulerTest {
   @Mock private PersistedBatchOperation batchOperation;
   @Mock private ItemProviderFactory itemProviderFactory;
   @Mock private ItemProvider itemProvider;
+  @Mock private BatchOperationMetrics metrics;
 
   @Captor private ArgumentCaptor<Task> taskCaptor;
   @Captor private ArgumentCaptor<BatchOperationChunkRecord> chunkRecordCaptor;
@@ -108,7 +109,7 @@ public class BatchOperationExecutionSchedulerTest {
             itemProviderFactory,
             engineConfiguration,
             PARTITION_ID,
-            mock(BatchOperationMetrics.class));
+            metrics);
   }
 
   @Test
@@ -259,6 +260,41 @@ public class BatchOperationExecutionSchedulerTest {
             anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
     final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
     assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
+
+    verify(metrics).recordItemsPerPartition(3, CANCEL_PROCESS_INSTANCE);
+  }
+
+  @Test
+  public void shouldAppendNextChunkForBatchOperations() {
+    // given
+    when(batchOperation.getInitializationSearchCursor()).thenReturn("1");
+    when(batchOperation.getNumTotalItems()).thenReturn(10);
+    when(itemProvider.fetchItemPage(eq("1"), anyInt())).thenReturn(createItemPage(1L, 2L, 3L));
+
+    // when our scheduler fires
+    execute();
+
+    // then
+    verify(batchOperationState).getNextPendingBatchOperation();
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(),
+            eq(BatchOperationIntent.START),
+            any(BatchOperationCreationRecord.class),
+            any());
+    verify(taskResultBuilder)
+        .appendCommandRecord(
+            anyLong(), eq(BatchOperationChunkIntent.CREATE), chunkRecordCaptor.capture(), any());
+    final var batchOperationChunkRecord = chunkRecordCaptor.getValue();
+    assertThat(batchOperationChunkRecord.getItems().size()).isEqualTo(3);
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
+
+    verify(metrics).recordItemsPerPartition(13, CANCEL_PROCESS_INSTANCE);
   }
 
   @Test
@@ -289,8 +325,6 @@ public class BatchOperationExecutionSchedulerTest {
 
   @Test
   public void shouldCreateMultipleChunks() {
-    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceFilter.class);
-
     // given
     final var queryItems = LongStream.range(0, CHUNK_SIZE * 2).toArray();
     when(itemProvider.fetchItemPage(any(), anyInt())).thenReturn(createItemPage(queryItems));
@@ -319,6 +353,11 @@ public class BatchOperationExecutionSchedulerTest {
     assertThat(extractRecordItemKeys(batchOperationChunkRecord.getItems()))
         .containsExactlyInAnyOrder(
             extractQueryItemKeys(queryItems, CHUNK_SIZE, CHUNK_SIZE).toArray(Long[]::new));
+
+    verify(taskResultBuilder)
+        .appendCommandRecord(anyLong(), eq(BatchOperationExecutionIntent.EXECUTE), any(), any());
+
+    verify(metrics).recordItemsPerPartition(CHUNK_SIZE * 2, CANCEL_PROCESS_INSTANCE);
   }
 
   @Test
