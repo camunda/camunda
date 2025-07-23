@@ -24,7 +24,7 @@ import {useMemo} from 'react';
 import {Details} from './Details';
 import {createV2InstanceMetadata} from './types';
 import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
-import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance.ts';
+import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance.ts';
 import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition.ts';
 import {resolveIncidentErrorType} from './Incident/resolveIncidentErrorType.ts';
 
@@ -112,13 +112,11 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {
     data: elementInstancesIncidentsSearchResult,
     isLoading: isSearchingIncidents,
-  } = useGetIncidentsByElementInstance(
-    elementInstanceMetadata?.elementInstanceKey ?? '',
+  } = useGetIncidentsByProcessInstance(
     processInstance?.processInstanceKey ?? '',
+    elementInstanceMetadata?.elementInstanceKey,
     {
-      enabled:
-        !!elementInstanceMetadata?.elementInstanceKey &&
-        !!processInstance?.processInstanceKey,
+      enabled: !!processInstance?.processInstanceKey,
     },
   );
 
@@ -175,68 +173,62 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
         )}
 
         {elementInstanceMetadata && (
-          <>
-            <Details
-              metaData={{
-                ...metaData,
-                instanceMetadata: createV2InstanceMetadata(
-                  instanceMetadata,
-                  elementInstanceMetadata,
-                  elementInstanceMetadata.type === 'USER_TASK'
-                    ? userTask
-                    : undefined,
-                ),
-                incident: singleIncident
-                  ? {
-                      errorType: resolveIncidentErrorType(
-                        singleIncident?.errorType,
-                      ),
-                      errorMessage: singleIncident.errorMessage,
-                    }
-                  : null,
-              }}
-              elementId={elementInstanceMetadata.elementId}
-            />
-            {isSearchingIncidents || isFetchingProcessDefinition ? (
-              <Loading
-                small
-                withOverlay={false}
-                data-testid="incidents-loading"
-              />
-            ) : singleIncident ? (
-              <>
-                <Divider />
-                <Incident
-                  processInstanceId={processInstance?.processInstanceKey}
-                  processDefinitionName={processDefinition?.name}
-                  incidentV2={singleIncident}
-                  incident={incident}
-                  onButtonClick={() => {
-                    incidentsStore.clearSelection();
-                    incidentsStore.toggleFlowNodeSelection(elementId);
-                    incidentsStore.toggleErrorTypeSelection(
-                      singleIncident.errorType,
-                    );
-                    incidentsStore.setIncidentBarOpen(true);
-                  }}
-                />
-              </>
-            ) : elementInstancesIncidentsSearchResult &&
-              elementInstancesIncidentsSearchResult?.length > 1 ? (
-              <>
-                <Divider />
-                <MultiIncidents
-                  count={elementInstancesIncidentsSearchResult?.length}
-                  onButtonClick={() => {
-                    incidentsStore.clearSelection();
-                    incidentsStore.toggleFlowNodeSelection(elementId);
-                    incidentsStore.setIncidentBarOpen(true);
-                  }}
-                />
-              </>
-            ) : null}
-          </>
+          <Details
+            metaData={{
+              ...metaData,
+              instanceMetadata: createV2InstanceMetadata(
+                instanceMetadata,
+                elementInstanceMetadata,
+                elementInstanceMetadata.type === 'USER_TASK'
+                  ? userTask
+                  : undefined,
+              ),
+              incident: singleIncident
+                ? {
+                    errorType: resolveIncidentErrorType(
+                      singleIncident?.errorType,
+                    ),
+                    errorMessage: singleIncident.errorMessage,
+                  }
+                : null,
+            }}
+            elementId={elementInstanceMetadata.elementId}
+          />
         )}
+        {isSearchingIncidents || isFetchingProcessDefinition ? (
+          <Loading small withOverlay={false} data-testid="incidents-loading" />
+        ) : singleIncident ? (
+          <>
+            <Divider />
+            <Incident
+              processInstanceId={processInstance?.processInstanceKey}
+              processDefinitionName={processDefinition?.name}
+              incidentV2={singleIncident}
+              incident={incident}
+              onButtonClick={() => {
+                incidentsStore.clearSelection();
+                incidentsStore.toggleFlowNodeSelection(elementId);
+                incidentsStore.toggleErrorTypeSelection(
+                  singleIncident.errorType,
+                );
+                incidentsStore.setIncidentBarOpen(true);
+              }}
+            />
+          </>
+        ) : elementInstancesIncidentsSearchResult &&
+          elementInstancesIncidentsSearchResult?.length > 1 ? (
+          <>
+            <Divider />
+            <MultiIncidents
+              count={elementInstancesIncidentsSearchResult?.length}
+              onButtonClick={() => {
+                incidentsStore.clearSelection();
+                incidentsStore.toggleFlowNodeSelection(elementId);
+                incidentsStore.setIncidentBarOpen(true);
+              }}
+            />
+          </>
+        ) : null}
       </Stack>
     </Popover>
   );

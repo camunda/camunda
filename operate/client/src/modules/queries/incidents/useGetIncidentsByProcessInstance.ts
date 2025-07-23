@@ -11,30 +11,36 @@ import {useQuery} from '@tanstack/react-query';
 import {searchIncidentsByProcessInstance} from 'modules/api/v2/incidents/searchIncidentsByProcessInstance';
 const INCIDENTS_SEARCH_QUERY_KEY = 'incidentsSearch';
 
-const useGetIncidentsByElementInstance = (
-  elementInstanceKey: string,
+const useGetIncidentsByProcessInstance = (
   processInstanceKey: string,
+  elementInstanceKey?: string,
   options: {enabled: boolean} = {enabled: true},
 ) => {
   return useQuery({
-    queryKey: [INCIDENTS_SEARCH_QUERY_KEY, processInstanceKey],
+    queryKey: [
+      INCIDENTS_SEARCH_QUERY_KEY,
+      processInstanceKey,
+      elementInstanceKey,
+    ],
     queryFn: async () => {
       const {response, error} = await searchIncidentsByProcessInstance({
         processInstanceKey,
       });
-      if (response !== null) {
-        const filteredByElementInstanceIncidents = response.items.filter(
-          (incident) => incident.elementInstanceKey === elementInstanceKey,
-        );
 
-        return filteredByElementInstanceIncidents.length > 0
-          ? filteredByElementInstanceIncidents
-          : null;
+      if (response !== null) {
+        const incidents = elementInstanceKey
+          ? response.items.filter(
+              (incident) => incident.elementInstanceKey === elementInstanceKey,
+            )
+          : response.items;
+
+        return incidents.length > 0 ? incidents : null;
       }
+
       throw error;
     },
     ...options,
   });
 };
 
-export {useGetIncidentsByElementInstance};
+export {useGetIncidentsByProcessInstance};
