@@ -80,13 +80,13 @@ public class GroupsByTenantSearchRequestImpl
   @Override
   public GroupsByTenantSearchRequest filter(final TenantGroupFilter value) {
     // this command does not support filtering
-    return this;
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
   public GroupsByTenantSearchRequest filter(final Consumer<TenantGroupFilter> fn) {
     // this command does not support filtering
-    return this;
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
