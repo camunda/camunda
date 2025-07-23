@@ -29,6 +29,7 @@ import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
+import io.camunda.exporter.tasks.util.ElasticsearchArchiverQueries;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -191,21 +192,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   private SearchRequest createFinishedInstancesSearchRequest() {
-    final var endDateQ =
-        QueryBuilders.range(
-            q ->
-                q.date(
-                    d -> d.field(ListViewTemplate.END_DATE).lte(config.getArchivingTimePoint())));
-    final var isProcessInstanceQ =
-        QueryBuilders.term(
-            q ->
-                q.field(ListViewTemplate.JOIN_RELATION)
-                    .value(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
-    final var partitionQ =
-        QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
-    final var combinedQuery =
-        QueryBuilders.bool(q -> q.must(endDateQ, isProcessInstanceQ, partitionQ));
-    return createSearchRequest(processInstanceIndex, combinedQuery, ListViewTemplate.END_DATE);
+    return createSearchRequest(
+        processInstanceIndex,
+        ElasticsearchArchiverQueries.finishedProcessInstancesQuery(
+            config.getArchivingTimePoint(), partitionId),
+        ListViewTemplate.END_DATE);
   }
 
   private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
