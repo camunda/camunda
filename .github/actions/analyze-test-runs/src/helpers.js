@@ -111,7 +111,7 @@ Fixable now? Maybe not.
 
 Please consider investigating if you have time. These tests might return, and
 
-![I'll be back](https://media.tenor.com/p2Ie017Zwu8AAAAM/exterminador-do.gif)`;
+I’ll be back. 🤖`;
 }
 
 module.exports = {
