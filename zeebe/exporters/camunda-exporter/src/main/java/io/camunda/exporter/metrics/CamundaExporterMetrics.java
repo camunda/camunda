@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CamundaExporterMetrics {
@@ -55,6 +56,7 @@ public class CamundaExporterMetrics {
   private final Timer recordExportDuration;
 
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
+  private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this(meterRegistry, InstantSource.system());
@@ -146,6 +148,13 @@ public class CamundaExporterMetrics {
     Gauge.builder(meterName("since.last.flush.seconds"), this::secondSinceLastFlush)
         .description("Time in seconds since the last successful flush")
         .register(meterRegistry);
+
+    Gauge.builder(
+            meterName("process.instances.awaiting.archival"),
+            processInstancesAwaitingArchival,
+            AtomicInteger::get)
+        .description("Number of process instances awaiting archival (approximate)")
+        .register(meterRegistry);
   }
 
   public CloseableSilently measureFlushDuration() {
@@ -200,6 +209,10 @@ public class CamundaExporterMetrics {
 
   public void recordFlushOccurrence(final Instant time) {
     lastFlushTime.set(time);
+  }
+
+  public void addToProcessInstancesAwaitingArchival(final int count) {
+    processInstancesAwaitingArchival.addAndGet(count);
   }
 
   /**
