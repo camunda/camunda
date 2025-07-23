@@ -590,7 +590,7 @@ public class GroupControllerTest {
     }
 
     @Test
-    void shouldAssignUserToGroupAndReturnAccepted() {
+    void shouldAssignUserToGroupAndReturnNoContent() {
       // given
       final String groupId = "111";
       final String username = "222";
@@ -604,7 +604,7 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
-          .isAccepted();
+          .isNoContent();
 
       // then
       verify(groupServices, times(1)).assignMember(request);
@@ -671,7 +671,7 @@ public class GroupControllerTest {
     }
 
     @Test
-    void shouldAssignMemberToGroupAndReturnAccepted() {
+    void shouldAssignMemberToGroupAndReturnNoContent() {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -685,7 +685,7 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
-          .isAccepted();
+          .isNoContent();
 
       // then
       verify(groupServices, times(1)).assignMember(request);
@@ -810,7 +810,7 @@ public class GroupControllerTest {
     }
 
     @Test
-    void shouldUnassignUserToGroupAndReturnAccepted() {
+    void shouldUnassignUserToGroupAndReturnNoContent() {
       // given
       final String groupId = "111";
       final String username = "222";
@@ -824,7 +824,7 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
-          .isAccepted();
+          .isNoContent();
 
       // then
       verify(groupServices, times(1)).removeMember(request);
@@ -891,7 +891,7 @@ public class GroupControllerTest {
     }
 
     @Test
-    void shouldUnassignMemberFromGroupAndReturnAccepted() {
+    void shouldUnassignMemberFromGroupAndReturnNoContent() {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -905,7 +905,7 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
-          .isAccepted();
+          .isNoContent();
 
       // then
       verify(groupServices, times(1)).removeMember(request);

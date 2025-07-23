@@ -413,7 +413,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldAssignUserToRoleAndReturnAccepted() {
+  void shouldAssignUserToRoleAndReturnNoContent() {
     // given
     final var roleId = "roleId";
     final var username = "username";
@@ -428,14 +428,14 @@ public class RoleControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
 
     // then
     verify(roleServices, times(1)).addMember(request);
   }
 
   @Test
-  void shouldAssignMappingToRoleAndReturnAccepted() {
+  void shouldAssignMappingToRoleAndReturnNoContent() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -449,7 +449,7 @@ public class RoleControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
 
     // then
     verify(roleServices, times(1)).addMember(request);
@@ -573,7 +573,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldUnassignMappingFromRoleAndReturnAccepted() {
+  void shouldUnassignMappingFromRoleAndReturnNoContent() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingRuleId = Strings.newRandomValidIdentityId();
@@ -588,7 +588,7 @@ public class RoleControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
 
     // then
     verify(roleServices, times(1)).removeMember(request);
@@ -766,7 +766,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldUnassignUserFromRoleAndReturnAccepted() {
+  void shouldUnassignUserFromRoleAndReturnNoContent() {
     // given
     final var roleId = "roleId";
     final var username = "username";
@@ -781,7 +781,7 @@ public class RoleControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
 
     // then
     verify(roleServices, times(1)).removeMember(request);
@@ -900,7 +900,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldAssignGroupToRoleAndReturnAccepted() {
+  void shouldAssignGroupToRoleAndReturnNoContent() {
     // given
     final var roleId = "roleId";
     final var groupId = "groupId";
@@ -915,7 +915,7 @@ public class RoleControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
 
     // then
     verify(roleServices, times(1)).addMember(request);
@@ -1036,7 +1036,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldUnassignGroupFromRoleAndReturnAccepted() {
+  void shouldUnassignGroupFromRoleAndReturnNoContent() {
     // given
     final var roleId = "roleId";
     final var groupId = "groupId";
@@ -1051,7 +1051,7 @@ public class RoleControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
 
     // then
     verify(roleServices, times(1)).removeMember(request);
