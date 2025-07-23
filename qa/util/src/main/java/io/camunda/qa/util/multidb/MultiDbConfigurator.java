@@ -9,7 +9,9 @@ package io.camunda.qa.util.multidb;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.application.commons.utils.DatabaseTypeUtils.UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE;
 
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
@@ -74,8 +76,18 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put(
         PROPERTY_CAMUNDA_DATABASE_TYPE,
         io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH);
+
+    elasticsearchProperties.put(
+        UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE,
+        SecondaryStorageType.elasticsearch.toString());
+
     elasticsearchProperties.put("camunda.database.indexPrefix", indexPrefix);
     elasticsearchProperties.put("camunda.database.url", elasticsearchUrl);
+
+    elasticsearchProperties.put("camunda.data.secondary-storage.type", "elasticsearch");
+    elasticsearchProperties.put(
+        "camunda.data.secondary-storage.elasticsearch.url", elasticsearchUrl);
+
     elasticsearchProperties.put(
         "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
     elasticsearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
@@ -194,6 +206,7 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
     opensearchProperties.put("camunda.database.retention.minimumAge", "0s");
     opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
+    opensearchProperties.put("camunda.data.secondary-storage.type", "opensearch");
 
     testApplication.withAdditionalProperties(opensearchProperties);
 

@@ -396,7 +396,12 @@ public class TestContainerUtil {
     operateContainer
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
+
+        /* these need to match the URL value even if they're not used */
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth")
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
@@ -447,6 +452,8 @@ public class TestContainerUtil {
       final String zeebeContactPoint,
       final String zeebeIndexPrefix) {
     final Properties properties = new Properties();
+    properties.setProperty("camunda.data.secondary-storage.type", "elasticsearch");
+
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));
     properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.host", elsHost);

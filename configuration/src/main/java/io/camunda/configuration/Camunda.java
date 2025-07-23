@@ -17,4 +17,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class Camunda {
 
   public static final String PREFIX = "camunda";
+
+  private Data data = new Data();
+
+  public Data getData() {
+    return data;
+  }
+
+  public void setData(Data data) {
+    this.data = data;
+  }
 }
