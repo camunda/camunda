@@ -41,6 +41,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnProcessResultSenderBehavior processResultSenderBehavior;
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnJobBehavior jobBehavior;
+  private final MultiInstanceInputCollectionBehavior multiInstanceInputCollectionBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final CatchEventBehavior catchEventBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
@@ -144,6 +145,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             jobMetrics,
             clock);
 
+    multiInstanceInputCollectionBehavior =
+        new MultiInstanceInputCollectionBehavior(expressionBehavior, stateBehavior);
     multiInstanceOutputCollectionBehavior =
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
 
@@ -249,6 +252,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnSignalBehavior signalBehavior() {
     return signalBehavior;
+  }
+
+  @Override
+  public MultiInstanceInputCollectionBehavior inputCollectionBehavior() {
+    return multiInstanceInputCollectionBehavior;
   }
 
   @Override
