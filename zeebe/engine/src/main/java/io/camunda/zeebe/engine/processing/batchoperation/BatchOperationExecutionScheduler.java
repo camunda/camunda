@@ -139,11 +139,12 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     final var itemProvider = itemProviderFactory.fromBatchOperation(batchOperation);
 
     String lastSearchResultCursor = batchOperation.getInitializationSearchCursor();
+    int keysAdded = 0;
+    ItemPage page = null;
     if (lastSearchResultCursor != null && lastSearchResultCursor.isEmpty()) {
       // If the cursor is empty, we need to initialize it with the first page
       lastSearchResultCursor = null;
     }
-    ItemPage page = null;
     while (page == null || !page.isLastPage()) {
       try {
         page = itemProvider.fetchItemPage(lastSearchResultCursor, queryPageSize);
@@ -179,16 +180,18 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         }
       } else {
         lastSearchResultCursor = page.endCursor();
+        keysAdded += page.items().size();
         if (page.isLastPage()) {
           // If we have reached the last page, we can finalize the initialization and start the BO
           // we always append the EXECUTE command at the end, even if no items were found, so we can
           // leave the completion logic in that processor.
           appendExecution(batchOperation.getKey(), taskResultBuilder);
+          metrics.recordItemsPerPartition(
+              batchOperation.getNumTotalItems() + keysAdded,
+              batchOperation.getBatchOperationType());
         }
       }
     }
-
-    // TODO    metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
 
     metrics.startStartExecuteLatencyMeasure(
         batchOperation.getKey(), batchOperation.getBatchOperationType());
