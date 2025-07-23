@@ -23,14 +23,14 @@ import java.util.Objects;
 public class UsageMetricsStatisticsImpl extends UsageMetricsStatisticsItemImpl
     implements UsageMetricsStatistics {
 
-  private final Long activeTenants;
+  private final long activeTenants;
   private final Map<String, UsageMetricsStatisticsItem> tenants;
 
   public UsageMetricsStatisticsImpl(
-      final Long processInstances,
-      final Long decisionInstances,
-      final Long assignees,
-      final Long activeTenants,
+      final long processInstances,
+      final long decisionInstances,
+      final long assignees,
+      final long activeTenants,
       final Map<String, UsageMetricsStatisticsItem> tenants) {
     super(processInstances, decisionInstances, assignees);
     this.activeTenants = activeTenants;
@@ -38,17 +38,17 @@ public class UsageMetricsStatisticsImpl extends UsageMetricsStatisticsItemImpl
   }
 
   @Override
-  public Long getProcessInstances() {
+  public long getProcessInstances() {
     return processInstances;
   }
 
   @Override
-  public Long getDecisionInstances() {
+  public long getDecisionInstances() {
     return decisionInstances;
   }
 
   @Override
-  public Long getAssignees() {
+  public long getAssignees() {
     return assignees;
   }
 
@@ -87,7 +87,7 @@ public class UsageMetricsStatisticsImpl extends UsageMetricsStatisticsItemImpl
   }
 
   @Override
-  public Long getActiveTenants() {
+  public long getActiveTenants() {
     return activeTenants;
   }
 

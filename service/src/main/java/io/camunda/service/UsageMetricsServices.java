@@ -11,6 +11,7 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -37,7 +38,13 @@ public final class UsageMetricsServices
       throw new IllegalArgumentException("Query must not be null");
     }
     validateStartAndEndTime(query);
-    return SearchQueryResult.of(usageMetricsSearchClient.usageMetricStatistics(query));
+    return SearchQueryResult.of(
+        usageMetricsSearchClient
+            // TODO add proper authorization with https://github.com/camunda/camunda/issues/34708
+            .withSecurityContext(
+                securityContextProvider.provideSecurityContext(
+                    authentication, Authorization.of(a -> a)))
+            .usageMetricStatistics(query));
   }
 
   private void validateStartAndEndTime(final UsageMetricsQuery query) {

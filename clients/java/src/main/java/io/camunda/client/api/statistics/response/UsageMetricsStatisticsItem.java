@@ -17,9 +17,9 @@ package io.camunda.client.api.statistics.response;
 
 public interface UsageMetricsStatisticsItem {
 
-  Long getProcessInstances();
+  long getProcessInstances();
 
-  Long getDecisionInstances();
+  long getDecisionInstances();
 
-  Long getAssignees();
+  long getAssignees();
 }
