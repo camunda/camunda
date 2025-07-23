@@ -322,4 +322,5 @@ declare module '@carbon/react/icons' {
   export const Move: Icon;
   export const Copy: Icon;
   export const Launch: Icon;
+  export const CheckmarkFilled: Icon;
 }

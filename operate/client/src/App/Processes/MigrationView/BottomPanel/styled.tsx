@@ -11,7 +11,7 @@ import {supportSuccess} from '@carbon/elements';
 import {
   CheckmarkFilled as BaseCheckmark,
   ArrowRight as BaseArrowRight,
-} from '@carbon/icons-react';
+} from '@carbon/react/icons';
 import {DataTable as BaseDataTable} from 'modules/components/DataTable';
 import {Select as BaseSelect} from '@carbon/react';
 

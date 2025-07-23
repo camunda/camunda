@@ -8,8 +8,10 @@
 
 import styled from 'styled-components';
 import {styles, supportError, supportSuccess} from '@carbon/elements';
-import {WarningFilled as BaseWarningFilled} from '@carbon/react/icons';
-import {CheckmarkFilled as BaseCheckmark} from '@carbon/icons-react';
+import {
+  WarningFilled as BaseWarningFilled,
+  CheckmarkFilled as BaseCheckmark,
+} from '@carbon/react/icons';
 
 const StatusContainer = styled.div`
   display: flex;
