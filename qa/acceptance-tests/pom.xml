@@ -393,11 +393,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.springframework.ai</groupId>
-      <artifactId>spring-ai-model</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-webapp</artifactId>
       <scope>test</scope>
@@ -412,6 +407,12 @@
       <artifactId>tasklist-common</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-mcp</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>

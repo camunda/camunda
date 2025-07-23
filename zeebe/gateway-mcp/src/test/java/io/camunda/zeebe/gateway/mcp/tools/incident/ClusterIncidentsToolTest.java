@@ -213,11 +213,21 @@ class ClusterIncidentsToolTest {
         .thenReturn(authenticatedServices);
     when(authenticatedServices.search(any(IncidentQuery.class))).thenReturn(searchResult);
 
-    final var filter = new IncidentFilter(
-        List.of(123L), // processInstanceKeys
-        List.of(456L), // processDefinitionKeys
-        List.of("test-process"), // processDefinitionIds
-        null, null, null, null, null, null, null, null, null, null);
+    final var filter =
+        new IncidentFilter(
+            List.of(123L), // processInstanceKeys
+            List.of(456L), // processDefinitionKeys
+            List.of("test-process"), // processDefinitionIds
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
 
     final var request = new IncidentSearchRequest(filter, null, null);
 
@@ -241,19 +251,19 @@ class ClusterIncidentsToolTest {
         .thenReturn(authenticatedServices);
     when(authenticatedServices.search(any(IncidentQuery.class))).thenReturn(searchResult);
 
-    final var filter = new IncidentFilter(
-        List.of(), // empty processInstanceKeys
-        List.of(), // empty processDefinitionKeys
-        List.of(), // empty processDefinitionIds
-        List.of(), // empty incidentKeys
-        List.of(), // empty states
-        List.of(), // empty errorTypes
-        List.of(), // empty errorMessages
-        List.of(), // empty flowNodeIds
-        List.of(), // empty flowNodeInstanceKeys
-        null, null,
-        List.of(), // empty jobKeys
-        List.of()); // empty tenantIds
+    final var filter =
+        new IncidentFilter(
+            List.of(), // empty processInstanceKeys
+            List.of(), // empty processDefinitionKeys
+            List.of(), // empty processDefinitionIds
+            List.of(), // empty incidentKeys
+            List.of(), // empty states
+            List.of(), // empty errorTypes
+            List.of(), // empty errorMessages
+            List.of(), // empty flowNodeIds
+            List.of(), // empty flowNodeInstanceKeys
+            null, null, List.of(), // empty jobKeys
+            List.of()); // empty tenantIds
 
     final var request = new IncidentSearchRequest(filter, null, null);
 
@@ -302,15 +312,16 @@ class ClusterIncidentsToolTest {
         .thenReturn(authenticatedServices);
     when(authenticatedServices.search(any(IncidentQuery.class))).thenReturn(searchResult);
 
-    final var sorts = List.of(
-        new IncidentSort("key", "asc"),
-        new IncidentSort("creationTime", "desc"),
-        new IncidentSort("state", "asc"),
-        new IncidentSort("errorType", "desc"),
-        new IncidentSort("processInstanceKey", "asc"),
-        new IncidentSort("processDefinitionKey", "desc"),
-        new IncidentSort("unknownField", "asc") // should default to key
-    );
+    final var sorts =
+        List.of(
+            new IncidentSort("key", "asc"),
+            new IncidentSort("creationTime", "desc"),
+            new IncidentSort("state", "asc"),
+            new IncidentSort("errorType", "desc"),
+            new IncidentSort("processInstanceKey", "asc"),
+            new IncidentSort("processDefinitionKey", "desc"),
+            new IncidentSort("unknownField", "asc") // should default to key
+            );
     final var request = new IncidentSearchRequest(null, sorts, null);
 
     // when

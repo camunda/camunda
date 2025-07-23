@@ -19,8 +19,10 @@ public class GatewayMcpProperties {
   /** MCP server name exposed to MCP clients. */
   private String serverName = "Camunda Orchestration cluster MCP";
 
-  /** Camunda Orchestration cluster MCP Implementation version.
-   * TODO(mathieu) change this to be the project version.*/
+  /**
+   * Camunda Orchestration cluster MCP Implementation version. TODO(mathieu) change this to be the
+   * project version.
+   */
   private String version = "1.0.0";
 
   private Duration requestTimeout = Duration.ofSeconds(20);

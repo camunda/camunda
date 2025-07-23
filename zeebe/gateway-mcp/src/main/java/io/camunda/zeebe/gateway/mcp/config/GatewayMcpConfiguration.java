@@ -41,7 +41,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 @EnableConfigurationProperties(GatewayMcpProperties.class)
 public class GatewayMcpConfiguration {
 
-  private static final Logger logger = LoggerFactory.getLogger(GatewayMcpConfiguration.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GatewayMcpConfiguration.class);
 
   @Bean
   ToolCallback incidentSearchToolCallback(final ClusterIncidentsTool clusterIncidentsTool) {
@@ -60,7 +60,7 @@ public class GatewayMcpConfiguration {
   @Bean
   public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
       ObjectProvider<ObjectMapper> objectMapperProvider) {
-    ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+    final ObjectMapper objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
     return new WebMvcSseServerTransportProvider(objectMapper, "", "/mcp/message", "/sse");
   }
 
@@ -76,23 +76,24 @@ public class GatewayMcpConfiguration {
       McpServerTransportProvider transportProvider,
       List<ToolCallbackProvider> toolCallbackProvider) {
     // Create the server
-    Implementation serverInfo =
+    final Implementation serverInfo =
         new Implementation(serverProperties.getServerName(), serverProperties.getVersion());
-    SyncSpecification serverBuilder = McpServer.sync(transportProvider).serverInfo(serverInfo);
+    final SyncSpecification serverBuilder =
+        McpServer.sync(transportProvider).serverInfo(serverInfo);
 
     // Add tools available
-    List<ToolCallback> providerToolCallbacks =
+    final List<ToolCallback> providerToolCallbacks =
         toolCallbackProvider.stream()
             .map(pr -> List.of(pr.getToolCallbacks()))
             .flatMap(List::stream)
             .filter(Objects::nonNull)
             .toList();
 
-    var toolSpecifications = this.toSyncToolSpecifications(providerToolCallbacks);
+    final var toolSpecifications = this.toSyncToolSpecifications(providerToolCallbacks);
 
     if (!CollectionUtils.isEmpty(toolSpecifications)) {
       serverBuilder.tools(toolSpecifications);
-      logger.info("Registered tools: {}", toolSpecifications.size());
+      LOGGER.info("Registered tools: {}", toolSpecifications.size());
     }
 
     serverBuilder.capabilities(ServerCapabilities.builder().tools(false).build());

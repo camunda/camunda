@@ -35,14 +35,13 @@ import org.junit.jupiter.api.Test;
 @MultiDbTest
 public class IncidentMcpToolTest {
 
-  @Authenticated
-  private static McpSyncClient mcpClient;
+  @Authenticated private static McpSyncClient mcpClient;
 
   @MultiDbTestApplication
-  static final TestStandaloneBroker BROKER =
+  private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withProperty("camunda.gateway.mcp.enabled", true);
 
-  private static final List<Process> deployedProcesses = new ArrayList<>();
+  private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
   private static final int AMOUNT_OF_INCIDENTS = 3;
   private static Incident incident;
 
@@ -52,7 +51,7 @@ public class IncidentMcpToolTest {
         List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
     processes.forEach(
         process ->
-            deployedProcesses.addAll(
+            DEPLOYED_PROCESSES.addAll(
                 deployResource(camundaClient, String.format("process/%s", process))
                     .getProcesses()));
 
@@ -76,20 +75,26 @@ public class IncidentMcpToolTest {
   @Test
   void shouldSuccessfullyRetrieveIncidentsByProcessDefinitionKeys() {
     // when
-    var callResult = mcpClient.callTool(new CallToolRequest("searchIncidents", """
+    final var callResult =
+        mcpClient.callTool(
+            new CallToolRequest(
+                "searchIncidents",
+                """
         {
            "filter": {
               "processDefinitionIds": ["%s"]
            }
         }
-        """.formatted("incident_process_v1")));
+        """
+                    .formatted("incident_process_v1")));
 
     // then
     assertThat(callResult.isError()).isFalse();
 
     // Parse the result content to IncidentSearchResponse using JsonUtil
-    var responseContent = (TextContent) callResult.content().getFirst();
-    var incidentSearchResponse = JsonUtil.fromJson(responseContent.text(), IncidentSearchResponse.class);
+    final var responseContent = (TextContent) callResult.content().getFirst();
+    final var incidentSearchResponse =
+        JsonUtil.fromJson(responseContent.text(), IncidentSearchResponse.class);
 
     // Assert that the number of incidents equals 3
     assertThat(incidentSearchResponse.incidents()).hasSize(AMOUNT_OF_INCIDENTS);

@@ -24,7 +24,5 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
 @ConditionalOnWebApplication
-@ConditionalOnProperty(
-    name = "camunda.gateway.mcp.enabled",
-    havingValue = "true")
+@ConditionalOnProperty(name = "camunda.gateway.mcp.enabled", havingValue = "true")
 public @interface ConditionalOnMcpGatewayEnabled {}

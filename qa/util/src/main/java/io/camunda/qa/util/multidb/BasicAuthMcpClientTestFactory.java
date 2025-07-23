@@ -22,15 +22,13 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nullable;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class BasicAuthMcpClientTestFactory implements McpClientTestFactory {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(BasicAuthMcpClientTestFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BasicAuthMcpClientTestFactory.class);
 
   private final Map<String, McpSyncClient> cachedClients = new ConcurrentHashMap<>();
 
@@ -43,12 +41,9 @@ public final class BasicAuthMcpClientTestFactory implements McpClientTestFactory
   public McpSyncClient getMcpClient(
       final TestGateway<?> gateway, final Authenticated authenticated) {
     if (authenticated == null) {
-      LOGGER.info(
-          "Creating unauthorized Mcp client for broker address '{}", gateway.restAddress());
-      var transport = newTransport(gateway.restAddress(), null);
-      return McpClient.sync(transport)
-          .requestTimeout(Duration.ofSeconds(10))
-          .build();
+      LOGGER.info("Creating unauthorized Mcp client for broker address '{}", gateway.restAddress());
+      final var transport = newTransport(gateway.restAddress(), null);
+      return McpClient.sync(transport).requestTimeout(Duration.ofSeconds(10)).build();
     }
 
     LOGGER.info(
@@ -63,12 +58,9 @@ public final class BasicAuthMcpClientTestFactory implements McpClientTestFactory
     return createAuthenticatedClient(application.application(), TestUser.DEFAULT);
   }
 
-  private McpSyncClient createAuthenticatedClient(
-      final TestGateway<?> gateway, TestUser testUser) {
+  private McpSyncClient createAuthenticatedClient(final TestGateway<?> gateway, TestUser testUser) {
     final var transport = newTransport(gateway.restAddress(), testUser);
-    return McpClient.sync(transport)
-        .requestTimeout(Duration.ofSeconds(10))
-        .build();
+    return McpClient.sync(transport).requestTimeout(Duration.ofSeconds(10)).build();
   }
 
   @Override
@@ -76,14 +68,18 @@ public final class BasicAuthMcpClientTestFactory implements McpClientTestFactory
     CloseHelper.quietCloseAll(cachedClients.values());
   }
 
-  private static McpClientTransport newTransport(URI url, @Nullable TestUser testUser) {
-    var builder = HttpClientSseClientTransport.builder(url.toString());
+  private static McpClientTransport newTransport(URI url, TestUser testUser) {
+    final var builder = HttpClientSseClientTransport.builder(url.toString());
     if (testUser != null) {
       builder.customizeRequest(
-          r -> r.header("Authorization", "Basic " + Base64.getEncoder()
-              .encodeToString((testUser.username() + ":" + testUser.password()).getBytes(
-                  StandardCharsets.UTF_8)))
-      );
+          r ->
+              r.header(
+                  "Authorization",
+                  "Basic "
+                      + Base64.getEncoder()
+                          .encodeToString(
+                              (testUser.username() + ":" + testUser.password())
+                                  .getBytes(StandardCharsets.UTF_8))));
     }
     return builder.build();
   }

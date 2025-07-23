@@ -22,7 +22,7 @@ public class McpEnabledBasicAuthTest {
   private static McpSyncClient mcpClient;
 
   @MultiDbTestApplication
-  static final TestStandaloneBroker BROKER =
+  private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withProperty("camunda.gateway.mcp.enabled", true);
 
   @Test
