@@ -62,7 +62,7 @@ public final class DecisionInstanceFilterTransformer
         .ifPresent(queries::add);
     ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
     queries.addAll(getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeyOperations()));
-    queries.addAll(getElementInstanceKeysQuery(filter.elementInstanceKeyOperations()));
+    queries.addAll(getFlowNodeInstanceKeysQuery(filter.flowNodeInstanceKeyOperations()));
     ofNullable(getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds()))
         .ifPresent(queries::add);
     ofNullable(getDecisionDefinitionNamesQuery(filter.decisionDefinitionNames()))
@@ -123,9 +123,9 @@ public final class DecisionInstanceFilterTransformer
     return stringOperations(DECISION_DEFINITION_ID, stringOperations);
   }
 
-  private List<SearchQuery> getElementInstanceKeysQuery(
-      final List<Operation<Long>> elementInstanceKeyOperations) {
-    return longOperations(ELEMENT_INSTANCE_KEY, elementInstanceKeyOperations);
+  private List<SearchQuery> getFlowNodeInstanceKeysQuery(
+      final List<Operation<Long>> flowNodeInstanceKeyOperations) {
+    return longOperations(ELEMENT_INSTANCE_KEY, flowNodeInstanceKeyOperations);
   }
 
   private SearchQuery getDecisionDefinitionIdsQuery(final List<String> decisionDefinitionIds) {

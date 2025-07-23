@@ -35,7 +35,7 @@ public class JobFieldSortingTransformer implements FieldSortingTransformer {
     return switch (domainField) {
       case "processDefinitionKey" -> PROCESS_DEFINITION_KEY;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
-      case "flowNodeInstanceKey" -> FLOW_NODE_INSTANCE_ID;
+      case "elementInstanceKey" -> FLOW_NODE_INSTANCE_ID;
       case "elementId" -> FLOW_NODE_ID;
       case "jobKey" -> JOB_KEY;
       case "type" -> JOB_TYPE;

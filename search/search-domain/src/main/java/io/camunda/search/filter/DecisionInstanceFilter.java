@@ -29,7 +29,7 @@ public record DecisionInstanceFilter(
     List<String> evaluationFailures,
     List<Long> processDefinitionKeys,
     List<Long> processInstanceKeys,
-    List<Operation<Long>> elementInstanceKeyOperations,
+    List<Operation<Long>> flowNodeInstanceKeyOperations,
     List<Operation<Long>> decisionDefinitionKeyOperations,
     List<String> decisionDefinitionIds,
     List<String> decisionDefinitionNames,

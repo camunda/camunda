@@ -145,8 +145,8 @@
       </foreach>
     </if>
     <if
-      test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
-      <foreach collection="filter.elementInstanceKeyOperations" item="operation">
+      test="filter.flowNodeInstanceKeyOperations != null and !filter.flowNodeInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.flowNodeInstanceKeyOperations" item="operation">
         AND di.FLOW_NODE_INSTANCE_KEY
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>

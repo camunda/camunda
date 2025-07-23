@@ -58,7 +58,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "evaluationDate": "2024-06-05T08:29:15.027Z",
                        "processDefinitionKey": "2251799813688736",
                        "processInstanceKey": "6755399441058457",
-                       "flowNodeInstanceKey": "6755399441058465",
+                       "elementInstanceKey": "6755399441058465",
                        "decisionDefinitionKey": "123456",
                        "decisionDefinitionId": "ddi",
                        "decisionDefinitionName": "ddn",
@@ -254,7 +254,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                      "evaluationDate": "2024-06-05T08:29:15.027Z",
                      "processDefinitionKey": "2251799813688736",
                      "processInstanceKey": "6755399441058457",
-                     "flowNodeInstanceKey": "6755399441058465",
+                     "elementInstanceKey": "6755399441058465",
                      "decisionDefinitionKey": "123456",
                      "decisionDefinitionId": "ddi",
                      "decisionDefinitionName": "ddn",
@@ -401,7 +401,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         ops -> new DecisionInstanceFilter.Builder().decisionDefinitionKeyOperations(ops).build());
     keyOperationTestCases(
         streamBuilder,
-        "flowNodeInstanceKey",
+        "elementInstanceKey",
         ops -> new DecisionInstanceFilter.Builder().flowNodeInstanceKeyOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
