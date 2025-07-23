@@ -35,6 +35,8 @@ public class MultiInstanceInputCollectionBehavior {
 
   public Either<Failure, List<DirectBuffer>> getInputCollection() {
     // TODO read input collection from state
+    // TODO as a fallback, if the input collection cannot be found in the state we should still
+    //  evaluate the input collection so we remain backwards compatible.
     return Either.right(List.of());
   }
 }
