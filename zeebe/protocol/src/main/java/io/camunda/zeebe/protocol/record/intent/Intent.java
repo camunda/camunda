@@ -195,6 +195,7 @@ public interface Intent {
       case ASYNC_REQUEST:
         return AsyncRequestIntent.from(intent);
       case USAGE_METRIC:
+      case USAGE_METRIC_TU:
         return UsageMetricIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:

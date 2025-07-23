@@ -8,20 +8,16 @@
 package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
-import io.camunda.search.entities.UsageMetricsEntity;
+import io.camunda.search.entities.UsageMetricsTUEntity;
 
-public class UsageMetricsEntityTransformer
+public class UsageMetricsTUEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity, UsageMetricsEntity> {
+        io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity, UsageMetricsTUEntity> {
 
   @Override
-  public UsageMetricsEntity apply(
-      final io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity value) {
-    return new UsageMetricsEntity(
-        value.getId(),
-        value.getTenantId(),
-        value.getEventTime(),
-        value.getEventType().toString(),
-        value.getEventValue().toString());
+  public UsageMetricsTUEntity apply(
+      final io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity value) {
+    return new UsageMetricsTUEntity(
+        value.getId(), value.getTenantId(), value.getEventTime(), value.getAssigneeHash());
   }
 }

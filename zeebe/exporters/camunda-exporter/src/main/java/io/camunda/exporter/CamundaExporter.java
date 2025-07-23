@@ -28,6 +28,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRI
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
+import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC_TU;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
@@ -436,7 +437,8 @@ processing records from previous version
             BATCH_OPERATION_EXECUTION,
             BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BATCH_OPERATION_CHUNK,
-            USAGE_METRIC);
+            USAGE_METRIC,
+            USAGE_METRIC_TU);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

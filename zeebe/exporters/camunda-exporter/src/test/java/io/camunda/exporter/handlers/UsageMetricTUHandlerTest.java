@@ -12,10 +12,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.UsageMetricHandler.UsageMetricsBatch;
+import io.camunda.exporter.handlers.UsageMetricTUHandler.UsageMetricsTUBatch;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
-import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
+import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -32,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -39,24 +39,24 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class UsageMetricHandlerTest {
+class UsageMetricTUHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-usage-metrics";
-  private final UsageMetricHandler underTest = new UsageMetricHandler(indexName);
+  private final String indexName = "test-usage-metrics-tu";
+  private final UsageMetricTUHandler underTest = new UsageMetricTUHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
-    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.USAGE_METRIC);
+    assertThat(underTest.getHandledValueType()).isEqualTo(ValueType.USAGE_METRIC_TU);
   }
 
   private Record<UsageMetricRecordValue> generateRecord(
       final UnaryOperator<Builder<UsageMetricRecordValue>> fnBuild) {
-    return factory.generateRecord(ValueType.USAGE_METRIC, fnBuild, UsageMetricIntent.EXPORTED);
+    return factory.generateRecord(ValueType.USAGE_METRIC_TU, fnBuild, UsageMetricIntent.EXPORTED);
   }
 
   public static Stream<Arguments> provideHandleRecordParameters() {
-    return Arrays.stream(EventType.values()).map(e -> Arguments.of(e, e != EventType.NONE));
+    return Arrays.stream(EventType.values()).map(e -> Arguments.of(e, e == EventType.TU));
   }
 
   @ParameterizedTest
@@ -86,9 +86,16 @@ class UsageMetricHandlerTest {
     // given
     final var recordValue =
         ImmutableUsageMetricRecordValue.builder()
-            .withEventType(EventType.RPI)
+            .withEventType(EventType.TU)
             .withIntervalType(IntervalType.ACTIVE)
-            .withCounterValues(Map.of("tenant1", 1L, "tenant2", 2L, "tenant3", 3L))
+            .withSetValues(
+                Map.of(
+                    "tenant1",
+                    Set.of(12L, 34L),
+                    "tenant2",
+                    Set.of(56L, 78L),
+                    "tenant3",
+                    Set.of(89L, 11L)))
             .build();
     final var record = generateRecord(b -> b.withValue(recordValue).withKey(10));
 
@@ -103,51 +110,57 @@ class UsageMetricHandlerTest {
   void shouldUpdateEntity() throws PersistenceException {
     // given
     final var now = OffsetDateTime.now().toEpochSecond();
+    final var partitionId = 9;
     final var recordValue =
         ImmutableUsageMetricRecordValue.builder()
-            .withEventType(EventType.RPI)
+            .withEventType(EventType.TU)
             .withIntervalType(IntervalType.ACTIVE)
             .withStartTime(now)
-            .withCounterValues(Map.of("tenant3", 33L))
+            .withSetValues(Map.of("tenant3", Set.of(89L, 11L)))
             .build();
     final var record = generateRecord(b -> b.withValue(recordValue).withKey(10).withPartitionId(9));
-    final var usageMetricsBatch =
-        new UsageMetricsBatch(
+    final var usageMetricsTUBatch =
+        new UsageMetricsTUBatch(
             "batch_1",
             new ArrayList<>(
                 List.of(
-                    new UsageMetricsEntity()
+                    new UsageMetricsTUEntity()
                         .setId("10_tenant1")
-                        .setPartitionId(9)
-                        .setEventTime(DateUtil.toOffsetDateTime(now))
-                        .setEventType(UsageMetricsEventType.RPI)
-                        .setEventValue(11L),
-                    new UsageMetricsEntity()
+                        .setAssigneeHash(12L)
+                        .setPartitionId(partitionId)
+                        .setEventTime(DateUtil.toOffsetDateTime(now)),
+                    new UsageMetricsTUEntity()
+                        .setId("10_tenant1")
+                        .setAssigneeHash(34L)
+                        .setPartitionId(partitionId)
+                        .setEventTime(DateUtil.toOffsetDateTime(now)),
+                    new UsageMetricsTUEntity()
                         .setId("10_tenant2")
-                        .setEventType(UsageMetricsEventType.RPI)
-                        .setPartitionId(9)
-                        .setEventTime(DateUtil.toOffsetDateTime(now))
-                        .setEventValue(22L))));
+                        .setAssigneeHash(89L)
+                        .setPartitionId(partitionId)
+                        .setEventTime(DateUtil.toOffsetDateTime(now)),
+                    new UsageMetricsTUEntity()
+                        .setId("10_tenant2")
+                        .setAssigneeHash(11L)
+                        .setPartitionId(partitionId)
+                        .setEventTime(DateUtil.toOffsetDateTime(now)))));
 
     // when
-    underTest.updateEntity(record, usageMetricsBatch);
+    underTest.updateEntity(record, usageMetricsTUBatch);
 
     // then
-    final List<UsageMetricsEntity> variables = usageMetricsBatch.variables();
+    final List<UsageMetricsTUEntity> variables = usageMetricsTUBatch.variables();
 
     assertThat(variables)
-        .extracting(UsageMetricsEntity::getId)
-        .containsExactlyInAnyOrder("10_tenant1", "10_tenant2", "10_tenant3");
+        .extracting(UsageMetricsTUEntity::getId)
+        .contains("10_tenant1", "10_tenant2", "10_tenant3");
     assertThat(variables)
-        .extracting(UsageMetricsEntity::getEventTime)
+        .extracting(UsageMetricsTUEntity::getEventTime)
         .contains(DateUtil.toOffsetDateTime(now));
+    assertThat(variables).extracting(UsageMetricsTUEntity::getPartitionId).containsOnly(9);
     assertThat(variables)
-        .extracting(UsageMetricsEntity::getEventType)
-        .containsOnly(UsageMetricsEventType.RPI);
-    assertThat(variables).extracting(UsageMetricsEntity::getPartitionId).containsOnly(9);
-    assertThat(variables)
-        .extracting(UsageMetricsEntity::getEventValue)
-        .containsExactlyInAnyOrder(11L, 22L, 33L);
+        .extracting(UsageMetricsTUEntity::getAssigneeHash)
+        .contains(12L, 89L, 34L, 11L);
   }
 
   @Test
@@ -164,17 +177,11 @@ class UsageMetricHandlerTest {
   void shouldAddEntityOnFlush() throws PersistenceException {
     // given
     final var usageMetricsBatch =
-        new UsageMetricsBatch(
+        new UsageMetricsTUBatch(
             "batch_1",
             List.of(
-                new UsageMetricsEntity()
-                    .setId("10_tenant1")
-                    .setEventType(UsageMetricsEventType.RPI)
-                    .setEventValue(1L),
-                new UsageMetricsEntity()
-                    .setId("10_tenant3")
-                    .setEventType(UsageMetricsEventType.EDI)
-                    .setEventValue(5L)));
+                new UsageMetricsTUEntity().setId("10_tenant3").setAssigneeHash(12L),
+                new UsageMetricsTUEntity().setId("10_tenant1").setAssigneeHash(23L)));
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when

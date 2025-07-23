@@ -9,8 +9,11 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
+import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.TU;
 
+import io.camunda.exporter.handlers.UsageMetricHandler.UsageMetricsBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
 import io.camunda.zeebe.protocol.record.Record;
@@ -19,12 +22,14 @@ import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.util.DateUtil;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public record UsageMetricHandler(String indexName)
-    implements ExportHandler<UsageMetricsEntity, UsageMetricRecordValue> {
+    implements ExportHandler<UsageMetricsBatch, UsageMetricRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricHandler.class);
   private static final String ID_PATTERN = "%s_%s";
@@ -35,8 +40,8 @@ public record UsageMetricHandler(String indexName)
   }
 
   @Override
-  public Class<UsageMetricsEntity> getEntityType() {
-    return UsageMetricsEntity.class;
+  public Class<UsageMetricsBatch> getEntityType() {
+    return UsageMetricsBatch.class;
   }
 
   @Override
@@ -54,33 +59,63 @@ public record UsageMetricHandler(String indexName)
   }
 
   @Override
-  public UsageMetricsEntity createNewEntity(final String id) {
-    return new UsageMetricsEntity().setId(id);
+  public UsageMetricsBatch createNewEntity(final String id) {
+    return new UsageMetricsBatch(id, new ArrayList<>());
   }
 
   @Override
   public void updateEntity(
-      final Record<UsageMetricRecordValue> record, final UsageMetricsEntity entity) {
-    final var recordValue = record.getValue();
-    final var tenantId = parseTenantId(entity.getId());
+      final Record<UsageMetricRecordValue> record, final UsageMetricsBatch usageMetricsBatch) {
 
+    final var recordValue = record.getValue();
     final var eventType = mapEventType(recordValue.getEventType());
 
-    if (eventType != null) {
-      final var tenantValue = recordValue.getCounterValues().get(tenantId);
-      entity
-          .setEventTime(DateUtil.toOffsetDateTime(recordValue.getStartTime()))
-          .setEventType(eventType)
-          .setEventValue(tenantValue)
-          .setTenantId(tenantId)
-          .setPartitionId(record.getPartitionId());
-    } else {
+    if (eventType == null) {
       LOGGER.warn("Unsupported event type: {}", recordValue.getEventType());
+      return;
     }
+
+    final var recordKey = record.getKey();
+    final var partitionId = record.getPartitionId();
+    final var timestamp = DateUtil.toOffsetDateTime(record.getTimestamp());
+    var collection = usageMetricsBatch.variables();
+
+    recordValue
+        .getCounterValues()
+        .forEach(
+            (tenantId, counter) ->
+                collection.add(
+                    createMetricEntity(
+                        recordKey, partitionId, timestamp, tenantId, eventType, counter)));
+
+    recordValue
+        .getSetValues()
+        .forEach(
+            (tenantId, set) ->
+                collection.add(
+                    createMetricEntity(
+                        recordKey, partitionId, timestamp, tenantId, eventType, set.size())));
+  }
+
+  private UsageMetricsEntity createMetricEntity(
+      final long recordKey,
+      final int partitionId,
+      final OffsetDateTime timestamp,
+      final String tenantId,
+      final UsageMetricsEventType eventType,
+      final long eventValue) {
+
+    return new UsageMetricsEntity()
+        .setId(String.format(ID_PATTERN, recordKey, tenantId))
+        .setPartitionId(partitionId)
+        .setTenantId(tenantId)
+        .setEventTime(timestamp)
+        .setEventType(eventType)
+        .setEventValue(eventValue);
   }
 
   @Override
-  public void flush(final UsageMetricsEntity entity, final BatchRequest batchRequest) {
+  public void flush(final UsageMetricsBatch entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
   }
 
@@ -89,16 +124,26 @@ public record UsageMetricHandler(String indexName)
     return indexName;
   }
 
-  private String parseTenantId(final String id) {
-    final int idx = id.indexOf('_');
-    return id.substring(idx + 1);
-  }
-
   private UsageMetricsEventType mapEventType(final EventType eventType) {
     return switch (eventType) {
       case RPI -> RPI;
       case EDI -> EDI;
+      case TU -> TU;
       default -> null;
     };
+  }
+
+  public record UsageMetricsBatch(String id, List<UsageMetricsEntity> variables)
+      implements ExporterEntity<UsageMetricHandler.UsageMetricsBatch> {
+
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public UsageMetricHandler.UsageMetricsBatch setId(final String id) {
+      throw new UnsupportedOperationException("Not allowed to set an id");
+    }
   }
 }
