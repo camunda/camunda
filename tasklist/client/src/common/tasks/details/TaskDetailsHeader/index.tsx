@@ -74,18 +74,8 @@ const TaskDetailsHeader: React.FC<Props> = ({
           </span>
         )}
 
-        {['UPDATING', 'CANCELING'].includes(taskState) && !assignee && (
-          <TaskStateLoadingText taskState={taskState} />
-        )}
-
-        {['CREATED', 'ASSIGNING'].includes(taskState) && (
-          <span className={styles.assignButtonContainer}>{assignButton}</span>
-        )}
-
-        {['UPDATING', 'COMPLETING', 'CANCELING', 'CANCELED', 'FAILED'].includes(
-          taskState,
-        ) &&
-          assignee && (
+        {['CREATED', 'CANCELED', 'FAILED'].includes(taskState) && (
+          <>
             <span className={styles.taskAssignee} data-testid="assignee">
               <AssigneeTag
                 currentUser={user}
@@ -93,7 +83,36 @@ const TaskDetailsHeader: React.FC<Props> = ({
                 isShortFormat={false}
               />
             </span>
-          )}
+            <span className={styles.assignButtonContainer}>{assignButton}</span>
+          </>
+        )}
+
+        {['UPDATING', 'CANCELING'].includes(taskState) &&
+          (assignee ? (
+            <span className={styles.taskAssignee} data-testid="assignee">
+              <AssigneeTag
+                currentUser={user}
+                assignee={assignee}
+                isShortFormat={false}
+              />
+            </span>
+          ) : (
+            <TaskStateLoadingText taskState={taskState} />
+          ))}
+
+        {taskState === 'ASSIGNING' && (
+          <TaskStateLoadingText taskState={taskState} />
+        )}
+
+        {taskState === 'COMPLETING' && (
+          <span className={styles.taskAssignee} data-testid="assignee">
+            <AssigneeTag
+              currentUser={user}
+              assignee={assignee}
+              isShortFormat={false}
+            />
+          </span>
+        )}
       </div>
     </header>
   );
