@@ -45,15 +45,13 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
     return stateTransitionBehavior
         .transitionToCompleted(element, completing)
         .thenDo(
-            completed ->
-                stateTransitionBehavior
-                    .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
-                    // fork the process processing by taking all outgoing sequence flows of the
-                    // parallel
-                    // gateway
-                    .ifLeft(
-                        notTerminated ->
-                            stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed)));
+            completed -> {
+              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
+              // fork the process processing by taking all outgoing sequence flows of the
+              // parallel
+              // gateway
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            });
   }
 
   @Override
@@ -81,6 +79,6 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   @Override
   public void finalizeTermination(
       final ExecutableFlowNode element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
   }
 }

@@ -100,11 +100,8 @@ public class AdHocSubProcessProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior
-                  .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
-                  .ifLeft(
-                      notTerminated ->
-                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }
 
@@ -130,7 +127,7 @@ public class AdHocSubProcessProcessor
   @Override
   public void finalizeTermination(
       final ExecutableAdHocSubProcess element, final BpmnElementContext terminated) {
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, terminated);
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, terminated);
   }
 
   private void terminate(

@@ -112,11 +112,8 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior
-                  .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
-                  .ifLeft(
-                      notTerminated ->
-                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }
 
@@ -156,7 +153,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   public void onFinalizeTerminationInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
 
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
 
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior

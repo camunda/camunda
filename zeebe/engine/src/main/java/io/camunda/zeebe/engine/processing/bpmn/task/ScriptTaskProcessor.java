@@ -62,6 +62,12 @@ public final class ScriptTaskProcessor
   }
 
   @Override
+  public void finalizeTermination(
+      final ExecutableScriptTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
+  }
+
+  @Override
   protected boolean isJobBehavior(
       final ExecutableScriptTask element, final BpmnElementContext context) {
     if (element.getExpression() != null) {
@@ -107,11 +113,8 @@ public final class ScriptTaskProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior
-                  .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
-                  .ifLeft(
-                      notTerminated ->
-                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }
 
@@ -145,12 +148,6 @@ public final class ScriptTaskProcessor
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
     return TransitionOutcome.CONTINUE;
-  }
-
-  @Override
-  public void finalizeTermination(
-      final ExecutableScriptTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
   }
 
   private void triggerProcessEventWithResultVariable(

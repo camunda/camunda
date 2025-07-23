@@ -72,8 +72,7 @@ public final class EventSubProcessProcessor
         .transitionToCompleted(element, context)
         .thenDo(
             completed ->
-                stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(
-                    element, completed));
+                stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed));
   }
 
   @Override
@@ -96,7 +95,7 @@ public final class EventSubProcessProcessor
   @Override
   public void finalizeTermination(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
   }
 
   @Override

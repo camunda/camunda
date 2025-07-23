@@ -61,19 +61,15 @@ public final class InclusiveGatewayProcessor
               return stateTransitionBehavior
                   .transitionToCompleted(element, completing)
                   .thenDo(
-                      completed ->
-                          stateTransitionBehavior
-                              .terminateProcessInstanceIfRuntimeInstructionExists(
-                                  element, completed)
-                              .ifLeft(
-                                  notTerminated -> {
-                                    if (optFlows != null) {
-                                      optFlows.forEach(
-                                          flow ->
-                                              stateTransitionBehavior.takeSequenceFlow(
-                                                  completed, flow));
-                                    }
-                                  }));
+                      completed -> {
+                        stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(
+                            element, completed);
+
+                        if (optFlows != null) {
+                          optFlows.forEach(
+                              flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow));
+                        }
+                      });
             });
   }
 
@@ -104,7 +100,7 @@ public final class InclusiveGatewayProcessor
   @Override
   public void finalizeTermination(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
   }
 
   private Either<Failure, List<ExecutableSequenceFlow>> findSequenceFlowsToTake(

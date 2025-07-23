@@ -74,16 +74,14 @@ public final class EventBasedGatewayProcessor
     return stateTransitionBehavior
         .transitionToCompleted(element, context)
         .thenDo(
-            completed ->
-                stateTransitionBehavior
-                    .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
-                    .ifLeft(
-                        notTerminated ->
-                            eventSubscriptionBehavior.activateTriggeredEvent(
-                                context.getElementInstanceKey(),
-                                completed.getFlowScopeKey(),
-                                eventTrigger,
-                                completed)));
+            completed -> {
+              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
+              eventSubscriptionBehavior.activateTriggeredEvent(
+                  context.getElementInstanceKey(),
+                  completed.getFlowScopeKey(),
+                  eventTrigger,
+                  completed);
+            });
   }
 
   @Override
@@ -106,6 +104,6 @@ public final class EventBasedGatewayProcessor
   @Override
   public void finalizeTermination(
       final ExecutableEventBasedGateway element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
   }
 }

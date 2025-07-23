@@ -79,11 +79,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior
-                  .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
-                  .ifLeft(
-                      notTerminated ->
-                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }
 
@@ -125,6 +122,6 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   @Override
   public void finalizeTermination(
       final ExecutableReceiveTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
   }
 }

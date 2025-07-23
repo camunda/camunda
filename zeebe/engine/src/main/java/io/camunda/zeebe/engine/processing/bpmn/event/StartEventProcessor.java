@@ -75,12 +75,10 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
         .subscribeToEvents(flowScope, flowScopeInstanceContext)
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .thenDo(
-            completed ->
-                stateTransitionBehavior
-                    .terminateProcessInstanceIfRuntimeInstructionExists(element, completed)
-                    .ifLeft(
-                        notTerminated ->
-                            stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed)));
+            completed -> {
+              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            });
   }
 
   @Override
@@ -102,7 +100,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   @Override
   public void finalizeTermination(
       final ExecutableStartEvent element, final BpmnElementContext context) {
-    stateTransitionBehavior.terminateProcessInstanceIfRuntimeInstructionExists(element, context);
+    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
   }
 
   private BpmnElementContextImpl buildContextForFlowScopeInstance(
