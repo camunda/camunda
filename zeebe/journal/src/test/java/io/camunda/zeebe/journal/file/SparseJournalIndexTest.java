@@ -20,6 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.util.TestJournalRecord;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /** Sparse journal index test. */
@@ -262,5 +265,44 @@ class SparseJournalIndexTest {
     assertThat(index.hasIndexed(10)).isFalse();
     assertThat(index.hasIndexed(11)).isFalse();
     assertThat(index.hasIndexed(100)).isFalse();
+  }
+
+  @Test
+  void shouldDeleteInRange() {
+    // given - every 5 index is added
+    final JournalIndex index = new SparseJournalIndex(1);
+    // index entries
+    LongStream.rangeClosed(1, 10).forEach(i -> index.index(asJournalRecord(i, i), (int) (i * 2)));
+
+    // when
+    index.deleteInRange(3, 7);
+
+    // then all lookups in range 3-7 should return the 2nd entry as it's the floor entry of the
+    // journal index
+    IntStream.rangeClosed(3, 7)
+        .forEach(
+            i -> {
+              final var info = index.lookup(i);
+              Assertions.assertNotNull(info);
+              assertEquals(2, info.index());
+              assertEquals(4, info.position());
+              assertEquals(2, index.lookupAsqn(4));
+            });
+
+    IntStream.rangeClosed(1, 2)
+        .forEach(
+            i -> {
+              assertEquals(i, index.lookup(i).index());
+              assertEquals(i * 2, index.lookup(i).position());
+              assertEquals(i, index.lookupAsqn(i));
+            });
+
+    IntStream.rangeClosed(8, 10)
+        .forEach(
+            i -> {
+              assertEquals(i, index.lookup(i).index());
+              assertEquals(i * 2, index.lookup(i).position());
+              assertEquals(i, index.lookupAsqn(i));
+            });
   }
 }
