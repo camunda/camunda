@@ -30,7 +30,6 @@ import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
@@ -65,7 +64,6 @@ public class TaskService {
 
   @Autowired private Metrics metrics;
   @Autowired private TaskMetricsStore taskMetricsStore;
-  @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
   @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
   @Autowired private TasklistProperties tasklistProperties;
@@ -300,7 +298,6 @@ public class TaskService {
     LOGGER.info("Updating completed task metric for task with ID: {}", task.getKey());
     try {
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
-      assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
       // Only write metrics when completing a Job-based User Tasks. With 8.7,
       // metrics for completed (not Job-based) User Tasks are written by the
       // handler "TaskCompletedMetricHandler" in the camunda-exporter
