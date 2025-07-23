@@ -245,7 +245,7 @@ public class CamundaMultiDBExtension
   public static DatabaseType currentMultiDbDatabaseType() {
     final String property =
         System.getProperty(CamundaMultiDBExtension.PROP_CAMUNDA_IT_DATABASE_TYPE);
-    return property == null ? DatabaseType.LOCAL : DatabaseType.valueOf(property.toUpperCase());
+    return property == null ? DatabaseType.RDBMS : DatabaseType.valueOf(property.toUpperCase());
   }
 
   private void setupTestApplication(final Class<?> testClass) {

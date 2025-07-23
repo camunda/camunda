@@ -12,9 +12,11 @@ import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.columns.MappingRuleSearchColumn;
 import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.entities.MappingRuleEntity;
+import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +47,10 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
   @Override
   public SearchQueryResult<MappingRuleEntity> search(
       final MappingRuleQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    if (shouldReturnEmptyResult(query.filter())) {
+      return new SearchQueryResult.Builder<MappingRuleEntity>().total(0).items(List.of()).build();
+    }
+
     final var dbSort = convertSort(query.sort(), MappingRuleSearchColumn.MAPPING_RULE_ID);
     final var dbQuery =
         MappingRuleDbQuery.of(
@@ -55,5 +61,9 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
     final var hits = mappingMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  private boolean shouldReturnEmptyResult(final MappingRuleFilter filter) {
+    return filter.mappingRuleIds() != null && filter.mappingRuleIds().isEmpty();
   }
 }
