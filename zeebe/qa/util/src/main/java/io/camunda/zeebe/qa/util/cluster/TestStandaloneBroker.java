@@ -84,7 +84,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 InitializationConfiguration.DEFAULT_USER_EMAIL));
     securityConfig
         .getInitialization()
-        .getMappings()
+        .getMappingRules()
         .add(
             new ConfiguredMapping(
                 DEFAULT_MAPPING_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));
@@ -96,7 +96,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
             Map.of(
                 "users",
                 List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
-                "mappings",
+                "mappingRules",
                 List.of(DEFAULT_MAPPING_ID)));
 
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);

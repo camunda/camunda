@@ -97,7 +97,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                         .setPassword(passwordEncoder.encode(user.getPassword()))));
 
     initialization
-        .getMappings()
+        .getMappingRules()
         .forEach(
             mapping ->
                 setupRecord.addMappingRule(
@@ -125,7 +125,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             switch (assignmentsForEntityType.getKey()) {
               case "users" -> EntityType.USER;
               case "clients" -> EntityType.CLIENT;
-              case "mappings" -> EntityType.MAPPING_RULE;
+              case "mappingRules" -> EntityType.MAPPING_RULE;
               case "groups" -> EntityType.GROUP;
               case "roles" -> EntityType.ROLE;
               default ->

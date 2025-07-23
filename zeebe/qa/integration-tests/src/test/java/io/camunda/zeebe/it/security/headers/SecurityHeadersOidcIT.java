@@ -105,7 +105,7 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
                 oidcConfig.setRedirectUri(EXAMPLE_REDIRECT_URI);
 
                 c.getInitialization()
-                    .setMappings(
+                    .setMappingRules(
                         List.of(new ConfiguredMapping(USER_ID, USER_ID_CLAIM_NAME, USER_ID)));
                 c.getInitialization()
                     .getDefaultRoles()

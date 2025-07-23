@@ -84,13 +84,13 @@ public class OidcAuthOverGrpcIT {
                 oidcConfig.setRedirectUri("example.com");
 
                 c.getInitialization()
-                    .setMappings(
+                    .setMappingRules(
                         List.of(
                             new ConfiguredMapping(
                                 DEFAULT_USER_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
                 c.getInitialization()
                     .getDefaultRoles()
-                    .put("admin", Map.of("mappings", List.of(DEFAULT_USER_ID)));
+                    .put("admin", Map.of("mappingRules", List.of(DEFAULT_USER_ID)));
               });
 
   @BeforeAll

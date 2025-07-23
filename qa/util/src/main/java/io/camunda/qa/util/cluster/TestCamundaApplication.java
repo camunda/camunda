@@ -108,7 +108,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
                 InitializationConfiguration.DEFAULT_USER_EMAIL));
     securityConfig
         .getInitialization()
-        .getMappings()
+        .getMappingRules()
         .add(
             new ConfiguredMapping(
                 DEFAULT_MAPPING_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));

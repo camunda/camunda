@@ -84,7 +84,7 @@ public class OidcAuthOverRestIT {
                 oidcConfig.setRedirectUri("example.com");
 
                 c.getInitialization()
-                    .setMappings(
+                    .setMappingRules(
                         List.of(
                             new ConfiguredMapping(
                                 DEFAULT_USER_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
