@@ -60,7 +60,7 @@ public final class ExecutionListenerTransformer {
   private Map<String, String> transformTaskHeaders(final BaseElement element) {
     final var zeebeTaskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     if (zeebeTaskHeaders == null) {
-      return null;
+      return Map.of();
     }
     return zeebeTaskHeaders.getHeaders().stream()
         .filter(this::isValidHeader)
