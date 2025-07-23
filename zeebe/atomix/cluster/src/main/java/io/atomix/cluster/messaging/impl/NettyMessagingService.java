@@ -272,7 +272,13 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final boolean keepAlive,
       final Duration timeout) {
     return sendAndReceive(
-        address, type, payload, keepAlive, timeout, MoreExecutors.directExecutor());
+        address,
+        type,
+        dedicatedChannel,
+        payload,
+        keepAlive,
+        timeout,
+        MoreExecutors.directExecutor());
   }
 
   @Override
