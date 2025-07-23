@@ -48,11 +48,10 @@ And then start the spring-boot application under webapp folder in your preferred
 The [docker compose file](/config/docker-compose.yml) is built in an incremental way relying on the /env directory configuration files
 to provide the relevant environment variables for the services. Targeting a top level service will result in all it's dependencies being created.
 There are four configuration bundles:
-
 - Base configurations, no suffix
-- \*\_identity: Identity with plain authentication configuration
-- \*\_oauth: Identity with OAuth configuration
-- \*\_mt: Multitenancy configuration with OAuth and Identity
+- *_identity: Identity with plain authentication configuration
+- *_oauth: Identity with OAuth configuration
+- *_mt: Multitenancy configuration with OAuth and Identity
 
 For example, to start Tasklist with multitenancy configuration:
 
@@ -103,8 +102,19 @@ Please follow these steps to backport your changes:
 2. The Github Actions bot comments on the pull request once it finishes:
    - When _successful_, a new backport pull request was automatically created. Simply **approve and
      merge it**
-   - If it _failed_, please follow these **manual steps**: 1. Locally checkout the target branch (e.g. `stable/8.3`). 2. Make sure it's up to date with origin (i.e. `git pull`). 3. Checkout a new branch for your backported changes (e.g. `git checkout -b
-backport-123-to-stable/8.3`). 4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
-     conflicts. 5. Push your cherry-picked changes `git push`. 6. Create a pull request for your backport branch: - Make sure it is clear that this backports in the title (e.g. `[Backport stable/8.3] Title
-of the original PR`). - Make sure to change the target of the pull request to the correct branch (e.g.
-     `stable/8.3`). - Refer to the pull request in the description to link it (e.g. `backports #123`) - Refer to any issues that were referenced in the original pull request (e.g. `relates to #99`).
+   - If it _failed_, please follow these **manual steps**:
+     1. Locally checkout the target branch (e.g. `stable/8.3`).
+     2. Make sure it's up to date with origin (i.e. `git pull`).
+     3. Checkout a new branch for your backported changes (e.g. `git checkout -b
+        backport-123-to-stable/8.3`).
+     4. Cherry pick your changes `git cherry-pick -x <sha-1>...<sha-n>`. You may need to resolve
+        conflicts.
+     5. Push your cherry-picked changes `git push`.
+     6. Create a pull request for your backport branch:
+        - Make sure it is clear that this backports in the title (e.g. `[Backport stable/8.3] Title
+          of the original PR`).
+        - Make sure to change the target of the pull request to the correct branch (e.g.
+          `stable/8.3`).
+        - Refer to the pull request in the description to link it (e.g. `backports #123`)
+        - Refer to any issues that were referenced in the original pull request (e.g. `relates to #99`).
+
