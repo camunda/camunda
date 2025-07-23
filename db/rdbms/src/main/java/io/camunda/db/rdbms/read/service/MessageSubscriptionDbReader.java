@@ -7,22 +7,54 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.domain.MessageSubscriptionDbQuery;
+import io.camunda.db.rdbms.read.mapper.MessageSubscriptionEntityMapper;
+import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.columns.MessageSubscriptionColumn;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MessageSubscriptionDbReader extends AbstractEntityReader<MessageSubscriptionEntity>
     implements MessageSubscriptionReader {
 
-  public MessageSubscriptionDbReader() {
-    super(null);
+  private static final Logger LOG = LoggerFactory.getLogger(MessageSubscriptionDbReader.class);
+
+  private final MessageSubscriptionMapper mapper;
+
+  public MessageSubscriptionDbReader(final MessageSubscriptionMapper mapper) {
+    super(MessageSubscriptionColumn.values());
+    this.mapper = mapper;
+  }
+
+  public SearchQueryResult<MessageSubscriptionEntity> search(final MessageSubscriptionQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 
   @Override
   public SearchQueryResult<MessageSubscriptionEntity> search(
       final MessageSubscriptionQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException("Message Subscription search not implemented on RDBMS");
+    final var dbSort =
+        convertSort(query.sort(), MessageSubscriptionColumn.MESSAGE_SUBSCRIPTION_KEY);
+    final var dbQuery =
+        MessageSubscriptionDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+
+    LOG.trace("[RDBMS DB] Search for message subscriptions with filter {}", dbQuery);
+    final var totalHits = mapper.count(dbQuery);
+    final var hits =
+        mapper.search(dbQuery).stream().map(MessageSubscriptionEntityMapper::toEntity).toList();
+    return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<MessageSubscriptionEntity> findOne(final long key) {
+    final var result =
+        search(MessageSubscriptionQuery.of(b -> b.filter(f -> f.messageSubscriptionKeys(key))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
   }
 }

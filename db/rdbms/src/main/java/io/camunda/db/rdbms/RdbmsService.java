@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
+import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
@@ -61,6 +62,7 @@ public class RdbmsService {
   private final JobDbReader jobReader;
   private final UsageMetricsDbReader usageMetricReader;
   private final UsageMetricTUDbReader usageMetricTUDbReader;
+  private final MessageSubscriptionDbReader messageSubscriptionReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -85,7 +87,8 @@ public class RdbmsService {
       final BatchOperationItemDbReader batchOperationItemReader,
       final JobDbReader jobReader,
       final UsageMetricsDbReader usageMetricReader,
-      final UsageMetricTUDbReader usageMetricTUDbReader) {
+      final UsageMetricTUDbReader usageMetricTUDbReader,
+      final MessageSubscriptionDbReader messageSubscriptionReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -109,6 +112,7 @@ public class RdbmsService {
     this.jobReader = jobReader;
     this.usageMetricReader = usageMetricReader;
     this.usageMetricTUDbReader = usageMetricTUDbReader;
+    this.messageSubscriptionReader = messageSubscriptionReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -197,6 +201,10 @@ public class RdbmsService {
 
   public JobDbReader getJobReader() {
     return jobReader;
+  }
+
+  public MessageSubscriptionDbReader getMessageSubscriptionReader() {
+    return messageSubscriptionReader;
   }
 
   public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?
