@@ -67,7 +67,10 @@ final class RemoteClientConnection extends AbstractClientConnection {
     final String toAddress = channel.remoteAddress().toString();
     final String subject = message.subject();
     final String channelId = channel.attr(CHANNEL_ID_ATTRIBUTE).get();
-    messagingMetrics.countMessage(channel.remoteAddress().toString(), message.subject(), channelId);
+    messagingMetrics.countMessage(
+        channel.remoteAddress().toString(),
+        message.subject(),
+        channelId != null ? channelId : "anonymous");
     final byte[] payload = message.payload();
     messagingMetrics.observeRequestSize(toAddress, subject, payload == null ? 0 : payload.length);
   }
@@ -78,7 +81,8 @@ final class RemoteClientConnection extends AbstractClientConnection {
     final String channelId = channel.attr(CHANNEL_ID_ATTRIBUTE).get();
     final String toAddress = channel.remoteAddress().toString();
     final String subject = message.subject();
-    messagingMetrics.countRequestResponse(toAddress, subject, channelId);
+    messagingMetrics.countRequestResponse(
+        toAddress, subject, channelId != null ? channelId : "anonymous");
     messagingMetrics.incInFlightRequests(toAddress, subject);
     final var timer = messagingMetrics.startRequestTimer(subject);
     final byte[] payload = message.payload();
