@@ -13,9 +13,9 @@ import static io.camunda.tasklist.Metrics.TASKLIST_NAMESPACE;
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,12 +34,12 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
   @Autowired private TestRestTemplate testRestTemplate;
   @LocalManagementPort private int managementPort;
 
-  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe Doe");
-  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane Doe");
-  private final UserDTO demo = buildAllAccessUserWith(DEFAULT_USER_ID, DEFAULT_DISPLAY_NAME);
+  private final CamundaAuthentication joe = buildAllAccessUserWith("joe");
+  private final CamundaAuthentication jane = buildAllAccessUserWith("jane");
+  private final CamundaAuthentication demo = buildAllAccessUserWith(DEFAULT_USER_ID);
 
-  private static UserDTO buildAllAccessUserWith(final String userId, final String displayName) {
-    return new UserDTO().setUserId(userId).setDisplayName(displayName);
+  private static CamundaAuthentication buildAllAccessUserWith(final String userId) {
+    return CamundaAuthentication.of(b -> b.user(userId));
   }
 
   @Override

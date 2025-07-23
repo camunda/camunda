@@ -18,7 +18,6 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsRes
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
 import io.camunda.tasklist.webapp.dto.ProcessInstanceDTO;
-import io.camunda.tasklist.webapp.group.UserGroupService;
 import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
@@ -57,7 +56,6 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private FormStore formStore;
   @Autowired private ProcessService processService;
   @Autowired private TasklistProperties tasklistProperties;
-  @Autowired private UserGroupService userGroupService;
   @Autowired private TenantService tenantService;
   @Autowired private TasklistPermissionServices permissionServices;
 

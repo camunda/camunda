@@ -10,7 +10,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Objects.requireNonNullElse;
 
-import io.camunda.tasklist.property.IdentityProperties;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskByCandidateUserOrGroup;
 import io.camunda.tasklist.util.LazySupplier;
@@ -32,7 +32,6 @@ import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
@@ -81,7 +80,7 @@ public class TaskController extends ApiErrorController {
   @Autowired private TaskService taskService;
   @Autowired private VariableService variableService;
   @Autowired private TaskMapper taskMapper;
-  @Autowired private UserReader userReader;
+  @Autowired private CamundaAuthenticationProvider authenticationProvider;
   @Autowired private UserGroupService userGroupService;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private TasklistPermissionServices permissionServices;
@@ -114,24 +113,22 @@ public class TaskController extends ApiErrorController {
     final var query =
         taskMapper.toTaskQuery(requireNonNullElse(searchRequest, new TaskSearchRequest()));
 
-    final var currentUser = userReader.getCurrentUser();
+    final var camundaAuthentication = authenticationProvider.getCamundaAuthentication();
+    final var userName = camundaAuthentication.authenticatedUsername();
 
     if (tasklistProperties.getIdentity() != null
         && tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()
         // In the case of M2M tokens the userId is null, so we do not apply the user group
         // restrictions
         // this is backwards compatible with previous versions, but in the future this will change
-        && currentUser.getUserId() != null
-        && !currentUser.getUserId().isEmpty()) {
+        && userName != null
+        && !userName.isEmpty()) {
       final List<String> listOfUserGroups = userGroupService.getUserGroups();
-      if (!listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS)) {
-        final String userName = currentUser.getUserId();
-        final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup =
-            new TaskByCandidateUserOrGroup();
-        taskByCandidateUserOrGroup.setUserGroups(listOfUserGroups.toArray(String[]::new));
-        taskByCandidateUserOrGroup.setUserName(userName);
-        query.setTaskByCandidateUserOrGroup(taskByCandidateUserOrGroup);
-      }
+      final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup =
+          new TaskByCandidateUserOrGroup();
+      taskByCandidateUserOrGroup.setUserGroups(listOfUserGroups.toArray(String[]::new));
+      taskByCandidateUserOrGroup.setUserName(userName);
+      query.setTaskByCandidateUserOrGroup(taskByCandidateUserOrGroup);
     }
 
     // TODO  This is a temporary solution to include the taskDescription in the contextVariables
@@ -238,14 +235,14 @@ public class TaskController extends ApiErrorController {
   }
 
   private boolean hasAccessToTask(final LazySupplier<TaskDTO> taskSupplier) {
-    final var currentUser = userReader.getCurrentUser();
-    if (currentUser.getUserId() == null || currentUser.getUserId().isEmpty()) {
+    final var currentAuthentication = authenticationProvider.getCamundaAuthentication();
+    final var userName = currentAuthentication.authenticatedUsername();
+    if (userName == null || userName.isEmpty()) {
       // In the case of M2M tokens the userId is null, so we do not apply the user group
       // restrictions
       // this is backwards compatible with previous versions, but in the future this will change
       return true;
     }
-    final String userName = userReader.getCurrentUserId();
     final List<String> listOfUserGroups = userGroupService.getUserGroups();
     final var task = taskSupplier.get();
     final boolean allUsersTask =
@@ -257,13 +254,8 @@ public class TaskController extends ApiErrorController {
         task.getCandidateUsers() != null
             && Arrays.asList(task.getCandidateUsers()).contains(userName);
     final boolean assigneeTasks = task.getAssignee() != null && task.getAssignee().equals(userName);
-    final boolean noRestrictions = listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS);
 
-    return candidateUserTasks
-        || assigneeTasks
-        || candidateGroupTasks
-        || allUsersTask
-        || noRestrictions;
+    return candidateUserTasks || assigneeTasks || candidateGroupTasks || allUsersTask;
   }
 
   @Operation(

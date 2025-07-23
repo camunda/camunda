@@ -13,11 +13,10 @@ import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.TASK_NOT_ASSIGN
 import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.TASK_NOT_ASSIGNED_TO_CURRENT_USER;
 import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.createErrorMessage;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
-import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +25,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskValidator {
 
-  @Autowired private UserReader userReader;
+  @Autowired private CamundaAuthenticationProvider authenticationProvider;
   @Autowired private TasklistProperties tasklistProperties;
 
   public void validateCanPersistDraftTaskVariables(final TaskEntity task) {
@@ -64,13 +63,14 @@ public class TaskValidator {
 
     validateTaskIsAssigned(task);
 
-    final UserDTO currentUser = getCurrentUser();
-    if (!task.getAssignee().equals(currentUser.getUserId())
+    final var currentAuthentication = authenticationProvider.getCamundaAuthentication();
+    final var authenticatedUsername = currentAuthentication.authenticatedUsername();
+    if (!task.getAssignee().equals(authenticatedUsername)
         && !tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment()) {
       throw new InvalidRequestException(
           createErrorMessage(
               TASK_NOT_ASSIGNED_TO_CURRENT_USER,
-              "Task is not assigned to " + currentUser.getUserId()));
+              "Task is not assigned to " + authenticatedUsername));
     }
   }
 
@@ -108,9 +108,5 @@ public class TaskValidator {
       throw new InvalidRequestException(
           createErrorMessage(TASK_NOT_ASSIGNED, "Task is not assigned"));
     }
-  }
-
-  private UserDTO getCurrentUser() {
-    return userReader.getCurrentUser();
   }
 }

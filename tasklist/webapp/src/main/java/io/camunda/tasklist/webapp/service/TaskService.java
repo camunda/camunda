@@ -9,12 +9,15 @@ package io.camunda.tasklist.webapp.service;
 
 import static io.camunda.tasklist.Metrics.*;
 import static io.camunda.tasklist.util.CollectionUtil.countNonNullObjects;
+import static io.camunda.tasklist.webapp.service.OrganizationService.DEFAULT_ORGANIZATION;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.Auth0Properties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.FormStore.FormIdView;
@@ -24,14 +27,12 @@ import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.tasklist.webapp.dto.TaskDTO;
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
-import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
@@ -51,9 +52,9 @@ import org.springframework.web.client.HttpServerErrorException;
 public class TaskService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);
+  private static final String DEFAULT_USER = "No name";
 
-  @Autowired private UserReader userReader;
-
+  @Autowired private CamundaAuthenticationProvider authenticationProvider;
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
   @Autowired private FormStore formStore;
@@ -164,10 +165,13 @@ public class TaskService {
         Optional.ofNullable(tasklistProperties.getFeatureFlag().getAllowNonSelfAssignment())
             .orElse(false);
 
+    final var currentAuthentication = authenticationProvider.getCamundaAuthentication();
+    final var currentUsername = currentAuthentication.authenticatedUsername();
+
     if (!allowNonSelfAssignment
         && StringUtils.isNotEmpty(assignee)
         && !isApiUser
-        && !assignee.equals(getCurrentUser().getUserId())) {
+        && !assignee.equals(currentUsername)) {
       throw new ForbiddenActionException(
           "User doesn't have the permission to assign another user to this task");
     }
@@ -175,17 +179,18 @@ public class TaskService {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
-    final String taskAssignee = determineTaskAssignee(assignee);
+    final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
     tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
 
     final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
-    updateClaimedMetric(claimedTask);
+    final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
+    updateClaimedMetric(assignedTaskMetrics);
     return TaskDTO.createFrom(claimedTask, objectMapper);
   }
 
-  private String determineTaskAssignee(final String assignee) {
+  private String determineTaskAssignee(final String assignee, final String authenticatedUsername) {
     return StringUtils.isEmpty(assignee) && !TasklistAuthenticationUtil.isApiUser()
-        ? getCurrentUser().getUserId()
+        ? authenticatedUsername
         : assignee;
   }
 
@@ -267,10 +272,6 @@ public class TaskService {
     return TaskDTO.createFrom(taskEntity, objectMapper);
   }
 
-  private UserDTO getCurrentUser() {
-    return userReader.getCurrentUser();
-  }
-
   private boolean taskFormLinkIsNotComplete(final TaskEntity task) {
     return task.getFormKey() != null
         && task.getFormId() == null
@@ -291,14 +292,17 @@ public class TaskService {
         });
   }
 
-  private void updateClaimedMetric(final TaskEntity task) {
-    metrics.recordCounts(COUNTER_NAME_CLAIMED_TASKS, 1, getTaskMetricLabels(task));
+  private void updateClaimedMetric(final String[] metricsLabels) {
+    metrics.recordCounts(COUNTER_NAME_CLAIMED_TASKS, 1, metricsLabels);
   }
 
   private void updateCompletedMetric(final TaskEntity task) {
     LOGGER.info("Updating completed task metric for task with ID: {}", task.getKey());
     try {
-      metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
+      final var currentAuthentication = authenticationProvider.getCamundaAuthentication();
+      final var authenticatedUsername = currentAuthentication.authenticatedUsername();
+      final var completedTaskLabels = getTaskMetricLabels(task, authenticatedUsername);
+      metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, completedTaskLabels);
       // Only write metrics when completing a Job-based User Tasks. With 8.7,
       // metrics for completed (not Job-based) User Tasks are written by the
       // handler "TaskCompletedMetricHandler" in the camunda-exporter
@@ -312,17 +316,17 @@ public class TaskService {
     }
   }
 
-  private String[] getTaskMetricLabels(final TaskEntity task) {
+  private String[] getTaskMetricLabels(final TaskEntity task, final String username) {
     final String keyUserId;
 
     if (TasklistAuthenticationUtil.isApiUser()) {
       if (task.getAssignee() != null) {
         keyUserId = task.getAssignee();
       } else {
-        keyUserId = UserReader.DEFAULT_USER;
+        keyUserId = DEFAULT_USER;
       }
     } else {
-      keyUserId = userReader.getCurrentUserId();
+      keyUserId = username;
     }
 
     return new String[] {
@@ -331,5 +335,11 @@ public class TaskService {
       TAG_KEY_USER_ID, keyUserId,
       TAG_KEY_ORGANIZATION_ID, organizationService.getOrganizationIfPresent()
     };
+  }
+
+  private String getOrganizationIfPresent() {
+    return Optional.ofNullable(tasklistProperties.getAuth0())
+        .map(Auth0Properties::getOrganization)
+        .orElse(DEFAULT_ORGANIZATION);
   }
 }

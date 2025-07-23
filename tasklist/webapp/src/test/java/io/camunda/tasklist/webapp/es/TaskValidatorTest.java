@@ -9,16 +9,17 @@ package io.camunda.tasklist.webapp.es;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.property.FeatureFlagProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
-import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +38,7 @@ public class TaskValidatorTest {
 
   public static final String TEST_USER = "TestUser";
 
-  @Mock private UserReader userReader;
+  @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private TasklistProperties tasklistProperties;
 
   @InjectMocks private TaskValidator instance;
@@ -64,7 +65,7 @@ public class TaskValidatorTest {
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
 
     // when - then
-    verifyNoInteractions(userReader);
+    verifyNoInteractions(authenticationProvider);
     assertThatThrownBy(() -> instance.validateCanPersistDraftTaskVariables(task))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage(
@@ -80,8 +81,9 @@ public class TaskValidatorTest {
     // given
     when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
-    when(userReader.getCurrentUser()).thenReturn(user);
+    final var authentication = mock(CamundaAuthentication.class);
+    when(authentication.authenticatedUsername()).thenReturn(TEST_USER);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
 
@@ -117,8 +119,9 @@ public class TaskValidatorTest {
   public void userCanPersistDraftTaskVariablesWhenTaskIsAssignedToItself() {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
-    when(userReader.getCurrentUser()).thenReturn(user);
+    final var authentication = mock(CamundaAuthentication.class);
+    when(authentication.authenticatedUsername()).thenReturn(TEST_USER);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
@@ -145,7 +148,7 @@ public class TaskValidatorTest {
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(taskState);
 
     // when - then
-    verifyNoInteractions(userReader);
+    verifyNoInteractions(authenticationProvider);
     assertThatThrownBy(() -> instance.validateCanComplete(task))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage(
@@ -161,8 +164,9 @@ public class TaskValidatorTest {
     // given
     when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
-    when(userReader.getCurrentUser()).thenReturn(user);
+    final var authentication = mock(CamundaAuthentication.class);
+    when(authentication.authenticatedUsername()).thenReturn(TEST_USER);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
     final TaskEntity task =
         new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
 
@@ -200,8 +204,9 @@ public class TaskValidatorTest {
     // given
 
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final UserDTO user = new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
-    when(userReader.getCurrentUser()).thenReturn(user);
+    final var authentication = mock(CamundaAuthentication.class);
+    when(authentication.authenticatedUsername()).thenReturn(TEST_USER);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
@@ -214,9 +219,9 @@ public class TaskValidatorTest {
     when(tasklistProperties.getFeatureFlag())
         .thenReturn(new FeatureFlagProperties().setAllowNonSelfAssignment(true));
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(false);
-    final UserDTO user =
-        new UserDTO().setUserId("AnotherTestUser").setDisplayName("AnotherTestUser");
-    when(userReader.getCurrentUser()).thenReturn(user);
+    final var authentication = mock(CamundaAuthentication.class);
+    when(authentication.authenticatedUsername()).thenReturn("AnotherTestUser");
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
     final TaskEntity task = new TaskEntity().setAssignee(TEST_USER).setState(TaskState.CREATED);
 
     // when - then
@@ -351,7 +356,7 @@ public class TaskValidatorTest {
     final TaskEntity task = new TaskEntity().setAssignee(null).setState(TaskState.CREATED);
 
     // when - then
-    verifyNoInteractions(userReader);
+    verifyNoInteractions(authenticationProvider);
     assertThatThrownBy(() -> instance.validateCanUnassign(task))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage(
@@ -379,9 +384,5 @@ public class TaskValidatorTest {
               "detail": "Task is not active"
             }
             """);
-  }
-
-  protected UserDTO getTestUser() {
-    return new UserDTO().setUserId(TEST_USER).setDisplayName(TEST_USER);
   }
 }

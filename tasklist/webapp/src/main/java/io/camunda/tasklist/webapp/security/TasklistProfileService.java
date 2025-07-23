@@ -7,11 +7,39 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-public interface TasklistProfileService {
+import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
-  String getMessageByProfileFor(Exception exception);
+import io.camunda.security.entity.AuthenticationMethod;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 
-  boolean currentProfileCanLogout();
+@Component
+public class TasklistProfileService {
 
-  boolean isLoginDelegated();
+  @Autowired private Environment environment;
+
+  public String getMessageByProfileFor(final Exception exception) {
+    if (isDevelopmentProfileActive()) {
+      return exception.getMessage();
+    }
+    return "";
+  }
+
+  public boolean currentProfileCanLogout() {
+    return true;
+  }
+
+  public boolean isLoginDelegated() {
+    final var consolidatedAuthVariation =
+        AuthenticationMethod.parse(environment.getProperty(METHOD));
+
+    return consolidatedAuthVariation.isPresent()
+        && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());
+  }
+
+  private boolean isDevelopmentProfileActive() {
+    return List.of(environment.getActiveProfiles()).contains("dev");
+  }
 }

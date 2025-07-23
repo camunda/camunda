@@ -10,25 +10,22 @@ package io.camunda.tasklist.util;
 import static io.camunda.tasklist.util.TasklistZeebeIntegrationTest.DEFAULT_USER_ID;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.authentication.entity.CamundaUserDTO;
-import io.camunda.authentication.service.CamundaUserService;
-import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.service.OrganizationService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 
 @WithMockUser(DEFAULT_USER_ID)
 public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZeebeIntegrationTest {
   public static final String DEFAULT_USER_ID = "demo";
 
-  public static final String DEFAULT_DISPLAY_NAME = "Demo User";
-
-  @Autowired protected CamundaUserService camundaUserService;
+  @MockBean protected CamundaAuthenticationProvider authenticationProvider;
 
   private MockedStatic<TasklistAuthenticationUtil> authenticationUtil;
 
@@ -52,27 +49,24 @@ public abstract class TasklistZeebeIntegrationTest extends SessionlessTasklistZe
     setCurrentUser(getDefaultCurrentUser());
   }
 
-  protected UserDTO getDefaultCurrentUser() {
-    return new UserDTO().setUserId(DEFAULT_USER_ID).setDisplayName(DEFAULT_DISPLAY_NAME);
+  protected CamundaAuthentication getDefaultCurrentUser() {
+    return CamundaAuthentication.of(b -> b.user(DEFAULT_USER_ID));
   }
 
-  protected void setCurrentUser(final UserDTO user) {
+  protected void setCurrentUser(final CamundaAuthentication user) {
     setCurrentUser(user, false);
   }
 
-  protected void setCurrentUser(final UserDTO user, final boolean isApiUser) {
-    Mockito.when(userReader.getCurrentUserId()).thenReturn(user.getUserId());
-    Mockito.when(userReader.getCurrentUser()).thenReturn(user);
-
+  protected void setCurrentUser(final CamundaAuthentication user, final boolean isApiUser) {
     final String organisation =
-        user.getUserId().equals(DEFAULT_USER_ID)
+        user.authenticatedUsername().equals(DEFAULT_USER_ID)
             ? OrganizationService.DEFAULT_ORGANIZATION
-            : user.getUserId() + "-org";
+            : user.authenticatedUsername() + "-org";
     Mockito.when(organizationService.getOrganizationIfPresent()).thenReturn(organisation);
 
+    final var authentication = mock(CamundaAuthentication.class);
+    Mockito.when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    Mockito.when(authentication.authenticatedUsername()).thenReturn(user.authenticatedUsername());
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(isApiUser);
-
-    Mockito.when(camundaUserService.getCurrentUser()).thenReturn(mock(CamundaUserDTO.class));
-    Mockito.when(camundaUserService.getCurrentUser().userId()).thenReturn(user.getUserId());
   }
 }

@@ -20,6 +20,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -27,7 +29,6 @@ import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
 import io.camunda.tasklist.webapp.dto.TaskDTO;
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.group.UserGroupService;
@@ -36,7 +37,6 @@ import io.camunda.tasklist.webapp.permission.TasklistPermissionServices;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
@@ -77,14 +77,15 @@ class TaskControllerTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private TasklistProperties tasklistProperties;
 
-  @Mock private UserReader userReader;
+  @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private UserGroupService userGroupService;
   @Mock private TasklistPermissionServices tasklistPermissionServices;
 
   @BeforeEach
   public void setUp() {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO());
+    final var authentication = mock(CamundaAuthentication.class);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
   }
 
   @Nested
@@ -926,9 +927,10 @@ class TaskControllerTest {
       when(taskMapper.toTaskResponse(taskDTO)).thenReturn(expectedTaskResponse);
       when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-      when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(mock(CamundaAuthentication.class));
+      when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+          .thenReturn("demo");
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
 
@@ -968,9 +970,10 @@ class TaskControllerTest {
       when(taskMapper.toTaskResponse(taskDTO)).thenReturn(expectedTaskResponse);
       when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-      when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(mock(CamundaAuthentication.class));
+      when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+          .thenReturn("demo");
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
 
@@ -1002,9 +1005,10 @@ class TaskControllerTest {
       when(taskService.completeTask(taskId, variables, true)).thenThrow(NotFoundException.class);
       when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-      when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-      when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-      when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(mock(CamundaAuthentication.class));
+      when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+          .thenReturn("demo");
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
       when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(false);
 
@@ -1055,9 +1059,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
@@ -1116,8 +1121,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn(null);
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn(null);
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
             .thenReturn(List.of(providedTask));
@@ -1175,9 +1182,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
@@ -1240,9 +1248,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
         when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
@@ -1281,9 +1290,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
-        when(userReader.getCurrentUser().getDisplayName()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
 
@@ -1330,8 +1340,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskService.getTask(taskId)).thenReturn(taskDto);
         when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDto);
@@ -1378,8 +1390,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Demo"));
         when(taskService.getTask(taskId)).thenReturn(taskDto);
         when(taskService.completeTask(taskId, variables, true)).thenReturn(taskDto);
@@ -1431,8 +1445,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUserId()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
@@ -1481,8 +1497,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
@@ -1533,8 +1551,10 @@ class TaskControllerTest {
 
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Test"));
         when(taskService.getTask(taskId)).thenReturn(providedTask);
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
@@ -1587,8 +1607,10 @@ class TaskControllerTest {
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
         when(tasklistPermissionServices.hasPermissionToUpdateUserTask(any())).thenReturn(true);
 
@@ -1638,8 +1660,10 @@ class TaskControllerTest {
         when(taskMapper.toTaskResponse(providedTask)).thenReturn(taskResponse);
         when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
         when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
-        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
-        when(userReader.getCurrentUser().getUserId()).thenReturn("demo");
+        when(authenticationProvider.getCamundaAuthentication())
+            .thenReturn(mock(CamundaAuthentication.class));
+        when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+            .thenReturn("demo");
         when(userGroupService.getUserGroups()).thenReturn(List.of("Demo"));
 
         // When
@@ -1922,7 +1946,8 @@ class TaskControllerTest {
       when(taskService.getTask(taskId))
           .thenReturn(
               new TaskDTO().setId(taskId).setImplementation(TaskImplementation.ZEEBE_USER_TASK));
-      when(userReader.getCurrentUser()).thenReturn(new UserDTO());
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(mock(CamundaAuthentication.class));
 
       authenticationUtil = mockStatic(TasklistAuthenticationUtil.class);
       authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
