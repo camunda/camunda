@@ -23,6 +23,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
@@ -220,13 +221,14 @@ public class JobHandlerInvokingSpringBeansTest {
 
   private static List<ParameterResolver> parameterResolvers(final JobWorkerValue jobWorkerValue) {
     return JobHandlingUtil.createParameterResolvers(
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper()), jobWorkerValue);
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class)),
+        jobWorkerValue);
   }
 
   private static ResultProcessor resultProcessor(final JobWorkerValue jobWorkerValue) {
     return JobHandlingUtil.createResultProcessor(
         new DefaultResultProcessorStrategy(
-            mock(JobClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class)),
+            mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class)),
         jobWorkerValue);
   }
 

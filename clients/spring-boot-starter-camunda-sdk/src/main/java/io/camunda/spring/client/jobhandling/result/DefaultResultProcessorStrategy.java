@@ -15,25 +15,26 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
-import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.bean.MethodInfo;
 
 public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
-  private final JobClient jobClient;
+  private final CamundaClient camundaClient;
   private final DocumentResultProcessorFailureHandlingStrategy
       documentResultProcessorFailureHandlingStrategy;
 
   public DefaultResultProcessorStrategy(
-      final JobClient jobClient,
+      final CamundaClient camundaClient,
       final DocumentResultProcessorFailureHandlingStrategy
           documentResultProcessorFailureHandlingStrategy) {
-    this.jobClient = jobClient;
+    this.camundaClient = camundaClient;
     this.documentResultProcessorFailureHandlingStrategy =
         documentResultProcessorFailureHandlingStrategy;
   }
 
   @Override
   public ResultProcessor createProcessor(final MethodInfo methodInfo) {
-    return new DefaultResultProcessor(jobClient, documentResultProcessorFailureHandlingStrategy);
+    return new DefaultResultProcessor(
+        camundaClient, documentResultProcessorFailureHandlingStrategy);
   }
 }

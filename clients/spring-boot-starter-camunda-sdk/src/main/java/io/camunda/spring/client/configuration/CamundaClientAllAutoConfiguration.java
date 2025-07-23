@@ -18,9 +18,9 @@ package io.camunda.spring.client.configuration;
 import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.DEFAULT;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
@@ -79,8 +79,10 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ParameterResolverStrategy parameterResolverStrategy(
-      final JsonMapper jsonMapper, @Autowired(required = false) final ZeebeClient zeebeClient) {
-    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient);
+      final JsonMapper jsonMapper,
+      @Autowired(required = false) final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient) {
+    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient, camundaClient);
   }
 
   @Bean
@@ -93,11 +95,11 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ResultProcessorStrategy resultProcessorStrategy(
-      final JobClient jobClient,
+      final CamundaClient camundaClient,
       final DocumentResultProcessorFailureHandlingStrategy
           documentResultProcessorFailureHandlingStrategy) {
     return new DefaultResultProcessorStrategy(
-        jobClient, documentResultProcessorFailureHandlingStrategy);
+        camundaClient, documentResultProcessorFailureHandlingStrategy);
   }
 
   @Bean

@@ -19,6 +19,7 @@ import static io.camunda.spring.client.testsupport.ClassInfoUtil.parameterInfos;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.impl.CamundaObjectMapper;
@@ -35,7 +36,8 @@ public class DefaultParameterResolverStrategyTest {
   void shouldResolveLegacyParameter() {
     final ZeebeClient zeebeClient = mock(ZeebeClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), zeebeClient);
+        new DefaultParameterResolverStrategy(
+            new CamundaObjectMapper(), zeebeClient, mock(CamundaClient.class));
 
     final List<ParameterInfo> parameters = parameterInfos(this, "legacyMethod");
     assertThat(parameters).hasSize(2);
@@ -50,7 +52,7 @@ public class DefaultParameterResolverStrategyTest {
   @Test
   void shouldResolveCurrentParameter() {
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
     final List<ParameterInfo> parameters = parameterInfos(this, "currentMethod");
     assertThat(parameters).hasSize(2);
     final ParameterResolver jobClientResolver = strategy.createResolver(parameters.get(0));
@@ -62,7 +64,7 @@ public class DefaultParameterResolverStrategyTest {
   @Test
   void shouldResolveDocument() {
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
     final List<ParameterInfo> parameters = parameterInfos(this, "documentMethod");
     assertThat(parameters).hasSize(1);
     final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));

@@ -15,6 +15,7 @@
  */
 package io.camunda.spring.client.jobhandling.parameter;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.InternalClientException;
 import io.camunda.client.api.response.ActivatedJob;
@@ -31,12 +32,17 @@ public class DocumentParameterResolver implements ParameterResolver {
   private final String variableName;
   private final boolean optional;
   private final ParameterType parameterType;
+  private final CamundaClient camundaClient;
 
   public DocumentParameterResolver(
-      final String variableName, final boolean optional, final ParameterType parameterType) {
+      final String variableName,
+      final boolean optional,
+      final ParameterType parameterType,
+      final CamundaClient camundaClient) {
     this.variableName = variableName;
     this.optional = optional;
     this.parameterType = parameterType;
+    this.camundaClient = camundaClient;
   }
 
   @Override
@@ -45,7 +51,7 @@ public class DocumentParameterResolver implements ParameterResolver {
     final List<DocumentReferenceResponse> documentReferences = getDocumentReferences(job);
     return switch (parameterType) {
       case LIST -> documentReferences;
-      case CONTEXT -> new ParameterDocumentContext(documentReferences, jobClient, optional);
+      case CONTEXT -> new ParameterDocumentContext(documentReferences, camundaClient, optional);
       case SINGLE -> singleDocumentReference(documentReferences);
     };
   }

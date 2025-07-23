@@ -22,6 +22,7 @@ import static io.camunda.spring.client.annotation.AnnotationUtil.isDocument;
 import static io.camunda.spring.client.annotation.AnnotationUtil.isVariable;
 import static io.camunda.spring.client.annotation.AnnotationUtil.isVariablesAsType;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
@@ -33,15 +34,20 @@ import io.camunda.spring.client.bean.ParameterInfo;
 public class DefaultParameterResolverStrategy implements ParameterResolverStrategy {
   protected final JsonMapper jsonMapper;
   private final io.camunda.zeebe.client.api.worker.JobClient jobClient;
+  private final CamundaClient camundaClient;
 
   public DefaultParameterResolverStrategy(
-      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.worker.JobClient jobClient) {
+      final JsonMapper jsonMapper,
+      final io.camunda.zeebe.client.api.worker.JobClient jobClient,
+      final CamundaClient camundaClient) {
     this.jsonMapper = jsonMapper;
     this.jobClient = jobClient;
+    this.camundaClient = camundaClient;
   }
 
-  public DefaultParameterResolverStrategy(final JsonMapper jsonMapper) {
-    this(jsonMapper, null);
+  public DefaultParameterResolverStrategy(
+      final JsonMapper jsonMapper, final CamundaClient camundaClient) {
+    this(jsonMapper, null, camundaClient);
   }
 
   @Override
@@ -82,7 +88,8 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
       final String variableName = documentValue.getName();
       final boolean optional = documentValue.isOptional();
       final ParameterType documentParameterType = documentValue.getParameterType();
-      return new DocumentParameterResolver(variableName, optional, documentParameterType);
+      return new DocumentParameterResolver(
+          variableName, optional, documentParameterType, camundaClient);
     }
     throw new IllegalStateException(
         "Could not create parameter resolver for parameter " + parameterInfo);

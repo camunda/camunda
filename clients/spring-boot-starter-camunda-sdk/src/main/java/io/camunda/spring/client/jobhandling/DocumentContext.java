@@ -15,9 +15,9 @@
  */
 package io.camunda.spring.client.jobhandling;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DocumentLinkResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.jobhandling.result.ResultDocumentContext;
 import io.camunda.spring.client.jobhandling.result.ResultDocumentContextBuilder;
 import java.io.IOException;
@@ -73,12 +73,12 @@ public interface DocumentContext {
 
     abstract class AbstractDocumentEntry implements DocumentEntry {
       protected final DocumentReferenceResponse documentReference;
-      protected final JobClient jobClient;
+      protected final CamundaClient camundaClient;
 
       public AbstractDocumentEntry(
-          final DocumentReferenceResponse documentReference, final JobClient jobClient) {
+          final DocumentReferenceResponse documentReference, final CamundaClient camundaClient) {
         this.documentReference = documentReference;
-        this.jobClient = jobClient;
+        this.camundaClient = camundaClient;
       }
 
       @Override
@@ -88,12 +88,12 @@ public interface DocumentContext {
 
       @Override
       public InputStream getDocumentInputStream() {
-        return jobClient.newDocumentContentGetRequest(documentReference).execute();
+        return camundaClient.newDocumentContentGetRequest(documentReference).execute();
       }
 
       @Override
       public DocumentLinkResponse getDocumentLink() {
-        return jobClient.newCreateDocumentLinkCommand(documentReference).execute();
+        return camundaClient.newCreateDocumentLinkCommand(documentReference).execute();
       }
     }
   }

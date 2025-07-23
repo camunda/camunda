@@ -15,10 +15,10 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceBatchResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.jobhandling.DocumentContext.DocumentEntry;
 import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy.FailureHandlingContext;
 import java.io.InputStream;
@@ -33,13 +33,13 @@ import org.springframework.util.ReflectionUtils;
 
 public class DefaultResultProcessor implements ResultProcessor {
   private static final Logger LOG = LoggerFactory.getLogger(DefaultResultProcessor.class);
-  private final JobClient jobClient;
+  private final CamundaClient camundaClient;
   private final DocumentResultProcessorFailureHandlingStrategy exceptionHandlingStrategy;
 
   public DefaultResultProcessor(
-      final JobClient jobClient,
+      final CamundaClient camundaClient,
       final DocumentResultProcessorFailureHandlingStrategy exceptionHandlingStrategy) {
-    this.jobClient = jobClient;
+    this.camundaClient = camundaClient;
     this.exceptionHandlingStrategy = exceptionHandlingStrategy;
   }
 
@@ -69,7 +69,7 @@ public class DefaultResultProcessor implements ResultProcessor {
     if (hasDocumentField(clazz)) {
       final Map<String, Object> map = extractFieldsToMap(result);
       handleDocumentsForResultMap(map, activatedJob);
-      return jobClient.getConfiguration().getJsonMapper().transform(map, clazz);
+      return camundaClient.getConfiguration().getJsonMapper().transform(map, clazz);
     } else {
       return result;
     }
@@ -95,12 +95,12 @@ public class DefaultResultProcessor implements ResultProcessor {
       if (entry.getValue() instanceof final ResultDocumentContext resultDocumentContext) {
         LOG.debug("Handling submitted document {}", entry.getKey());
         final DocumentReferenceBatchResponse response =
-            resultDocumentContext.processDocumentBuilders(jobClient);
+            resultDocumentContext.processDocumentBuilders(camundaClient);
         if (!response.isSuccessful()) {
           exceptionHandlingStrategy.handleFailure(
               new FailureHandlingContext(
                   activatedJob,
-                  jobClient,
+                  camundaClient,
                   response,
                   resultDocumentContext.getFailedDocumentBuilders()));
         }
