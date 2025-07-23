@@ -23,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
@@ -112,6 +113,7 @@ public final class BackgroundTaskManagerFactory {
 
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildProcessInstanceArchiverJob());
+    tasks.add(buildProcessInstanceToBeArchivedCountJob());
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationArchiverJob());
       tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
@@ -120,6 +122,16 @@ public final class BackgroundTaskManagerFactory {
 
     executor.setCorePoolSize(tasks.size());
     return tasks;
+  }
+
+  private RunnableTask buildProcessInstanceToBeArchivedCountJob() {
+    final var connector = new ElasticsearchConnector(config.getConnect());
+    return new ProcessInstanceToBeArchivedCountJob(
+        metrics,
+        connector.createAsyncClient(),
+        partitionId,
+        config.getHistory().getArchivingTimePoint(),
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName());
   }
 
   private ReschedulingTask buildIncidentMarkerTask() {
