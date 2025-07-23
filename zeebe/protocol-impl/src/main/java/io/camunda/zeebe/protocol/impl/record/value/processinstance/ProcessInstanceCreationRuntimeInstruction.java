@@ -60,6 +60,11 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
     return this;
   }
 
+  @JsonIgnore
+  public DirectBuffer getAfterElementIdBuffer() {
+    return afterElementIdProp.getValue();
+  }
+
   public static ProcessInstanceCreationRuntimeInstruction createInstruction() {
     return new ProcessInstanceCreationRuntimeInstruction();
   }

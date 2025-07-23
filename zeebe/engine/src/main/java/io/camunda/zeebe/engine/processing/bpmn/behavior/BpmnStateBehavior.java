@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.Either;
@@ -258,17 +259,15 @@ public final class BpmnStateBehavior {
   }
 
   /**
-   * Verifies if the process instance needs to be terminated after the element with the given ID
-   * completes or terminates, based on the runtime instructions of the process instance.
+   * Gets the runtime instructions for a specific element ID within a process instance.
    *
    * @param processInstanceKey the key of the process instance
    * @param elementId the ID of the element that has completed or terminated
-   * @return a boolean indicating whether the process instance should be terminated
+   * @return a list of runtime instructions for the given element ID, potentially empty
    */
-  public boolean shouldTerminateProcessInstance(
+  public List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
       final long processInstanceKey, final String elementId) {
-    return elementInstanceState.isRuntimeInstructionPresentToTerminateProcessInstance(
-        processInstanceKey, elementId);
+    return elementInstanceState.getRuntimeInstructionsForElementId(processInstanceKey, elementId);
   }
 
   private void copyVariablesToProcessInstance(

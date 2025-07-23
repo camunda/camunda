@@ -9,24 +9,24 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionInterruptionRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 public class ProcessInstanceElementInterruptedByRuntimeInstructionApplier
-    implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
+    implements TypedEventApplier<ProcessInstanceIntent, RuntimeInstructionInterruptionRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
 
   public ProcessInstanceElementInterruptedByRuntimeInstructionApplier(
-      MutableElementInstanceState elementInstanceState) {
+      final MutableElementInstanceState elementInstanceState) {
     this.elementInstanceState = elementInstanceState;
   }
 
   @Override
-  public void applyState(final long key, final ProcessInstanceRecord value) {
+  public void applyState(final long key, final RuntimeInstructionInterruptionRecord value) {
     elementInstanceState.updateInstance(
         key,
         elementInstance ->
-            elementInstance.setState(ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION));
+            elementInstance.setInterruptingElementId(value.getInterruptingElementIdBuffer()));
   }
 }

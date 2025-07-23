@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionInterruptionRecord;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -45,6 +46,8 @@ public final class BpmnStateTransitionBehavior {
 
   private final ProcessInstanceRecord childInstanceRecord = new ProcessInstanceRecord();
   private final ProcessInstanceRecord followUpInstanceRecord = new ProcessInstanceRecord();
+  private final RuntimeInstructionInterruptionRecord interruptionRecord =
+      new RuntimeInstructionInterruptionRecord();
 
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
@@ -72,7 +75,7 @@ public final class BpmnStateTransitionBehavior {
       final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
-    this.jobBehavior = bpmnJobBehavior;
+    jobBehavior = bpmnJobBehavior;
     this.userTaskBehavior = userTaskBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
@@ -453,40 +456,47 @@ public final class BpmnStateTransitionBehavior {
   }
 
   /**
-   * Terminates the process instance if the condition for termination is met, i.e. if a runtime
-   * instruction exists that requires the process instance to be terminated after the given element
-   * is completed or terminated.
+   * Executes runtime instructions for the given flow node element if there are any.
    *
    * @param element the flow node element that is being processed
    * @param context the context of the process instance
-   * @return an Either with the context (left) if the process instance is not terminated by this
-   *     call, or Void (right) if it is. If already terminating, returns the context (left) to allow
-   *     the processors to finish terminating elements.
    */
-  public <T extends ExecutableFlowNode>
-      Either<BpmnElementContext, Void> terminateProcessInstanceIfRuntimeInstructionExists(
-          final T element, BpmnElementContext context) {
+  public <T extends ExecutableFlowNode> void executeRuntimeInstructionsIfNeeded(
+      final T element, final BpmnElementContext context) {
 
-    if (!stateBehavior.shouldTerminateProcessInstance(
-        context.getProcessInstanceKey(), BufferUtil.bufferAsString(element.getId()))) {
-      return Either.left(context);
+    final var runtimeInstructions =
+        stateBehavior.getRuntimeInstructionsForElementId(
+            context.getProcessInstanceKey(), BufferUtil.bufferAsString(element.getId()));
+
+    if (runtimeInstructions.isEmpty()) {
+      return;
     }
+
+    // We only have one runtime instruction type for now (termination), so we can directly execute
+    // its logic (interrupt process instance and request termination).
+    // In the future, we might have branches for different instruction types
+
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
     if (processInstance.isTerminating()) {
-      // if the process instance is already terminating, we don't need to terminate it again
-      return Either.left(context);
+      // if the process instance is already terminating, we don't need to interrupt and terminate it
+      // again, the instruction has already been processed.
+      return;
     }
+
+    interruptionRecord.reset();
+    interruptionRecord.setProcessInstanceKey(context.getProcessInstanceKey());
+    interruptionRecord.setTenantId(context.getTenantId());
+    // assuming only one runtime instruction type, duplicates for the same element are not expected
+    interruptionRecord.setInterruptingElementId(runtimeInstructions.getFirst().getAfterElementId());
 
     stateWriter.appendFollowUpEvent(
         processInstance.getKey(),
         ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION,
-        processInstance.getValue());
+        interruptionRecord);
     commandWriter.appendFollowUpCommand(
         processInstance.getKey(),
         ProcessInstanceIntent.TERMINATE_ELEMENT,
         processInstance.getValue());
-
-    return Either.right(null);
   }
 
   public Either<Failure, ?> beforeExecutionPathCompleted(

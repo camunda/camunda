@@ -349,8 +349,4 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   public void setProcessDepth(final int depth) {
     processDepth.setValue(depth);
   }
-
-  public boolean isInterruptedByRuntimeInstruction() {
-    return ProcessInstanceLifecycle.isInterruptedByRuntimeInstruction(getState());
-  }
 }

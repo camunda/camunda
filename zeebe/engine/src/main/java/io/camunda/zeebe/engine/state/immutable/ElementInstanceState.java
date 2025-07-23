@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -127,9 +128,9 @@ public interface ElementInstanceState {
    *
    * @param processInstanceKey the key of the process instance
    * @param elementId the ID of the element that has completed or terminated
-   * @return a boolean indicating whether the process instance should be terminated
+   * @return a list of runtime instructions for the given element ID, potentially empty
    */
-  boolean isRuntimeInstructionPresentToTerminateProcessInstance(
+  List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
       long processInstanceKey, String elementId);
 
   @FunctionalInterface

@@ -71,7 +71,6 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
         .extracting(Record::getIntent, record -> record.getValue().getElementId())
         .containsSequence(
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, elementBeforeTermination),
-            Tuple.tuple(ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION, processId),
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, processId));
 
     final var processInstanceRecord =
@@ -142,7 +141,6 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
         .containsSequence(
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, elementBeforeTermination),
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, elementBeforeTermination),
-            Tuple.tuple(ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION, processId),
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, processId),
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, processId));
   }
@@ -194,8 +192,7 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
 
     assertThat(result)
         .extracting(Record::getIntent, record -> record.getValue().getElementId())
-        .doesNotContain(Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, processId))
-        .doesNotContain(
-            Tuple.tuple(ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION, processId));
+        .doesNotContain(Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, processId))
+        .doesNotContain(Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, processId));
   }
 }
