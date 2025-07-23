@@ -32,6 +32,7 @@ public class PersistedInputCollection extends UnpackedObject implements DbValue 
   }
 
   public PersistedInputCollection setInputCollection(final List<DirectBuffer> inputCollection) {
+    inputCollectionProperty.reset();
     inputCollection.forEach(
         element -> inputCollectionProperty.add().wrap(BufferUtil.cloneBuffer(element)));
     return this;
