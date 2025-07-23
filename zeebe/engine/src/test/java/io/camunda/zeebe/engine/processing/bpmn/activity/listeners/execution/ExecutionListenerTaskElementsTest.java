@@ -1169,9 +1169,11 @@ public class ExecutionListenerTaskElementsTest {
                   .withIntent(JobIntent.CREATED)
                   .limit(2))
           .hasSize(2)
-          .extracting(r -> r.getValue().getCustomHeaders())
-          .describedAs("Expect that the created jobs have the task headers")
-          .containsOnly(Map.ofEntries(taskHeaderA.toEntry(), taskHeaderB.toEntry()));
+          .allSatisfy(
+              r ->
+                  assertThat(r.getValue().getCustomHeaders())
+                      .describedAs("Expect that the created job have the task headers")
+                      .containsOnly(taskHeaderA.toEntry(), taskHeaderB.toEntry()));
       assertThat(
               jobRecords()
                   .withProcessInstanceKey(processInstanceKey)
