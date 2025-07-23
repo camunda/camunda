@@ -15,6 +15,10 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
@@ -23,6 +27,8 @@ import io.camunda.client.api.response.DocumentReferenceBatchResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.jobhandling.DocumentContext;
 import io.camunda.spring.client.jobhandling.DocumentContext.DocumentEntry.AbstractDocumentEntry;
+import io.camunda.spring.client.jobhandling.result.ResultDocumentContext.ResultDocumentContextSerializer;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +37,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@JsonSerialize(using = ResultDocumentContextSerializer.class)
 public class ResultDocumentContext implements DocumentContext, ResultDocumentContextBuilder {
   private static final Logger LOG = LoggerFactory.getLogger(ResultDocumentContext.class);
   private final Map<
@@ -42,6 +49,10 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
   @Override
   public List<DocumentEntry> getDocuments() {
     throw new ClientException("ResultDocumentContext.getDocuments() is not implemented");
+  }
+
+  public DocumentReferenceBatchResponse getResponse() {
+    return response;
   }
 
   public Map<String, Function<CreateDocumentBatchCommandStep2, CreateDocumentBatchCommandStep2>>
@@ -103,6 +114,26 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
     public ResultDocumentEntry(
         final DocumentReferenceResponse documentReference, final CamundaClient camundaClient) {
       super(documentReference, camundaClient);
+    }
+  }
+
+  public static class ResultDocumentContextSerializer extends StdSerializer<ResultDocumentContext> {
+
+    public ResultDocumentContextSerializer() {
+      this(null);
+    }
+
+    public ResultDocumentContextSerializer(final Class<ResultDocumentContext> t) {
+      super(t);
+    }
+
+    @Override
+    public void serialize(
+        final ResultDocumentContext value,
+        final JsonGenerator gen,
+        final SerializerProvider provider)
+        throws IOException {
+      gen.writeObject(value.getResponse().getCreatedDocuments());
     }
   }
 }

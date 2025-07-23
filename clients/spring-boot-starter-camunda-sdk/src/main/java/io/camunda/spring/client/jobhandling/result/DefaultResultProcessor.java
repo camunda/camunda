@@ -18,13 +18,12 @@ package io.camunda.spring.client.jobhandling.result;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceBatchResponse;
-import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.spring.client.jobhandling.DocumentContext.DocumentEntry;
+import io.camunda.spring.client.jobhandling.DocumentContext;
 import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy.FailureHandlingContext;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.slf4j.Logger;
@@ -67,50 +66,62 @@ public class DefaultResultProcessor implements ResultProcessor {
     // result is object
     final Class<?> clazz = result.getClass();
     if (hasDocumentField(clazz)) {
-      final Map<String, Object> map = extractFieldsToMap(result);
-      handleDocumentsForResultMap(map, activatedJob);
-      return camundaClient.getConfiguration().getJsonMapper().transform(map, clazz);
+      handleDocumentsForResultObject(result, activatedJob);
+      return result;
     } else {
       return result;
     }
   }
 
   private boolean hasDocumentField(final Class<?> clazz) {
-    return Arrays.stream(clazz.getDeclaredFields())
-        .anyMatch(f -> f.getType().equals(ResultDocumentContext.class));
+    return Arrays.stream(clazz.getDeclaredFields()).anyMatch(this::isDocumentField);
   }
 
-  private Map<String, Object> extractFieldsToMap(final Object result) {
-    final Map<String, Object> map = new HashMap<>();
+  private boolean isDocumentField(final Field field) {
+    return isDocumentContext(field.getType());
+  }
+
+  private boolean isDocumentContext(final Class<?> type) {
+    return type.isAssignableFrom(DocumentContext.class);
+  }
+
+  private void handleDocumentsForResultObject(
+      final Object result, final ActivatedJob activatedJob) {
     ReflectionUtils.doWithFields(
         result.getClass(),
-        field -> map.put(field.getName(), ReflectionUtils.getField(field, result)));
-    return map;
+        field -> {
+          ReflectionUtils.makeAccessible(field);
+          final Object fieldValue = ReflectionUtils.getField(field, result);
+          handleDocumentFieldValue(field.getName(), fieldValue, activatedJob);
+        },
+        this::isDocumentField);
   }
 
   private void handleDocumentsForResultMap(
       final Map<String, Object> result, final ActivatedJob activatedJob) {
     final Map<String, Object> replacements = new HashMap<>();
     for (final Entry<String, Object> entry : result.entrySet()) {
-      if (entry.getValue() instanceof final ResultDocumentContext resultDocumentContext) {
-        LOG.debug("Handling submitted document {}", entry.getKey());
-        final DocumentReferenceBatchResponse response =
-            resultDocumentContext.processDocumentBuilders(camundaClient);
-        if (!response.isSuccessful()) {
-          exceptionHandlingStrategy.handleFailure(
-              new FailureHandlingContext(
-                  activatedJob,
-                  camundaClient,
-                  response,
-                  resultDocumentContext.getFailedDocumentBuilders()));
-        }
-        final List<DocumentReferenceResponse> documentReferences =
-            resultDocumentContext.getDocuments().stream()
-                .map(DocumentEntry::getDocumentReference)
-                .toList();
-        replacements.put(entry.getKey(), documentReferences);
+      if (entry.getValue() instanceof DocumentContext) {
+        handleDocumentFieldValue(entry.getKey(), entry.getValue(), activatedJob);
       }
     }
     result.putAll(replacements);
+  }
+
+  private void handleDocumentFieldValue(
+      final String key, final Object value, final ActivatedJob activatedJob) {
+    if (value instanceof final ResultDocumentContext resultDocumentContext) {
+      LOG.debug("Handling submitted document {}", key);
+      final DocumentReferenceBatchResponse response =
+          resultDocumentContext.processDocumentBuilders(camundaClient);
+      if (!response.isSuccessful()) {
+        exceptionHandlingStrategy.handleFailure(
+            new FailureHandlingContext(
+                activatedJob,
+                camundaClient,
+                response,
+                resultDocumentContext.getFailedDocumentBuilders()));
+      }
+    }
   }
 }
