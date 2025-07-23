@@ -932,12 +932,15 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessDefinitionKey())
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::processDefinitionKeys);
-              Optional.ofNullable(f.getName()).ifPresent(builder::names);
+              Optional.ofNullable(f.getName())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::nameOperations);
               Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
               Optional.ofNullable(f.getVersion()).ifPresent(builder::versions);
               Optional.ofNullable(f.getVersionTag()).ifPresent(builder::versionTags);
               Optional.ofNullable(f.getProcessDefinitionId())
-                  .ifPresent(builder::processDefinitionIds);
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::processDefinitionIdOperations);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
             });
     return builder.build();
