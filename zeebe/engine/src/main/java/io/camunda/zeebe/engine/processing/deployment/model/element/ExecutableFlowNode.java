@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class ExecutableFlowNode extends AbstractFlowElement {
@@ -62,13 +63,15 @@ public class ExecutableFlowNode extends AbstractFlowElement {
   public void addListener(
       final ZeebeExecutionListenerEventType eventType,
       final Expression type,
-      final Expression retries) {
+      final Expression retries,
+      final Map<String, String> taskHeaders) {
     final ExecutionListener listener = new ExecutionListener();
     listener.setEventType(eventType);
 
     final JobWorkerProperties jobWorkerProperties = new JobWorkerProperties();
     jobWorkerProperties.setType(type);
     jobWorkerProperties.setRetries(retries);
+    jobWorkerProperties.setTaskHeaders(taskHeaders);
     listener.setJobWorkerProperties(jobWorkerProperties);
     executionListeners.add(listener);
   }

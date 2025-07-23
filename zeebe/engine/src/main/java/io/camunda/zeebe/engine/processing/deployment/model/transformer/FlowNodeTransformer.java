@@ -97,6 +97,6 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
         .ifPresent(
             listeners ->
                 executionListenerTransformer.transform(
-                    flowNode, listeners.getExecutionListeners(), expressionLanguage));
+                    element, flowNode, listeners.getExecutionListeners(), expressionLanguage));
   }
 }

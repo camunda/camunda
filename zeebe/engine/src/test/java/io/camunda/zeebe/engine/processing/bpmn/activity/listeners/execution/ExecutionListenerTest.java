@@ -573,6 +573,48 @@ public class ExecutionListenerTest {
         .isEqualTo(START_EL_TYPE + "_sub");
   }
 
+  @Test
+  public void shouldCreateExecutionListenerJobsWithCustomHeadersContainingTaskHeaders() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(
+            "/processes/process_with_execution_listeners_and_task_headers.bpmn")
+        .deploy();
+
+    // when both start and end execution listeners are created and completed
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("Process_1x1wunc").create();
+    ENGINE.job().ofInstance(processInstanceKey).withType("start").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("end").complete();
+
+    // then
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.CREATED)
+                .limit(2))
+        .hasSize(2)
+        .allSatisfy(
+            r ->
+                assertThat(r.getValue().getCustomHeaders())
+                    .describedAs("Expect that the created jobs have the task headers")
+                    .isEqualTo(Map.of("foo", "bar")));
+    assertThat(
+            jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.EXECUTION_LISTENER)
+                .withIntent(JobIntent.COMPLETED)
+                .limit(2))
+        .hasSize(2)
+        .allSatisfy(
+            r ->
+                assertThat(r.getValue().getCustomHeaders())
+                    .describedAs("Expect that the completed jobs also have the task headers")
+                    .isEqualTo(Map.of("foo", "bar")));
+  }
+
   // test util methods
   static long createProcessInstance(
       final EngineRule engineRule, final BpmnModelInstance modelInstance) {

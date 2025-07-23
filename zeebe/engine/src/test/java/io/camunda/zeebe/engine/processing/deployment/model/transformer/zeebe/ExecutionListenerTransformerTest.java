@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.util.FakeExpressionLanguage;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,6 +21,8 @@ import org.junit.jupiter.api.Test;
 
 class ExecutionListenerTransformerTest {
 
+  private final BaseElement element = Bpmn.createProcess().getElement();
+
   @Test
   void shouldNotAddListenersIfNoneProvided() {
     // given
@@ -26,7 +30,8 @@ class ExecutionListenerTransformerTest {
 
     // when
     final Collection<ZeebeExecutionListener> listeners = List.of();
-    new ExecutionListenerTransformer().transform(process, listeners, new FakeExpressionLanguage());
+    new ExecutionListenerTransformer()
+        .transform(element, process, listeners, new FakeExpressionLanguage());
 
     // then
     Assertions.assertThat(process.hasExecutionListeners()).isFalse();
@@ -40,7 +45,7 @@ class ExecutionListenerTransformerTest {
     // when
     final var listener = new FakeZeebeExecutionListener("start", "type", "3");
     new ExecutionListenerTransformer()
-        .transform(process, List.of(listener), new FakeExpressionLanguage());
+        .transform(element, process, List.of(listener), new FakeExpressionLanguage());
 
     // then
     Assertions.assertThat(process.hasExecutionListeners()).isTrue();
@@ -58,7 +63,7 @@ class ExecutionListenerTransformerTest {
       final var listeners = new ArrayList<ZeebeExecutionListener>();
       listeners.add(null);
       new ExecutionListenerTransformer()
-          .transform(process, listeners, new FakeExpressionLanguage());
+          .transform(element, process, listeners, new FakeExpressionLanguage());
 
       // then
       Assertions.assertThat(process.hasExecutionListeners()).isFalse();
@@ -73,7 +78,7 @@ class ExecutionListenerTransformerTest {
       final var listeners = new ArrayList<ZeebeExecutionListener>();
       listeners.add(new FakeZeebeExecutionListener(null, "type", "3"));
       new ExecutionListenerTransformer()
-          .transform(process, listeners, new FakeExpressionLanguage());
+          .transform(element, process, listeners, new FakeExpressionLanguage());
 
       // then
       Assertions.assertThat(process.hasExecutionListeners()).isFalse();
@@ -88,7 +93,7 @@ class ExecutionListenerTransformerTest {
       final var listeners = new ArrayList<ZeebeExecutionListener>();
       listeners.add(new FakeZeebeExecutionListener("start", null, "3"));
       new ExecutionListenerTransformer()
-          .transform(process, listeners, new FakeExpressionLanguage());
+          .transform(element, process, listeners, new FakeExpressionLanguage());
 
       // then
       Assertions.assertThat(process.hasExecutionListeners()).isFalse();
@@ -103,7 +108,7 @@ class ExecutionListenerTransformerTest {
       final var listeners = new ArrayList<ZeebeExecutionListener>();
       listeners.add(new FakeZeebeExecutionListener("start", "type", null));
       new ExecutionListenerTransformer()
-          .transform(process, listeners, new FakeExpressionLanguage());
+          .transform(element, process, listeners, new FakeExpressionLanguage());
 
       // then
       Assertions.assertThat(process.hasExecutionListeners()).isFalse();

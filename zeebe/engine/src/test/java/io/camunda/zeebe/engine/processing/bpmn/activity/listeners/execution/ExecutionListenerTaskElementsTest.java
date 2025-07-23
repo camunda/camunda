@@ -30,6 +30,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractTaskBuilder;
+import io.camunda.zeebe.model.bpmn.builder.BuilderWithTaskHeaders;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,6 +57,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.assertj.core.api.Assumptions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1129,6 +1132,58 @@ public class ExecutionListenerTaskElementsTest {
                   .getFirst())
           .extracting(Record::getKey)
           .isEqualTo(incident.getKey());
+    }
+
+    @Test
+    public void shouldCreateListenerJobsWithCustomHeadersContainingTaskHeaders() {
+      Assumptions.assumeThat(
+              scenario.taskConfigurer.apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent()))
+          .describedAs(
+              "This test case is only applicable to task builders that support task headers")
+          .isInstanceOf(BuilderWithTaskHeaders.class);
+
+      final var taskHeaderA = Tuple.of("someTaskHeader", "foo");
+      final var taskHeaderB = Tuple.of("anotherTaskHeader", "bar");
+
+      // given
+      deployProcess(
+          createProcessWithTask(
+              b ->
+                  ((BuilderWithTaskHeaders<?>)
+                          b.zeebeStartExecutionListener(START_EL_TYPE)
+                              .zeebeEndExecutionListener(END_EL_TYPE))
+                      .zeebeTaskHeader(taskHeaderA.getLeft(), taskHeaderA.getRight())
+                      .zeebeTaskHeader(taskHeaderB.getLeft(), taskHeaderB.getRight())));
+
+      // when both start and end execution listeners are created and completed
+      final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+      ENGINE.job().ofInstance(processInstanceKey).withType(START_EL_TYPE).complete();
+      scenario.taskProcessor.accept(processInstanceKey);
+      ENGINE.job().ofInstance(processInstanceKey).withType(END_EL_TYPE).complete();
+
+      // then
+      assertThat(
+              jobRecords()
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withJobKind(JobKind.EXECUTION_LISTENER)
+                  .withIntent(JobIntent.CREATED)
+                  .limit(2))
+          .hasSize(2)
+          .allSatisfy(
+              r ->
+                  assertThat(r.getValue().getCustomHeaders())
+                      .describedAs("Expect that the created job have the task headers")
+                      .containsOnly(taskHeaderA.toEntry(), taskHeaderB.toEntry()));
+      assertThat(
+              jobRecords()
+                  .withProcessInstanceKey(processInstanceKey)
+                  .withJobKind(JobKind.EXECUTION_LISTENER)
+                  .withIntent(JobIntent.COMPLETED)
+                  .limit(2))
+          .hasSize(2)
+          .extracting(r -> r.getValue().getCustomHeaders())
+          .describedAs("Expect that the completed jobs also have the task headers")
+          .containsOnly(Map.ofEntries(taskHeaderA.toEntry(), taskHeaderB.toEntry()));
     }
 
     private void assertExecutionListenerJobsCompleted(
