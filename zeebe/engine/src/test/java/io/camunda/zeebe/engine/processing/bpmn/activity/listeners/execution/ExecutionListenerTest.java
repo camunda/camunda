@@ -587,6 +587,7 @@ public class ExecutionListenerTest {
                 <bpmn:extensionElements>
                   <zeebe:executionListeners>
                     <zeebe:executionListener eventType="start" type="start" />
+                    <zeebe:executionListener eventType="end" type="end" />
                   </zeebe:executionListeners>
                   <zeebe:taskHeaders>
                     <zeebe:header key="foo" value="bar" />
@@ -623,6 +624,7 @@ public class ExecutionListenerTest {
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId("Process_1x1wunc").create();
     ENGINE.job().ofInstance(processInstanceKey).withType("start").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("end").complete();
 
     // then
     assertThat(
@@ -630,21 +632,25 @@ public class ExecutionListenerTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.EXECUTION_LISTENER)
                 .withIntent(JobIntent.CREATED)
-                .limit(1))
-        .hasSize(1)
-        .extracting(r -> r.getValue().getCustomHeaders())
-        .describedAs("Expect that the created jobs have the task headers")
-        .containsOnly(Map.of("foo", "bar"));
+                .limit(2))
+        .hasSize(2)
+        .allSatisfy(
+            r ->
+                assertThat(r.getValue().getCustomHeaders())
+                    .describedAs("Expect that the created jobs have the task headers")
+                    .isEqualTo(Map.of("foo", "bar")));
     assertThat(
             jobRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .withJobKind(JobKind.EXECUTION_LISTENER)
                 .withIntent(JobIntent.COMPLETED)
-                .limit(1))
-        .hasSize(1)
-        .extracting(r -> r.getValue().getCustomHeaders())
-        .describedAs("Expect that the completed jobs also have the task headers")
-        .containsOnly(Map.of("foo", "bar"));
+                .limit(2))
+        .hasSize(2)
+        .allSatisfy(
+            r ->
+                assertThat(r.getValue().getCustomHeaders())
+                    .describedAs("Expect that the completed jobs also have the task headers")
+                    .isEqualTo(Map.of("foo", "bar")));
   }
 
   // test util methods
