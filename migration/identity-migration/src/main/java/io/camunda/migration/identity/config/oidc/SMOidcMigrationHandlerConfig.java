@@ -1,0 +1,39 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.migration.identity.config.oidc;
+
+import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import io.camunda.migration.identity.handler.RoleMigrationHandler;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.AuthorizationServices;
+import io.camunda.service.RoleServices;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+
+@Configuration
+@ConditionalOnOidc
+public class SMOidcMigrationHandlerConfig {
+
+  @Bean
+  @Order(1)
+  public RoleMigrationHandler roleMigrationHandler(
+      final CamundaAuthentication authentication,
+      final ManagementIdentityClient managementIdentityClient,
+      final RoleServices roleServices,
+      final AuthorizationServices authorizationServices,
+      final IdentityMigrationProperties migrationProperties) {
+    return new RoleMigrationHandler(
+        authentication,
+        managementIdentityClient,
+        roleServices,
+        authorizationServices,
+        migrationProperties);
+  }
+}

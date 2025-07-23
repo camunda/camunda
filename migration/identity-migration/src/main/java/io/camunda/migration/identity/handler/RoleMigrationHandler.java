@@ -5,16 +5,17 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.handler.sm;
+package io.camunda.migration.identity.handler;
 
 import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
-import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthorizationsByAudience;
+import static io.camunda.migration.identity.config.StaticEntities.getAuthorizationsByAudience;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import io.camunda.migration.identity.config.oidc.OidcProperties.Audiences;
 import io.camunda.migration.identity.dto.Role;
-import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
@@ -28,6 +29,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
   private final ManagementIdentityClient managementIdentityClient;
   private final RoleServices roleServices;
   private final AuthorizationServices authorizationServices;
+  private final IdentityMigrationProperties migrationProperties;
 
   private final AtomicInteger createdRoleCount = new AtomicInteger();
   private final AtomicInteger totalRoleCount = new AtomicInteger();
@@ -36,10 +38,12 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final RoleServices roleServices,
-      final AuthorizationServices authorizationServices) {
+      final AuthorizationServices authorizationServices,
+      final IdentityMigrationProperties migrationProperties) {
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices.withAuthentication(authentication);
     this.authorizationServices = authorizationServices.withAuthentication(authentication);
+    this.migrationProperties = migrationProperties;
   }
 
   @Override
@@ -52,6 +56,10 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
   protected void process(final List<Role> batch) {
     final var roles = managementIdentityClient.fetchRoles();
     totalRoleCount.set(roles.size());
+
+    logger.debug(
+        "Running role migration with this default audiences: {}",
+        migrationProperties.getOidc().getAudience());
 
     roles.forEach(
         role -> {
@@ -69,7 +77,8 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
             }
             logger.debug("Role with name '{}' already exists, skipping creation.", role.name());
           }
-          createAuthorizationsForRole(roleId, roleName);
+          createAuthorizationsForRole(
+              migrationProperties.getOidc().getAudience(), roleId, roleName);
         });
   }
 
@@ -81,7 +90,8 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
         totalRoleCount.get());
   }
 
-  private void createAuthorizationsForRole(final String roleId, final String roleName) {
+  private void createAuthorizationsForRole(
+      final Audiences audiences, final String roleId, final String roleName) {
     final List<String> permissions = getFormattedPermissions(roleName);
 
     if (permissions.isEmpty()) {
@@ -94,7 +104,8 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
         permissions.stream()
             .map(
                 permission ->
-                    getAuthorizationsByAudience(permission, roleId, AuthorizationOwnerType.ROLE))
+                    getAuthorizationsByAudience(
+                        audiences, permission, roleId, AuthorizationOwnerType.ROLE))
             .flatMap(List::stream)
             .toList();
 

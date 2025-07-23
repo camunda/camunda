@@ -20,6 +20,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Permission;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -58,7 +59,10 @@ public class ClientMigrationHandlerTest {
     this.authorizationServices = authorizationServices;
     migrationHandler =
         new ClientMigrationHandler(
-            CamundaAuthentication.none(), managementIdentityClient, authorizationServices);
+            CamundaAuthentication.none(),
+            managementIdentityClient,
+            authorizationServices,
+            new IdentityMigrationProperties());
   }
 
   @Test
@@ -131,7 +135,7 @@ public class ClientMigrationHandlerTest {
                 AuthorizationOwnerType.CLIENT,
                 "*",
                 AuthorizationResourceType.BATCH_OPERATION,
-                Set.of(PermissionType.CREATE, PermissionType.READ)),
+                Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
             tuple(
                 "ClientOne",
                 AuthorizationOwnerType.CLIENT,

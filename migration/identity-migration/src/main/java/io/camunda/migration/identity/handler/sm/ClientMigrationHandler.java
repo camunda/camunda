@@ -8,10 +8,11 @@
 package io.camunda.migration.identity.handler.sm;
 
 import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
-import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthorizationsByAudience;
+import static io.camunda.migration.identity.config.StaticEntities.getAuthorizationsByAudience;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -24,6 +25,7 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
 
   private final ManagementIdentityClient managementIdentityClient;
   private final AuthorizationServices authorizationService;
+  private final IdentityMigrationProperties migrationProperties;
 
   private final AtomicInteger createdAuthorizationsCount = new AtomicInteger();
   private final AtomicInteger skippedAuthorizationsCount = new AtomicInteger();
@@ -32,9 +34,11 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
   public ClientMigrationHandler(
       final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
-      final AuthorizationServices authorizationService) {
+      final AuthorizationServices authorizationService,
+      final IdentityMigrationProperties migrationProperties) {
     this.managementIdentityClient = managementIdentityClient;
     this.authorizationService = authorizationService.withAuthentication(authentication);
+    this.migrationProperties = migrationProperties;
   }
 
   @Override
@@ -85,7 +89,10 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
                       .map(
                           permission ->
                               getAuthorizationsByAudience(
-                                  permission, clientId, AuthorizationOwnerType.CLIENT))
+                                  migrationProperties.getOidc().getAudience(),
+                                  permission,
+                                  clientId,
+                                  AuthorizationOwnerType.CLIENT))
                       .flatMap(List::stream)
                       .toList();
 

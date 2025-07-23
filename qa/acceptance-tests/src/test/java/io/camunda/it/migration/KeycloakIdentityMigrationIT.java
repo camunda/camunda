@@ -268,7 +268,7 @@ public class KeycloakIdentityMigrationIT {
             tuple(
                 "operate",
                 ResourceType.BATCH_OPERATION,
-                Set.of(PermissionType.READ, PermissionType.CREATE)),
+                Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
             tuple(
                 "zeebe",
                 ResourceType.DECISION_DEFINITION,

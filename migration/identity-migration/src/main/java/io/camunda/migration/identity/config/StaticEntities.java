@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.config.sm;
+package io.camunda.migration.identity.config;
 
+import io.camunda.migration.identity.config.oidc.OidcProperties.Audiences;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -22,10 +23,13 @@ public class StaticEntities {
   private static final String TASKLIST_RESOURCE_ID = "tasklist";
 
   public static List<CreateAuthorizationRequest> getAuthorizationsByAudience(
-      final String audience, final String ownerId, final AuthorizationOwnerType ownerType) {
+      final Audiences audiences,
+      final String permission,
+      final String ownerId,
+      final AuthorizationOwnerType ownerType) {
     final var authorizations =
         Map.of(
-            "camunda-identity-resource-server:read",
+            audiences.getIdentity() + ":read",
             List.of(
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -63,7 +67,7 @@ public class StaticEntities {
                     "*",
                     AuthorizationResourceType.ROLE,
                     Set.of(PermissionType.READ))),
-            "camunda-identity-resource-server:read:users",
+            audiences.getIdentity() + ":read:users",
             List.of(
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -83,7 +87,7 @@ public class StaticEntities {
                     "*",
                     AuthorizationResourceType.ROLE,
                     Set.of(PermissionType.READ))),
-            "camunda-identity-resource-server:write",
+            audiences.getIdentity() + ":write",
             List.of(
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -121,7 +125,7 @@ public class StaticEntities {
                     "*",
                     AuthorizationResourceType.ROLE,
                     AuthorizationResourceType.ROLE.getSupportedPermissionTypes())),
-            "operate-api:read:*",
+            audiences.getOperate() + ":read:*",
             List.of(
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -169,7 +173,7 @@ public class StaticEntities {
                     Set.of(
                         PermissionType.READ_DECISION_DEFINITION,
                         PermissionType.READ_DECISION_INSTANCE))),
-            "operate-api:write:*",
+            audiences.getOperate() + ":write:*",
             List.of(
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -182,7 +186,7 @@ public class StaticEntities {
                     ownerType,
                     "*",
                     AuthorizationResourceType.BATCH_OPERATION,
-                    Set.of(PermissionType.READ, PermissionType.CREATE)),
+                    Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
                 new CreateAuthorizationRequest(
                     ownerId,
                     ownerType,
@@ -221,7 +225,7 @@ public class StaticEntities {
                         PermissionType.READ_DECISION_INSTANCE,
                         PermissionType.CREATE_DECISION_INSTANCE,
                         PermissionType.DELETE_DECISION_INSTANCE))),
-            "tasklist-api:read:*",
+            audiences.getTasklist() + ":read:*",
             List.of(
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -241,7 +245,7 @@ public class StaticEntities {
                     "*",
                     AuthorizationResourceType.PROCESS_DEFINITION,
                     Set.of(PermissionType.READ_PROCESS_DEFINITION, PermissionType.READ_USER_TASK))),
-            "tasklist-api:write:*",
+            audiences.getTasklist() + ":write:*",
             List.of(
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -264,7 +268,7 @@ public class StaticEntities {
                         PermissionType.READ_PROCESS_DEFINITION,
                         PermissionType.READ_USER_TASK,
                         PermissionType.UPDATE_USER_TASK))),
-            "zeebe-api:write:*",
+            audiences.getZeebe() + ":write:*",
             List.of(
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -314,6 +318,6 @@ public class StaticEntities {
                     AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
                     Set.of(PermissionType.UPDATE, PermissionType.DELETE))));
 
-    return authorizations.getOrDefault(audience, List.of());
+    return authorizations.getOrDefault(permission, List.of());
   }
 }
