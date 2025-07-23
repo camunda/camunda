@@ -29,21 +29,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: tasklist/client
       - name: Install node dependencies
         working-directory: ./tasklist/client
-        run: yarn
+        run: npm ci
       - name: Build frontend
         working-directory: ./tasklist/client
-        run: yarn build:visual-regression
+        run: npm run build:visual-regression
       - name: Start server
         working-directory: ./tasklist/client
-        run: yarn start:visual-regression &
+        run: npm run start:visual-regression &
       - name: Update snapshots
         working-directory: ./tasklist/client
-        run: yarn test:visual --update-snapshots
+        run: npm run test:visual --update-snapshots
       - name: Commit screenshots
         uses: stefanzweifel/git-auto-commit-action@v6
         with:

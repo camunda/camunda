@@ -75,25 +75,19 @@ jobs:
 
       - name: Install node dependencies
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-        run: yarn install
+        run: npm ci
 
       - name: Install frontend dependencies
         working-directory: ./tasklist/client
-        run: yarn install
-
-      - name: Add Yarn binaries to Path
-        working-directory: ./tasklist/client
-        run: |
-          yarn bin >> "$GITHUB_PATH"
-          yarn global bin >> "$GITHUB_PATH"
+        run: npm ci
 
       - name: Install Playwright
-        run: yarn exec playwright install -- --with-deps chromium
+        run: npx playwright install -- --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Build frontend
         working-directory: ./tasklist/client
-        run: yarn build
+        run: npm run build
 
       - name: Setup Java
         uses: actions/setup-java@v4
