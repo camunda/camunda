@@ -126,6 +126,7 @@ import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
+import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -255,6 +256,7 @@ import io.camunda.client.impl.search.request.BatchOperationItemSearchRequestImpl
 import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByRoleSearchRequestImpl;
+import io.camunda.client.impl.search.request.ClientsByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
@@ -910,6 +912,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ClientsByGroupSearchRequest newClientsByGroupSearchRequest(final String groupId) {
     return new ClientsByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
+  }
+
+  @Override
+  public ClientsByTenantSearchRequest newClientsByTenantSearchRequest(final String tenantId) {
+    return new ClientsByTenantSearchRequestImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override
