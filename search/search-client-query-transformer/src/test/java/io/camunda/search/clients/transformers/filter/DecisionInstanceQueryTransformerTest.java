@@ -133,7 +133,7 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   void shouldQueryByElementInstanceKey() {
     // given
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(f -> f.elementInstanceKeys(12345L));
+        FilterBuilders.decisionInstance(f -> f.flowNodeInstanceKeys(12345L));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);

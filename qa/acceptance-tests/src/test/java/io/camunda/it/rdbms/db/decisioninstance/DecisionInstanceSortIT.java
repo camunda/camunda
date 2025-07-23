@@ -72,6 +72,40 @@ public class DecisionInstanceSortIT {
   }
 
   @TestTemplate
+  public void shouldSortByProcessInstanceKeyDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.processInstanceKey().desc(),
+        Comparator.comparing(DecisionInstanceEntity::processInstanceKey).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByProcessInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.processInstanceKey().asc(),
+        Comparator.comparing(DecisionInstanceEntity::processInstanceKey));
+  }
+
+  @TestTemplate
+  public void shouldSortByFlowNodeInstanceKeyDesc(
+      final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.flowNodeInstanceKey().desc(),
+        Comparator.comparing(DecisionInstanceEntity::flowNodeInstanceKey).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortByElementInstanceKeyAsc(final CamundaRdbmsTestApplication testApplication) {
+    testSorting(
+        testApplication.getRdbmsService(),
+        b -> b.flowNodeInstanceKey().asc(),
+        Comparator.comparing(DecisionInstanceEntity::flowNodeInstanceKey));
+  }
+
+  @TestTemplate
   public void shouldSortByDecisionDefinitionKeyAsc(
       final CamundaRdbmsTestApplication testApplication) {
     // TODO this makes no sense since builder.decisionDefinitionKey sets the field to "decisionId"

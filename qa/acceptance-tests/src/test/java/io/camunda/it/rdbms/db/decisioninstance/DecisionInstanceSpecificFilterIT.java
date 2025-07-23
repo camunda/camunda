@@ -123,7 +123,7 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.processInstanceKeys(123L)),
         DecisionInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionKeys(100L)),
-        DecisionInstanceFilter.of(b -> b.elementInstanceKeys(126L)),
+        DecisionInstanceFilter.of(b -> b.flowNodeInstanceKeys(126L)),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionIds("decision-100")),
         DecisionInstanceFilter.of(b -> b.states(DecisionInstanceState.EVALUATED)),
         DecisionInstanceFilter.of(b -> b.decisionTypes(DecisionDefinitionType.DECISION_TABLE)),
