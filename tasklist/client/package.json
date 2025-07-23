@@ -19,7 +19,7 @@
     "classnames": "2.5.1",
     "date-fns": "4.1.0",
     "event-source-polyfill": "1.0.31",
-    "final-form": "4.20.10",
+    "final-form": "5.0.0",
     "final-form-arrays": "4.0.0",
     "i18next": "25.3.0",
     "i18next-browser-languagedetector": "8.2.0",
@@ -30,7 +30,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-error-boundary": "6.0.0",
-    "react-final-form": "6.5.9",
+    "react-final-form": "7.0.0",
     "react-final-form-arrays": "4.0.0",
     "react-i18next": "15.6.0",
     "react-router-dom": "7.6.2",
@@ -43,17 +43,17 @@
   "scripts": {
     "start": "vite",
     "build": "tsc && vite build && node ./renameProdIndex.mjs",
-    "test": "TZ=utc vitest",
-    "test:ci": "CI=true yarn test",
+    "test": "TZ=utc vitest run",
+    "test:ci": "CI=true npm run test",
     "test:visual": "playwright test --project=visual",
     "test:a11y": "IS_A11Y=true playwright test --project=a11y",
     "test:docs": "CI=true IS_E2E=true playwright test --project=docs",
     "ts-check": "tsc && tsc -p ./e2e/tsconfig.json",
     "eslint": "eslint .",
     "stylelint": "stylelint \"src/**/*.?(s)css\"",
-    "lint": "yarn ts-check && yarn eslint && yarn stylelint",
-    "coverage": "yarn test run --coverage --changed",
-    "analyze-bundle": "yarn build && source-map-explorer 'build/assets/*.js'",
+    "lint": "npm run ts-check && npm run eslint && npm run stylelint",
+    "coverage": "npm run test run --coverage --changed",
+    "analyze-bundle": "npm run build && source-map-explorer 'build/assets/*.js'",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.53.2 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "VITE_VERSION=0.0.0-SNAPSHOT vite build --mode visual-regression",
@@ -109,7 +109,7 @@
     "stylelint-prettier": "5.0.3",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.8.3",
-    "typescript-plugin-css-modules": "5.1.0",
+    "typescript-plugin-css-modules": "5.2.0",
     "vite": "7.0.0",
     "vite-plugin-svgr": "4.3.0",
     "vite-tsconfig-paths": "5.1.4",
@@ -121,5 +121,5 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "yarn@1.22.22"
+  "packageManager": "npm@11.4.2"
 }

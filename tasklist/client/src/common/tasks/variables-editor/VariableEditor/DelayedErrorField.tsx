@@ -12,7 +12,7 @@ import {
   Field,
   useField,
   type FieldInputProps,
-  type FieldMetaState,
+  type FieldRenderProps,
 } from 'react-final-form';
 
 type Props = Omit<React.ComponentProps<typeof Field>, 'validate'> & {
@@ -20,7 +20,7 @@ type Props = Omit<React.ComponentProps<typeof Field>, 'validate'> & {
   validate?: FieldValidator<string | undefined>;
   children: (props: {
     input: FieldInputProps<string | undefined>;
-    meta: FieldMetaState<string | undefined>;
+    meta: FieldRenderProps<string | undefined>['meta'];
   }) => React.ReactNode;
 };
 

@@ -232,7 +232,7 @@ const FieldsModal: React.FC<Props> = ({
                     )}
                   </Field>
 
-                  {values.assignee === 'user-and-group' ? (
+                  {values?.assignee === 'user-and-group' ? (
                     <>
                       <Field name="assignedTo">
                         {({input}) => (
@@ -285,7 +285,7 @@ const FieldsModal: React.FC<Props> = ({
                       <ProcessesSelect
                         {...input}
                         id={input.name}
-                        tenantId={values.tenant}
+                        tenantId={values?.tenant}
                         disabled={!isOpen}
                         labelText={t(
                           'customFiltersModalLatestProcessVersionLabel',
@@ -327,7 +327,7 @@ const FieldsModal: React.FC<Props> = ({
                     )}
                   </Field>
 
-                  {values.areAdvancedFiltersEnabled ? (
+                  {values?.areAdvancedFiltersEnabled ? (
                     <>
                       <FormGroup
                         className={styles.dateRangeFormGroup}
@@ -533,7 +533,7 @@ const FieldsModal: React.FC<Props> = ({
                   kind="ghost"
                   onClick={() => {
                     form.reset(
-                      values.name === undefined
+                      values?.name === undefined
                         ? DEFAULT_FORM_VALUES
                         : {
                             ...DEFAULT_FORM_VALUES,

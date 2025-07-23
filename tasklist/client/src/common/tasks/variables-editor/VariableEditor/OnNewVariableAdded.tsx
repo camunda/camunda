@@ -14,6 +14,7 @@ const OnNewVariableAdded: React.FC<{execute: () => void; name: string}> = ({
   name,
 }) => {
   const {fields} = useFieldArray(name, {
+    // @ts-expect-error wrong type in react-final-form-arrays
     subscription: {length: true},
   });
   const currentLength = fields.length ?? 0;
