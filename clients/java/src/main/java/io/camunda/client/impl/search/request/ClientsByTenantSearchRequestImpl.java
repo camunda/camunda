@@ -80,13 +80,13 @@ public class ClientsByTenantSearchRequestImpl
   @Override
   public ClientsByTenantSearchRequest filter(final ClientFilter value) {
     // This command doesn't support filtering
-    return null;
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
   public ClientsByTenantSearchRequest filter(final Consumer<ClientFilter> fn) {
     // This command doesn't support filtering
-    return null;
+    throw new UnsupportedOperationException("This command does not support filtering");
   }
 
   @Override
