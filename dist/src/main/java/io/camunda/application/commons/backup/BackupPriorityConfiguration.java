@@ -10,8 +10,6 @@ package io.camunda.application.commons.backup;
 import static io.camunda.application.commons.backup.ConfigValidation.allMatch;
 import static io.camunda.application.commons.backup.ConfigValidation.skipEmptyOptional;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.profiles.ProfileWebApp;
@@ -187,8 +185,7 @@ public class BackupPriorityConfiguration {
             differentConfigFor("database.type"),
             Map.of(
                 "operate",
-                Optional.ofNullable(operateProperties)
-                    .map(ignored -> DatabaseInfo.isCurrent(DatabaseType.Elasticsearch)),
+                Optional.ofNullable(operateProperties).map(OperateProperties::isElasticsearchDB),
                 "tasklist",
                 Optional.ofNullable(tasklistProperties)
                     .map(prop -> prop.getDatabase().equals(TasklistProperties.ELASTIC_SEARCH))),

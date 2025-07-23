@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.startupcheck.OneShotStartupCheckStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
@@ -98,6 +100,34 @@ public class CamundaDockerIT {
 
       assertThat(actualJson).isEqualTo(expectedJson);
     }
+  }
+
+  // Regression for https://github.com/camunda/camunda/issues/35520
+  @Test
+  public void testStartStandalonePrefixMigration() throws Exception {
+    // given
+    // create and start Elasticsearch container
+    final ElasticsearchContainer elasticsearchContainer =
+        createContainer(this::createElasticsearchContainer);
+    elasticsearchContainer.start();
+
+    // create camunda container with only StandalonePrefixMigration app
+    final var prefixMigrationContainer =
+        new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+            .withCreateContainerCmdModifier(
+                (final CreateContainerCmd cmd) ->
+                    cmd.withEntrypoint("/usr/local/camunda/bin/prefix-migration"))
+            .withStartupCheckStrategy(
+                new OneShotStartupCheckStrategy().withTimeout(Duration.ofSeconds(180)))
+            .withNetwork(Network.SHARED)
+            .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
+            .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticsearchUrl())
+            .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl())
+            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", "some-prefix")
+            .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl());
+
+    // when - then the container should start without errors
+    startContainer(createContainer(() -> prefixMigrationContainer));
   }
 
   private void startContainer(final GenericContainer container) {
