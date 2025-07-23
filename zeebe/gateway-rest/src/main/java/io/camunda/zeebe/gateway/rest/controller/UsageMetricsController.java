@@ -40,7 +40,7 @@ public class UsageMetricsController {
       @RequestParam(required = false) final String startTime,
       @RequestParam(required = false) final String endTime,
       @RequestParam(required = false) final String tenantId,
-      @RequestParam(required = false) final boolean withTenants) {
+      @RequestParam(required = false, defaultValue = "false") final boolean withTenants) {
 
     return SearchQueryRequestMapper.toUsageMetricsQuery(startTime, endTime, tenantId, withTenants)
         .fold(RestErrorMapper::mapProblemToResponse, this::getMetrics);

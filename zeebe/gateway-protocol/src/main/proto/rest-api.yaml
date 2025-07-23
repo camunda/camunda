@@ -4870,7 +4870,7 @@ paths:
         - Usage metrics
       operationId: getUsageMetrics
       summary: Get usage metrics
-      description: Retrieve the usage metrics by given start and end date.
+      description: Retrieve the usage metrics based on given criteria.
       parameters:
         - name: startTime
           in: query
@@ -4895,7 +4895,7 @@ paths:
         - name: withTenants
           in: query
           required: false
-          description: Whether to return tenant metrics in additional to the total metrics or not. Default false.
+          description: Whether to return tenant metrics in addition to the total metrics or not. Default false.
           schema:
             type: boolean
             default: false
