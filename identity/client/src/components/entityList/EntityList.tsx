@@ -67,7 +67,6 @@ export type DataTableHeader<D extends EntityData> = {
   header: string;
   key: Extract<keyof HeaderData<D>, string | ReactNode>;
   isSortable?: boolean;
-  isSearchable?: boolean;
 };
 
 export type EntityListHeader<D extends EntityData> = DataTableHeader<D> & {
@@ -329,7 +328,7 @@ const EntityList = <D extends EntityData>({
                   <TableBody>
                     <TableRow>
                       <StyledTableCell colSpan={headers.length + 1}>
-                        {t("No data available")}
+                        {t("No results found")}
                       </StyledTableCell>
                     </TableRow>
                   </TableBody>

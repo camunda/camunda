@@ -100,8 +100,10 @@ export type GetGroupMappingRulesParams = {
 export const getMappingRulesByGroupId: ApiDefinition<
   SearchResponse<MappingRule>,
   GetGroupMappingRulesParams
-> = ({ groupId }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/search`);
+> = (params) => {
+  const { groupId, ...body } = params;
+  return apiPost(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/search`, body);
+};
 
 type AssignGroupMappingRuleParams = GetGroupMappingRulesParams & {
   mappingRuleId: string;
@@ -131,7 +133,10 @@ export type Client = {
 export const getClientsByGroupId: ApiDefinition<
   SearchResponse<Client>,
   GetGroupClientsParams
-> = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/clients/search`);
+> = (args) => {
+  const { groupId, ...body } = args;
+  return apiPost(`${GROUPS_ENDPOINT}/${groupId}/clients/search`, body);
+};
 
 type AssignGroupClientParams = GetGroupClientsParams & Client;
 export const assignGroupClient: ApiDefinition<

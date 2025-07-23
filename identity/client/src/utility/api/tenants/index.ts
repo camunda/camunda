@@ -128,8 +128,10 @@ export type GetTenantMappingRulesParams = {
 export const getMappingRulesByTenantId: ApiDefinition<
   SearchResponse<MappingRule>,
   GetTenantMappingRulesParams
-> = ({ tenantId }) =>
-  apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`);
+> = (params) => {
+  const { tenantId, ...body } = params;
+  return apiPost(`${TENANTS_ENDPOINT}/${tenantId}/mapping-rules/search`, body);
+};
 
 type AssignTenantMappingRuleParams = GetTenantMappingRulesParams & {
   mappingRuleId: string;

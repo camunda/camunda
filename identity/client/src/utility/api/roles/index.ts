@@ -57,7 +57,10 @@ export type GetRoleMappingRulesParams = {
 export const getMappingRulesByRoleId: ApiDefinition<
   SearchResponse<MappingRule>,
   GetRoleMappingRulesParams
-> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`);
+> = (params) => {
+  const { roleId, ...body } = params;
+  return apiPost(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/search`, body);
+};
 
 type AssignRoleMappingParams = GetRoleMappingRulesParams & {
   mappingRuleId: string;
@@ -116,7 +119,10 @@ export type Client = {
 export const getClientsByRoleId: ApiDefinition<
   SearchResponse<Client>,
   GetRoleClientsParams
-> = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/clients/search`);
+> = (args) => {
+  const { roleId, ...body } = args;
+  return apiPost(`${ROLES_ENDPOINT}/${roleId}/clients/search`, body);
+};
 
 type AssignRoleClientParams = GetRoleClientsParams & Client;
 export const assignRoleClient: ApiDefinition<
