@@ -3055,7 +3055,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The role was assigned successfully to the user.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3098,7 +3098,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The user was unassigned successfully from the role.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3136,7 +3136,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The role was assigned successfully to the client.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3179,7 +3179,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The role was unassigned successfully from the client.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3250,7 +3250,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The role was assigned successfully to the group.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3293,7 +3293,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The role was unassigned successfully from the group.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3373,7 +3373,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The role was assigned successfully to the mapping rule.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3416,7 +3416,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The role was unassigned successfully from the mapping rule.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3799,7 +3799,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The user was assigned successfully to the group.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3842,7 +3842,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The user was unassigned successfully from the group.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3880,7 +3880,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The client was assigned successfully to the group.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3923,7 +3923,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The client was unassigned successfully from the group.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -3961,7 +3961,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The mapping rule was assigned successfully to the group.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -4004,7 +4004,7 @@ paths:
           schema:
             type: string
       responses:
-        "202":
+        "204":
           description: The mapping rule was unassigned successfully from the group.
         "400":
           $ref: "#/components/responses/InvalidData"
