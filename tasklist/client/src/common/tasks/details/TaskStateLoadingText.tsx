@@ -7,11 +7,11 @@
  */
 
 import {Loading} from '@carbon/react';
-import type {UserTaskState} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import styles from './TaskStateLoadingText.module.scss';
 import {t} from 'i18next';
 
-type TaskStateLoadingTextProps = {taskState: UserTaskState};
+type TaskStateLoadingTextProps = {taskState: UserTask['state']};
 
 const statusLoadingMessage = {
   CREATED: null,

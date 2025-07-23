@@ -10,10 +10,7 @@ import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'common/components/AssigneeTag';
-import type {
-  CurrentUser,
-  UserTaskState,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser, UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import styles from './styles.module.scss';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {TaskStateLoadingText} from 'common/tasks/details/TaskStateLoadingText';
@@ -22,7 +19,7 @@ type Props = {
   taskName: string;
   processName: string;
   assignee: string | null;
-  taskState: UserTaskState;
+  taskState: UserTask['state'];
   assignButton: React.ReactNode;
   user: CurrentUser;
 };
