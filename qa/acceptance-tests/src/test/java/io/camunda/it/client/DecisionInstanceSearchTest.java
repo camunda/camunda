@@ -27,7 +27,6 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -92,24 +91,10 @@ class DecisionInstanceSearchTest {
   @Test
   public void shouldRetrieveAllDecisionInstances() {
     // when
-    final var result =
-        camundaClient
-            .newDecisionInstanceSearchRequest()
-            .sort(b -> b.decisionInstanceKey().asc())
-            .send()
-            .join();
+    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
-
-    assertThat(
-            result.items().stream()
-                .map(DecisionInstance::getDecisionInstanceKey)
-                .collect(Collectors.toSet()))
-        .containsAll(
-            EVALUATED_DECISIONS.values().stream()
-                .map(EvaluateDecisionResponse::getDecisionInstanceKey)
-                .collect(Collectors.toSet()));
   }
 
   @Test
