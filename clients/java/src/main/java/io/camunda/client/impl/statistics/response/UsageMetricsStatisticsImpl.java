@@ -20,11 +20,9 @@ import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import java.util.Map;
 import java.util.Objects;
 
-public class UsageMetricsStatisticsImpl implements UsageMetricsStatistics {
+public class UsageMetricsStatisticsImpl extends UsageMetricsStatisticsItemImpl
+    implements UsageMetricsStatistics {
 
-  private final Long processInstances;
-  private final Long decisionInstances;
-  private final Long assignees;
   private final Long activeTenants;
   private final Map<String, UsageMetricsStatisticsItem> tenants;
 
@@ -34,9 +32,7 @@ public class UsageMetricsStatisticsImpl implements UsageMetricsStatistics {
       final Long assignees,
       final Long activeTenants,
       final Map<String, UsageMetricsStatisticsItem> tenants) {
-    this.processInstances = processInstances;
-    this.decisionInstances = decisionInstances;
-    this.assignees = assignees;
+    super(processInstances, decisionInstances, assignees);
     this.activeTenants = activeTenants;
     this.tenants = tenants;
   }
@@ -54,16 +50,6 @@ public class UsageMetricsStatisticsImpl implements UsageMetricsStatistics {
   @Override
   public Long getAssignees() {
     return assignees;
-  }
-
-  @Override
-  public Long getActiveTenants() {
-    return activeTenants;
-  }
-
-  @Override
-  public Map<String, UsageMetricsStatisticsItem> getTenants() {
-    return tenants;
   }
 
   @Override
@@ -98,5 +84,15 @@ public class UsageMetricsStatisticsImpl implements UsageMetricsStatistics {
         + ", tenants="
         + tenants
         + '}';
+  }
+
+  @Override
+  public Long getActiveTenants() {
+    return activeTenants;
+  }
+
+  @Override
+  public Map<String, UsageMetricsStatisticsItem> getTenants() {
+    return tenants;
   }
 }

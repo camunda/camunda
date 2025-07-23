@@ -17,13 +17,7 @@ package io.camunda.client.api.statistics.response;
 
 import java.util.Map;
 
-public interface UsageMetricsStatistics {
-
-  Long getProcessInstances();
-
-  Long getDecisionInstances();
-
-  Long getAssignees();
+public interface UsageMetricsStatistics extends UsageMetricsStatisticsItem {
 
   Long getActiveTenants();
 

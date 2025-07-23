@@ -20,9 +20,9 @@ import java.util.Objects;
 
 public class UsageMetricsStatisticsItemImpl implements UsageMetricsStatisticsItem {
 
-  private final Long processInstances;
-  private final Long decisionInstances;
-  private final Long assignees;
+  protected final Long processInstances;
+  protected final Long decisionInstances;
+  protected final Long assignees;
 
   public UsageMetricsStatisticsItemImpl(
       final Long processInstances, final Long decisionInstances, final Long assignees) {
