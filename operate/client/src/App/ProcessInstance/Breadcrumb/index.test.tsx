@@ -8,10 +8,13 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Breadcrumb} from './index';
-import {createInstance} from 'modules/testUtils';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
+import {
+  type CallHierarchy,
+  type ProcessInstance,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const createWrapper = (initialPath: string = Paths.processInstance('123')) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
@@ -26,30 +29,47 @@ const createWrapper = (initialPath: string = Paths.processInstance('123')) => {
   return Wrapper;
 };
 
-const processInstance = {
-  ...createInstance(),
-  id: '123',
-  processName: 'Base instance name',
-  callHierarchy: [
-    {
-      instanceId: '546546543276',
-      processDefinitionName: 'Parent Process Name',
-    },
-    {
-      instanceId: '968765314354',
-      processDefinitionName: '1st level Child Process Name',
-    },
-    {
-      instanceId: '2251799813685447',
-      processDefinitionName: '2nd level Child Process Name',
-    },
-  ],
+const processInstance: ProcessInstance = {
+  processInstanceKey: '123',
+  processDefinitionName: 'Base instance name',
+  state: 'ACTIVE',
+  processDefinitionVersion: 0,
+  processDefinitionId: '',
+  processDefinitionKey: '',
+  tenantId: '',
+  startDate: '',
+  hasIncident: false,
 };
+
+const callHierarchy: CallHierarchy[] = [
+  {
+    processInstanceKey: '546546543276',
+    processDefinitionName: 'Parent Process Name',
+    processDefinitionKey: '',
+  },
+  {
+    processInstanceKey: '968765314354',
+    processDefinitionName: '1st level Child Process Name',
+    processDefinitionKey: '',
+  },
+  {
+    processInstanceKey: '2251799813685447',
+    processDefinitionName: '2nd level Child Process Name',
+    processDefinitionKey: '',
+  },
+];
+
 describe('User', () => {
   it('should render breadcrumb', async () => {
-    render(<Breadcrumb processInstance={processInstance} />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <Breadcrumb
+        callHierarchy={callHierarchy}
+        processInstance={processInstance}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(screen.getByText('Parent Process Name')).toBeInTheDocument();
     expect(
@@ -62,9 +82,15 @@ describe('User', () => {
   });
 
   it('should navigate to instance detail on click', async () => {
-    const {user} = render(<Breadcrumb processInstance={processInstance} />, {
-      wrapper: createWrapper(Paths.processInstance('123')),
-    });
+    const {user} = render(
+      <Breadcrumb
+        callHierarchy={callHierarchy}
+        processInstance={processInstance}
+      />,
+      {
+        wrapper: createWrapper(Paths.processInstance('123')),
+      },
+    );
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(
       /^\/processes\/123$/,

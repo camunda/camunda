@@ -11,7 +11,7 @@ import HelpDiagram_Dark from 'modules/components/Icon/HelpDiagram_Dark_Carbon.sv
 import HelpDiagram_Light from 'modules/components/Icon/HelpDiagram_Light_Carbon.svg?react';
 import {styles} from '@carbon/elements';
 import {Add, Error, ArrowRight} from '@carbon/react/icons';
-import {Checkbox as BaseCheckbox, Stack} from '@carbon/react';
+import {Stack} from '@carbon/react';
 
 const Container = styled.div`
   display: flex;
@@ -72,10 +72,6 @@ const DiagramDark = styled(HelpDiagram_Dark)`
   ${diagramStyles}
 `;
 
-const Checkbox = styled(BaseCheckbox)`
-  margin-left: var(--cds-spacing-05);
-`;
-
 export {
   ModificationType,
   Modification,
@@ -86,5 +82,4 @@ export {
   DiagramDark,
   Container,
   Modifications,
-  Checkbox,
 };

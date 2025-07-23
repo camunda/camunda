@@ -156,17 +156,6 @@ const validateNameComplete =
     }
   };
 
-const validateNameNotDuplicateDeprecated: FieldValidator<string | undefined> =
-  promisifyValidator((variableName = '', _, meta) => {
-    const isVariableDuplicate = variablesStore.state.items.some(
-      ({name}) => name === variableName,
-    );
-
-    if (meta?.dirty && isVariableDuplicate) {
-      return ERRORS.DUPLICATE_NAME;
-    }
-  }, VALIDATION_DELAY);
-
 const validateNameNotDuplicate = (
   allVariables: Variable[],
 ): FieldValidator<string | undefined> =>
@@ -242,7 +231,6 @@ export {
   validateNameComplete,
   validateNameCompleteDeprecated,
   validateNameNotDuplicate,
-  validateNameNotDuplicateDeprecated,
   validateValueComplete,
   validateValueValid,
   validateModifiedNameComplete,

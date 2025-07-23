@@ -781,7 +781,6 @@ export {
   multiInstanceProcessInstance,
   nestedSubProcessesInstance,
   adHocSubProcessesInstance,
-  processId,
   processInstanceId,
   flowNodeInstances,
   eventSubProcessFlowNodeInstances,

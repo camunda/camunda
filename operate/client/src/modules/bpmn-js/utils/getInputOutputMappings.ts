@@ -67,4 +67,4 @@ const getMappings = (
   return [];
 };
 
-export {getInputOutputMappings, getMappings};
+export {getMappings};

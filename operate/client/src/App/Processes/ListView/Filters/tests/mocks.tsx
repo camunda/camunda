@@ -14,19 +14,6 @@ import {Paths} from 'modules/Routes';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 
-const GROUPED_BIG_VARIABLE_PROCESS = {
-  bpmnProcessId: 'bigVarProcess',
-  name: 'Big variable process',
-  processes: [
-    {
-      id: '2251799813685530',
-      name: 'Big variable process',
-      version: 1,
-      bpmnProcessId: 'bigVarProcess',
-    },
-  ],
-};
-
 function getWrapper(initialPath: string = Paths.dashboard()) {
   const MockApp: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
@@ -52,4 +39,4 @@ function getWrapper(initialPath: string = Paths.dashboard()) {
   return MockApp;
 }
 
-export {GROUPED_BIG_VARIABLE_PROCESS, getWrapper};
+export {getWrapper};

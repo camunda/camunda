@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {getSelectedFlowNodeName} from 'modules/utils/flowNodeSelection';
 
 const createModification = ({
   scopeId,
@@ -17,16 +14,14 @@ const createModification = ({
   id,
   name,
   value,
-  businessObjects,
-  isRootNodeSelected,
+  selectedFlowNodeName,
 }: {
   scopeId: string | null;
   areFormFieldsValid: boolean;
   id: string;
   name: string;
   value: string;
-  businessObjects?: BusinessObjects;
-  isRootNodeSelected?: boolean;
+  selectedFlowNodeName: string;
 }) => {
   if (scopeId === null || !areFormFieldsValid || name === '' || value === '') {
     return;
@@ -49,12 +44,7 @@ const createModification = ({
         operation: 'ADD_VARIABLE',
         scopeId,
         id,
-        flowNodeName: getSelectedFlowNodeName({
-          businessObjects,
-          processDefinitionName:
-            processInstanceDetailsStore.state.processInstance?.processName,
-          isRootNodeSelected,
-        }),
+        flowNodeName: selectedFlowNodeName,
         name,
         newValue: value,
       },

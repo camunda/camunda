@@ -95,5 +95,4 @@ class CurrentTheme {
 
 const currentTheme = new CurrentTheme();
 
-export {currentTheme, THEME_NAME};
-export type {ThemeType};
+export {currentTheme};

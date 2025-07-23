@@ -12,22 +12,25 @@ import {Link} from 'modules/components/Link';
 import {OverflowMenu, OverflowMenuItem, BreadcrumbItem} from '@carbon/react';
 import {useNavigate} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import type {ProcessInstanceEntity} from 'modules/types/operate';
+import {
+  type CallHierarchy,
+  type ProcessInstance,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 type Props = {
-  processInstance: ProcessInstanceEntity;
+  callHierarchy: CallHierarchy[];
+  processInstance: ProcessInstance;
 };
 
 const PRECEDING_BREADCRUMB_COUNT = 2;
 const MAX_BREADCRUMBS_VISIBLE = 4;
 
-const Breadcrumb: React.FC<Props> = ({processInstance}) => {
+const Breadcrumb: React.FC<Props> = ({callHierarchy, processInstance}) => {
   const navigate = useNavigate();
+  const {processInstanceKey, processDefinitionName} = processInstance;
 
-  const {id, processName, callHierarchy} = processInstance;
-
-  let breadcrumbs: ProcessInstanceEntity['callHierarchy'] = [...callHierarchy];
-  let overflowingBreadcrumbs: ProcessInstanceEntity['callHierarchy'] = [];
+  let breadcrumbs = [...callHierarchy];
+  let overflowingBreadcrumbs: CallHierarchy[] = [];
   const lastBreadcrumb = callHierarchy[callHierarchy.length - 1];
 
   if (callHierarchy.length > MAX_BREADCRUMBS_VISIBLE) {
@@ -40,12 +43,12 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
 
   return (
     <CarbonBreadcrumb noTrailingSlash>
-      {breadcrumbs.map(({instanceId, processDefinitionName}) => {
+      {breadcrumbs.map(({processInstanceKey, processDefinitionName}) => {
         return (
-          <BreadcrumbItem key={instanceId}>
+          <BreadcrumbItem key={processInstanceKey}>
             <Link
-              to={Paths.processInstance(instanceId)}
-              title={`View Process ${processDefinitionName} - Instance ${instanceId}`}
+              to={Paths.processInstance(processInstanceKey)}
+              title={`View Process ${processDefinitionName} - Instance ${processInstanceKey}`}
               onClick={() => {
                 tracking.track({
                   eventName: 'navigation',
@@ -63,14 +66,14 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
           <BreadcrumbItem data-floating-menu-container>
             <OverflowMenu align="bottom" iconDescription="More">
               {overflowingBreadcrumbs.map(
-                ({instanceId, processDefinitionName}) => (
+                ({processInstanceKey, processDefinitionName}) => (
                   <OverflowMenuItem
-                    key={instanceId}
+                    key={processInstanceKey}
                     itemText={processDefinitionName}
                     requireTitle
-                    title={`View Process ${processDefinitionName} - Instance ${instanceId}`}
+                    title={`View Process ${processDefinitionName} - Instance ${processInstanceKey}`}
                     onClick={() => {
-                      navigate(Paths.processInstance(instanceId));
+                      navigate(Paths.processInstance(processInstanceKey));
                     }}
                   />
                 ),
@@ -78,10 +81,10 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
             </OverflowMenu>
           </BreadcrumbItem>
           {lastBreadcrumb !== undefined && (
-            <BreadcrumbItem key={lastBreadcrumb.instanceId}>
+            <BreadcrumbItem key={lastBreadcrumb.processInstanceKey}>
               <Link
-                to={Paths.processInstance(lastBreadcrumb.instanceId)}
-                title={`View Process ${lastBreadcrumb.processDefinitionName} - Instance ${lastBreadcrumb.instanceId}`}
+                to={Paths.processInstance(lastBreadcrumb.processInstanceKey)}
+                title={`View Process ${lastBreadcrumb.processDefinitionName} - Instance ${lastBreadcrumb.processInstanceKey}`}
                 onClick={() => {
                   tracking.track({
                     eventName: 'navigation',
@@ -97,9 +100,9 @@ const Breadcrumb: React.FC<Props> = ({processInstance}) => {
       )}
       <BreadcrumbItem
         isCurrentPage
-        title={`Process ${processName} - Instance ${id}`}
+        title={`Process ${processDefinitionName} - Instance ${processInstanceKey}`}
       >
-        {processName}
+        {processDefinitionName}
       </BreadcrumbItem>
     </CarbonBreadcrumb>
   );

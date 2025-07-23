@@ -132,6 +132,6 @@ function createV2InstanceMetadata(
   };
 }
 
-export type {V2InstanceMetadata, V2MetaDataDto, UserTaskSubset};
+export type {V2MetaDataDto};
 
 export {createV2InstanceMetadata};

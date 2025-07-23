@@ -8,23 +8,29 @@
 
 import {Button} from '@carbon/react';
 import {Copy} from '@carbon/react/icons';
-import {copyVariablesStore} from 'modules/stores/variables/copyVariables';
+import {
+  hasItems,
+  isPaginated,
+  isTruncated,
+  variablesAsJSON,
+} from 'modules/utils/variables';
+import {useVariables} from 'modules/queries/variables/useVariables';
+import {writeToClipboard} from './writeToClipboard';
 
 const CopyVariablesButton: React.FC = () => {
-  const {isPaginated, isTruncated, hasItems, variablesAsJSON} =
-    copyVariablesStore;
+  const {data} = useVariables();
 
   const getErrorMessage = () => {
-    if (isPaginated) {
+    if (isPaginated(data)) {
       return 'Copying is disabled for 50 variables or more';
     }
 
-    if (isTruncated) {
+    if (isTruncated(data)) {
       return 'Copying is disabled for variable values larger than 8192 characters';
     }
   };
 
-  const isDisabled = isPaginated || isTruncated || !hasItems;
+  const isDisabled = isPaginated(data) || isTruncated(data) || !hasItems(data);
 
   return (
     <Button
@@ -33,7 +39,7 @@ const CopyVariablesButton: React.FC = () => {
       disabled={isDisabled}
       title={getErrorMessage() ?? 'Click to copy variables to clipboard'}
       onClick={() => {
-        navigator.clipboard.writeText(variablesAsJSON);
+        writeToClipboard(variablesAsJSON(data));
       }}
       renderIcon={Copy}
     >

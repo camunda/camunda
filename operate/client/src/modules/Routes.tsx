@@ -10,10 +10,6 @@ import type {To} from 'react-router-dom';
 import type {DecisionInstanceFilters} from 'modules/utils/filter';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 
-type RouterState = {
-  referrer?: string;
-};
-
 const Paths = {
   login() {
     return '/login';
@@ -76,4 +72,3 @@ const Locations = {
 } as const;
 
 export {Paths, Locations};
-export type {RouterState};

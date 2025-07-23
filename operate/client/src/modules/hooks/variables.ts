@@ -9,7 +9,6 @@
 import {logger} from 'modules/logger';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
-import {variablesStore} from 'modules/stores/variables';
 import {
   useHasRunningOrFinishedTokens,
   useIsRootNodeSelected,
@@ -28,58 +27,6 @@ const useHasNoContent = () => {
     !hasRunningOrFinishedTokens &&
     newTokenCountForSelectedNode === 0
   );
-};
-
-/**
- * DEPRECATED: This hook is being migrated as part of Operate UI Migration. Use `useDisplayStatus` instead.
- **/
-const useDisplayStatusFromVariablesStore = () => {
-  const hasNoContent = useHasNoContent();
-  const hasMultipleInstances = useHasMultipleInstances();
-  const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
-  const {status, items} = variablesStore.state;
-
-  if (status === 'error') {
-    return 'error';
-  }
-
-  if (hasNoContent) {
-    return 'no-content';
-  }
-
-  if (hasMultipleInstances) {
-    return 'multi-instances';
-  }
-
-  if (
-    flowNodeSelectionStore.state.selection?.isPlaceholder ||
-    newTokenCountForSelectedNode === 1
-  ) {
-    return 'no-variables';
-  }
-
-  if (['initial', 'first-fetch'].includes(status)) {
-    return variablesStore.areVariablesLoadedOnce ? 'spinner' : 'skeleton';
-  }
-
-  if (modificationsStore.isModificationModeEnabled && getScopeId() === null) {
-    return 'no-variables';
-  }
-  if (status === 'fetching' || getScopeId() === null) {
-    return 'spinner';
-  }
-  if (variablesStore.hasNoVariables) {
-    return 'no-variables';
-  }
-  if (
-    ['fetched', 'fetching-next', 'fetching-prev'].includes(status) &&
-    items.length > 0
-  ) {
-    return 'variables';
-  }
-
-  logger.error('Failed to show Variables');
-  return 'error';
 };
 
 const useDisplayStatus = ({
@@ -137,4 +84,4 @@ const useDisplayStatus = ({
   return 'error';
 };
 
-export {useDisplayStatusFromVariablesStore, useDisplayStatus};
+export {useDisplayStatus};

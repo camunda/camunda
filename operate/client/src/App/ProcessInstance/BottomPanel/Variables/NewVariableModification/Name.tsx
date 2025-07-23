@@ -12,14 +12,15 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {
   validateNameCharacters,
   validateModifiedNameComplete,
-  validateModifiedNameNotDuplicateDeprecated,
+  validateModifiedNameNotDuplicate,
 } from '../validators';
 import {TextInputField} from 'modules/components/TextInputField';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
 import {useEffect, useRef} from 'react';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
+import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {
   variableName: string;
@@ -31,7 +32,12 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
 
   const {currentName, currentValue, currentId, areFormFieldsValid} =
     useVariableFormFields(variableName);
+  const selectedFlowNodeName = useSelectedFlowNodeName() || '';
   const inputRef = useRef<HTMLInputElement>(null);
+  const {data: variablesData} = useVariables();
+  const allVariables =
+    variablesData?.pages.flatMap((page) => (page.items ? page.items : [])) ??
+    [];
 
   useEffect(() => {
     inputRef?.current?.focus();
@@ -44,7 +50,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
         validate={mergeValidators(
           validateNameCharacters,
           validateModifiedNameComplete,
-          validateModifiedNameNotDuplicateDeprecated,
+          validateModifiedNameNotDuplicate(allVariables),
         )}
         allowNull={false}
         parse={(value) => value}
@@ -73,7 +79,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: currentValue,
-                isRootNodeSelected: flowNodeSelectionStore.isRootNodeSelected,
+                selectedFlowNodeName,
               });
             }}
           />

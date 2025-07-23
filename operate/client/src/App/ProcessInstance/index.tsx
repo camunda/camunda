@@ -9,23 +9,20 @@
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {InstanceDetail} from '../Layout/InstanceDetail';
 import {Breadcrumb} from './Breadcrumb';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from './useProcessInstancePageParams';
-import {useLocation, useNavigate} from 'react-router-dom';
-import {useEffect} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import {Locations} from 'modules/Routes';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {BottomPanel, ModificationFooter, Buttons} from './styled';
-import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
+import {FlowNodeInstanceLog} from './FlowNodeInstanceLog/v2';
 import {Button, Modal} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
@@ -34,37 +31,69 @@ import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import {LastModification} from './LastModification';
 import {VariablePanel} from './BottomPanel/VariablePanel';
 import {Forbidden} from 'modules/components/Forbidden';
-import {notificationsStore} from 'modules/stores/notifications';
 import {Frame} from 'modules/components/Frame';
-import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import type {ProcessInstanceEntity} from 'modules/types/operate';
+import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
+import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {startPolling as startPollingIncidents} from 'modules/utils/incidents';
+import {
+  init as initFlowNodeInstance,
+  startPolling as startPollingFlowNodeInstance,
+} from 'modules/utils/flowNodeInstance';
+import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
+import {type ProcessInstance as ProcessInstanceType} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
+import {notificationsStore} from 'modules/stores/notifications';
+import {useNavigate} from 'react-router-dom';
+import {Locations} from 'modules/Routes';
 
-const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
-  processInstanceDetailsStore.startPolling(processInstanceId, {
+const startPolling = (processInstance?: ProcessInstanceType) => {
+  startPollingIncidents(processInstance, {
     runImmediately: true,
   });
-  incidentsStore.startPolling(processInstanceId, {
-    runImmediately: true,
-  });
-  flowNodeInstanceStore.startPolling({runImmediately: true});
+  startPollingFlowNodeInstance(processInstance, {runImmediately: true});
 };
 
 const stopPolling = () => {
-  processInstanceDetailsStore.stopPolling();
   incidentsStore.stopPolling();
   flowNodeInstanceStore.stopPolling();
 };
 
 const ProcessInstance: React.FC = observer(() => {
+  const {data: processInstance, error} = useProcessInstance();
+  const {data: processTitle} = useProcessTitle();
+  const {data: callHierarchy} = useCallHierarchy();
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const isRootNodeSelected = useIsRootNodeSelected();
+  const rootNode = useRootNode();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
     useCallbackPrompt({
       shouldInterrupt: modificationsStore.isModificationModeEnabled,
     });
+
+  useEffect(() => {
+    if (error?.response?.status === 404 && processInstanceId) {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: `Instance ${processInstanceId} could not be found`,
+        isDismissable: true,
+      });
+      navigate(
+        Locations.processes({
+          active: true,
+          incidents: true,
+        }),
+        {replace: true},
+      );
+    }
+  }, [error, processInstanceId, navigate]);
 
   useEffect(() => {
     const disposer = reaction(
@@ -74,14 +103,14 @@ const ProcessInstance: React.FC = observer(() => {
           stopPolling();
         } else {
           instanceHistoryModificationStore.reset();
-          startPolling(processInstanceId);
+          startPolling(processInstance);
         }
       },
     );
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        startPolling(processInstanceId);
+        startPolling(processInstance);
       } else {
         stopPolling();
       }
@@ -93,95 +122,65 @@ const ProcessInstance: React.FC = observer(() => {
       disposer();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [processInstanceId]);
+  }, [processInstance]);
 
+  const isInitialized = useRef(false);
   useEffect(() => {
-    const {
-      state: {processInstance},
-    } = processInstanceDetailsStore;
-
-    if (processInstanceId !== processInstance?.id) {
-      processInstanceDetailsStore.init({
-        id: processInstanceId,
-        onRefetchFailure: () => {
-          navigate(
-            Locations.processes({
-              active: true,
-              incidents: true,
-            }),
-          );
-
-          notificationsStore.displayNotification({
-            kind: 'error',
-            title: `Instance ${processInstanceId} could not be found`,
-            isDismissable: true,
-          });
-        },
-        onPollingFailure: () => {
-          navigate(Locations.processes());
-
-          notificationsStore.displayNotification({
-            kind: 'success',
-            title: 'Instance deleted',
-            isDismissable: true,
-          });
-        },
-      });
-      flowNodeInstanceStore.init();
-      flowNodeSelectionStore.init();
+    if (
+      !isInitialized.current &&
+      processInstance?.processInstanceKey &&
+      rootNode
+    ) {
+      initFlowNodeSelection(rootNode, processInstanceId, isRootNodeSelected);
+      initFlowNodeInstance(processInstance);
+      isInitialized.current = true;
     }
-  }, [processInstanceId, navigate, location]);
+  }, [processInstance, rootNode, processInstanceId, isRootNodeSelected]);
 
   useEffect(() => {
     return () => {
       instanceHistoryModificationStore.reset();
-      processInstanceDetailsStore.reset();
       flowNodeInstanceStore.reset();
       flowNodeTimeStampStore.reset();
       flowNodeSelectionStore.reset();
       modificationsStore.reset();
+      isInitialized.current = false;
     };
   }, [processInstanceId]);
 
   useEffect(() => {
     let processTitleDisposer = when(
-      () => processInstanceDetailsStore.processTitle !== null,
+      () => !!processTitle,
       () => {
-        document.title = processInstanceDetailsStore.processTitle ?? '';
+        document.title = processTitle ?? '';
       },
     );
 
     return () => {
       processTitleDisposer();
     };
-  }, []);
+  });
 
-  const {
-    state: {processInstance},
-  } = processInstanceDetailsStore;
+  const [isListenerTabSelected, setListenerTabVisibility] =
+    useState<boolean>(false);
 
   const {
     isModificationModeEnabled,
     state: {modifications, status: modificationStatus},
   } = modificationsStore;
 
-  const isBreadcrumbVisible =
-    processInstanceDetailsStore.state.processInstance !== null &&
-    processInstanceDetailsStore.state.processInstance?.callHierarchy?.length >
-      0;
+  const isBreadcrumbVisible = callHierarchy && callHierarchy.length > 0;
 
   const hasPendingModifications = modifications.length > 0;
 
-  const {
-    state: {isListenerTabSelected},
-  } = processInstanceListenersStore;
-
-  if (processInstanceDetailsStore.state.status === 'forbidden') {
+  if (error?.response?.status === HTTP_STATUS_FORBIDDEN) {
     return <Forbidden />;
   }
 
   return (
-    <ProcessDefinitionKeyContext.Provider value={processInstance?.processId}>
+    <ProcessDefinitionKeyContext.Provider
+      value={processInstance?.processDefinitionKey}
+    >
       <VisuallyHiddenH1>
         {`Operate Process Instance${
           isModificationModeEnabled ? ' - Modification Mode' : ''
@@ -193,103 +192,109 @@ const ProcessInstance: React.FC = observer(() => {
           headerTitle: 'Process Instance Modification Mode',
         }}
       >
-        <InstanceDetail
-          hasLoadingOverlay={modificationStatus === 'applying-modifications'}
-          breadcrumb={
-            isBreadcrumbVisible ? (
-              <Breadcrumb
-                processInstance={
-                  processInstanceDetailsStore.state.processInstance!
-                }
-              />
-            ) : undefined
-          }
-          header={<ProcessInstanceHeader />}
-          topPanel={<TopPanel />}
-          bottomPanel={
-            <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
-              <FlowNodeInstanceLog />
-              <VariablePanel />
-            </BottomPanel>
-          }
-          footer={
-            isModificationModeEnabled ? (
-              <ModificationFooter>
-                <LastModification />
-                <Buttons orientation="horizontal" gap={4}>
-                  <ModalStateManager
-                    renderLauncher={({setOpen}) => (
-                      <Button
-                        kind="secondary"
-                        size="sm"
-                        onClick={() => {
-                          tracking.track({
-                            eventName: 'discard-all-summary',
-                            hasPendingModifications,
-                          });
-                          setOpen(true);
-                        }}
-                        data-testid="discard-all-button"
-                      >
-                        Discard All
-                      </Button>
-                    )}
-                  >
-                    {({open, setOpen}) => (
-                      <Modal
-                        modalHeading="Discard Modifications"
-                        preventCloseOnClickOutside
-                        danger
-                        primaryButtonText="Discard"
-                        secondaryButtonText="Cancel"
-                        open={open}
-                        onRequestClose={() => setOpen(false)}
-                        onRequestSubmit={() => {
-                          tracking.track({
-                            eventName: 'discard-modifications',
-                            hasPendingModifications,
-                          });
-                          modificationsStore.reset();
-                          setOpen(false);
-                        }}
-                      >
-                        <p>
-                          About to discard all added modifications for instance{' '}
-                          {processInstanceId}.
-                        </p>
-                        <p>Click "Discard" to proceed.</p>
-                      </Modal>
-                    )}
-                  </ModalStateManager>
-                  <ModalStateManager
-                    renderLauncher={({setOpen}) => (
-                      <Button
-                        kind="primary"
-                        size="sm"
-                        onClick={() => {
-                          tracking.track({
-                            eventName: 'apply-modifications-summary',
-                            hasPendingModifications,
-                          });
-                          setOpen(true);
-                        }}
-                        data-testid="apply-modifications-button"
-                        disabled={!hasPendingModifications}
-                      >
-                        Apply Modifications
-                      </Button>
-                    )}
-                  >
-                    {({open, setOpen}) => (
-                      <ModificationSummaryModal open={open} setOpen={setOpen} />
-                    )}
-                  </ModalStateManager>
-                </Buttons>
-              </ModificationFooter>
-            ) : undefined
-          }
-          type="process"
-        />
+        {processInstance && (
+          <InstanceDetail
+            hasLoadingOverlay={modificationStatus === 'applying-modifications'}
+            breadcrumb={
+              isBreadcrumbVisible && callHierarchy ? (
+                <Breadcrumb
+                  callHierarchy={callHierarchy.slice(0, -1)}
+                  processInstance={processInstance}
+                />
+              ) : undefined
+            }
+            header={<ProcessInstanceHeader processInstance={processInstance} />}
+            topPanel={<TopPanel />}
+            bottomPanel={
+              <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
+                <FlowNodeInstanceLog />
+                <VariablePanel
+                  setListenerTabVisibility={setListenerTabVisibility}
+                />
+              </BottomPanel>
+            }
+            footer={
+              isModificationModeEnabled ? (
+                <ModificationFooter>
+                  <LastModification />
+                  <Buttons orientation="horizontal" gap={4}>
+                    <ModalStateManager
+                      renderLauncher={({setOpen}) => (
+                        <Button
+                          kind="secondary"
+                          size="sm"
+                          onClick={() => {
+                            tracking.track({
+                              eventName: 'discard-all-summary',
+                              hasPendingModifications,
+                            });
+                            setOpen(true);
+                          }}
+                          data-testid="discard-all-button"
+                        >
+                          Discard All
+                        </Button>
+                      )}
+                    >
+                      {({open, setOpen}) => (
+                        <Modal
+                          modalHeading="Discard Modifications"
+                          preventCloseOnClickOutside
+                          danger
+                          primaryButtonText="Discard"
+                          secondaryButtonText="Cancel"
+                          open={open}
+                          onRequestClose={() => setOpen(false)}
+                          onRequestSubmit={() => {
+                            tracking.track({
+                              eventName: 'discard-modifications',
+                              hasPendingModifications,
+                            });
+                            modificationsStore.reset();
+                            setOpen(false);
+                          }}
+                        >
+                          <p>
+                            About to discard all added modifications for
+                            instance {processInstanceId}.
+                          </p>
+                          <p>Click "Discard" to proceed.</p>
+                        </Modal>
+                      )}
+                    </ModalStateManager>
+                    <ModalStateManager
+                      renderLauncher={({setOpen}) => (
+                        <Button
+                          kind="primary"
+                          size="sm"
+                          onClick={() => {
+                            tracking.track({
+                              eventName: 'apply-modifications-summary',
+                              hasPendingModifications,
+                            });
+                            setOpen(true);
+                          }}
+                          data-testid="apply-modifications-button"
+                          disabled={!hasPendingModifications}
+                        >
+                          Apply Modifications
+                        </Button>
+                      )}
+                    >
+                      {({open, setOpen}) => (
+                        <ModificationSummaryModal
+                          open={open}
+                          setOpen={setOpen}
+                        />
+                      )}
+                    </ModalStateManager>
+                  </Buttons>
+                </ModificationFooter>
+              ) : undefined
+            }
+            type="process"
+          />
+        )}
       </Frame>
       {isNavigationInterrupted && (
         <Modal

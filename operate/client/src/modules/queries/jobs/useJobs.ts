@@ -80,4 +80,4 @@ function useJobs<T = QueryJobsResponseBody>(options: {
   });
 }
 
-export {JOBS_SEARCH_QUERY_KEY, useJobs};
+export {useJobs};

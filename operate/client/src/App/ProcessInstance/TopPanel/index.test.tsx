@@ -13,7 +13,6 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {mockSequenceFlowsV2, mockIncidents} from './index.setup';
 import {TopPanel} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -23,9 +22,11 @@ import {
   incidentFlowNodeMetaData,
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, createIncident} from 'modules/testUtils';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
+import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
@@ -36,9 +37,79 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
-import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import type {
+  ElementInstance,
+  ProcessInstance,
+  SequenceFlow,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {http, HttpResponse} from 'msw';
+import {mockServer} from 'modules/mock-server/node';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData.ts';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
+
+const mockIncidents = {
+  count: 1,
+  incidents: [
+    createIncident({
+      errorType: {
+        name: 'Condition error',
+        id: 'CONDITION_ERROR',
+      },
+      flowNodeId: 'Service5678',
+    }),
+  ],
+  errorTypes: [
+    {
+      id: 'Condition error',
+      name: 'Condition error',
+      count: 1,
+    },
+  ],
+  flowNodes: [
+    {
+      id: 'Service5678',
+      name: 'Do something',
+      count: 1,
+    },
+  ],
+};
+
+const mockSequenceFlowsV2: SequenceFlow[] = [
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowId: 'SequenceFlow_0drux68',
+    processDefinitionId: '123',
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowId: 'SequenceFlow_0j6tsnn',
+    processDefinitionId: '123',
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowId: 'SequenceFlow_1dwqvrt',
+    processDefinitionId: '123',
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
+  },
+  {
+    processInstanceKey: '2251799813693731',
+    sequenceFlowId: 'SequenceFlow_1fgekwd',
+    processDefinitionId: '123',
+    processDefinitionKey: '123',
+    tenantId: '',
+    elementId: '',
+  },
+];
 
 vi.mock('react-transition-group', () => {
   const FakeTransition = vi.fn(({children}) => children);
@@ -58,6 +129,32 @@ vi.mock('react-transition-group', () => {
     }),
   };
 });
+
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: 'instance_id',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: true,
+};
+
+const mockElementInstance: ElementInstance = {
+  elementInstanceKey: '2251799813699889',
+  elementId: 'service-task-1',
+  elementName: 'Service Task',
+  type: 'SERVICE_TASK',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionId: 'process-def-1',
+  processInstanceKey: 'instance_id',
+  processDefinitionKey: '2',
+  hasIncident: false,
+  tenantId: '<default>',
+};
 
 const getWrapper = (
   initialEntries: React.ComponentProps<
@@ -94,18 +191,6 @@ describe('TopPanel', () => {
   });
 
   beforeEach(() => {
-    const mockProcessInstance: ProcessInstance = {
-      processInstanceKey: 'instance_id',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      processDefinitionKey: '2',
-      processDefinitionVersion: 1,
-      processDefinitionId: 'someKey',
-      tenantId: '<default>',
-      processDefinitionName: 'someProcessName',
-      hasIncident: false,
-    };
-
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );
@@ -134,18 +219,25 @@ describe('TopPanel', () => {
         },
       ],
     });
+    mockServer.use(
+      http.post('/api/process-instances/:instanceId/flow-node-metadata', () => {
+        return HttpResponse.json(calledInstanceMetadata);
+      }),
+    );
   });
 
   afterEach(() => {
     processInstanceDetailsStore.reset();
     flowNodeSelectionStore.reset();
     modificationsStore.reset();
+    flowNodeMetaDataStore.reset();
   });
 
   it('should render spinner while loading', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      createInstance({id: 'instance_id'}),
-    );
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      hasIncident: false,
+    });
 
     render(<TopPanel />, {
       wrapper: getWrapper(),
@@ -158,6 +250,8 @@ describe('TopPanel', () => {
   });
 
   it('should render incident bar', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+
     render(<TopPanel />, {
       wrapper: getWrapper(),
     });
@@ -226,11 +320,42 @@ describe('TopPanel', () => {
   });
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...calledInstanceMetadata,
+      flowNodeId: 'service-task-1',
+      flowNodeInstanceId: '2251799813699889',
+    });
+    mockFetchElementInstance('2251799813699889').withSuccess(
+      mockElementInstance,
+    );
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockSearchElementInstances().withSuccess({
+      items: [mockElementInstance],
+      page: {totalItems: 1},
+    });
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: mockElementInstance.elementId,
+          active: 1,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+      ],
+    });
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
+    flowNodeMetaDataStore.setMetaData({
+      ...calledInstanceMetadata,
+      flowNodeId: 'service-task-1',
+      flowNodeInstanceId: '2251799813699889',
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
-        id: PROCESS_INSTANCE_ID,
+        id: 'instance_id',
         state: 'ACTIVE',
       }),
     );
@@ -238,32 +363,39 @@ describe('TopPanel', () => {
       wrapper: getWrapper(),
     });
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-1',
+        flowNodeInstanceId: '2251799813699889',
+      },
+    );
 
-    expect(
-      await screen.findByText(/Flow Node Instance Key/),
-    ).toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('diagram-spinner'),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/Element Instance Key/),
+      ).not.toBeInTheDocument(),
+    );
 
     expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
-
-    await waitFor(() =>
-      expect(
-        screen.queryByText(/Flow Node Instance Key/),
-      ).not.toBeInTheDocument(),
-    );
 
     expect(screen.queryByText(/Start Date/)).not.toBeInTheDocument();
     expect(screen.queryByText(/End Date/)).not.toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-1',
+      },
+    );
 
     expect(
       await screen.findByText(/Flow Node Modifications/),
@@ -293,9 +425,12 @@ describe('TopPanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-7',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-7',
+      },
+    );
 
     expect(
       await screen.findByText(
@@ -305,9 +440,12 @@ describe('TopPanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-1',
+      },
+    );
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
@@ -315,9 +453,12 @@ describe('TopPanel', () => {
       ),
     );
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-7',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-7',
+      },
+    );
 
     expect(
       await screen.findByText(
@@ -327,10 +468,13 @@ describe('TopPanel', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-7',
-      flowNodeInstanceId: 'some-instance-id',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-7',
+        flowNodeInstanceId: 'some-instance-id',
+      },
+    );
 
     await waitForElementToBeRemoved(() =>
       screen.queryByText(
@@ -358,9 +502,12 @@ describe('TopPanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'service-task-1',
+      },
+    );
 
     expect(
       await screen.findByText(/Flow Node Modifications/),
@@ -398,9 +545,12 @@ describe('TopPanel', () => {
 
       modificationsStore.enableModificationMode();
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'user_task',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'user_task',
+        },
+      );
 
       await user.click(
         await screen.findByTitle(/Add single flow node instance/),

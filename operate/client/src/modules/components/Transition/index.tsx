@@ -7,7 +7,7 @@
  */
 
 import React, {Children, useRef} from 'react';
-import {CSSTransition, TransitionGroup} from 'react-transition-group';
+import {CSSTransition} from 'react-transition-group';
 
 type Props = {
   children: React.ReactElement<React.RefAttributes<HTMLElement>>;
@@ -25,4 +25,4 @@ const Transition: React.FC<Props> = ({children, ...props}) => {
   );
 };
 
-export {Transition, TransitionGroup};
+export {Transition};

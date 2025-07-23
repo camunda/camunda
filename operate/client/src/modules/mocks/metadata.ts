@@ -112,26 +112,6 @@ const multiInstancesMetadata = {
   instanceMetadata: null,
 };
 
-const multiInstanceMetadata = {
-  ...baseMetadata,
-  breadcrumb: [
-    {
-      flowNodeId: 'Task',
-      flowNodeType: 'MULTI_INSTANCE_BODY',
-    },
-    {
-      flowNodeId: 'Task',
-      flowNodeType: 'SERVICE_TASK',
-    },
-  ],
-  instanceMetadata: {
-    ...baseInstanceMetadata,
-    flowNodeId: 'Task',
-    flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
-    flowNodeType: 'SERVICE_TASK',
-  },
-};
-
 const multiInstanceCallActivityMetadata = {
   ...baseMetadata,
   flowNodeType: 'MULTI_INSTANCE_BODY',
@@ -220,9 +200,7 @@ export {
   calledFailedDecisionMetadata,
   calledUnevaluatedDecisionMetadata,
   calledInstanceMetadata,
-  calledInstanceWithIncidentMetadata,
   multiInstancesMetadata,
-  multiInstanceMetadata,
   multiInstanceCallActivityMetadata,
   rootIncidentFlowNodeMetaData,
   userTaskFlowNodeMetaData,
