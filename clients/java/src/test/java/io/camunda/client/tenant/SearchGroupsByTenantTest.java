@@ -74,7 +74,7 @@ public class SearchGroupsByTenantTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNullTenantId1() {
+  void shouldRaiseExceptionWhenFilteringIsPresentAsFunction() {
     assertThatThrownBy(
             () -> client.newGroupsByTenantSearchRequest(TENANT_ID).filter(fn -> {}).send().join())
         .isInstanceOf(UnsupportedOperationException.class)
@@ -82,7 +82,7 @@ public class SearchGroupsByTenantTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNullTenantId2() {
+  void shouldRaiseExceptionWhenFilteringIsPresent() {
     assertThatThrownBy(
             () ->
                 client
