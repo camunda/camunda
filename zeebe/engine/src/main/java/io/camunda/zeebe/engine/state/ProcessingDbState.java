@@ -32,6 +32,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationState;
+import io.camunda.zeebe.engine.state.multiinstance.DbMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptio
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
+import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -85,6 +87,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableDistributionState distributionState;
   private final MutableUserTaskState userTaskState;
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
+  private final MutableMultiInstanceState multiInstanceState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
@@ -127,6 +130,7 @@ public class ProcessingDbState implements MutableProcessingState {
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     compensationSubscriptionState =
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
+    multiInstanceState = new DbMultiInstanceState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
@@ -236,6 +240,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableCompensationSubscriptionState getCompensationSubscriptionState() {
     return compensationSubscriptionState;
+  }
+
+  @Override
+  public MutableMultiInstanceState getMultiInstanceState() {
+    return multiInstanceState;
   }
 
   @Override
