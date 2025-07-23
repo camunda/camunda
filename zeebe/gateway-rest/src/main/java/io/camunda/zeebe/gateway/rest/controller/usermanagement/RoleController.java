@@ -259,7 +259,7 @@ public class RoleController {
 
   private CompletableFuture<ResponseEntity<Object>> addMemberToRole(
       final RoleMemberRequest request) {
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -330,7 +330,7 @@ public class RoleController {
   private CompletableFuture<ResponseEntity<Object>> removeMemberFromRole(
       final RoleMemberRequest request) {
 
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             roleServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())

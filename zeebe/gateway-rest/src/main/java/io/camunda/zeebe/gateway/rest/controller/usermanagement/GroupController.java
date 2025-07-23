@@ -239,7 +239,7 @@ public class GroupController {
   }
 
   public CompletableFuture<ResponseEntity<Object>> assignMember(final GroupMemberDTO request) {
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             groupServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
@@ -322,7 +322,7 @@ public class GroupController {
   }
 
   public CompletableFuture<ResponseEntity<Object>> unassignMember(final GroupMemberDTO request) {
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             groupServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
