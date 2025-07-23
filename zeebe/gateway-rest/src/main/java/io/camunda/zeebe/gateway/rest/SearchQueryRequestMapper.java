@@ -627,7 +627,7 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::processInstanceKeys);
       ofNullable(filter.getElementInstanceKey())
           .map(mapToOperations(Long.class))
-          .ifPresent(builder::elementInstanceKeyOperations);
+          .ifPresent(builder::flowNodeInstanceKeyOperations);
       ofNullable(filter.getDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::decisionDefinitionKeyOperations);
@@ -658,6 +658,7 @@ public final class SearchQueryRequestMapper {
         case EVALUATION_FAILURE -> builder.evaluationFailure();
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case DECISION_DEFINITION_KEY -> builder.decisionDefinitionKey();
         case DECISION_DEFINITION_ID -> builder.decisionDefinitionId();
         case DECISION_DEFINITION_NAME -> builder.decisionDefinitionName();

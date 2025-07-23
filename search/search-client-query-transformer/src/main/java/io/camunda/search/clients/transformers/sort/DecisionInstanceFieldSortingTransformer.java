@@ -12,6 +12,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
@@ -35,6 +36,7 @@ public class DecisionInstanceFieldSortingTransformer implements FieldSortingTran
       case "evaluationFailureMessage" -> EVALUATION_FAILURE_MESSAGE;
       case "processDefinitionKey" -> PROCESS_DEFINITION_KEY;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
+      case "flowNodeInstanceKey" -> ELEMENT_INSTANCE_KEY;
       case "decisionDefinitionKey" -> DECISION_DEFINITION_ID; // yes, this is correct
       case "decisionDefinitionId" -> DECISION_ID;
       case "decisionDefinitionName" -> DECISION_NAME;

@@ -13,6 +13,8 @@ public enum DecisionInstanceSearchColumn implements SearchColumn<DecisionInstanc
   DECISION_INSTANCE_ID("decisionInstanceId"),
   DECISION_INSTANCE_KEY("decisionInstanceKey"),
   PROCESS_DEFINITION_KEY("processDefinitionKey"),
+  PROCESS_INSTANCE_KEY("processInstanceKey"),
+  FLOW_NODE_INSTANCE_KEY("flowNodeInstanceKey"),
   DECISION_DEFINITION_NAME("decisionDefinitionName"),
   DECISION_DEFINITION_ID("decisionDefinitionId"),
   DECISION_DEFINITION_KEY("decisionDefinitionKey"),

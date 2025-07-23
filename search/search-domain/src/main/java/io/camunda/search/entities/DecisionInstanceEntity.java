@@ -20,7 +20,7 @@ public record DecisionInstanceEntity(
     String evaluationFailureMessage,
     Long processDefinitionKey,
     Long processInstanceKey,
-    Long elementInstanceKey,
+    Long flowNodeInstanceKey,
     String tenantId,
     String decisionDefinitionId,
     Long decisionDefinitionKey,
@@ -41,7 +41,7 @@ public record DecisionInstanceEntity(
         .evaluationFailureMessage(evaluationFailureMessage)
         .processDefinitionKey(processDefinitionKey)
         .processInstanceKey(processInstanceKey)
-        .elementInstanceKey(elementInstanceKey)
+        .flowNodeInstanceKey(flowNodeInstanceKey)
         .decisionDefinitionKey(decisionDefinitionKey)
         .decisionDefinitionId(decisionDefinitionId)
         .decisionDefinitionName(decisionDefinitionName)
@@ -63,7 +63,7 @@ public record DecisionInstanceEntity(
     private String evaluationFailureMessage;
     private Long processDefinitionKey;
     private Long processInstanceKey;
-    private Long elementInstanceKey;
+    private Long flowNodeInstanceKey;
     private String tenantId;
     private String decisionDefinitionId;
     private Long decisionDefinitionKey;
@@ -114,8 +114,8 @@ public record DecisionInstanceEntity(
       return this;
     }
 
-    public Builder elementInstanceKey(final Long elementInstanceKey) {
-      this.elementInstanceKey = elementInstanceKey;
+    public Builder flowNodeInstanceKey(final Long flowNodeInstanceKey) {
+      this.flowNodeInstanceKey = flowNodeInstanceKey;
       return this;
     }
 
@@ -175,7 +175,7 @@ public record DecisionInstanceEntity(
           evaluationFailureMessage,
           processDefinitionKey,
           processInstanceKey,
-          elementInstanceKey,
+          flowNodeInstanceKey,
           tenantId,
           decisionDefinitionId,
           decisionDefinitionKey,
