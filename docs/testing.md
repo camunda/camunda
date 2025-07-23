@@ -46,6 +46,7 @@ Conventions are here to help make the code base clearer and consistent, we want 
 - Where possible, avoid waiting for something to happen; this will reduce flakiness.
   - If you have to, use [Awaitility](http://www.awaitility.org/) to await conditions, **do not use `Thread.sleep` or the likes**.
 - Avoid using any shaded dependencies*, and use direct ones.
+- For Java tests, use AssertJ for assertions, never use JUnit or Hamcrest assertions.
 
 _*Shaded dependency: is a dependency that is repackaged in a different dependency/library. For example, Testcontainer does this with Awaitility, to be independent of version updates. We should ensure that we do not use such shaded dependencies, as we would be conflicting with versions and usage if we would use the shaded and the explicit ones._
 
