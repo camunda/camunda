@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -185,13 +184,6 @@ public final class ProcessInstanceMigrationPreconditions {
       Joining gateways with at least one incoming sequence flow taken must be mapped \
       to a gateway of the same type in the target process definition.""";
 
-  private static final String ERROR_SEQUENCE_FLOW_NOT_CONNECTED_TO_TARGET_GATEWAY =
-      """
-      Expected to migrate process instance '%s' \
-      but gateway with id '%s' has a taken incoming sequence flow mismatch. \
-      Taken sequence flow with id '%s' must connect to the mapped target gateway \
-      with id '%s' in the target process definition.""";
-
   private static final String ERROR_TARGET_GATEWAY_HAS_LESS_INCOMING_SEQUENCE_FLOWS =
       """
       Expected to migrate process instance '%s' \
@@ -204,6 +196,12 @@ public final class ProcessInstanceMigrationPreconditions {
       Expected to migrate process instance '%s' \
       but it is currently suspended. \
       Suspended process instances cannot be migrated.""";
+
+  private static final String ERROR_TAKEN_SEQUENCE_FLOW_NOT_MAPPED =
+      """
+      Expected to migrate process instance '%s' \
+      but joining gateway with id '%s' has a taken sequence flow with id '%s'. \
+      Taken sequence flows must be mapped to a sequence flow in the target process definition.""";
 
   private static final String ZEEBE_USER_TASK_IMPLEMENTATION = "zeebe user task";
   private static final String JOB_WORKER_IMPLEMENTATION = "job worker";
@@ -1029,29 +1027,6 @@ public final class ProcessInstanceMigrationPreconditions {
     }
   }
 
-  public static void requireSequenceFlowExistsInTarget(
-      final DirectBuffer activeSequenceFlowId,
-      final ExecutableFlowNode sourceGateway,
-      final ExecutableFlowNode targetGateway,
-      final long processInstanceKey) {
-    final boolean sequenceFLowExistsInTarget =
-        targetGateway.getIncoming().stream()
-            .map(ExecutableSequenceFlow::getId)
-            .anyMatch(activeSequenceFlowId::equals);
-
-    if (!sequenceFLowExistsInTarget) {
-      final var reason =
-          String.format(
-              ERROR_SEQUENCE_FLOW_NOT_CONNECTED_TO_TARGET_GATEWAY,
-              processInstanceKey,
-              BufferUtil.bufferAsString(sourceGateway.getId()),
-              BufferUtil.bufferAsString(activeSequenceFlowId),
-              BufferUtil.bufferAsString(targetGateway.getId()));
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_ARGUMENT);
-    }
-  }
-
   public static void requireValidTargetIncomingFlowCount(
       final ExecutableFlowNode sourceGateway,
       final ExecutableFlowNode targetGateway,
@@ -1202,12 +1177,40 @@ public final class ProcessInstanceMigrationPreconditions {
    *
    * @param processInstance process instance to check
    */
-  public static void requireProcessInstanceNotInSuspendedState(ElementInstance processInstance) {
+  public static void requireProcessInstanceNotInSuspendedState(
+      final ElementInstance processInstance) {
     if (processInstance.isSuspended()) {
       final String reason =
           String.format(ERROR_SUSPENDED_PROCESS_INSTANCE, processInstance.getKey());
       throw new ProcessInstanceMigrationPreconditionFailedException(
           reason, RejectionType.INVALID_STATE);
+    }
+  }
+
+  /**
+   * Checks whether the target sequence flow id is not null. If it is null, it throws an exception.
+   * This is used to ensure that the taken sequence flow id is mapped when migrating a process
+   * instance.
+   *
+   * @param targetSequenceFlowId target sequence flow id to check
+   * @param sourceSequenceFlowId source sequence flow id to be logged
+   * @param sourceGatewayElementId source gateway element id to be logged
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNonNullTargetSequenceFlowId(
+      final String targetSequenceFlowId,
+      final String sourceSequenceFlowId,
+      final String sourceGatewayElementId,
+      final long processInstanceKey) {
+    if (targetSequenceFlowId == null) {
+      final String reason =
+          String.format(
+              ERROR_TAKEN_SEQUENCE_FLOW_NOT_MAPPED,
+              processInstanceKey,
+              sourceGatewayElementId,
+              sourceSequenceFlowId);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
     }
   }
 
