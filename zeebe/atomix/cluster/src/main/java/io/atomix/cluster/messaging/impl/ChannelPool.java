@@ -99,21 +99,25 @@ class ChannelPool {
       final CompletableFuture<Channel> channelFuture) {
     if (dedicatedChannel) {
       channelsForAddress.dedicatedChannels.put(messageType, channelFuture);
-      channelFuture.whenComplete(
-          (channel, error) -> {
-            if (error == null) {
-              channel.attr(CHANNEL_ID_ATTRIBUTE).set("dedicated-" + messageType);
-            }
-          });
+      if (channelFuture != null) {
+        channelFuture.whenComplete(
+            (channel, error) -> {
+              if (error == null) {
+                channel.attr(CHANNEL_ID_ATTRIBUTE).set("dedicated-" + messageType);
+              }
+            });
+      }
     } else {
       final var offset = getChannelOffset(messageType);
       channelsForAddress.channels.set(offset, channelFuture);
-      channelFuture.whenComplete(
-          (channel, error) -> {
-            if (error == null) {
-              channel.attr(CHANNEL_ID_ATTRIBUTE).set("shared-" + offset);
-            }
-          });
+      if (channelFuture != null) {
+        channelFuture.whenComplete(
+            (channel, error) -> {
+              if (error == null) {
+                channel.attr(CHANNEL_ID_ATTRIBUTE).set("shared-" + offset);
+              }
+            });
+      }
     }
   }
 
