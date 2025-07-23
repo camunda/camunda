@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.security.se.store;
 
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
@@ -46,7 +45,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + SSO_AUTH_PROFILE + " & !" + IDENTITY_AUTH_PROFILE)
+@Profile("!" + SSO_AUTH_PROFILE)
 @Conditional(ElasticSearchCondition.class)
 public class UserStoreElasticSearch implements UserStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(UserStoreElasticSearch.class);

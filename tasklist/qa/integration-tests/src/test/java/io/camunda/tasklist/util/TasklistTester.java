@@ -27,7 +27,6 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
-import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -47,10 +46,7 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -125,9 +121,6 @@ public class TasklistTester {
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private WebApplicationContext context;
-
-  @Autowired(required = false)
-  private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
 
   private MockMvcHelper mockMvcHelper;
 
@@ -565,21 +558,5 @@ public class TasklistTester {
 
   public String getTaskId() {
     return taskId;
-  }
-
-  public TasklistTester withAuthenticationToken(final String token) {
-    final Jwt jwt;
-    try {
-      jwt = jwtDecoder.decode(token);
-    } catch (final JwtException e) {
-      throw new RuntimeException(e);
-    }
-    SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationConverter.convert(jwt));
-    return this;
-  }
-
-  public TasklistTester unsetAuthorization() {
-    SecurityContextHolder.getContext().setAuthentication(null);
-    return this;
   }
 }

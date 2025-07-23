@@ -9,7 +9,6 @@ package io.camunda.tasklist.webapp.security.oauth;
 
 import static io.camunda.tasklist.util.CollectionUtil.firstOrDefault;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.WebSecurityConfig.sendJSONErrorMessage;
 
 import io.camunda.tasklist.property.ClientProperties;
@@ -23,7 +22,6 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -36,7 +34,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + IDENTITY_AUTH_PROFILE)
 public class OAuth2WebConfigurer {
 
   public static final String SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_ISSUER_URI =
@@ -53,7 +50,7 @@ public class OAuth2WebConfigurer {
   private final CustomJwtAuthenticationConverter jwtConverter =
       new CustomJwtAuthenticationConverter();
 
-  public void configure(HttpSecurity http) throws Exception {
+  public void configure(final HttpSecurity http) throws Exception {
     if (isJWTEnabled()) {
       http.oauth2ResourceServer(
           serverCustomizer ->
@@ -102,7 +99,7 @@ public class OAuth2WebConfigurer {
         final ClientProperties clientConfig = config.getClient();
         return clientConfig.getAudience().equals(audience)
             && clientConfig.getClusterId().equals(clusterId);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.warn("Validation of JWT payload failed. Request is not authenticated.");
         return false;
       }
