@@ -8,10 +8,16 @@
 package io.camunda.webapps.schema.entities.metrics;
 
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.PartitionedEntity;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-public final class UsageMetricsEntity implements ExporterEntity<UsageMetricsEntity> {
+public final class UsageMetricsEntity
+    implements ExporterEntity<UsageMetricsEntity>,
+        PartitionedEntity<UsageMetricsEntity>,
+        TenantOwned {
+
   private String id;
   private OffsetDateTime eventTime;
   private UsageMetricsEventType eventType;
@@ -57,6 +63,7 @@ public final class UsageMetricsEntity implements ExporterEntity<UsageMetricsEnti
     return this;
   }
 
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -66,10 +73,12 @@ public final class UsageMetricsEntity implements ExporterEntity<UsageMetricsEnti
     return this;
   }
 
+  @Override
   public int getPartitionId() {
     return partitionId;
   }
 
+  @Override
   public UsageMetricsEntity setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
