@@ -45,7 +45,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    Mockito.verify(authorizationServices, Mockito.times(16)).createAuthorization(results.capture());
+    Mockito.verify(authorizationServices, Mockito.times(19)).createAuthorization(results.capture());
     final var requests = results.getAllValues();
     assertThat(requests).containsExactlyElementsOf(ROLE_PERMISSIONS);
   }

@@ -69,6 +69,12 @@ public class StaticEntities {
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION
                   .getSupportedPermissionTypes()),
+          new CreateAuthorizationRequest(
+              DEVELOPER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.BATCH_OPERATION,
+              Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
           // OPERATIONS ENGINEER
           new CreateAuthorizationRequest(
               OPERATIONS_ENGINEER_ROLE_ID,
@@ -100,6 +106,12 @@ public class StaticEntities {
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION
                   .getSupportedPermissionTypes()),
+          new CreateAuthorizationRequest(
+              OPERATIONS_ENGINEER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.BATCH_OPERATION,
+              Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
           // TASK USER
           new CreateAuthorizationRequest(
               TASK_USER_ROLE_ID,
@@ -151,6 +163,12 @@ public class StaticEntities {
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+              Set.of(PermissionType.READ)),
+          new CreateAuthorizationRequest(
+              VISITOR_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.BATCH_OPERATION,
               Set.of(PermissionType.READ)));
 
   public static List<CreateAuthorizationRequest> getZeebeClientPermissions(final String clientId) {
