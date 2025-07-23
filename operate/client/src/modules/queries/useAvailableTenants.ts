@@ -6,36 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {currentUserQueryOptions} from './useCurrentUser';
+import {useMemo} from 'react';
+import {useCurrentUser} from './useCurrentUser';
 
-export const useAvailableTenants = () => {
-  const queryClient = useQueryClient();
+const useAvailableTenants = () => {
+  const {data: currentUser} = useCurrentUser();
 
-  const {data} = useQuery({
-    queryKey: ['availableTenants'],
-    queryFn: async () => {
-      const currentUser = await queryClient.ensureQueryData(
-        currentUserQueryOptions,
-      );
+  return useMemo<Record<string, string>>(() => {
+    if (!currentUser?.tenants) {
+      return {};
+    }
 
-      if (!currentUser?.tenants) {
-        return {};
-      }
-
-      return currentUser.tenants.reduce(
-        (acc, tenant) => ({
-          [tenant.tenantId]: tenant.name,
-          ...acc,
-        }),
-        {} as Record<string, string>,
-      );
-    },
-    gcTime: Infinity,
-    staleTime: Infinity,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: false,
-  });
-
-  return data ?? {};
+    return currentUser.tenants.reduce(
+      (acc, tenant) => ({
+        [tenant.tenantId]: tenant.name,
+        ...acc,
+      }),
+      {},
+    );
+  }, [currentUser?.tenants]);
 };
+
+export {useAvailableTenants};
