@@ -233,7 +233,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                     AssertionJsonMapper.readJson(variables.get(variableName), jsonMappedClass);
 
                 try {
-                  assertThat(actualValue).satisfies(requirement);
+                  requirement.accept(actualValue);
                 } catch (final AssertionError e) {
                   assertionError.set(e.getMessage());
                   throw e;

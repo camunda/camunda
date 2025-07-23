@@ -105,6 +105,30 @@ public class VariableAssertTest {
         Arguments.of("{\"b\":2,\"a\":1}", CONTEXT_VARIABLE_VALUE));
   }
 
+  // Used to test assertVariableSatisfies JSON logic
+  private static final class SimpleJsonObject {
+
+    @JsonProperty("string")
+    private String strValue;
+
+    @JsonProperty("int")
+    private int intValue;
+
+    @JsonProperty("boolean")
+    private boolean boolValue;
+
+    @JsonProperty("list")
+    private List<Object> list;
+
+    @JsonProperty("object")
+    private SimpleJsonNestedObject nestedObject;
+  }
+
+  private static final class SimpleJsonNestedObject {
+
+    @JsonProperty private String key;
+  }
+
   @Nested
   class HasVariableNames {
 
@@ -692,7 +716,9 @@ public class VariableAssertTest {
                           COMPLEX_VARIABLE_KEY,
                           SimpleJsonObject.class,
                           result -> {
-                            Assertions.assertThat(result).isNull();
+                            Assertions.assertThat(result)
+                                .describedAs("Should be not null")
+                                .isNull();
                             Assertions.assertThat(result)
                                 .extracting("strValue", "intValue", "boolValue")
                                 .containsExactlyInAnyOrder("wrong", -1, false);
@@ -705,8 +731,8 @@ public class VariableAssertTest {
                                 .isEqualTo("wrong_value");
                           }))
           .hasMessageContainingAll(
-              "Multiple Failures (1 failure)",
-              "-- failure 1 --",
+              "Process instance [key: 1] should have a variable 'complex' but the following requirement was not satisfied:",
+              "[Should be not null]",
               "expected: null",
               "but was: io.camunda.process.test.api.VariableAssertTest$SimpleJsonObject");
     }
@@ -772,29 +798,5 @@ public class VariableAssertTest {
                           }))
           .hasMessage("java.lang.Exception: Error");
     }
-  }
-
-  // Used to test assertVariableSatisfies JSON logic
-  private static final class SimpleJsonObject {
-
-    @JsonProperty("string")
-    private String strValue;
-
-    @JsonProperty("int")
-    private int intValue;
-
-    @JsonProperty("boolean")
-    private boolean boolValue;
-
-    @JsonProperty("list")
-    private List<Object> list;
-
-    @JsonProperty("object")
-    private SimpleJsonNestedObject nestedObject;
-  }
-
-  private static final class SimpleJsonNestedObject {
-
-    @JsonProperty private String key;
   }
 }
