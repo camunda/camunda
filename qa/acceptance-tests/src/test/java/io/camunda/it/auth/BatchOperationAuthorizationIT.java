@@ -317,7 +317,7 @@ class BatchOperationAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE' on resource 'BATCH_OPERATION'");
+            "Command 'CREATE' rejected with code 'FORBIDDEN': Insufficient permissions to perform operation 'CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE' on resource 'BATCH'");
   }
 
   @Test
