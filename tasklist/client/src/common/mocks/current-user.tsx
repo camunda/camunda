@@ -17,9 +17,10 @@ const currentUser: CurrentUser = {
   tenants: [],
   groups: [],
   canLogout: true,
-  authorizedComponents: ['*'],
+  authorizedApplications: ['*'],
   apiUser: false,
   userKey: 2251799813685250,
+  email: 'demo@camunda.com',
 };
 
 const currentUserWithC8Links: CurrentUser = {
@@ -52,9 +53,10 @@ const currentUserWithC8Links: CurrentUser = {
   tenants: [],
   groups: [],
   canLogout: true,
-  authorizedComponents: ['*'],
+  authorizedApplications: ['*'],
   apiUser: false,
   userKey: 2251799813685250,
+  email: 'demo-with-c8links@camunda.com',
 };
 
 const currentUserWithTenants: CurrentUser = {
@@ -67,17 +69,20 @@ const currentUserWithTenants: CurrentUser = {
     {
       tenantId: 'tenantA',
       name: 'Tenant A',
+      key: 1,
     },
     {
       tenantId: 'tenantB',
       name: 'Tenant B',
+      key: 2,
     },
   ],
   groups: [],
   canLogout: true,
-  authorizedComponents: ['*'],
+  authorizedApplications: ['*'],
   apiUser: false,
   userKey: 2251799813685250,
+  email: 'demo-with-tenants@camunda.com',
 };
 
 const currentUserWithGroups: CurrentUser = {
@@ -89,9 +94,10 @@ const currentUserWithGroups: CurrentUser = {
   tenants: [],
   groups: ['admin', 'customer-support', 'guest'],
   canLogout: true,
-  authorizedComponents: ['*'],
+  authorizedApplications: ['*'],
   apiUser: false,
   userKey: 2251799813685250,
+  email: 'demo-groups@camunda.com',
 };
 
 const currentUnauthorizedUser: CurrentUser = {
@@ -103,9 +109,10 @@ const currentUnauthorizedUser: CurrentUser = {
   tenants: [],
   groups: ['admin', 'customer-support', 'guest'],
   canLogout: true,
-  authorizedComponents: ['operate'],
+  authorizedApplications: ['operate'],
   apiUser: false,
   userKey: 2251799813685250,
+  email: 'demo-unauthorized@camunda.com',
 };
 
 export {

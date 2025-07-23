@@ -10,9 +10,9 @@ import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 function isForbidden(user: CurrentUser | undefined) {
   return (
-    Array.isArray(user?.authorizedComponents) &&
-    !user.authorizedComponents.includes('tasklist') &&
-    !user.authorizedComponents.includes('*')
+    Array.isArray(user?.authorizedApplications) &&
+    !user.authorizedApplications.includes('tasklist') &&
+    !user.authorizedApplications.includes('*')
   );
 }
 
