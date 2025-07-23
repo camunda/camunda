@@ -115,7 +115,7 @@ runs:
       if: ${{ inputs.source-build == 'true' }}
       working-directory: ./tasklist/client
       shell: bash
-      run: npm
+      run: npm ci
 
     - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
       if: ${{ inputs.source-build == 'true' }}
