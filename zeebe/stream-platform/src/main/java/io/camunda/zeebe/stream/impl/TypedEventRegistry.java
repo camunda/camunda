@@ -129,6 +129,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationExecutionRecord.class);
     registry.put(ValueType.BATCH_OPERATION_CHUNK, BatchOperationChunkRecord.class);
     registry.put(ValueType.USAGE_METRIC, UsageMetricRecord.class);
+    registry.put(ValueType.USAGE_METRIC_TU, UsageMetricRecord.class);
     registry.put(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         BatchOperationLifecycleManagementRecord.class);

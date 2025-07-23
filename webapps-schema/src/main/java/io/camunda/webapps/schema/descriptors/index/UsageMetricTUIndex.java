@@ -17,7 +17,6 @@ public class UsageMetricTUIndex extends AbstractIndexDescriptor implements Prio5
   public static final String INDEX_VERSION = "8.8.0";
 
   public static final String ID = "id";
-  public static final String KEY = "key";
   public static final String TENANT_ID = IndexDescriptor.TENANT_ID;
   public static final String PARTITION_ID = "partitionId";
   public static final String EVENT_TIME = "eventTime";

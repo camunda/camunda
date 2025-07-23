@@ -5,9 +5,6 @@
       "id": {
         "type": "keyword"
       },
-      "key": {
-        "type": "long"
-      },
       "tenantId": {
         "type": "keyword"
       },
