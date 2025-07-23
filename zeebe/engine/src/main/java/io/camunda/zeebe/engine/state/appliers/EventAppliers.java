@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -114,7 +115,15 @@ public final class EventAppliers implements EventApplier {
     registerUserAppliers(state);
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
+
+    registerMultiInstanceAppliers(state);
     return this;
+  }
+
+  private void registerMultiInstanceAppliers(final MutableProcessingState state) {
+    register(
+        MultiInstanceIntent.INPUT_COLLECTION_EVALUATED,
+        new MultiInstanceInputCollectionEvaluatedApplier(state.getMultiInstanceState()));
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {
