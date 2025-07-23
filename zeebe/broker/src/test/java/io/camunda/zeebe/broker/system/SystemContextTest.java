@@ -445,4 +445,91 @@ final class SystemContextTest {
         .hasMessageContaining(
             String.format("gossipFanout must be greater than 1: configured value = %d", 1));
   }
+
+  @Test
+  void shouldNotThrowExceptionForDefaultBatchOperationConfig() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+
+    // when
+    final var systemContext = initSystemContext(brokerCfg);
+
+    // then
+    assertThat(
+            systemContext
+                .getBrokerConfiguration()
+                .getExperimental()
+                .getEngine()
+                .getBatchOperations())
+        .isNotNull();
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationSchedulerIntervalIsNegative() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg
+        .getExperimental()
+        .getEngine()
+        .getBatchOperations()
+        .setSchedulerInterval(Duration.ofSeconds(-1));
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.schedulerInterval must be positive");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationChunkSizeIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().getEngine().getBatchOperations().setChunkSize(0);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.chunkSize must be greater than 0");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationDbChunkSizeIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().getEngine().getBatchOperations().setDbChunkSize(0);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.dbChunkSize must be greater than 0");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationQueryPageSizeIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().getEngine().getBatchOperations().setQueryPageSize(0);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.queryPageSize must be greater than 0");
+  }
+
+  @Test
+  void shouldThrowExceptionIfBatchOperationQueryInClauseSizeIsInvalid() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getExperimental().getEngine().getBatchOperations().setQueryInClauseSize(0);
+
+    // when - then
+    assertThatCode(() -> initSystemContext(brokerCfg))
+        .isInstanceOf(InvalidConfigurationException.class)
+        .hasMessageContaining(
+            "experimental.engine.batchOperation.queryInClauseSize must be greater than 0");
+  }
 }
