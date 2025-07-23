@@ -59,12 +59,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
         executableAdHocSubProcess.getChildElements();
     setAdHocActivities(executableAdHocSubProcess, childElements);
     setImplementationType(executableAdHocSubProcess, element);
-
-    final var taskDefinition = element.getSingleExtensionElement(ZeebeTaskDefinition.class);
-    taskDefinitionTransformer.transform(executableAdHocSubProcess, context, taskDefinition);
-
-    final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
-    taskHeadersTransformer.transform(executableAdHocSubProcess, taskHeaders, element);
+    setJobWorkerProperties(executableAdHocSubProcess, context, element);
   }
 
   private static void setActiveElementsCollection(
@@ -97,6 +92,17 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
             .map(ZeebeAdHoc::getImplementationType)
             .orElse(ZeebeAdHocImplementationType.BPMN);
     executableAdHocSubProcess.setImplementationType(implementationType);
+  }
+
+  private void setJobWorkerProperties(
+      final ExecutableAdHocSubProcess executableAdHocSubProcess,
+      final TransformContext context,
+      final AdHocSubProcess element) {
+    final var taskDefinition = element.getSingleExtensionElement(ZeebeTaskDefinition.class);
+    taskDefinitionTransformer.transform(executableAdHocSubProcess, context, taskDefinition);
+
+    final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
+    taskHeadersTransformer.transform(executableAdHocSubProcess, taskHeaders, element);
   }
 
   /**
