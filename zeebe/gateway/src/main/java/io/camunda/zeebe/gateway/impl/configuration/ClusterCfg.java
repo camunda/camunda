@@ -14,6 +14,8 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_PORT;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SOCKET_RECEIVE_BUFFER;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SOCKET_SEND_BUFFER;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
@@ -24,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.springframework.util.unit.DataSize;
 
 public final class ClusterCfg {
 
@@ -42,6 +45,8 @@ public final class ClusterCfg {
   private MembershipCfg membership = new MembershipCfg();
   private SecurityCfg security = new SecurityCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
+  private DataSize socketSendBuffer = DEFAULT_GATEWAY_SOCKET_SEND_BUFFER;
+  private DataSize socketReceiveBuffer = DEFAULT_GATEWAY_SOCKET_RECEIVE_BUFFER;
 
   public String getMemberId() {
     return memberId;
@@ -156,6 +161,24 @@ public final class ClusterCfg {
     return this;
   }
 
+  public DataSize getSocketSendBuffer() {
+    return socketSendBuffer;
+  }
+
+  public ClusterCfg setSocketSendBuffer(final DataSize socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
+    return this;
+  }
+
+  public DataSize getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
+  }
+
+  public ClusterCfg setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -167,7 +190,9 @@ public final class ClusterCfg {
         port,
         membership,
         security,
-        messageCompression);
+        messageCompression,
+        socketSendBuffer,
+        socketReceiveBuffer);
   }
 
   @Override
@@ -187,7 +212,9 @@ public final class ClusterCfg {
         && Objects.equals(host, that.host)
         && Objects.equals(membership, that.membership)
         && Objects.equals(security, that.security)
-        && Objects.equals(messageCompression, that.messageCompression);
+        && Objects.equals(messageCompression, that.messageCompression)
+        && Objects.equals(socketSendBuffer, that.socketSendBuffer)
+        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer);
   }
 
   @Override
@@ -214,6 +241,10 @@ public final class ClusterCfg {
         + security
         + ", messageCompression="
         + messageCompression
+        + ", socketSendBuffer="
+        + socketSendBuffer
+        + ", socketReceiveBuffer="
+        + socketReceiveBuffer
         + '}';
   }
 }
