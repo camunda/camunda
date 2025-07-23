@@ -229,7 +229,7 @@ class DecisionInstanceSearchTest {
     // then
     assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items())
-        .extracting("flowNodeInstanceKey", "decisionDefinitionId")
+        .extracting("elementInstanceKey", "decisionDefinitionId")
         .containsExactlyInAnyOrder(
             tuple(elementInstanceKey, DECISION_DEFINITION_ID_2),
             tuple(elementInstanceKey, DECISION_DEFINITION_ID_3));
