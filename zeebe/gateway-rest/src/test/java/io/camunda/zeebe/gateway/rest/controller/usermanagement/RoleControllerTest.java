@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(RoleController.class)
 public class RoleControllerTest extends RestControllerTest {
@@ -120,7 +121,8 @@ public class RoleControllerTest extends RestControllerTest {
               "detail": "No roleId provided.",
               "instance": "%s"
             }"""
-                .formatted(ROLE_BASE_URL));
+                .formatted(ROLE_BASE_URL),
+            JsonCompareMode.STRICT);
 
     // then
     verifyNoInteractions(roleServices);
@@ -152,7 +154,8 @@ public class RoleControllerTest extends RestControllerTest {
               "detail": "No roleId provided.",
               "instance": "%s"
             }"""
-                .formatted(ROLE_BASE_URL));
+                .formatted(ROLE_BASE_URL),
+            JsonCompareMode.STRICT);
 
     // then
     verifyNoInteractions(roleServices);
@@ -184,7 +187,8 @@ public class RoleControllerTest extends RestControllerTest {
               "detail": "No name provided.",
               "instance": "%s"
             }"""
-                .formatted(ROLE_BASE_URL));
+                .formatted(ROLE_BASE_URL),
+            JsonCompareMode.STRICT);
 
     // then
     verifyNoInteractions(roleServices);
@@ -215,7 +219,8 @@ public class RoleControllerTest extends RestControllerTest {
               "detail": "The provided roleId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
-                .formatted(ROLE_BASE_URL));
+                .formatted(ROLE_BASE_URL),
+            JsonCompareMode.STRICT);
 
     // then
     verifyNoInteractions(roleServices);
@@ -249,7 +254,8 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, ROLE_BASE_URL));
+                .formatted(IdentifierPatterns.ID_PATTERN, ROLE_BASE_URL),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -289,7 +295,8 @@ public class RoleControllerTest extends RestControllerTest {
               "description": "%s"
             }
             """
-                .formatted(roleId, roleName, description));
+                .formatted(roleId, roleName, description),
+            JsonCompareMode.STRICT);
 
     // then
     verify(roleServices, times(1)).updateRole(request);
@@ -323,7 +330,8 @@ public class RoleControllerTest extends RestControllerTest {
               "detail": "No name provided.",
               "instance": "%s"
             }"""
-                .formatted(uri));
+                .formatted(uri),
+            JsonCompareMode.STRICT);
 
     verifyNoInteractions(roleServices);
   }
@@ -385,7 +393,8 @@ public class RoleControllerTest extends RestControllerTest {
               "detail": "No description provided.",
               "instance": "%s"
             }"""
-                .formatted(uri));
+                .formatted(uri),
+            JsonCompareMode.STRICT);
 
     verifyNoInteractions(roleServices);
   }
@@ -538,7 +547,8 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -568,7 +578,8 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -731,7 +742,8 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -761,7 +773,8 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -866,7 +879,8 @@ public class RoleControllerTest extends RestControllerTest {
                   "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -895,7 +909,8 @@ public class RoleControllerTest extends RestControllerTest {
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -1001,7 +1016,8 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -1031,7 +1047,8 @@ public class RoleControllerTest extends RestControllerTest {
                 "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                 "instance": "%s"
               }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -1139,7 +1156,8 @@ public class RoleControllerTest extends RestControllerTest {
                   "detail": "The provided groupId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 
@@ -1168,7 +1186,8 @@ public class RoleControllerTest extends RestControllerTest {
                   "detail": "The provided roleId contains illegal characters. It must match the pattern '%s'.",
                   "instance": "%s"
                 }"""
-                .formatted(IdentifierPatterns.ID_PATTERN, path));
+                .formatted(IdentifierPatterns.ID_PATTERN, path),
+            JsonCompareMode.STRICT);
     verifyNoInteractions(roleServices);
   }
 }

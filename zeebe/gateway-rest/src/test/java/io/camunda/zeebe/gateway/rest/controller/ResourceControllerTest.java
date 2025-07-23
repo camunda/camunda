@@ -125,7 +125,8 @@ public class ResourceControllerTest extends RestControllerTest {
                     ],
                     "tenantId":"<default>"
                  }
-                """);
+                """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -188,7 +189,8 @@ public class ResourceControllerTest extends RestControllerTest {
                     ],
                     "tenantId":"<default>"
                  }
-                """);
+                """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -255,7 +257,8 @@ public class ResourceControllerTest extends RestControllerTest {
                     ],
                     "tenantId":"<default>"
                  }
-                """);
+                """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -365,7 +368,8 @@ public class ResourceControllerTest extends RestControllerTest {
                     ],
                     "tenantId":"<default>"
                  }
-                """);
+                """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -530,7 +534,8 @@ public class ResourceControllerTest extends RestControllerTest {
             "tenantId": "tenant-1",
             "resourceKey": "1"
           }
-          """);
+          """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -564,7 +569,8 @@ public class ResourceControllerTest extends RestControllerTest {
               "instance": "%s"
             }
             """
-                .formatted(url));
+                .formatted(url),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -601,7 +607,8 @@ public class ResourceControllerTest extends RestControllerTest {
               "instance": "%s"
             }
             """
-                .formatted(url));
+                .formatted(url),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -634,7 +641,8 @@ public class ResourceControllerTest extends RestControllerTest {
               "instance": "%s"
             }
             """
-                .formatted(url));
+                .formatted(url),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -695,7 +703,8 @@ public class ResourceControllerTest extends RestControllerTest {
               "instance": "%s"
             }
             """
-                .formatted(url));
+                .formatted(url),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -732,7 +741,8 @@ public class ResourceControllerTest extends RestControllerTest {
               "instance": "%s"
             }
             """
-                .formatted(url));
+                .formatted(url),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -765,6 +775,7 @@ public class ResourceControllerTest extends RestControllerTest {
               "instance": "%s"
             }
             """
-                .formatted(url));
+                .formatted(url),
+            JsonCompareMode.STRICT);
   }
 }

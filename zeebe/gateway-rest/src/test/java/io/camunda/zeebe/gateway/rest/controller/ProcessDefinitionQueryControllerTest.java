@@ -179,9 +179,11 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "status": 404,
                       "title": "NOT_FOUND",
-                      "detail": "Process definition with key 17 not found"
+                      "detail": "Process definition with key 17 not found",
+                      "instance": "/v2/process-definitions/17"
                     }
-                """);
+                """,
+            JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid key
     verify(processDefinitionServices).getByKey(17L);
@@ -220,9 +222,10 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             ErrorMapper.createForbiddenException(
                 Authorization.of(a -> a.processDefinition().read())));
     // when / then
+    final String formattedUrl = url.formatted(processDefinitionKey);
     webClient
         .get()
-        .uri(url.formatted(processDefinitionKey))
+        .uri(formattedUrl)
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -233,9 +236,12 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "status": 403,
                       "title": "FORBIDDEN",
-                      "detail": "Unauthorized to perform operation 'READ' on resource 'PROCESS_DEFINITION'"
+                      "detail": "Unauthorized to perform operation 'READ' on resource 'PROCESS_DEFINITION'",
+                      "instance": "%s"
                     }
-                """);
+                """
+                .formatted(formattedUrl),
+            JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid key
     service.apply(verify(processDefinitionServices), processDefinitionKey);
@@ -433,9 +439,11 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
               "type": "about:blank",
               "title": "NOT_FOUND",
               "status": 404,
-              "detail": "Process definition with key 999 not found"
+              "detail": "Process definition with key 999 not found",
+              "instance": "/v2/process-definitions/999/form"
             }
-            """);
+            """,
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -460,6 +468,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
               "detail": "Unexpected error occurred during the request processing: Unexpected error",
               "instance": "/v2/process-definitions/1/form"
             }
-            """);
+            """,
+            JsonCompareMode.STRICT);
   }
 }

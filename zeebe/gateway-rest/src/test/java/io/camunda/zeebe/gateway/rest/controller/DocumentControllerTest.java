@@ -39,6 +39,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(DocumentController.class)
 public class DocumentControllerTest extends RestControllerTest {
@@ -97,14 +98,19 @@ public class DocumentControllerTest extends RestControllerTest {
                     {
                       "documentId": "documentId",
                       "storeId": "default",
+                      "camunda.document.type": "camunda",
+                      "contentHash": "dummy_hash",
                       "metadata": {
                         "contentType": "application/octet-stream",
                         "fileName": "file.txt",
-                        "expiresAt": "%s"
+                        "expiresAt": "%s",
+                        "size": 0,
+                        "customProperties": {}
                       }
                     }
                     """,
-                timestamp));
+                timestamp),
+            JsonCompareMode.STRICT);
 
     verify(documentServices).createDocument(requestCaptor.capture());
 
@@ -172,14 +178,19 @@ public class DocumentControllerTest extends RestControllerTest {
                     {
                       "documentId": "documentId",
                       "storeId": "default",
+                      "camunda.document.type": "camunda",
+                      "contentHash": "dummy_hash",
                       "metadata": {
                         "contentType": "application/octet-stream",
                         "fileName": "file.txt",
-                        "expiresAt": "%s"
+                        "expiresAt": "%s",
+                        "size": 0,
+                        "customProperties": {}
                       }
                     }
                     """,
-                timestamp));
+                timestamp),
+            JsonCompareMode.STRICT);
 
     verify(documentServices).createDocument(requestCaptor.capture());
 
@@ -294,7 +305,8 @@ public class DocumentControllerTest extends RestControllerTest {
                       "failedDocuments": []
                     }
                     """
-                .formatted(timestamp, timestamp));
+                .formatted(timestamp, timestamp),
+            JsonCompareMode.STRICT);
 
     verify(documentServices).createDocumentBatch(requestCaptor.capture());
 
@@ -403,9 +415,12 @@ public class DocumentControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "No document hash provided for document foo"
+                  "detail": "No document hash provided for document foo",
+                  "instance": "%s"
                 }
-                """);
+                """
+                .formatted(DOCUMENTS_BASE_URL + "/foo"),
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -431,9 +446,12 @@ public class DocumentControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "Document hash for document foo doesn't match the provided hash barbaz"
+                  "detail": "Document hash for document foo doesn't match the provided hash barbaz",
+                  "instance": "%s"
                 }
-                """);
+                """
+                .formatted(DOCUMENTS_BASE_URL + "/foo"),
+            JsonCompareMode.STRICT);
   }
 
   // TODO: test error cases

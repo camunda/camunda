@@ -93,10 +93,12 @@ class SetupControllerTest extends RestControllerTest {
           {
             "username": "%s",
             "name": "%s",
-            "email": "%s"
+            "email": "%s",
+            "userKey": "-1"
           }
         """
-                .formatted(dto.username(), dto.name(), dto.email()));
+                .formatted(dto.username(), dto.name(), dto.email()),
+            JsonCompareMode.STRICT);
 
     // then
     verify(userServices, times(1)).createInitialAdminUser(dto);
@@ -258,10 +260,12 @@ class SetupControllerTest extends RestControllerTest {
           {
             "username": "%s",
             "name": "",
-            "email": ""
+            "email": "",
+            "userKey": "-1"
           }
         """
-                .formatted(dto.username()));
+                .formatted(dto.username()),
+            JsonCompareMode.STRICT);
 
     // then
     verify(userServices, times(1)).createInitialAdminUser(dto);

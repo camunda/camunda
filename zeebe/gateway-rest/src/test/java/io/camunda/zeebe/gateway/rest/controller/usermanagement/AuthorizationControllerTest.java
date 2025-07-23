@@ -44,6 +44,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(AuthorizationController.class)
 public class AuthorizationControllerTest extends RestControllerTest {
@@ -100,7 +101,8 @@ public class AuthorizationControllerTest extends RestControllerTest {
             {
               "authorizationKey": "%s"
             }"""
-                .formatted(authorizationKey));
+                .formatted(authorizationKey),
+            JsonCompareMode.STRICT);
 
     final var captor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
     verify(authorizationServices, times(1)).createAuthorization(captor.capture());

@@ -692,9 +692,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldReturn404ForInvalidUserTaskKey() {
     // when and then
+    final String uri = "/v2/user-tasks/" + INVALID_USER_TASK_KEY;
     webClient
         .get()
-        .uri("/v2/user-tasks/{userTaskKey}", INVALID_USER_TASK_KEY)
+        .uri(uri)
         .accept(APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -706,9 +707,12 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "status": 404,
                       "title": "NOT_FOUND",
-                      "detail": "User Task with key 999 not found"
+                      "detail": "User Task with key 999 not found",
+                      "instance": "%s"
                     }
-                """);
+                """
+                .formatted(uri),
+            JsonCompareMode.STRICT);
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(INVALID_USER_TASK_KEY);
@@ -734,28 +738,34 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @Test
   public void shouldReturn404ForFormInvalidUserTaskKey() {
+    // given
     when(userTaskServices.getUserTaskForm(INVALID_USER_TASK_KEY))
         .thenThrow(
             ErrorMapper.mapSearchError(
                 new CamundaSearchException(
                     "User Task with key 999 not found", CamundaSearchException.Reason.NOT_FOUND)));
+    final String formattedUri = "/v2/user-tasks/%s/form".formatted(INVALID_USER_TASK_KEY);
+    final String expectedResponse =
+        """
+        {
+          "type": "about:blank",
+          "title": "NOT_FOUND",
+          "status": 404,
+          "detail": "User Task with key 999 not found",
+          "instance": "%s"
+        }
+        """
+            .formatted(formattedUri);
+    // when/then
     webClient
         .get()
-        .uri("/v2/user-tasks/{userTaskKey}/form", INVALID_USER_TASK_KEY)
+        .uri(formattedUri)
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNotFound()
         .expectBody()
-        .json(
-            """
-            {
-              "type": "about:blank",
-              "title": "NOT_FOUND",
-              "status": 404,
-              "detail": "User Task with key 999 not found"
-            }
-            """);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -780,7 +790,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "detail": "Unexpected error occurred during the request processing: Unexpected error",
               "instance": "/v2/user-tasks/0/form"
             }
-            """);
+            """,
+            JsonCompareMode.STRICT);
   }
 
   @Test

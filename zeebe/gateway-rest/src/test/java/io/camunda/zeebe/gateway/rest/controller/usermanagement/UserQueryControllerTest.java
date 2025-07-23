@@ -102,8 +102,10 @@ public class UserQueryControllerTest extends RestControllerTest {
             {
               "username": "username",
               "name": "User Name",
-              "email": "email@email.com"
-            }""");
+              "email": "email@email.com",
+              "userKey": "100"
+            }""",
+            JsonCompareMode.STRICT);
 
     // then
     verify(userServices, times(1)).getUser(user.username());
@@ -138,7 +140,8 @@ public class UserQueryControllerTest extends RestControllerTest {
               "detail": "user not found",
               "instance": "%s"
             }"""
-                .formatted(path));
+                .formatted(path),
+            JsonCompareMode.STRICT);
 
     // then
     verify(userServices, times(1)).getUser(username);

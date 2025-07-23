@@ -32,6 +32,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.json.JsonCompareMode;
 
 @WebMvcTest(value = BatchOperationItemsController.class)
 class BatchOperationItemControllerTest extends RestControllerTest {
@@ -131,8 +132,12 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                             "errorMessage": "error"
                         }
                     ],
-                    "page":{"totalItems":1}
-                }""");
+                    "page":{
+                      "totalItems":1,
+                      "hasMoreTotalItems": false
+                    }
+                }""",
+            JsonCompareMode.STRICT);
 
     verify(batchOperationServices)
         .searchItems(new BatchOperationItemQuery.Builder().filter(filter).build());
