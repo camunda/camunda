@@ -73,6 +73,7 @@ final class TestSupport {
           config.adHocSubProcessActivityActivation = value;
       case ASYNC_REQUEST -> config.asyncRequest = value;
       case USAGE_METRIC -> config.usageMetrics = value;
+      case USAGE_METRIC_TU -> config.usageMetrics = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -125,7 +126,8 @@ final class TestSupport {
             ValueType.BATCH_OPERATION_EXECUTION,
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
-            ValueType.USAGE_METRIC);
+            ValueType.USAGE_METRIC,
+            ValueType.USAGE_METRIC_TU);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }
