@@ -521,12 +521,6 @@ public class RequestMapper {
         method, ignored -> ResponseEntity.noContent().build());
   }
 
-  public static <BrokerResponseT>
-      CompletableFuture<ResponseEntity<Object>> executeServiceMethodWithAcceptedResult(
-          final Supplier<CompletableFuture<BrokerResponseT>> method) {
-    return RequestMapper.executeServiceMethod(method, ignored -> ResponseEntity.accepted().build());
-  }
-
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
       final List<MultipartFile> resources,
       final String tenantId,
