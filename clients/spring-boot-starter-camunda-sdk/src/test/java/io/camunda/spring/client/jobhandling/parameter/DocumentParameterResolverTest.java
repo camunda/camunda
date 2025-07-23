@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.worker.JobClient;
@@ -51,7 +52,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", optional, ParameterType.CONTEXT);
+          new DocumentParameterResolver(
+              "foo", optional, ParameterType.CONTEXT, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(DocumentContext.class);
       final DocumentContext documentContext = (DocumentContext) resolved;
@@ -66,7 +68,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", optional, ParameterType.LIST);
+          new DocumentParameterResolver(
+              "foo", optional, ParameterType.LIST, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(List.class);
       final List<DocumentReferenceResponse> documentReferences =
@@ -82,7 +85,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", optional, ParameterType.SINGLE);
+          new DocumentParameterResolver(
+              "foo", optional, ParameterType.SINGLE, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(DocumentReferenceResponse.class);
       final DocumentReferenceResponse documentReference = (DocumentReferenceResponse) resolved;
@@ -106,7 +110,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", optional, ParameterType.CONTEXT);
+          new DocumentParameterResolver(
+              "foo", optional, ParameterType.CONTEXT, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(DocumentContext.class);
       final DocumentContext documentContext = (DocumentContext) resolved;
@@ -124,7 +129,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", optional, ParameterType.LIST);
+          new DocumentParameterResolver(
+              "foo", optional, ParameterType.LIST, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(List.class);
       final List<DocumentReferenceResponse> documentReferences =
@@ -140,7 +146,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", optional, ParameterType.SINGLE);
+          new DocumentParameterResolver(
+              "foo", optional, ParameterType.SINGLE, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(DocumentReferenceResponse.class);
       final DocumentReferenceResponse documentReference = (DocumentReferenceResponse) resolved;
@@ -163,7 +170,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", optional, ParameterType.CONTEXT);
+          new DocumentParameterResolver(
+              "foo", optional, ParameterType.CONTEXT, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(DocumentContext.class);
       final DocumentContext documentContext = (DocumentContext) resolved;
@@ -176,7 +184,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", optional, ParameterType.LIST);
+          new DocumentParameterResolver(
+              "foo", optional, ParameterType.LIST, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(List.class);
       final List<DocumentReferenceResponse> documentReferences =
@@ -189,7 +198,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", true, ParameterType.SINGLE);
+          new DocumentParameterResolver(
+              "foo", true, ParameterType.SINGLE, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isNull();
     }
@@ -199,7 +209,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(mockDocumentReferences);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", false, ParameterType.SINGLE);
+          new DocumentParameterResolver(
+              "foo", false, ParameterType.SINGLE, mock(CamundaClient.class));
       assertThatThrownBy(() -> documentParameterResolver.resolve(mock(JobClient.class), job))
           .isInstanceOf(IllegalStateException.class)
           .hasMessage(
@@ -215,7 +226,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(null);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", true, ParameterType.CONTEXT);
+          new DocumentParameterResolver(
+              "foo", true, ParameterType.CONTEXT, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(DocumentContext.class);
       final DocumentContext documentContext = (DocumentContext) resolved;
@@ -227,7 +239,7 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(null);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", true, ParameterType.LIST);
+          new DocumentParameterResolver("foo", true, ParameterType.LIST, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isInstanceOf(List.class);
       final List<DocumentReferenceResponse> documentReferences =
@@ -240,7 +252,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(null);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", true, ParameterType.SINGLE);
+          new DocumentParameterResolver(
+              "foo", true, ParameterType.SINGLE, mock(CamundaClient.class));
       final Object resolved = documentParameterResolver.resolve(mock(JobClient.class), job);
       assertThat(resolved).isNull();
     }
@@ -250,7 +263,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(null);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", false, ParameterType.SINGLE);
+          new DocumentParameterResolver(
+              "foo", false, ParameterType.SINGLE, mock(CamundaClient.class));
       assertThatThrownBy(() -> documentParameterResolver.resolve(mock(JobClient.class), job))
           .isInstanceOf(IllegalStateException.class)
           .hasMessage("Could not get document references for variable foo");
@@ -261,7 +275,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(null);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", false, ParameterType.CONTEXT);
+          new DocumentParameterResolver(
+              "foo", false, ParameterType.CONTEXT, mock(CamundaClient.class));
       assertThatThrownBy(() -> documentParameterResolver.resolve(mock(JobClient.class), job))
           .isInstanceOf(IllegalStateException.class)
           .hasMessage("Could not get document references for variable foo");
@@ -272,7 +287,8 @@ public class DocumentParameterResolverTest {
       final ActivatedJob job = mock(ActivatedJob.class);
       when(job.getDocumentReferences(anyString())).thenReturn(null);
       final DocumentParameterResolver documentParameterResolver =
-          new DocumentParameterResolver("foo", false, ParameterType.LIST);
+          new DocumentParameterResolver(
+              "foo", false, ParameterType.LIST, mock(CamundaClient.class));
       assertThatThrownBy(() -> documentParameterResolver.resolve(mock(JobClient.class), job))
           .isInstanceOf(IllegalStateException.class)
           .hasMessage("Could not get document references for variable foo");

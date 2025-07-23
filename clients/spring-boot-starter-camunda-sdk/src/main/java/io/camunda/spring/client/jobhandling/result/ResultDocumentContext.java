@@ -15,11 +15,12 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1.CreateDocumentBatchCommandStep2;
 import io.camunda.client.api.response.DocumentReferenceBatchResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.jobhandling.DocumentContext;
 import io.camunda.spring.client.jobhandling.DocumentContext.DocumentEntry.AbstractDocumentEntry;
 import java.util.HashMap;
@@ -37,25 +38,10 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
       documentBuilders = new HashMap<>();
   private String storeId;
   private DocumentReferenceBatchResponse response;
-  private JobClient jobClient;
 
   @Override
   public List<DocumentEntry> getDocuments() {
-    if (response == null) {
-      LOG.warn("Result document context has not been processed yet, returning empty list");
-      return List.of();
-    }
-    if (!response.isSuccessful()) {
-      LOG.warn(
-          "Result document context has been processed with failures, returning only successful documents {}",
-          response.getFailedDocuments());
-    }
-    return response.getCreatedDocuments().stream()
-        .map(
-            documentReferenceResponse ->
-                new ResultDocumentEntry(documentReferenceResponse, jobClient))
-        .map(DocumentEntry.class::cast)
-        .toList();
+    throw new ClientException("ResultDocumentContext.getDocuments() is not implemented");
   }
 
   public Map<String, Function<CreateDocumentBatchCommandStep2, CreateDocumentBatchCommandStep2>>
@@ -90,13 +76,12 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
     return this;
   }
 
-  public DocumentReferenceBatchResponse processDocumentBuilders(final JobClient jobClient) {
+  public DocumentReferenceBatchResponse processDocumentBuilders(final CamundaClient camundaClient) {
     if (response != null) {
       LOG.debug("Result document context has already been processed, returning previous response");
     } else {
-      this.jobClient = jobClient;
       final CreateDocumentBatchCommandStep1 documentBatchCommand =
-          jobClient.newCreateDocumentBatchCommand();
+          camundaClient.newCreateDocumentBatchCommand();
       if (storeId != null) {
         documentBatchCommand.storeId(storeId);
       }
@@ -116,8 +101,8 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
   public static class ResultDocumentEntry extends AbstractDocumentEntry {
 
     public ResultDocumentEntry(
-        final DocumentReferenceResponse documentReference, final JobClient jobClient) {
-      super(documentReference, jobClient);
+        final DocumentReferenceResponse documentReference, final CamundaClient camundaClient) {
+      super(documentReference, camundaClient);
     }
   }
 }

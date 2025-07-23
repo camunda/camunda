@@ -15,8 +15,8 @@
  */
 package io.camunda.spring.client.jobhandling.parameter;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.jobhandling.DocumentContext;
 import io.camunda.spring.client.jobhandling.DocumentContext.DocumentEntry.AbstractDocumentEntry;
 import java.io.InputStream;
@@ -25,22 +25,22 @@ import java.util.Objects;
 
 public class ParameterDocumentContext implements DocumentContext {
   private final List<DocumentReferenceResponse> documentReferences;
-  private final JobClient jobClient;
+  private final CamundaClient camundaClient;
   private final boolean optional;
 
   public ParameterDocumentContext(
       final List<DocumentReferenceResponse> documentReferences,
-      final JobClient jobClient,
+      final CamundaClient camundaClient,
       final boolean optional) {
     this.documentReferences = documentReferences;
-    this.jobClient = jobClient;
+    this.camundaClient = camundaClient;
     this.optional = optional;
   }
 
   @Override
   public List<DocumentEntry> getDocuments() {
     return documentReferences.stream()
-        .map(r -> new ParameterDocumentEntry(r, jobClient, optional))
+        .map(r -> new ParameterDocumentEntry(r, camundaClient, optional))
         .map(DocumentEntry.class::cast)
         .toList();
   }
@@ -50,9 +50,9 @@ public class ParameterDocumentContext implements DocumentContext {
 
     public ParameterDocumentEntry(
         final DocumentReferenceResponse documentReference,
-        final JobClient jobClient,
+        final CamundaClient camundaClient,
         final boolean optional) {
-      super(documentReference, jobClient);
+      super(documentReference, camundaClient);
       this.optional = optional;
     }
 
