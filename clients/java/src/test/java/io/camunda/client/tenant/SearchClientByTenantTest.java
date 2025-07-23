@@ -19,6 +19,7 @@ import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -36,18 +37,25 @@ public class SearchClientByTenantTest extends ClientRestTest {
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath).isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/clients/search");
+    assertThat(RestGatewayService.getLastRequest().getMethod()).isEqualTo(RequestMethod.POST);
   }
 
   @Test
-  void shouldIncludeSortInSearchRequestBody() {
+  void shouldIncludeSortAndPaginationInSearchRequestBody() {
     // when
-    client.newClientsByTenantSearchRequest(TENANT_ID).sort(s -> s.clientId().desc()).send().join();
+    client
+        .newClientsByTenantSearchRequest(TENANT_ID)
+        .sort(s -> s.clientId().desc())
+        .page(p -> p.limit(2))
+        .send()
+        .join();
 
     // then
     final LoggedRequest lastRequest = RestGatewayService.getLastRequest();
     final String requestBody = lastRequest.getBodyAsString();
 
     assertThat(requestBody).contains("\"sort\":[{\"field\":\"clientId\",\"order\":\"DESC\"}]");
+    assertThat(requestBody).contains("\"page\":{\"limit\":2}");
   }
 
   @Test
