@@ -110,7 +110,7 @@ class TenantAuthorizationIT {
             () -> {
               final var tenantsSearchResponse = adminClient.newTenantsSearchRequest().send().join();
               Assertions.assertThat(
-                      tenantsSearchResponse.items().stream().map(Tenant::getTenantId).toList())
+                      tenantsSearchResponse.items().stream().map(Tenant::getTenantId))
                   .containsAll(Arrays.asList(TENANT_ID_1, TENANT_ID_2));
             });
   }
@@ -196,7 +196,7 @@ class TenantAuthorizationIT {
             () -> {
               final SearchResponse<TenantUser> response =
                   adminClient.newUsersByTenantSearchRequest(TENANT_ID_1).send().join();
-              Assertions.assertThat(response.items().stream().map(TenantUser::getUsername).toList())
+              Assertions.assertThat(response.items().stream().map(TenantUser::getUsername))
                   .contains(userName);
             });
   }
@@ -216,7 +216,7 @@ class TenantAuthorizationIT {
             () -> {
               final SearchResponse<TenantGroup> response =
                   adminClient.newGroupsByTenantSearchRequest("tenant1").send().join();
-              Assertions.assertThat(response.items().stream().map(TenantGroup::getGroupId).toList())
+              Assertions.assertThat(response.items().stream().map(TenantGroup::getGroupId))
                   .contains(groupId);
             });
   }
