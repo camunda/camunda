@@ -47,7 +47,7 @@ public final class CancelBatchOperationCommandImpl implements CancelBatchOperati
   @Override
   public CamundaFuture<Void> send() {
     final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    httpClient.post(
         "/batch-operations/" + batchOperationKey + "/cancellation",
         null,
         httpRequestConfig.build(),
