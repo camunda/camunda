@@ -24,9 +24,7 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1.CreateDocumentBatchCommandStep2;
 import io.camunda.client.api.response.DocumentReferenceBatchResponse;
-import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.jobhandling.DocumentContext;
-import io.camunda.spring.client.jobhandling.DocumentContext.DocumentEntry.AbstractDocumentEntry;
 import io.camunda.spring.client.jobhandling.result.ResultDocumentContext.ResultDocumentContextSerializer;
 import java.io.IOException;
 import java.util.HashMap;
@@ -107,14 +105,6 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
       response = documentBatchCommand.execute();
     }
     return response;
-  }
-
-  public static class ResultDocumentEntry extends AbstractDocumentEntry {
-
-    public ResultDocumentEntry(
-        final DocumentReferenceResponse documentReference, final CamundaClient camundaClient) {
-      super(documentReference, camundaClient);
-    }
   }
 
   public static class ResultDocumentContextSerializer extends StdSerializer<ResultDocumentContext> {

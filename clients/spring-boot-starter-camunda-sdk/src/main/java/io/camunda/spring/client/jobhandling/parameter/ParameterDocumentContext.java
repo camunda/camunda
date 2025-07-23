@@ -16,12 +16,12 @@
 package io.camunda.spring.client.jobhandling.parameter;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.DocumentLinkResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.jobhandling.DocumentContext;
-import io.camunda.spring.client.jobhandling.DocumentContext.DocumentEntry.AbstractDocumentEntry;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Objects;
 
 public class ParameterDocumentContext implements DocumentContext {
   private final List<DocumentReferenceResponse> documentReferences;
@@ -45,25 +45,48 @@ public class ParameterDocumentContext implements DocumentContext {
         .toList();
   }
 
-  public static class ParameterDocumentEntry extends AbstractDocumentEntry {
+  public static class ParameterDocumentEntry implements DocumentEntry {
     private final boolean optional;
+    private final DocumentReferenceResponse documentReference;
+    private final CamundaClient camundaClient;
 
     public ParameterDocumentEntry(
         final DocumentReferenceResponse documentReference,
         final CamundaClient camundaClient,
         final boolean optional) {
-      super(documentReference, camundaClient);
       this.optional = optional;
+      this.documentReference = documentReference;
+      this.camundaClient = camundaClient;
+    }
+
+    @Override
+    public DocumentReferenceResponse getDocumentReference() {
+      return documentReference;
     }
 
     @Override
     public InputStream getDocumentInputStream() {
-      final InputStream in = super.getDocumentInputStream();
-      if (!optional) {
-        return Objects.requireNonNull(in, "Document content is null");
+      InputStream in = null;
+      try {
+        in = camundaClient.newDocumentContentGetRequest(documentReference).execute();
+      } catch (final Exception e) {
+        if (!optional) {
+          throw new ClientException(
+              "Could not get document with id " + documentReference.getDocumentId(), e);
+        }
+      }
+      if (!optional && in == null) {
+        throw new ClientException(
+            "Document input stream is null for document with id "
+                + documentReference.getDocumentId());
       } else {
         return in;
       }
+    }
+
+    @Override
+    public DocumentLinkResponse getDocumentLink() {
+      return camundaClient.newCreateDocumentLinkCommand(documentReference).execute();
     }
   }
 }
