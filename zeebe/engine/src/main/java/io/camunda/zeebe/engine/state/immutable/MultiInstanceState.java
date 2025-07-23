@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import java.util.List;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 public interface MultiInstanceState {
@@ -15,8 +16,12 @@ public interface MultiInstanceState {
   /**
    * Retrieves the evaluated input collection for a multi-instance body.
    *
+   * <p>Storing the input collection was introduced in later versions. It could be that existing
+   * multi-instance bodies do not have an input collection stored in the state. Because of this the
+   * method returns an optional.
+   *
    * @param multiInstanceKey The key of the multi-instance element instance.
-   * @return A list of buffers representing the input collection.
+   * @return A optional list of buffers representing the input collection.
    */
-  List<DirectBuffer> getInputCollection(long multiInstanceKey);
+  Optional<List<DirectBuffer>> getInputCollection(long multiInstanceKey);
 }
