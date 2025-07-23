@@ -207,6 +207,19 @@ public final class SearchResponseMapper {
     return new ClientImpl(response.getClientId());
   }
 
+  public static SearchResponse<Client> toTenantClientsResponse(
+      final TenantClientSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Client> instances =
+        toSearchResponseInstances(
+            response.getItems(), SearchResponseMapper::toTenantClientResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static Client toTenantClientResponse(final TenantClientResult response) {
+    return new ClientImpl(response.getClientId());
+  }
+
   public static Role toRoleResponse(final RoleResult response) {
     return new RoleImpl(response.getRoleId(), response.getName(), response.getDescription());
   }
