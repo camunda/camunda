@@ -154,7 +154,8 @@ public final class MultiInstanceBodyProcessor
     final int loopCounter =
         stateBehavior.getElementInstance(childContext).getMultiInstanceLoopCounter();
 
-    return readInputCollectionVariable(multiInstanceBody, childContext)
+    return multiInstanceInputCollectionBehavior
+        .getInputCollection(multiInstanceBody, childContext)
         .flatMap(
             collection -> {
               // the loop counter starts at 1
@@ -197,8 +198,12 @@ public final class MultiInstanceBodyProcessor
       return satisfiesCompletionConditionOrFailure;
     }
 
-    // test that input collection variable can be evaluated correctly
-    return readInputCollectionVariable(element, flowScopeContext)
+    // Test that input collection variable can be evaluated correctly.
+    // This should not be necessary now that we fetch the input collection from the state. However,
+    // to remain backwards compatible we need to keep this check, as there could be existing multi
+    // instance bodies that do not have an input collection stored in the state.
+    return multiInstanceInputCollectionBehavior
+        .getInputCollection(element, flowScopeContext)
         .map(ok -> satisfiesCompletionConditionOrFailure.get());
   }
 
@@ -224,7 +229,8 @@ public final class MultiInstanceBodyProcessor
       }
       return;
     }
-    final var inputCollectionOrFailure = readInputCollectionVariable(element, flowScopeContext);
+    final var inputCollectionOrFailure =
+        multiInstanceInputCollectionBehavior.getInputCollection(element, flowScopeContext);
     if (inputCollectionOrFailure.isLeft()) {
       // this incident is un-resolvable
       incidentBehavior.createIncident(inputCollectionOrFailure.getLeft(), childContext);
@@ -377,13 +383,6 @@ public final class MultiInstanceBodyProcessor
         childContext,
         LOOP_COUNTER_VARIABLE,
         wrapVariable(loopCounterVariableBuffer, loopCounterVariableView, loopCounter));
-  }
-
-  private Either<Failure, List<DirectBuffer>> readInputCollectionVariable(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
-    final Expression inputCollection = element.getLoopCharacteristics().getInputCollection();
-    return expressionBehavior.evaluateArrayExpression(
-        inputCollection, context.getElementInstanceKey());
   }
 
   private void createInnerInstance(
