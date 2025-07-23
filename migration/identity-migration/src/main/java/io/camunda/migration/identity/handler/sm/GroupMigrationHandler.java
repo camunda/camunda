@@ -73,7 +73,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
               "Migrating Group: {} to a Group with the identifier: {}.", group, normalizedGroupId);
           try {
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
-            groupServices.createGroup(groupDTO).join();
+//            groupServices.createGroup(groupDTO).join();
             createdGroupCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -81,7 +81,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             }
             logger.debug("Group with ID '{}' already exists, skipping creation.", group.id());
           }
-          assignUsersToGroup(group.id(), normalizedGroupId);
+//          assignUsersToGroup(group.id(), normalizedGroupId);
           assignRolesToGroup(group.id(), normalizedGroupId);
           createAuthorizationsForGroup(group.id(), normalizedGroupId);
         });

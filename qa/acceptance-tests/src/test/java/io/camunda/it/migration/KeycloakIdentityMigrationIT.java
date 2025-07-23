@@ -32,6 +32,8 @@ import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
+import io.camunda.security.configuration.ConfiguredMapping;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneIdentityMigration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -46,7 +48,9 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AutoClose;
@@ -63,22 +67,15 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(parallel = true)
 public class KeycloakIdentityMigrationIT {
 
-  @TestZeebe(autoStart = false)
-  static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker()
-          .withAdditionalProfile("identity")
-          .withBasicAuth()
-          .withAuthorizationsEnabled();
-
-  @Container
-  private static final ElasticsearchContainer ELASTIC = IdentityMigrationTestUtil.getElastic();
+  private static final String DEFAULT_USER_ID = UUID.randomUUID().toString();
+  private static final String USER_ID_CLAIM_NAME = "sub";
 
   @Container
   private static final KeycloakContainer KEYCLOAK = IdentityMigrationTestUtil.getKeycloak();
-
+  @Container
+  private static final ElasticsearchContainer ELASTIC = IdentityMigrationTestUtil.getElastic();
   @Container
   private static final GenericContainer<?> POSTGRES = IdentityMigrationTestUtil.getPostgres();
-
   private static final GenericContainer<?> IDENTITY =
       IdentityMigrationTestUtil.getManagementIdentitySMKeycloak(KEYCLOAK, POSTGRES)
           // this triggers the setup of the default roles for operate, tasklist and zeebe
@@ -162,17 +159,42 @@ public class KeycloakIdentityMigrationIT {
                   .forStatusCode(200)
                   .withReadTimeout(Duration.ofSeconds(10))
                   .withStartupTimeout(Duration.ofMinutes(5)));
-
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  @TestZeebe(awaitCompleteTopology = false)
+  private final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withAuthenticatedAccess()
+          .withCamundaExporter("http://" + ELASTIC.getHttpHostAddress())
+          .withAuthenticationMethod(AuthenticationMethod.OIDC)
+          .withSecurityConfig(
+              c -> {
+                c.getAuthorizations().setEnabled(true);
+
+                final var oidcConfig = c.getAuthentication().getOidc();
+                oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/camunda-platform");
+                // The following two properties are only needed for the webapp login flow which we
+                // don't test here.
+                oidcConfig.setClientId("example");
+                oidcConfig.setRedirectUri("example.com");
+
+                oidcConfig.setGroupsClaim("groups");
+
+                c.getInitialization()
+                    .setMappings(
+                        List.of(
+                            new ConfiguredMapping(
+                                DEFAULT_USER_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
+                c.getInitialization()
+                    .getDefaultRoles()
+                    .put("admin", Map.of("users", List.of(DEFAULT_USER_ID)));
+              });
   @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
   private TestStandaloneIdentityMigration migration;
   private CamundaClient client;
 
   @BeforeAll
   static void init() {
-    BROKER.withCamundaExporter("http://" + ELASTIC.getHttpHostAddress()).start();
-
     IDENTITY
         .withEnv(
             "IDENTITY_AUTH_PROVIDER_ISSUER_URL",
@@ -182,7 +204,6 @@ public class KeycloakIdentityMigrationIT {
 
   @AfterAll
   static void afterAll() {
-    BROKER.stop();
     IDENTITY.stop();
   }
 
