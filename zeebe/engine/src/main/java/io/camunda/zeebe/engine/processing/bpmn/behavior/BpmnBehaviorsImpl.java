@@ -146,7 +146,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             clock);
 
     multiInstanceInputCollectionBehavior =
-        new MultiInstanceInputCollectionBehavior(expressionBehavior, stateBehavior);
+        new MultiInstanceInputCollectionBehavior(
+            expressionBehavior, stateBehavior, writers.state());
     multiInstanceOutputCollectionBehavior =
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
 
