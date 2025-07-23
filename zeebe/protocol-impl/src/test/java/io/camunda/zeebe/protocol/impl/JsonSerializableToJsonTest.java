@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
@@ -2313,6 +2314,37 @@ final class JsonSerializableToJsonTest {
           "variables": {}
         }
         """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// MultiInstanceRecord ///////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "MultiInstanceRecord",
+        (Supplier<MultiInstanceRecord>)
+            () ->
+                new MultiInstanceRecord()
+                    .setInputCollection(
+                        List.of(
+                            new UnsafeBuffer(MsgPackConverter.convertToMsgPack("1")),
+                            new UnsafeBuffer(MsgPackConverter.convertToMsgPack("2")),
+                            new UnsafeBuffer(MsgPackConverter.convertToMsgPack("3")))),
+        """
+      {
+        "inputCollection": ["1", "2", "3"]
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////////////// Empty MultiInstanceRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty MultiInstanceRecord",
+        (Supplier<MultiInstanceRecord>) MultiInstanceRecord::new,
+        """
+      {
+        "inputCollection": []
+      }
+      """
       },
     };
   }
