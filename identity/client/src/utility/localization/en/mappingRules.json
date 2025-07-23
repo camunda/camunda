@@ -30,5 +30,9 @@
   "enterClaimValue": "Enter claim value",
   "valueForClaim": "Enter the value for the claim",
   "mappingRuleUpdated": "Mapping rule updated",
-  "mappingRuleUpdatedSuccessfully": "You have successfully updated mapping rule {{ name }}"
+  "mappingRuleUpdatedSuccessfully": "You have successfully updated mapping rule {{ name }}",
+  "mappingRuleIdRequired": "Mapping rule ID is required",
+  "mappingRuleNameRequired": "Mapping rule name is required",
+  "claimNameRequired": "Claim name is required",
+  "claimValueRequired": "Claim value is required"
 }

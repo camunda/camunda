@@ -16,7 +16,7 @@ import EntityList from "src/components/entityList";
 import { documentationHref } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
-import AddModal from "src/pages/mapping-rules/modals/AddModal";
+import { AddModal } from "src/pages/mapping-rules/modals/add-modal";
 import { searchMappingRule } from "src/utility/api/mapping-rules";
 import DeleteModal from "src/pages/mapping-rules/modals/DeleteModal";
 import EditModal from "src/pages/mapping-rules/modals/EditModal";
