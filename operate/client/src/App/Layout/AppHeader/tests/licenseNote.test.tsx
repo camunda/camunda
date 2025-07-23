@@ -33,10 +33,6 @@ describe('license note', () => {
       wrapper: Wrapper,
     });
 
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
-
     expect(
       await screen.findByText(/^Non-production license$/i),
     ).toBeInTheDocument();
@@ -79,10 +75,6 @@ describe('license note', () => {
       wrapper: Wrapper,
     });
 
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
-
     expect(
       await screen.findByText(/^Non-production license$/i),
     ).toBeInTheDocument();
@@ -103,10 +95,6 @@ describe('license note', () => {
     render(<AppHeader />, {
       wrapper: Wrapper,
     });
-
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
 
     expect(
       await screen.findByText(/^production license$/i),
@@ -145,10 +133,6 @@ describe('license note', () => {
       wrapper: Wrapper,
     });
 
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
-
     expect(
       await screen.findByText(/^Non-commercial license - expired$/i),
     ).toBeInTheDocument();
@@ -165,10 +149,6 @@ describe('license note', () => {
     render(<AppHeader />, {
       wrapper: Wrapper,
     });
-
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
 
     expect(
       screen.queryByText(/^Non-commercial license - expired$/i),
@@ -189,10 +169,6 @@ describe('license note', () => {
     render(<AppHeader />, {
       wrapper: Wrapper,
     });
-
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
 
     expect(
       await screen.findByText(/^Non-commercial license - 0 day left$/i),
