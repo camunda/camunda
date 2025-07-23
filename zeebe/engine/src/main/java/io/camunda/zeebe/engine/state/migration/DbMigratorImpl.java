@@ -106,7 +106,7 @@ public class DbMigratorImpl implements DbMigrator {
         break;
       case final Compatible.SameVersion compatible:
         LOGGER.debug("No migrations to run, snapshot is the same as current version");
-        return MigrationsPerformed.zero();
+        return MigrationsPerformed.none();
       default:
         break;
     }
