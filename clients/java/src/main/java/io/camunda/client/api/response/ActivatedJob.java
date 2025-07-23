@@ -17,9 +17,9 @@ package io.camunda.client.api.response;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ClientException;
-import java.util.List;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.ListenerEventType;
+import java.util.List;
 import java.util.Map;
 
 public interface ActivatedJob {
