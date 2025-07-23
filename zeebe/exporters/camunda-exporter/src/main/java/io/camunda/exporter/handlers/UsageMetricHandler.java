@@ -25,6 +25,7 @@ import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,10 @@ public record UsageMetricHandler(String indexName)
   @Override
   public List<String> generateIds(final Record<UsageMetricRecordValue> record) {
     final long key = record.getKey();
-    return record.getValue().getCounterValues().keySet().stream()
+    final UsageMetricRecordValue value = record.getValue();
+
+    return Stream.concat(
+            value.getCounterValues().keySet().stream(), value.getSetValues().keySet().stream())
         .map(tenantId -> ID_PATTERN.formatted(key, tenantId))
         .toList();
   }

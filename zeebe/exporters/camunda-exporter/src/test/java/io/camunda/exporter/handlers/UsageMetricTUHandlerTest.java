@@ -103,7 +103,14 @@ class UsageMetricTUHandlerTest {
     final var idList = underTest.generateIds(record);
 
     // then
-    assertThat(idList).containsExactlyInAnyOrder("10_tenant1", "10_tenant2", "10_tenant3");
+    assertThat(idList)
+        .containsExactlyInAnyOrder(
+            "10_tenant1_12",
+            "10_tenant1_34",
+            "10_tenant2_56",
+            "10_tenant2_78",
+            "10_tenant3_89",
+            "10_tenant3_11");
   }
 
   @Test
@@ -125,22 +132,22 @@ class UsageMetricTUHandlerTest {
             new ArrayList<>(
                 List.of(
                     new UsageMetricsTUEntity()
-                        .setId("10_tenant1")
+                        .setId("10_tenant1_12")
                         .setAssigneeHash(12L)
                         .setPartitionId(partitionId)
                         .setEventTime(DateUtil.toOffsetDateTime(now)),
                     new UsageMetricsTUEntity()
-                        .setId("10_tenant1")
+                        .setId("10_tenant1_34")
                         .setAssigneeHash(34L)
                         .setPartitionId(partitionId)
                         .setEventTime(DateUtil.toOffsetDateTime(now)),
                     new UsageMetricsTUEntity()
-                        .setId("10_tenant2")
+                        .setId("10_tenant2_89")
                         .setAssigneeHash(89L)
                         .setPartitionId(partitionId)
                         .setEventTime(DateUtil.toOffsetDateTime(now)),
                     new UsageMetricsTUEntity()
-                        .setId("10_tenant2")
+                        .setId("10_tenant2_11")
                         .setAssigneeHash(11L)
                         .setPartitionId(partitionId)
                         .setEventTime(DateUtil.toOffsetDateTime(now)))));
@@ -153,7 +160,13 @@ class UsageMetricTUHandlerTest {
 
     assertThat(variables)
         .extracting(UsageMetricsTUEntity::getId)
-        .contains("10_tenant1", "10_tenant2", "10_tenant3");
+        .contains(
+            "10_tenant1_12",
+            "10_tenant1_34",
+            "10_tenant2_89",
+            "10_tenant2_11",
+            "10_tenant3_89",
+            "10_tenant3_11");
     assertThat(variables)
         .extracting(UsageMetricsTUEntity::getEventTime)
         .contains(DateUtil.toOffsetDateTime(now));

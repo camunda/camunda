@@ -27,7 +27,7 @@ public class UsageMetricTUHandler
     implements ExportHandler<UsageMetricsTUBatch, UsageMetricRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricTUHandler.class);
-  private static final String ID_PATTERN = "%s_%s";
+  private static final String ID_PATTERN = "%s_%s_%s";
   private final String indexName;
 
   public UsageMetricTUHandler(final String indexName) {
@@ -53,8 +53,11 @@ public class UsageMetricTUHandler
   @Override
   public List<String> generateIds(final Record<UsageMetricRecordValue> record) {
     final long key = record.getKey();
-    return record.getValue().getSetValues().keySet().stream()
-        .map(tenantId -> ID_PATTERN.formatted(key, tenantId))
+    return record.getValue().getSetValues().entrySet().stream()
+        .flatMap(
+            entry ->
+                entry.getValue().stream()
+                    .map(value -> ID_PATTERN.formatted(key, entry.getKey(), value)))
         .toList();
   }
 
@@ -79,10 +82,10 @@ public class UsageMetricTUHandler
         .forEach(
             (tenantId, set) ->
                 set.forEach(
-                    value ->
+                    assigneeHash ->
                         usageMetricsCollection.add(
                             createMetricTUEntity(
-                                recordKey, partitionId, timestamp, tenantId, value))));
+                                recordKey, partitionId, timestamp, tenantId, assigneeHash))));
   }
 
   private UsageMetricsTUEntity createMetricTUEntity(
@@ -90,14 +93,14 @@ public class UsageMetricTUHandler
       final int partitionId,
       final OffsetDateTime timestamp,
       final String tenantId,
-      final long eventValue) {
+      final long assigneeHash) {
 
     return new UsageMetricsTUEntity()
-        .setId(String.format(ID_PATTERN, recordKey, tenantId))
+        .setId(String.format(ID_PATTERN, recordKey, tenantId, assigneeHash))
         .setPartitionId(partitionId)
         .setTenantId(tenantId)
         .setEventTime(timestamp)
-        .setAssigneeHash(eventValue);
+        .setAssigneeHash(assigneeHash);
   }
 
   @Override
