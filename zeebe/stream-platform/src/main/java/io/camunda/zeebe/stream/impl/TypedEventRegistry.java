@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -100,6 +101,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.USER, UserRecord.class);
     registry.put(ValueType.CLOCK, ClockRecord.class);
     registry.put(ValueType.AUTHORIZATION, AuthorizationRecord.class);
+    registry.put(ValueType.MULTI_INSTANCE, MultiInstanceRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
