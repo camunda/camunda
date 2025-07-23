@@ -52,6 +52,15 @@ public final class JsonUtil {
     }
   }
 
+  public static <T> T fromJson(final String json, final Class<T> clazz) {
+    try {
+      return JSON_MAPPER.readValue(json, clazz);
+    } catch (final IOException e) {
+      throw new AssertionError(
+          String.format("Failed to deserialize json '%s' to '%s'", json, clazz.getSimpleName()), e);
+    }
+  }
+
   public static String toJson(final Object o) {
     try {
       return JSON_MAPPER.writeValueAsString(o);

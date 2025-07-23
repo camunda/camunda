@@ -14,7 +14,9 @@ import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
+import io.camunda.authentication.ConditionalOnProtectedMcp;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.ConditionalOnUnprotectedMcp;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
@@ -77,6 +79,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -94,11 +97,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @EnableWebSecurity
 @Profile("consolidated-auth")
 public class WebSecurityConfig {
+
   public static final String SESSION_COOKIE = "camunda-session";
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
   public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**");
+  public static final Set<String> MCP_PATHS = Set.of("/sse", "/mcp/message");
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
           // these v2 endpoints are public
@@ -185,9 +190,44 @@ public class WebSecurityConfig {
     LOG.warn(
         "The API is unprotected. Please disable {} for any deployment.",
         AuthenticationProperties.API_UNPROTECTED);
+    return getDefaultUnprotectedSecurityFilterChain(
+        API_PATHS.toArray(String[]::new),
+        httpSecurity,
+        securityConfiguration,
+        authFailureHandler,
+        csrfTokenRepository);
+  }
+
+  @Bean
+  @ConditionalOnUnprotectedMcp
+  @Order(ORDER_UNPROTECTED)
+  public SecurityFilterChain unprotectedMcpAuthSecurityFilterChain(
+      final HttpSecurity httpSecurity,
+      final SecurityConfiguration securityConfiguration,
+      final AuthFailureHandler authFailureHandler,
+      final CookieCsrfTokenRepository csrfTokenRepository)
+      throws Exception {
+    LOG.warn(
+        "The MCP is unprotected. Please disable {} for any deployment.",
+        AuthenticationProperties.MCP_UNPROTECTED);
+    return getDefaultUnprotectedSecurityFilterChain(
+        MCP_PATHS.toArray(String[]::new),
+        httpSecurity,
+        securityConfiguration,
+        authFailureHandler,
+        csrfTokenRepository);
+  }
+
+  private static DefaultSecurityFilterChain getDefaultUnprotectedSecurityFilterChain(
+      final String[] paths,
+      final HttpSecurity httpSecurity,
+      final SecurityConfiguration securityConfiguration,
+      final AuthFailureHandler authFailureHandler,
+      final CookieCsrfTokenRepository csrfTokenRepository)
+      throws Exception {
     final var filterChainBuilder =
         httpSecurity
-            .securityMatcher(API_PATHS.toArray(String[]::new))
+            .securityMatcher(paths)
             .authorizeHttpRequests(
                 (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
             .headers(
@@ -376,6 +416,7 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   public static class BasicConfiguration {
+
     @Bean
     @ConditionalOnMissingBean(UserDetailsService.class)
     public CamundaUserDetailsService camundaUserDetailsService(
@@ -427,6 +468,48 @@ public class WebSecurityConfig {
                           .accessDeniedHandler(authFailureHandler))
               // do not create a session on api authentication, that's to be done on webapp login
               // only
+              .sessionManagement(
+                  (sessionManagement) ->
+                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER));
+
+      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+      return filterChainBuilder.build();
+    }
+
+    @Bean
+    @Order(ORDER_WEBAPP_API)
+    @ConditionalOnProtectedMcp
+    public SecurityFilterChain httpBasicMcpAuthSecurityFilterChain(
+        final HttpSecurity httpSecurity,
+        final AuthFailureHandler authFailureHandler,
+        final SecurityConfiguration securityConfiguration,
+        final CookieCsrfTokenRepository csrfTokenRepository)
+        throws Exception {
+      LOG.info("The MCP is protected by HTTP Basic authentication.");
+      final var filterChainBuilder =
+          httpSecurity
+              .securityMatcher(MCP_PATHS.toArray(String[]::new))
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
+              .headers(
+                  headers ->
+                      setupSecureHeaders(
+                          headers,
+                          securityConfiguration.getHttpHeaders(),
+                          securityConfiguration.getSaas().isConfigured()))
+              .cors(AbstractHttpConfigurer::disable)
+              .formLogin(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable)
+              .httpBasic(Customizer.withDefaults())
+              .exceptionHandling(
+                  // this prevents the usage of the default BasicAuthenticationEntryPoint returning
+                  // a WWW-Authenticate header that causes browsers to prompt for basic login
+                  exceptionHandling ->
+                      exceptionHandling
+                          .authenticationEntryPoint(authFailureHandler)
+                          .accessDeniedHandler(authFailureHandler))
+              // do not create a session on authentication, MCP server handles the session.
               .sessionManagement(
                   (sessionManagement) ->
                       sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER));

@@ -27,6 +27,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.modelcontextprotocol.client.McpSyncClient;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.time.Duration;
@@ -229,6 +230,7 @@ public class CamundaMultiDBExtension
   private MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
+  private McpClientTestFactory authenticatedMcpClientFactory;
   private EntityManager entityManager;
   private KeycloakContainer keycloakContainer;
 
@@ -346,12 +348,19 @@ public class CamundaMultiDBExtension
       manageApplicationUnderTest();
     }
 
+    // MCP Client must be created after the application is started, as it requires the session to
+    // be open at client creation time.
+    // TODO(mathieu): support OICD for MCP tests
+    if (!shouldSetupKeycloak) {
+      authenticatedMcpClientFactory = new BasicAuthMcpClientTestFactory(applicationUnderTest);
+    }
+
     entityManager = new EntityManager(authenticatedClientFactory.getAdminCamundaClient());
     createEntities(testClass, shouldSetupKeycloak);
 
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
-    // We want to run tests in an efficient manner, and reduce setup time
+    // We want to run tests efficiently, and reduce setup time
     injectStaticClientField(testClass);
   }
 
@@ -550,6 +559,14 @@ public class CamundaMultiDBExtension
             fail("Camunda Client field couldn't be injected. Make sure it is static.");
           }
         }
+        if (field.getType() == McpSyncClient.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, getMcpClient(field.getAnnotation(Authenticated.class)));
+          } else {
+            fail("Mcp Client field couldn't be injected. Make sure it is static.");
+          }
+        }
       } catch (final Exception ex) {
         throw new RuntimeException(ex);
       }
@@ -596,6 +613,14 @@ public class CamundaMultiDBExtension
 
   private CamundaClient getCamundaClient(final Authenticated authenticated) {
     return authenticatedClientFactory.getCamundaClient(
+        applicationUnderTest.application, authenticated);
+  }
+
+  private McpSyncClient getMcpClient(final Authenticated authenticated) {
+    if (authenticatedMcpClientFactory == null) {
+      throw new IllegalStateException("MCP Client does not support OIDC authentication (yet).");
+    }
+    return authenticatedMcpClientFactory.getMcpClient(
         applicationUnderTest.application, authenticated);
   }
 

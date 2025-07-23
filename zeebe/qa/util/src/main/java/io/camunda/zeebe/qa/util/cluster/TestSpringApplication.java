@@ -184,7 +184,10 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
   }
 
   protected T withUnauthenticatedAccess(final boolean unprotectedApi) {
-    return withProperty(AuthenticationProperties.API_UNPROTECTED, unprotectedApi);
+    return withAdditionalProperties(
+        Map.of(
+            AuthenticationProperties.API_UNPROTECTED, unprotectedApi,
+            AuthenticationProperties.MCP_UNPROTECTED, unprotectedApi));
   }
 
   public final T withUnauthenticatedAccess() {

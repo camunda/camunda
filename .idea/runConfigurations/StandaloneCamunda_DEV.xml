@@ -2,14 +2,16 @@
   <configuration default="false" name="StandaloneCamunda DEV" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
     <option name="ACTIVE_PROFILES" value="identity,tasklist,operate,broker,consolidated-auth,dev,insecure" />
     <envs>
+      <env name="CAMUNDA_GATEWAY_MCP_ENABLED" value="true" />
+      <env name="CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED-MCP" value="true" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0_" value="demo" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL" value="demo@example.com" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME" value="Demo" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD" value="demo" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME" value="demo" />
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL" value="http://localhost:9200" />
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS" value="false" />
       <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME" value="io.camunda.exporter.CamundaExporter" />
-      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME" value="Demo" />
-      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME" value="demo" />
-      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL" value="demo@example.com" />
-      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD" value="demo" />
-      <env name="CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0_" value="demo" />
     </envs>
     <module name="camunda-zeebe" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="io.camunda.application.StandaloneCamunda" />

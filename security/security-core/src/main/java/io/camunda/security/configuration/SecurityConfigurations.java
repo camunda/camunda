@@ -16,6 +16,7 @@ public class SecurityConfigurations {
         securityConfiguration.getAuthentication();
     authenticationConfiguration.setMethod(AuthenticationMethod.BASIC);
     authenticationConfiguration.setUnprotectedApi(true);
+    authenticationConfiguration.setUnprotectedMcp(true);
     securityConfiguration.getAuthorizations().setEnabled(false);
     return securityConfiguration;
   }
