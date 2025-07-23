@@ -83,8 +83,7 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter evaluationDate(final OffsetDateTime evaluationDate) {
-    evaluationDate(b -> b.eq(evaluationDate));
-    return null;
+    return evaluationDate(b -> b.eq(evaluationDate));
   }
 
   @Override
@@ -92,7 +91,7 @@ public class DecisionInstanceFilterImpl
     final DateTimeProperty property = new DateTimePropertyImpl();
     fn.accept(property);
     filter.setEvaluationDate(provideSearchRequestProperty(property));
-    return null;
+    return this;
   }
 
   @Override
@@ -109,8 +108,7 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter elementInstanceKey(final long elementInstanceKey) {
-    elementInstanceKey(b -> b.eq(elementInstanceKey));
-    return this;
+    return elementInstanceKey(b -> b.eq(elementInstanceKey));
   }
 
   @Override
@@ -123,8 +121,7 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
-    decisionDefinitionKey(b -> b.eq(decisionDefinitionKey));
-    return this;
+    return decisionDefinitionKey(b -> b.eq(decisionDefinitionKey));
   }
 
   @Override
