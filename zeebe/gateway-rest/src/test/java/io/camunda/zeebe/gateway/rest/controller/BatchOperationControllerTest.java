@@ -230,8 +230,9 @@ class BatchOperationControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
-        .put()
+        .post()
         .uri("/v2/batch-operations/{key}/cancellation", batchOperationKey)
+        .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
@@ -244,8 +245,9 @@ class BatchOperationControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
-        .put()
+        .post()
         .uri("/v2/batch-operations/{key}/suspension", batchOperationKey)
+        .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
@@ -258,8 +260,9 @@ class BatchOperationControllerTest extends RestControllerTest {
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
-        .put()
+        .post()
         .uri("/v2/batch-operations/{key}/resumption", batchOperationKey)
+        .contentType(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();

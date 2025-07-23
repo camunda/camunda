@@ -32,7 +32,7 @@ public final class ResumeBatchOperationTest extends ClientRestTest {
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getMethod()).isEqualTo(RequestMethod.PUT);
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
     assertThat(request.getUrl()).isEqualTo("/v2/batch-operations/batch-123/resumption");
   }
 }

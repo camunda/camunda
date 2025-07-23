@@ -5242,7 +5242,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /batch-operations/{batchOperationKey}/cancellation:
-    put:
+    post:
       tags:
         - Batch operation
       operationId: cancelBatchOperation
@@ -5260,10 +5260,7 @@ paths:
             type: string
       requestBody:
         content:
-          application/json:
-            schema:
-              type: object
-              nullable: true
+          application/json: {}
         required: false
       responses:
         "204":
@@ -5283,7 +5280,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /batch-operations/{batchOperationKey}/suspension:
-    put:
+    post:
       tags:
         - Batch operation
       operationId: suspendBatchOperation
@@ -5301,10 +5298,7 @@ paths:
             type: string
       requestBody:
         content:
-          application/json:
-            schema:
-              type: object
-              nullable: true
+          application/json: {}
         required: false
       responses:
         "204":
@@ -5326,7 +5320,7 @@ paths:
           $ref: "#/components/responses/ServiceUnavailable"
 
   /batch-operations/{batchOperationKey}/resumption:
-    put:
+    post:
       tags:
         - Batch operation
       operationId: resumeBatchOperation
@@ -5344,10 +5338,7 @@ paths:
             type: string
       requestBody:
         content:
-          application/json:
-            schema:
-              type: object
-              nullable: true
+          application/json: {}
         required: false
       responses:
         "204":

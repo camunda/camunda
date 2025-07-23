@@ -47,7 +47,7 @@ public final class SuspendBatchOperationCommandImpl implements SuspendBatchOpera
   @Override
   public CamundaFuture<Void> send() {
     final HttpCamundaFuture<Void> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    httpClient.post(
         "/batch-operations/" + batchOperationKey + "/suspension",
         null,
         httpRequestConfig.build(),
