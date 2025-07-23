@@ -82,7 +82,7 @@ jobs:
         run: npm ci
 
       - name: Install Playwright
-        run: npx playwright install -- --with-deps chromium
+        run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Build frontend
