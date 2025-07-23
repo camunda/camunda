@@ -21,7 +21,6 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -63,7 +62,7 @@ public class BatchOperationController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaPutMapping(path = "/{batchOperationKey}/cancellation")
+  @CamundaPostMapping(path = "/{batchOperationKey}/cancellation")
   public ResponseEntity<Object> cancelBatchOperation(@PathVariable final String batchOperationKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
@@ -73,7 +72,7 @@ public class BatchOperationController {
         .join();
   }
 
-  @CamundaPutMapping(path = "/{batchOperationKey}/suspension")
+  @CamundaPostMapping(path = "/{batchOperationKey}/suspension")
   public ResponseEntity<Object> suspendBatchOperation(
       @PathVariable final String batchOperationKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
@@ -84,7 +83,7 @@ public class BatchOperationController {
         .join();
   }
 
-  @CamundaPutMapping(path = "/{batchOperationKey}/resumption")
+  @CamundaPostMapping(path = "/{batchOperationKey}/resumption")
   public ResponseEntity<Object> resumeBatchOperation(@PathVariable final String batchOperationKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
