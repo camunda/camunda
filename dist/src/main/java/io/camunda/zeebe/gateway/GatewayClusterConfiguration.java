@@ -94,6 +94,8 @@ public final class GatewayClusterConfiguration {
         new MessagingConfig()
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(cluster.getHost()))
+            .setSocketReceiveBuffer((int) cluster.getSocketReceiveBuffer().toBytes())
+            .setSocketSendBuffer((int) cluster.getSocketSendBuffer().toBytes())
             .setPort(cluster.getPort());
 
     final var security = cluster.getSecurity();

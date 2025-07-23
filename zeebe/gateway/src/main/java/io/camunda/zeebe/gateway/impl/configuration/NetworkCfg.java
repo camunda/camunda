@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
-import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SOCKET_RECEIVE_BUFFER;
-import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SOCKET_SEND_BUFFER;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
 
 import java.net.InetSocketAddress;
@@ -22,8 +20,6 @@ public final class NetworkCfg {
   private int port = DEFAULT_PORT;
   private Duration minKeepAliveInterval = Duration.ofSeconds(30);
   private DataSize maxMessageSize = DataSize.ofMegabytes(4);
-  private DataSize socketSendBuffer = DEFAULT_GATEWAY_SOCKET_SEND_BUFFER;
-  private DataSize socketReceiveBuffer = DEFAULT_GATEWAY_SOCKET_RECEIVE_BUFFER;
 
   public void init(final String defaultHost) {
     if (host == null) {
@@ -67,31 +63,13 @@ public final class NetworkCfg {
     return this;
   }
 
-  public DataSize getSocketSendBuffer() {
-    return socketSendBuffer;
-  }
-
-  public NetworkCfg setSocketSendBuffer(final DataSize socketSendBuffer) {
-    this.socketSendBuffer = socketSendBuffer;
-    return this;
-  }
-
-  public DataSize getSocketReceiveBuffer() {
-    return socketReceiveBuffer;
-  }
-
-  public NetworkCfg setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
-    this.socketReceiveBuffer = socketReceiveBuffer;
-    return this;
-  }
-
   public InetSocketAddress toSocketAddress() {
     return new InetSocketAddress(host, port);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(host, port, socketSendBuffer, socketReceiveBuffer);
+    return Objects.hash(host, port, minKeepAliveInterval, maxMessageSize);
   }
 
   @Override
@@ -105,8 +83,8 @@ public final class NetworkCfg {
     final NetworkCfg that = (NetworkCfg) o;
     return port == that.port
         && Objects.equals(host, that.host)
-        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer)
-        && Objects.equals(socketSendBuffer, that.socketSendBuffer);
+        && Objects.equals(minKeepAliveInterval, that.minKeepAliveInterval)
+        && Objects.equals(maxMessageSize, that.maxMessageSize);
   }
 
   @Override
@@ -119,10 +97,6 @@ public final class NetworkCfg {
         + port
         + ", minKeepAliveInterval="
         + minKeepAliveInterval
-        + ", socketReceiveBuffer="
-        + socketReceiveBuffer
-        + ", socketSendBuffer="
-        + socketSendBuffer
         + '}';
   }
 }
