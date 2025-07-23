@@ -193,4 +193,43 @@ public class SequenceFlowIT {
                 .tenantId("tenant1")
                 .build());
   }
+
+  @TestTemplate
+  public void shouldDeleteSequenceFlow(final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var rdbmsService = testApplication.getRdbmsService();
+    final var rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
+    final var sequenceFlowWriter = rdbmsWriter.getSequenceFlowWriter();
+
+    final var dbModel =
+        new Builder()
+            .flowNodeId("nodeDel")
+            .processInstanceKey(99L)
+            .processDefinitionKey(9L)
+            .processDefinitionId("bpmnDel")
+            .tenantId("tenantX")
+            .partitionId(PARTITION_ID.intValue())
+            .historyCleanupDate(NOW)
+            .build();
+    sequenceFlowWriter.create(dbModel);
+    rdbmsWriter.flush();
+
+    assertThat(
+            sequenceFlowReader
+                .search(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(99L))))
+                .items())
+        .isNotEmpty();
+
+    // when
+    sequenceFlowWriter.delete(dbModel);
+    rdbmsWriter.flush();
+
+    // then
+    final var itemsAfterDelete =
+        sequenceFlowReader
+            .search(SequenceFlowQuery.of(q -> q.filter(f -> f.processInstanceKey(99L))))
+            .items();
+    assertThat(itemsAfterDelete).isEmpty();
+  }
 }
