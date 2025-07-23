@@ -49,17 +49,17 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by processInstanceKey */
   DecisionInstanceFilter processInstanceKey(long processInstanceKey);
 
-  /** Filter by decisionDefinitionKey */
-  DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
-
-  /** Filter by decisionDefinitionKey using {@link BasicLongProperty} consumer */
-  DecisionInstanceFilter decisionDefinitionKey(Consumer<BasicLongProperty> fn);
-
   /** Filter by elementInstanceKey */
   DecisionInstanceFilter elementInstanceKey(long elementInstanceKey);
 
   /** Filter by elementInstanceKey using {@link BasicLongProperty} consumer */
   DecisionInstanceFilter elementInstanceKey(Consumer<BasicLongProperty> fn);
+
+  /** Filter by decisionDefinitionKey */
+  DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
+
+  /** Filter by decisionDefinitionKey using {@link BasicLongProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionKey(Consumer<BasicLongProperty> fn);
 
   /** Filter by decisionDefinitionId */
   DecisionInstanceFilter decisionDefinitionId(String decisionDefinitionId);

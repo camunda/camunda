@@ -108,20 +108,6 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
-  public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
-    decisionDefinitionKey(b -> b.eq(decisionDefinitionKey));
-    return this;
-  }
-
-  @Override
-  public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
-    final BasicLongProperty property = new BasicLongPropertyImpl();
-    fn.accept(property);
-    filter.setDecisionDefinitionKey(provideSearchRequestProperty(property));
-    return this;
-  }
-
-  @Override
   public DecisionInstanceFilter elementInstanceKey(final long elementInstanceKey) {
     elementInstanceKey(b -> b.eq(elementInstanceKey));
     return this;
@@ -132,6 +118,20 @@ public class DecisionInstanceFilterImpl
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setElementInstanceKey(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
+    decisionDefinitionKey(b -> b.eq(decisionDefinitionKey));
+    return this;
+  }
+
+   @Override
+  public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setDecisionDefinitionKey(provideSearchRequestProperty(property));
     return this;
   }
 
