@@ -142,8 +142,8 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.interceptors.0.id", "overwritten");
     setEnv("zeebe.gateway.interceptors.0.className", "Overwritten");
     setEnv("zeebe.gateway.interceptors.0.jarPath", "./overwritten.jar");
-    setEnv("zeebe.gateway.network.socketSendBuffer", "3MB");
-    setEnv("zeebe.gateway.network.socketReceiveBuffer", "3MB");
+    setEnv("zeebe.gateway.cluster.socketSendBuffer", "3MB");
+    setEnv("zeebe.gateway.cluster.socketReceiveBuffer", "3MB");
 
     final GatewayCfg expected = new GatewayCfg();
     expected
