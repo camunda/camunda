@@ -57,6 +57,14 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     );
   }, [statistics, elementId, isMultiInstance]);
 
+  const incidentCount = useMemo(() => {
+    if (!statistics?.items || !elementId) return 0;
+    const elementStats = statistics.items.find(
+      (stat) => stat.elementId === elementId,
+    );
+    return elementStats?.incidents ?? 0;
+  }, [statistics, elementId]);
+
   const shouldFetchElementInstances =
     instanceCount === 1 &&
     !elementInstanceId &&
@@ -198,7 +206,11 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               elementId={elementInstanceMetadata.elementId}
             />
             {isSearchingIncidents || isFetchingProcessDefinition ? (
-              <Loading small withOverlay={false} />
+              <Loading
+                small
+                withOverlay={false}
+                data-testid="incidents-loading"
+              />
             ) : singleIncident ? (
               <>
                 <Divider />

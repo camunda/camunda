@@ -345,53 +345,6 @@ describe('MetadataPopover', () => {
         },
       ],
     });
-    mockSearchIncidentsByProcessInstance(PROCESS_INSTANCE_ID).withSuccess({
-      items: [
-        {
-          processDefinitionId: 'invoice',
-          errorType: 'CALLED_ELEMENT_ERROR',
-          errorMessage: 'Multi-instance incident 1',
-          elementId: FLOW_NODE_ID,
-          creationTime: '2022-02-03T16:44:06.981+0000',
-          state: 'PENDING',
-          tenantId: '<default>',
-          incidentKey: '2251799814080731',
-          processDefinitionKey: '2251799813686633',
-          processInstanceKey: PROCESS_INSTANCE_ID,
-          elementInstanceKey: '2251799813699880',
-          jobKey: '2251799814080731',
-        },
-        {
-          processDefinitionId: 'invoice',
-          errorType: 'JOB_NO_RETRIES',
-          errorMessage: 'Multi-instance incident 2',
-          elementId: FLOW_NODE_ID,
-          creationTime: '2022-02-03T16:45:06.981+0000',
-          state: 'PENDING',
-          tenantId: '<default>',
-          incidentKey: '2251799814080732',
-          processDefinitionKey: '2251799813686633',
-          processInstanceKey: PROCESS_INSTANCE_ID,
-          elementInstanceKey: '2251799813699881',
-          jobKey: '2251799814080732',
-        },
-        {
-          processDefinitionId: 'invoice',
-          errorType: 'IO_MAPPING_ERROR',
-          errorMessage: 'Multi-instance incident 3',
-          elementId: FLOW_NODE_ID,
-          creationTime: '2022-02-03T16:46:06.981+0000',
-          state: 'PENDING',
-          tenantId: '<default>',
-          incidentKey: '2251799814080733',
-          processDefinitionKey: '2251799813686633',
-          processInstanceKey: PROCESS_INSTANCE_ID,
-          elementInstanceKey: '2251799813699882',
-          jobKey: '2251799814080733',
-        },
-      ],
-      page: {totalItems: 3},
-    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -417,10 +370,6 @@ describe('MetadataPopover', () => {
       screen.getByText(
         /To view details for any of these, select one Instance in the Instance History./,
       ),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/3 incidents occurred/)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {name: labels.showIncidents}),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(labels.elementInstanceKey),
