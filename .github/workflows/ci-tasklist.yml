@@ -38,7 +38,7 @@ env:
 
 jobs:
   tasklist-backend-unit-tests:
-    name: "[UT] ${{matrix.suiteName}}"
+    name: "[UT] Back End / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -56,7 +56,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   tasklist-frontend-tests:
-    name: "[FE] Tests / Core Features"
+    name: "[UT] Front End"
     if: inputs.feChanges
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
     secrets: inherit

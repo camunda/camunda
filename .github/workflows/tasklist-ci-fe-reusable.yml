@@ -13,7 +13,7 @@ env:
 
 jobs:
   fe-type-check:
-    name: Type check
+    name: "Type check / Core Features"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -40,7 +40,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-eslint:
-    name: ESLint
+    name: "ESLint / Core Features"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -67,7 +67,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-stylelint:
-    name: Stylelint
+    name: "Stylelint / Core Features"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -94,7 +94,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-tests:
-    name: Unit Tests
+    name: "Run Unit Tests / Core Features"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -121,7 +121,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-visual-regression-tests:
-    name: Visual regression tests
+    name: "Visual regression tests / Core Features"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -163,7 +163,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   fe-a11y-tests:
-    name: a11y tests
+    name: "a11y tests / Core Features"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
