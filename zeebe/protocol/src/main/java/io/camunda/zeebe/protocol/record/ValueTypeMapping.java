@@ -104,6 +104,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionInterruptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -307,6 +308,10 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.USAGE_METRIC,
         new Mapping<>(UsageMetricRecordValue.class, UsageMetricIntent.class));
+    mapping.put(
+        ValueType.RUNTIME_INSTRUCTION_INTERRUPTION,
+        new Mapping<>(
+            RuntimeInstructionInterruptionRecordValue.class, ProcessInstanceIntent.class));
     return mapping;
   }
 

@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionInterruptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -100,6 +101,7 @@ public class CompactRecordLogger {
           entry("PROCESS_INSTANCE_CREATION", "CREA"),
           entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
           entry("PROCESS_INSTANCE", "PI"),
+          entry("RUNTIME_INSTRUCTION_INTERRUPTION", "RI_INT"),
           entry("PROCESS", "PROC"),
           entry("AD_HOC_SUB_PROC_ACTIVITY_ACTIVATION", "AH_ACT"),
           entry("TIMER", "TIME"),
@@ -182,6 +184,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING_RULE, this::summarizeMappingRule);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
+    valueLoggers.put(ValueType.RUNTIME_INSTRUCTION_INTERRUPTION, this::summarizeInterruption);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1099,6 +1102,21 @@ public class CompactRecordLogger {
         .append(shortenKey(value.getScopeKey()))
         .append("]")
         .toString();
+  }
+
+  private String summarizeInterruption(final Record<?> record) {
+    final var value = (RuntimeInstructionInterruptionRecordValue) record.getValue();
+
+    final var result = new StringBuilder();
+    if (value.getInterruptingElementId() != null) {
+      result.append("interrupted by \"").append(value.getInterruptingElementId()).append("\"");
+    }
+
+    if (value.getProcessInstanceKey() != -1) {
+      result.append(summarizeProcessInformation(null, value.getProcessInstanceKey()));
+    }
+
+    return result.toString();
   }
 
   private String formatPinnedTime(final long time) {

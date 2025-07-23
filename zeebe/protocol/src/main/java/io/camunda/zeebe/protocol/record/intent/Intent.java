@@ -196,6 +196,8 @@ public interface Intent {
         return AsyncRequestIntent.from(intent);
       case USAGE_METRIC:
         return UsageMetricIntent.from(intent);
+      case RUNTIME_INSTRUCTION_INTERRUPTION:
+        return ProcessInstanceIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
