@@ -127,7 +127,7 @@ public class DecisionInstanceFilterImpl
     return this;
   }
 
-   @Override
+  @Override
   public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
