@@ -30,7 +30,6 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -575,49 +574,12 @@ public class ExecutionListenerTest {
   }
 
   @Test
-  public void shouldCreateListenerJobsWithCustomHeadersContainingTaskHeadersOnProcessStart() {
+  public void shouldCreateExecutionListenerJobsWithCustomHeadersContainingTaskHeaders() {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(
-            """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1wnykb0" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.37.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
-              <bpmn:process id="Process_1x1wunc" isExecutable="true">
-                <bpmn:extensionElements>
-                  <zeebe:executionListeners>
-                    <zeebe:executionListener eventType="start" type="start" />
-                    <zeebe:executionListener eventType="end" type="end" />
-                  </zeebe:executionListeners>
-                  <zeebe:taskHeaders>
-                    <zeebe:header key="foo" value="bar" />
-                  </zeebe:taskHeaders>
-                </bpmn:extensionElements>
-                <bpmn:startEvent id="StartEvent_1">
-                  <bpmn:outgoing>Flow_0g4i5lz</bpmn:outgoing>
-                </bpmn:startEvent>
-                <bpmn:endEvent id="Event_0ykkkx4">
-                  <bpmn:incoming>Flow_0g4i5lz</bpmn:incoming>
-                </bpmn:endEvent>
-                <bpmn:sequenceFlow id="Flow_0g4i5lz" sourceRef="StartEvent_1" targetRef="Event_0ykkkx4" />
-              </bpmn:process>
-              <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-                <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1x1wunc">
-                  <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
-                    <dc:Bounds x="182" y="82" width="36" height="36" />
-                  </bpmndi:BPMNShape>
-                  <bpmndi:BPMNShape id="Event_0ykkkx4_di" bpmnElement="Event_0ykkkx4">
-                    <dc:Bounds x="272" y="82" width="36" height="36" />
-                  </bpmndi:BPMNShape>
-                  <bpmndi:BPMNEdge id="Flow_0g4i5lz_di" bpmnElement="Flow_0g4i5lz">
-                    <di:waypoint x="218" y="100" />
-                    <di:waypoint x="272" y="100" />
-                  </bpmndi:BPMNEdge>
-                </bpmndi:BPMNPlane>
-              </bpmndi:BPMNDiagram>
-            </bpmn:definitions>
-            """
-                .getBytes(StandardCharsets.UTF_8))
+        .withXmlClasspathResource(
+            "/processes/process_with_execution_listeners_and_task_headers.bpmn")
         .deploy();
 
     // when both start and end execution listeners are created and completed
