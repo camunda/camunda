@@ -46,6 +46,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           "failure",
           2251799813688736L,
           6755399441058457L,
+          6755399441058465L,
           "tenantId",
           "ddi",
           123456L,
@@ -65,6 +66,7 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
           .setEvaluationFailureMessage("failure")
           .setProcessDefinitionKey(2251799813688736L)
           .setProcessInstanceKey(6755399441058457L)
+          .setElementInstanceKey(6755399441058465L)
           .setTenantId("tenantId")
           .setDecisionId("ddi")
           .setDecisionDefinitionId("123456")

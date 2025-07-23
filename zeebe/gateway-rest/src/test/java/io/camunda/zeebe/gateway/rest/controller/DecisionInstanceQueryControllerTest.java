@@ -58,6 +58,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "evaluationDate": "2024-06-05T08:29:15.027Z",
                        "processDefinitionKey": "2251799813688736",
                        "processInstanceKey": "6755399441058457",
+                       "elementInstanceKey": "6755399441058465",
                        "decisionDefinitionKey": "123456",
                        "decisionDefinitionId": "ddi",
                        "decisionDefinitionName": "ddn",
@@ -89,6 +90,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       null,
                       2251799813688736L,
                       6755399441058457L,
+                      6755399441058465L,
                       "tenantId",
                       "ddi",
                       123456L,
@@ -221,6 +223,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
             null,
             2251799813688736L,
             6755399441058457L,
+            6755399441058465L,
             "tenantId",
             "ddi",
             123456L,
@@ -245,17 +248,20 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         .json(
             """
                 {
+                     "decisionInstanceId": "123-1",
                      "decisionInstanceKey": "123",
                      "state": "EVALUATED",
                      "evaluationDate": "2024-06-05T08:29:15.027Z",
                      "processDefinitionKey": "2251799813688736",
                      "processInstanceKey": "6755399441058457",
+                     "elementInstanceKey": "6755399441058465",
                      "decisionDefinitionKey": "123456",
                      "decisionDefinitionId": "ddi",
                      "decisionDefinitionName": "ddn",
                      "decisionDefinitionVersion": 0,
                      "decisionDefinitionType": "DECISION_TABLE",
                      "result": "result",
+                     "tenantId": "tenantId",
                      "evaluatedInputs": [
                          {
                              "inputId": "1",
@@ -264,6 +270,17 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                          }
                      ],
                      "matchedRules": [
+                         {
+                             "ruleId": "ruleId2",
+                             "ruleIndex": 2,
+                             "evaluatedOutputs": [
+                                 {
+                                     "outputId": "3",
+                                     "outputName": "name3",
+                                     "outputValue": "value3"
+                                 }
+                             ]
+                         },
                          {
                              "ruleId": "ruleId1",
                              "ruleIndex": 1,
@@ -279,20 +296,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                      "outputValue": "value2"
                                  }
                              ]
-                         },
-                         {
-                             "ruleId": "ruleId2",
-                             "ruleIndex": 2,
-                             "evaluatedOutputs": [
-                                 {
-                                     "outputId": "3",
-                                     "outputName": "name3",
-                                     "outputValue": "value3"
-                                 }
-                             ]
                          }
                      ]
-                 }""");
+                 }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -323,7 +330,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                           "status": 404,
                           "detail": "Decision instance with key 123-1 was not found.",
                           "instance": "/v2/decision-instances/123-1"
-                        }""");
+                        }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -350,7 +358,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "status": 500,
                   "detail": "Unexpected error occurred during the request processing: Something bad happened.",
                   "instance": "/v2/decision-instances/123-1"
-                }""");
+                }""",
+            JsonCompareMode.STRICT);
   }
 
   @Test
@@ -379,7 +388,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "status": 403,
                   "detail": "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'",
                   "instance": "/v2/decision-instances/123-1"
-                }""");
+                }""",
+            JsonCompareMode.STRICT);
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {
@@ -389,6 +399,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "decisionDefinitionKey",
         ops -> new DecisionInstanceFilter.Builder().decisionDefinitionKeyOperations(ops).build());
+    keyOperationTestCases(
+        streamBuilder,
+        "elementInstanceKey",
+        ops -> new DecisionInstanceFilter.Builder().flowNodeInstanceKeyOperations(ops).build());
     dateTimeOperationTestCases(
         streamBuilder,
         "evaluationDate",

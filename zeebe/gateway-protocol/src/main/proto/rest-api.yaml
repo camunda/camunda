@@ -6390,8 +6390,8 @@ components:
                   "state": "ACTIVE",
                   "tenantId": 123,
                   "$or": [
-                    { "processInstanceId": "process_v1" },
-                    { "processInstanceId": "process_v2", "hasIncident": true }
+                    { "processDefinitionId": "process_v1" },
+                    { "processDefinitionId": "process_v2", "hasIncident": true }
                   ]
                 }
                 ```
@@ -6402,8 +6402,8 @@ components:
                   <li style="list-style-type: disc;">have tenant ID equal to <em>123</em></li>
                   <li style="list-style-type: disc;">and match either:
                     <ul style="padding-left: 20px; margin-left: 20px;">
-                      <li style="list-style-type: circle;"><code>processInstanceId</code> is <em>process_v1</em>, or</li>
-                      <li style="list-style-type: circle;"><code>processInstanceId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
+                      <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v1</em>, or</li>
+                      <li style="list-style-type: circle;"><code>processDefinitionId</code> is <em>process_v2</em> and <code>hasIncident</code> is <em>true</em></li>
                     </ul>
                   </li>
                 </ul>
@@ -9582,19 +9582,19 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - decisionInstanceKey
+            - decisionDefinitionId
+            - decisionDefinitionKey
+            - decisionDefinitionName
+            - decisionDefinitionType
+            - decisionDefinitionVersion
             - decisionInstanceId
-            - state
+            - decisionInstanceKey
+            - elementInstanceKey
             - evaluationDate
             - evaluationFailure
             - processDefinitionKey
             - processInstanceKey
-            - processInstanceId
-            - decisionDefinitionKey
-            - decisionDefinitionId
-            - decisionDefinitionName
-            - decisionDefinitionVersion
-            - decisionDefinitionType
+            - state
             - tenantId
         order:
           $ref: "#/components/schemas/SortOrderEnum"
@@ -9659,6 +9659,10 @@ components:
           description: The key of the decision.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+        elementInstanceKey:
+          description: The key of the element instance this decision instance is linked to.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
     DecisionInstanceSearchQueryResult:
       type: object
       allOf:
@@ -9715,6 +9719,9 @@ components:
         decisionDefinitionKey:
           type: string
           description: The key of the decision.
+        elementInstanceKey:
+          type: string
+          description: The key of the element instance this decision instance is linked to.
 
     DecisionInstanceGetQueryResult:
       allOf:

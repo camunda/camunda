@@ -17,7 +17,6 @@ import io.camunda.search.clients.query.SearchTermsQuery;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -115,8 +114,6 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
     // given
     final var decisionInstanceFilter =
         FilterBuilders.decisionInstance(f -> f.decisionDefinitionKeys(12345L));
-    final var searchQuery =
-        SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);
@@ -133,12 +130,30 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  void shouldQueryByElementInstanceKey() {
+    // given
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.flowNodeInstanceKeys(12345L));
+
+    // when
+    final var searchRequest = transformQuery(decisionInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("elementInstanceKey");
+              assertThat(t.value().longValue()).isEqualTo(12345L);
+            });
+  }
+
+  @Test
   void shouldQueryByDecisionInstanceId() {
     // given
     final var decisionInstanceFilter =
         FilterBuilders.decisionInstance(f -> f.decisionInstanceIds("12345-1"));
-    final var searchQuery =
-        SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);

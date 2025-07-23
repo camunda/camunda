@@ -57,6 +57,11 @@ public interface DecisionInstance {
   Long getProcessInstanceKey();
 
   /**
+   * @return the element instance key of the decision instance
+   */
+  Long getElementInstanceKey();
+
+  /**
    * @return the decision definition key of the decision instance
    */
   long getDecisionDefinitionKey();

@@ -7,23 +7,26 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.deployResource;
+import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceIsEnded;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,10 +37,13 @@ class DecisionInstanceSearchTest {
   private static final String DECISION_DEFINITION_ID_1 = "decision_1";
   private static final String DECISION_DEFINITION_ID_2 = "invoiceAssignApprover";
   private static final String DECISION_DEFINITION_ID_3 = "invoiceClassification";
+  private static final String PROCESS_DEFINITION_ID = "myProcessWithDMN";
+  private static final String ELEMENT_ID_DMN_CALL = "dmnCall";
+
   private static CamundaClient camundaClient;
+  private static long processInstanceKey;
   // evaluated decisions mapped by decision definition id
   private static final Map<String, EvaluateDecisionResponse> EVALUATED_DECISIONS = new HashMap<>();
-  private boolean initialized;
 
   @BeforeAll
   static void setUp() {
@@ -46,44 +52,49 @@ class DecisionInstanceSearchTest {
         .forEach(
             dmn ->
                 deployResource(camundaClient, String.format("decisions/%s", dmn)).getDecisions());
+    // creates one decision instance
     EVALUATED_DECISIONS.put(
         DECISION_DEFINITION_ID_1,
         evaluateDecision(
             camundaClient, DECISION_DEFINITION_ID_1, "{\"age\": 20, \"income\": 20000}"));
+    // creates two decision instances
     EVALUATED_DECISIONS.put(
         DECISION_DEFINITION_ID_2,
         evaluateDecision(
             camundaClient,
             DECISION_DEFINITION_ID_2,
             "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}"));
-    waitForDecisionsToBeEvaluated(
+
+    deployResource(
         camundaClient,
-        EVALUATED_DECISIONS.values().stream()
-            .mapToInt(v -> v.getEvaluatedDecisions().size())
-            .sum());
+        Bpmn.createExecutableProcess(PROCESS_DEFINITION_ID)
+            .startEvent()
+            .businessRuleTask(
+                ELEMENT_ID_DMN_CALL,
+                b ->
+                    b.zeebeCalledDecisionId(DECISION_DEFINITION_ID_2).zeebeResultVariable("foobar"))
+            .endEvent()
+            .done(),
+        "myProcessWithDMN.bpmn");
+    processInstanceKey =
+        // creates two decision instances
+        startProcessInstance(
+                camundaClient,
+                PROCESS_DEFINITION_ID,
+                "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
+            .getProcessInstanceKey();
+
+    waitUntilProcessInstanceIsEnded(camundaClient, processInstanceKey);
+    waitForDecisionsToBeEvaluated(camundaClient, 5);
   }
 
   @Test
   public void shouldRetrieveAllDecisionInstances() {
     // when
-    final var result =
-        camundaClient
-            .newDecisionInstanceSearchRequest()
-            .sort(b -> b.decisionInstanceKey().asc())
-            .send()
-            .join();
+    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
-
-    assertThat(
-            result.items().stream()
-                .map(DecisionInstance::getDecisionInstanceKey)
-                .collect(Collectors.toSet()))
-        .containsExactlyElementsOf(
-            EVALUATED_DECISIONS.values().stream()
-                .map(EvaluateDecisionResponse::getDecisionInstanceKey)
-                .collect(Collectors.toSet()));
+    assertThat(result.items().size()).isEqualTo(5);
   }
 
   @Test
@@ -166,10 +177,14 @@ class DecisionInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items().size()).isEqualTo(4);
     assertThat(result.items())
         .extracting(DecisionInstance::getDecisionDefinitionId)
-        .containsExactlyInAnyOrder(DECISION_DEFINITION_ID_2, DECISION_DEFINITION_ID_3);
+        .containsExactlyInAnyOrder(
+            DECISION_DEFINITION_ID_2,
+            DECISION_DEFINITION_ID_2,
+            DECISION_DEFINITION_ID_3,
+            DECISION_DEFINITION_ID_3);
   }
 
   @Test
@@ -192,6 +207,55 @@ class DecisionInstanceSearchTest {
   }
 
   @Test
+  public void shouldRetrieveDecisionInstanceByElementInstanceKeyFilterIn(
+      final CamundaClient camundaClient) {
+    // given
+    final long elementInstanceKey =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.processInstanceKey(processInstanceKey).elementId(ELEMENT_ID_DMN_CALL))
+            .send()
+            .join()
+            .singleItem()
+            .getElementInstanceKey();
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.elementInstanceKey(b -> b.in(Long.MAX_VALUE, elementInstanceKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("elementInstanceKey", "decisionDefinitionId")
+        .containsExactlyInAnyOrder(
+            tuple(elementInstanceKey, DECISION_DEFINITION_ID_2),
+            tuple(elementInstanceKey, DECISION_DEFINITION_ID_3));
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByProcessInstanceKeyFilter(
+      final CamundaClient camundaClient) {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .filter(f -> f.processInstanceKey(processInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("processInstanceKey", "decisionDefinitionId")
+        .containsExactlyInAnyOrder(
+            tuple(processInstanceKey, DECISION_DEFINITION_ID_2),
+            tuple(processInstanceKey, DECISION_DEFINITION_ID_3));
+  }
+
+  @Test
   public void shouldRetrieveDecisionInstanceByStateAndType() {
     // when
     final DecisionInstanceState state = DecisionInstanceState.EVALUATED;
@@ -204,7 +268,7 @@ class DecisionInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().size()).isEqualTo(5);
   }
 
   @Test
@@ -251,7 +315,7 @@ class DecisionInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(2);
+    assertThat(result.items()).hasSize(4);
     assertThat(result.items())
         .extracting("evaluationDate", String.class)
         .allMatch(date -> requestDate.isBefore(OffsetDateTime.parse(date)));
@@ -283,7 +347,7 @@ class DecisionInstanceSearchTest {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(3);
+    assertThat(result.items()).hasSize(5);
     assertThat(result.items())
         .extracting("evaluationDate", String.class)
         .allMatch(date -> !OffsetDateTime.parse(date).isBefore(requestDate));
@@ -311,7 +375,7 @@ class DecisionInstanceSearchTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDecisionInstanceKey())
+    assertThat(result.singleItem().getDecisionInstanceKey())
         .isEqualTo(EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionInstanceKey());
   }
 
@@ -341,15 +405,6 @@ class DecisionInstanceSearchTest {
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
         .contains("A single result was expected, but none was found matching");
-  }
-
-  private static DeploymentEvent deployResource(
-      final CamundaClient camundaClient, final String resourceName) {
-    return camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath(resourceName)
-        .send()
-        .join();
   }
 
   private static EvaluateDecisionResponse evaluateDecision(

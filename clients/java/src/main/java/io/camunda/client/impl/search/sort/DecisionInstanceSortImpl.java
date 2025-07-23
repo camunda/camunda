@@ -57,8 +57,13 @@ public class DecisionInstanceSortImpl extends SearchRequestSortBase<DecisionInst
   }
 
   @Override
-  public DecisionInstanceSort processInstanceId() {
-    return field("processInstanceId");
+  public DecisionInstanceSort processInstanceKey() {
+    return field("processInstanceKey");
+  }
+
+  @Override
+  public DecisionInstanceSort elementInstanceKey() {
+    return field("elementInstanceKey");
   }
 
   @Override

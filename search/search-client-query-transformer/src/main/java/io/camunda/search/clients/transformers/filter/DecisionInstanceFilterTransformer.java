@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
@@ -19,6 +20,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_VERSION;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
@@ -60,6 +62,7 @@ public final class DecisionInstanceFilterTransformer
         .ifPresent(queries::add);
     ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
     queries.addAll(getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeyOperations()));
+    queries.addAll(getFlowNodeInstanceKeysQuery(filter.flowNodeInstanceKeyOperations()));
     ofNullable(getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds()))
         .ifPresent(queries::add);
     ofNullable(getDecisionDefinitionNamesQuery(filter.decisionDefinitionNames()))
@@ -118,6 +121,11 @@ public final class DecisionInstanceFilterTransformer
                 })
             .toList();
     return stringOperations(DECISION_DEFINITION_ID, stringOperations);
+  }
+
+  private List<SearchQuery> getFlowNodeInstanceKeysQuery(
+      final List<Operation<Long>> flowNodeInstanceKeyOperations) {
+    return longOperations(ELEMENT_INSTANCE_KEY, flowNodeInstanceKeyOperations);
   }
 
   private SearchQuery getDecisionDefinitionIdsQuery(final List<String> decisionDefinitionIds) {

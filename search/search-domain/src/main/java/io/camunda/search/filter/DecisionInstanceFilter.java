@@ -29,6 +29,7 @@ public record DecisionInstanceFilter(
     List<String> evaluationFailures,
     List<Long> processDefinitionKeys,
     List<Long> processInstanceKeys,
+    List<Operation<Long>> flowNodeInstanceKeyOperations,
     List<Operation<Long>> decisionDefinitionKeyOperations,
     List<String> decisionDefinitionIds,
     List<String> decisionDefinitionNames,
@@ -51,6 +52,7 @@ public record DecisionInstanceFilter(
     private List<String> evaluationFailures;
     private List<Long> processDefinitionKeys;
     private List<Long> processInstanceKeys;
+    private List<Operation<Long>> flowNodeInstanceKeyOperations;
     private List<Operation<Long>> decisionDefinitionKeyOperations;
     private List<String> decisionDefinitionIds;
     private List<String> decisionDefinitionNames;
@@ -121,6 +123,21 @@ public record DecisionInstanceFilter(
 
     public Builder processInstanceKeys(final Long... values) {
       return processInstanceKeys(collectValuesAsList(values));
+    }
+
+    public Builder flowNodeInstanceKeyOperations(final List<Operation<Long>> operations) {
+      flowNodeInstanceKeyOperations = addValuesToList(flowNodeInstanceKeyOperations, operations);
+      return this;
+    }
+
+    public Builder flowNodeInstanceKeys(final Long value, final Long... values) {
+      return flowNodeInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder flowNodeInstanceKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return flowNodeInstanceKeyOperations(collectValues(operation, operations));
     }
 
     public Builder decisionDefinitionKeyOperations(final List<Operation<Long>> operations) {
@@ -194,6 +211,7 @@ public record DecisionInstanceFilter(
           Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(flowNodeInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionIds, Collections.emptyList()),
           Objects.requireNonNullElse(decisionDefinitionNames, Collections.emptyList()),

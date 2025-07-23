@@ -22,7 +22,6 @@ import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
-import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.sort.DecisionInstanceSort;
@@ -96,6 +95,7 @@ public class DecisionInstanceSpecificFilterIT {
                     .processInstanceKey(123L)
                     .processDefinitionId("unique-process-124")
                     .processDefinitionKey(124L)
+                    .flowNodeInstanceKey(126L)
                     .state(DecisionInstanceState.EVALUATED)
                     .decisionType(DecisionDefinitionType.DECISION_TABLE)
                     .decisionDefinitionKey(decisionDefinition.decisionDefinitionKey())
@@ -122,8 +122,8 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.decisionInstanceKeys(42L)),
         DecisionInstanceFilter.of(b -> b.processInstanceKeys(123L)),
         DecisionInstanceFilter.of(b -> b.processDefinitionKeys(124L)),
-        DecisionInstanceFilter.of(
-            b -> b.decisionDefinitionKeyOperations(List.of(Operation.eq(100L)))),
+        DecisionInstanceFilter.of(b -> b.decisionDefinitionKeys(100L)),
+        DecisionInstanceFilter.of(b -> b.flowNodeInstanceKeys(126L)),
         DecisionInstanceFilter.of(b -> b.decisionDefinitionIds("decision-100")),
         DecisionInstanceFilter.of(b -> b.states(DecisionInstanceState.EVALUATED)),
         DecisionInstanceFilter.of(b -> b.decisionTypes(DecisionDefinitionType.DECISION_TABLE)),
