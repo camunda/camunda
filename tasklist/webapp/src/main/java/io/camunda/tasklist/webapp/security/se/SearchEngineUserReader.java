@@ -8,7 +8,6 @@
 package io.camunda.tasklist.webapp.security.se;
 
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.CONSOLIDATED_AUTH_PROFILE;
-import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.tasklist.util.CollectionUtil;
@@ -24,7 +23,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + SSO_AUTH_PROFILE + " & !" + CONSOLIDATED_AUTH_PROFILE)
+@Profile("!" + CONSOLIDATED_AUTH_PROFILE)
 public class SearchEngineUserReader implements UserReader {
 
   @Autowired private UserStore userStore;
