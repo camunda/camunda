@@ -32,9 +32,6 @@ public enum Profile {
   // authentication profiles
   CONSOLIDATED_AUTH("consolidated-auth"),
   IDENTITY_AUTH("identity-auth"),
-  SSO_AUTH("sso-auth"),
-  DEFAULT_AUTH_PROFILE("auth"),
-  LDAP_AUTH_PROFILE("ldap-auth"),
 
   // migration profiles
   IDENTITY_MIGRATION("identity-migration"),
@@ -50,11 +47,6 @@ public enum Profile {
 
   public String getId() {
     return id;
-  }
-
-  public static Set<Profile> getAuthProfiles() {
-    return Set.of(
-        CONSOLIDATED_AUTH, DEFAULT_AUTH_PROFILE, IDENTITY_AUTH, LDAP_AUTH_PROFILE, SSO_AUTH);
   }
 
   public static Set<Profile> getWebappProfiles() {

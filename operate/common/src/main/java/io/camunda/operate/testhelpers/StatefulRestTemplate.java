@@ -76,7 +76,7 @@ public class StatefulRestTemplate extends RestTemplate {
         new StatefulHttpComponentsClientHttpRequestFactory(httpClient, httpContext);
     super.setRequestFactory(statefulHttpComponentsClientHttpRequestFactory);
 
-    // We set the interceptors here so they capture the non overridden methods
+    // We set the interceptors here so they capture the non-overridden methods
     final var interceptors = new ArrayList<>(super.getInterceptors());
     interceptors.add(new BasicAuthenticationInterceptor(USERNAME, PASSWORD));
     super.setInterceptors(interceptors);

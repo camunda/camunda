@@ -8,9 +8,7 @@
 package io.camunda.application.initializers;
 
 import static io.camunda.application.Profile.IDENTITY;
-import static io.camunda.application.Profile.IDENTITY_AUTH;
 import static io.camunda.application.Profile.OPERATE;
-import static io.camunda.application.Profile.SSO_AUTH;
 import static io.camunda.application.Profile.TASKLIST;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
@@ -34,8 +32,6 @@ public class WebappsConfigurationInitializer
       "server.servlet.session.cookie.name";
   private static final Set<String> WEBAPPS_PROFILES =
       Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId());
-  private static final Set<String> LOGIN_DELEGATED_PROFILES =
-      Set.of(IDENTITY_AUTH.getId(), SSO_AUTH.getId());
 
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
@@ -61,11 +57,6 @@ public class WebappsConfigurationInitializer
   }
 
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
-    final var activeProfiles = Arrays.asList(context.getEnvironment().getActiveProfiles());
-    if (activeProfiles.stream().anyMatch(LOGIN_DELEGATED_PROFILES::contains)) {
-      return true;
-    }
-
     final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
     final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
     return authenticationMethod.isPresent()

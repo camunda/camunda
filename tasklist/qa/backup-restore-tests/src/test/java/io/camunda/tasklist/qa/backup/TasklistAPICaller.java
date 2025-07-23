@@ -60,8 +60,6 @@ public class TasklistAPICaller {
   private static final Logger LOGGER = LoggerFactory.getLogger(TasklistAPICaller.class);
   private static final String COMPLETE_TASK_MUTATION_PATTERN =
       "mutation {completeTask(taskId: \"%s\", variables: [%s]){id name assignee taskState completionTime}}";
-  private static final String USERNAME = "demo";
-  private static final String PASSWORD = "demo";
 
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
 
@@ -101,7 +99,6 @@ public class TasklistAPICaller {
       statefulRestTemplate =
           statefulRestTemplateFactory.apply(
               testContext.getExternalTasklistHost(), testContext.getExternalTasklistPort());
-      statefulRestTemplate.loginWhenNeeded(USERNAME, PASSWORD);
       mgmtRestTemplate =
           statefulRestTemplateFactory.apply(
               testContext.getExternalTasklistHost(), testContext.getExternalTasklistMgmtPort());

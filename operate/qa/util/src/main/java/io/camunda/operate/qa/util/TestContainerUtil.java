@@ -401,11 +401,7 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
-        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
-        .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
-        .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
-        .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
-        .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
     final Map<String, String> customEnvs = testContext.getOperateContainerEnvs();
     customEnvs.forEach(operateContainer::withEnv);
 
@@ -530,8 +526,7 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
-          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com")
-          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0", "demo");
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
 
       if (testContext.getPartitionCount() != null) {
         broker.withEnv(

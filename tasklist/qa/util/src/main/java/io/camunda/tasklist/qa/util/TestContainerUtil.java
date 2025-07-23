@@ -465,6 +465,16 @@ public class TestContainerUtil {
         tasklistContainer.withEnv(
             "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
       }
+
+      tasklistContainer
+          .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth")
+          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
+          .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
+          .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
     }
 
     final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
@@ -481,7 +491,11 @@ public class TestContainerUtil {
               .withNetwork(testContext.getNetwork())
               .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
               .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
-              .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
+              .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+              .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME", "demo")
+              .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD", "demo")
+              .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
+              .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
 
       if (testContext.getZeebeDataFolder() != null) {
         broker.withCreateContainerCmdModifier(

@@ -68,7 +68,8 @@ public class StartupIT {
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticSearchUrl)
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticSearchUrl)
         .withEnv("CAMUNDA_DATABASE_URL", elasticSearchUrl)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true");
+        .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true")
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
     testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
     LOGGER.info("************ Tasklist started  ************");
@@ -77,7 +78,7 @@ public class StartupIT {
     final ResponseEntity<String> clientConfig =
         restTemplate.getForEntity(
             String.format(
-                "http://%s:%s/tasklist/client-config.js",
+                "http://%s:%s/v2/topology",
                 testContext.getExternalTasklistHost(), testContext.getExternalTasklistPort()),
             String.class);
 

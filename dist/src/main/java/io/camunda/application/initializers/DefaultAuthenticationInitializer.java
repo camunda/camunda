@@ -7,18 +7,16 @@
  */
 package io.camunda.application.initializers;
 
-import static io.camunda.application.Profile.DEFAULT_AUTH_PROFILE;
-import static io.camunda.application.Profile.getAuthProfiles;
+import static io.camunda.application.Profile.CONSOLIDATED_AUTH;
 import static io.camunda.application.Profile.getWebappProfiles;
 
-import io.camunda.application.Profile;
 import io.camunda.authentication.config.AuthenticationProperties;
 import java.util.Set;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
 
-/** Adds the "auth" if none of the {@link Profile#getAuthProfiles()} is set as an active profile. */
+/** Adds the "consolidated-auth" profile if it's not set */
 public class DefaultAuthenticationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -26,7 +24,7 @@ public class DefaultAuthenticationInitializer
   public void initialize(final ConfigurableApplicationContext context) {
     final var env = context.getEnvironment();
     if (shouldApplyDefaultAuthenticationProfile(env)) {
-      env.addActiveProfile(DEFAULT_AUTH_PROFILE.getId());
+      env.addActiveProfile(CONSOLIDATED_AUTH.getId());
     }
   }
 
@@ -35,7 +33,8 @@ public class DefaultAuthenticationInitializer
       return false;
     }
     final Set<String> activeProfiles = Set.of(environment.getActiveProfiles());
-    return webappProfileIsPresent(activeProfiles) && !authProfileIsPresent(activeProfiles);
+    return webappProfileIsPresent(activeProfiles)
+        && !consolidatedAuthProfileIsPresent(activeProfiles);
   }
 
   private boolean webappProfileIsPresent(final Set<String> activeProfiles) {
@@ -43,7 +42,7 @@ public class DefaultAuthenticationInitializer
         .anyMatch(profile -> activeProfiles.contains(profile.getId()));
   }
 
-  private boolean authProfileIsPresent(final Set<String> activeProfiles) {
-    return getAuthProfiles().stream().anyMatch(profile -> activeProfiles.contains(profile.getId()));
+  private boolean consolidatedAuthProfileIsPresent(final Set<String> activeProfiles) {
+    return activeProfiles.contains(CONSOLIDATED_AUTH.getId());
   }
 }
