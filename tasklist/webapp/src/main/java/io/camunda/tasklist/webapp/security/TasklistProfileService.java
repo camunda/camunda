@@ -7,15 +7,7 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import java.util.Set;
-
 public interface TasklistProfileService {
-
-  String CONSOLIDATED_AUTH_PROFILE = "consolidated-auth";
-  String AUTH_PROFILE = "auth";
-  String DEFAULT_AUTH = AUTH_PROFILE;
-  String LDAP_AUTH_PROFILE = "ldap-auth";
-  Set<String> AUTH_PROFILES = Set.of(AUTH_PROFILE, LDAP_AUTH_PROFILE, CONSOLIDATED_AUTH_PROFILE);
 
   String getMessageByProfileFor(Exception exception);
 

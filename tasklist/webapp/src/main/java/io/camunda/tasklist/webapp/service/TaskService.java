@@ -67,6 +67,7 @@ public class TaskService {
   @Autowired private TaskValidator taskValidator;
   @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private OrganizationService organizationService;
 
   public List<TaskDTO> getTasks(final TaskQueryDTO query) {
     return getTasks(query, emptySet(), false);
@@ -328,7 +329,7 @@ public class TaskService {
       TAG_KEY_BPMN_PROCESS_ID, task.getBpmnProcessId(),
       TAG_KEY_FLOW_NODE_ID, task.getFlowNodeBpmnId(),
       TAG_KEY_USER_ID, keyUserId,
-      TAG_KEY_ORGANIZATION_ID, userReader.getCurrentOrganizationId()
+      TAG_KEY_ORGANIZATION_ID, organizationService.getOrganizationIfPresent()
     };
   }
 }

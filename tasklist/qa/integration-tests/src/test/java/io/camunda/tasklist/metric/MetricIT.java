@@ -16,7 +16,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.dto.UserDTO;
-import io.camunda.tasklist.webapp.security.Permission;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,10 +39,7 @@ public class MetricIT extends TasklistZeebeIntegrationTest {
   private final UserDTO demo = buildAllAccessUserWith(DEFAULT_USER_ID, DEFAULT_DISPLAY_NAME);
 
   private static UserDTO buildAllAccessUserWith(final String userId, final String displayName) {
-    return new UserDTO()
-        .setUserId(userId)
-        .setDisplayName(displayName)
-        .setPermissions(List.of(Permission.WRITE));
+    return new UserDTO().setUserId(userId).setDisplayName(displayName);
   }
 
   @Override

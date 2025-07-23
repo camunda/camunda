@@ -135,18 +135,6 @@
       <artifactId>spring-boot-starter-thymeleaf</artifactId>
     </dependency>
 
-    <!-- ELASTICSEARCH -->
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-high-level-client</artifactId>
-    </dependency>
-
-    <!-- https://mvnrepository.com/artifact/org.glassfish/jakarta.json -->
-    <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>jakarta.json</artifactId>
-    </dependency>
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
@@ -190,11 +178,6 @@
       <artifactId>spring-security-oauth2-resource-server</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-oauth2-jose</artifactId>
-    </dependency>
-
     <!-- OpenAPI -->
     <dependency>
       <groupId>org.springdoc</groupId>
@@ -209,11 +192,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>jakarta.json</groupId>
-      <artifactId>jakarta.json-api</artifactId>
     </dependency>
 
     <dependency>
@@ -237,23 +215,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-x-content</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-web</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents.core5</groupId>
-      <artifactId>httpcore5</artifactId>
     </dependency>
 
     <dependency>
@@ -301,18 +264,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-crypto</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
     </dependency>
 
     <dependency>
@@ -390,11 +343,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
@@ -437,13 +385,9 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-config</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.lucene</groupId>
       <artifactId>lucene-core</artifactId>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -501,7 +445,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
             <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
             <dependency>org.thymeleaf:thymeleaf</dependency>
-            <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
             <dependency>org.junit.platform:junit-platform-suite</dependency>
             <!-- This dependency are indirectly used by the awssdk auth plugin. It requires these

@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -42,6 +43,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 public abstract class TasklistIntegrationTest {
 
   protected OffsetDateTime testStartTime;
+  @MockBean protected UserReader userReader;
   @Autowired private ApplicationContext applicationContext;
   @MockBean private CamundaUserService camundaUserService;
 

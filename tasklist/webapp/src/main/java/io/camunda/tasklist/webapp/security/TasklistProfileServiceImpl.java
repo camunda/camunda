@@ -35,18 +35,14 @@ public class TasklistProfileServiceImpl implements TasklistProfileService {
 
   @Override
   public boolean isLoginDelegated() {
-    return isConsolidatedAuthOidc();
-  }
-
-  private boolean isDevelopmentProfileActive() {
-    return List.of(environment.getActiveProfiles()).contains("dev");
-  }
-
-  public boolean isConsolidatedAuthOidc() {
     final var consolidatedAuthVariation =
         AuthenticationMethod.parse(environment.getProperty(METHOD));
 
     return consolidatedAuthVariation.isPresent()
         && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());
+  }
+
+  private boolean isDevelopmentProfileActive() {
+    return List.of(environment.getActiveProfiles()).contains("dev");
   }
 }

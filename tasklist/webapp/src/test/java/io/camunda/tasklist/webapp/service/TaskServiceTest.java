@@ -80,6 +80,7 @@ class TaskServiceTest {
   @Mock private TaskMetricsStore taskMetricsStore;
   @Mock private TaskValidator taskValidator;
   @Mock private TasklistServicesAdapter tasklistServicesAdapter;
+  @Mock private OrganizationService organizationService;
 
   @Mock private TasklistProperties tasklistProperties;
 
@@ -91,6 +92,8 @@ class TaskServiceTest {
   public void setUp() {
     authenticationUtil = mockStatic(TasklistAuthenticationUtil.class);
     when(tasklistProperties.getFeatureFlag()).thenReturn(new FeatureFlagProperties());
+    when(organizationService.getOrganizationIfPresent())
+        .thenReturn(OrganizationService.DEFAULT_ORGANIZATION);
   }
 
   @AfterEach

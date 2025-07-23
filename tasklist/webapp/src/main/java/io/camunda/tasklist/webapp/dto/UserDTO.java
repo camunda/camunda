@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.dto;
 
-import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.tenant.TasklistTenant;
 import java.util.List;
 import java.util.Objects;
@@ -17,7 +16,6 @@ public class UserDTO {
 
   private String userId;
   private String displayName;
-  private List<Permission> permissions;
   private List<String> roles;
   private String salesPlanType;
   private List<C8AppLink> c8Links = List.of();
@@ -42,15 +40,6 @@ public class UserDTO {
 
   public UserDTO setDisplayName(final String displayName) {
     this.displayName = displayName;
-    return this;
-  }
-
-  public List<Permission> getPermissions() {
-    return permissions;
-  }
-
-  public UserDTO setPermissions(final List<Permission> permissions) {
-    this.permissions = permissions;
     return this;
   }
 
@@ -105,8 +94,7 @@ public class UserDTO {
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        userId, displayName, permissions, roles, salesPlanType, c8Links, tenants, groups);
+    return Objects.hash(userId, displayName, roles, salesPlanType, c8Links, tenants, groups);
   }
 
   @Override
@@ -120,7 +108,6 @@ public class UserDTO {
     final UserDTO userDTO = (UserDTO) o;
     return Objects.equals(userId, userDTO.userId)
         && Objects.equals(displayName, userDTO.displayName)
-        && Objects.equals(permissions, userDTO.permissions)
         && Objects.equals(roles, userDTO.roles)
         && Objects.equals(salesPlanType, userDTO.salesPlanType)
         && Objects.equals(c8Links, userDTO.c8Links)
@@ -137,8 +124,6 @@ public class UserDTO {
         + ", displayName='"
         + displayName
         + '\''
-        + ", permissions="
-        + permissions
         + ", roles="
         + roles
         + ", salesPlanType='"

@@ -16,8 +16,6 @@ import io.camunda.tasklist.qa.util.TestOpenSearchSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.webapp.security.WebSecurityConfig;
-import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,9 +36,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     classes = {
       TestOpenSearchSchemaManager.class,
       TestApplication.class,
-      SearchEngineHealthIndicator.class,
-      WebSecurityConfig.class,
-      OAuth2WebConfigurer.class,
+      SearchEngineHealthIndicator.class
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",

@@ -15,7 +15,6 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.util.TestTasklistPropertiesOverride;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
-import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
@@ -57,7 +56,6 @@ import org.springframework.context.annotation.Profile;
 @Import({
   TestTasklistPropertiesOverride.class,
   WebappsModuleConfiguration.class,
-  WebappSecurityModuleConfiguration.class,
   ImporterSecurityModuleConfiguration.class,
   WebappManagementModuleConfiguration.class,
 })
