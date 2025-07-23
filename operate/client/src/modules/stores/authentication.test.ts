@@ -6,83 +6,199 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {waitFor} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
+import {mockLogin} from 'modules/mocks/api/login';
+import {mockLogout} from 'modules/mocks/api/logout';
 
 const mockUserResponse = createUser();
 
-describe('stores/authentication', () => {
-  afterEach(() => {
+describe('authentication store', () => {
+  beforeEach(() => {
     authenticationStore.reset();
   });
 
-  it.each([{canLogout: false}, {canLogout: true, isLoginDelegated: true}])(
-    'should handle third-party authentication when client config is %s',
-    async (config) => {
-      vi.stubGlobal('clientConfig', config);
+  it('should assume that there is an existing session', () => {
+    expect(authenticationStore.status).toBe('initial');
+  });
 
+  it('should login', async () => {
+    mockLogin().withSuccess({});
+    mockMe().withSuccess(mockUserResponse);
+
+    authenticationStore.disableSession();
+
+    expect(authenticationStore.status).toBe('session-invalid');
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+  });
+
+  it('should handle login failure', async () => {
+    mockLogin().withServerError(401);
+
+    const result = await authenticationStore.handleLogin('demo', 'demo');
+    expect(result).toBeDefined();
+    expect(result).toMatchObject({
+      status: 401,
+    });
+    expect(authenticationStore.status).toBe('initial');
+  });
+
+  it('should logout', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+
+    mockLogin().withSuccess({});
+    mockMe().withSuccess(mockUserResponse);
+
+    await authenticationStore.handleLogin('demo', 'demo');
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    mockLogout().withSuccess({});
+    await authenticationStore.handleLogout();
+
+    expect(authenticationStore.status).toBe('logged-out');
+
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally()).toEqual({
+      wasReloaded: false,
+    });
+  });
+
+  it('should throw an error on logout failure', async () => {
+    mockLogout().withServerError(500);
+
+    expect(await authenticationStore.handleLogout()).not.toBeUndefined();
+  });
+
+  it('should disable session', async () => {
+    const mockReload = vi.fn();
+    vi.spyOn(window, 'location', 'get').mockReturnValue({
+      ...window.location,
+      reload: mockReload,
+    });
+
+    vi.stubGlobal('clientConfig', {
+      canLogout: true,
+      isLoginDelegated: false,
+    });
+
+    authenticationStore.activateSession();
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    authenticationStore.disableSession();
+
+    expect(authenticationStore.status).toBe('session-expired');
+
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally()).toEqual({
+      wasReloaded: false,
+    });
+
+    authenticationStore.activateSession();
+
+    expect(authenticationStore.status).toBe('logged-in');
+
+    expect(mockReload).toHaveBeenCalledTimes(0);
+    expect(getStateLocally()).toEqual({
+      wasReloaded: false,
+    });
+  });
+
+  it.each([
+    {canLogout: false, isLoginDelegated: false},
+    {canLogout: true, isLoginDelegated: true},
+  ])(
+    'should disable session when canLogout is $canLogout and isLoginDelegated is $isLoginDelegated',
+    async ({canLogout, isLoginDelegated}) => {
       const mockReload = vi.fn();
-
-      vi.stubGlobal('location', {
+      vi.spyOn(window, 'location', 'get').mockReturnValue({
         ...window.location,
         reload: mockReload,
       });
 
-      mockMe().withSuccess(mockUserResponse);
-      authenticationStore.authenticate();
+      vi.stubGlobal('clientConfig', {
+        canLogout,
+        isLoginDelegated,
+      });
 
-      await waitFor(() =>
-        expect(authenticationStore.state.status).toBe(
-          'user-information-fetched',
-        ),
-      );
+      authenticationStore.activateSession();
 
-      mockMe().withServerError(401);
-      authenticationStore.authenticate();
+      expect(authenticationStore.status).toBe('logged-in');
 
-      await waitFor(() =>
-        expect(authenticationStore.state.status).toBe(
-          'invalid-third-party-session',
-        ),
-      );
+      authenticationStore.disableSession();
+
+      expect(authenticationStore.status).toBe('invalid-third-party-session');
 
       expect(mockReload).toHaveBeenCalledTimes(1);
-      expect(getStateLocally()?.wasReloaded).toBe(true);
+      expect(getStateLocally()).toEqual({
+        wasReloaded: true,
+      });
 
-      mockMe().withSuccess(mockUserResponse);
-      authenticationStore.authenticate();
+      authenticationStore.activateSession();
 
-      await waitFor(() =>
-        expect(authenticationStore.state.status).toBe(
-          'user-information-fetched',
-        ),
-      );
+      expect(authenticationStore.status).toBe('logged-in');
 
       expect(mockReload).toHaveBeenCalledTimes(1);
-      expect(getStateLocally()?.wasReloaded).toBe(false);
+      expect(getStateLocally()).toEqual({
+        wasReloaded: false,
+      });
     },
   );
 
-  describe('isForbidden', () => {
-    it('should return true when authorizedApplications does not contain "operate" or "*"', () => {
-      authenticationStore.state.authorizedApplications = ['tasklist'];
-      expect(authenticationStore.isForbidden()).toBe(true);
-    });
+  it.each([
+    {canLogout: false, isLoginDelegated: false},
+    {canLogout: true, isLoginDelegated: true},
+  ])(
+    'should logout when canLogout is $canLogout and isLoginDelegated is $isLoginDelegated',
+    async ({canLogout, isLoginDelegated}) => {
+      const mockReload = vi.fn();
+      vi.spyOn(window, 'location', 'get').mockReturnValue({
+        ...window.location,
+        reload: mockReload,
+      });
 
-    it('should return false when authorizedApplications contains "operate"', () => {
-      authenticationStore.state.authorizedApplications = [
-        'tasklist',
-        'operate',
-      ];
-      expect(authenticationStore.isForbidden()).toBe(false);
-    });
+      vi.stubGlobal('clientConfig', {
+        canLogout,
+        isLoginDelegated,
+      });
 
-    it('should return false when authorizedApplications contains "*"', () => {
-      authenticationStore.state.authorizedApplications = ['*'];
-      expect(authenticationStore.isForbidden()).toBe(false);
-    });
-  });
+      mockLogin().withSuccess({});
+      mockMe().withSuccess(mockUserResponse);
+      mockLogout().withSuccess({});
+      mockLogin().withSuccess({});
+      mockMe().withSuccess(mockUserResponse);
+
+      await authenticationStore.handleLogin('demo', 'demo');
+
+      expect(authenticationStore.status).toBe('logged-in');
+
+      await authenticationStore.handleLogout();
+
+      expect(authenticationStore.status).toBe('invalid-third-party-session');
+
+      expect(mockReload).toHaveBeenCalledTimes(1);
+      expect(getStateLocally()).toEqual({
+        wasReloaded: true,
+      });
+
+      await authenticationStore.handleLogin('demo', 'demo');
+
+      expect(authenticationStore.status).toBe('logged-in');
+
+      expect(mockReload).toHaveBeenCalledTimes(1);
+      expect(getStateLocally()).toEqual({
+        wasReloaded: false,
+      });
+    },
+  );
 });

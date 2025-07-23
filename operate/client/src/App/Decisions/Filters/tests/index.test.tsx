@@ -15,13 +15,17 @@ import {MemoryRouter} from 'react-router-dom';
 import {Filters} from '../';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
-import {useEffect} from 'react';
+import {act, useEffect} from 'react';
 import {
   clearComboBox,
   selectDecision,
   selectDecisionVersion,
 } from 'modules/testUtils/selectComboBoxOption';
 import {Paths} from 'modules/Routes';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {createUser} from 'modules/testUtils';
 
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -30,11 +34,13 @@ function getWrapper(initialPath: string = Paths.decisions()) {
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <AppHeader />
-        {children}
-        <LocationLog />
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <AppHeader />
+          {children}
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -61,6 +67,8 @@ const MOCK_FILTERS_PARAMS = {
 describe('<Filters />', () => {
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
     await groupedDecisionsStore.fetchDecisions();
     vi.useFakeTimers({shouldAdvanceTime: true});
   });
@@ -129,7 +137,9 @@ describe('<Filters />', () => {
     await user.click(screen.getByRole('button', {name: 'More Filters'}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -169,7 +179,9 @@ describe('<Filters />', () => {
     });
     await user.click(screen.getByText('Apply'));
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(
         Object.fromEntries(
@@ -475,11 +487,11 @@ describe('<Filters />', () => {
     );
 
     await user.click(
-      within(
+      await within(
         screen.getByRole('navigation', {
           name: /camunda operate/i,
         }),
-      ).getByRole('link', {
+      ).findByRole('link', {
         name: /dashboard/i,
       }),
     );

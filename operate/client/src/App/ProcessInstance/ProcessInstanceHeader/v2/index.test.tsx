@@ -22,8 +22,11 @@ import {
   mockInstanceDeprecated,
 } from './index.setup';
 
-import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
-import {authenticationStore} from 'modules/stores/authentication';
+import {
+  createUser,
+  mockCallActivityProcessXML,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
@@ -31,6 +34,7 @@ import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
 import {mockCancelProcessInstance} from 'modules/mocks/api/v2/processInstances/cancelProcessInstance';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -41,6 +45,7 @@ vi.mock('modules/stores/notifications', () => ({
 describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchCallHierarchy().withSuccess([]);
+    mockMe().withSuccess(createUser());
   });
 
   it('should render process instance data', async () => {
@@ -201,16 +206,6 @@ describe('InstanceHeader', () => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
@@ -233,16 +228,6 @@ describe('InstanceHeader', () => {
   it('should show operation buttons for finished process instance when user has permission', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
 
     render(
       <ProcessInstanceHeader
@@ -267,16 +252,6 @@ describe('InstanceHeader', () => {
   it('should redirect and show notification when "Delete Instance" is clicked', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
 
     const {user} = render(
       <ProcessInstanceHeader
@@ -318,16 +293,6 @@ describe('InstanceHeader', () => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
     render(
       <ProcessInstanceHeader
         processInstance={{...mockInstance, state: 'TERMINATED'}}
@@ -353,16 +318,6 @@ describe('InstanceHeader', () => {
 
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    authenticationStore.setUser({
-      displayName: 'demo',
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
 
     render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,

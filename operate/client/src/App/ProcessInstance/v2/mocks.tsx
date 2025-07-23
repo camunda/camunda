@@ -13,6 +13,7 @@ import {mockIncidents} from 'modules/mocks/incidents';
 import {testData} from './index.setup';
 import {
   createMultiInstanceFlowNodeInstances,
+  createUser,
   createVariable,
   createVariableV2,
 } from 'modules/testUtils';
@@ -49,6 +50,7 @@ import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetc
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 const processInstancesMock = createMultiInstanceFlowNodeInstances('4294980768');
 const mockProcessInstance: ProcessInstance = {
@@ -98,6 +100,7 @@ const mockSequenceFlowsV2: SequenceFlow[] = [
 ];
 
 const mockRequests = () => {
+  mockMe().withSuccess(createUser());
   mockFetchProcessInstanceDeprecated().withSuccess(
     testData.fetch.onPageLoad.processInstanceWithIncident,
   );

@@ -8,7 +8,11 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {processesStore} from 'modules/stores/processes/processes.list';
-import {groupedProcessesMock, mockProcessXML} from 'modules/testUtils';
+import {
+  createUser,
+  groupedProcessesMock,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 
@@ -23,6 +27,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 function getWrapper(
   initialPath: string = `${Paths.processes()}?active=true&incidents=true`,
@@ -58,6 +63,7 @@ describe('Filters', () => {
       groupedProcessesMock.filter(({tenantId}) => tenantId === '<default>'),
     );
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    mockMe().withSuccess(createUser());
     processesStore.fetchProcesses();
   });
 

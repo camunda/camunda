@@ -25,6 +25,10 @@ import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupe
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {createUser} from 'modules/testUtils';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 const createWrapper = (initialPath: string = Paths.decisions()) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -37,14 +41,16 @@ const createWrapper = (initialPath: string = Paths.decisions()) => {
     }, []);
 
     return (
-      <MemoryRouter initialEntries={[initialPath]}>
-        <Routes>
-          <Route path={Paths.decisions()} element={children} />
-          <Route path={Paths.processInstance()} element={<></>} />
-          <Route path={Paths.decisionInstance()} element={<></>} />
-        </Routes>
-        <LocationLog />
-      </MemoryRouter>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <MemoryRouter initialEntries={[initialPath]}>
+          <Routes>
+            <Route path={Paths.decisions()} element={children} />
+            <Route path={Paths.processInstance()} element={<></>} />
+            <Route path={Paths.decisionInstance()} element={<></>} />
+          </Routes>
+          <LocationLog />
+        </MemoryRouter>
+      </QueryClientProvider>
     );
   };
 
@@ -54,6 +60,7 @@ const createWrapper = (initialPath: string = Paths.decisions()) => {
 describe('<InstancesTable />', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
+    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
   });
 
   it('should initially render skeleton', async () => {

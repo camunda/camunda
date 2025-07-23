@@ -6,37 +6,33 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {createUser} from 'modules/testUtils';
 
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {authenticationStore} from 'modules/stores/authentication';
-import {useEffect} from 'react';
 import {TenantField} from '.';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
 function getWrapper(initialValues?: ProcessInstanceFilters) {
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => {
-    useEffect(() => {
-      return () => {
-        authenticationStore.reset();
-      };
-    }, []);
-
     return (
-      <Form
-        onSubmit={() => {}}
-        mutators={{...arrayMutators}}
-        initialValues={initialValues}
-      >
-        {({handleSubmit}) => {
-          return <form onSubmit={handleSubmit}>{children}</form>;
-        }}
-      </Form>
+      <QueryClientProvider client={getMockQueryClient()}>
+        <Form
+          onSubmit={() => {}}
+          mutators={{...arrayMutators}}
+          initialValues={initialValues}
+        >
+          {({handleSubmit}) => {
+            return <form onSubmit={handleSubmit}>{children}</form>;
+          }}
+        </Form>
+      </QueryClientProvider>
     );
   };
 
@@ -50,8 +46,6 @@ describe('Tenant Field', () => {
         tenants: [],
       }),
     );
-
-    await authenticationStore.authenticate();
 
     const {user} = render(<TenantField />, {
       wrapper: getWrapper(),
@@ -69,14 +63,12 @@ describe('Tenant Field', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: 'tenant-A', name: 'Tenant A'},
-          {tenantId: 'tenant-B', name: 'Tenant B'},
+          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
+          {key: 2, tenantId: 'tenant-A', name: 'Tenant A'},
+          {key: 3, tenantId: 'tenant-B', name: 'Tenant B'},
         ],
       }),
     );
-
-    await authenticationStore.authenticate();
 
     const {user} = render(<TenantField />, {
       wrapper: getWrapper(),
@@ -84,7 +76,9 @@ describe('Tenant Field', () => {
 
     await user.click(screen.getByRole('combobox', {name: 'Tenant'}));
 
-    expect(screen.getAllByRole('option')).toHaveLength(4);
+    await waitFor(() => {
+      expect(screen.getAllByRole('option')).toHaveLength(4);
+    });
     expect(
       screen.getByRole('option', {name: 'All tenants'}),
     ).toBeInTheDocument();
@@ -99,14 +93,12 @@ describe('Tenant Field', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: 'tenant-A', name: 'Tenant A'},
-          {tenantId: 'tenant-B', name: 'Tenant B'},
+          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
+          {key: 2, tenantId: 'tenant-A', name: 'Tenant A'},
+          {key: 3, tenantId: 'tenant-B', name: 'Tenant B'},
         ],
       }),
     );
-
-    await authenticationStore.authenticate();
 
     render(<TenantField />, {
       wrapper: getWrapper({tenant: 'invalid-tenant'}),

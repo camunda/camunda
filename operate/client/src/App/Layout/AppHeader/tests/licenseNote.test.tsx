@@ -11,10 +11,16 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {Wrapper} from './mocks';
 import {mockFetchLicense} from 'modules/mocks/api/v2/fetchLicense';
 import {licenseTagStore} from 'modules/stores/licenseTag';
+import {createUser} from 'modules/testUtils';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 vi.unmock('modules/stores/licenseTag');
 
 describe('license note', () => {
+  beforeEach(() => {
+    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+  });
+
   it('should show non production tag if license is invalid', async () => {
     mockFetchLicense().withSuccess({
       licenseType: 'production',
@@ -26,10 +32,6 @@ describe('license note', () => {
     render(<AppHeader />, {
       wrapper: Wrapper,
     });
-
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
 
     expect(
       await screen.findByText(/^Non-production license$/i),
@@ -73,10 +75,6 @@ describe('license note', () => {
       wrapper: Wrapper,
     });
 
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
-
     expect(
       await screen.findByText(/^Non-production license$/i),
     ).toBeInTheDocument();
@@ -97,10 +95,6 @@ describe('license note', () => {
     render(<AppHeader />, {
       wrapper: Wrapper,
     });
-
-    await waitFor(() =>
-      expect(licenseTagStore.state.status).toEqual('fetched'),
-    );
 
     expect(
       await screen.findByText(/^production license$/i),
@@ -126,64 +120,58 @@ describe('license note', () => {
 
     expect(screen.queryByText(/^production license$/i)).not.toBeInTheDocument();
   });
-});
 
-it('should show non-commercial license note in self-managed enterprise environment', async () => {
-  mockFetchLicense().withSuccess({
-    licenseType: 'production',
-    validLicense: true,
-    isCommercial: false,
-    expiresAt: new Date().toISOString(),
+  it('should show non-commercial license note in self-managed enterprise environment', async () => {
+    mockFetchLicense().withSuccess({
+      licenseType: 'production',
+      validLicense: true,
+      isCommercial: false,
+      expiresAt: new Date().toISOString(),
+    });
+
+    render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByText(/^Non-commercial license - expired$/i),
+    ).toBeInTheDocument();
   });
 
-  render(<AppHeader />, {
-    wrapper: Wrapper,
+  it('should hide commercial license note in self-managed if license is commercial', async () => {
+    mockFetchLicense().withSuccess({
+      licenseType: 'production',
+      validLicense: true,
+      isCommercial: true,
+      expiresAt: new Date().toISOString(),
+    });
+
+    render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      screen.queryByText(/^Non-commercial license - expired$/i),
+    ).not.toBeInTheDocument();
   });
 
-  await waitFor(() => expect(licenseTagStore.state.status).toEqual('fetched'));
+  it('should show non-commercial license expiry date', async () => {
+    const date = new Date();
+    date.setUTCDate(date.getUTCDate() + 1); // Adds one day to the current date in UTC
 
-  expect(
-    await screen.findByText(/^Non-commercial license - expired$/i),
-  ).toBeInTheDocument();
-});
+    mockFetchLicense().withSuccess({
+      licenseType: 'production',
+      validLicense: true,
+      isCommercial: false,
+      expiresAt: date.toISOString(),
+    });
 
-it('should hide commercial license note in self-managed if license is commercial', async () => {
-  mockFetchLicense().withSuccess({
-    licenseType: 'production',
-    validLicense: true,
-    isCommercial: true,
-    expiresAt: new Date().toISOString(),
+    render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    expect(
+      await screen.findByText(/^Non-commercial license - 0 day left$/i),
+    ).toBeInTheDocument();
   });
-
-  render(<AppHeader />, {
-    wrapper: Wrapper,
-  });
-
-  await waitFor(() => expect(licenseTagStore.state.status).toEqual('fetched'));
-
-  expect(
-    screen.queryByText(/^Non-commercial license - expired$/i),
-  ).not.toBeInTheDocument();
-});
-
-it('should show non-commercial license expiry date', async () => {
-  const date = new Date();
-  date.setUTCDate(date.getUTCDate() + 1); // Adds one day to the current date in UTC
-
-  mockFetchLicense().withSuccess({
-    licenseType: 'production',
-    validLicense: true,
-    isCommercial: false,
-    expiresAt: date.toISOString(),
-  });
-
-  render(<AppHeader />, {
-    wrapper: Wrapper,
-  });
-
-  await waitFor(() => expect(licenseTagStore.state.status).toEqual('fetched'));
-
-  expect(
-    await screen.findByText(/^Non-commercial license - 0 day left$/i),
-  ).toBeInTheDocument();
 });

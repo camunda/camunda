@@ -17,6 +17,8 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {useCurrentPage} from '../useCurrentPage';
 import {licenseTagStore} from 'modules/stores/licenseTag';
 import {currentTheme} from 'modules/stores/currentTheme';
+import {useCurrentUser} from 'modules/queries/useCurrentUser';
+import {isForbidden} from 'modules/auth/isForbidden';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -80,20 +82,21 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
 }
 
 const AppHeader: React.FC = observer(() => {
-  const {
-    isForbidden,
-    state: {displayName, salesPlanType, userId, roles},
-  } = authenticationStore;
+  const {data: currentUser} = useCurrentUser();
   const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
   const {currentPage} = useCurrentPage();
   const {theme, changeTheme} = currentTheme;
   const [isAppBarOpen, setIsAppBarOpen] = useState(false);
 
   useEffect(() => {
-    if (userId) {
-      tracking.identifyUser({userId, salesPlanType, roles});
+    if (currentUser !== undefined) {
+      tracking.identifyUser({
+        userId: currentUser.userId,
+        salesPlanType: currentUser.salesPlanType,
+        roles: currentUser.roles,
+      });
     }
-  }, [userId, salesPlanType, roles]);
+  }, [currentUser]);
 
   useEffect(() => {
     licenseTagStore.fetchLicense();
@@ -132,7 +135,7 @@ const AppHeader: React.FC = observer(() => {
       }}
       forwardRef={Link}
       navbar={{
-        elements: isForbidden()
+        elements: isForbidden(currentUser)
           ? []
           : [
               {
@@ -194,7 +197,8 @@ const AppHeader: React.FC = observer(() => {
         isOpen: false,
         ariaLabel: 'Info',
         elements: getInfoSidebarItems(
-          ['paid-cc', 'enterprise'].includes(salesPlanType!),
+          typeof currentUser?.salesPlanType === 'string' &&
+            ['paid-cc', 'enterprise'].includes(currentUser.salesPlanType),
         ),
       }}
       userSideBar={{
@@ -204,8 +208,8 @@ const AppHeader: React.FC = observer(() => {
           profile: {
             label: 'Profile',
             user: {
-              name: displayName ?? '',
-              email: '',
+              name: currentUser?.displayName ?? '',
+              email: currentUser?.email ?? '',
             },
           },
           themeSelector: {

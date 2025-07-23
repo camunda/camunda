@@ -8,12 +8,16 @@
 
 import {MemoryRouter} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {QueryClientProvider} from '@tanstack/react-query';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
-  <MemoryRouter>
-    {children}
-    <LocationLog />
-  </MemoryRouter>
+  <QueryClientProvider client={getMockQueryClient()}>
+    <MemoryRouter>
+      {children}
+      <LocationLog />
+    </MemoryRouter>
+  </QueryClientProvider>
 );
 
 export {Wrapper};

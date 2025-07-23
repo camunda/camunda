@@ -21,7 +21,6 @@ import {
   selectTenant,
 } from 'modules/testUtils/selectComboBoxOption';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 describe('Filters', () => {
@@ -31,14 +30,13 @@ describe('Filters', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {tenantId: '<default>', name: 'Default Tenant'},
-          {tenantId: '<tenant-A>', name: 'Tenant A'},
-          {tenantId: 'tenant-b', name: 'Tenant B'},
+          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
+          {key: 2, tenantId: '<tenant-A>', name: 'Tenant A'},
+          {key: 3, tenantId: 'tenant-b', name: 'Tenant B'},
         ],
       }),
     );
     processesStore.fetchProcesses();
-    await authenticationStore.authenticate();
   });
 
   it('should load values from the URL when multi tenancy is enabled', async () => {

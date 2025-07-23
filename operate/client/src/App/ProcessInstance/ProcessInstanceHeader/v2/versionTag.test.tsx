@@ -18,20 +18,19 @@ import {
   mockInstance,
   Wrapper,
 } from './index.setup';
-import {mockProcessXML} from 'modules/testUtils';
+import {createUser, mockProcessXML} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcess} from 'modules/mocks/api/processes/fetchProcess';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockMe} from 'modules/mocks/api/v2/me';
 
 describe('InstanceHeader', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-  });
-  afterEach(() => {
-    window.clientConfig = undefined;
+    mockMe().withSuccess(createUser());
   });
 
   it('should render version tag', async () => {

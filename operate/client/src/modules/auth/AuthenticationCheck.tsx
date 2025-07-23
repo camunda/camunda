@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
 import {Navigate, useLocation} from 'react-router-dom';
 import {observer} from 'mobx-react-lite';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -19,27 +18,12 @@ type Props = {
 const AuthenticationCheck: React.FC<Props> = observer(
   ({redirectPath, children}) => {
     const location = useLocation();
-    const {
-      state: {status},
-      authenticate,
-    } = authenticationStore;
-
-    useEffect(() => {
-      if (['initial', 'logged-in'].includes(status)) {
-        authenticate();
-      }
-    }, [status, authenticate]);
+    const {status} = authenticationStore;
 
     if (
-      [
-        'initial',
-        'logged-in',
-        'fetching-user-information',
-        'user-information-fetched',
-        'invalid-third-party-session',
-      ].includes(status)
+      ['logged-in', 'initial', 'invalid-third-party-session'].includes(status)
     ) {
-      return <>{children}</>;
+      return children;
     }
 
     return (

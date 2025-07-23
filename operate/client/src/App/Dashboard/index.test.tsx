@@ -18,18 +18,27 @@ import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
 import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {createUser} from 'modules/testUtils';
 
 type Props = {
   children?: React.ReactNode;
 };
 
 const Wrapper = ({children}: Props) => {
-  return <MemoryRouter>{children}</MemoryRouter>;
+  return (
+    <QueryClientProvider client={getMockQueryClient()}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
 };
 
 describe('Dashboard', () => {
   beforeEach(() => {
     statisticsStore.reset();
+    mockMe().withSuccess(createUser());
   });
 
   it('should render', async () => {
