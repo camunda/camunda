@@ -39,7 +39,7 @@ env:
 jobs:
   optimize-backend-unit-tests:
     if: inputs.beChanges
-    name: "[BE] Unit Test / ${{matrix.suiteName}}"
+    name: "[UT] Back End / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -57,7 +57,7 @@ jobs:
       suite: ${{ matrix.suite }}
 
   optimize-frontend-unit-tests:
-    name: "[FE] Unit Tests / Core Features"
+    name: "[UT] Front End / Core Features"
     if: inputs.feChanges
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -105,7 +105,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   hadolint:
-    name: "Dockerfile Linting / Core Features"
+    name: "[Linting] Dockerfile / Core Features"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
     timeout-minutes: 4
