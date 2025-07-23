@@ -19,7 +19,7 @@ import java.util.Map;
 
 public interface UsageMetricsStatistics extends UsageMetricsStatisticsItem {
 
-  Long getActiveTenants();
+  long getActiveTenants();
 
   Map<String, UsageMetricsStatisticsItem> getTenants();
 }

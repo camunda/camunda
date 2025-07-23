@@ -20,29 +20,29 @@ import java.util.Objects;
 
 public class UsageMetricsStatisticsItemImpl implements UsageMetricsStatisticsItem {
 
-  protected final Long processInstances;
-  protected final Long decisionInstances;
-  protected final Long assignees;
+  protected final long processInstances;
+  protected final long decisionInstances;
+  protected final long assignees;
 
   public UsageMetricsStatisticsItemImpl(
-      final Long processInstances, final Long decisionInstances, final Long assignees) {
+      final long processInstances, final long decisionInstances, final long assignees) {
     this.processInstances = processInstances;
     this.decisionInstances = decisionInstances;
     this.assignees = assignees;
   }
 
   @Override
-  public Long getProcessInstances() {
+  public long getProcessInstances() {
     return processInstances;
   }
 
   @Override
-  public Long getDecisionInstances() {
+  public long getDecisionInstances() {
     return decisionInstances;
   }
 
   @Override
-  public Long getAssignees() {
+  public long getAssignees() {
     return assignees;
   }
 
