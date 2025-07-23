@@ -181,7 +181,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final long processInstanceKey,
       final ElementSelector selector,
       final String variableName,
-      final Class<T> jsonMappedClass,
+      final Class<T> variableValueType,
       final ThrowingConsumer<T> requirement) {
 
     withLocalVariableAssertion(
@@ -190,7 +190,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         instance ->
             hasVariableSatisfies(
                 variableName,
-                jsonMappedClass,
+                variableValueType,
                 requirement,
                 () ->
                     getLocalProcessInstanceVariables(
@@ -200,19 +200,19 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   public <T> void hasVariableSatisfies(
       final long processInstanceKey,
       final String variableName,
-      final Class<T> jsonMappedClass,
+      final Class<T> variableValueType,
       final ThrowingConsumer<T> requirement) {
 
     hasVariableSatisfies(
         variableName,
-        jsonMappedClass,
+        variableValueType,
         requirement,
         () -> getGlobalProcessInstanceVariables(processInstanceKey));
   }
 
   private <T> void hasVariableSatisfies(
       final String variableName,
-      final Class<T> jsonMappedClass,
+      final Class<T> variableValueType,
       final ThrowingConsumer<T> requirement,
       final Supplier<Map<String, String>> actualVariablesSupplier) {
 
@@ -230,7 +230,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 assertThat(variables).containsKey(variableName);
 
                 final T actualValue =
-                    AssertionJsonMapper.readJson(variables.get(variableName), jsonMappedClass);
+                    AssertionJsonMapper.readJson(variables.get(variableName), variableValueType);
 
                 try {
                   requirement.accept(actualValue);
@@ -262,7 +262,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final String failureMessage =
           String.format(
               "%s should have a variable '%s' of type '%s', but was: '%s'",
-              actual, variableName, jsonMappedClass.getName(), actualVariable);
+              actual, variableName, variableValueType.getName(), actualVariable);
 
       fail(failureMessage);
     }
