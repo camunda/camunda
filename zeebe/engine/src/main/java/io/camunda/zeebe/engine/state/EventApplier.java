@@ -45,7 +45,8 @@ public interface EventApplier {
       public NoApplierForIntent(final Intent intent) {
         super(
             String.format(
-                "Expected to find an event applier for intent '%s', but none was found.", intent));
+                "Expected to find an event applier for intent '%s', but none was found. This may happen during a rolling update.",
+                intent));
       }
     }
 
@@ -54,7 +55,7 @@ public interface EventApplier {
           final Intent intent, final int recordVersion, final int latestVersion) {
         super(
             String.format(
-                "Expected to find an event applier for intent '%s' and version '%d', but '%s' is the latest supported version.",
+                "Expected to find an event applier for intent '%s' and version '%d', but '%s' is the latest supported version. This may happen during a rolling update.",
                 intent, recordVersion, latestVersion));
       }
     }
