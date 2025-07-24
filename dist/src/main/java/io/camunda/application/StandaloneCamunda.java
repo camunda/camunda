@@ -15,6 +15,7 @@ import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
@@ -53,6 +54,7 @@ public class StandaloneCamunda {
             .sources(
                 // Unified Configuration classes
                 UnifiedConfiguration.class,
+                UnifiedConfigurationHelper.class,
                 TasklistPropertiesOverride.class,
                 OperatePropertiesOverride.class,
                 GatewayBasedPropertiesOverride.class,

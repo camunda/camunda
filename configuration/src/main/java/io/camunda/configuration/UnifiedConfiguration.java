@@ -7,18 +7,17 @@
  */
 package io.camunda.configuration;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-@ConfigurationProperties
+@Configuration
+@EnableConfigurationProperties(Camunda.class)
 public class UnifiedConfiguration {
 
-  private Camunda camunda = new Camunda();
+  @Autowired private Camunda camunda;
 
   public Camunda getCamunda() {
     return camunda;
-  }
-
-  public void setCamunda(final Camunda camunda) {
-    this.camunda = camunda;
   }
 }
