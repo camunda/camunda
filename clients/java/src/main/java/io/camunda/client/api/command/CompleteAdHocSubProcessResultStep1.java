@@ -27,6 +27,21 @@ public interface CompleteAdHocSubProcessResultStep1 extends CompleteJobResult {
    */
   CompleteAdHocSubProcessResultStep2 activateElement(String elementId);
 
+  /**
+   * Indicates whether the completion condition of the ad-hoc sub-process is fulfilled.
+   *
+   * @return this result
+   */
+  CompleteAdHocSubProcessResultStep1 completionConditionFulfilled(
+      boolean completionConditionFulfilled);
+
+  /**
+   * Indicates whether all remaining instances of the ad-hoc sub-process should be canceled.
+   *
+   * @return this result
+   */
+  CompleteAdHocSubProcessResultStep1 cancelRemainingInstances(boolean cancelRemainingInstances);
+
   interface CompleteAdHocSubProcessResultStep2
       extends CompleteAdHocSubProcessResultStep1,
           CommandWithVariables<CompleteAdHocSubProcessResultStep1> {

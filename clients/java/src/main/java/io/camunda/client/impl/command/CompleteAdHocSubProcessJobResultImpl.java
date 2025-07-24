@@ -28,6 +28,8 @@ public class CompleteAdHocSubProcessJobResultImpl
 
   private final List<ActivateElement> activateElements = new ArrayList<>();
   private ActivateElement latestActivateElement;
+  private boolean completionConditionFulfilled;
+  private boolean cancelRemainingInstances;
 
   public CompleteAdHocSubProcessJobResultImpl(final JsonMapper jsonMapper) {
     super(jsonMapper);
@@ -48,6 +50,28 @@ public class CompleteAdHocSubProcessJobResultImpl
     latestActivateElement = new ActivateElement().setElementId(elementId);
     activateElements.add(latestActivateElement);
     return this;
+  }
+
+  @Override
+  public CompleteAdHocSubProcessResultStep1 completionConditionFulfilled(
+      final boolean completionConditionFulfilled) {
+    this.completionConditionFulfilled = completionConditionFulfilled;
+    return this;
+  }
+
+  @Override
+  public CompleteAdHocSubProcessResultStep1 cancelRemainingInstances(
+      final boolean cancelRemainingInstances) {
+    this.cancelRemainingInstances = cancelRemainingInstances;
+    return this;
+  }
+
+  public boolean isCompletionConditionFulfilled() {
+    return completionConditionFulfilled;
+  }
+
+  public boolean isCancelRemainingInstances() {
+    return cancelRemainingInstances;
   }
 
   @Override
