@@ -184,7 +184,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     header.put("typ", "JWT");
     header.put("x5t", x5t);
 
-    ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
+    final ZonedDateTime now = ZonedDateTime.now(ZoneId.of("UTC"));
     return JWT.create()
         .withHeader(header)
         .withIssuer(builder.getClientId())

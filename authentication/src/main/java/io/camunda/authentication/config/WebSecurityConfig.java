@@ -20,6 +20,7 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -500,6 +501,42 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   public static class OidcConfiguration {
+
+    @Bean
+    public CertificateClientAssertionService certificateClientAssertionService() {
+      return new CertificateClientAssertionService();
+    }
+
+    @Bean
+    public CertificateOidcProperties certificateOidcProperties() {
+      return new CertificateOidcProperties();
+    }
+
+    /**
+     * Maps certificate properties from Spring Boot configuration to OIDC authentication configuration.
+     */
+    @Bean
+    public OidcAuthenticationConfiguration enhancedOidcConfiguration(
+        final SecurityConfiguration securityConfiguration,
+        final CertificateOidcProperties certificateProperties) {
+      final var oidcConfig = securityConfiguration.getAuthentication().getOidc();
+
+      // Map certificate properties if they exist
+      if (certificateProperties.getClientAssertionKeystorePath() != null) {
+        oidcConfig.setClientAssertionKeystorePath(certificateProperties.getClientAssertionKeystorePath());
+      }
+      if (certificateProperties.getClientAssertionKeystorePassword() != null) {
+        oidcConfig.setClientAssertionKeystorePassword(certificateProperties.getClientAssertionKeystorePassword());
+      }
+      if (certificateProperties.getClientAssertionKeystoreKeyAlias() != null) {
+        oidcConfig.setClientAssertionKeystoreKeyAlias(certificateProperties.getClientAssertionKeystoreKeyAlias());
+      }
+      if (certificateProperties.getClientAssertionKeystoreKeyPassword() != null) {
+        oidcConfig.setClientAssertionKeystoreKeyPassword(certificateProperties.getClientAssertionKeystoreKeyPassword());
+      }
+
+      return oidcConfig;
+    }
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
@@ -619,7 +656,8 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final CertificateClientAssertionService certificateClientAssertionService)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -657,6 +695,16 @@ public class WebSecurityConfig {
                                 authorization.authorizationRequestResolver(
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, securityConfiguration)));
+
+                    if (securityConfiguration.getAuthentication().getOidc().isClientAssertionEnabled()) {
+                      final var certificateTokenResponseClient =
+                          new CertificateBasedOAuth2AccessTokenResponseClient(
+                              certificateClientAssertionService,
+                              securityConfiguration.getAuthentication().getOidc());
+                      oauthLoginConfigurer.tokenEndpoint(
+                          tokenEndpointConfig ->
+                              tokenEndpointConfig.accessTokenResponseClient(certificateTokenResponseClient));
+                    }
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
@@ -730,14 +778,14 @@ public class WebSecurityConfig {
 
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication)
         throws IOException, ServletException {
       response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
     @Override
     public void onLogoutSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication)
         throws IOException, ServletException {
       onAuthenticationSuccess(request, response, authentication);
     }
@@ -746,7 +794,7 @@ public class WebSecurityConfig {
   protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication)
         throws IOException, ServletException {
       super.onAuthenticationSuccess(request, response, authentication);
 

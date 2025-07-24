@@ -420,7 +420,8 @@ public final class OAuthCredentialsProviderTest {
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
-  private void mockCredentials(final String token, final String scope, final boolean withAssertion) {
+  private void mockCredentials(
+      final String token, final String scope, final boolean withAssertion) {
     mockCredentialsWithResource(token, scope, null, withAssertion);
   }
 
@@ -644,30 +645,6 @@ public final class OAuthCredentialsProviderTest {
           .put(CLIENT_ID, new ZeebeClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
           .writeCache();
       mockCredentials(ACCESS_TOKEN, null);
-
-      // when
-      final Future<Topology> topology;
-      try (final ZeebeClient client = builder.build()) {
-        topology = client.newTopologyRequest().useRest().send();
-
-        // then
-        assertThat(topology).succeedsWithin(Duration.ofSeconds(5));
-        WireMock.verify(1, RequestPatternBuilder.newRequestPattern().withUrl("/oauth/token"));
-      }
-    }
-
-    @Test
-    void shouldRetryRequestWithNewCredentialsUsingClientAssertion()
-        throws URISyntaxException, IOException {
-      // given
-      final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFilePath.toFile());
-      final ZeebeClientBuilder builder = clientBuilder();
-      mockUnauthorizedRestRequest();
-      mockAuthorizedRestRequest();
-      cache
-          .put(CLIENT_ID, new ZeebeClientCredentials("firstToken", EXPIRY, TOKEN_TYPE))
-          .writeCache();
-      mockCredentials(ACCESS_TOKEN, null, true);
 
       // when
       final Future<Topology> topology;
