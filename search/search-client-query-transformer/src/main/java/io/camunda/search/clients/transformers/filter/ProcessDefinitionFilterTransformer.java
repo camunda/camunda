@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.bool;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
@@ -24,7 +25,9 @@ import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_TAG;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.security.auth.Authorization;
@@ -43,7 +46,6 @@ public class ProcessDefinitionFilterTransformer
   public SearchQuery toSearchQuery(final ProcessDefinitionFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(longTerms(KEY, filter.processDefinitionKeys())).ifPresent(queries::add);
-
     ofNullable(getNamesQuery(filter.nameOperations())).ifPresent(queries::addAll);
     ofNullable(getProcessDefinitionIdsQuery(filter.processDefinitionIdOperations()))
         .ifPresent(queries::addAll);
@@ -66,7 +68,14 @@ public class ProcessDefinitionFilterTransformer
 
   private SearchQuery getFormKeyQuery(final Boolean hasFormKey) {
     if (hasFormKey != null) {
-      return term(FORM_KEY, hasFormKey);
+      return bool(b -> {
+        if (hasFormKey) {
+          b.must(List.of(SearchQueryBuilders.exists(FORM_ID)));
+        } else {
+          b.mustNot(List.of(SearchQueryBuilders.exists(FORM_ID)));
+        }
+        return b;
+      }).toSearchQuery();
     }
     return null;
   }

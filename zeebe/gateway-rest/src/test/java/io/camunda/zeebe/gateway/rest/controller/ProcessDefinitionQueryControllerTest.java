@@ -69,7 +69,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "resourceName": "complexProcess.bpmn",
           "version": 5,
           "versionTag": "alpha",
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "hasFormKey": true
       }""";
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -82,7 +83,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                   "resourceName": "complexProcess.bpmn",
                   "version": 5,
                   "versionTag": "alpha",
-                  "tenantId": "<default>"
+                  "tenantId": "<default>",
+                  "hasFormKey": true
               }
           ],
           "page": {
@@ -492,7 +494,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @MethodSource("provideAdvancedSearchParameters")
-  void shouldSearchTasksWithAdvancedFilter(
+  void shouldSearchProcessWithAdvancedFilter(
       final String filterString, final ProcessDefinitionFilter filter) {
     // given
     final var request =
@@ -522,4 +524,5 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     verify(processDefinitionServices)
         .search(new ProcessDefinitionQuery.Builder().filter(filter).build());
   }
+
 }
