@@ -13,8 +13,6 @@ import io.camunda.db.rdbms.read.mapper.UsageMetricEntityMapper;
 import io.camunda.db.rdbms.sql.UsageMetricMapper;
 import io.camunda.search.clients.reader.UsageMetricsReader;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
-import io.camunda.search.entities.UsageMetricsEntity;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
 import org.slf4j.Logger;
@@ -46,11 +44,5 @@ public class UsageMetricsDbReader implements UsageMetricsReader {
           ofNullable(result.at()).orElse(0L),
           null);
     }
-  }
-
-  @Override
-  public SearchQueryResult<UsageMetricsEntity> search(
-      final UsageMetricsQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException("UsageMetricsQuery not implemented yet.");
   }
 }

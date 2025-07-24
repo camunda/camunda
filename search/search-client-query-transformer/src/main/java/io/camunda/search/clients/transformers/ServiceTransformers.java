@@ -52,7 +52,6 @@ import io.camunda.search.clients.transformers.entity.RoleMemberEntityTransformer
 import io.camunda.search.clients.transformers.entity.SequenceFlowEntityTransformer;
 import io.camunda.search.clients.transformers.entity.TenantEntityTransformer;
 import io.camunda.search.clients.transformers.entity.TenantMemberEntityTransformer;
-import io.camunda.search.clients.transformers.entity.UsageMetricsEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
@@ -221,7 +220,6 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.form.FormEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
@@ -346,7 +344,6 @@ public final class ServiceTransformers {
     mappers.put(GroupMemberEntity.class, new GroupMemberEntityTransformer());
     mappers.put(UserEntity.class, new UserEntityTransformer());
     mappers.put(MappingRuleEntity.class, new MappingRuleEntityTransformer());
-    mappers.put(UsageMetricsEntity.class, new UsageMetricsEntityTransformer());
     mappers.put(BatchOperationEntity.class, new BatchOperationEntityTransformer());
     mappers.put(OperationEntity.class, new BatchOperationItemEntityTransformer());
     mappers.put(SequenceFlowEntity.class, new SequenceFlowEntityTransformer());
