@@ -16,7 +16,7 @@ import io.camunda.authentication.CamundaOAuthPrincipalServiceNoDbImpl;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;]
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.List;
 import java.util.Map;

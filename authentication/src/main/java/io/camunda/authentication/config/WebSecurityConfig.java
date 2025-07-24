@@ -669,6 +669,7 @@ public class WebSecurityConfig {
 
     @Bean
     @Order(ORDER_WEBAPP_API)
+    @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
