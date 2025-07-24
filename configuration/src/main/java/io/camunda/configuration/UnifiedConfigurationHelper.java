@@ -31,9 +31,7 @@ public class UnifiedConfigurationHelper {
               "camunda.tasklist.elasticsearch.url",
               "camunda.tasklist.zeebeElasticsearch.url"),
           "camunda.data.secondary-storage.type",
-          Set.of("camunda.database.type"),
-          "camunda.data.secondary-storage.elasticsearch.mattia",
-          Set.of("camunda.database.mattia"));
+          Set.of("camunda.database.type"));
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
 
@@ -46,37 +44,39 @@ public class UnifiedConfigurationHelper {
     UnifiedConfigurationHelper.environment = environment;
   }
 
+  public enum BackwardsCompatibilityMode {
+    NOT_SUPPORTED,
+    SUPPORTED_ONLY_IF_VALUES_MATCH,
+    SUPPORTED
+  }
+
   public static <T> T validateLegacyConfiguration(
       final String newProperty,
       final T newValue,
       final Class<T> expectedType,
-      final boolean legacyConfigAllowed,
-      final boolean onlyIfValuesMatch) {
-
+      final BackwardsCompatibilityMode backwardsCompatibilityMode) {
     // Input validation
-    if (!legacyConfigAllowed && onlyIfValuesMatch) {
-      throw new UnifiedConfigurationException(
-          "onlyIfValuesMatch cannot be true without legacyConfigAllowed.");
+    if (backwardsCompatibilityMode == null) {
+      throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
     }
 
     // Tools
     final Set<String> legacyProperties = legacyPropertiesDict.get(newProperty);
 
-    // Backwards compatibility not supported
-    if (!legacyConfigAllowed) {
-      return backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue);
-    }
-
-    // Backwards compatibility supported  only if values match
-    if (legacyConfigAllowed && onlyIfValuesMatch) {
-      final T legacyValue = getLegacyValue(legacyProperties, expectedType);
-      return backwardsCompatibilitySupportedOnlyIfValuesMatch(
-          legacyProperties, legacyValue, newProperty, newValue);
-    }
-
-    // Backwards compatibility supported
-    final T legacyValue = getLegacyValue(legacyProperties, expectedType);
-    return backwardsCompatibilitySupported(legacyProperties, legacyValue, newProperty, newValue);
+    return switch (backwardsCompatibilityMode) {
+      case NOT_SUPPORTED -> {
+        yield backwardsCompatibilityNotSupported(legacyProperties, newProperty, newValue);
+      }
+      case SUPPORTED_ONLY_IF_VALUES_MATCH -> {
+        final T legacyValue = getLegacyValue(legacyProperties, expectedType);
+        yield backwardsCompatibilitySupportedOnlyIfValuesMatch(
+            legacyProperties, legacyValue, newProperty, newValue);
+      }
+      case SUPPORTED -> {
+        final T legacyValue = getLegacyValue(legacyProperties, expectedType);
+        yield backwardsCompatibilitySupported(legacyProperties, legacyValue, newProperty, newValue);
+      }
+    };
   }
 
   private static <T> T getLegacyValue(
@@ -104,15 +104,14 @@ public class UnifiedConfigurationHelper {
     final boolean legacyPresent = legacyConfigPresent(legacyProperties);
     final boolean newPresent = newConfigPresent(newProperty);
 
-    if (!legacyPresent && !newPresent) {
+    final String warningMessage =
+        String.format(
+            "The following legacy properties are no longer supported and should be removed in favor of '%s': %s",
+            newProperty, String.join(", ", legacyProperties));
+
+    if (!legacyPresent) {
       // Legacy config: not present
-      // New config...: not present
-      // We can return the default value
-      return newValue;
-    } else if (!legacyPresent && newPresent) {
-      // Legacy config: not present
-      // New config...: present
-      // We can return newValue, that's either the default or the configured one
+      // We can return the newValue or default value
       return newValue;
     } else if (legacyPresent && !newPresent) {
       // Legacy config: present
@@ -126,12 +125,9 @@ public class UnifiedConfigurationHelper {
     } else {
       // Legacy config: present
       // New config...: present
-      // The legacy config should be removed entirely -> error
-      final String errorMessage =
-          String.format(
-              "The following legacy configuration properties are no longer supported and must be removed: %s",
-              String.join(", ", legacyProperties));
-      throw new UnifiedConfigurationException(errorMessage);
+      // We can return the new value and log a warning
+      LOGGER.warn(warningMessage);
+      return newValue;
     }
   }
 
@@ -143,14 +139,18 @@ public class UnifiedConfigurationHelper {
     final boolean legacyPresent = legacyConfigPresent(legacyProperties);
     final boolean newPresent = newConfigPresent(newProperty);
 
-    if (!legacyPresent && !newPresent) {
+    final String warningMessage =
+        String.format(
+            "The following legacy properties are no longer supported and should be removed in favor of '%s': %s",
+            newProperty, String.join(", ", legacyProperties));
+
+    if ((!legacyPresent && !newPresent) || (!legacyPresent && newPresent)) {
       // Legacy config: not present
       // New config...: not present
-      // We can return the default value
-      return newValue;
-    } else if (!legacyPresent && newPresent) {
+      // or
       // Legacy config: not present
       // New config...: present
+      // then
       // We can return the new value, either default or declared
       return newValue;
     } else {
@@ -162,10 +162,6 @@ public class UnifiedConfigurationHelper {
       // then
       // We can return only if the new default value and the legacy value match
       if (Objects.equals(legacyValue, newValue)) {
-        final String warningMessage =
-            String.format(
-                "The following legacy properties are no longer supported and should be removed in favor of '%s': %s",
-                newProperty, String.join(", ", legacyProperties));
         LOGGER.warn(warningMessage);
         return newValue;
       }
