@@ -124,14 +124,25 @@ public final class BackgroundTaskManagerFactory {
     return tasks;
   }
 
-  private RunnableTask buildProcessInstanceToBeArchivedCountJob() {
+  private ReschedulingTask buildProcessInstanceToBeArchivedCountJob() {
     final var connector = new ElasticsearchConnector(config.getConnect());
-    return new ProcessInstanceToBeArchivedCountJob(
-        metrics,
-        connector.createAsyncClient(),
-        partitionId,
-        config.getHistory().getArchivingTimePoint(),
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName());
+    final var processInstanceToBeArchivedCountJob =
+        new ProcessInstanceToBeArchivedCountJob(
+            metrics,
+            connector.createAsyncClient(),
+            partitionId,
+            config.getHistory().getArchivingTimePoint(),
+            resourceProvider
+                .getIndexTemplateDescriptor(ListViewTemplate.class)
+                .getFullQualifiedName());
+
+    return new ReschedulingTask(
+        processInstanceToBeArchivedCountJob,
+        0,
+        ProcessInstanceToBeArchivedCountJob.DELAY_BETWEEN_RUNS,
+        ProcessInstanceToBeArchivedCountJob.MAX_DELAY_BETWEEN_RUNS,
+        executor,
+        logger);
   }
 
   private ReschedulingTask buildIncidentMarkerTask() {

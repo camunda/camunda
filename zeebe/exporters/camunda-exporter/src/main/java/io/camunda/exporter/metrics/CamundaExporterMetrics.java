@@ -211,8 +211,8 @@ public class CamundaExporterMetrics {
     lastFlushTime.set(time);
   }
 
-  public void addToProcessInstancesAwaitingArchival(final int count) {
-    processInstancesAwaitingArchival.addAndGet(count);
+  public void setProcessInstancesAwaitingArchival(final int count) {
+    processInstancesAwaitingArchival.set(count);
   }
 
   /**

@@ -9,10 +9,14 @@ package io.camunda.exporter.tasks.archiver;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.tasks.RunnableTask;
+import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.util.ElasticsearchArchiverQueries;
+import java.util.concurrent.CompletionStage;
 
-public class ProcessInstanceToBeArchivedCountJob implements RunnableTask {
+public class ProcessInstanceToBeArchivedCountJob implements BackgroundTask {
+  public static final int DELAY_BETWEEN_RUNS = 60000;
+  public static final int MAX_DELAY_BETWEEN_RUNS = 300000;
+
   private final CamundaExporterMetrics metrics;
   private final ElasticsearchAsyncClient client;
   private final int partitionId;
@@ -33,13 +37,24 @@ public class ProcessInstanceToBeArchivedCountJob implements RunnableTask {
   }
 
   @Override
-  public void run() {
+  public CompletionStage<Integer> execute() {
     final var countRequest =
         ElasticsearchArchiverQueries.createFinishedInstancesCountRequest(
             listViewIndexName, archivingTimePoint, partitionId);
     final var countFuture = client.count(countRequest);
 
-    countFuture.whenCompleteAsync(
-        (res, err) -> metrics.addToProcessInstancesAwaitingArchival((int) res.count()));
+    return countFuture
+        .whenCompleteAsync(
+            (res, err) -> {
+              if (err == null) {
+                metrics.setProcessInstancesAwaitingArchival((int) res.count());
+              }
+            })
+        .thenApply(res -> (int) res.count()); // return the count as Integer
+  }
+
+  @Override
+  public String getCaption() {
+    return "Process instances to be archived metric job";
   }
 }
