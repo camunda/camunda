@@ -31,7 +31,7 @@ public class UsageMetricsDbReader implements UsageMetricsReader {
 
   @Override
   public UsageMetricStatisticsEntity usageMetricStatistics(
-      final UsageMetricsQuery query, final ResourceAccessChecks access) {
+      final UsageMetricsQuery query, final ResourceAccessChecks resourceAccessChecks) {
     LOG.trace("[RDBMS DB] Aggregate usage metrics statistics with {}", query);
     final var filter = query.filter();
 

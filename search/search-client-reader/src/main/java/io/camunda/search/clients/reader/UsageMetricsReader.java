@@ -16,5 +16,5 @@ public interface UsageMetricsReader
     extends SearchEntityReader<UsageMetricsEntity, UsageMetricsQuery> {
 
   UsageMetricStatisticsEntity usageMetricStatistics(
-      UsageMetricsQuery query, ResourceAccessChecks access);
+      UsageMetricsQuery query, ResourceAccessChecks resourceAccessChecks);
 }
