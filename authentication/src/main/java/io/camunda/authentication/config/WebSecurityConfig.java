@@ -564,7 +564,6 @@ public class WebSecurityConfig {
     @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
-    @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
@@ -616,6 +615,7 @@ public class WebSecurityConfig {
 
     @Bean
     @Order(ORDER_WEBAPP_API)
+    @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
