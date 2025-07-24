@@ -11,10 +11,12 @@ import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation;
 import io.camunda.search.aggregation.ProcessInstanceFlowNodeStatisticsAggregation;
+import io.camunda.search.aggregation.UsageMetricsAggregation;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionLatestVersionAggregationResult;
 import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.UsageMetricsAggregationResult;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -23,10 +25,12 @@ import io.camunda.search.clients.transformers.aggregation.AggregationTransformer
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionLatestVersionAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessInstanceFlowNodeStatisticsAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.UsageMetricsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.AggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionLatestVersionAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.UsageMetricsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.BatchOperationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.BatchOperationItemEntityTransformer;
@@ -468,6 +472,7 @@ public final class ServiceTransformers {
     mappers.put(
         ProcessDefinitionLatestVersionAggregation.class,
         new ProcessDefinitionLatestVersionAggregationTransformer());
+    mappers.put(UsageMetricsAggregation.class, new UsageMetricsAggregationTransformer());
 
     // aggregation result
     mappers.put(
@@ -479,5 +484,7 @@ public final class ServiceTransformers {
     mappers.put(
         ProcessDefinitionLatestVersionAggregationResult.class,
         new ProcessDefinitionLatestVersionAggregationResultTransformer());
+    mappers.put(
+        UsageMetricsAggregationResult.class, new UsageMetricsAggregationResultTransformer());
   }
 }
