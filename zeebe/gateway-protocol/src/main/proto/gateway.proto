@@ -186,6 +186,10 @@ message JobResult{
   optional string type = 4;
   // The list of elements that should be activated after the job is completed. Only relevant for ad-hoc subprocesses.
   repeated JobResultActivateElement activateElements = 5;
+  // Indicates whether the completion condition of the job is fulfilled. Only relevant for ad-hoc subprocesses.
+  optional bool isCompletionConditionFulfilled = 6;
+  // Indicates whether active instances of the ad-hoc subprocess should be cancelled. Only relevant for ad-hoc subprocesses.
+  optional bool isCancelRemainingInstances = 7;
 }
 
 message JobResultCorrections {
