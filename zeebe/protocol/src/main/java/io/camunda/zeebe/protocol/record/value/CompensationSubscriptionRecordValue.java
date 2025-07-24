@@ -16,18 +16,13 @@
 package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.Map;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableCompensationSubscriptionRecordValue.Builder.class)
-public interface CompensationSubscriptionRecordValue extends RecordValue {
-
-  /**
-   * @return the id of the tenant
-   */
-  String getTenantId();
+public interface CompensationSubscriptionRecordValue extends RecordValueWithVariables, TenantOwned {
 
   /**
    * @return the key of the process instance
@@ -78,5 +73,6 @@ public interface CompensationSubscriptionRecordValue extends RecordValue {
   /**
    * @return the local variables of activity with compensation handler
    */
+  @Override
   Map<String, Object> getVariables();
 }
