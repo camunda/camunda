@@ -58,11 +58,6 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
     </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-sdk</artifactId>
-    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
@@ -298,11 +293,6 @@
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
       <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.auth0</groupId>
-      <artifactId>java-jwt</artifactId>
     </dependency>
 
     <dependency>

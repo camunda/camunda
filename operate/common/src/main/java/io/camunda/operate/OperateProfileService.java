@@ -10,7 +10,6 @@ package io.camunda.operate;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
 import io.camunda.security.entity.AuthenticationMethod;
-import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -18,7 +17,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class OperateProfileService {
-  public static final String IDENTITY_AUTH_PROFILE = "identity-auth";
   public static final String CONSOLIDATED_AUTH = "consolidated-auth";
 
   @Autowired private Environment environment;
@@ -42,11 +40,7 @@ public class OperateProfileService {
         && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());
   }
 
-  public boolean isIdentityProfile() {
-    return Arrays.asList(environment.getActiveProfiles()).contains(IDENTITY_AUTH_PROFILE);
-  }
-
   public boolean isLoginDelegated() {
-    return isIdentityProfile() || isConsolidatedAuthOidc();
+    return isConsolidatedAuthOidc();
   }
 }

@@ -72,6 +72,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
     given(securityConfiguration.getAuthorizations()).willReturn(authorizationsConfiguration);
     given(securityConfiguration.getMultiTenancy()).willReturn(multiTenancyConfiguration);
     given(authenticationConfiguration.getOidc()).willReturn(oidcAuthenticationConfiguration);
+    given(operateProfileService.isLoginDelegated()).willReturn(true);
   }
 
   @Test
@@ -101,7 +102,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"clusterId\":\"clusterId\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
                 + "\"mixpanelToken\":\"i-am-a-token\","
-                + "\"isLoginDelegated\":false,"
+                + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":\"https://tasklist.camunda.io/tl\","
                 + "\"resourcePermissionsEnabled\":true,"
                 + "\"multiTenancyEnabled\":false"
@@ -135,7 +136,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"clusterId\":\"clusterId\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
                 + "\"mixpanelToken\":\"i-am-a-token\","
-                + "\"isLoginDelegated\":false,"
+                + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":null,"
                 + "\"resourcePermissionsEnabled\":true,"
                 + "\"multiTenancyEnabled\":false"
@@ -171,7 +172,7 @@ public class ClientConfigRestServiceIT extends OperateAbstractIT {
                 + "\"clusterId\":\"clusterId\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
                 + "\"mixpanelToken\":\"i-am-a-token\","
-                + "\"isLoginDelegated\":false,"
+                + "\"isLoginDelegated\":true,"
                 + "\"tasklistUrl\":null,"
                 + "\"resourcePermissionsEnabled\":true,"
                 + "\"multiTenancyEnabled\":false"
