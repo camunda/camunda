@@ -12,6 +12,8 @@ import static io.camunda.security.auth.Authorization.WILDCARD;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.security.auth.AuthorizationScope;
+import io.camunda.security.auth.AuthorizationScope.AuthorizationScopeFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -46,7 +48,8 @@ public class AuthorizationChecker {
    * @param securityContext the context containing authorization and authentication information
    * @return a list of authorized resource keys for the user or group in the SecurityContext
    */
-  public List<String> retrieveAuthorizedResourceKeys(final SecurityContext securityContext) {
+  public List<AuthorizationScope> retrieveAuthorizedResourceKeys(
+      final SecurityContext securityContext) {
     final var ownerIds = collectOwnerTypeToOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
@@ -63,7 +66,7 @@ public class AuthorizationChecker {
             ResourceAccessChecks.disabled());
     return authorizationEntities.items().stream()
         .filter(e -> e.permissionTypes().contains(permissionType))
-        .map(AuthorizationEntity::resourceId)
+        .map(authorizationEntity -> AuthorizationScopeFactory.of(authorizationEntity.resourceId()))
         .toList();
   }
 
@@ -72,11 +75,12 @@ public class AuthorizationChecker {
    * defined in the provided SecurityContext. The authorization check is based on the resource type
    * and permission type in the SecurityContext.
    *
-   * @param resourceId the resource id to check authorization for
+   * @param authorizationScope the resource id to check authorization for
    * @param securityContext the context containing authorization and authentication information
    * @return true if the resource key is authorized, false otherwise
    */
-  public boolean isAuthorized(final String resourceId, final SecurityContext securityContext) {
+  public boolean isAuthorized(
+      final AuthorizationScope authorizationScope, final SecurityContext securityContext) {
     final var ownerIds = collectOwnerTypeToOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
@@ -89,7 +93,8 @@ public class AuthorizationChecker {
                                     f.ownerTypeToOwnerIds(ownerIds)
                                         .resourceType(resourceType.name())
                                         .permissionTypes(permissionType)
-                                        .resourceIds(List.of(WILDCARD, resourceId)))
+                                        .resourceIds(
+                                            List.of(WILDCARD, authorizationScope.resourceId())))
                             .page(p -> p.size(1))),
                 ResourceAccessChecks.disabled())
             .total()

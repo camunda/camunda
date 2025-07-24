@@ -8,6 +8,7 @@
 package io.camunda.service.security;
 
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.AuthorizationScope.AuthorizationScopeFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.SecurityContext.Builder;
@@ -46,7 +47,8 @@ public class SecurityContextProvider {
       final Authorization authorization) {
     final var securityContext = provideSecurityContext(authentication, authorization);
     if (securityContext.requiresAuthorizationChecks()) {
-      return authorizationChecker.isAuthorized(resourceKey, securityContext);
+      return authorizationChecker.isAuthorized(
+          AuthorizationScopeFactory.of(resourceKey), securityContext);
     }
     return true;
   }

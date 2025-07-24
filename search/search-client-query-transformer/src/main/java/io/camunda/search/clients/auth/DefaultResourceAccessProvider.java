@@ -10,6 +10,7 @@ package io.camunda.search.clients.auth;
 import static io.camunda.security.auth.Authorization.WILDCARD;
 
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.AuthorizationScope.AuthorizationScopeFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -47,7 +48,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
     final var securityContext = createSecurityContext(authentication, requiredAuthorization);
     final var resourceIds = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
 
-    if (resourceIds.contains(WILDCARD)) {
+    if (resourceIds.contains(AuthorizationScopeFactory.wildcard())) {
       // no authorization check required, user can access
       // the respective resources.
       return ResourceAccess.wildcard(resultingAuthorization.resourceId(WILDCARD).build());
@@ -58,7 +59,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
     }
 
     final var authorizationWithResolvedResourceIds =
-        resultingAuthorization.resourceIds(resourceIds).build();
+        resultingAuthorization.authorizationScopes(resourceIds).build();
     return ResourceAccess.allowed(authorizationWithResolvedResourceIds);
   }
 
