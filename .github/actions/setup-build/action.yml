@@ -150,7 +150,7 @@ runs:
         secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
         ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
-        secret/data/products/camunda/ci/github-actions MINIMUS_PSW | minimus-token
+        secret/data/products/camunda/ci/github-actions POC_MINIMUS_PSW | minimus-token
 
   - name: Setup Java
     uses: actions/setup-java@v4
