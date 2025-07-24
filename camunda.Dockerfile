@@ -43,7 +43,7 @@ FROM ${DIST} AS dist
 
 
 ### Setup of folders and user for usage without shell ###
-FROM camundaservicesgmbhdhi/dhi-eclipse-temurin:21-jdk-debian12-dev AS setup
+FROM ubuntu:noble@sha256:a08e551cb33850e4740772b38217fc1796a66da2506d312abe51acda354ff061 AS setup
 RUN groupadd --gid 1001 camunda
 ENV CAMUNDA_HOME=/usr/local/camunda
 RUN useradd --system --gid 1001 --uid 1001 --home ${CAMUNDA_HOME} camunda
