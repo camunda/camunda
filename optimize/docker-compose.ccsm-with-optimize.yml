@@ -106,7 +106,7 @@ services:
       - identity-network
   elasticsearch:
     profiles: ["", "elasticsearch"]
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.13.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.16.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
@@ -197,7 +197,7 @@ services:
       - optimize
     restart: always
   opensearch:
-    image: opensearchproject/opensearch:${OS_VERSION:-2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796}
+    image: opensearchproject/opensearch:${OS_VERSION:-2.17.0}
     profiles: [ "opensearch" ]
     container_name: opensearch
     environment:
