@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -65,6 +66,7 @@ public class ElementInstanceController {
                 .setVariables(variablesRequest));
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ElementInstanceSearchQueryResult> searchElementInstances(
       @RequestBody(required = false) final ElementInstanceSearchQuery query) {
@@ -72,6 +74,7 @@ public class ElementInstanceController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{elementInstanceKey}")
   public ResponseEntity<ElementInstanceResult> getByKey(
       @PathVariable("elementInstanceKey") final Long elementInstanceKey) {

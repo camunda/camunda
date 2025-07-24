@@ -48,6 +48,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
@@ -86,6 +87,7 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createTenant);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{tenantId}")
   public ResponseEntity<TenantResult> getTenant(@PathVariable final String tenantId) {
     try {
@@ -100,6 +102,7 @@ public class TenantController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<TenantSearchQueryResult> searchTenants(
       @RequestBody(required = false) final TenantSearchQueryRequest query) {
@@ -122,6 +125,7 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToTenant);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/users/search")
   public ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
       @PathVariable final String tenantId,
@@ -184,6 +188,7 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/mapping-rules/search")
   public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesInTenant(
       @PathVariable final String tenantId,
@@ -215,6 +220,7 @@ public class TenantController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromTenant);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/groups/search")
   public ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
       @PathVariable final String tenantId,
@@ -238,6 +244,7 @@ public class TenantController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/roles/search")
   public ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
       @PathVariable final String tenantId,
@@ -248,6 +255,7 @@ public class TenantController {
             roleQuery -> searchRolesInTenant(tenantId, roleQuery));
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{tenantId}/clients/search")
   public ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
       @PathVariable final String tenantId,

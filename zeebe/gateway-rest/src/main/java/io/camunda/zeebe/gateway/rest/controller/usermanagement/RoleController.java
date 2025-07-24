@@ -40,6 +40,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
@@ -113,6 +114,7 @@ public class RoleController {
                 .deleteRole(roleId));
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{roleId}")
   public ResponseEntity<Object> getRole(@PathVariable final String roleId) {
     try {
@@ -127,6 +129,7 @@ public class RoleController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<RoleSearchQueryResult> searchRoles(
       @RequestBody(required = false) final RoleSearchQueryRequest query) {
@@ -146,6 +149,7 @@ public class RoleController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/users/search")
   public ResponseEntity<RoleUserSearchResult> searchUsersByRole(
       @PathVariable final String roleId,
@@ -169,6 +173,7 @@ public class RoleController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/clients/search")
   public ResponseEntity<RoleClientSearchResult> searchClientsByRole(
       @PathVariable final String roleId,
@@ -199,6 +204,7 @@ public class RoleController {
         .build();
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/mapping-rules/search")
   public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRulesByRole(
       @PathVariable final String roleId,
@@ -303,6 +309,7 @@ public class RoleController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{roleId}/groups/search")
   public ResponseEntity<RoleGroupSearchResult> searchGroupsByRole(
       @PathVariable final String roleId,

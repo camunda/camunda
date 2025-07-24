@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import jakarta.validation.ValidationException;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.HttpStatus;
@@ -59,6 +60,7 @@ public class IncidentController {
                 .resolveIncident(incidentKey, operationReference));
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
       @RequestBody(required = false) final IncidentSearchQuery query) {
@@ -66,6 +68,7 @@ public class IncidentController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{incidentKey}")
   public ResponseEntity<IncidentResult> getByKey(
       @PathVariable("incidentKey") final Long incidentKey) {

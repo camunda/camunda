@@ -7,20 +7,26 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
+import io.camunda.zeebe.gateway.rest.interceptor.SecondaryStorageInterceptor;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @TestPropertySource(
@@ -78,6 +84,13 @@ public abstract class RestControllerTest {
       CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("tenantId"));
 
   @Autowired protected WebTestClient webClient;
+
+  @MockitoBean protected SecondaryStorageInterceptor secondaryStorageInterceptor;
+
+  @BeforeEach
+  void setup() {
+    when(secondaryStorageInterceptor.preHandle(any(), any(), any())).thenReturn(true);
+  }
 
   protected static <T> Arguments generateParameterizedArguments(
       final String filterKey,

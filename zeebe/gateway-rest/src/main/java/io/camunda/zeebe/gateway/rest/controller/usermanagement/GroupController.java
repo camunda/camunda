@@ -41,6 +41,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
@@ -144,6 +145,7 @@ public class GroupController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::unassignMember);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{groupId}/users/search")
   public ResponseEntity<GroupUserSearchResult> usersByGroup(
       @PathVariable final String groupId,
@@ -154,6 +156,7 @@ public class GroupController {
             groupQuery -> searchUsersInGroup(groupId, groupQuery));
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{groupId}/mapping-rules/search")
   public ResponseEntity<MappingRuleSearchQueryResult> mappingRulesByGroup(
       @PathVariable final String groupId,
@@ -164,6 +167,7 @@ public class GroupController {
             mappingRuleQuery -> searchMappingsInGroup(groupId, mappingRuleQuery));
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{groupId}/roles/search")
   public ResponseEntity<RoleSearchQueryResult> rolesByGroup(
       @PathVariable final String groupId,
@@ -174,6 +178,7 @@ public class GroupController {
             userQuery -> searchRolesInGroup(groupId, userQuery));
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{groupId}/clients/search")
   public ResponseEntity<GroupClientSearchResult> clientsByGroup(
       @PathVariable final String groupId,
@@ -184,6 +189,7 @@ public class GroupController {
             groupQuery -> searchClientsInGroup(groupId, groupQuery));
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{groupId}")
   public ResponseEntity<Object> getGroup(@PathVariable final String groupId) {
     try {
@@ -198,6 +204,7 @@ public class GroupController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<GroupSearchQueryResult> searchGroups(
       @RequestBody(required = false) final GroupSearchQueryRequest query) {

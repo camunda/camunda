@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
@@ -58,6 +59,7 @@ public class DecisionDefinitionController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateDecision);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionDefinitionSearchQueryResult> searchDecisionDefinitions(
       @RequestBody(required = false) final DecisionDefinitionSearchQuery query) {
@@ -65,6 +67,7 @@ public class DecisionDefinitionController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{decisionDefinitionKey}")
   public ResponseEntity<DecisionDefinitionResult> getDecisionDefinitionByKey(
       @PathVariable("decisionDefinitionKey") final long decisionDefinitionKey) {
@@ -79,6 +82,7 @@ public class DecisionDefinitionController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(
       path = "/{decisionDefinitionKey}/xml",
       produces = {MediaType.TEXT_XML_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})

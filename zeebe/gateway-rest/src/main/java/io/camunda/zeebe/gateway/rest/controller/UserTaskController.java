@@ -34,6 +34,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
@@ -89,6 +90,7 @@ public class UserTaskController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateUserTask);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<UserTaskSearchQueryResult> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQuery query) {
@@ -96,6 +98,7 @@ public class UserTaskController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{userTaskKey}")
   public ResponseEntity<UserTaskResult> getByKey(
       @PathVariable("userTaskKey") final Long userTaskKey) {
@@ -111,6 +114,7 @@ public class UserTaskController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{userTaskKey}/form")
   public ResponseEntity<FormResult> getFormByUserTaskKey(
       @PathVariable("userTaskKey") final long userTaskKey) {
@@ -127,6 +131,7 @@ public class UserTaskController {
     }
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/{userTaskKey}/variables/search")
   public ResponseEntity<VariableSearchQueryResult> searchVariables(
       @PathVariable("userTaskKey") final long userTaskKey,

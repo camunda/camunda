@@ -26,6 +26,7 @@ import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
@@ -53,6 +54,7 @@ public class AuthorizationController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
   }
 
+  @RequiresSecondaryStorage
   @CamundaGetMapping(path = "/{authorizationKey}")
   public ResponseEntity<Object> getAuthorization(@PathVariable final long authorizationKey) {
     try {
@@ -85,6 +87,7 @@ public class AuthorizationController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
   }
 
+  @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<AuthorizationSearchResult> searchAuthorizations(
       @RequestBody(required = false) final AuthorizationSearchQuery query) {
