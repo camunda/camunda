@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.AuthorizationScope.AuthorizationScopeFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.impl.AuthorizationChecker;
 import java.util.List;
@@ -39,7 +40,8 @@ class DefaultResourceAccessProviderTest {
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
     when(authorizationChecker.retrieveAuthorizedResourceKeys(any()))
-        .thenReturn(List.of("bar", "baz"));
+        .thenReturn(
+            List.of(AuthorizationScopeFactory.id("bar"), AuthorizationScopeFactory.id("baz")));
 
     // when
     final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
@@ -59,7 +61,8 @@ class DefaultResourceAccessProviderTest {
     final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessDefinition());
 
-    when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of("*"));
+    when(authorizationChecker.retrieveAuthorizedResourceKeys(any()))
+        .thenReturn(List.of(AuthorizationScopeFactory.wildcard()));
 
     // when
     final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);

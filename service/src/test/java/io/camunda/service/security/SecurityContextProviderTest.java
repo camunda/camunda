@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.AuthorizationScope.AuthorizationScopeFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -103,7 +104,7 @@ class SecurityContextProviderTest {
     assertThat(authorized).isTrue();
     verify(authorizationChecker)
         .isAuthorized(
-            "resourceKey",
+            AuthorizationScopeFactory.id("resourceKey"),
             SecurityContext.of(
                 s -> s.withAuthentication(authentication).withAuthorization(authorization)));
   }
@@ -124,7 +125,7 @@ class SecurityContextProviderTest {
     assertThat(authorized).isFalse();
     verify(authorizationChecker)
         .isAuthorized(
-            "resourceKey",
+            AuthorizationScopeFactory.id("resourceKey"),
             SecurityContext.of(
                 s -> s.withAuthentication(authentication).withAuthorization(authorization)));
   }
