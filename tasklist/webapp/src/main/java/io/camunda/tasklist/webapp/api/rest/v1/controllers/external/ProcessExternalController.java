@@ -135,8 +135,7 @@ public class ProcessExternalController extends ApiErrorController {
       @RequestBody(required = false) final StartProcessRequest startProcessRequest) {
 
     if (tenantService.isMultiTenancyEnabled()) {
-      if (StringUtils.isBlank(tenantId)
-          || !tenantService.getAuthenticatedTenants().contains(tenantId)) {
+      if (StringUtils.isBlank(tenantId) || !tenantService.isTenantValid(tenantId)) {
         throw new InvalidRequestException("Invalid Tenant");
       }
     }

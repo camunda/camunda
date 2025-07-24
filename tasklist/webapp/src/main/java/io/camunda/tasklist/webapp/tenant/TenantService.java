@@ -7,52 +7,58 @@
  */
 package io.camunda.tasklist.webapp.tenant;
 
-import static java.util.Collections.emptyList;
-
-import java.util.List;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.reader.TenantAccess;
+import io.camunda.security.reader.TenantAccessProvider;
+import java.util.function.Function;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
 
 @Component
-public interface TenantService {
+public class TenantService {
 
-  List<String> tenantsIds();
+  private final CamundaAuthenticationProvider authenticationProvider;
+  private final TenantAccessProvider tenantAccessProvider;
+  private final SecurityConfiguration securityConfiguration;
 
-  AuthenticatedTenants getAuthenticatedTenants();
-
-  boolean isTenantValid(final String tenantId);
-
-  boolean isMultiTenancyEnabled();
-
-  record AuthenticatedTenants(TenantAccessType tenantAccessType, List<String> ids) {
-
-    public TenantAccessType getTenantAccessType() {
-      return tenantAccessType;
-    }
-
-    public List<String> getTenantIds() {
-      return ids;
-    }
-
-    public boolean contains(final String tenantId) {
-      return ids.contains(tenantId);
-    }
-
-    public static AuthenticatedTenants allTenants() {
-      return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_ALL, emptyList());
-    }
-
-    public static AuthenticatedTenants noTenantsAssigned() {
-      return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_NONE, emptyList());
-    }
-
-    public static AuthenticatedTenants assignedTenants(final List<String> tenants) {
-      return new AuthenticatedTenants(TenantAccessType.TENANT_ACCESS_ASSIGNED, tenants);
-    }
+  public TenantService(
+      final CamundaAuthenticationProvider authenticationProvider,
+      final TenantAccessProvider tenantAccessProvider,
+      final SecurityConfiguration securityConfiguration) {
+    this.authenticationProvider = authenticationProvider;
+    this.tenantAccessProvider = tenantAccessProvider;
+    this.securityConfiguration = securityConfiguration;
   }
 
-  enum TenantAccessType {
-    TENANT_ACCESS_ALL,
-    TENANT_ACCESS_ASSIGNED,
-    TENANT_ACCESS_NONE
+  public TenantAccess getAuthenticatedTenants() {
+    return withAuthenticationOrDefaultResult(
+        tenantAccessProvider::resolveTenantAccess, TenantAccess.wildcard(null));
+  }
+
+  public boolean isTenantValid(final String tenantId) {
+    return withAuthenticationOrDefaultResult(
+        authentication ->
+            tenantAccessProvider.hasTenantAccessByTenantId(authentication, tenantId).allowed(),
+        true);
+  }
+
+  private <T> T withAuthenticationOrDefaultResult(
+      final Function<CamundaAuthentication, T> supplier, final T defaultValue) {
+    if (hasNoneRequestContext() || !isMultiTenancyEnabled()) {
+      return defaultValue;
+    }
+
+    final var currentAuthentication = authenticationProvider.getCamundaAuthentication();
+    return supplier.apply(currentAuthentication);
+  }
+
+  public boolean isMultiTenancyEnabled() {
+    return securityConfiguration.getMultiTenancy().isChecksEnabled();
+  }
+
+  private boolean hasNoneRequestContext() {
+    return RequestContextHolder.getRequestAttributes() == null;
   }
 }

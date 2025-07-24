@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.external;
 
 import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -420,14 +421,9 @@ public class ProcessExternalControllerTest {
   void startProcessWithInvalidTenant() {
     final String bpmnProcessId = "bpmnProcessId";
     final String tenantId = "TenantA";
-    final List<String> tenantIds = new ArrayList<String>();
-    tenantIds.add("TenantB");
-    tenantIds.add("TenantC");
-    final TenantService.AuthenticatedTenants authenticatedTenants =
-        TenantService.AuthenticatedTenants.assignedTenants(tenantIds);
 
     when(tenantService.isMultiTenancyEnabled()).thenReturn(true);
-    when(tenantService.getAuthenticatedTenants()).thenReturn(authenticatedTenants);
+    when(tenantService.isTenantValid(eq(tenantId))).thenReturn(false);
 
     Assertions.assertThatThrownBy(() -> instance.startProcess(bpmnProcessId, tenantId, null))
         .isInstanceOf(InvalidRequestException.class);
