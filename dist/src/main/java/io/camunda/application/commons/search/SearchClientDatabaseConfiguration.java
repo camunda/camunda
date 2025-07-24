@@ -7,9 +7,9 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageDisabled;
-import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageType;
+import io.camunda.authentication.ConditionalOnSecondaryStorageDisabled;
+import io.camunda.authentication.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;

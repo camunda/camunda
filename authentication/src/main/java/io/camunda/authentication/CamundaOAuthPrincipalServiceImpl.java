@@ -43,7 +43,7 @@ import org.springframework.util.StringUtils;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-@ConditionalOnSecondaryStorage
+@ConditionalOnSecondaryStorageEnabled
 public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalService {
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalServiceImpl.class);
