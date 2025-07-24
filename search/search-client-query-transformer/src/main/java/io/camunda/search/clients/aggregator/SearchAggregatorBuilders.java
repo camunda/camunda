@@ -20,6 +20,14 @@ public final class SearchAggregatorBuilders {
     return children().name(name).type(type).build();
   }
 
+  public static SearchSumAggregator.Builder sum() {
+    return new SearchSumAggregator.Builder();
+  }
+
+  public static SearchSumAggregator sum(final String field) {
+    return sum().field(field).build();
+  }
+
   public static SearchParentAggregator.Builder parent() {
     return new SearchParentAggregator.Builder();
   }
