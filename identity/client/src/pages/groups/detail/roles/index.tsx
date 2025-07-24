@@ -29,7 +29,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
     loading,
     success,
     reload,
-    ...paginationParams
+    ...paginationProps
   } = usePaginatedApi(searchRolesByGroupId, {
     groupId: groupId,
   });
@@ -100,7 +100,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
             onClick: unassignRole,
           },
         ]}
-        {...paginationParams}
+        {...paginationProps}
       />
       {assignRolesModal}
       {unassignRoleModal}

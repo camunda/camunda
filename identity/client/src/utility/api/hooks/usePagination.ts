@@ -95,12 +95,12 @@ const usePagination = (config: Page = DEFAULT_PAGINATION_CONFIG) => {
     }));
   }, []);
 
-  const setPageSize = (newPageSize: number) => {
+  const setPageSize = useCallback((newPageSize: number) => {
     setPageState((prevState) => ({
       ...prevState,
       pageSize: newPageSize,
     }));
-  };
+  }, []);
 
   const pageParams = useMemo(() => {
     const result: PaginationRequestParams = {
