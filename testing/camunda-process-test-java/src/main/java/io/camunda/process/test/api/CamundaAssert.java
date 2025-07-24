@@ -105,8 +105,6 @@ public class CamundaAssert {
     Awaitility.setDefaultPollInterval(assertionInterval);
   }
 
-  // ======== Assertions ========
-
   /**
    * Configures the element selector used for BPMN element assertions with a string identifier.
    *
@@ -117,6 +115,28 @@ public class CamundaAssert {
     CamundaAssert.elementSelector = elementSelector;
   }
 
+  // ======== Assertions ========
+
+  /**
+   * To verify a process instance.
+   *
+   * @param processInstanceEvent the event of the process instance to verify
+   * @return the assertion object
+   */
+  public static ProcessInstanceAssert assertThatProcessInstance(
+      final ProcessInstanceEvent processInstanceEvent) {
+    return createProcessInstanceAssertj(processInstanceEvent.getProcessInstanceKey());
+  }
+
+  /**
+   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceEvent)} instead
+   */
+  @Deprecated
+  public static ProcessInstanceAssert assertThatProcessInstance(
+      final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent) {
+    return createProcessInstanceAssertj(processInstanceEvent.getProcessInstanceKey());
+  }
+
   /**
    * To verify a process instance.
    *
@@ -124,16 +144,36 @@ public class CamundaAssert {
    * @return the assertion object
    */
   public static ProcessInstanceAssert assertThat(final ProcessInstanceEvent processInstanceEvent) {
-    return createProcessInstanceAssertj(processInstanceEvent.getProcessInstanceKey());
+    return assertThatProcessInstance(processInstanceEvent);
   }
 
   /**
-   * @deprecated, for removal, use {@link #assertThat(ProcessInstanceEvent)} instead
+   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceEvent)} instead
    */
   @Deprecated
   public static ProcessInstanceAssert assertThat(
       final io.camunda.zeebe.client.api.response.ProcessInstanceEvent processInstanceEvent) {
-    return createProcessInstanceAssertj(processInstanceEvent.getProcessInstanceKey());
+    return assertThatProcessInstance(processInstanceEvent);
+  }
+
+  /**
+   * To verify a process instance.
+   *
+   * @param processInstanceResult the result of the process instance to verify
+   * @return the assertion object
+   */
+  public static ProcessInstanceAssert assertThatProcessInstance(
+      final ProcessInstanceResult processInstanceResult) {
+    return createProcessInstanceAssertj(processInstanceResult.getProcessInstanceKey());
+  }
+
+  /**
+   * @deprecated, for removal, use {@link #assertThatProcessInstance(ProcessInstanceResult)} instead
+   */
+  @Deprecated
+  public static ProcessInstanceAssert assertThatProcessInstance(
+      final io.camunda.zeebe.client.api.response.ProcessInstanceResult processInstanceResult) {
+    return createProcessInstanceAssertj(processInstanceResult.getProcessInstanceKey());
   }
 
   /**
@@ -144,21 +184,28 @@ public class CamundaAssert {
    */
   public static ProcessInstanceAssert assertThat(
       final ProcessInstanceResult processInstanceResult) {
-    return createProcessInstanceAssertj(processInstanceResult.getProcessInstanceKey());
+    return assertThatProcessInstance(processInstanceResult);
   }
 
   /**
-   * @deprecated, for removal, use {@link #assertThat(ProcessInstanceResult)} instead
+   * @deprecated, for removal, use {@link #assertThat(ProcessInstanceEvent)} instead
    */
   @Deprecated
   public static ProcessInstanceAssert assertThat(
       final io.camunda.zeebe.client.api.response.ProcessInstanceResult processInstanceResult) {
-    return createProcessInstanceAssertj(processInstanceResult.getProcessInstanceKey());
+    return assertThatProcessInstance(processInstanceResult);
   }
 
-  private static ProcessInstanceAssertj createProcessInstanceAssertj(
-      final long processInstanceKey) {
-    return new ProcessInstanceAssertj(getDataSource(), processInstanceKey, elementSelector);
+  /**
+   * To verify a process instance.
+   *
+   * @param processInstanceSelector the selector of the process instance to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.ProcessInstanceSelectors
+   */
+  public static ProcessInstanceAssert assertThatProcessInstance(
+      final ProcessInstanceSelector processInstanceSelector) {
+    return new ProcessInstanceAssertj(getDataSource(), processInstanceSelector, elementSelector);
   }
 
   /**
@@ -170,7 +217,23 @@ public class CamundaAssert {
    */
   public static ProcessInstanceAssert assertThat(
       final ProcessInstanceSelector processInstanceSelector) {
-    return new ProcessInstanceAssertj(getDataSource(), processInstanceSelector, elementSelector);
+    return assertThatProcessInstance(processInstanceSelector);
+  }
+
+  private static ProcessInstanceAssertj createProcessInstanceAssertj(
+      final long processInstanceKey) {
+    return new ProcessInstanceAssertj(getDataSource(), processInstanceKey, elementSelector);
+  }
+
+  /**
+   * To verify a user task.
+   *
+   * @param userTaskSelector the selector of the user task to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.UserTaskSelectors
+   */
+  public static UserTaskAssert assertThatUserTask(final UserTaskSelector userTaskSelector) {
+    return new UserTaskAssertj(getDataSource(), userTaskSelector);
   }
 
   /**
@@ -181,7 +244,18 @@ public class CamundaAssert {
    * @see io.camunda.process.test.api.assertions.UserTaskSelectors
    */
   public static UserTaskAssert assertThat(final UserTaskSelector userTaskSelector) {
-    return new UserTaskAssertj(getDataSource(), userTaskSelector);
+    return assertThatUserTask(userTaskSelector);
+  }
+
+  /**
+   * To verify a decision instance (via business rule task).
+   *
+   * @param decisionSelector the selector of the decision instance to verify
+   * @return the assertion object
+   * @see io.camunda.process.test.api.assertions.DecisionSelectors
+   */
+  public static DecisionInstanceAssert assertThatDecision(final DecisionSelector decisionSelector) {
+    return new DecisionInstanceAssertj(getDataSource(), decisionSelector);
   }
 
   /**
@@ -192,7 +266,18 @@ public class CamundaAssert {
    * @see io.camunda.process.test.api.assertions.DecisionSelectors
    */
   public static DecisionInstanceAssert assertThat(final DecisionSelector decisionSelector) {
-    return new DecisionInstanceAssertj(getDataSource(), decisionSelector);
+    return assertThatDecision(decisionSelector);
+  }
+
+  /**
+   * To verify an evaluated decision response (via API).
+   *
+   * @param response the evaluated decision response to assert
+   * @return the assertion object
+   */
+  public static DecisionInstanceAssertj assertThatDecision(
+      final EvaluateDecisionResponse response) {
+    return new DecisionInstanceAssertj(getDataSource(), DecisionSelectors.byResponse(response));
   }
 
   /**
@@ -202,7 +287,7 @@ public class CamundaAssert {
    * @return the assertion object
    */
   public static DecisionInstanceAssertj assertThat(final EvaluateDecisionResponse response) {
-    return new DecisionInstanceAssertj(getDataSource(), DecisionSelectors.byResponse(response));
+    return assertThatDecision(response);
   }
 
   // ======== Internal ========
