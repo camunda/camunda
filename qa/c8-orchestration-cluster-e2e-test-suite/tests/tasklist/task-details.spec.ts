@@ -15,7 +15,6 @@ import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
 test.beforeAll(async () => {
-  // Workaround for #34322: split deployments to avoid test failures caused by bulk deployment
   await deploy([
     './resources/usertask_to_be_completed.bpmn',
     './resources/user_task_with_form.bpmn',
@@ -27,8 +26,6 @@ test.beforeAll(async () => {
     './resources/form_with_checkbox.form',
     './resources/checklist_task_with_form.bpmn',
     './resources/form_with_checklist.form',
-  ]);
-  await deploy([
     './resources/date_and_time_task_with_form.bpmn',
     './resources/form_with_date_and_time.form',
     './resources/number_task_with_form.bpmn',
@@ -39,8 +36,6 @@ test.beforeAll(async () => {
     './resources/form_with_select.form',
     './resources/tag_list_task_with_form.bpmn',
     './resources/form_with_tag_list.form',
-  ]);
-  await deploy([
     './resources/text_templating_form_task.bpmn',
     './resources/form_with_text_templating.form',
     './resources/processWithDeployedForm.bpmn',
@@ -207,7 +202,9 @@ test.describe('task details page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Zeebe_user_task');
-    await expect(page.getByText('zeebeVar', { exact: true })).toBeVisible({timeout: 60000});
+    await expect(page.getByText('zeebeVar', {exact: true})).toBeVisible({
+      timeout: 60000,
+    });
     await expect(taskDetailsPage.assignToMeButton).toBeHidden();
     await expect(taskDetailsPage.unassignButton).toBeHidden();
     await expect(taskDetailsPage.completeTaskButton).toBeHidden();
