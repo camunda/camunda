@@ -47,7 +47,7 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   static OpensearchContainer opensearch =
       (OpensearchContainer)
-          new OpensearchContainer("opensearchproject/opensearch:2.9.0")
+          new OpensearchContainer("opensearchproject/opensearch:2.17.0")
               .withCopyFileToContainer(
                   MountableFile.forHostPath("src/test/resources/certs/elastic-stack-ca.p12"),
                   "/usr/share/elasticsearch/config/certs/elastic-stack-ca.p12")
