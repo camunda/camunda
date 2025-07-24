@@ -147,7 +147,7 @@ public class CamundaExporterMetrics {
             .register(meterRegistry);
 
     TimeGauge.builder(
-            meterName("since.last.flush.seconds"), TimeUnit.SECONDS, this::secondSinceLastFlush)
+            meterName("since.last.flush.seconds"), this::secondSinceLastFlush, TimeUnit.SECONDS)
         .description("Time in seconds since the last successful flush")
         .register(meterRegistry);
 
