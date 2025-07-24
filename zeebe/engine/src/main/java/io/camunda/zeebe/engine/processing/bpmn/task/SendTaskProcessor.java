@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.bpmn.task;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSendTask;
@@ -25,10 +27,17 @@ public final class SendTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
                   + "deploy the updated process version, and migrate the instance to it.",
               ErrorType.UNKNOWN));
 
+  private final BpmnJobBehavior jobBehavior;
+  private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnStateTransitionBehavior stateTransitionBehavior;
+
   public SendTaskProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior) {
     super(bpmnBehaviors, stateTransitionBehavior);
+    jobBehavior = bpmnBehaviors.jobBehavior();
+    incidentBehavior = bpmnBehaviors.incidentBehavior();
+    this.stateTransitionBehavior = stateTransitionBehavior;
   }
 
   @Override
@@ -70,6 +79,20 @@ public final class SendTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   protected TransitionOutcome onTerminateInternal(
       final ExecutableSendTask element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
+    incidentBehavior.resolveIncidents(context);
+
+    final var terminated =
+        stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
+    stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  protected void onFinalizeTerminationInternal(
+      final ExecutableSendTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.executeRuntimeInstructions(element, context);
   }
 }
