@@ -6,8 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Error, Tools, RetryFailed} from '@carbon/react/icons';
-import {Button, type ButtonSize, type Icon} from '@carbon/react';
+import {
+  Error,
+  Tools,
+  RetryFailed,
+  type CarbonIconType,
+} from '@carbon/react/icons';
+import {Button, type ButtonSize} from '@carbon/react';
 
 type ItemProps = {
   type:
@@ -23,7 +28,12 @@ type ItemProps = {
 const TYPE_DETAILS: Readonly<
   Record<
     ItemProps['type'],
-    {icon?: typeof Icon; testId: string; isDangerous?: boolean; label?: string}
+    {
+      icon?: CarbonIconType;
+      testId: string;
+      isDangerous?: boolean;
+      label?: string;
+    }
   >
 > = {
   RESOLVE_INCIDENT: {icon: RetryFailed, testId: 'retry-operation'},

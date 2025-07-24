@@ -7,7 +7,7 @@
  */
 
 import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
-import {type Icon, Error} from '@carbon/react/icons';
+import {Error, type CarbonIconType} from '@carbon/react/icons';
 import type {
   InstanceEntityState,
   DecisionInstanceEntityState,
@@ -25,7 +25,7 @@ const stateIconsMap = {
 
 type Props = {
   state: InstanceEntityState | DecisionInstanceEntityState;
-  size: React.ComponentProps<Icon>['size'];
+  size: React.ComponentProps<CarbonIconType>['size'];
 };
 
 const StateIcon: React.FC<Props> = ({state, ...props}) => {
