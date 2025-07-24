@@ -8,7 +8,7 @@
 package io.camunda.it.nodb;
 
 import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-import static io.camunda.authentication.ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.authentication.ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -16,7 +16,7 @@ import io.camunda.authentication.CamundaOAuthPrincipalServiceNoDbImpl;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;]
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.List;
 import java.util.Map;
