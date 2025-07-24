@@ -113,7 +113,9 @@ public final class BackgroundTaskManagerFactory {
 
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildProcessInstanceArchiverJob());
-    tasks.add(buildProcessInstanceToBeArchivedCountJob());
+    if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
+      tasks.add(buildProcessInstanceToBeArchivedCountJob());
+    }
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationArchiverJob());
       tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
