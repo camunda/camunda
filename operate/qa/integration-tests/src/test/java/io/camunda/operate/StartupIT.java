@@ -71,7 +71,8 @@ public class StartupIT {
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl)
-        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
 
     testContainerUtil.startOperateContainer(operateContainer, testContext);
     LOGGER.info("************ Operate started  ************");
