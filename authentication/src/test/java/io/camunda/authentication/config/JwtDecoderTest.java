@@ -9,9 +9,9 @@ package io.camunda.authentication.config;
 
 import static com.nimbusds.jose.JOSEObjectType.JWT;
 import static io.camunda.authentication.config.WebSecurityConfig.AT_JWT;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.fail;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
@@ -93,10 +93,10 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
     // remove alg field from mocked server response and assert it was removed to cover this use case
     final String withoutAlg = jwtKeys.publicKey.replaceFirst(",\"alg\":\"[^\"]*\"", "");
     final String authServerResponseBody = "{\"keys\":[" + withoutAlg + "]}";
-    assertFalse(authServerResponseBody.contains("alg\":"));
+    assertThat(authServerResponseBody).doesNotContain("alg\":");
     mockAuthServerResponse(authServerResponseBody);
 
-    assertDoesNotThrow(() -> decoder.decode(jwtKeys.serializedJwt));
+    assertThatCode(() -> decoder.decode(jwtKeys.serializedJwt)).doesNotThrowAnyException();
     wireMock.getRuntimeInfo().getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
@@ -113,7 +113,7 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
     final String authServerResponseBody = "{\"keys\":[" + jwtKeys.publicKey + "]}";
     mockAuthServerResponse(authServerResponseBody);
 
-    assertDoesNotThrow(() -> decoder.decode(jwtKeys.serializedJwt));
+    assertThatCode(() -> decoder.decode(jwtKeys.serializedJwt)).doesNotThrowAnyException();
     wireMock.getRuntimeInfo().getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
@@ -125,7 +125,7 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
     final String authServerResponseBody = "{\"keys\":[" + jwtKeys.publicKey + "]}";
     mockAuthServerResponse(authServerResponseBody);
 
-    assertDoesNotThrow(() -> decoder.decode(jwtKeys.serializedJwt));
+    assertThatCode(() -> decoder.decode(jwtKeys.serializedJwt)).doesNotThrowAnyException();
     wireMock.getRuntimeInfo().getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
@@ -137,7 +137,7 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
     final String authServerResponseBody = "{\"keys\":[" + jwtKeys.publicKey + "]}";
     mockAuthServerResponse(authServerResponseBody);
 
-    assertDoesNotThrow(() -> decoder.decode(jwtKeys.serializedJwt));
+    assertThatCode(() -> decoder.decode(jwtKeys.serializedJwt)).doesNotThrowAnyException();
     wireMock.getRuntimeInfo().getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
@@ -185,7 +185,8 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
                 .generate();
         jwsSigner = new ECDSASigner((ECKey) jwk);
       } else {
-        fail("unsupported algorithm type " + algorithm);
+        fail("unsupported algorithm type '%s'", algorithm);
+        throw new IllegalStateException("Unreachable");
       }
       serializedJwt = signAndSerialize(jwk, algorithm, type);
       publicKey = jwk.toPublicJWK().toJSONString();
