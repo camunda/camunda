@@ -27,6 +27,10 @@ public class CamundaSecurityConfiguration {
       "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI";
 
   @VisibleForTesting
+  public static final String UNPROTECTED_MCP_ENV_VAR =
+      "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDMCP";
+
+  @VisibleForTesting
   public static final String AUTHORIZATION_CHECKS_ENV_VAR =
       "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED";
 
@@ -47,10 +51,11 @@ public class CamundaSecurityConfiguration {
   public void validate() {
     final var multiTenancyEnabled = camundaSecurityProperties.getMultiTenancy().isChecksEnabled();
     final var apiUnprotected = camundaSecurityProperties.getAuthentication().getUnprotectedApi();
+    final var mcpUnprotected = camundaSecurityProperties.getAuthentication().getUnprotectedMcp();
 
-    if (multiTenancyEnabled && apiUnprotected) {
+    if (multiTenancyEnabled && (apiUnprotected || mcpUnprotected)) {
       throw new IllegalStateException(
-          "Multi-tenancy is enabled (%s=%b), but the API is unprotected (%s=%b). Please enable API protection if you want to make use of multi-tenancy."
+          "Multi-tenancy is enabled (%s=%b), but the API or MCP is unprotected (%s=%b). Please enable API and MCP protection if you want to make use of multi-tenancy."
               .formatted(
                   "camunda.security.multiTenancy.checksEnabled",
                   true,

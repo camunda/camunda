@@ -13,12 +13,9 @@ import io.camunda.security.entity.AuthenticationMethod;
 public final class AuthenticationProperties {
   public static final String METHOD = "camunda.security.authentication.method";
   public static final String API_UNPROTECTED = "camunda.security.authentication.unprotected-api";
+  public static final String MCP_UNPROTECTED = "camunda.security.authentication.unprotected-mcp";
 
   private AuthenticationProperties() {}
-
-  public static String getUnprotectedApiEnvVar() {
-    return API_UNPROTECTED.replace(".", "_").replace("-", "").toUpperCase();
-  }
 
   public static void applyToSecurityConfig(
       final SecurityConfiguration securityConfig, final String key, final Object value) {
@@ -30,6 +27,10 @@ public final class AuthenticationProperties {
           securityConfig
               .getAuthentication()
               .setUnprotectedApi(Boolean.parseBoolean(String.valueOf(value)));
+      case MCP_UNPROTECTED ->
+          securityConfig
+              .getAuthentication()
+              .setUnprotectedMcp(Boolean.parseBoolean(String.valueOf(value)));
       default -> {}
     }
   }

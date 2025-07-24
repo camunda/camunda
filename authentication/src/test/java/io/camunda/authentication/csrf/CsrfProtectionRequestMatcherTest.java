@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.authentication.config.WebSecurityConfig;
-import io.camunda.security.configuration.AuthenticationConfiguration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -31,8 +30,6 @@ class CsrfProtectionRequestMatcherTest {
 
   @BeforeEach
   void beforeEach() {
-    final var authConfig = new AuthenticationConfiguration();
-    authConfig.setUnprotectedApi(false);
     matcher = new CsrfProtectionRequestMatcher();
   }
 
@@ -70,8 +67,6 @@ class CsrfProtectionRequestMatcherTest {
         "/api/process-instances/123/sequence-flows"
       })
   void whenUnprotectedApiIsOnAndApiCalledFromBrowser(final String protectedUrls) {
-    final var authConfig = new AuthenticationConfiguration();
-    authConfig.setUnprotectedApi(true);
     final var unprotectedApiMatcher = new CsrfProtectionRequestMatcher();
     final var request = prepareMockRequest();
     request.getSession(true);

@@ -20,7 +20,7 @@ import java.lang.annotation.Target;
  * org.junit.jupiter.api.TestTemplate} or {@link CamundaMultiDbExtension}. When applied, this
  * indicates that the {@link CamundaClient} should be created with the provided user's credentials.
  */
-@Target(ElementType.PARAMETER)
+@Target({ElementType.FIELD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Authenticated {

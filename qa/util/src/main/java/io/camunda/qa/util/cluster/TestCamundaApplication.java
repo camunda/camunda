@@ -97,6 +97,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     securityConfig = new CamundaSecurityProperties();
     securityConfig.getAuthorizations().setEnabled(false);
     securityConfig.getAuthentication().setUnprotectedApi(true);
+    securityConfig.getAuthentication().setUnprotectedMcp(true);
     securityConfig
         .getInitialization()
         .getUsers()
@@ -129,6 +130,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         .withProperty(
             AuthenticationProperties.API_UNPROTECTED,
             securityConfig.getAuthentication().getUnprotectedApi())
+        .withProperty(
+            AuthenticationProperties.MCP_UNPROTECTED,
+            securityConfig.getAuthentication().getUnprotectedMcp())
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)

@@ -36,7 +36,88 @@ public class CamundaSecurityConfigurationTest {
         .cause()
         .isInstanceOf(IllegalStateException.class)
         .hasMessage(
-            "Multi-tenancy is enabled (%s=true), but the API is unprotected (%s=true). Please enable API protection if you want to make use of multi-tenancy."
-                .formatted(mtProperty, apiProperty));
+            "Multi-tenancy is enabled (%s=%b), but the API or MCP is unprotected (%s=%b). Please enable API and MCP protection if you want to make use of multi-tenancy."
+                .formatted(
+                    "camunda.security.multi-tenancy.enabled",
+                    true,
+                    "camunda.security.authentication.unprotected-api",
+                    true));
+  }
+
+  @Test
+  public void whenMultiTenancyEnabledAndMcpUnprotectedThenFailsToStart() {
+    final var application =
+        MainSupport.createDefaultApplicationBuilder()
+            .sources(CommonsModuleConfiguration.class)
+            .build();
+
+    final var mtProperty = "camunda.security.multi-tenancy.enabled";
+    final var mcpProperty = "camunda.security.authentication.unprotected-mcp";
+    application.setDefaultProperties(
+        Map.of(
+            mtProperty, true,
+            mcpProperty, true));
+
+    assertThatThrownBy(application::run)
+        .isInstanceOf(BeanCreationException.class)
+        .cause()
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Multi-tenancy is enabled (%s=%b), but the API or MCP is unprotected (%s=%b). Please enable API and MCP protection if you want to make use of multi-tenancy."
+                .formatted(
+                    "camunda.security.multi-tenancy.enabled",
+                    true,
+                    "camunda.security.authentication.unprotected-api",
+                    true));
+  }
+
+  @Test
+  public void whenMultiTenancyEnabledAndBothApiAndMcpUnprotectedThenFailsToStart() {
+    final var application =
+        MainSupport.createDefaultApplicationBuilder()
+            .sources(CommonsModuleConfiguration.class)
+            .build();
+
+    final var mtProperty = "camunda.security.multi-tenancy.enabled";
+    final var apiProperty = "camunda.security.authentication.unprotected-api";
+    final var mcpProperty = "camunda.security.authentication.unprotected-mcp";
+    application.setDefaultProperties(
+        Map.of(
+            mtProperty, true,
+            apiProperty, true,
+            mcpProperty, true));
+
+    assertThatThrownBy(application::run)
+        .isInstanceOf(BeanCreationException.class)
+        .cause()
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
+            "Multi-tenancy is enabled (%s=%b), but the API or MCP is unprotected (%s=%b). Please enable API and MCP protection if you want to make use of multi-tenancy."
+                .formatted(
+                    "camunda.security.multi-tenancy.enabled",
+                    true,
+                    "camunda.security.authentication.unprotected-api",
+                    true));
+  }
+
+  @Test
+  public void whenMultiTenancyEnabledAndBothApiAndMcpProtectedThenStartsSuccessfully() {
+    final var application =
+        MainSupport.createDefaultApplicationBuilder()
+            .sources(CommonsModuleConfiguration.class)
+            .build();
+
+    final var mtProperty = "camunda.security.multi-tenancy.enabled";
+    final var apiProperty = "camunda.security.authentication.unprotected-api";
+    final var mcpProperty = "camunda.security.authentication.unprotected-mcp";
+    application.setDefaultProperties(
+        Map.of(
+            mtProperty, true,
+            apiProperty, false,
+            mcpProperty, false));
+
+    // This should not throw an exception
+    final var context = application.run();
+    context.close();
   }
 }
