@@ -8,12 +8,14 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.bool;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.FORM_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.RESOURCE_NAME;
@@ -22,6 +24,7 @@ import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_T
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.security.auth.Authorization;
@@ -47,7 +50,7 @@ public class ProcessDefinitionFilterTransformer
     ofNullable(intTerms(VERSION, filter.versions())).ifPresent(queries::add);
     ofNullable(stringTerms(VERSION_TAG, filter.versionTags())).ifPresent(queries::add);
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
-
+    ofNullable(getHasStartFormQuery(filter.hasStartForm())).ifPresent(queries::add);
     return and(queries);
   }
 
@@ -58,6 +61,21 @@ public class ProcessDefinitionFilterTransformer
   private List<SearchQuery> getProcessDefinitionIdsQuery(
       final List<Operation<String>> processDefinitionIds) {
     return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
+  }
+
+  private SearchQuery getHasStartFormQuery(final Boolean hasStartForm) {
+    if (hasStartForm != null) {
+      return bool(b -> {
+            if (hasStartForm) {
+              b.must(List.of(SearchQueryBuilders.exists(FORM_ID)));
+            } else {
+              b.mustNot(List.of(SearchQueryBuilders.exists(FORM_ID)));
+            }
+            return b;
+          })
+          .toSearchQuery();
+    }
+    return null;
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.clients.query.SearchTermsQuery;
@@ -22,6 +23,8 @@ import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public final class ProcessDefinitionQueryTransformerTest extends AbstractTransformerTest {
 
@@ -95,6 +98,32 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
             t -> {
               assertThat(t.field()).isEqualTo("version");
               assertThat(t.value().intValue()).isEqualTo(5);
+            });
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldQueryByHasStartForm(final boolean hasStartForm) {
+    final var filter = FilterBuilders.processDefinition(f -> f.hasStartForm(hasStartForm));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest.queryOption())
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              final var boolQueryMustOrNot = hasStartForm ? boolQuery.must() : boolQuery.mustNot();
+              assertThat(boolQueryMustOrNot).hasSize(1);
+              final var innerQuery = boolQueryMustOrNot.get(0).queryOption();
+
+              assertThat(boolQueryMustOrNot).hasSize(1);
+
+              assertThat(innerQuery).isInstanceOf(SearchExistsQuery.class);
+
+              final var existsQuery = (SearchExistsQuery) innerQuery;
+              assertThat(existsQuery.field()).isEqualTo("formId");
             });
   }
 

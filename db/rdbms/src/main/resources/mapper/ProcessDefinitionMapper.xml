@@ -94,6 +94,14 @@
         #{value}
       </foreach>
     </if>
+    <if test="filter.hasStartForm != null">
+      <if test="filter.hasStartForm == true">
+        AND FORM_ID IS NOT NULL
+      </if>
+      <if test="filter.hasStartForm == false">
+        AND FORM_ID IS NULL
+      </if>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessDefinitionEntity">

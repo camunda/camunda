@@ -79,6 +79,12 @@ public class ProcessDefinitionFilterImpl
     return this;
   }
 
+  @Override
+  public ProcessDefinitionFilter hasStartForm(final boolean hasStartForm) {
+    filter.hasStartForm(hasStartForm);
+    return this;
+  }
+
   public ProcessDefinitionFilter name(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);

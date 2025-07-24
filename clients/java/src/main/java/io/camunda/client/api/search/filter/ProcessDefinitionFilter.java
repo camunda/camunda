@@ -81,4 +81,12 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ProcessDefinitionFilter tenantId(final String tenantId);
+
+  /**
+   * Filters process definitions by having or not a form to start the process
+   *
+   * @param hasStartForm boolean to indicate how to filter
+   * @return the updated filter
+   */
+  ProcessDefinitionFilter hasStartForm(final boolean hasStartForm);
 }
