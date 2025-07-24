@@ -8,7 +8,6 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
@@ -20,8 +19,6 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -67,36 +64,6 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
                   .containsExactly(
                       "eventTime", "2021-01-01T00:00:00.000+0000", "2023-01-01T00:00:00.000+0000");
             });
-  }
-
-  @Test
-  public void shouldQueryDifferentIndicesDependingOnEvent() {
-    // given
-    final TasklistMetricIndex tasklistMetricIndex = mock(TasklistMetricIndex.class);
-    final MetricIndex operateMetricIndex = mock(MetricIndex.class);
-    final var transformer =
-        new UsageMetricsFilterTransformer(tasklistMetricIndex, operateMetricIndex);
-    final var startTime = OffsetDateTime.of(2021, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-    final var endTime = OffsetDateTime.of(2023, 1, 1, 0, 0, 0, 0, ZoneOffset.UTC);
-    // should use Operate
-    var filter =
-        FilterBuilders.usageMetrics(
-            f ->
-                f.startTime(startTime)
-                    .endTime(endTime)
-                    .events("EVENT_PROCESS_INSTANCE_START", "EVENT_PROCESS_INSTANCE_END"));
-
-    // when
-    transformer.toSearchQuery(filter);
-    assertThat(transformer.getIndex()).isEqualTo(operateMetricIndex);
-
-    // should use Tasklist
-    filter =
-        FilterBuilders.usageMetrics(
-            f -> f.startTime(startTime).endTime(endTime).events("task_completed_by_assignee"));
-    // when
-    transformer.toSearchQuery(filter);
-    assertThat(transformer.getIndex()).isEqualTo(tasklistMetricIndex);
   }
 
   @Test

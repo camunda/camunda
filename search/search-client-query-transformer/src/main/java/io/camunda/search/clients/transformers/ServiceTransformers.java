@@ -193,11 +193,10 @@ import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -428,9 +427,7 @@ public final class ServiceTransformers {
         TenantFilter.class, new TenantFilterTransformer(indexDescriptors.get(TenantIndex.class)));
     mappers.put(
         UsageMetricsFilter.class,
-        new UsageMetricsFilterTransformer(
-            indexDescriptors.get(TasklistMetricIndex.class),
-            indexDescriptors.get(MetricIndex.class)));
+        new UsageMetricsFilterTransformer(indexDescriptors.get(UsageMetricIndex.class)));
     mappers.put(
         ProcessDefinitionStatisticsFilter.class,
         new ProcessDefinitionStatisticsFilterTransformer(
