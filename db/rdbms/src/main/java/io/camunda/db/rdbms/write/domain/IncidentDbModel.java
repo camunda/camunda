@@ -35,7 +35,7 @@ public record IncidentDbModel(
     OffsetDateTime historyCleanupDate)
     implements DbModel<IncidentDbModel> {
 
-  private static final Logger log = LoggerFactory.getLogger(IncidentDbModel.class);
+  private static final Logger LOG = LoggerFactory.getLogger(IncidentDbModel.class);
 
   @Override
   public IncidentDbModel copy(
@@ -67,7 +67,7 @@ public record IncidentDbModel(
     final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
 
     if (truncatedValue.length() < errorMessage.length()) {
-      log.warn(
+      LOG.warn(
           "Truncated error message for incident {}, original message was: {}",
           incidentKey,
           errorMessage);
