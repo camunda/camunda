@@ -281,11 +281,9 @@ final class SegmentsManager implements AutoCloseable {
     // Load existing log segments from disk.
     Segment previousSegment = null;
     for (final Segment segment : loadSegments()) {
-      if (previousSegment != null) {
+      if (previousSegment != null && previousSegment.lastIndex() >= segment.index()) {
         // Segments contain overlaps
-        if (previousSegment.lastIndex() >= segment.index()) {
-          reIndexOverlap(segment);
-        }
+        reIndexOverlap(segment);
       }
       previousSegment = segment;
       final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
