@@ -29,15 +29,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class VariableResolverTest {
+class VariableParameterResolverTest {
 
-  private VariableResolver resolver;
+  private VariableParameterResolver resolver;
   @Mock private JobClient jobClient;
   @Mock private ActivatedJob job;
 
   @BeforeEach
   void setUp() {
-    resolver = new VariableResolver("testVar", String.class, new CamundaObjectMapper(), true);
+    resolver =
+        new VariableParameterResolver("testVar", String.class, new CamundaObjectMapper(), true);
   }
 
   @Test

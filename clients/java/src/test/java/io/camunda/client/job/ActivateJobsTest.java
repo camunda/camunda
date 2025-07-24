@@ -15,6 +15,7 @@
  */
 package io.camunda.client.job;
 
+import static io.camunda.client.TestUtil.getBytes;
 import static io.camunda.client.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ActivateJobsResponse;
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
@@ -565,6 +567,53 @@ public final class ActivateJobsTest extends ClientTest {
     // then
     final ActivateJobsRequest request = gatewayService.getLastRequest();
     assertThat(request.getWorker()).isEqualTo(workerName);
+  }
+
+  @Test
+  public void shouldParseDocumentReference() {
+    // given
+    final ActivatedJob activatedJob1 =
+        ActivatedJob.newBuilder()
+            .setKey(12)
+            .setType("foo")
+            .setProcessInstanceKey(123)
+            .setBpmnProcessId("test1")
+            .setProcessDefinitionVersion(2)
+            .setProcessDefinitionKey(23)
+            .setElementId("foo")
+            .setElementInstanceKey(23213)
+            .setCustomHeaders("{\"version\": \"1\"}")
+            .setWorker("worker1")
+            .setRetries(34)
+            .setDeadline(1231)
+            .setVariables(
+                "{\"documentReference\": ["
+                    + new String(getBytes("/document/test-document-reference.json"))
+                    + "]}")
+            .setTenantId("test-tenant-1")
+            .build();
+
+    gatewayService.onActivateJobsRequest(activatedJob1);
+
+    // when
+    final ActivateJobsResponse response =
+        client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(1).send().join();
+    // then
+    assertThat(response.getJobs()).hasSize(1);
+    final io.camunda.client.api.response.ActivatedJob job = response.getJobs().get(0);
+    assertThat(job.getDocumentReferences("documentReference")).isNotNull();
+    final List<DocumentReferenceResponse> documentReference =
+        job.getDocumentReferences("documentReference");
+    assertThat(documentReference).hasSize(1);
+    final DocumentReferenceResponse documentReferenceResponse = documentReference.get(0);
+    assertThat(documentReferenceResponse.getDocumentType()).isEqualTo("camunda");
+    assertThat(documentReferenceResponse.getDocumentId()).isEqualTo("document-id");
+    assertThat(documentReferenceResponse.getContentHash()).isEqualTo("content-hash");
+    assertThat(documentReferenceResponse.getMetadata()).isNotNull();
+    assertThat(documentReferenceResponse.getMetadata().getContentType()).isEqualTo("content-type");
+    assertThat(documentReferenceResponse.getMetadata().getFileName()).isEqualTo("file-name");
+    assertThat(documentReferenceResponse.getMetadata().getExpiresAt())
+        .isEqualTo("2025-06-28T07:32:28.93912+02:00");
   }
 
   private static final class VariablesPojo {

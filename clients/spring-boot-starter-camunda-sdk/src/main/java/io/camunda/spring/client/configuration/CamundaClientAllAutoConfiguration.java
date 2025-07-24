@@ -18,6 +18,7 @@ package io.camunda.spring.client.configuration;
 import static io.camunda.spring.client.configuration.CamundaClientConfigurationImpl.DEFAULT;
 import static java.util.Optional.ofNullable;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
@@ -30,7 +31,9 @@ import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.DefaultDocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.spring.client.jobhandling.result.DefaultResultProcessorStrategy;
+import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.spring.client.properties.CamundaClientProperties;
@@ -76,14 +79,27 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ParameterResolverStrategy parameterResolverStrategy(
-      final JsonMapper jsonMapper, @Autowired(required = false) final ZeebeClient zeebeClient) {
-    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient);
+      final JsonMapper jsonMapper,
+      @Autowired(required = false) final ZeebeClient zeebeClient,
+      final CamundaClient camundaClient) {
+    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient, camundaClient);
   }
 
   @Bean
   @ConditionalOnMissingBean
-  public ResultProcessorStrategy resultProcessorStrategy() {
-    return new DefaultResultProcessorStrategy();
+  public DocumentResultProcessorFailureHandlingStrategy
+      documentResultProcessorFailureHandlingStrategy() {
+    return new DefaultDocumentResultProcessorFailureHandlingStrategy();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public ResultProcessorStrategy resultProcessorStrategy(
+      final CamundaClient camundaClient,
+      final DocumentResultProcessorFailureHandlingStrategy
+          documentResultProcessorFailureHandlingStrategy) {
+    return new DefaultResultProcessorStrategy(
+        camundaClient, documentResultProcessorFailureHandlingStrategy);
   }
 
   @Bean

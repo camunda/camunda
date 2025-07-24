@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.jobhandling.result;
+package io.camunda.spring.client;
 
-import io.camunda.spring.client.bean.MethodInfo;
+import io.camunda.client.impl.command.StreamUtil;
+import java.io.IOException;
+import java.io.InputStream;
 
-public interface ResultProcessorStrategy {
-
-  @Deprecated
-  default ResultProcessor createProcessor(final Class<?> resultType) {
-    return new ResultProcessor() {};
-  }
-
-  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
-    return createProcessor(methodInfo.getReturnType());
+public class TestUtil {
+  public static byte[] getBytes(final String filename) {
+    try (final InputStream is = TestUtil.class.getResourceAsStream(filename)) {
+      return StreamUtil.readInputStream(is);
+    } catch (final IOException e) {
+      throw new AssertionError("Failed to read bytes of file: " + filename, e);
+    }
   }
 }
