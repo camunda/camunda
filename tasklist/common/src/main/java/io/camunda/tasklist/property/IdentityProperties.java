@@ -9,17 +9,7 @@ package io.camunda.tasklist.property;
 
 public class IdentityProperties {
   public static final String ALL_RESOURCES = "*";
-  public static final String FULL_GROUP_ACCESS = "";
-  private String redirectRootUrl;
   private boolean userAccessRestrictionsEnabled = true;
-
-  public String getRedirectRootUrl() {
-    return redirectRootUrl;
-  }
-
-  public void setRedirectRootUrl(final String redirectRootUrl) {
-    this.redirectRootUrl = redirectRootUrl;
-  }
 
   public boolean isUserAccessRestrictionsEnabled() {
     return userAccessRestrictionsEnabled;

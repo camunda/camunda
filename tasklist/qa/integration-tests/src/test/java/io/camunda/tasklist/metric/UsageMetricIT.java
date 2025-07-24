@@ -12,9 +12,9 @@ import static io.camunda.tasklist.metric.MetricIT.ELEMENT_ID;
 import static io.camunda.tasklist.property.ElasticsearchProperties.DATE_FORMAT_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.io.IOException;
@@ -43,15 +43,12 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
   @Autowired private TestRestTemplate testRestTemplate;
   @Autowired private TaskMetricsStore taskMetricsStore;
   @LocalManagementPort private int managementPort;
-  private final UserDTO joe = buildAllAccessUserWith("joe", "Joe", "Doe");
-  private final UserDTO jane = buildAllAccessUserWith("jane", "Jane", "Doe");
-  private final UserDTO demo = buildAllAccessUserWith("demo", "Demo", "User");
+  private final CamundaAuthentication joe = buildAllAccessUserWith("joe");
+  private final CamundaAuthentication jane = buildAllAccessUserWith("jane");
+  private final CamundaAuthentication demo = buildAllAccessUserWith("demo");
 
-  private static UserDTO buildAllAccessUserWith(
-      final String username, final String firstname, final String lastname) {
-    return new UserDTO()
-        .setUserId(username)
-        .setDisplayName(String.format("%s %s", firstname, lastname));
+  private static CamundaAuthentication buildAllAccessUserWith(final String username) {
+    return CamundaAuthentication.of(b -> b.user(username));
   }
 
   @Override

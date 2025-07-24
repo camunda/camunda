@@ -7,8 +7,20 @@
  */
 package io.camunda.tasklist.webapp.group;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import java.util.List;
+import org.springframework.stereotype.Component;
 
-public interface UserGroupService {
-  List<String> getUserGroups();
+@Component
+public class UserGroupService {
+
+  private final CamundaAuthenticationProvider authenticationProvider;
+
+  public UserGroupService(final CamundaAuthenticationProvider authenticationProvider) {
+    this.authenticationProvider = authenticationProvider;
+  }
+
+  public List<String> getUserGroups() {
+    return authenticationProvider.getCamundaAuthentication().authenticatedGroupIds();
+  }
 }

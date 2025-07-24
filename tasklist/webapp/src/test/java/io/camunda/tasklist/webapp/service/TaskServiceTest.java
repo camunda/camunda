@@ -24,6 +24,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -36,14 +38,12 @@ import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.dto.TaskDTO;
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
-import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
@@ -72,7 +72,7 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class TaskServiceTest {
 
-  @Mock private UserReader userReader;
+  @Mock private CamundaAuthenticationProvider authenticationProvider;
   @Mock private TaskStore taskStore;
   @Mock private VariableService variableService;
   @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
@@ -303,13 +303,16 @@ class TaskServiceTest {
   private static Stream<Arguments> assignTaskTestData() {
     final var userA = "userA";
     final var userB = "userB";
+    final var userAAuthentication = CamundaAuthentication.of(b -> b.user(userA));
+    final var userBAuthentication = CamundaAuthentication.of(b -> b.user(userB));
+
     return Stream.of(
-        Arguments.of(null, true, userA, new UserDTO().setUserId(userA), false, userA, false, null),
-        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), true, userA, false, null),
-        Arguments.of(true, true, null, new UserDTO().setUserId(userB), false, userB, false, null),
-        Arguments.of(true, true, "", new UserDTO().setUserId(userB), false, userB, false, null),
-        Arguments.of(false, false, userA, new UserDTO().setUserId(userB), false, userA, true, null),
-        Arguments.of(true, true, userA, new UserDTO().setUserId(userB), false, userA, true, userB));
+        Arguments.of(null, true, userA, userAAuthentication, false, userA, false, null),
+        Arguments.of(false, false, userA, userBAuthentication, true, userA, false, null),
+        Arguments.of(true, true, null, userBAuthentication, false, userB, false, null),
+        Arguments.of(true, true, "", userBAuthentication, false, userB, false, null),
+        Arguments.of(false, false, userA, userBAuthentication, false, userA, true, null),
+        Arguments.of(true, true, userA, userBAuthentication, false, userA, true, userB));
   }
 
   @ParameterizedTest
@@ -318,7 +321,7 @@ class TaskServiceTest {
       final Boolean providedAllowOverrideAssignment,
       final boolean expectedAllowOverrideAssignment,
       final String providedAssignee,
-      final UserDTO user,
+      final CamundaAuthentication user,
       final boolean isApiUser,
       final String expectedAssignee,
       final boolean allowNonSelfAssignment,
@@ -332,7 +335,10 @@ class TaskServiceTest {
     final var taskBefore = mock(TaskEntity.class);
     when(taskBefore.getAssignee()).thenReturn(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
-    when(userReader.getCurrentUser()).thenReturn(user);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+        .thenReturn(user.authenticatedUsername());
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
 
@@ -350,7 +356,10 @@ class TaskServiceTest {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final var taskId = "123";
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+        .thenReturn("userA");
 
     // when - then
     verifyNoInteractions(taskStore, taskValidator);
@@ -364,7 +373,10 @@ class TaskServiceTest {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final var taskId = "123";
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+        .thenReturn("userA");
 
     // when - then
     verifyNoInteractions(taskStore, taskValidator);
@@ -378,7 +390,10 @@ class TaskServiceTest {
     // given
     authenticationUtil.when(TasklistAuthenticationUtil::isApiUser).thenReturn(true);
     final var taskId = "123";
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+        .thenReturn("userA");
     when(taskStore.getTask(taskId))
         .thenThrow(new NotFoundException("task with id " + taskId + " was not found "));
 
@@ -407,7 +422,10 @@ class TaskServiceTest {
   public void assignTaskWhenUserTriesToAssignTaskToAnotherAssignee() {
     // given
     final var taskId = "123";
-    when(userReader.getCurrentUser()).thenReturn(new UserDTO().setUserId("userA"));
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+        .thenReturn("userA");
 
     // when - then
     verifyNoInteractions(taskStore, taskValidator);
@@ -440,8 +458,8 @@ class TaskServiceTest {
     final var variables = List.of(new VariableInputDTO().setName("a").setValue("1"));
     final Map<String, Object> variablesMap = Map.of("a", 1);
 
-    final var mockedUser = mock(UserDTO.class);
-    when(userReader.getCurrentUser()).thenReturn(mockedUser);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var completedTask =
@@ -470,8 +488,8 @@ class TaskServiceTest {
     final var variables = List.of(new VariableInputDTO().setName("a").setValue("1"));
     final Map<String, Object> variablesMap = Map.of("a", 1);
 
-    final var mockedUser = mock(UserDTO.class);
-    when(userReader.getCurrentUser()).thenReturn(mockedUser);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     final var completedTask =
@@ -533,13 +551,14 @@ class TaskServiceTest {
     // Given
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
-    final var user = mock(UserDTO.class);
     final var providedAssignee = "expectedAssignee";
     final var providedAllowOverrideAssignment = false;
 
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
-    when(userReader.getCurrentUser()).thenReturn(user);
-    when(user.getUserId()).thenReturn(providedAssignee);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+        .thenReturn(providedAssignee);
     doThrow(new TasklistRuntimeException("reason for error"))
         .when(tasklistServicesAdapter)
         .assignUserTask(eq(taskBefore), any());
@@ -557,7 +576,7 @@ class TaskServiceTest {
       final Boolean providedAllowOverrideAssignment,
       final boolean expectedAllowOverrideAssignment,
       final String providedAssignee,
-      final UserDTO user,
+      final CamundaAuthentication user,
       final boolean isApiUser,
       final String expectedAssignee,
       final boolean allowNonSelfAssignment,
@@ -570,7 +589,10 @@ class TaskServiceTest {
     final var taskBefore = mock(TaskEntity.class);
     when(taskBefore.getAssignee()).thenReturn(currentAssignee);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
-    when(userReader.getCurrentUser()).thenReturn(user);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(mock(CamundaAuthentication.class));
+    when(authenticationProvider.getCamundaAuthentication().authenticatedUsername())
+        .thenReturn(user.authenticatedUsername());
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
     when(taskStore.persistTaskClaim(taskBefore, expectedAssignee)).thenReturn(assignedTask);
     final var result =

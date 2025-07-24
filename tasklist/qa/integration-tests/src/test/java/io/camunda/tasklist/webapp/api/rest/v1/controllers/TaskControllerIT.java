@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.RangeValueFilter.RangeValueFilterBuilder;
@@ -32,7 +33,6 @@ import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.*;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse.DraftSearchVariableValue;
 import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
-import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.group.UserGroupService;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
@@ -1096,7 +1096,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var assignRequest =
           new TaskAssignRequest().setAssignee("bill_doe").setAllowOverrideAssignment(false);
 
-      setCurrentUser(new UserDTO().setUserId("bob_doe"), true);
+      setCurrentUser(CamundaAuthentication.of(b -> b.user("bob_doe")), true);
 
       // when
       final var errorResult =
@@ -1530,7 +1530,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var taskId =
           createTask(bpmnProcessId, flowNodeBpmnId, 1).claimHumanTask(flowNodeBpmnId).getTaskId();
 
-      setCurrentUser(getDefaultCurrentUser().setUserId("user_B"));
+      setCurrentUser(CamundaAuthentication.of(b -> b.user("user_B")));
 
       // when
       final var errorResult =
@@ -1666,7 +1666,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var taskId =
           createTask(bpmnProcessId, flowNodeBpmnId, 1).claimHumanTask(flowNodeBpmnId).getTaskId();
 
-      setCurrentUser(getDefaultCurrentUser().setUserId("user_B"));
+      setCurrentUser(CamundaAuthentication.of(b -> b.user("user_B")));
 
       // when
       final var errorResult =
@@ -1702,7 +1702,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               .setVariables(
                   List.of(new VariableInputDTO().setName("array_var").setValue("[30, 8, 2022]")));
 
-      setCurrentUser(getDefaultCurrentUser().setUserId("user_B"), true);
+      setCurrentUser(CamundaAuthentication.of(b -> b.user("user_B")), true);
 
       // when
       final var errorResult =
