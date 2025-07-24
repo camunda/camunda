@@ -89,7 +89,7 @@ jobs:
               fi
 
               printf "• %sx \`%s.%s\`%s %s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
-              printf "  • @Matt Bear"
+              printf "\t• @Matt Bear\n\n"
 
             done
             echo ""
