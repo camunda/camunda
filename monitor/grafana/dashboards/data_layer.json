@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 6,
+  "id": 8,
   "links": [],
   "panels": [
     {
@@ -98,7 +98,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1
+            "y": 9
           },
           "id": 43,
           "options": {
@@ -242,7 +242,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 493
+            "y": 3
           },
           "id": 32,
           "options": {
@@ -359,7 +359,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 500
+            "y": 10
           },
           "id": 33,
           "options": {
@@ -485,7 +485,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 505
+            "y": 15
           },
           "id": 34,
           "options": {
@@ -592,7 +592,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 505
+            "y": 15
           },
           "id": 35,
           "options": {
@@ -699,7 +699,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 505
+            "y": 15
           },
           "id": 36,
           "options": {
@@ -802,7 +802,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 513
+            "y": 23
           },
           "id": 37,
           "options": {
@@ -849,7 +849,106 @@
         "y": 3
       },
       "id": 28,
-      "panels": [],
+      "panels": [
+        {
+          "datasource": {
+            "default": true,
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "During archival documents are moved from the main index to dated historical indices, this is how long moving each batch of documents takes.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Seconds",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 4
+          },
+          "id": 48,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "editorMode": "code",
+              "expr": "rate(operate_archiver_reindex_query_seconds_sum{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])\n/\nrate(operate_archiver_reindex_query_seconds_count{namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])\n",
+              "instant": false,
+              "legendFormat": "Reindex duration",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Operate Archiver (Average Reindex Duration)",
+          "type": "timeseries"
+        }
+      ],
       "title": "Operate Archiver",
       "type": "row"
     },
@@ -888,7 +987,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 13
           },
           "id": 2,
           "options": {
@@ -996,8 +1095,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1013,7 +1111,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 13
           },
           "id": 3,
           "options": {
@@ -1070,7 +1168,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 21
           },
           "id": 4,
           "options": {
@@ -1178,8 +1276,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1195,7 +1292,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 21
           },
           "id": 5,
           "options": {
@@ -1277,8 +1374,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1293,7 +1389,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 29
           },
           "id": 47,
           "options": {
@@ -1360,7 +1456,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 161
+            "y": 169
           },
           "id": 22,
           "options": {
@@ -1446,7 +1542,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 161
+            "y": 169
           },
           "id": 23,
           "options": {
@@ -1547,7 +1643,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 161
+            "y": 169
           },
           "id": 24,
           "options": {
@@ -1607,7 +1703,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 169
+            "y": 177
           },
           "id": 25,
           "options": {
@@ -1734,7 +1830,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 169
+            "y": 177
           },
           "id": 26,
           "options": {
@@ -1811,7 +1907,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 169
+            "y": 177
           },
           "id": 27,
           "options": {
@@ -2001,7 +2097,7 @@
     ]
   },
   "time": {
-    "from": "now-5m",
+    "from": "now-3m",
     "to": "now"
   },
   "timepicker": {},
