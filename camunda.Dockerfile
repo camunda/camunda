@@ -109,5 +109,4 @@ COPY --from=setup /etc/group /etc/group
 COPY --from=setup ${CAMUNDA_HOME} ${CAMUNDA_HOME}
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
-
-ENTRYPOINT ["tini", "--", "/usr/local/camunda/bin/camunda"]
+ENTRYPOINT ["java", "-XX:+ExitOnOutOfMemoryError", "-Dfile.encoding=UTF-8", "-Xshare:auto", "-classpath", "/usr/local/camunda/config:/usr/local/camunda/lib/*", "io.camunda.application.StandaloneCamunda"]
