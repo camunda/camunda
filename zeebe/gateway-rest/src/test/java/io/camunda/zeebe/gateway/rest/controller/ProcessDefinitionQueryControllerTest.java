@@ -524,5 +524,4 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     verify(processDefinitionServices)
         .search(new ProcessDefinitionQuery.Builder().filter(filter).build());
   }
-
 }

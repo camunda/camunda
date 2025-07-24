@@ -13,7 +13,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.FORM_ID;
@@ -67,13 +66,14 @@ public class ProcessDefinitionFilterTransformer
   private SearchQuery getHasStartFormQuery(final Boolean hasStartForm) {
     if (hasStartForm != null) {
       return bool(b -> {
-        if (hasStartForm) {
-          b.must(List.of(SearchQueryBuilders.exists(FORM_ID)));
-        } else {
-          b.mustNot(List.of(SearchQueryBuilders.exists(FORM_ID)));
-        }
-        return b;
-      }).toSearchQuery();
+            if (hasStartForm) {
+              b.must(List.of(SearchQueryBuilders.exists(FORM_ID)));
+            } else {
+              b.mustNot(List.of(SearchQueryBuilders.exists(FORM_ID)));
+            }
+            return b;
+          })
+          .toSearchQuery();
     }
     return null;
   }

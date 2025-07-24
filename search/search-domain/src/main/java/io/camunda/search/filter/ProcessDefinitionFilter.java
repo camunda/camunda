@@ -121,7 +121,7 @@ public record ProcessDefinitionFilter(
       return this;
     }
 
-    public Builder hasStartForm(final Boolean hasStartForm){
+    public Builder hasStartForm(final Boolean hasStartForm) {
       this.hasStartForm = hasStartForm;
       return this;
     }
@@ -139,7 +139,5 @@ public record ProcessDefinitionFilter(
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           hasStartForm);
     }
-
-
   }
 }

@@ -114,20 +114,22 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
 
     // then
     assertThat(searchRequest.queryOption())
-        .isInstanceOfSatisfying(SearchBoolQuery.class, boolQuery -> {
-          final var innerQuery = hasStartForm ? boolQuery.must().get(0).queryOption() : boolQuery.mustNot().get(0).queryOption();
-          final var boolQueryMustOrNot = hasStartForm ? boolQuery.must() : boolQuery.mustNot();
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            boolQuery -> {
+              final var innerQuery =
+                  hasStartForm
+                      ? boolQuery.must().get(0).queryOption()
+                      : boolQuery.mustNot().get(0).queryOption();
+              final var boolQueryMustOrNot = hasStartForm ? boolQuery.must() : boolQuery.mustNot();
 
-          assertThat(boolQueryMustOrNot)
-              .hasSize(1);
+              assertThat(boolQueryMustOrNot).hasSize(1);
 
-          assertThat(innerQuery)
-              .isInstanceOf(SearchExistsQuery.class);
+              assertThat(innerQuery).isInstanceOf(SearchExistsQuery.class);
 
-          final var existsQuery = (SearchExistsQuery) innerQuery;
-          assertThat(existsQuery.field())
-              .isEqualTo("formId");
-        });
+              final var existsQuery = (SearchExistsQuery) innerQuery;
+              assertThat(existsQuery.field()).isEqualTo("formId");
+            });
   }
 
   @Test
