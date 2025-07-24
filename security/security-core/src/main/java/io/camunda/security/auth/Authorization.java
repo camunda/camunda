@@ -155,6 +155,11 @@ public record Authorization(
       return this;
     }
 
+    public Builder authorizationScopes(final List<AuthorizationScope> authorizationScopes) {
+      resourceIds = authorizationScopes.stream().map(AuthorizationScope::resourceId).toList();
+      return this;
+    }
+
     public Authorization build() {
       return new Authorization(resourceType, permissionType, resourceIds);
     }
