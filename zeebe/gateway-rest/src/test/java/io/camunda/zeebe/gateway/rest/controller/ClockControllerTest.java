@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import java.net.URI;
+import java.time.OffsetDateTime;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,11 +54,12 @@ public class ClockControllerTest extends RestControllerTest {
   @Test
   void pinClockShouldReturnNoContent() {
     // given
-    final long timestamp = 2693098555055L;
-    final var request = new ClockPinRequest().timestamp(timestamp);
-    final var clockRecord = new ClockRecord().pinAt(timestamp);
+    final String timestampString = "2055-05-15T10:15:30Z";
+    final long timestampEpoch = OffsetDateTime.parse(timestampString).toInstant().toEpochMilli();
+    final var request = new ClockPinRequest().timestamp(timestampString);
+    final var clockRecord = new ClockRecord().pinAt(timestampEpoch);
 
-    when(clockServices.pinClock(timestamp))
+    when(clockServices.pinClock(timestampEpoch))
         .thenReturn(CompletableFuture.completedFuture(clockRecord));
 
     // when - then
@@ -71,15 +73,15 @@ public class ClockControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    verify(clockServices).pinClock(timestamp);
+    verify(clockServices).pinClock(timestampEpoch);
   }
 
   static Stream<Arguments> invalidClockPinRequests() {
     return Stream.of(
         of(new ClockPinRequest(), "No timestamp provided."),
         of(
-            new ClockPinRequest().timestamp(-1L),
-            "The value for timestamp is '-1' but must be not negative."));
+            new ClockPinRequest().timestamp("invalid-date"),
+            "The provided timestamp 'invalid-date' cannot be parsed as a date according to RFC 3339, section 5.6"));
   }
 
   @ParameterizedTest

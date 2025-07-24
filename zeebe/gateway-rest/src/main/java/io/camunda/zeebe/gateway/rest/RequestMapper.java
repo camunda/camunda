@@ -212,7 +212,9 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
-    return getResult(validateClockPinRequest(pinRequest), pinRequest::getTimestamp);
+    return getResult(
+        validateClockPinRequest(pinRequest),
+        () -> OffsetDateTime.parse(pinRequest.getTimestamp()).toInstant().toEpochMilli());
   }
 
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
