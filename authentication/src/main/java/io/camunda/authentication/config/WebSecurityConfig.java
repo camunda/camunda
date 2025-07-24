@@ -513,7 +513,8 @@ public class WebSecurityConfig {
     }
 
     /**
-     * Maps certificate properties from Spring Boot configuration to OIDC authentication configuration.
+     * Maps certificate properties from Spring Boot configuration to OIDC authentication
+     * configuration.
      */
     @Bean
     public OidcAuthenticationConfiguration enhancedOidcConfiguration(
@@ -523,20 +524,25 @@ public class WebSecurityConfig {
 
       // Map certificate properties if they exist
       if (certificateProperties.getClientAssertionKeystorePath() != null) {
-        oidcConfig.setClientAssertionKeystorePath(certificateProperties.getClientAssertionKeystorePath());
+        oidcConfig.setClientAssertionKeystorePath(
+            certificateProperties.getClientAssertionKeystorePath());
       }
       if (certificateProperties.getClientAssertionKeystorePassword() != null) {
-        oidcConfig.setClientAssertionKeystorePassword(certificateProperties.getClientAssertionKeystorePassword());
+        oidcConfig.setClientAssertionKeystorePassword(
+            certificateProperties.getClientAssertionKeystorePassword());
       }
       if (certificateProperties.getClientAssertionKeystoreKeyAlias() != null) {
-        oidcConfig.setClientAssertionKeystoreKeyAlias(certificateProperties.getClientAssertionKeystoreKeyAlias());
+        oidcConfig.setClientAssertionKeystoreKeyAlias(
+            certificateProperties.getClientAssertionKeystoreKeyAlias());
       }
       if (certificateProperties.getClientAssertionKeystoreKeyPassword() != null) {
-        oidcConfig.setClientAssertionKeystoreKeyPassword(certificateProperties.getClientAssertionKeystoreKeyPassword());
+        oidcConfig.setClientAssertionKeystoreKeyPassword(
+            certificateProperties.getClientAssertionKeystoreKeyPassword());
       }
 
       return oidcConfig;
     }
+
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
         final SecurityConfiguration securityConfiguration) {
@@ -696,14 +702,18 @@ public class WebSecurityConfig {
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, securityConfiguration)));
 
-                    if (securityConfiguration.getAuthentication().getOidc().isClientAssertionEnabled()) {
+                    if (securityConfiguration
+                        .getAuthentication()
+                        .getOidc()
+                        .isClientAssertionEnabled()) {
                       final var certificateTokenResponseClient =
                           new CertificateBasedOAuth2AccessTokenResponseClient(
                               certificateClientAssertionService,
                               securityConfiguration.getAuthentication().getOidc());
                       oauthLoginConfigurer.tokenEndpoint(
                           tokenEndpointConfig ->
-                              tokenEndpointConfig.accessTokenResponseClient(certificateTokenResponseClient));
+                              tokenEndpointConfig.accessTokenResponseClient(
+                                  certificateTokenResponseClient));
                     }
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
@@ -778,14 +788,18 @@ public class WebSecurityConfig {
 
     @Override
     public void onAuthenticationSuccess(
-        final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
     @Override
     public void onLogoutSuccess(
-        final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       onAuthenticationSuccess(request, response, authentication);
     }
@@ -794,7 +808,9 @@ public class WebSecurityConfig {
   protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
     @Override
     public void onAuthenticationSuccess(
-        final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       super.onAuthenticationSuccess(request, response, authentication);
 

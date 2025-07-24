@@ -188,12 +188,15 @@ public class OidcAuthenticationConfiguration {
     return clientAssertionKeystoreKeyPassword;
   }
 
-  public void setClientAssertionKeystoreKeyPassword(final String clientAssertionKeystoreKeyPassword) {
+  public void setClientAssertionKeystoreKeyPassword(
+      final String clientAssertionKeystoreKeyPassword) {
     this.clientAssertionKeystoreKeyPassword = clientAssertionKeystoreKeyPassword;
   }
 
   public boolean isClientAssertionEnabled() {
-    return clientAssertionKeystorePath != null && !clientAssertionKeystorePath.isEmpty() && 
-           clientAssertionKeystorePassword != null && !clientAssertionKeystorePassword.isEmpty();
+    return clientAssertionKeystorePath != null
+        && !clientAssertionKeystorePath.isEmpty()
+        && clientAssertionKeystorePassword != null
+        && !clientAssertionKeystorePassword.isEmpty();
   }
 }

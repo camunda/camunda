@@ -28,15 +28,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Service for creating JWT client assertions using X.509 certificates for Microsoft Entra ID authentication.
- * Implements the certificate credential flow as described in:
+ * Service for creating JWT client assertions using X.509 certificates for Microsoft Entra ID
+ * authentication. Implements the certificate credential flow as described in:
  * https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow#request-an-access-token-with-a-certificate-credential
  */
 @Service
 public class CertificateClientAssertionService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CertificateClientAssertionService.class);
-  private static final String JWT_ASSERTION_TYPE = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
+  private static final Logger LOG =
+      LoggerFactory.getLogger(CertificateClientAssertionService.class);
+  private static final String JWT_ASSERTION_TYPE =
+      "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
   private static final int ASSERTION_VALIDITY_MINUTES = 10; // Microsoft recommends max 10 minutes
 
   /**
@@ -47,7 +49,8 @@ public class CertificateClientAssertionService {
    * @return The JWT client assertion string
    * @throws RuntimeException if certificate loading or JWT creation fails
    */
-  public String createClientAssertion(final OidcAuthenticationConfiguration configuration, final String tokenUri) {
+  public String createClientAssertion(
+      final OidcAuthenticationConfiguration configuration, final String tokenUri) {
     if (!configuration.isClientAssertionEnabled()) {
       throw new IllegalStateException("Certificate client assertion is not enabled");
     }
@@ -61,22 +64,28 @@ public class CertificateClientAssertionService {
     }
   }
 
-  private CertificateData loadCertificate(final OidcAuthenticationConfiguration configuration) 
+  private CertificateData loadCertificate(final OidcAuthenticationConfiguration configuration)
       throws IOException, GeneralSecurityException {
-    
-    try (final FileInputStream stream = new FileInputStream(configuration.getClientAssertionKeystorePath())) {
+
+    try (final FileInputStream stream =
+        new FileInputStream(configuration.getClientAssertionKeystorePath())) {
       final KeyStore keyStore = KeyStore.getInstance("PKCS12");
       keyStore.load(stream, configuration.getClientAssertionKeystorePassword().toCharArray());
 
-      final String keyAlias = configuration.getClientAssertionKeystoreKeyAlias() != null 
-          ? configuration.getClientAssertionKeystoreKeyAlias()
-          : keyStore.aliases().nextElement(); // Use first available alias if none specified
+      final String keyAlias =
+          configuration.getClientAssertionKeystoreKeyAlias() != null
+              ? configuration.getClientAssertionKeystoreKeyAlias()
+              : keyStore.aliases().nextElement(); // Use first available alias if none specified
 
-      final String keyPassword = configuration.getClientAssertionKeystoreKeyPassword() != null
-          ? configuration.getClientAssertionKeystoreKeyPassword()
-          : configuration.getClientAssertionKeystorePassword(); // Use keystore password if key password not specified
+      final String keyPassword =
+          configuration.getClientAssertionKeystoreKeyPassword() != null
+              ? configuration.getClientAssertionKeystoreKeyPassword()
+              : configuration
+                  .getClientAssertionKeystorePassword(); // Use keystore password if key password
+      // not specified
 
-      final RSAPrivateKey privateKey = (RSAPrivateKey) keyStore.getKey(keyAlias, keyPassword.toCharArray());
+      final RSAPrivateKey privateKey =
+          (RSAPrivateKey) keyStore.getKey(keyAlias, keyPassword.toCharArray());
       final X509Certificate certificate = (X509Certificate) keyStore.getCertificate(keyAlias);
       final RSAPublicKey publicKey = (RSAPublicKey) certificate.getPublicKey();
 
@@ -88,10 +97,11 @@ public class CertificateClientAssertionService {
     }
   }
 
-  private String buildJwtAssertion(final String clientId, final String tokenUri, final CertificateData certData) {
+  private String buildJwtAssertion(
+      final String clientId, final String tokenUri, final CertificateData certData) {
     final Date now = new Date();
     final Date expiry = new Date(now.getTime() + (ASSERTION_VALIDITY_MINUTES * 60 * 1000L));
-    
+
     // Generate X.509 certificate thumbprint (x5t) as required by Microsoft Entra ID
     final String x5t = generateX5tThumbprint(certData.certificate);
 
@@ -115,8 +125,8 @@ public class CertificateClientAssertionService {
   }
 
   /**
-   * Generates the X.509 certificate thumbprint (x5t) using SHA-1 hash
-   * as required by Microsoft Entra ID for certificate authentication.
+   * Generates the X.509 certificate thumbprint (x5t) using SHA-1 hash as required by Microsoft
+   * Entra ID for certificate authentication.
    */
   private static String generateX5tThumbprint(final X509Certificate certificate) {
     try {
@@ -133,7 +143,10 @@ public class CertificateClientAssertionService {
     final RSAPublicKey publicKey;
     final X509Certificate certificate;
 
-    CertificateData(final RSAPrivateKey privateKey, final RSAPublicKey publicKey, final X509Certificate certificate) {
+    CertificateData(
+        final RSAPrivateKey privateKey,
+        final RSAPublicKey publicKey,
+        final X509Certificate certificate) {
       this.privateKey = privateKey;
       this.publicKey = publicKey;
       this.certificate = certificate;

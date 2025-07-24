@@ -11,11 +11,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Configuration properties for certificate-based OIDC authentication.
- * These properties extend the standard OIDC configuration to support
- * Microsoft Entra ID certificate credentials.
+ * Configuration properties for certificate-based OIDC authentication. These properties extend the
+ * standard OIDC configuration to support Microsoft Entra ID certificate credentials.
  *
- * Example configuration:
+ * <p>Example configuration:
+ *
  * <pre>
  * camunda:
  *   security:
@@ -36,27 +36,25 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "camunda.security.authentication.oidc")
 public class CertificateOidcProperties {
-  
+
   /**
-   * Path to the PKCS12 keystore containing the client certificate for authentication.
-   * This certificate should be uploaded to Microsoft Entra ID application configuration.
+   * Path to the PKCS12 keystore containing the client certificate for authentication. This
+   * certificate should be uploaded to Microsoft Entra ID application configuration.
    */
   private String clientAssertionKeystorePath;
-  
-  /**
-   * Password for the PKCS12 keystore.
-   */
+
+  /** Password for the PKCS12 keystore. */
   private String clientAssertionKeystorePassword;
-  
+
   /**
-   * Alias of the certificate within the keystore.
-   * If not provided, the first available certificate will be used.
+   * Alias of the certificate within the keystore. If not provided, the first available certificate
+   * will be used.
    */
   private String clientAssertionKeystoreKeyAlias;
-  
+
   /**
-   * Password for the private key within the keystore.
-   * If not provided, the keystore password will be used.
+   * Password for the private key within the keystore. If not provided, the keystore password will
+   * be used.
    */
   private String clientAssertionKeystoreKeyPassword;
 
@@ -88,7 +86,8 @@ public class CertificateOidcProperties {
     return clientAssertionKeystoreKeyPassword;
   }
 
-  public void setClientAssertionKeystoreKeyPassword(final String clientAssertionKeystoreKeyPassword) {
+  public void setClientAssertionKeystoreKeyPassword(
+      final String clientAssertionKeystoreKeyPassword) {
     this.clientAssertionKeystoreKeyPassword = clientAssertionKeystoreKeyPassword;
   }
 }
