@@ -7,6 +7,9 @@
  */
 package io.camunda.security.reader;
 
+import io.camunda.security.auth.Authorization;
+import java.util.Optional;
+
 public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, TenantCheck tenantCheck) {
 
   public static ResourceAccessChecks disabled() {
@@ -16,5 +19,9 @@ public record ResourceAccessChecks(AuthorizationCheck authorizationCheck, Tenant
   public static ResourceAccessChecks of(
       final AuthorizationCheck authorizationCheck, final TenantCheck tenantCheck) {
     return new ResourceAccessChecks(authorizationCheck, tenantCheck);
+  }
+
+  public Optional<Authorization> getAuthorization() {
+    return Optional.ofNullable(authorizationCheck).map(AuthorizationCheck::authorization);
   }
 }

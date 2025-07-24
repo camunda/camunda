@@ -80,6 +80,12 @@
         </foreach>
           )
       </if>
+      <if test="authorizationFilter != null and authorizationFilter.resourceIds() != null and !authorizationFilter.resourceIds().isEmpty()">
+        AND pi.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizationFilter.resourceIds" item="resourceId" open="(" separator="," close=")">
+          #{resourceId}
+        </foreach>
+      </if>
     </where>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
