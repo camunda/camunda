@@ -65,7 +65,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.UPDATE_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
     // then
@@ -138,7 +138,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.DELETE_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final MvcResult mvcResult = postRequest(QUERY_CREATE_BATCH_OPERATIONS_URL, request);
 
@@ -318,7 +318,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(any(PermissionType.class)))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     final CreateBatchOperationRequestDto request =
         new CreateBatchOperationRequestDto()

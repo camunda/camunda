@@ -109,7 +109,7 @@ public class DecisionIT extends OperateAbstractIT {
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
     final MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
 
     // then
@@ -209,7 +209,7 @@ public class DecisionIT extends OperateAbstractIT {
         decision111, decision121, decision112, decision122, decision2, decision3);
 
     when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     // when
     MvcResult mvcResult =
@@ -323,7 +323,7 @@ public class DecisionIT extends OperateAbstractIT {
         decision111, decision121, decision112, decision122, decision2, decision3);
 
     when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     // when
     MvcResult mvcResult = postRequest(QUERY_DECISION_GROUPED_URL, new DecisionRequestDto());
