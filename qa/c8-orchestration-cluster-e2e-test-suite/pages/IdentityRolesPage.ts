@@ -6,19 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
+import {waitForItemInList} from 'utils/waitForItemInList';
 
 export class IdentityRolesPage {
+  readonly page: Page;
   readonly rolesList: Locator;
   readonly createRoleButton: Locator;
   readonly editRoleButton: (rowName?: string) => Locator;
   readonly deleteRoleButton: (rowName?: string) => Locator;
   readonly createRoleModal: Locator;
   readonly closeCreateRoleModal: Locator;
-  readonly createNameField: Locator;
-  readonly createIdField: Locator;
+  readonly nameField: Locator;
+  readonly idField: Locator;
   readonly createRoleModalCancelButton: Locator;
-  readonly createRoleModalCreateButton: Locator;
+  readonly createRoleSubButton: Locator;
   readonly editRoleModal: Locator;
   readonly closeEditRoleModal: Locator;
   readonly editNameField: Locator;
@@ -28,8 +30,10 @@ export class IdentityRolesPage {
   readonly closeDeleteRoleModal: Locator;
   readonly deleteRoleModalCancelButton: Locator;
   readonly deleteRoleModalDeleteButton: Locator;
+  readonly roleCell: (name: string) => Locator;
 
   constructor(page: Page) {
+    this.page = page;
     this.rolesList = page.getByRole('table');
     this.createRoleButton = page.getByRole('button', {
       name: 'Create role',
@@ -45,11 +49,11 @@ export class IdentityRolesPage {
     this.closeCreateRoleModal = this.createRoleModal.getByRole('button', {
       name: 'Close',
     });
-    this.createIdField = this.createRoleModal.getByRole('textbox', {
+    this.idField = this.createRoleModal.getByRole('textbox', {
       name: 'Role ID',
       exact: true,
     });
-    this.createNameField = this.createRoleModal.getByRole('textbox', {
+    this.nameField = this.createRoleModal.getByRole('textbox', {
       name: 'Role name',
       exact: true,
     });
@@ -57,10 +61,9 @@ export class IdentityRolesPage {
       'button',
       {name: 'Cancel'},
     );
-    this.createRoleModalCreateButton = this.createRoleModal.getByRole(
-      'button',
-      {name: 'Create role'},
-    );
+    this.createRoleSubButton = this.createRoleModal.getByRole('button', {
+      name: 'Create role',
+    });
 
     this.editRoleModal = page.getByRole('dialog', {
       name: 'Edit role',
@@ -93,5 +96,33 @@ export class IdentityRolesPage {
       'button',
       {name: 'Delete role'},
     );
+    this.roleCell = (roleID: string) =>
+      this.rolesList.getByRole('cell', {name: roleID, exact: true});
+  }
+
+  async clickCreateRoles() {
+    await this.createRoleButton.click();
+  }
+
+  async fillRoleId(rowName: string) {
+    await this.editRoleButton(rowName).click();
+  }
+
+  async createRole(role: {id: string; name: string}) {
+    await this.clickCreateRoles();
+    await expect(this.createRoleModal).toBeVisible();
+    await this.idField.fill(role.id);
+    await this.nameField.fill(role.name);
+    await this.createRoleSubButton.click();
+    await expect(this.createRoleModal).toBeHidden();
+
+    const item = this.roleCell(role.name);
+
+    await waitForItemInList(this.page, item);
+  }
+
+  async clickRole(roleID: string) {
+    await expect(this.roleCell(roleID)).toBeVisible({timeout: 60000});
+    await this.roleCell(roleID).click();
   }
 }

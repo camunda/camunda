@@ -25,6 +25,7 @@ import {IdentityUsersPage} from '@pages/IdentityUsersPage';
 import {IdentityMappingsPage} from '@pages/IdentityMappingsPage';
 import {IdentityRolesPage} from '@pages/IdentityRolesPage';
 import {IdentityTenantsPage} from '@pages/IdentityTenantsPage';
+import {IdentityRolesDetailsPage} from '@pages/IdentityRolesDetailsPage';
 
 import {sleep} from 'utils/sleep';
 
@@ -48,6 +49,7 @@ type PlaywrightFixtures = {
   identityMappingsPage: IdentityMappingsPage;
   identityRolesPage: IdentityRolesPage;
   identityTenantsPage: IdentityTenantsPage;
+  identityRolesDetailsPage: IdentityRolesDetailsPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -144,6 +146,10 @@ const test = base.extend<PlaywrightFixtures>({
 
   identityTenantsPage: async ({page}, use) => {
     await use(new IdentityTenantsPage(page));
+  },
+
+  identityRolesDetailsPage: async ({page}, use) => {
+    await use(new IdentityRolesDetailsPage(page));
   },
 });
 
