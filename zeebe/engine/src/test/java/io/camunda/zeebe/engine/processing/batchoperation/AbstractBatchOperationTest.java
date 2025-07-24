@@ -53,6 +53,8 @@ abstract class AbstractBatchOperationTest {
           UUID.randomUUID().toString(),
           UUID.randomUUID().toString());
 
+  protected static final int DEFAULT_QUERY_PAGE_SIZE = 10000;
+
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -71,6 +73,7 @@ abstract class AbstractBatchOperationTest {
                   cfg.getInitialization()
                       .getDefaultRoles()
                       .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))))
+          .withEngineConfig(cfg -> cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE))
           .withSearchClientsProxy(searchClientsProxy);
 
   @Before
