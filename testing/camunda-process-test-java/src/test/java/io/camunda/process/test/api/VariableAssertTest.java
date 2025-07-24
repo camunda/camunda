@@ -20,18 +20,26 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
+import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.api.ThrowingConsumer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -95,6 +103,30 @@ public class VariableAssertTest {
         Arguments.of("[1,2]", Arrays.asList(1, 2)),
         Arguments.of("{\"a\":1,\"b\":2}", CONTEXT_VARIABLE_VALUE),
         Arguments.of("{\"b\":2,\"a\":1}", CONTEXT_VARIABLE_VALUE));
+  }
+
+  // Used to test assertVariableSatisfies JSON logic
+  private static final class SimpleJsonObject {
+
+    @JsonProperty("string")
+    private String strValue;
+
+    @JsonProperty("int")
+    private int intValue;
+
+    @JsonProperty("boolean")
+    private boolean boolValue;
+
+    @JsonProperty("list")
+    private List<Object> list;
+
+    @JsonProperty("object")
+    private SimpleJsonNestedObject nestedObject;
+  }
+
+  private static final class SimpleJsonNestedObject {
+
+    @JsonProperty private String key;
   }
 
   @Nested
@@ -544,6 +576,227 @@ public class VariableAssertTest {
       final Map<String, Object> expectedVariables = new HashMap<>();
       expectedVariables.put("largeVar", "truncatedValue");
       CamundaAssert.assertThat(processInstanceEvent).hasVariables(expectedVariables);
+    }
+  }
+
+  @Nested
+  class HasVariableSatisfies {
+
+    private static final String COMPLEX_VARIABLE_KEY = "complex";
+    private static final String COMPLEX_VARIABLE_VALUE =
+        "{\"string\":\"value\",\"int\":2,\"boolean\":true,\"list\":[\"a\",1,true,null,[\"foo\"]],\"object\":{\"key\":\"value\"}}";
+
+    private final Variable complexVariable =
+        newVariable(COMPLEX_VARIABLE_KEY, COMPLEX_VARIABLE_VALUE);
+
+    private final ThrowingConsumer<SimpleJsonObject> assertionRequirements =
+        result -> {
+          Assertions.assertThat(result).isNotNull();
+
+          Assertions.assertThat(result)
+              .extracting("strValue", "intValue", "boolValue")
+              .containsExactlyInAnyOrder("value", 2, true);
+
+          Assertions.assertThat(result)
+              .extracting("list", InstanceOfAssertFactories.list(Object.class))
+              .containsExactlyInAnyOrder(1, "a", true, null, Collections.singletonList("foo"));
+
+          Assertions.assertThat(result).extracting("nestedObject.key").isEqualTo("value");
+        };
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldSatisfyConditions() {
+      // given
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(complexVariable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasVariableSatisfies(
+              COMPLEX_VARIABLE_KEY,
+              Map.class,
+              result -> {
+                Assertions.assertThat(result).hasSize(5);
+                Assertions.assertThat(result)
+                    .containsEntry("string", "value")
+                    .containsEntry("int", 2)
+                    .containsEntry("boolean", true);
+                Assertions.assertThat(result)
+                    .extracting("list", InstanceOfAssertFactories.list(Object.class))
+                    .asList()
+                    .containsExactlyInAnyOrder(
+                        1, "a", true, null, Collections.singletonList("foo"));
+              });
+    }
+
+    @Test
+    void shouldSatisfyConditionsForLocalVariables() {
+      // given
+      final String elementId = "element-id";
+      final String elementName = "Element Name";
+      final ElementInstance elementInstanceA =
+          ElementInstanceBuilder.newActiveElementInstance(elementId, PROCESS_INSTANCE_KEY)
+              .setElementName(elementName)
+              .setElementInstanceKey(1L)
+              .build();
+
+      when(camundaDataSource.findElementInstances(any()))
+          .thenReturn(Collections.singletonList(elementInstanceA));
+      when(camundaDataSource.findVariables(any()))
+          .thenReturn(Collections.singletonList(complexVariable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasLocalVariableSatisfies(
+              elementId, COMPLEX_VARIABLE_KEY, SimpleJsonObject.class, assertionRequirements);
+
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasLocalVariableSatisfies(
+              ElementSelectors.byId(elementId),
+              COMPLEX_VARIABLE_KEY,
+              SimpleJsonObject.class,
+              assertionRequirements);
+
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasLocalVariableSatisfies(
+              ElementSelectors.byName(elementName),
+              COMPLEX_VARIABLE_KEY,
+              SimpleJsonObject.class,
+              assertionRequirements);
+    }
+
+    @Test
+    void shouldSatisfyConditionsWithJsonDeserialization() {
+      // given
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(complexVariable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasVariableSatisfies(
+              COMPLEX_VARIABLE_KEY, SimpleJsonObject.class, assertionRequirements);
+    }
+
+    @Test
+    void shouldWaitUntilVariableExists() {
+      // given
+      final Variable variableA = newVariable("a", "1");
+      final Variable variableB = newVariable("b", "2");
+
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(variableB))
+          .thenReturn(Arrays.asList(variableA, variableB));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      CamundaAssert.assertThat(processInstanceEvent)
+          .hasVariableSatisfies(
+              "a", String.class, value -> Assertions.assertThat(value).isEqualTo("1"));
+
+      verify(camundaDataSource, times(2))
+          .findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY);
+    }
+
+    @Test
+    void shouldHaveSensibleErrorMessageWhenAssertionFails() {
+      // given
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(complexVariable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasVariableSatisfies(
+                          COMPLEX_VARIABLE_KEY,
+                          SimpleJsonObject.class,
+                          result -> {
+                            Assertions.assertThat(result)
+                                .describedAs("Should be not null")
+                                .isNull();
+                            Assertions.assertThat(result)
+                                .extracting("strValue", "intValue", "boolValue")
+                                .containsExactlyInAnyOrder("wrong", -1, false);
+                            Assertions.assertThat(result)
+                                .extracting("list", InstanceOfAssertFactories.list(Object.class))
+                                .containsExactlyInAnyOrder(
+                                    -10, "wrong", false, "truthy", Collections.emptyList());
+                            Assertions.assertThat(result)
+                                .extracting("nestedObject.key")
+                                .isEqualTo("wrong_value");
+                          }))
+          .hasMessageContainingAll(
+              "Process instance [key: 1] should have a variable 'complex' but the following requirement was not satisfied:",
+              "[Should be not null]",
+              "expected: null",
+              "but was: io.camunda.process.test.api.VariableAssertTest$SimpleJsonObject");
+    }
+
+    @Test
+    void shouldHaveSensibleErrorMessageWhenJsonMappingFails() {
+      // given
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(complexVariable));
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasVariableSatisfies(
+                          COMPLEX_VARIABLE_KEY,
+                          List.class,
+                          result -> Assertions.assertThat(result).hasSize(5)))
+          .hasMessage(
+              "Process instance [key: 1] should have a variable 'complex' of type 'java.util.List', but was: '"
+                  + AssertionJsonMapper.readJson(COMPLEX_VARIABLE_VALUE)
+                  + "'");
+    }
+
+    @Test
+    void shouldHaveSensibleErrorMessageWhenNoVariablesFound() {
+      // given
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.emptyList());
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasVariableSatisfies(
+                          COMPLEX_VARIABLE_KEY,
+                          SimpleJsonObject.class,
+                          result -> Assertions.assertThat(result).isNotNull()))
+          .hasMessage(
+              "Process instance [key: 1] should have a variable 'complex', but the variable doesn't exist.");
+    }
+
+    @Test
+    void shouldConvertCheckedExceptions() {
+      // given
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+          .thenReturn(Collections.singletonList(complexVariable));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThat(processInstanceEvent)
+                      .hasVariableSatisfies(
+                          COMPLEX_VARIABLE_KEY,
+                          SimpleJsonObject.class,
+                          result -> {
+                            throw new Exception("Error");
+                          }))
+          .hasMessage("java.lang.Exception: Error");
     }
   }
 }

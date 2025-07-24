@@ -35,6 +35,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.ThrowingConsumer;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
@@ -278,6 +279,40 @@ public class ProcessInstanceAssertj
       final ElementSelector selector, final String variableName, final Object variableValue) {
     variableAssertj.hasLocalVariable(
         getProcessInstanceKey(), selector, variableName, variableValue);
+    return this;
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasVariableSatisfies(
+      final String variableName,
+      final Class<T> variableValueType,
+      final ThrowingConsumer<T> requirement) {
+
+    variableAssertj.hasVariableSatisfies(
+        getProcessInstanceKey(), variableName, variableValueType, requirement);
+    return this;
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      final String elementId,
+      final String variableName,
+      final Class<T> variableValueType,
+      final ThrowingConsumer<T> requirement) {
+
+    return hasLocalVariableSatisfies(
+        elementSelector.apply(elementId), variableName, variableValueType, requirement);
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      final ElementSelector selector,
+      final String variableName,
+      final Class<T> variableValueType,
+      final ThrowingConsumer<T> requirement) {
+
+    variableAssertj.hasLocalVariableSatisfies(
+        getProcessInstanceKey(), selector, variableName, variableValueType, requirement);
     return this;
   }
 
