@@ -368,7 +368,7 @@ jobs:
 
   zeebe-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "[UT] Zeebe - ${{matrix.component}} - ${{matrix.suiteName}}"
+    name: "Zeebe / [UT] ${{matrix.component}} / ${{matrix.suiteName}}"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -1078,6 +1078,7 @@ jobs:
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
+    name: "Zeebe"
     needs: [ detect-changes ]
     uses: ./.github/workflows/zeebe-ci.yml
     secrets: inherit
