@@ -17,6 +17,7 @@ public enum ErrorType {
   JOB_NO_RETRIES("No more retries left", true),
   EXECUTION_LISTENER_NO_RETRIES("Execution Listener no more retries left", true),
   TASK_LISTENER_NO_RETRIES("Task Listener no more retries left", true),
+  AD_HOC_SUB_PROCESS_NO_RETRIES("Ad-hoc sub-process no more retries left", true),
   CONDITION_ERROR("Condition error"),
   EXTRACT_VALUE_ERROR("Extract value error"),
   CALLED_ELEMENT_ERROR("Called element error"),
