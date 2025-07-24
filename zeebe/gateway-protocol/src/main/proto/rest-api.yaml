@@ -5994,7 +5994,7 @@ components:
         processDefinitionKey:
           description: The key for this process definition.
           type: string
-        hasFormKey:
+        hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
     ProcessDefinitionSearchQueryResult:
@@ -6032,7 +6032,7 @@ components:
         processDefinitionKey:
           description: The key for this process definition.
           type: string
-        hasFormKey:
+        hasStartForm:
           description: Indicates whether the start event of the process has an associated Form Key.
           type: boolean
     ProcessInstanceSearchQuerySortRequest:

@@ -94,11 +94,11 @@
         #{value}
       </foreach>
     </if>
-    <if test="filter.hasFormKey != null">
-      <if test="filter.hasFormKey == true">
+    <if test="filter.hasStartForm != null">
+      <if test="filter.hasStartForm == true">
         AND FORM_ID IS NOT NULL
       </if>
-      <if test="filter.hasFormKey == false">
+      <if test="filter.hasStartForm == false">
         AND FORM_ID IS NULL
       </if>
     </if>

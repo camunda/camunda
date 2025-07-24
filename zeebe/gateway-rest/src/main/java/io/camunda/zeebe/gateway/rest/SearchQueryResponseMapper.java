@@ -504,7 +504,7 @@ public final class SearchQueryResponseMapper {
         .versionTag(entity.versionTag())
         .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId())
-        .hasFormKey(StringUtils.isNotBlank(entity.formId()));
+        .hasStartForm(StringUtils.isNotBlank(entity.formId()));
   }
 
   private static List<ProcessInstanceResult> toProcessInstances(

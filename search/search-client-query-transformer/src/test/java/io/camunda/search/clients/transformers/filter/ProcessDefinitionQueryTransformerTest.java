@@ -103,8 +103,8 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
-  public void shouldQueryByHasFormKey(final boolean hasFormKey) {
-    final var filter = FilterBuilders.processDefinition(f -> f.hasFormKey(hasFormKey));
+  public void shouldQueryByHasStartForm(final boolean hasStartForm) {
+    final var filter = FilterBuilders.processDefinition(f -> f.hasStartForm(hasStartForm));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -115,8 +115,8 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
     // then
     assertThat(searchRequest.queryOption())
         .isInstanceOfSatisfying(SearchBoolQuery.class, boolQuery -> {
-          final var innerQuery = hasFormKey ? boolQuery.must().get(0).queryOption() : boolQuery.mustNot().get(0).queryOption();
-          final var boolQueryMustOrNot = hasFormKey ? boolQuery.must() : boolQuery.mustNot();
+          final var innerQuery = hasStartForm ? boolQuery.must().get(0).queryOption() : boolQuery.mustNot().get(0).queryOption();
+          final var boolQueryMustOrNot = hasStartForm ? boolQuery.must() : boolQuery.mustNot();
 
           assertThat(boolQueryMustOrNot)
               .hasSize(1);

@@ -70,7 +70,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "version": 5,
           "versionTag": "alpha",
           "tenantId": "<default>",
-          "hasFormKey": true
+          "hasStartForm": true
       }""";
   static final String EXPECTED_SEARCH_RESPONSE =
       """
@@ -84,7 +84,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                   "version": 5,
                   "versionTag": "alpha",
                   "tenantId": "<default>",
-                  "hasFormKey": true
+                  "hasStartForm": true
               }
           ],
           "page": {

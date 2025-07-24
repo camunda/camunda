@@ -79,6 +79,12 @@ public class ProcessDefinitionFilterImpl
     return this;
   }
 
+  @Override
+  public ProcessDefinitionFilter hasStartForm(final boolean formKey) {
+    filter.hasStartForm(formKey);
+    return this;
+  }
+
   public ProcessDefinitionFilter name(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
@@ -90,12 +96,6 @@ public class ProcessDefinitionFilterImpl
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionId(provideSearchRequestProperty(property));
-    return this;
-  }
-
-  @Override
-  public ProcessDefinitionFilter hasFormKey(final boolean formKey) {
-    filter.hasFormKey(formKey);
     return this;
   }
 

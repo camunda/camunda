@@ -88,5 +88,5 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    * @param formKey boolean to indicate how to filter
    * @return the updated filter
    */
-  ProcessDefinitionFilter hasFormKey(final boolean formKey);
+  ProcessDefinitionFilter hasStartForm(final boolean formKey);
 }
