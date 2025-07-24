@@ -16,6 +16,7 @@
 package io.camunda.process.test.api.assertions;
 
 import java.util.Map;
+import org.assertj.core.api.ThrowingConsumer;
 
 /** The assertion object to verify a process instance. */
 public interface ProcessInstanceAssert {
@@ -378,6 +379,65 @@ public interface ProcessInstanceAssert {
    */
   ProcessInstanceAssert hasLocalVariable(
       ElementSelector selector, String variableName, Object variableValue);
+
+  /**
+   * Verifies that the process instance has a variable with a value that satisfies the given
+   * requirements expressed as a {@link ThrowingConsumer}. It can be used to verify a complex object
+   * partially with multiple grouped assertions. The verification fails if the variable doesn't
+   * exist or the value doesn't satisfy the requirements.
+   *
+   * <p>The assertion waits until the variable exists and the value satisfies the requirements.
+   *
+   * @param variableName the variable name
+   * @param variableValueType the variable value's deserialization type, can be a JsonNode or Map
+   *     for a generic variable
+   * @param requirement the requirement that the variable must satisfy
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName, final Class<T> variableValueType, final ThrowingConsumer<T> requirement);
+
+  /**
+   * Verifies that the process instance has a local variable with a value that satisfies the given
+   * requirements expressed as a {@link ThrowingConsumer}. It can be used to verify a complex object
+   * partially with multiple grouped assertions. The verification fails if the variable doesn't
+   * exist or the value doesn't satisfy the requirements.
+   *
+   * <p>The assertion waits until the variable exists and the value satisfies the requirements.
+   *
+   * @param elementId id of the element the local variable is associated with
+   * @param variableName the variable name
+   * @param variableValueType the variable value's deserialization type, can be a JsonNode or Map
+   *     for a generic variable
+   * @param requirement the requirement that the variable must satisfy
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      String elementId,
+      String variableName,
+      Class<T> variableValueType,
+      ThrowingConsumer<T> requirement);
+
+  /**
+   * Verifies that the process instance has a local variable with a value that satisfies the given
+   * requirements expressed as a {@link ThrowingConsumer}. It can be used to verify a complex object
+   * partially with multiple grouped assertions. The verification fails if the variable doesn't
+   * exist or the value doesn't satisfy the requirements.
+   *
+   * <p>The assertion waits until the variable exists and the value satisfies the requirements.
+   *
+   * @param selector the {@see ElementSelector} for the BPMN element the variable is associated with
+   * @param variableName the variable name
+   * @param variableValueType the variable value's deserialization type, can be a JsonNode or Map
+   *     for a generic variable
+   * @param requirement the requirement that the variable must satisfy
+   * @return the assertion object
+   */
+  <T> ProcessInstanceAssert hasLocalVariableSatisfies(
+      ElementSelector selector,
+      String variableName,
+      Class<T> variableValueType,
+      ThrowingConsumer<T> requirement);
 
   /**
    * Verifies that the process instance has the given variables. The verification fails if at least
