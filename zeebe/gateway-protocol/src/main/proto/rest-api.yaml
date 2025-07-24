@@ -7559,9 +7559,6 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        userKey:
-          description: The key of the updated user
-          type: "string"
     UserSearchQuerySortRequest:
       type: object
       properties:

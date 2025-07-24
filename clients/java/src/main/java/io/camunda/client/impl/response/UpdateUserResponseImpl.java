@@ -20,15 +20,9 @@ import io.camunda.client.protocol.rest.UserUpdateResult;
 
 public class UpdateUserResponseImpl implements UpdateUserResponse {
 
-  private String userKey;
   private String username;
   private String name;
   private String email;
-
-  @Override
-  public String getUserKey() {
-    return userKey;
-  }
 
   @Override
   public String getUsername() {
@@ -46,7 +40,6 @@ public class UpdateUserResponseImpl implements UpdateUserResponse {
   }
 
   public UpdateUserResponseImpl setResponse(final UserUpdateResult userUpdateResult) {
-    userKey = userUpdateResult.getUserKey();
     name = userUpdateResult.getName();
     username = userUpdateResult.getUsername();
     email = userUpdateResult.getEmail();

@@ -18,13 +18,6 @@ package io.camunda.client.api.response;
 public interface UpdateUserResponse {
 
   /**
-   * Returns the key of the updated user.
-   *
-   * @return the key of the updated user.
-   */
-  String getUserKey();
-
-  /**
    * Returns the username of the updated user.
    *
    * @return the username of the updated user.

@@ -578,7 +578,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toUserUpdateResponse(final UserRecord userRecord) {
     final var response =
         new UserUpdateResult()
-            .userKey(KeyUtil.keyToString(userRecord.getUserKey()))
             .username(userRecord.getUsername())
             .email(userRecord.getEmail())
             .name(userRecord.getName());
