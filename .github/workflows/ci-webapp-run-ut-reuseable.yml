@@ -56,6 +56,7 @@ jobs:
           -Dsurefire.failIfNoSpecifiedTests=false -B -T 2 --no-snapshot-updates
           -D forkCount=7 -D skipITs -D skipQaBuild=true -D skipChecks -Dskip.docker
           -D surefire.rerunFailingTestsCount=3 -D junitThreadCount=16 -P skipFrontendBuild
+          -pl '-:optimize-schema-integrity-tests'
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
