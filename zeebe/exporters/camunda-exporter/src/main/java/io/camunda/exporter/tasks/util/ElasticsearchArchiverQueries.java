@@ -12,7 +12,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 
-public class ElasticsearchArchiverQueries {
+public final class ElasticsearchArchiverQueries {
 
   private ElasticsearchArchiverQueries() {}
 
