@@ -134,7 +134,8 @@ public final class BackgroundTaskManagerFactory {
             config.getHistory().getArchivingTimePoint(),
             resourceProvider
                 .getIndexTemplateDescriptor(ListViewTemplate.class)
-                .getFullQualifiedName());
+                .getFullQualifiedName(),
+            logger);
 
     return new ReschedulingTask(
         processInstanceToBeArchivedCountJob,

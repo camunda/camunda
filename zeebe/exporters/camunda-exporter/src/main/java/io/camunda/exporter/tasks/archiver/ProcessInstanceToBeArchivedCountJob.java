@@ -12,6 +12,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.exporter.tasks.util.ElasticsearchArchiverQueries;
 import java.util.concurrent.CompletionStage;
+import org.slf4j.Logger;
 
 public class ProcessInstanceToBeArchivedCountJob implements BackgroundTask {
   public static final int DELAY_BETWEEN_RUNS = 60000;
@@ -22,18 +23,21 @@ public class ProcessInstanceToBeArchivedCountJob implements BackgroundTask {
   private final int partitionId;
   private final String archivingTimePoint;
   private final String listViewIndexName;
+  private final Logger logger;
 
   public ProcessInstanceToBeArchivedCountJob(
       final CamundaExporterMetrics metrics,
       final ElasticsearchAsyncClient client,
       final int partitionId,
       final String archivingTimePoint,
-      final String listViewIndexName) {
+      final String listViewIndexName,
+      final Logger logger) {
     this.metrics = metrics;
     this.client = client;
     this.partitionId = partitionId;
     this.archivingTimePoint = archivingTimePoint;
     this.listViewIndexName = listViewIndexName;
+    this.logger = logger;
   }
 
   @Override
@@ -48,6 +52,8 @@ public class ProcessInstanceToBeArchivedCountJob implements BackgroundTask {
             (res, err) -> {
               if (err == null) {
                 metrics.setProcessInstancesAwaitingArchival((int) res.count());
+              } else {
+                logger.error("Failed to count number of process instances awaiting archival", err);
               }
             })
         .thenApply(res -> (int) res.count()); // return the count as Integer
