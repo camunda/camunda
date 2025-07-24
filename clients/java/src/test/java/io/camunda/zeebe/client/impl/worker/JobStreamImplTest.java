@@ -80,7 +80,7 @@ final class JobStreamImplTest {
             new ZeebeClientBuilderImpl(),
             new ZeebeObjectMapper(),
             ignored -> false);
-    jobStreamer = createStreamer();
+    jobStreamer = createStreamer(Duration.ofHours(8));
   }
 
   @AfterEach
@@ -176,7 +176,29 @@ final class JobStreamImplTest {
     assertThat(service.streams).isEmpty();
   }
 
-  private JobStreamerImpl createStreamer() {
+  @Test
+  void shouldReopenStreamOnStreamingTimeout() {
+    // given
+    final Duration streamingTimeout = Duration.ofSeconds(2);
+    jobStreamer = createStreamer(streamingTimeout);
+
+    jobStreamer.openStreamer(ignored -> {});
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> initialStream =
+        service.lastStream();
+
+    // when
+    scheduler.tick(streamingTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    scheduler.runUntilIdle();
+
+    // then
+    final ServerCallStreamObserver<GatewayOuterClass.ActivatedJob> recreatedStream =
+        service.lastStream();
+    assertThat(recreatedStream).isNotNull().isNotEqualTo(initialStream);
+    assertThat(initialStream.isCancelled()).isTrue();
+    assertThat(recreatedStream.isCancelled()).isFalse();
+  }
+
+  private JobStreamerImpl createStreamer(final Duration streamingTimeout) {
     return new JobStreamerImpl(
         client,
         "type",
@@ -184,7 +206,7 @@ final class JobStreamImplTest {
         Duration.ofSeconds(10),
         Arrays.asList("foo", "bar"),
         Arrays.asList("test-tenant"),
-        Duration.ofHours(8),
+        streamingTimeout,
         ignored -> 10_000L,
         scheduler);
   }
