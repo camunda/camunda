@@ -25,6 +25,8 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.protocol.rest.ClockPinRequest;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -45,7 +47,10 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   @Override
   public ClockPinCommandStep1 time(final long timestamp) {
     ArgumentUtil.ensureNotNegative("timestamp", timestamp);
-    request.setTimestamp(timestamp);
+    final String rfc3339Timestamp = Instant.ofEpochMilli(timestamp)
+        .atOffset(ZoneOffset.UTC)
+        .toString();
+    request.setTimestamp(rfc3339Timestamp);
     return this;
   }
 
@@ -53,7 +58,9 @@ public class ClockPinCommandImpl implements ClockPinCommandStep1 {
   public ClockPinCommandStep1 time(final Instant instant) {
     ArgumentUtil.ensureNotNull("instant", instant);
     ArgumentUtil.ensureNotBefore("instant", instant, Instant.EPOCH);
-    return time(instant.toEpochMilli());
+    final String rfc3339Timestamp = instant.atOffset(ZoneOffset.UTC).toString();
+    request.setTimestamp(rfc3339Timestamp);
+    return this;
   }
 
   @Override

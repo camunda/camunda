@@ -38,6 +38,7 @@ public final class PinClockTest extends ClientRestTest {
   void shouldPinClockToTimestamp() {
     // given
     final long timestamp = 1742461285000L;
+    final String expectedTimestamp = "2025-03-16T13:08:05Z";
 
     // when
     client.newClockPinCommand().time(timestamp).send().join();
@@ -47,7 +48,7 @@ public final class PinClockTest extends ClientRestTest {
         .hasMethod(RequestMethod.PUT)
         .hasUrl(RestGatewayPaths.getClockPinUrl())
         .extractingBody(ClockPinRequest.class)
-        .isEqualTo(new ClockPinRequest().timestamp(timestamp));
+        .isEqualTo(new ClockPinRequest().timestamp(expectedTimestamp));
   }
 
   @Test
@@ -69,11 +70,12 @@ public final class PinClockTest extends ClientRestTest {
     client.newClockPinCommand().time(validInstant).send().join();
 
     // then
+    final String expectedTimestamp = validInstant.atOffset(java.time.ZoneOffset.UTC).toString();
     assertThat(RestGatewayService.getLastRequest())
         .hasMethod(RequestMethod.PUT)
         .hasUrl(RestGatewayPaths.getClockPinUrl())
         .extractingBody(ClockPinRequest.class)
-        .isEqualTo(new ClockPinRequest().timestamp(validInstant.toEpochMilli()));
+        .isEqualTo(new ClockPinRequest().timestamp(expectedTimestamp));
   }
 
   static Stream<Arguments> invalidInstantValues() {
