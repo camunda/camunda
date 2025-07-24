@@ -72,6 +72,7 @@ final class TestSupport {
           config.adHocSubProcessActivityActivation = value;
       case ASYNC_REQUEST -> config.asyncRequest = value;
       case USAGE_METRIC -> config.usageMetrics = value;
+      case RUNTIME_INSTRUCTION_INTERRUPTION -> config.runtimeInstructionInterruption = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
