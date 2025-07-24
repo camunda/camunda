@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.handler.oidc;
+package io.camunda.migration.identity.handler.sm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -18,7 +18,6 @@ import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.dto.Permission;
 import io.camunda.migration.identity.dto.Role;
-import io.camunda.migration.identity.handler.RoleMigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
@@ -46,7 +45,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RoleMigrationHandlerTest {
+public class KeycloakRoleMigrationHandlerTest {
 
   private final ManagementIdentityClient managementIdentityClient;
   private final RoleServices roleServices;
@@ -54,25 +53,20 @@ public class RoleMigrationHandlerTest {
 
   private final RoleMigrationHandler roleMigrationHandler;
 
-  public RoleMigrationHandlerTest(
+  public KeycloakRoleMigrationHandlerTest(
       @Mock final ManagementIdentityClient managementIdentityClient,
       @Mock(answer = Answers.RETURNS_SELF) final RoleServices roleServices,
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices;
     this.authorizationServices = authorizationServices;
-    final IdentityMigrationProperties identityMigrationProperties =
-        new IdentityMigrationProperties();
-    final var audience = identityMigrationProperties.getOidc().getAudience();
-    audience.setIdentity("identity");
-    audience.setZeebe("zeebe");
     roleMigrationHandler =
         new RoleMigrationHandler(
             CamundaAuthentication.none(),
             managementIdentityClient,
             roleServices,
             authorizationServices,
-            identityMigrationProperties);
+            new IdentityMigrationProperties());
   }
 
   @Test
@@ -89,16 +83,16 @@ public class RoleMigrationHandlerTest {
     when(managementIdentityClient.fetchPermissions(any()))
         .thenReturn(
             List.of(
-                new Permission("read", "identity"),
-                new Permission("read:users", "identity"),
-                new Permission("write", "identity"),
+                new Permission("read", "camunda-identity-resource-server"),
+                new Permission("read:users", "camunda-identity-resource-server"),
+                new Permission("write", "camunda-identity-resource-server"),
                 new Permission("read:*", "operate-api"),
                 new Permission("write:*", "operate-api")))
         .thenReturn(
             List.of(
                 new Permission("read:*", "tasklist-api"),
                 new Permission("write:*", "tasklist-api"),
-                new Permission("write:*", "zeebe")));
+                new Permission("write:*", "zeebe-api")));
     when(authorizationServices.createAuthorization(any()))
         .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
 
@@ -292,16 +286,16 @@ public class RoleMigrationHandlerTest {
     when(managementIdentityClient.fetchPermissions(any()))
         .thenReturn(
             List.of(
-                new Permission("read", "identity"),
-                new Permission("read:users", "identity"),
-                new Permission("write", "identity"),
+                new Permission("read", "camunda-identity-resource-server"),
+                new Permission("read:users", "camunda-identity-resource-server"),
+                new Permission("write", "camunda-identity-resource-server"),
                 new Permission("read:*", "operate-api"),
                 new Permission("write:*", "operate-api")))
         .thenReturn(
             List.of(
                 new Permission("read:*", "tasklist-api"),
                 new Permission("write:*", "tasklist-api"),
-                new Permission("write:*", "zeebe")));
+                new Permission("write:*", "zeebe-api")));
     when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
         .thenReturn(
             CompletableFuture.failedFuture(

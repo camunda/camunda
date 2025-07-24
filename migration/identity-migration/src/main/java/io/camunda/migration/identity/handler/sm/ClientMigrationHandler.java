@@ -8,7 +8,7 @@
 package io.camunda.migration.identity.handler.sm;
 
 import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
-import static io.camunda.migration.identity.config.StaticEntities.getAuthorizationsByAudience;
+import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthorizationsByAudience;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;

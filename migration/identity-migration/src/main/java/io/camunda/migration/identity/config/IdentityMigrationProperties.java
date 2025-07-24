@@ -8,7 +8,7 @@
 package io.camunda.migration.identity.config;
 
 import io.camunda.migration.identity.config.cluster.ClusterProperties;
-import io.camunda.migration.identity.config.oidc.OidcProperties;
+import io.camunda.migration.identity.config.sm.OidcProperties;
 import jakarta.validation.Valid;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
