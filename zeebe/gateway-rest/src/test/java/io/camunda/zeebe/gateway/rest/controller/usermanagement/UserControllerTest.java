@@ -334,7 +334,7 @@ public class UserControllerTest extends RestControllerTest {
   }
 
   @Test
-  void updateUserShouldReturnNoContent() {
+  void updateUserShouldReturnOk() {
     // given
     final String username = "alice-test";
     final UserDTO user = new UserDTO(username, "Alice", "test+alice@camunda.com", null);
@@ -356,7 +356,7 @@ public class UserControllerTest extends RestControllerTest {
             new UserUpdateRequest().name(user.name()).email(user.email()).password(user.password()))
         .exchange()
         .expectStatus()
-        .isNoContent();
+        .isOk();
 
     verify(userServices, times(1)).updateUser(user);
   }

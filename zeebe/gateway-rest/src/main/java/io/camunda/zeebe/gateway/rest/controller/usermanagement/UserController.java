@@ -94,11 +94,12 @@ public class UserController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
-    return RequestMapper.executeServiceMethodWithNoContentResult(
+    return RequestMapper.executeServiceMethod(
         () ->
             userServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                .updateUser(request));
+                .updateUser(request),
+        ResponseMapper::toUserUpdateResponse);
   }
 
   @CamundaPostMapping(path = "/search")
