@@ -18,9 +18,12 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.impl.util.EnumUtil;
+import java.time.OffsetDateTime;
 import io.camunda.client.impl.util.ParseUtil;
+import java.time.OffsetDateTime;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
 import java.util.Objects;
+import java.time.OffsetDateTime;
 
 public class MessageSubscriptionImpl implements MessageSubscription {
 

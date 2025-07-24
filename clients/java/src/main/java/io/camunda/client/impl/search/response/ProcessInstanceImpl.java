@@ -18,7 +18,9 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.util.EnumUtil;
+import java.time.OffsetDateTime;
 import io.camunda.client.impl.util.ParseUtil;
+import java.time.OffsetDateTime;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import java.util.Set;
 
@@ -32,8 +34,8 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Long processDefinitionKey;
   private final Long parentProcessInstanceKey;
   private final Long parentElementInstanceKey;
-  private final String startDate;
-  private final String endDate;
+  private final OffsetDateTime startDate;
+  private final OffsetDateTime endDate;
   private final ProcessInstanceState state;
   private final Boolean hasIncident;
   private final String tenantId;
@@ -97,12 +99,12 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public String getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
   @Override
-  public String getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 

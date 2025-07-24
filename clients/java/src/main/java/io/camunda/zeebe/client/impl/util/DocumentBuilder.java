@@ -68,7 +68,7 @@ public class DocumentBuilder implements DocumentBuilderStep1, DocumentBuilderSte
   @Override
   public DocumentBuilderStep2 timeToLive(final Duration timeToLive) {
     final OffsetDateTime expiresAt = OffsetDateTime.now().plus(timeToLive);
-    metadata.setExpiresAt(expiresAt.toString());
+    metadata.setExpiresAt(expiresAt);
     return this;
   }
 
