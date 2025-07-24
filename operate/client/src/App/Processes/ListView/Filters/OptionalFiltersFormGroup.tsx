@@ -298,6 +298,10 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
 
                     OPTIONAL_FILTER_FIELDS[filter].keys.forEach((key) => {
                       form.change(key, undefined);
+                      if (key === 'errorMessage') {
+                        // clear errorMessageHashCode when error message field is removed.
+                        form.change('incidentErrorHashCode', undefined);
+                      }
                     });
                     form.submit();
                   }}
