@@ -20,6 +20,11 @@ class OperateProcessesPage {
   readonly processFinishedInstancesCheckbox: Locator;
   readonly processNameFilter: Locator;
   readonly processInstanceLink: Locator;
+  readonly startDateSortButton: Locator;
+  readonly processInstanceKeySortButton: Locator;
+  readonly versionSortButton: Locator;
+  readonly processNameSortButton: Locator;
+  readonly processInstancesTable: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -51,6 +56,19 @@ class OperateProcessesPage {
         name: 'view instance',
       })
       .first();
+    this.startDateSortButton = page.getByRole('button', {
+      name: 'sort by start date',
+    });
+    this.processInstanceKeySortButton = page.getByRole('button', {
+      name: 'sort by process instance key',
+    });
+    this.versionSortButton = page.getByRole('button', {
+      name: 'sort by version',
+    });
+    this.processNameSortButton = page.getByRole('button', {
+      name: 'sort by name',
+    });
+    this.processInstancesTable = page.getByTestId('data-list').getByRole('row');
   }
 
   async clickProcessActiveCheckbox(): Promise<void> {
@@ -104,6 +122,22 @@ class OperateProcessesPage {
         name: `View instance ${processInstanceKey}`,
       }),
     ).toBeVisible();
+  }
+
+  async clickStartDateSortButton(): Promise<void> {
+    await this.startDateSortButton.click();
+  }
+
+  async clickProcessInstanceKeySortButton(): Promise<void> {
+    await this.processInstanceKeySortButton.click();
+  }
+
+  async clickVersionSortButton(): Promise<void> {
+    await this.versionSortButton.click();
+  }
+
+  async clickProcessNameSortButton(): Promise<void> {
+    await this.processNameSortButton.click();
   }
 }
 
