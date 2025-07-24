@@ -9,10 +9,10 @@ package io.camunda.migration.identity.config.sm;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
-import io.camunda.migration.identity.handler.sm.RoleMigrationHandler;
 import io.camunda.migration.identity.handler.sm.AuthorizationMigrationHandler;
 import io.camunda.migration.identity.handler.sm.ClientMigrationHandler;
 import io.camunda.migration.identity.handler.sm.GroupMigrationHandler;
+import io.camunda.migration.identity.handler.sm.RoleMigrationHandler;
 import io.camunda.migration.identity.handler.sm.TenantMigrationHandler;
 import io.camunda.migration.identity.handler.sm.UserRoleMigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -89,8 +89,12 @@ public class SMKeycloakMigrationHandlerConfig {
   public TenantMigrationHandler tenantMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final TenantServices tenantService,
-      final CamundaAuthentication camundaAuthentication) {
+      final CamundaAuthentication camundaAuthentication,
+      final IdentityMigrationProperties migrationProperties) {
     return new TenantMigrationHandler(
-        managementIdentityClient, tenantService, camundaAuthentication);
+        managementIdentityClient,
+        tenantService,
+        camundaAuthentication,
+        migrationProperties.getMode());
   }
 }

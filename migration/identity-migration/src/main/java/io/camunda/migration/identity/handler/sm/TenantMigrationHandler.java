@@ -13,6 +13,7 @@ import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.Tenant;
@@ -31,6 +32,7 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
   private final ManagementIdentityClient managementIdentityClient;
   private final TenantServices tenantService;
+  private final Mode mode;
 
   private final AtomicInteger createdTenantCount = new AtomicInteger();
   private final AtomicInteger totalTenantCount = new AtomicInteger();
@@ -44,9 +46,11 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
   public TenantMigrationHandler(
       final ManagementIdentityClient managementIdentityClient,
       final TenantServices tenantService,
-      final CamundaAuthentication camundaAuthentication) {
+      final CamundaAuthentication camundaAuthentication,
+      final Mode mode) {
     this.managementIdentityClient = managementIdentityClient;
     this.tenantService = tenantService.withAuthentication(camundaAuthentication);
+    this.mode = mode;
   }
 
   @Override
@@ -89,6 +93,10 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
                   "Tenant with ID '{}' already exists, skipping creation.", tenant.tenantId());
             }
           }
+          if (Mode.OIDC.equals(mode)) {
+            // In OIDC mode, we do not assign users, groups, or clients to the tenants.
+            return;
+          }
           assignUsersToTenant(tenant.tenantId(), tenantId);
           assignGroupsToTenant(tenant.tenantId(), tenantId);
           assignClientsToTenant(tenant.tenantId(), tenantId);
@@ -97,6 +105,13 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
   @Override
   protected void logSummary() {
+    if (Mode.OIDC.equals(mode)) {
+      logger.info(
+          "Tenant migration completed: Created {} out of {} tenants, the remaining existed already.",
+          createdTenantCount.get(),
+          totalTenantCount.get());
+      return;
+    }
     logger.info(
         "Tenant migration completed: Created {} out of {} tenants, the remaining existed already. Assigned {} users out of {} attempted, the remaining were already assigned. Assigned {} groups out of {} attempted, the remaining were already assigned. Assigned {} clients out of {} attempted, the remaining were already assigned.",
         createdTenantCount.get(),
