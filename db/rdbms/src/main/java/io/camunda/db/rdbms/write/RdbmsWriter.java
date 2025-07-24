@@ -102,7 +102,7 @@ public class RdbmsWriter {
     decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
     flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper);
     groupWriter = new GroupWriter(executionQueue);
-    incidentWriter = new IncidentWriter(executionQueue, incidentMapper);
+    incidentWriter = new IncidentWriter(executionQueue, incidentMapper, vendorDatabaseProperties);
     processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
     processInstanceWriter = new ProcessInstanceWriter(processInstanceMapper, executionQueue);
     tenantWriter = new TenantWriter(executionQueue);

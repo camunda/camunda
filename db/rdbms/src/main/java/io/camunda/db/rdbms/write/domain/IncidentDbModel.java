@@ -7,11 +7,14 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public record IncidentDbModel(
     Long incidentKey,
@@ -31,6 +34,8 @@ public record IncidentDbModel(
     int partitionId,
     OffsetDateTime historyCleanupDate)
     implements DbModel<IncidentDbModel> {
+
+  private static final Logger log = LoggerFactory.getLogger(IncidentDbModel.class);
 
   @Override
   public IncidentDbModel copy(
@@ -56,6 +61,35 @@ public record IncidentDbModel(
                 .partitionId(partitionId)
                 .historyCleanupDate(historyCleanupDate))
         .build();
+  }
+
+  public IncidentDbModel truncateErrorMessage(final int sizeLimit, final Integer byteLimit) {
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
+
+    if (truncatedValue.length() < errorMessage.length()) {
+      log.warn(
+          "Truncated error message for incident {}, original message was: {}",
+          incidentKey,
+          errorMessage);
+    }
+
+    return new IncidentDbModel(
+        incidentKey,
+        processDefinitionKey,
+        processDefinitionId,
+        processInstanceKey,
+        flowNodeInstanceKey,
+        flowNodeId,
+        jobKey,
+        errorType,
+        truncatedValue,
+        errorMessageHash,
+        creationDate,
+        state,
+        treePath,
+        tenantId,
+        partitionId,
+        historyCleanupDate);
   }
 
   public static class Builder implements ObjectBuilder<IncidentDbModel> {

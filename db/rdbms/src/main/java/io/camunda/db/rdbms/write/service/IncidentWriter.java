@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.IncidentMapper;
@@ -29,10 +30,15 @@ public class IncidentWriter {
 
   private final ExecutionQueue executionQueue;
   private final IncidentMapper mapper;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
-  public IncidentWriter(final ExecutionQueue executionQueue, final IncidentMapper mapper) {
+  public IncidentWriter(
+      final ExecutionQueue executionQueue,
+      final IncidentMapper mapper,
+      final VendorDatabaseProperties vendorDatabaseProperties) {
     this.executionQueue = executionQueue;
     this.mapper = mapper;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   public void create(final IncidentDbModel incident) {
@@ -42,7 +48,9 @@ public class IncidentWriter {
             WriteStatementType.INSERT,
             incident.incidentKey(),
             "io.camunda.db.rdbms.sql.IncidentMapper.insert",
-            incident));
+            incident.truncateErrorMessage(
+                vendorDatabaseProperties.errorMessageSize(),
+                vendorDatabaseProperties.columnMaxBytes())));
   }
 
   public void update(final IncidentDbModel incident) {
@@ -52,7 +60,9 @@ public class IncidentWriter {
             WriteStatementType.UPDATE,
             incident.incidentKey(),
             "io.camunda.db.rdbms.sql.IncidentMapper.update",
-            incident));
+            incident.truncateErrorMessage(
+                vendorDatabaseProperties.variableValuePreviewSize(),
+                vendorDatabaseProperties.columnMaxBytes())));
   }
 
   public void resolve(final Long incidentKey) {
