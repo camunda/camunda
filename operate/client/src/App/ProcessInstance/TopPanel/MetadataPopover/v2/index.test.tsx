@@ -48,6 +48,7 @@ import {waitFor} from '@testing-library/react';
 import {mockSearchIncidents} from 'modules/mocks/api/v2/incidents/searchIncidents.ts';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance.ts';
 import {mockFetchProcessDefinition} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinition.ts';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances.ts';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -261,6 +262,17 @@ describe('MetadataPopover', () => {
       endDate: '2018-12-12 00:00:00',
     });
     flowNodeMetaDataStore.setMetaData(calledInstanceMetadata);
+
+    mockSearchProcessInstances().withSuccess({
+      items: [
+        {
+          ...mockProcessInstance,
+          processInstanceKey: '229843728748927482',
+          processDefinitionName: 'Called Process',
+        },
+      ],
+      page: {totalItems: 1},
+    });
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({

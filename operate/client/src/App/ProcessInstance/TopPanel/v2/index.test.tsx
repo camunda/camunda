@@ -18,6 +18,7 @@ import {TopPanel} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {incidentsStore} from 'modules/stores/incidents';
 import {
   calledInstanceMetadata,
   incidentFlowNodeMetaData,
@@ -48,6 +49,8 @@ import {mockServer} from 'modules/mock-server/node';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData.ts';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances.ts';
+import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance.ts';
 
 vi.mock('react-transition-group', () => {
   const FakeTransition = vi.fn(({children}) => children);
@@ -169,6 +172,7 @@ describe('TopPanel', () => {
     flowNodeSelectionStore.reset();
     modificationsStore.reset();
     flowNodeMetaDataStore.reset();
+    incidentsStore.reset();
   });
 
   it('should render spinner while loading', async () => {
@@ -283,7 +287,18 @@ describe('TopPanel', () => {
         },
       ],
     });
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchIncidentsByProcessInstance(
+      mockProcessInstance.processInstanceKey,
+    ).withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
 
     flowNodeMetaDataStore.setMetaData({
       ...calledInstanceMetadata,
@@ -313,11 +328,7 @@ describe('TopPanel', () => {
       screen.queryByTestId('diagram-spinner'),
     );
 
-    await waitFor(() =>
-      expect(
-        screen.queryByText(/Element Instance Key/),
-      ).not.toBeInTheDocument(),
-    );
+    await screen.findByText(/Element Instance Key/);
 
     expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
 

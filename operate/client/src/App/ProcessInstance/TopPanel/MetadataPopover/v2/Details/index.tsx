@@ -17,13 +17,13 @@ import {Header} from '../../Header';
 import {SummaryDataKey, SummaryDataValue} from '../../styled';
 import {getExecutionDuration} from '../../Details/getExecutionDuration';
 import {buildMetadata} from './buildMetadata';
-import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {type V2MetaDataDto} from '../types';
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 
 type Props = {
   metaData: V2MetaDataDto;
   elementId: string;
+  businessObject?: BusinessObject | null;
 };
 
 const NULL_METADATA = {
@@ -38,14 +38,8 @@ const NULL_METADATA = {
   jobRetries: null,
 } as const;
 
-const Details: React.FC<Props> = ({metaData, elementId}) => {
+const Details: React.FC<Props> = ({metaData, elementId, businessObject}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-
-  const processDefinitionKey = useProcessDefinitionKeyContext();
-  const {data} = useProcessInstanceXml({
-    processDefinitionKey,
-  });
-  const businessObject = data?.businessObjects[elementId];
 
   const elementName = businessObject?.name || elementId;
 
