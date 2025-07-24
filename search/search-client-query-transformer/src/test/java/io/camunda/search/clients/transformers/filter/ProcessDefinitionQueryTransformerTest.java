@@ -110,18 +110,13 @@ public final class ProcessDefinitionQueryTransformerTest extends AbstractTransfo
     final var searchRequest = transformQuery(filter);
 
     // then
-    final var queryVariant = searchRequest.queryOption();
-
-    // then
     assertThat(searchRequest.queryOption())
         .isInstanceOfSatisfying(
             SearchBoolQuery.class,
             boolQuery -> {
-              final var innerQuery =
-                  hasStartForm
-                      ? boolQuery.must().get(0).queryOption()
-                      : boolQuery.mustNot().get(0).queryOption();
               final var boolQueryMustOrNot = hasStartForm ? boolQuery.must() : boolQuery.mustNot();
+              assertThat(boolQueryMustOrNot).hasSize(1);
+              final var innerQuery = boolQueryMustOrNot.get(0).queryOption();
 
               assertThat(boolQueryMustOrNot).hasSize(1);
 
