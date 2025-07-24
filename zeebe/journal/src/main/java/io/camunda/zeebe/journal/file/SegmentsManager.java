@@ -282,8 +282,9 @@ final class SegmentsManager implements AutoCloseable {
     Segment previousSegment = null;
     for (final Segment segment : loadSegments()) {
       if (previousSegment != null && previousSegment.lastIndex() >= segment.index()) {
-        // Segments contain overlaps
-        reIndexOverlap(segment);
+        // Segments are overlapping, remove the journal index entries in the segment's index range.
+        // This is to avoid having an index lookup point to a position in the previous segment.
+        journalIndex.deleteInRange(segment.index(), segment.lastIndex() - 1);
       }
       previousSegment = segment;
       final Segment replacedSegment = segments.put(segment.descriptor().index(), segment);
@@ -312,21 +313,6 @@ final class SegmentsManager implements AutoCloseable {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
-  }
-
-  /**
-   * When an overlap is detected, we must remove the journal index entries for segment's start index
-   * up to its last index - 1. Then we index the segment's first index in the {@link JournalIndex}.
-   * This is required to ensure that the {@link JournalIndex} points to the correct buffer positions
-   * in the overlapping segment. Any lookups on overlapping segments will point to the latest
-   * segment containing that index.
-   *
-   * @param segment the overlapping segment
-   */
-  private void reIndexOverlap(final Segment segment) {
-    final var reader = segment.createReader();
-    reader.truncateJournalIndex(segment.index(), segment.lastIndex() - 1);
-    reader.close();
   }
 
   private void prepareNextSegment() {
