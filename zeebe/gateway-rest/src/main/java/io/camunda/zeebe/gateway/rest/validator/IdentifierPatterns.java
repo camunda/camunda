@@ -9,6 +9,10 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import java.util.regex.Pattern;
 
+/**
+ * Utility class containing patterns for validating identifiers used in the REST API. The pattern is
+ * used to validate String-based identifies such as User, Role, Group, Tenant, and Mapping IDs.
+ */
 public final class IdentifierPatterns {
 
   public static final int MAX_LENGTH = 256;

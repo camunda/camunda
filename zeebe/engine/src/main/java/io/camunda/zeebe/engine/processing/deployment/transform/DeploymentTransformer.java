@@ -74,6 +74,8 @@ public final class DeploymentTransformer {
         new RpaTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
+    // TODO: Add resource ID validators to the resourceTransformers. They already contain checks
+    //  for duplicate resource IDs (within a single deployment).
     resourceTransformers =
         Map.ofEntries(
             entry(".bpmn", bpmnResourceTransformer),
