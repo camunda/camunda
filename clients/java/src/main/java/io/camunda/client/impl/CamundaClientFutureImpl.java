@@ -58,8 +58,13 @@ public class CamundaClientFutureImpl<ClientResponse, BrokerResponse>
 
   @Override
   public boolean cancel(final boolean mayInterruptIfRunning) {
+    return cancel(mayInterruptIfRunning, null);
+  }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning, final Throwable cause) {
     if (mayInterruptIfRunning && clientCall != null) {
-      clientCall.cancel("Client call explicitly cancelled by user", null);
+      clientCall.cancel("Client call explicitly cancelled by user", cause);
     }
 
     return super.cancel(mayInterruptIfRunning);
