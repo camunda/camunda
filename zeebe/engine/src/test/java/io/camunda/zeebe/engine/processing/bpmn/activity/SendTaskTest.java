@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -123,6 +124,54 @@ public final class SendTaskTest {
                 .withType("send-task-job")
                 .exists())
         .as("Job for SendTask should be created after incident resolution")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldCancelProcessWithIncidentOnUnsupportedSendTask() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "process.bpmn",
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .sendTask("task")
+                .message(m -> m.name("msg").zeebeCorrelationKeyExpression("123"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // wait for incident on unsupported sendTask
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("task")
+        .withErrorType(ErrorType.UNKNOWN)
+        .await();
+
+    // when
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
+                .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED))
+        .extracting(r -> r.getValue().getElementId())
+        .as("SendTask and process instance should be terminated")
+        .containsExactly("task", "process");
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("task")
+                .withErrorType(ErrorType.UNKNOWN)
+                .exists())
+        .as("Incident should be resolved during sendTask termination")
         .isTrue();
   }
 }
