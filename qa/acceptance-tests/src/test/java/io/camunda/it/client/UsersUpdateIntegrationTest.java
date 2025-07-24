@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.client.api.response.UpdateUserResponse;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.User;
@@ -35,15 +34,14 @@ public class UsersUpdateIntegrationTest {
     final var updatedName = "Updated User Name";
     final var updatedEmail = "updated_email@email.com";
 
-    final CreateUserResponse createUserResponse =
-        camundaClient
-            .newCreateUserCommand()
-            .username(username)
-            .password("password")
-            .name(name)
-            .email(email)
-            .send()
-            .join();
+    camundaClient
+        .newCreateUserCommand()
+        .username(username)
+        .password("password")
+        .name(name)
+        .email(email)
+        .send()
+        .join();
     assertUserCreated(username);
 
     // when
@@ -59,6 +57,21 @@ public class UsersUpdateIntegrationTest {
     assertThat(updateUserResponse.getUsername()).isEqualTo(username);
     assertThat(updateUserResponse.getName()).isEqualTo(updatedName);
     assertThat(updateUserResponse.getEmail()).isEqualTo(updatedEmail);
+
+    Awaitility.await("User is updated")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final SearchResponse<User> response =
+                  camundaClient
+                      .newUsersSearchRequest()
+                      .filter(fn -> fn.username(username))
+                      .send()
+                      .join();
+              assertThat(response.items().getFirst().getUsername()).isEqualTo(username);
+              assertThat(response.items().getFirst().getName()).isEqualTo(updatedName);
+              assertThat(response.items().getFirst().getEmail()).isEqualTo(updatedEmail);
+            });
   }
 
   @Test
