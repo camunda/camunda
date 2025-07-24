@@ -218,12 +218,9 @@ public final class AsyncSnapshotDirector extends Actor
               if (error != null) {
                 LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
                 snapshotFuture.completeExceptionally(error);
-              } else if (position == StreamProcessor.UNSET_POSITION) {
-                LOG.debug(
-                    "We will skip taking this snapshot, because we haven't processed anything yet.");
-                snapshotFuture.complete(null);
               } else {
-                inProgressSnapshot.lowerBoundSnapshotPosition = position;
+                inProgressSnapshot.lowerBoundSnapshotPosition =
+                    position == StreamProcessor.UNSET_POSITION ? 0L : position;
                 snapshot(inProgressSnapshot).onComplete(snapshotFuture);
               }
             });
