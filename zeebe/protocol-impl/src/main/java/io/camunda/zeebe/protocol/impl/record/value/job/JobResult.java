@@ -41,6 +41,10 @@ public class JobResult extends UnpackedObject implements JobResultValue {
   private static final StringValue CORRECTIONS_KEY = new StringValue("corrections");
   private static final StringValue DENIED_REASON_KEY = new StringValue("deniedReason");
   private static final StringValue ACTIVATE_ELEMENTS_KEY = new StringValue("activateElements");
+  private static final StringValue COMPLETION_CONDITION_FULFILLED_KEY =
+      new StringValue("isCompletionConditionFulfilled");
+  private static final StringValue CANCEL_REMAINING_INSTANCES_KEY =
+      new StringValue("isCancelRemainingInstances");
 
   private final EnumProperty<JobResultType> typeProp =
       new EnumProperty<>(TYPE_KEY, JobResultType.class, JobResultType.USER_TASK);
@@ -57,15 +61,21 @@ public class JobResult extends UnpackedObject implements JobResultValue {
   // Ad-hoc subprocess properties
   private final ArrayProperty<JobResultActivateElement> activateElementsProp =
       new ArrayProperty<>(ACTIVATE_ELEMENTS_KEY, JobResultActivateElement::new);
+  private final BooleanProperty isCompletionConditionFulfilledProp =
+      new BooleanProperty(COMPLETION_CONDITION_FULFILLED_KEY, false);
+  private final BooleanProperty isCancelRemainingInstancesProp =
+      new BooleanProperty(CANCEL_REMAINING_INSTANCES_KEY, false);
 
   public JobResult() {
-    super(6);
+    super(8);
     declareProperty(typeProp)
         .declareProperty(deniedProp)
         .declareProperty(correctionsProp)
         .declareProperty(correctedAttributesProp)
         .declareProperty(deniedReasonProp)
-        .declareProperty(activateElementsProp);
+        .declareProperty(activateElementsProp)
+        .declareProperty(isCompletionConditionFulfilledProp)
+        .declareProperty(isCancelRemainingInstancesProp);
   }
 
   /** Sets all properties to current instance from provided user task job data */
@@ -76,6 +86,8 @@ public class JobResult extends UnpackedObject implements JobResultValue {
     setCorrections(result.getCorrections());
     setDeniedReason(result.getDeniedReason());
     setActivateElements(result.getActivateElements());
+    setCompletionConditionFulfilled(result.isCompletionConditionFulfilled());
+    setCancelRemainingInstances(result.isCancelRemainingInstances());
   }
 
   @Override
@@ -149,6 +161,26 @@ public class JobResult extends UnpackedObject implements JobResultValue {
     activateElementsProp.reset();
     elements.forEach(
         element -> activateElementsProp.add().copyFrom((JobResultActivateElement) element));
+    return this;
+  }
+
+  @Override
+  public boolean isCompletionConditionFulfilled() {
+    return isCompletionConditionFulfilledProp.getValue();
+  }
+
+  public JobResult setCompletionConditionFulfilled(final boolean completionConditionFulfilled) {
+    isCompletionConditionFulfilledProp.setValue(completionConditionFulfilled);
+    return this;
+  }
+
+  @Override
+  public boolean isCancelRemainingInstances() {
+    return isCancelRemainingInstancesProp.getValue();
+  }
+
+  public JobResult setCancelRemainingInstances(final boolean cancelRemainingInstances) {
+    isCancelRemainingInstancesProp.setValue(cancelRemainingInstances);
     return this;
   }
 
