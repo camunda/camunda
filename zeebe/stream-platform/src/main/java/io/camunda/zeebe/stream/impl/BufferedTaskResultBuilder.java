@@ -20,6 +20,8 @@ import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StagedSchedu
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
+import java.util.List;
 
 /**
  * Implementation of {@code TaskResultBuilder} that buffers the task results. After being done with
@@ -66,6 +68,40 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
 
     either.ifRight(ok -> cache.add(intent, key));
     return either.isRight();
+  }
+
+  @Override
+  public boolean canAppendRecords(
+      final List<? extends UnifiedRecordValue> values, final FollowUpCommandMetadata metadata) {
+    if (values.isEmpty()) {
+      return true;
+    }
+
+    final var universalRecordMetadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(Intent.UNKNOWN) // every intent has the same size in the record
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("")
+            .valueType(ValueType.NULL_VAL) // every value type has the same size in the record
+            .operationReference(metadata.operationReference())
+            .batchOperationReference(metadata.batchOperationReference());
+
+    // we need to calculate the total size of all records, but we optimize it with not
+    // recalculating the metadata size again for each entry
+    final var firstRecord =
+        new RecordBatchEntry(universalRecordMetadata, NULL_KEY, -1, values.getFirst());
+    final var firstRecordSize = firstRecord.getLength();
+    final var firstRecordSizeWithoutValueSize = firstRecordSize - values.getFirst().getLength();
+
+    final var totalBatchLength =
+        firstRecordSize
+            + values.stream()
+                .skip(1) // we already calculated the first one
+                .map(v -> v.getLength() + firstRecordSizeWithoutValueSize)
+                .reduce(0, Integer::sum);
+
+    return mutableRecordBatch.canAppendRecordOfLength(totalBatchLength);
   }
 
   @Override
