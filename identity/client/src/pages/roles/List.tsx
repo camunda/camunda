@@ -84,7 +84,7 @@ const List: FC = () => {
             onClick: deleteRole,
           },
         ]}
-        searchPlaceholder="Search by Role ID"
+        searchPlaceholder={t("searchByRoleId")}
         searchKey="roleId"
         {...paginationProps}
       />

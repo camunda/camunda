@@ -68,7 +68,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
             },
           ]}
           maxDisplayCellLength={25}
-          searchPlaceholder={t("Search by Owner ID")}
+          searchPlaceholder={t("searchByOwnerId")}
           searchKey="ownerId"
           {...paginationProps}
         />
