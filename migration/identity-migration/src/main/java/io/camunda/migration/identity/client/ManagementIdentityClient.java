@@ -11,6 +11,7 @@ import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
+import io.camunda.migration.identity.dto.MappingRule;
 import io.camunda.migration.identity.dto.Permission;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
@@ -42,6 +43,7 @@ public class ManagementIdentityClient {
   private static final String MIGRATION_CLIENTS_ENDPOINT = "/api/clients";
   private static final String MIGRATION_CLIENTS_PERMISSIONS_ENDPOINT =
       "/api/clients/{0}/permissions";
+  private static final String MIGRATION_MAPPING_RULES_ENDPOINT = "/api/mapping-rules";
 
   private final String organizationId;
   private final RestTemplate restTemplate;
@@ -169,6 +171,13 @@ public class ManagementIdentityClient {
             Objects.requireNonNull(
                 restTemplate.getForObject(
                     MIGRATION_CLIENTS_PERMISSIONS_ENDPOINT, Permission[].class, clientId)))
+        .toList();
+  }
+
+  public List<MappingRule> fetchMappingRules() {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(MIGRATION_MAPPING_RULES_ENDPOINT, MappingRule[].class)))
         .toList();
   }
 }
