@@ -66,7 +66,7 @@ services:
       - identity-network
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:26.3.1@sha256:97042fe57f6622d88980ad79008346f20ba69272be10cd502613b2aa696a0c41
+    image: bitnami/keycloak:26.3.2@sha256:7c534a00285e6029f1f0a5a951f6254dea8a78ad73d05380c35100d6c7fb31e2
     ports:
       - "18080:8080"
     environment:
