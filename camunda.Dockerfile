@@ -16,7 +16,7 @@ ARG DIST="distball"
 ### Build camunda from scratch ###
 FROM camundaservicesgmbhdhi/dhi-eclipse-temurin:21-jdk-debian12-dev AS build
 WORKDIR /camunda
-ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
+ENV MAVEN_OPTS="-XX:MaxRAMPercentage=80"
 COPY --link . ./
 RUN --mount=type=cache,target=/root/.m2,rw \
     ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
@@ -89,7 +89,7 @@ LABEL io.openshift.min-cpu="1"
 LABEL io.openshift.wants="elasticsearch"
 
 ENV CAMUNDA_HOME=/usr/local/camunda
-ENV PATH "${CAMUNDA_HOME}/bin:${PATH}"
+ENV PATH="${CAMUNDA_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
 # We know there's no need to check for musl on this image
 ENV ROCKSDB_MUSL_LIBC=false
