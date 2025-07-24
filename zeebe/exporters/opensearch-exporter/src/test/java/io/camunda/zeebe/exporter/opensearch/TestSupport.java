@@ -120,7 +120,8 @@ final class TestSupport {
             ValueType.SBE_UNKNOWN,
             ValueType.NULL_VAL,
             ValueType.PROCESS_INSTANCE_RESULT,
-            ValueType.CLOCK);
+            ValueType.CLOCK,
+            ValueType.MULTI_INSTANCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }
