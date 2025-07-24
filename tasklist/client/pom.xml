@@ -27,21 +27,21 @@
 
         <executions>
           <execution>
-            <id>install node and yarn</id>
+            <id>install node and node</id>
             <goals>
-              <goal>install-node-and-yarn</goal>
+              <goal>install-node-and-npm</goal>
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
               <nodeVersion>${version.node}</nodeVersion>
-              <yarnVersion>${version.yarn}</yarnVersion>
+              <npmVersion>11.4.2</npmVersion>
             </configuration>
           </execution>
 
-          <execution>
+           <execution>
             <id>update package.json version</id>
             <goals>
-                <goal>yarn</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
@@ -50,26 +50,26 @@
           </execution>
 
           <execution>
-            <id>yarn install</id>
+            <id>npm install</id>
             <goals>
-              <goal>yarn</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
-              <arguments>install --mutex file:/tmp/.yarn-mutex</arguments>
+              <arguments>ci</arguments>
             </configuration>
           </execution>
 
           <execution>
-            <id>yarn build</id>
+            <id>npm build</id>
             <goals>
-              <goal>yarn</goal>
+              <goal>npm</goal>
             </goals>
             <configuration>
               <failOnError>false</failOnError>
               <skip>${skip.fe.build}</skip>
-              <arguments>build</arguments>
+              <arguments>run build</arguments>
             </configuration>
           </execution>
         </executions>

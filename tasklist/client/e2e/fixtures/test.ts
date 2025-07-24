@@ -32,6 +32,7 @@ type PlaywrightFixtures = {
 const test = base.extend<PlaywrightFixtures>({
   makeAxeBuilder: async ({page}, use) => {
     const makeAxeBuilder = () =>
+      // @ts-expect-error will be fixed in a next PR
       new AxeBuilder({page}).withTags([
         'best-practice',
         'wcag2a',

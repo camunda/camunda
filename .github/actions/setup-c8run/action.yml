@@ -111,16 +111,11 @@ runs:
       with:
         node-version: "20"
 
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-      if: ${{ inputs.source-build == 'true' }}
-      with:
-        directory: ./tasklist/client
-
     - name: Install node dependencies
       if: ${{ inputs.source-build == 'true' }}
       working-directory: ./tasklist/client
       shell: bash
-      run: yarn
+      run: npm ci
 
     - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
       if: ${{ inputs.source-build == 'true' }}

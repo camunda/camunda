@@ -16,7 +16,7 @@ import svgr from 'vite-plugin-svgr';
 import browserslistToEsbuild from 'browserslist-to-esbuild';
 import license from 'rollup-plugin-license';
 import path from 'node:path';
-import sbom from '@vzeta/rollup-plugin-sbom';
+import sbom from 'rollup-plugin-sbom';
 
 const plugins: PluginOption[] = [react(), tsconfigPaths(), svgr()];
 const outDir = 'build';

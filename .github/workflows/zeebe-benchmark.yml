@@ -139,6 +139,7 @@ jobs:
         id: build-tasklist-fe
         with:
           directory: ./tasklist/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         name: Build Identity Frontend
         id: build-identity-fe

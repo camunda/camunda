@@ -57,7 +57,7 @@ const VariableEditor: React.FC<Props> = ({
   variablesLoadingFullValue,
   onEdit,
 }) => {
-  const {dirtyFields} = useFormState<FormValues, Partial<FormValues>>();
+  const {dirtyFields} = useFormState<FormValues>();
   const {t} = useTranslation();
 
   return (
@@ -199,8 +199,8 @@ const VariableEditor: React.FC<Props> = ({
                             validateDuplicateNames,
                           )}
                           addExtraDelay={Boolean(
-                            !dirtyFields[nameFieldName] &&
-                              dirtyFields[valueFieldName],
+                            !dirtyFields?.[nameFieldName] &&
+                              dirtyFields?.[valueFieldName],
                           )}
                         >
                           {({input, meta}) => (
@@ -228,8 +228,8 @@ const VariableEditor: React.FC<Props> = ({
                           name={valueFieldName}
                           validate={validateValueComplete}
                           addExtraDelay={Boolean(
-                            dirtyFields[nameFieldName] &&
-                              !dirtyFields[valueFieldName],
+                            dirtyFields?.[nameFieldName] &&
+                              !dirtyFields?.[valueFieldName],
                           )}
                         >
                           {({input, meta}) => (

@@ -75,14 +75,14 @@ On Tasklist we use Playwright for visual regression testing. These tests run on 
 
 To run these locally you can follow the steps below:
 
-1. Inside the client folder run `yarn build:visual-regression`
-2. After the build is finished start the Docker container with `yarn start-visual-regression-docker`
-3. Inside the container, run `yarn start:visual-regression &`
-4. After that, run `yarn test:visual`
+1. Inside the client folder run `npm run build:visual-regression`
+2. After the build is finished start the Docker container with `npm run start-visual-regression-docker`
+3. Inside the container, run `npm run start:visual-regression &`
+4. After that, run `npm run test:visual`
 
 #### Updating screenshots
 
-If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn test:visual --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `npm run test:visual --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
 
 #### Inspecting failures in the CI
 

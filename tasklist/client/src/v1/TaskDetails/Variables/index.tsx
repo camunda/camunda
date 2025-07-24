@@ -86,8 +86,8 @@ const Variables: React.FC<Props> = ({
     useState<NonNullable<InlineLoadingProps['status']>>('inactive');
   const canCompleteTask =
     user.userId === assignee && taskState === 'CREATED' && status === 'success';
-  const hasEmptyNewVariable = (values: FormValues) =>
-    values.newVariables?.some((variable) => variable === undefined);
+  const hasEmptyNewVariable = (values: FormValues | undefined) =>
+    values?.newVariables?.some((variable) => variable === undefined);
   const variables = data ?? [];
   const isJsonEditorModalOpen = editingVariable !== undefined;
 
@@ -99,7 +99,7 @@ const Variables: React.FC<Props> = ({
     <Form<FormValues>
       mutators={{...arrayMutators}}
       onSubmit={async (values, form) => {
-        const {dirtyFields, initialValues = []} = form.getState();
+        const {dirtyFields = [], initialValues = []} = form.getState();
 
         const existingVariables = intersection(
           Object.keys(initialValues),
@@ -185,7 +185,7 @@ const Variables: React.FC<Props> = ({
               <TaskDetailsContainer tabIndex={-1}>
                 {match({
                   variablesLength: variables.length,
-                  newVariablesLength: values.newVariables?.length ?? 0,
+                  newVariablesLength: values?.newVariables?.length ?? 0,
                   status,
                 })
                   .with(

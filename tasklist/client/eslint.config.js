@@ -183,7 +183,6 @@ export default [
       'test-results/*',
       'playwright-report/*',
       'playwright/.cache/*',
-      'yarn.lock',
       '.eslintcache',
       '.env',
       '.prettierignore',
