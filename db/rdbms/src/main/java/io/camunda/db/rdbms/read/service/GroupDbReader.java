@@ -31,17 +31,9 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
     this.groupMapper = groupMapper;
   }
 
-  public Optional<GroupEntity> findOne(final String groupId) {
-    final var result = search(GroupQuery.of(b -> b.filter(f -> f.groupIds(groupId))));
-    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
-  }
-
-  public SearchQueryResult<GroupEntity> search(final GroupQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
-  }
-
-  private GroupEntity map(final GroupDbModel model) {
-    return new GroupEntity(model.groupKey(), model.groupId(), model.name(), model.description());
+  @Override
+  public GroupEntity getById(final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(id).orElse(null);
   }
 
   @Override
@@ -57,5 +49,18 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
     final var hits = groupMapper.search(dbQuery).stream().map(this::map).toList();
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<GroupEntity> findOne(final String groupId) {
+    final var result = search(GroupQuery.of(b -> b.filter(f -> f.groupIds(groupId))));
+    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
+  }
+
+  public SearchQueryResult<GroupEntity> search(final GroupQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
+  }
+
+  private GroupEntity map(final GroupDbModel model) {
+    return new GroupEntity(model.groupKey(), model.groupId(), model.name(), model.description());
   }
 }

@@ -92,7 +92,7 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return stringTerms(GROUP_ID, authorization.resourceIds());
   }
 }

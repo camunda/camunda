@@ -65,8 +65,18 @@ import java.util.List;
 public class NoDBSearchClientsProxy implements SearchClientsProxy {
 
   @Override
+  public AuthorizationEntity getAuthorization(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
       final AuthorizationQuery filter) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public BatchOperationEntity getBatchOperation(final String id) {
     throw new NoSecondaryStorageException();
   }
 
@@ -83,8 +93,18 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionDefinitionEntity getDecisionDefinition(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery filter) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public DecisionInstanceEntity getDecisionInstance(final String id) {
     throw new NoSecondaryStorageException();
   }
 
@@ -95,8 +115,19 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public DecisionRequirementsEntity getDecisionRequirements(
+      final long key, final boolean includeXml) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       final DecisionRequirementsQuery filter) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public FlowNodeInstanceEntity getFlowNodeInstance(final long key) {
     throw new NoSecondaryStorageException();
   }
 
@@ -107,7 +138,17 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public FormEntity getForm(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public GroupEntity getGroup(final String id) {
     throw new NoSecondaryStorageException();
   }
 
@@ -122,12 +163,28 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public IncidentEntity getIncident(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     throw new NoSecondaryStorageException();
   }
 
   @Override
-  public SearchQueryResult<MappingRuleEntity> searchMappingRules(final MappingRuleQuery filter) {
+  public MappingRuleEntity getMappingRule(final String id) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public SearchQueryResult<MappingRuleEntity> searchMappingRules(
+      final MappingRuleQuery mappingRuleQuery) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public ProcessDefinitionEntity getProcessDefinition(final long key) {
     throw new NoSecondaryStorageException();
   }
 
@@ -144,6 +201,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public ProcessInstanceEntity getProcessInstance(final long processInstanceKey) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
       final ProcessInstanceQuery query) {
     throw new NoSecondaryStorageException();
@@ -152,6 +214,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   @Override
   public List<ProcessFlowNodeStatisticsEntity> processInstanceFlowNodeStatistics(
       final long processInstanceKey) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public RoleEntity getRole(final String id) {
     throw new NoSecondaryStorageException();
   }
 
@@ -166,6 +233,11 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public TenantEntity getTenant(final String id) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
     throw new NoSecondaryStorageException();
   }
@@ -176,12 +248,27 @@ public class NoDBSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
+  public UserEntity getUser(final String id) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery userQuery) {
     throw new NoSecondaryStorageException();
   }
 
   @Override
+  public UserTaskEntity getUserTask(final long key) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
   public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
+    throw new NoSecondaryStorageException();
+  }
+
+  @Override
+  public VariableEntity getVariable(final long key) {
     throw new NoSecondaryStorageException();
   }
 

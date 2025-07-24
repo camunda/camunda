@@ -9,6 +9,9 @@ package io.camunda.search.exception;
 
 public class ErrorMessages {
 
+  public static final String ERROR_ENTITY_BY_KEY_NOT_FOUND = "%s with key '%d' not found";
+  public static final String ERROR_ENTITY_BY_ID_NOT_FOUND = "%s with id '%s' not found";
+
   public static final String ERROR_FAILED_DELETE_REQUEST = "Failed to execute delete request";
   public static final String ERROR_FAILED_FIND_ALL_QUERY = "Failed to execute findAll query";
   public static final String ERROR_FAILED_GET_ALIAS_REQUEST = "Failed to execute getAlias request";
@@ -23,7 +26,13 @@ public class ErrorMessages {
       "A single result was expected, but multiple results were found matching %s";
   public static final String ERROR_SINGLE_RESULT_NOT_FOUND =
       "A single result was expected, but none was found matching %s";
+  public static final String ERROR_GET_BY_QUERY_NOT_UNIQUE =
+      "Failed to get entity by a search request, the search query returned more than one result";
 
   public static final String ERROR_RESOURCE_ACCESS_CONTROLLER_NO_MATCHING_FOUND =
       "Failed to find a matching ResourceAccessController, make sure to set a security context using #withSecurityContext()";
+  public static final String ERROR_RESOURCE_ACCESS_DOES_NOT_CONTAIN_AUTHORIZATION =
+      "Resource Access %s does not include an authorization";
+  public static final String ERROR_RESOURCE_ACCESS_CONTROLLER_NO_TENANT_ACCESS =
+      "Tenant access was denied";
 }

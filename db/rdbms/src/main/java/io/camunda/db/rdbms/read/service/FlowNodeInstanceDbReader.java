@@ -31,14 +31,10 @@ public class FlowNodeInstanceDbReader extends AbstractEntityReader<FlowNodeInsta
     this.flowNodeInstanceMapper = flowNodeInstanceMapper;
   }
 
-  public Optional<FlowNodeInstanceEntity> findOne(final long key) {
-    final var result =
-        search(FlowNodeInstanceQuery.of(b -> b.filter(f -> f.flowNodeInstanceKeys(key))));
-    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
-  }
-
-  public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public FlowNodeInstanceEntity getByKey(
+      final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
   }
 
   @Override
@@ -55,5 +51,15 @@ public class FlowNodeInstanceDbReader extends AbstractEntityReader<FlowNodeInsta
     final var hits = flowNodeInstanceMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<FlowNodeInstanceEntity> findOne(final long key) {
+    final var result =
+        search(FlowNodeInstanceQuery.of(b -> b.filter(f -> f.flowNodeInstanceKeys(key))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
+  }
+
+  public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

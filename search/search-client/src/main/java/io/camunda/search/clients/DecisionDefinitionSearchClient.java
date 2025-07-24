@@ -14,6 +14,8 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface DecisionDefinitionSearchClient {
 
+  DecisionDefinitionEntity getDecisionDefinition(final long key);
+
   SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       DecisionDefinitionQuery filter);
 

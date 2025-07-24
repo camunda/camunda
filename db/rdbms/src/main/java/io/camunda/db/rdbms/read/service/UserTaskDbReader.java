@@ -33,14 +33,9 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
     this.userTaskMapper = userTaskMapper;
   }
 
-  public Optional<UserTaskEntity> findOne(final long userTaskKey) {
-    final var result =
-        search(UserTaskQuery.of(b -> b.filter(f -> f.userTaskKeys(List.of(userTaskKey)))));
-    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
-  }
-
-  public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public UserTaskEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
   }
 
   @Override
@@ -57,5 +52,15 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
         userTaskMapper.search(dbQuery).stream().map(UserTaskEntityMapper::toEntity).toList();
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<UserTaskEntity> findOne(final long userTaskKey) {
+    final var result =
+        search(UserTaskQuery.of(b -> b.filter(f -> f.userTaskKeys(List.of(userTaskKey)))));
+    return Optional.ofNullable(result.items()).flatMap(items -> items.stream().findFirst());
+  }
+
+  public SearchQueryResult<UserTaskEntity> search(final UserTaskQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

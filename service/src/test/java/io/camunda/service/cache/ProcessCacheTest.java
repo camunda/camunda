@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.cache.ProcessCache.Configuration;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
@@ -61,6 +62,8 @@ class ProcessCacheTest {
         new ProcessCache(
             configuration, processDefinitionServices, brokerTopologyManager, meterRegistry);
 
+    when(processDefinitionServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(processDefinitionServices);
     when(processDefinitionServices.getByKey(entity.processDefinitionKey())).thenReturn(entity);
   }
 

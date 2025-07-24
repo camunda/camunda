@@ -19,6 +19,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.cache.ProcessElementProvider.ProcessElement;
 import java.io.IOException;
@@ -75,6 +76,8 @@ class ProcessElementProviderTest {
     when(processDefinition.processDefinitionKey()).thenReturn(PROC_DEF_KEY);
     when(processDefinition.processDefinitionId()).thenReturn(PROC_DEF_ID1);
     when(processDefinitionServices.getByKey(eq(PROC_DEF_KEY))).thenReturn(processDefinition);
+    when(processDefinitionServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(processDefinitionServices);
   }
 
   private void verifyElementsBpmn1() {

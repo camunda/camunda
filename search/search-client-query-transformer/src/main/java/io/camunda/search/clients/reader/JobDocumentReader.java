@@ -12,11 +12,13 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class JobDocumentReader extends DocumentBasedReader implements JobReader {
 
-  public JobDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public JobDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override

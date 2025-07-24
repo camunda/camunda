@@ -33,10 +33,6 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-protocol</artifactId>
-    </dependency>
 
   </dependencies>
 

@@ -8,35 +8,38 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.flownodeInstanceSearchQuery;
-import static io.camunda.search.query.SearchQueryBuilders.formSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.instancio.Select.field;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
-import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
+import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.service.cache.ProcessCacheResult;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.Map;
 import java.util.Set;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +51,7 @@ public class UserTaskServiceTest {
 
   private UserTaskServices services;
   private UserTaskSearchClient client;
-  private FormSearchClient formSearchClient;
+  private FormServices formServices;
   private FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
   private VariableSearchClient variableSearchClient;
   private ProcessCache processCache;
@@ -58,7 +61,7 @@ public class UserTaskServiceTest {
   @BeforeEach
   public void before() {
     client = mock(UserTaskSearchClient.class);
-    formSearchClient = mock(FormSearchClient.class);
+    formServices = mock(FormServices.class);
     flowNodeInstanceSearchClient = mock(FlowNodeInstanceSearchClient.class);
     variableSearchClient = mock(VariableSearchClient.class);
     processCache = mock(ProcessCache.class);
@@ -69,14 +72,15 @@ public class UserTaskServiceTest {
             mock(BrokerClient.class),
             securityContextProvider,
             client,
-            formSearchClient,
+            formServices,
             flowNodeInstanceSearchClient,
             variableSearchClient,
             processCache,
             authentication);
 
     when(client.withSecurityContext(any())).thenReturn(client);
-    when(formSearchClient.withSecurityContext(any())).thenReturn(formSearchClient);
+    when(formServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(formServices);
     when(flowNodeInstanceSearchClient.withSecurityContext(any()))
         .thenReturn(flowNodeInstanceSearchClient);
     when(variableSearchClient.withSecurityContext(any())).thenReturn(variableSearchClient);
@@ -96,15 +100,10 @@ public class UserTaskServiceTest {
     public void searchVariablesShouldThrowExceptionWhenNotAuthorized() {
       // given
       final var entity = Instancio.create(UserTaskEntity.class);
-      final var flowNodeInstanceEntity =
-          Instancio.of(FlowNodeInstanceEntity.class)
-              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
-              .set(field(FlowNodeInstanceEntity::treePath), "1/2/3")
-              .create();
-      final var variable = Instancio.create(VariableEntity.class);
 
-      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      authorizeReadUserTasksForProcess(false, entity.processDefinitionId());
+      when(client.getUserTask(any(Long.class)))
+          .thenThrow(
+              new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
 
       // when
       final Executable executable =
@@ -113,12 +112,7 @@ public class UserTaskServiceTest {
       // then
       assertThat(assertThrows(ServiceException.class, executable).getStatus())
           .isEqualTo(Status.FORBIDDEN);
-      verify(client).searchUserTasks(any());
-      verify(securityContextProvider)
-          .isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readUserTask()));
+      verify(client).getUserTask(any(Long.class));
       verify(flowNodeInstanceSearchClient, never()).searchFlowNodeInstances(any());
       verify(variableSearchClient, never()).searchVariables(any());
     }
@@ -134,7 +128,7 @@ public class UserTaskServiceTest {
               .create();
       final var variable = Instancio.create(VariableEntity.class);
 
-      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(flowNodeInstanceSearchClient.searchFlowNodeInstances(
               flownodeInstanceSearchQuery(
                   q ->
@@ -167,11 +161,8 @@ public class UserTaskServiceTest {
       final var form =
           Instancio.of(FormEntity.class).set(field(FormEntity::formKey), entity.formKey()).create();
 
-      when(formSearchClient.searchForms(
-              formSearchQuery(q -> q.filter(f -> f.formKeys(entity.formKey())).singleResult())))
-          .thenReturn(SearchQueryResult.of(form));
-      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      authorizeReadUserTasksForProcess(true, entity.processDefinitionId());
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(formServices.getByKey(eq(entity.formKey()))).thenReturn(form);
 
       // when
       final var result = services.getUserTaskForm(entity.userTaskKey());
@@ -187,8 +178,7 @@ public class UserTaskServiceTest {
       final var entity =
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::formKey), null).create();
 
-      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      authorizeReadUserTasksForProcess(true, entity.processDefinitionId());
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
 
       // when
       final var result = services.getUserTaskForm(1L);
@@ -205,8 +195,7 @@ public class UserTaskServiceTest {
     void shouldReturnUserTask() {
       final var entity = Instancio.create(UserTaskEntity.class);
 
-      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      authorizeReadUserTasksForProcess(true, entity.processDefinitionId());
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
 
       final var searchQueryResult = services.getByKey(entity.userTaskKey());
 
@@ -218,12 +207,9 @@ public class UserTaskServiceTest {
       final var entity =
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
 
-      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      authorizeReadUserTasksForProcess(true, entity.processDefinitionId());
-      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
-          .thenReturn(
-              ProcessCacheResult.of(
-                  entity.processDefinitionKey(), entity.elementId(), "cached name"));
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(processCache.getCacheItem(entity.processDefinitionKey()))
+          .thenReturn(new ProcessCacheItem(Map.of(entity.elementId(), "cached name")));
 
       final var foundEntity = services.getByKey(entity.userTaskKey());
 
@@ -235,8 +221,9 @@ public class UserTaskServiceTest {
       final var entity =
           Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::name), null).create();
 
-      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      authorizeReadUserTasksForProcess(true, entity.processDefinitionId());
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(processCache.getCacheItem(entity.processDefinitionKey()))
+          .thenReturn(new ProcessCacheItem(Map.of("unknown-id", "cached name")));
 
       final var foundEntity = services.getByKey(entity.userTaskKey());
 
@@ -247,19 +234,15 @@ public class UserTaskServiceTest {
     void shouldThrowExceptionWhenNotAuthorized() {
       final var entity = Instancio.create(UserTaskEntity.class);
 
-      when(client.searchUserTasks(any())).thenReturn(SearchQueryResult.of(entity));
-      authorizeReadUserTasksForProcess(false, entity.processDefinitionId());
+      when(client.getUserTask(any(Long.class)))
+          .thenThrow(
+              new ResourceAccessDeniedException(Authorizations.USER_TASK_READ_AUTHORIZATION));
 
       final Executable executable = () -> services.getByKey(entity.userTaskKey());
 
       assertThat(assertThrows(ServiceException.class, executable).getStatus())
           .isEqualTo(Status.FORBIDDEN);
-      verify(client).searchUserTasks(any());
-      verify(securityContextProvider)
-          .isAuthorized(
-              entity.processDefinitionId(),
-              authentication,
-              Authorization.of(a -> a.processDefinition().readUserTask()));
+      verify(client).getUserTask(any(Long.class));
     }
   }
 

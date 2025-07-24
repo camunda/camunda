@@ -10,7 +10,7 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final record VariableEntity(
+public record VariableEntity(
     Long variableKey,
     String name,
     String value,
@@ -19,4 +19,5 @@ public final record VariableEntity(
     Long scopeKey,
     Long processInstanceKey,
     String processDefinitionId,
-    String tenantId) {}
+    String tenantId)
+    implements TenantOwnedEntity {}

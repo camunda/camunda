@@ -21,9 +21,16 @@ public final class SearchGetRequestTransformer
 
   @Override
   public GetRequest apply(final SearchGetRequest value) {
-    final var id = value.id();
-    final var index = value.index();
-    final var routing = value.routing();
-    return GetRequest.of(b -> b.id(id).index(index).routing(routing));
+    final var builder = new GetRequest.Builder();
+
+    builder.id(value.id());
+    builder.index(value.index());
+    builder.routing(value.routing());
+
+    final var excludes = value.sourceExcludes();
+    if (excludes != null && !excludes.isEmpty()) {
+      builder.sourceExcludes(excludes);
+    }
+    return builder.build();
   }
 }

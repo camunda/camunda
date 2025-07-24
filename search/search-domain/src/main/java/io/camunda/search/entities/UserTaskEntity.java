@@ -34,7 +34,8 @@ public record UserTaskEntity(
     String externalFormReference,
     Integer processDefinitionVersion,
     Map<String, String> customHeaders,
-    Integer priority) {
+    Integer priority)
+    implements TenantOwnedEntity {
 
   public UserTaskEntity withName(final String newName) {
     return new UserTaskEntity(

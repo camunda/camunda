@@ -7,12 +7,13 @@
  */
 package io.camunda.service;
 
+import static io.camunda.security.auth.Authorization.withAuthorization;
+import static io.camunda.service.authorization.Authorizations.MAPPING_RULE_READ_AUTHORIZATION;
+
 import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.query.MappingRuleQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.service.search.core.SearchQueryService;
@@ -47,7 +48,7 @@ public class MappingRuleServices
             mappingRuleSearchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
-                        authentication, Authorization.of(a -> a.mappingRule().read())))
+                        authentication, MAPPING_RULE_READ_AUTHORIZATION))
                 .searchMappingRules(query));
   }
 
@@ -76,13 +77,14 @@ public class MappingRuleServices
   }
 
   public MappingRuleEntity getMappingRule(final String mappingRuleId) {
-    return search(
-            SearchQueryBuilders.mappingRuleSearchQuery()
-                .filter(f -> f.mappingRuleId(mappingRuleId))
-                .singleResult()
-                .build())
-        .items()
-        .getFirst();
+    return executeSearchRequest(
+        () ->
+            mappingRuleSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication,
+                        withAuthorization(MAPPING_RULE_READ_AUTHORIZATION, mappingRuleId)))
+                .getMappingRule(mappingRuleId));
   }
 
   public CompletableFuture<MappingRuleRecord> deleteMappingRule(final String mappingRuleId) {

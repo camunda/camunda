@@ -15,6 +15,13 @@ import java.util.function.Function;
 public class AnonymousResourceAccessController implements ResourceAccessController {
 
   @Override
+  public <T> T doGet(
+      final SecurityContext securityContext,
+      final Function<ResourceAccessChecks, T> resourceChecksApplier) {
+    return doReadAnonymously(resourceChecksApplier);
+  }
+
+  @Override
   public <T> T doSearch(
       final SecurityContext securityContext,
       final Function<ResourceAccessChecks, T> resourceChecksApplier) {

@@ -14,6 +14,8 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface DecisionRequirementSearchClient {
 
+  DecisionRequirementsEntity getDecisionRequirements(final long key, final boolean includeXml);
+
   SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
       DecisionRequirementsQuery filter);
 

@@ -9,18 +9,16 @@ package io.camunda.search.clients.auth;
 
 import static io.camunda.security.auth.Authorization.WILDCARD;
 
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
+import java.util.List;
+import java.util.Optional;
 
-/**
- * Document based datastore (ES/OS) strategy implementation of {@link ResourceAccessProvider}. It
- * applies authorization to a search query by fetching the authorized resources for the
- * authenticated user and creating a new search query with the authorization applied.
- */
 public class DefaultResourceAccessProvider implements ResourceAccessProvider {
 
   private final AuthorizationChecker authorizationChecker;
@@ -30,8 +28,8 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
   }
 
   @Override
-  public ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization requiredAuthorization) {
+  public <T> ResourceAccess resolveResourceAccess(
+      final CamundaAuthentication authentication, final Authorization<T> requiredAuthorization) {
     // right now, not all Services provide an authorization with #withSecurityContext()
     // typically, the authorization check happens afterward in the respective Service
     if (requiredAuthorization == null) {
@@ -39,7 +37,7 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
     }
 
     final var resultingAuthorization =
-        new Authorization.Builder()
+        new Authorization.Builder<>()
             .resourceType(requiredAuthorization.resourceType())
             .permissionType(requiredAuthorization.permissionType());
 
@@ -62,8 +60,50 @@ public class DefaultResourceAccessProvider implements ResourceAccessProvider {
     return ResourceAccess.allowed(authorizationWithResolvedResourceIds);
   }
 
+  @Override
+  public <T> ResourceAccess hasResourceAccess(
+      final CamundaAuthentication authentication,
+      final Authorization<T> requiredAuthorization,
+      final T resource) {
+    final var resourceIdSupplier = requiredAuthorization.resourceIdSupplier();
+    final var resourceIds = requiredAuthorization.resourceIds();
+    final var resourceId =
+        Optional.ofNullable(resourceIdSupplier)
+            .map(supplier -> supplier.apply(resource))
+            .orElseGet(
+                () ->
+                    Optional.ofNullable(resourceIds)
+                        .filter(l -> l.size() == 1)
+                        .map(List::getFirst)
+                        .orElseThrow(
+                            () ->
+                                new CamundaSearchException(
+                                    "Expected one resource id to check resource access, but received none or more than one")));
+
+    return hasResourceAccessByResourceId(authentication, requiredAuthorization, resourceId);
+  }
+
+  @Override
+  public <T> ResourceAccess hasResourceAccessByResourceId(
+      final CamundaAuthentication authentication,
+      final Authorization<T> requiredAuthorization,
+      final String resourceId) {
+    final var securityContext = createSecurityContext(authentication, requiredAuthorization);
+    final var isAuthorized = authorizationChecker.isAuthorized(resourceId, securityContext);
+    final var checkedAuthorization =
+        Authorization.of(
+            a ->
+                a.resourceType(requiredAuthorization.resourceType())
+                    .permissionType(requiredAuthorization.permissionType())
+                    .resourceIds(List.of(resourceId)));
+
+    return isAuthorized
+        ? ResourceAccess.allowed(checkedAuthorization)
+        : ResourceAccess.denied(checkedAuthorization);
+  }
+
   private SecurityContext createSecurityContext(
-      final CamundaAuthentication authentication, final Authorization authorization) {
+      final CamundaAuthentication authentication, final Authorization<?> authorization) {
     return SecurityContext.of(
         s -> s.withAuthentication(authentication).withAuthorization(authorization));
   }

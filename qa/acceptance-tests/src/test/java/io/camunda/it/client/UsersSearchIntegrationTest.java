@@ -69,7 +69,7 @@ public class UsersSearchIntegrationTest {
     assertThatThrownBy(() -> camundaClient.newUserGetRequest("testUsername").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining("A single result was expected, but none was found matching");
+        .hasMessageContaining("User with id 'testUsername' not found");
   }
 
   @Test

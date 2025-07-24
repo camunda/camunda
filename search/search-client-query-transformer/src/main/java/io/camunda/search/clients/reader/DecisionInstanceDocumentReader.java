@@ -12,12 +12,23 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class DecisionInstanceDocumentReader extends DocumentBasedReader
     implements DecisionInstanceReader {
 
-  public DecisionInstanceDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public DecisionInstanceDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
+  }
+
+  @Override
+  public DecisionInstanceEntity getById(
+      final String id, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .getByQuery(
+            DecisionInstanceQuery.of(b -> b.filter(f -> f.decisionInstanceIds(id)).singleResult()),
+            io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity.class);
   }
 
   @Override

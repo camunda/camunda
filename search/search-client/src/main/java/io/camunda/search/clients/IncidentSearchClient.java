@@ -14,6 +14,8 @@ import io.camunda.security.auth.SecurityContext;
 
 public interface IncidentSearchClient {
 
+  IncidentEntity getIncident(final long key);
+
   SearchQueryResult<IncidentEntity> searchIncidents(IncidentQuery filter);
 
   IncidentSearchClient withSecurityContext(SecurityContext securityContext);

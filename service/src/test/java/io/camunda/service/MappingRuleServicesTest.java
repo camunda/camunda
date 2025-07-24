@@ -110,11 +110,10 @@ public class MappingRuleServicesTest {
   }
 
   @Test
-  public void shouldReturnSingleVariableForFind() {
+  public void shouldReturnSingleMappingForFind() {
     // given
     final var entity = mock(MappingRuleEntity.class);
-    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
-    when(client.searchMappingRules(any())).thenReturn(result);
+    when(client.getMappingRule(any(String.class))).thenReturn(entity);
 
     // when
     final var searchQueryResult = services.getMappingRule("mappingRuleId");

@@ -10,16 +10,26 @@ package io.camunda.security.reader;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 
-/** Strategy to apply authorization to a search query. */
 public interface ResourceAccessProvider {
 
-  ResourceAccessProvider NONE = (authentication, authorization) -> ResourceAccess.wildcard(null);
-
   /**
-   * Apply authorization to a search query.
-   *
-   * @return the search query request with authorization applied
+   * Resolves the given {@link CamundaAuthentication authentication} and {@link Authorization
+   * requiredAuthorization} into a {@link ResourceAccess}. The resulting {@link
+   * ResourceAccess#authorization()} shall contain the resource ids the principal is granted to
+   * access if access is not denied.
    */
-  ResourceAccess resolveResourceAccess(
-      final CamundaAuthentication authentication, final Authorization requiredAuthorization);
+  <T> ResourceAccess resolveResourceAccess(
+      final CamundaAuthentication authentication, final Authorization<T> requiredAuthorization);
+
+  /** Returns a {@link ResourceAccess} allowing or denying access to the given resource. */
+  <T> ResourceAccess hasResourceAccess(
+      final CamundaAuthentication authentication,
+      Authorization<T> requiredAuthorization,
+      final T resource);
+
+  /** Returns a {@link ResourceAccess} allowing or denying access to the given resource id. */
+  <T> ResourceAccess hasResourceAccessByResourceId(
+      final CamundaAuthentication authentication,
+      final Authorization<T> requiredAuthorization,
+      final String resourceId);
 }

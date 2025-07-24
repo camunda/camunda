@@ -75,7 +75,7 @@ public final class DecisionInstanceFilterTransformer
   }
 
   @Override
-  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization authorization) {
+  protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return stringTerms(DECISION_ID, authorization.resourceIds());
   }
 

@@ -12,14 +12,16 @@ import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class GroupMemberDocumentReader extends DocumentBasedReader implements GroupMemberReader {
 
-  public GroupMemberDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public GroupMemberDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override

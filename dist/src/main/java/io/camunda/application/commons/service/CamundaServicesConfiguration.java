@@ -100,12 +100,12 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
-      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
+      final DecisionRequirementsServices decisionRequirementsServices) {
     return new DecisionDefinitionServices(
         brokerClient,
         securityContextProvider,
         decisionDefinitionSearchClient,
-        decisionRequirementSearchClient,
+        decisionRequirementsServices,
         null);
   }
 
@@ -134,13 +134,13 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
-      final IncidentSearchClient incidentSearchClient) {
+      final IncidentServices incidentServices) {
     return new ProcessInstanceServices(
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
-        incidentSearchClient,
+        incidentServices,
         null);
   }
 
@@ -216,7 +216,7 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
-      final FormSearchClient formSearchClient,
+      final FormServices formServices,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final VariableSearchClient variableSearchClient,
       final ProcessCache processCache) {
@@ -224,7 +224,7 @@ public class CamundaServicesConfiguration {
         brokerClient,
         securityContextProvider,
         userTaskSearchClient,
-        formSearchClient,
+        formServices,
         flowNodeInstanceSearchClient,
         variableSearchClient,
         processCache,

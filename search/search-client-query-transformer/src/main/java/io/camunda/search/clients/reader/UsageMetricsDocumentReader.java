@@ -13,11 +13,13 @@ import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public class UsageMetricsDocumentReader extends DocumentBasedReader implements UsageMetricsReader {
 
-  public UsageMetricsDocumentReader(final SearchClientBasedQueryExecutor executor) {
-    super(executor);
+  public UsageMetricsDocumentReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptor indexDescriptor) {
+    super(executor, indexDescriptor);
   }
 
   @Override

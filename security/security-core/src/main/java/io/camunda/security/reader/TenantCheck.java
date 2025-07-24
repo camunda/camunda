@@ -9,6 +9,9 @@ package io.camunda.security.reader;
 
 import java.util.List;
 
+/**
+ * Enables or disables a {@link TenantCheck}. If enabled, then a list of tenantIds must be provided.
+ */
 public record TenantCheck(boolean enabled, List<String> tenantIds) {
 
   public static TenantCheck enabled(final List<String> tenantIds) {

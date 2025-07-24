@@ -15,15 +15,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -67,13 +67,7 @@ public final class IncidentServiceTest {
     final var entity = mock(IncidentEntity.class);
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
-    when(client.searchIncidents(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
-    when(securityContextProvider.isAuthorized(
-            processId,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(true);
+    when(client.getIncident(any(Long.class))).thenReturn(entity);
     // when
     final var searchQueryResult = services.getByKey(1L);
 
@@ -87,13 +81,8 @@ public final class IncidentServiceTest {
     final var entity = mock(IncidentEntity.class);
     final var processId = "processId";
     when(entity.processDefinitionId()).thenReturn(processId);
-    when(client.searchIncidents(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
-    when(securityContextProvider.isAuthorized(
-            processId,
-            authentication,
-            Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .thenReturn(false);
+    when(client.getIncident(any(Long.class)))
+        .thenThrow(new ResourceAccessDeniedException(Authorizations.INCIDENT_READ_AUTHORIZATION));
     // when
     final Executable executeGetByKey = () -> services.getByKey(1L);
     // then

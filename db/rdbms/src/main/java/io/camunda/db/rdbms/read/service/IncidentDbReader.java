@@ -31,13 +31,9 @@ public class IncidentDbReader extends AbstractEntityReader<IncidentEntity>
     this.incidentMapper = incidentMapper;
   }
 
-  public Optional<IncidentEntity> findOne(final long key) {
-    final var result = search(IncidentQuery.of(b -> b.filter(f -> f.incidentKeys(key))));
-    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
-  }
-
-  public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
-    return search(query, ResourceAccessChecks.disabled());
+  @Override
+  public IncidentEntity getByKey(final long key, final ResourceAccessChecks resourceAccessChecks) {
+    return findOne(key).orElse(null);
   }
 
   @Override
@@ -53,5 +49,14 @@ public class IncidentDbReader extends AbstractEntityReader<IncidentEntity>
     final var hits = incidentMapper.search(dbQuery);
     ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
+  }
+
+  public Optional<IncidentEntity> findOne(final long key) {
+    final var result = search(IncidentQuery.of(b -> b.filter(f -> f.incidentKeys(key))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
+  }
+
+  public SearchQueryResult<IncidentEntity> search(final IncidentQuery query) {
+    return search(query, ResourceAccessChecks.disabled());
   }
 }

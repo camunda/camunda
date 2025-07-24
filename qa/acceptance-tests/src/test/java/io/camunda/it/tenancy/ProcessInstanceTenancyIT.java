@@ -8,8 +8,10 @@
 package io.camunda.it.tenancy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
@@ -102,6 +104,41 @@ public class ProcessInstanceTenancyIT {
     assertThat(result.items()).hasSize(0);
   }
 
+  @Test
+  void getByKeyShouldReturnTenantOwnedProcessInstance(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given
+    final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID, TENANT_A);
+    // when
+    final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(result.getTenantId()).isEqualTo(TENANT_A);
+  }
+
+  @Test
+  void getByKeyShouldThrowNotFoundException(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER2) final CamundaClient camundaClient) {
+    // given
+    final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID, TENANT_A);
+
+    // when
+    final var exception =
+        assertThrowsExactly(
+            ProblemException.class,
+            () -> camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join());
+    // then
+    assertThat(exception.getMessage()).startsWith("Failed with code 404");
+    assertThat(exception.details()).isNotNull();
+    assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
+    assertThat(exception.details().getStatus()).isEqualTo(404);
+    assertThat(exception.details().getDetail())
+        .contains("Process Instance with key '%s' not found".formatted(processInstanceKey));
+  }
+
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
     camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
   }
@@ -147,5 +184,17 @@ public class ProcessInstanceTenancyIT {
                           .items())
                   .hasSize(2);
             });
+  }
+
+  private long getProcessInstanceKey(
+      final CamundaClient camundaClient, final String processId, final String tenantId) {
+    return camundaClient
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.processDefinitionId(processId).tenantId(tenantId))
+        .send()
+        .join()
+        .items()
+        .getFirst()
+        .getProcessInstanceKey();
   }
 }
