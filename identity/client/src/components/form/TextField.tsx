@@ -42,14 +42,16 @@ export type TextFieldProps = {
   placeholder?: string;
   cols?: number;
   autoFocus?: boolean;
-  onBlur?: () => void;
+  onBlur?: (newValue: string) => void;
   readOnly?: boolean;
   onChange?: (newValue: string) => void;
+  validate?: (newValue: string) => boolean;
 } & (TextInputProps | TextAreaProps | PasswordInputProps);
 
 const TextField: FC<TextFieldProps> = ({
   onChange,
   onBlur,
+  validate,
   errors = [],
   value,
   helperText,
@@ -75,10 +77,18 @@ const TextField: FC<TextFieldProps> = ({
     placeholder: placeholder,
     onChange: (
       e: ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>,
-    ) => onChange?.(e.currentTarget.value),
+    ) => {
+      onChange?.(e.currentTarget.value);
+      validate?.(e.currentTarget.value);
+    },
     invalid: errors && errors.length > 0,
     invalidText: errors?.map((e) => t(e)).join(" "),
-    onBlur: onBlur,
+    onBlur: (
+      e: ChangeEvent<HTMLInputElement> | React.ChangeEvent<HTMLTextAreaElement>,
+    ) => {
+      onBlur?.(e.currentTarget.value);
+      validate?.(e.currentTarget.value);
+    },
     readOnly: readOnly,
     ...(autoFocus && { "data-modal-primary-focus": true }),
   };
