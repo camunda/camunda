@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateUserResponse;
+import io.camunda.client.api.response.UpdateUserResponse;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.it.util.TestHelper;
@@ -28,7 +29,6 @@ import io.camunda.zeebe.test.util.Strings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -153,28 +153,17 @@ class UserAuthorizationIT {
     final String updatedName = "updated_name";
     final String updatedEmail = "updated_email@email.com";
 
-    adminClient
-        .newUpdateUserCommand(USER_1.username())
-        .name(updatedName)
-        .email(updatedEmail)
-        .send()
-        .join();
+    final UpdateUserResponse response =
+        adminClient
+            .newUpdateUserCommand(USER_1.username())
+            .name(updatedName)
+            .email(updatedEmail)
+            .send()
+            .join();
 
-    Awaitility.await("User is updated")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        adminClient
-                            .newUsersSearchRequest()
-                            .filter(fn -> fn.username(USER_1.username()))
-                            .send()
-                            .join()
-                            .items()
-                            .getFirst())
-                    .matches(u -> u.getUsername().equals(USER_1.username()))
-                    .matches(u -> u.getEmail().equals(updatedEmail))
-                    .matches(u -> u.getName().equals(updatedName)));
+    assertThat(response.getUsername()).isEqualTo(USER_1.username());
+    assertThat(response.getName()).isEqualTo(updatedName);
+    assertThat(response.getEmail()).isEqualTo(updatedEmail);
   }
 
   @Test
