@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.security.auth.AuthorizationScope.AuthorizationScopeFactory;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -274,7 +275,8 @@ class ProcessStoreOpenSearchTest {
         .thenReturn(mock(io.camunda.security.auth.SecurityContext.class));
 
     if (isAuthorizated) {
-      when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of("*"));
+      when(authorizationChecker.retrieveAuthorizedResourceKeys(any()))
+          .thenReturn(List.of(AuthorizationScopeFactory.wildcard()));
     } else {
       when(authorizationChecker.retrieveAuthorizedResourceKeys(any())).thenReturn(List.of());
     }
