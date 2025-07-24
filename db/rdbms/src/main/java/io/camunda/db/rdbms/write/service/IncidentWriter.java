@@ -61,7 +61,7 @@ public class IncidentWriter {
             incident.incidentKey(),
             "io.camunda.db.rdbms.sql.IncidentMapper.update",
             incident.truncateErrorMessage(
-                vendorDatabaseProperties.variableValuePreviewSize(),
+                vendorDatabaseProperties.errorMessageSize(),
                 vendorDatabaseProperties.columnMaxBytes())));
   }
 

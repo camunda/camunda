@@ -7,8 +7,6 @@
  */
 package io.camunda.db.rdbms.write.util;
 
-import static io.camunda.db.rdbms.write.util.TruncateUtil.truncateBytes;
-
 import java.nio.charset.StandardCharsets;
 
 public class TruncateUtil {
@@ -46,10 +44,10 @@ public class TruncateUtil {
 
     var truncatedVariable = original;
 
-    while (truncatedVariable.getBytes().length > maxBytes) {
+    while (truncatedVariable.getBytes(StandardCharsets.UTF_8).length > maxBytes) {
       truncatedVariable = truncatedVariable.substring(0, truncatedVariable.length() - 1);
 
-      if (truncatedVariable.getBytes().length <= maxBytes) {
+      if (truncatedVariable.getBytes(StandardCharsets.UTF_8).length <= maxBytes) {
         return truncatedVariable;
       }
     }
