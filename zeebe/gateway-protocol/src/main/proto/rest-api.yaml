@@ -5467,9 +5467,6 @@ components:
         description:
           type: string
           description: The tenant description.
-        tenantKey:
-          type: string
-          description: The unique system-generated internal tenant ID.
     TenantSearchQuerySortRequest:
       type: object
       properties:

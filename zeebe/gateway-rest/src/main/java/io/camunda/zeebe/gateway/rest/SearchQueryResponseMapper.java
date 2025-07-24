@@ -661,7 +661,6 @@ public final class SearchQueryResponseMapper {
 
   public static TenantResult toTenant(final TenantEntity tenantEntity) {
     return new TenantResult()
-        .tenantKey(KeyUtil.keyToString(tenantEntity.key()))
         .name(tenantEntity.name())
         .description(tenantEntity.description())
         .tenantId(tenantEntity.tenantId());
