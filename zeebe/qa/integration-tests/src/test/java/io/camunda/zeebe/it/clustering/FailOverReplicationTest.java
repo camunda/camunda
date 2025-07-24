@@ -126,9 +126,18 @@ public class FailOverReplicationTest {
     // when
     clusteringRule.connect(previousLeader);
 
-    // then
-    final var receivedSnapshot = clusteringRule.waitForSnapshotAtBroker(previousLeader);
-    assertThat(receivedSnapshot).isEqualTo(snapshotMetadata);
+    // then -- reconnected member is forced to receive a snapshot because leader has compacted the
+    // log after taking the snapshot.
+    Awaitility.await("snapshot received")
+        .pollInterval(Duration.ofMillis(100))
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                assertThat(clusteringRule.getSnapshot(previousLeader))
+                    .hasValueSatisfying(
+                        id ->
+                            assertThat(id.getIndex())
+                                .isGreaterThanOrEqualTo(snapshotMetadata.getIndex())));
   }
 
   // regression test for https://github.com/zeebe-io/zeebe/issues/4810
