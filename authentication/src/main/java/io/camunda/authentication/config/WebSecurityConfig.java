@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.authentication.ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.authentication.ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 
@@ -14,6 +16,8 @@ import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
+import io.camunda.authentication.ConditionalOnSecondaryStorageDisabled;
+import io.camunda.authentication.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
@@ -375,6 +379,7 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  @ConditionalOnSecondaryStorageEnabled
   public static class BasicConfiguration {
     @Bean
     @ConditionalOnMissingBean(UserDetailsService.class)
@@ -610,6 +615,7 @@ public class WebSecurityConfig {
 
     @Bean
     @Order(ORDER_WEBAPP_API)
+    @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
@@ -725,19 +731,51 @@ public class WebSecurityConfig {
     }
   }
 
+  /**
+   * Configuration that provides fail-fast behavior when Basic Authentication is configured but
+   * secondary storage is disabled (camunda.database.type=none). This prevents misleading security
+   * flows and provides clear error messages.
+   */
+  @Configuration
+  @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
+  @ConditionalOnSecondaryStorageDisabled
+  public static class BasicAuthenticationNoDbConfiguration {
+
+    @Bean
+    public BasicAuthenticationNoDbFailFastBean basicAuthenticationNoDbFailFastBean() {
+      throw new IllegalStateException(
+          "Basic Authentication is not supported when secondary storage is disabled ("
+              + PROPERTY_CAMUNDA_DATABASE_TYPE
+              + "="
+              + CAMUNDA_DATABASE_TYPE_NONE
+              + "). Basic Authentication requires access to user data "
+              + "stored in secondary storage. Please either enable secondary storage by configuring "
+              + PROPERTY_CAMUNDA_DATABASE_TYPE
+              + "to a supported database type, or use another authentication method by "
+              + "updating the camunda.security.authentication.method configuration.");
+    }
+  }
+
+  /** Marker bean for Basic Auth no-db fail-fast configuration. */
+  public static class BasicAuthenticationNoDbFailFastBean {}
+
   protected static class NoContentResponseHandler
       implements AuthenticationSuccessHandler, LogoutSuccessHandler {
 
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
     @Override
     public void onLogoutSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       onAuthenticationSuccess(request, response, authentication);
     }
@@ -746,7 +784,9 @@ public class WebSecurityConfig {
   protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       super.onAuthenticationSuccess(request, response, authentication);
 
