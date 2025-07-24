@@ -129,6 +129,13 @@ public class EvaluationResultTest {
   }
 
   @Test
+  public void dateTimeExpressionWithZeroSeconds() {
+    final var evaluationResult = evaluateExpression("=date and time(\"2025-04-17T07:42:00Z\")");
+
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"2025-04-17T07:42:00Z\""));
+  }
+
+  @Test
   public void localDateTimeExpression() {
     final var evaluationResult = evaluateExpression("=date and time(\"2020-04-01T10:31:10\")");
 
@@ -142,6 +149,20 @@ public class EvaluationResultTest {
     assertThat(evaluationResult.getNumber()).isNull();
     assertThat(evaluationResult.getList()).isNull();
     assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"2020-04-01T10:31:10\""));
+  }
+
+  @Test
+  public void localDateTimeExpressionWithZeroSeconds() {
+    final var evaluationResult = evaluateExpression("=date and time(\"2020-04-01T10:31:00\")");
+
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"2020-04-01T10:31:00\""));
+  }
+
+  @Test
+  public void zonedTimeExpressionWithZeroSeconds() {
+    final var evaluationResult = evaluateExpression("=time(\"10:31:00Z\")");
+
+    assertThat(evaluationResult.toBuffer()).isEqualTo(asMsgPack("\"10:31:00Z\""));
   }
 
   @Test
