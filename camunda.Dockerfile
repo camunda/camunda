@@ -5,8 +5,8 @@
 
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
-#ARG BASE_IMAGE="reg.mini.dev/openjre:21"
-#ARG BASE_DIGEST="sha256:?"
+ARG BASE_IMAGE="reg.mini.dev/openjre:21"
+ARG BASE_DIGEST="sha256:369630b84c8cf3305955aca855c3941bc03c45afd52aeb1083195b9fc24c775c"
 ARG JDK_IMAGE=""
 
 # set to "build" to build camunda from scratch instead of using a distball
@@ -57,8 +57,7 @@ RUN chmod -R 0775 ${CAMUNDA_HOME}
 ### Application Image ###
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
-#FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
-FROM reg.mini.dev/openjre:21-dev AS app
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -91,6 +90,9 @@ LABEL io.openshift.non-scalable="false"
 LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 LABEL io.openshift.wants="elasticsearch"
+
+# This label will keep changing so overriding to allow us to use the golden label set
+LABEL io.minimus.images.version=""
 
 ENV CAMUNDA_HOME=/usr/local/camunda
 ENV PATH="${CAMUNDA_HOME}/bin:${PATH}"
