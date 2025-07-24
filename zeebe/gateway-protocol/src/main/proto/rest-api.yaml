@@ -7726,9 +7726,6 @@ components:
         email:
           description: The email of the user.
           type: "string"
-        userKey:
-          description: The key of the user.
-          type: "string"
     UserSearchResult:
       type: object
       allOf:

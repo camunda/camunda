@@ -874,11 +874,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserResult toUser(final UserEntity user) {
-    return new UserResult()
-        .userKey(KeyUtil.keyToString(user.userKey()))
-        .username(user.username())
-        .email(user.email())
-        .name(user.name());
+    return new UserResult().username(user.username()).email(user.email()).name(user.name());
   }
 
   private static List<DecisionInstanceResult> toDecisionInstances(
