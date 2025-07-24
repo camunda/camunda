@@ -367,7 +367,8 @@ public class CamundaMultiDBExtension
       keycloak.realms().create(realm);
     }
     setupUserInKeycloak(
-        TestStandaloneBroker.DEFAULT_MAPPING_ID, TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_VALUE);
+        TestStandaloneBroker.DEFAULT_MAPPING_RULE_ID,
+        TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_VALUE);
 
     return keycloakContainer;
   }

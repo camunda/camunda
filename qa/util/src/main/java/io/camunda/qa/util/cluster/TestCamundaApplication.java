@@ -9,7 +9,7 @@ package io.camunda.qa.util.cluster;
 
 import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_NAME;
 import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_VALUE;
-import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_ID;
+import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_RULE_ID;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
@@ -23,7 +23,7 @@ import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
-import io.camunda.security.configuration.ConfiguredMapping;
+import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -110,8 +110,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         .getInitialization()
         .getMappingRules()
         .add(
-            new ConfiguredMapping(
-                DEFAULT_MAPPING_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));
+            new ConfiguredMappingRule(
+                DEFAULT_MAPPING_RULE_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));
     securityConfig
         .getInitialization()
         .getDefaultRoles()
@@ -120,8 +120,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
             Map.of(
                 "users",
                 List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
-                "mappings",
-                List.of(DEFAULT_MAPPING_ID)));
+                "mappingRules",
+                List.of(DEFAULT_MAPPING_RULE_ID)));
 
     //noinspection resource
     withBean("config", brokerProperties, BrokerBasedProperties.class)

@@ -44,7 +44,7 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
     adminCamundaClient =
         createAuthenticatedClient(
             application.application(),
-            TestStandaloneBroker.DEFAULT_MAPPING_ID,
+            TestStandaloneBroker.DEFAULT_MAPPING_RULE_ID,
             TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_VALUE);
   }
 

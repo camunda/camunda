@@ -16,7 +16,7 @@ import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.S
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.security.configuration.ConfiguredMapping;
+import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -42,7 +42,7 @@ import org.springframework.util.unit.DataSize;
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker>, TestStandaloneApplication<TestStandaloneBroker> {
-  public static final String DEFAULT_MAPPING_ID = "default";
+  public static final String DEFAULT_MAPPING_RULE_ID = "default";
   public static final String DEFAULT_MAPPING_CLAIM_NAME = "client_id";
   public static final String DEFAULT_MAPPING_CLAIM_VALUE = "default";
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
@@ -86,8 +86,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         .getInitialization()
         .getMappingRules()
         .add(
-            new ConfiguredMapping(
-                DEFAULT_MAPPING_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));
+            new ConfiguredMappingRule(
+                DEFAULT_MAPPING_RULE_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));
     securityConfig
         .getInitialization()
         .getDefaultRoles()
@@ -97,7 +97,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 "users",
                 List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
                 "mappingRules",
-                List.of(DEFAULT_MAPPING_ID)));
+                List.of(DEFAULT_MAPPING_RULE_ID)));
 
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     withProperty(
