@@ -226,33 +226,31 @@ class SegmentedJournalReader implements JournalReader {
   }
 
   private boolean unsafeHasNext() {
-    if (currentReader.hasNext()) {
-      return true;
-    }
-
     if (!currentSegment.isOpen()) {
       // When the segment has been deleted concurrently, we do not want to allow the readers to
       // read further until the reader is reset.
       return false;
     }
     final long nextIndex = getNextIndex();
-    while (true) {
+
+    while (!currentReader.hasNext() || currentReader.getNextIndex() != nextIndex) {
+      // the current reader is exhausted, or we are not at the expected index. The latter condition
+      // only occurs when we already switched to another segment that doesn't contain the expected
+      // next index.
       final Segment nextSegment = journal.getNextSegment(currentSegment.index());
-      LOG.trace("Segment {} is done, rolling over to {}", currentSegment, nextSegment);
-      if (nextSegment != null) {
-        final boolean segmentsOverlapping = nextSegment.index() <= currentSegment.lastIndex();
-        replaceCurrentSegment(nextSegment);
-        // If segments are overlapping we need to seek past the new segment's first index to the
-        // previous segment's expected next index to avoid reading the same entries again
-        final var expectedIndex = segmentsOverlapping ? nextIndex : getNextIndex();
-        currentReader.seek(expectedIndex);
-        if (expectedIndex == currentReader.getNextIndex()) {
-          return currentReader.hasNext();
-        }
-      } else {
+      LOG.trace("Segment {} exhausted, switching to next segment: {}", currentSegment, nextSegment);
+      if (nextSegment == null) {
+        // We ran out of segments, so we can't continue reading.
         return false;
       }
+      replaceCurrentSegment(nextSegment);
+      if (currentReader.getNextIndex() != nextIndex) {
+        // The new segment had an overlap with the previous segment, seek for the index where we
+        // need to continue reading from.
+        currentReader.seek(nextIndex);
+      }
     }
+    return true;
   }
 
   private void replaceCurrentSegment(final Segment nextSegment) {
