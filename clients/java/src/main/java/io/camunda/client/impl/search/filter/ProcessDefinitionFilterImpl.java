@@ -80,8 +80,8 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
-  public ProcessDefinitionFilter hasStartForm(final boolean formKey) {
-    filter.hasStartForm(formKey);
+  public ProcessDefinitionFilter hasStartForm(final boolean hasStartForm) {
+    filter.hasStartForm(hasStartForm);
     return this;
   }
 

@@ -85,8 +85,8 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
   /**
    * Filters process definitions by having or not a form to start the process
    *
-   * @param formKey boolean to indicate how to filter
+   * @param hasStartForm boolean to indicate how to filter
    * @return the updated filter
    */
-  ProcessDefinitionFilter hasStartForm(final boolean formKey);
+  ProcessDefinitionFilter hasStartForm(final boolean hasStartForm);
 }
