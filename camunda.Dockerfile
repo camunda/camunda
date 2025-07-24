@@ -94,8 +94,12 @@ ENV PATH="${CAMUNDA_HOME}/bin:${PATH}"
 # We know there's no need to check for musl on this image
 ENV ROCKSDB_MUSL_LIBC=false
 
+USER 1001:1001
+
 WORKDIR ${CAMUNDA_HOME}
+
 EXPOSE 8080 26500 26501 26502
+
 VOLUME /tmp
 VOLUME ${CAMUNDA_HOME}/data
 VOLUME ${CAMUNDA_HOME}/logs
@@ -105,6 +109,5 @@ COPY --from=setup /etc/group /etc/group
 COPY --from=setup ${CAMUNDA_HOME} ${CAMUNDA_HOME}
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
-USER 1001:1001
 
 ENTRYPOINT ["tini", "--", "/usr/local/camunda/bin/camunda"]
