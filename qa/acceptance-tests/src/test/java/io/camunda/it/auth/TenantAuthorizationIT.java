@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
-import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.TenantGroup;
@@ -109,8 +108,7 @@ class TenantAuthorizationIT {
         .untilAsserted(
             () -> {
               final var tenantsSearchResponse = adminClient.newTenantsSearchRequest().send().join();
-              Assertions.assertThat(
-                      tenantsSearchResponse.items().stream().map(Tenant::getTenantId))
+              Assertions.assertThat(tenantsSearchResponse.items().stream().map(Tenant::getTenantId))
                   .containsAll(Arrays.asList(TENANT_ID_1, TENANT_ID_2));
             });
   }
