@@ -15,11 +15,14 @@
  */
 package io.camunda.client.user;
 
+import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.github.tomakehurst.wiremock.http.RequestMethod;
 import io.camunda.client.protocol.rest.UserUpdateRequest;
 import io.camunda.client.util.ClientRestTest;
+import io.camunda.client.util.RestGatewayService;
 import org.junit.jupiter.api.Test;
 
 public class UpdateUserTest extends ClientRestTest {
@@ -38,6 +41,10 @@ public class UpdateUserTest extends ClientRestTest {
     assertThat(request.getName()).isEqualTo(NAME);
     assertThat(request.getEmail()).isEqualTo(EMAIL);
     assertThat(request.getPassword()).isEqualTo(PASSWORD);
+
+    final String requestPath = RestGatewayService.getLastRequest().getUrl();
+    assertThat(requestPath).isEqualTo(REST_API_PATH + "/users/" + USERNAME);
+    assertThat(RestGatewayService.getLastRequest().getMethod()).isEqualTo(RequestMethod.PUT);
   }
 
   @Test
