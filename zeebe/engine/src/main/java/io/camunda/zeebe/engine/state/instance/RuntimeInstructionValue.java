@@ -22,8 +22,9 @@ public final class RuntimeInstructionValue extends UnpackedObject implements DbV
           "type", RuntimeInstructionType.class, RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE);
 
   public RuntimeInstructionValue() {
-    super(1);
+    super(2);
     declareProperty(afterElementIdProp);
+    declareProperty(typeProp);
   }
 
   public String getAfterElementId() {
