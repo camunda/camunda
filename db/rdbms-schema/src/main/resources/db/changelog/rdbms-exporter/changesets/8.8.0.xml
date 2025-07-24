@@ -12,7 +12,7 @@
   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-  <changeSet id="create_exporter_position_table" author="pwunderlich">
+  <changeSet id="create_exporter_position_table" author="camunda">
     <createTable tableName="${prefix}EXPORTER_POSITION">
       <column name="PARTITION_ID" type="NUMBER">
         <constraints primaryKey="true"/>
@@ -24,7 +24,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="create_process_deployment_table" author="cthiel">
+  <changeSet id="create_process_deployment_table" author="camunda">
     <createTable tableName="${prefix}PROCESS_DEFINITION">
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -44,7 +44,7 @@
     </createIndex>
   </changeSet>
 
-  <changeSet id="create_process_instance_table" author="cthiel">
+  <changeSet id="create_process_instance_table" author="camunda">
     <createTable tableName="${prefix}PROCESS_INSTANCE">
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -71,7 +71,7 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_variable_table" author="pwunderlich">
+  <changeSet id="create_variable_table" author="camunda">
     <createTable tableName="${prefix}VARIABLE">
       <column name="VAR_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -109,7 +109,7 @@
   </changeSet>
 
 
-  <changeSet id="create_flow_node_table" author="cthiel">
+  <changeSet id="create_flow_node_table" author="camunda">
     <createTable tableName="${prefix}FLOW_NODE_INSTANCE">
       <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -137,7 +137,7 @@
     </modifySql>
   </changeSet>
 
-  <changeSet author="pwunderlich" id="create_usertask_table">
+  <changeSet author="camunda" id="create_usertask_table">
     <createTable tableName="${prefix}USER_TASK">
       <column name="USER_TASK_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -202,7 +202,7 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_incident" author="cthiel">
+  <changeSet id="create_incident" author="camunda">
     <createTable tableName="${prefix}INCIDENT">
       <column name="INCIDENT_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -232,7 +232,7 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_decision_definition_table" author="cthiel">
+  <changeSet id="create_decision_definition_table" author="camunda">
     <createTable tableName="${prefix}DECISION_DEFINITION">
       <column name="DECISION_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -250,7 +250,7 @@
     </createIndex>
   </changeSet>
 
-  <changeSet id="create_decision_requirements_table" author="cthiel">
+  <changeSet id="create_decision_requirements_table" author="camunda">
     <createTable tableName="${prefix}DECISION_REQUIREMENTS">
       <column name="DECISION_REQUIREMENTS_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -268,7 +268,7 @@
     </createIndex>
   </changeSet>
 
-  <changeSet id="create_decision_instance_table" author="cthiel">
+  <changeSet id="create_decision_instance_table" author="camunda">
     <createTable tableName="${prefix}DECISION_INSTANCE">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
@@ -301,7 +301,7 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_decision_instance_input_table" author="cthiel">
+  <changeSet id="create_decision_instance_input_table" author="camunda">
     <createTable tableName="${prefix}DECISION_INSTANCE_INPUT">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(255)">
         <constraints
@@ -320,7 +320,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="create_decision_instance_output_table" author="cthiel">
+  <changeSet id="create_decision_instance_output_table" author="camunda">
     <createTable tableName="${prefix}DECISION_INSTANCE_OUTPUT">
       <column name="DECISION_INSTANCE_ID" type="VARCHAR(255)">
         <constraints
@@ -343,7 +343,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="create_user_table" author="cthiel">
+  <changeSet id="create_user_table" author="camunda">
     <createTable tableName="${prefix}USERS">
       <column name="USERNAME" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
@@ -355,7 +355,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="create_form_table" author="pwunderlich">
+  <changeSet id="create_form_table" author="camunda">
     <createTable tableName="${prefix}FORM">
       <column name="FORM_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
@@ -375,7 +375,7 @@
     </createIndex>
   </changeSet>
 
-  <changeSet id="create_tenant_table" author="cthiel">
+  <changeSet id="create_tenant_table" author="camunda">
     <createTable tableName="${prefix}TENANT">
       <column name="TENANT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
@@ -386,7 +386,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="tenant_members_table" author="cthiel">
+  <changeSet id="tenant_members_table" author="camunda">
     <createTable tableName="${prefix}TENANT_MEMBER">
       <column name="TENANT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
@@ -401,7 +401,7 @@
   </changeSet>
 
 
-  <changeSet id="create_role_table" author="cthiel">
+  <changeSet id="create_role_table" author="camunda">
     <createTable tableName="${prefix}ROLES">
       <column name="ROLE_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
@@ -412,7 +412,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="role_members_table" author="cthiel">
+  <changeSet id="role_members_table" author="camunda">
     <createTable tableName="${prefix}ROLE_MEMBER">
       <column name="ROLE_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
@@ -426,7 +426,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="create_group_table" author="cthiel">
+  <changeSet id="create_group_table" author="camunda">
     <createTable tableName="${prefix}GROUPS">
       <column name="GROUP_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
@@ -437,7 +437,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="group_members_table" author="cthiel">
+  <changeSet id="group_members_table" author="camunda">
     <createTable tableName="${prefix}GROUP_MEMBER">
       <column name="GROUP_ID" type="VARCHAR(255)" >
         <constraints primaryKey="true"/>
@@ -451,7 +451,7 @@
     </createTable>
   </changeSet>
 
-  <changeSet id="create_authorization_permission_table" author="cthiel">
+  <changeSet id="create_authorization_permission_table" author="camunda">
     <!-- no PK possible, would have too many columns (ALL) -->
     <createTable tableName="${prefix}AUTHORIZATIONS">
       <column name="AUTHORIZATION_KEY" type="BIGINT" />
@@ -473,7 +473,7 @@
     </createIndex>
   </changeSet>
 
-  <changeSet id="create_batch_operation_table" author="pwunderlich">
+  <changeSet id="create_batch_operation_table" author="camunda">
     <createTable tableName="${prefix}BATCH_OPERATION">
       <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
         <constraints primaryKey="true" nullable="false"/>
@@ -532,7 +532,7 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_job_table" author="tsedekey">
+  <changeSet id="create_job_table" author="camunda">
   <createTable tableName="${prefix}JOB">
     <column name="JOB_KEY" type="BIGINT">
       <constraints primaryKey="true"/>
@@ -568,7 +568,7 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_sequence_flow_table" author="danielkelemen">
+  <changeSet id="create_sequence_flow_table" author="camunda">
     <createTable tableName="${prefix}SEQUENCE_FLOW">
       <column name="FLOW_NODE_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
