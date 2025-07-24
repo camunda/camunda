@@ -127,6 +127,12 @@
                       "enabled": false
                     }
                   }
+                },
+                "completionConditionFulfilled": {
+                  "type": "boolean"
+                },
+                "cancelRemainingInstances": {
+                  "type": "boolean"
                 }
               }
             }
