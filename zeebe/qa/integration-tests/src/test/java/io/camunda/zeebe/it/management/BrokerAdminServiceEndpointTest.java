@@ -37,125 +37,144 @@ public class BrokerAdminServiceEndpointTest {
   private static final String EXPECTED_PARTITIONS_JSON =
       // language=JSON
       """
-      {
-        "1": {
-          "role": "LEADER",
-          "processedPosition": 2,
-          "snapshotId": null,
-          "processedPositionInSnapshot": null,
-          "streamProcessorPhase": "PROCESSING",
-          "exporterPhase": "EXPORTING",
-          "exportedPosition": -1,
-          "clock": {
-            "instant": "2024-10-29T07:10:02.688Z",
-            "modificationType": "None",
-            "modification": {}
-          },
-          "health": {
-            "id": "Partition-1",
-            "name": "Partition-1",
-            "status": "HEALTHY",
-            "componentsState": "HEALTHY",
-            "children": [
-                {
-                 "id": "SnapshotDirector-1",
-                 "name": "SnapshotDirector-1",
-                 "status": "HEALTHY",
-                 "children": []
-               },
-               {
-                 "id": "ZeebePartitionHealth-1",
-                 "name": "ZeebePartitionHealth-1",
-                 "status": "HEALTHY",
-                 "children": []
-               },
-               {
-                 "id": "StreamProcessor-1",
-                 "name": "StreamProcessor-1",
-                 "status": "HEALTHY",
-                 "children": []
-               },
-               {
-                 "id": "Exporter-1",
-                 "name": "Exporter-1",
-                 "status": "HEALTHY",
-                 "children": []
-               },
-               {
-                 "id": "RaftPartition-1",
-                 "name": "RaftPartition-1",
-                 "status": "HEALTHY",
-                 "children": []
+          {
+            "1": {
+              "role": "LEADER",
+              "processedPosition": 2,
+              "snapshotId": "2-1-2-9223372036854775807-0-a06ff57d",
+              "processedPositionInSnapshot": 2,
+              "streamProcessorPhase": "PROCESSING",
+              "exporterPhase": "EXPORTING",
+              "exportedPosition": -1,
+              "clock": {
+                "instant": "2024-10-29T07:10:02.688Z",
+                "modificationType": "None",
+                "modification": {}
+              },
+              "health": {
+                "id": "Partition-1",
+                "name": "Partition-1",
+                "status": "HEALTHY",
+                "componentsState": "HEALTHY",
+                "children": [
+                    {
+                     "id": "SnapshotDirector-1",
+                     "name": "SnapshotDirector-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   },
+                   {
+                     "id": "ZeebePartitionHealth-1",
+                     "name": "ZeebePartitionHealth-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   },
+                   {
+                     "id": "StreamProcessor-1",
+                     "name": "StreamProcessor-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   },
+                   {
+                     "id": "Exporter-1",
+                     "name": "Exporter-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   },
+                   {
+                     "id":"MigrationSnapshotDirector",
+                     "name":"MigrationSnapshotDirector",
+                     "status":"HEALTHY",
+                     "children":[]
+                   },
+                   {
+                     "id": "RaftPartition-1",
+                     "name": "RaftPartition-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   }
+                 ]
                }
-             ]
-           }
-        }
-      }
-      """;
+            }
+          }
+          """;
   private static final String EXPECTED_PARTITION_JSON =
       // language=JSON
       """
-      {
-        "role": "LEADER",
-        "processedPosition": 2,
-        "snapshotId": null,
-        "processedPositionInSnapshot": null,
-        "streamProcessorPhase": "PROCESSING",
-        "exporterPhase": "EXPORTING",
-        "exportedPosition": -1,
-        "clock": {
-          "instant": "2024-10-29T07:24:41.576Z",
-          "modificationType": "None",
-          "modification": {}
-        },
-        "health": {
-             "id": "Partition-1",
-             "name": "Partition-1",
-             "status": "HEALTHY",
-             "componentsState": "HEALTHY",
-             "children": [
-               {
-                 "id": "SnapshotDirector-1",
-                 "name": "SnapshotDirector-1",
+          {
+            "role": "LEADER",
+            "processedPosition": 2,
+            "snapshotId": "2-1-2-9223372036854775807-0-a06ff57d",
+            "processedPositionInSnapshot": 2,
+            "streamProcessorPhase": "PROCESSING",
+            "exporterPhase": "EXPORTING",
+            "exportedPosition": -1,
+            "clock": {
+              "instant": "2024-10-29T07:24:41.576Z",
+              "modificationType": "None",
+              "modification": {}
+            },
+            "health": {
+                 "id": "Partition-1",
+                 "name": "Partition-1",
                  "status": "HEALTHY",
-                 "children": []
-               },
-               {
-                 "id": "ZeebePartitionHealth-1",
-                 "name": "ZeebePartitionHealth-1",
-                 "status": "HEALTHY",
-                 "children": []
-               },
-               {
-                 "id": "StreamProcessor-1",
-                 "name": "StreamProcessor-1",
-                 "status": "HEALTHY",
-                 "children": []
-               },
-               {
-                 "id": "Exporter-1",
-                 "name": "Exporter-1",
-                 "status": "HEALTHY",
-                 "children": []
-               },
-               {
-                 "id": "RaftPartition-1",
-                 "name": "RaftPartition-1",
-                 "status": "HEALTHY",
-                 "children": []
+                 "componentsState": "HEALTHY",
+                 "children": [
+                   {
+                     "id": "SnapshotDirector-1",
+                     "name": "SnapshotDirector-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   },
+                   {
+                     "id": "ZeebePartitionHealth-1",
+                     "name": "ZeebePartitionHealth-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   },
+                   {
+                     "id": "StreamProcessor-1",
+                     "name": "StreamProcessor-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   },
+                   {
+                     "id": "Exporter-1",
+                     "name": "Exporter-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   },
+                   {
+                     "id":"MigrationSnapshotDirector",
+                     "name":"MigrationSnapshotDirector",
+                     "status":"HEALTHY",
+                     "children":[]
+                   },
+                   {
+                     "id": "RaftPartition-1",
+                     "name": "RaftPartition-1",
+                     "status": "HEALTHY",
+                     "children": []
+                   }
+                 ]
                }
-             ]
-           }
-      }
-      """;
+          }
+          """;
 
   private static String sanitizeJson(final String json) {
     final var timestampPattern =
         Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
     final var timestampReplacement = "2024-10-29T07:10:02.688Z";
+
+    // snapshot checksum is not deterministic, so we replace it with a constant value
+    final var snapshotChecksumPattern = Pattern.compile("\\d+-\\d+-\\d+-\\d+-\\d+-\\w+");
+    final var snapshotChecksumReplacement = "2-1-2-9223372036854775807-0-a06ff57d";
+
     return json
         // map timestamp into the same value
         .replaceAll(timestampPattern.pattern(), timestampReplacement)
+        // map snapshot checksum into a constant value
+        .replaceAll(snapshotChecksumPattern.pattern(), snapshotChecksumReplacement)
         // remove all whitespaces from the pretty printing
         .replaceAll("\\s", "");
   }
