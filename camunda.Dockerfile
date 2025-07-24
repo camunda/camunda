@@ -10,8 +10,7 @@
 ARG JDK_IMAGE=""
 
 # set to "build" to build camunda from scratch instead of using a distball
-#ARG DIST="distball"
-ARG DIST="build"
+ARG DIST="distball"
 
 
 ### Build camunda from scratch ###
@@ -26,7 +25,7 @@ RUN --mount=type=cache,target=/root/.m2,rw \
 
 ### Extract camunda from distball ###
 # hadolint ignore=DL3006
-FROM base AS distball
+FROM ubuntu:noble@sha256:a08e551cb33850e4740772b38217fc1796a66da2506d312abe51acda354ff061 AS distball
 WORKDIR /camunda
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} camunda.tar.gz
