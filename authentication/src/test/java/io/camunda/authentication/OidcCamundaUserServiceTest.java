@@ -41,7 +41,7 @@ public class OidcCamundaUserServiceTest {
   }
 
   @Test
-  public void givenCamundaOidcUserWhenGetUserTokenThenTokenIsReturned() {
+  public void givenCamundaOidcUserWithAccessTokenWhenGetUserTokenThenAccessTokenIsReturned() {
     final var principal =
         new CamundaOidcUser(
             new DefaultOidcUser(
@@ -51,6 +51,29 @@ public class OidcCamundaUserServiceTest {
                     Instant.now(),
                     Instant.now().plusSeconds(3600),
                     Map.of("sub", "not-tested"))),
+            "test-access-token",
+            Collections.emptySet(),
+            null);
+
+    final var auth = new OAuth2AuthenticationToken(principal, List.of(), "oidc");
+    SecurityContextHolder.getContext().setAuthentication(auth);
+
+    final var expectedToken = Json.createValue("test-access-token").toString();
+    assertThat(oidcCamundaUserService.getUserToken()).isEqualTo(expectedToken);
+  }
+
+  @Test
+  public void givenCamundaOidcUserWithIdTokenWhenGetUserTokenThenIdTokenIsReturned() {
+    final var principal =
+        new CamundaOidcUser(
+            new DefaultOidcUser(
+                Collections.emptyList(),
+                new OidcIdToken(
+                    TOKEN_VALUE,
+                    Instant.now(),
+                    Instant.now().plusSeconds(3600),
+                    Map.of("sub", "not-tested"))),
+            null,
             Collections.emptySet(),
             null);
 

@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.controller;
+package io.camunda.zeebe.gateway.rest.controller.authentication;
 
 import io.camunda.authentication.service.CamundaUserService;
 import io.camunda.security.ConditionalOnSaaSConfigured;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
+import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,10 +29,10 @@ public class SaaSTokenController {
 
   @CamundaGetMapping(path = "/me/token")
   public ResponseEntity<String> getCurrentToken() {
-    final var idToken = camundaUserService.getUserToken();
+    final var token = camundaUserService.getUserToken();
 
-    return idToken == null
+    return token == null
         ? ResponseEntity.status(HttpStatus.UNAUTHORIZED).build()
-        : ResponseEntity.ok(idToken);
+        : ResponseEntity.ok(token);
   }
 }

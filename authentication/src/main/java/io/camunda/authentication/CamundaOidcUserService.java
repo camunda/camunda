@@ -41,12 +41,14 @@ public class CamundaOidcUserService extends OidcUserService {
     try {
       final var jwt = jwtDecoder.decode(userRequest.getAccessToken().getTokenValue());
       claims = jwt.getClaims();
+      return new CamundaOidcUser(
+          oidcUser, jwt.getTokenValue(), camundaOAuthPrincipalService.loadOAuthContext(claims));
     } catch (final JwtException e) {
       LOGGER.warn(
           "Failed to decode access token: {}, falling back to ID Token claims", e.getMessage());
       claims = oidcUser.getIdToken().getClaims();
+      return new CamundaOidcUser(
+          oidcUser, null, camundaOAuthPrincipalService.loadOAuthContext(claims));
     }
-
-    return new CamundaOidcUser(oidcUser, camundaOAuthPrincipalService.loadOAuthContext(claims));
   }
 }
