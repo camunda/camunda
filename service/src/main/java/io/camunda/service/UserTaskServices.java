@@ -7,15 +7,12 @@
  */
 package io.camunda.service;
 
-import static io.camunda.search.query.SearchQueryBuilders.flownodeInstanceSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.userTaskSearchQuery;
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.USER_TASK_READ_AUTHORIZATION;
 
-import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
-import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -50,8 +47,8 @@ public final class UserTaskServices
 
   private final UserTaskSearchClient userTaskSearchClient;
   private final FormServices formServices;
-  private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
-  private final VariableSearchClient variableSearchClient;
+  private final ElementInstanceServices elementInstanceServices;
+  private final VariableServices variableServices;
   private final ProcessCache processCache;
 
   public UserTaskServices(
@@ -59,15 +56,15 @@ public final class UserTaskServices
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
       final FormServices formServices,
-      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final VariableSearchClient variableSearchClient,
+      final ElementInstanceServices elementInstanceServices,
+      final VariableServices variableServices,
       final ProcessCache processCache,
       final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.userTaskSearchClient = userTaskSearchClient;
     this.formServices = formServices;
-    this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
-    this.variableSearchClient = variableSearchClient;
+    this.elementInstanceServices = elementInstanceServices;
+    this.variableServices = variableServices;
     this.processCache = processCache;
   }
 
@@ -78,8 +75,8 @@ public final class UserTaskServices
         securityContextProvider,
         userTaskSearchClient,
         formServices,
-        flowNodeInstanceSearchClient,
-        variableSearchClient,
+        elementInstanceServices,
+        variableServices,
         processCache,
         authentication);
   }
@@ -217,24 +214,17 @@ public final class UserTaskServices
     // Execute the search
     return executeSearchRequest(
         () ->
-            variableSearchClient
-                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-                .searchVariables(variableQueryWithTreePathFilter));
+            variableServices
+                .withAuthentication(CamundaAuthentication.anonymous())
+                .search(variableQueryWithTreePathFilter));
   }
 
   private String fetchFlowNodeTreePath(final long flowNodeInstanceKey) {
     return executeSearchRequest(
             () ->
-                flowNodeInstanceSearchClient
-                    .withSecurityContext(
-                        securityContextProvider.provideSecurityContext(authentication))
-                    .searchFlowNodeInstances(
-                        flownodeInstanceSearchQuery(
-                            q ->
-                                q.filter(f -> f.flowNodeInstanceKeys(flowNodeInstanceKey))
-                                    .singleResult())))
-        .items()
-        .getFirst()
+                elementInstanceServices
+                    .withAuthentication(CamundaAuthentication.anonymous())
+                    .getByKey(flowNodeInstanceKey))
         .treePath();
   }
 }

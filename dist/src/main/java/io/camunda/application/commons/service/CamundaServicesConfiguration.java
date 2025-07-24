@@ -217,16 +217,16 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final UserTaskSearchClient userTaskSearchClient,
       final FormServices formServices,
-      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final VariableSearchClient variableSearchClient,
+      final ElementInstanceServices elementInstanceServices,
+      final VariableServices variableServices,
       final ProcessCache processCache) {
     return new UserTaskServices(
         brokerClient,
         securityContextProvider,
         userTaskSearchClient,
         formServices,
-        flowNodeInstanceSearchClient,
-        variableSearchClient,
+        elementInstanceServices,
+        variableServices,
         processCache,
         null);
   }
@@ -323,10 +323,8 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
-  public SecurityContextProvider securityContextProvider(
-      final SecurityConfiguration securityConfiguration,
-      final AuthorizationChecker authorizationChecker) {
-    return new SecurityContextProvider(securityConfiguration, authorizationChecker);
+  public SecurityContextProvider securityContextProvider() {
+    return new SecurityContextProvider();
   }
 
   @Bean

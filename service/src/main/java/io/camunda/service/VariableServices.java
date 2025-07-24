@@ -7,7 +7,6 @@
  */
 package io.camunda.service;
 
-import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static io.camunda.security.auth.Authorization.withAuthorization;
 import static io.camunda.service.authorization.Authorizations.VARIABLE_READ_AUTHORIZATION;
 
@@ -15,13 +14,10 @@ import io.camunda.search.clients.VariableSearchClient;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.search.query.VariableQuery.Builder;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.function.Function;
 
 public final class VariableServices
     extends SearchQueryService<VariableServices, VariableQuery, VariableEntity> {
@@ -52,11 +48,6 @@ public final class VariableServices
                     securityContextProvider.provideSecurityContext(
                         authentication, VARIABLE_READ_AUTHORIZATION))
                 .searchVariables(query));
-  }
-
-  public SearchQueryResult<VariableEntity> search(
-      final Function<Builder, ObjectBuilder<VariableQuery>> fn) {
-    return search(variableSearchQuery(fn));
   }
 
   public VariableEntity getByKey(final Long key) {

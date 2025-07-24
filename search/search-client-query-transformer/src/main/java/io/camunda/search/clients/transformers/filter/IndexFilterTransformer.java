@@ -11,11 +11,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.exception.ErrorMessages.ERROR_INDEX_FILTER_TRANSFORMER_AUTH_CHECK_MISSING;
+import static io.camunda.search.exception.ErrorMessages.ERROR_INDEX_FILTER_TRANSFORMER_TENANT_CHECK_MISSING;
 
 import io.camunda.search.clients.query.SearchMatchAllQuery;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -25,8 +28,12 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class IndexFilterTransformer<T extends FilterBase> implements FilterTransformer<T> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(IndexFilterTransformer.class);
 
   private final IndexDescriptor indexDescriptor;
 
@@ -44,16 +51,28 @@ public abstract class IndexFilterTransformer<T extends FilterBase> implements Fi
     }
 
     final var authorizationSearchQuery =
-        Optional.of(resourceAccessChecks)
-            .map(ResourceAccessChecks::authorizationCheck)
+        Optional.of(resourceAccessChecks.authorizationCheck())
             .map(this::applyAuthorizationChecks)
-            .orElse(matchAll());
+            .orElseThrow(
+                () -> {
+                  final var message =
+                      ERROR_INDEX_FILTER_TRANSFORMER_AUTH_CHECK_MISSING.formatted(
+                          getClass().getSimpleName());
+                  LOG.error(message);
+                  return new CamundaSearchException(message);
+                });
 
     final var tenantSearchQuery =
-        Optional.of(resourceAccessChecks)
-            .map(ResourceAccessChecks::tenantCheck)
+        Optional.of(resourceAccessChecks.tenantCheck())
             .map(this::applyTenantChecks)
-            .orElse(matchAll());
+            .orElseThrow(
+                () -> {
+                  final var message =
+                      ERROR_INDEX_FILTER_TRANSFORMER_TENANT_CHECK_MISSING.formatted(
+                          getClass().getSimpleName());
+                  LOG.error(message);
+                  return new CamundaSearchException(message);
+                });
 
     return rewriteSearchQueries(
         List.of(filterSearchQuery, authorizationSearchQuery, tenantSearchQuery));

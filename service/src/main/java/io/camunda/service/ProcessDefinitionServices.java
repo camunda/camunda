@@ -93,7 +93,7 @@ public class ProcessDefinitionServices
         .flatMap(
             p ->
                 formServices
-                    .withAuthentication(authentication)
+                    .withAuthentication(CamundaAuthentication.anonymous())
                     .getLatestVersionByFormIdAndTenantId(p.formId(), p.tenantId()));
   }
 

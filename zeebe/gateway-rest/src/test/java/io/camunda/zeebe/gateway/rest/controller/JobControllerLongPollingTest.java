@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -428,11 +427,7 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         final BrokerClient brokerClient,
         final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
       return new JobServices<>(
-          brokerClient,
-          new SecurityContextProvider(new SecurityConfiguration(), null),
-          activateJobsHandler,
-          null,
-          null);
+          brokerClient, new SecurityContextProvider(), activateJobsHandler, null, null);
     }
   }
 }

@@ -11,8 +11,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.security.impl.AuthorizationChecker;
-import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.util.LazySupplier;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
@@ -25,27 +24,24 @@ public class TasklistPermissionServices {
 
   private static final List<String> WILD_CARD_PERMISSION =
       List.of(IdentityProperties.ALL_RESOURCES);
-  private static final Authorization READ_PROC_DEF_AUTH_CHECK =
+  private static final Authorization<?> READ_PROC_DEF_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().readProcessDefinition());
-  private static final Authorization CREATE_PROC_INST_AUTH_CHECK =
+  private static final Authorization<?> CREATE_PROC_INST_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().createProcessInstance());
-  private static final Authorization UPDATE_USER_TASK_AUTH_CHECK =
+  private static final Authorization<?> UPDATE_USER_TASK_AUTH_CHECK =
       Authorization.of(a -> a.processDefinition().updateUserTask());
 
   private final SecurityConfiguration securityConfiguration;
-  private final SecurityContextProvider securityContextProvider;
-  private final AuthorizationChecker authorizationChecker;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final ResourceAccessProvider resourceAccessProvider;
 
   public TasklistPermissionServices(
       final SecurityConfiguration securityConfiguration,
-      final SecurityContextProvider securityContextProvider,
-      final AuthorizationChecker authorizationChecker,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final ResourceAccessProvider resourceAccessProvider) {
     this.securityConfiguration = securityConfiguration;
-    this.securityContextProvider = securityContextProvider;
-    this.authorizationChecker = authorizationChecker;
     this.authenticationProvider = authenticationProvider;
+    this.resourceAccessProvider = resourceAccessProvider;
   }
 
   public boolean hasPermissionToCreateProcessInstance(final String bpmnProcessId) {
@@ -67,14 +63,14 @@ public class TasklistPermissionServices {
       return WILD_CARD_PERMISSION;
     }
 
-    final var securityContext =
-        securityContextProvider.provideSecurityContext(
+    final var resourceAccess =
+        resourceAccessProvider.resolveResourceAccess(
             authenticationSupplier.get(), CREATE_PROC_INST_AUTH_CHECK);
-    return authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+    return resourceAccess.allowed() ? resourceAccess.authorization().resourceIds() : List.of();
   }
 
   private boolean isAuthorizedForResource(
-      final String resourceId, final Authorization authorization) {
+      final String resourceId, final Authorization<?> authorization) {
 
     final var authenticationSupplier =
         LazySupplier.of(authenticationProvider::getCamundaAuthentication);
@@ -82,8 +78,9 @@ public class TasklistPermissionServices {
       return true;
     }
 
-    return securityContextProvider.isAuthorized(
-        resourceId, authenticationSupplier.get(), authorization);
+    return resourceAccessProvider
+        .hasResourceAccessByResourceId(authenticationSupplier.get(), authorization, resourceId)
+        .allowed();
   }
 
   private boolean isAuthorizationCheckDisabled(

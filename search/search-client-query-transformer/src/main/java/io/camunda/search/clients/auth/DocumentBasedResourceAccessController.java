@@ -59,7 +59,9 @@ public class DocumentBasedResourceAccessController implements ResourceAccessCont
 
   @Override
   public boolean supports(final SecurityContext securityContext) {
-    return Optional.of(securityContext).map(SecurityContext::authentication).isPresent()
+    return Optional.of(securityContext)
+            .filter(c -> c.authentication() != null && c.authorization() != null)
+            .isPresent()
         && !isAnonymousAuthentication(securityContext.authentication());
   }
 
