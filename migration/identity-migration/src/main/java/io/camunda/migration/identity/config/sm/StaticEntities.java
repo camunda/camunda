@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.config;
+package io.camunda.migration.identity.config.sm;
 
-import io.camunda.migration.identity.config.oidc.OidcProperties.Audiences;
+import io.camunda.migration.identity.config.sm.OidcProperties.Audiences;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;

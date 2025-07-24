@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.migration.identity.dto.Client;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.Tenant;
@@ -41,20 +42,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TenantMigrationHandlerTest {
+public class KeycloakTenantMigrationHandlerTest {
 
   private final ManagementIdentityClient managementIdentityClient;
   private final TenantServices tenantServices;
   private final TenantMigrationHandler migrationHandler;
 
-  public TenantMigrationHandlerTest(
+  public KeycloakTenantMigrationHandlerTest(
       @Mock final ManagementIdentityClient managementIdentityClient,
       @Mock(answer = Answers.RETURNS_SELF) final TenantServices tenantServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.tenantServices = tenantServices;
     migrationHandler =
         new TenantMigrationHandler(
-            managementIdentityClient, tenantServices, CamundaAuthentication.none());
+            managementIdentityClient, tenantServices, CamundaAuthentication.none(), Mode.KEYCLOAK);
   }
 
   @Test

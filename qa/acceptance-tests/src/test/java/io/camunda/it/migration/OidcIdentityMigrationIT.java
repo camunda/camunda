@@ -22,6 +22,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.Tenant;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -69,6 +70,10 @@ public class OidcIdentityMigrationIT {
 
   private static final GenericContainer<?> IDENTITY =
       IdentityMigrationTestUtil.getManagementIdentitySMOidc(KEYCLOAK, POSTGRES)
+          .withEnv("IDENTITY_TENANTS_0_NAME", "tenant 1")
+          .withEnv("IDENTITY_TENANTS_0_TENANT-ID", "tenant1")
+          .withEnv("IDENTITY_TENANTS_1_NAME", "tenant 2")
+          .withEnv("IDENTITY_TENANTS_1_TENANT-ID", "tenant2")
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
@@ -251,6 +256,31 @@ public class OidcIdentityMigrationIT {
                     PermissionType.CREATE)),
             tuple("identity", ResourceType.USER, Set.of(PermissionType.READ)),
             tuple("identity", ResourceType.APPLICATION, Set.of(PermissionType.ACCESS)));
+  }
+
+  @Test
+  public void canMigrateTenants() {
+    // when
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var tenants = client.newTenantsSearchRequest().send().join();
+              assertThat(tenants.items())
+                  .extracting(Tenant::getTenantId)
+                  .contains("tenant1", "tenant2");
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var tenants = client.newTenantsSearchRequest().send().join().items();
+    assertThat(tenants)
+        .extracting(Tenant::getTenantId, Tenant::getName)
+        .contains(tuple("tenant1", "tenant 1"), tuple("tenant2", "tenant 2"));
   }
 
   private static ClientRepresentation createClientRepresentation() {
