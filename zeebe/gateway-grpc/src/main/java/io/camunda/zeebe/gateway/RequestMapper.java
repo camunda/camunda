@@ -228,7 +228,10 @@ public final class RequestMapper extends RequestUtil {
 
   private static JobResult getAdHocSubProcessJobResult(final GatewayOuterClass.JobResult result) {
     final JobResult jobResult = new JobResult();
-    jobResult.setType(JobResultType.from(result.getType()));
+    jobResult
+        .setType(JobResultType.from(result.getType()))
+        .setCompletionConditionFulfilled(result.getIsCompletionConditionFulfilled())
+        .setCancelRemainingInstances(result.getIsCancelRemainingInstances());
     result.getActivateElementsList().stream()
         .map(
             element -> {

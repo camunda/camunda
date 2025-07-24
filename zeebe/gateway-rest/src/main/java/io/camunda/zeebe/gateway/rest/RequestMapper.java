@@ -986,7 +986,10 @@ public class RequestMapper {
 
   private static JobResult getJobResult(final JobResultAdHocSubProcess result) {
     final JobResult jobResult = new JobResult();
-    jobResult.setType(JobResultType.from(result.getType().getValue()));
+    jobResult
+        .setType(JobResultType.from(result.getType().getValue()))
+        .setCompletionConditionFulfilled(result.getIsCompletionConditionFulfilled())
+        .setCancelRemainingInstances(result.getIsCancelRemainingInstances());
     result.getActivateElements().stream()
         .map(
             element -> {
