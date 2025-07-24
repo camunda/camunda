@@ -44,6 +44,7 @@ import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.Tenant;
+import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
@@ -313,6 +314,18 @@ public final class SearchResponseMapper {
 
   private static TenantUser toTenantUser(final TenantUserResult response) {
     return new TenantUserImpl(response.getUsername());
+  }
+
+  public static SearchResponse<TenantGroup> toTenantGroupsResponse(
+      final TenantGroupSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<TenantGroup> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toTenantGroup);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  private static TenantGroup toTenantGroup(final TenantGroupResult response) {
+    return new TenantGroupImpl(response.getGroupId());
   }
 
   public static MappingRule toMappingResponse(final MappingRuleResult response) {

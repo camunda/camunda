@@ -121,6 +121,7 @@ import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
+import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
@@ -2591,7 +2592,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * <pre>
    * camundaClient
    *  .newGroupsByRoleSearchRequest("roleId")
-   *  .sort((s) -> s.name().asc())
+   *  .sort((s) -> s.groupdId().asc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
@@ -2600,6 +2601,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the groups by role search request
    */
   GroupsByRoleSearchRequest newGroupsByRoleSearchRequest(String roleId);
+
+  /**
+   * Executes a search request to query groups by tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newGroupsByTenantSearchRequest("tenantId")
+   *  .sort((s) -> s.groupId().desc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the groups by tenant search request
+   */
+  GroupsByTenantSearchRequest newGroupsByTenantSearchRequest(String tenantId);
 
   /**
    * Executes a search request to query jobs.

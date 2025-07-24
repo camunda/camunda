@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
+import static io.camunda.client.api.search.enums.ResourceType.GROUP;
 import static io.camunda.client.api.search.enums.ResourceType.TENANT;
 import static io.camunda.client.api.search.enums.ResourceType.USER;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,6 +23,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
+import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -80,7 +82,8 @@ class TenantAuthorizationIT {
               new Permissions(TENANT, CREATE, List.of("*")),
               new Permissions(TENANT, READ, List.of("*")),
               new Permissions(TENANT, UPDATE, List.of("*")),
-              new Permissions(USER, CREATE, List.of("*"))));
+              new Permissions(USER, CREATE, List.of("*")),
+              new Permissions(GROUP, CREATE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
@@ -105,8 +108,7 @@ class TenantAuthorizationIT {
         .untilAsserted(
             () -> {
               final var tenantsSearchResponse = adminClient.newTenantsSearchRequest().send().join();
-              Assertions.assertThat(
-                      tenantsSearchResponse.items().stream().map(Tenant::getTenantId).toList())
+              Assertions.assertThat(tenantsSearchResponse.items().stream().map(Tenant::getTenantId))
                   .containsAll(Arrays.asList(TENANT_ID_1, TENANT_ID_2));
             });
   }
@@ -192,9 +194,37 @@ class TenantAuthorizationIT {
             () -> {
               final SearchResponse<TenantUser> response =
                   adminClient.newUsersByTenantSearchRequest(TENANT_ID_1).send().join();
-              Assertions.assertThat(response.items().stream().map(TenantUser::getUsername).toList())
+              Assertions.assertThat(response.items().stream().map(TenantUser::getUsername))
                   .contains(userName);
             });
+  }
+
+  @Test
+  void shouldSearchGroupsByTenantIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final String groupId = Strings.newRandomValidIdentityId();
+    adminClient.newCreateGroupCommand().groupId(groupId).name("group name").send().join();
+    adminClient.newAssignGroupToTenantCommand().groupId(groupId).tenantId("tenant1").send().join();
+
+    // when/then
+    Awaitility.await("Search returns groups by tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final SearchResponse<TenantGroup> response =
+                  adminClient.newGroupsByTenantSearchRequest("tenant1").send().join();
+              Assertions.assertThat(response.items().stream().map(TenantGroup::getGroupId))
+                  .contains(groupId);
+            });
+  }
+
+  @Test
+  void searchGroupsByTenantShouldReturnEmptyListIfUnauthorized(
+      @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
+    final SearchResponse<TenantGroup> response =
+        camundaClient.newGroupsByTenantSearchRequest("tenant1").send().join();
+    Assertions.assertThat(response.items()).isEmpty();
   }
 
   @Test
