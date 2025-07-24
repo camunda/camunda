@@ -22,6 +22,7 @@ import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.reader.TenantAccess;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -91,9 +92,7 @@ public abstract class OperateAbstractIT {
   }
 
   protected void mockTenantResponse() {
-    doReturn(TenantService.AuthenticatedTenants.allTenants())
-        .when(tenantService)
-        .getAuthenticatedTenants();
+    doReturn(TenantAccess.wildcard(null)).when(tenantService).getAuthenticatedTenants();
   }
 
   protected MvcResult getRequest(final String requestUrl) throws Exception {

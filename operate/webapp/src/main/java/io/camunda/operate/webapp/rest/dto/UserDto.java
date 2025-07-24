@@ -9,7 +9,6 @@ package io.camunda.operate.webapp.rest.dto;
 
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
-import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import java.util.*;
 import org.springframework.util.StringUtils;
 
@@ -22,8 +21,6 @@ public class UserDto {
   private boolean canLogout;
 
   private List<Permission> permissions;
-
-  private List<OperateTenant> tenants;
 
   private List<String> roles;
 
@@ -72,15 +69,6 @@ public class UserDto {
 
   public UserDto setPermissions(final List<Permission> permissions) {
     this.permissions = permissions;
-    return this;
-  }
-
-  public List<OperateTenant> getTenants() {
-    return tenants;
-  }
-
-  public UserDto setTenants(final List<OperateTenant> tenants) {
-    this.tenants = tenants;
     return this;
   }
 

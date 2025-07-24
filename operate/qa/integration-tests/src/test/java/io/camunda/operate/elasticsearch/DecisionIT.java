@@ -21,7 +21,7 @@ import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.security.reader.TenantAccess;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionRequirementsEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -279,7 +279,7 @@ public class DecisionIT extends OperateAbstractIT {
     final String decisionId3 = "decisionId3";
     final String tenantId1 = "tenant1";
     final String tenantId2 = "tenant2";
-    doReturn(TenantService.AuthenticatedTenants.assignedTenants(List.of(tenantId1)))
+    doReturn(TenantAccess.allowed(List.of(tenantId1)))
         .when(tenantService)
         .getAuthenticatedTenants();
 
@@ -380,7 +380,7 @@ public class DecisionIT extends OperateAbstractIT {
     final String tenantId2 = "tenant2";
     final String tenant1Xml = "<xml>tenant1<xml>";
     final String tenant2Xml = "<xml>tenant2<xml>";
-    doReturn(TenantService.AuthenticatedTenants.assignedTenants(List.of(tenantId1)))
+    doReturn(TenantAccess.allowed(List.of(tenantId1)))
         .when(tenantService)
         .getAuthenticatedTenants();
 
