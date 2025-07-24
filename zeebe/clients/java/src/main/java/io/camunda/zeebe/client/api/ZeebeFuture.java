@@ -32,6 +32,13 @@ public interface ZeebeFuture<T> extends Future<T>, CompletionStage<T> {
   T join();
 
   /**
+   * Like {@link #cancel(boolean)} but allows providing a cause.
+   *
+   * @param cause cause for cancellation can be `null`
+   */
+  boolean cancel(boolean mayInterruptIfRunning, Throwable cause);
+
+  /**
    * Like {@link #get(long, TimeUnit)} but throws runtime exceptions.
    *
    * @throws ClientStatusException on gRPC errors
