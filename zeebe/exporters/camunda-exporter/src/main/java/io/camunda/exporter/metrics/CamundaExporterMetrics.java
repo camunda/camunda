@@ -14,6 +14,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
@@ -145,7 +146,8 @@ public class CamundaExporterMetrics {
             .serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets())
             .register(meterRegistry);
 
-    Gauge.builder(meterName("since.last.flush.seconds"), this::secondSinceLastFlush)
+    TimeGauge.builder(
+            meterName("since.last.flush.seconds"), TimeUnit.SECONDS, this::secondSinceLastFlush)
         .description("Time in seconds since the last successful flush")
         .register(meterRegistry);
 
