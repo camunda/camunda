@@ -52,7 +52,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
@@ -63,6 +65,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.StringUtils;
 
 public final class RequestMapper extends RequestUtil {
@@ -170,18 +173,25 @@ public final class RequestMapper extends RequestUtil {
       return null;
     }
 
-    if (!request.getResult().hasCorrections()) {
+    return switch (request.getResult().getType()) {
+      case "userTask" -> getUserTaskJobResult(request.getResult());
+      case "adHocSubProcess" -> getAdHocSubProcessJobResult(request.getResult());
+      default -> getUserTaskJobResult(request.getResult());
+    };
+  }
+
+  private static JobResult getUserTaskJobResult(final GatewayOuterClass.JobResult result) {
+    if (!result.hasCorrections()) {
       return new JobResult()
-          .setType(JobResultType.from(request.getResult().getType()))
-          .setDenied(request.getResult().getDenied())
-          .setDeniedReason(request.getResult().getDeniedReason());
+          .setType(JobResultType.from(result.getType()))
+          .setDenied(result.getDenied())
+          .setDeniedReason(result.getDeniedReason());
     }
 
     final JobResultCorrections corrections = new JobResultCorrections();
     final List<String> correctedAttributes = new ArrayList<>();
 
-    final GatewayOuterClass.JobResultCorrections requestCorrections =
-        request.getResult().getCorrections();
+    final GatewayOuterClass.JobResultCorrections requestCorrections = result.getCorrections();
 
     if (requestCorrections.hasAssignee()) {
       corrections.setAssignee(requestCorrections.getAssignee());
@@ -209,11 +219,29 @@ public final class RequestMapper extends RequestUtil {
     }
 
     return new JobResult()
-        .setType(JobResultType.from(request.getResult().getType()))
-        .setDenied(request.getResult().getDenied())
-        .setDeniedReason(request.getResult().getDeniedReason())
+        .setType(JobResultType.from(result.getType()))
+        .setDenied(result.getDenied())
+        .setDeniedReason(result.getDeniedReason())
         .setCorrections(corrections)
         .setCorrectedAttributes(correctedAttributes);
+  }
+
+  private static JobResult getAdHocSubProcessJobResult(final GatewayOuterClass.JobResult result) {
+    final JobResult jobResult = new JobResult();
+    jobResult.setType(JobResultType.from(result.getType()));
+    result.getActivateElementsList().stream()
+        .map(
+            element -> {
+              final var activateElement =
+                  new JobResultActivateElement().setElementId(element.getElementId());
+              if (!element.getVariables().isEmpty()) {
+                activateElement.setVariables(
+                    new UnsafeBuffer(MsgPackConverter.convertToMsgPack(element.getVariables())));
+              }
+              return activateElement;
+            })
+        .forEach(jobResult::addActivateElement);
+    return jobResult;
   }
 
   public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(

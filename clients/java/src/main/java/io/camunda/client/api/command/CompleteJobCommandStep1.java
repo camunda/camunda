@@ -96,15 +96,37 @@ public interface CompleteJobCommandStep1
      *
      * <pre>{@code
      * client.newCompleteJobCommand(jobKey)
-     *     .withResult()
-     *     .correctAssignee("john_doe")                 // dynamically reassigns the task to 'john_doe'
-     *     .correctPriority(84)                         // adjusts the priority of the task
-     *     .correctDueDate("2024-11-22T11:44:55.0000Z") // sets a new due date
-     *     .send();
+     *     .withResult(r -> r.forUserTask()
+     *      .correctAssignee("john_doe")                 // dynamically reassigns the task to 'john_doe'
+     *      .correctPriority(84)                         // adjusts the priority of the task
+     *      .correctDueDate("2024-11-22T11:44:55.0000Z")) // sets a new due date
+     *      .send();
      * }</pre>
      *
      * @return the builder for this command.
      */
-    CompleteUserTaskJobResult forUserTask();
+    CompleteUserTaskJobResultStep1 forUserTask();
+
+    /**
+     * Initialized the job result to allow activation of elements in an ad-hoc sub process.
+     *
+     * <p>This method is used to activate elements as a followup of a job completion. It will
+     * activate elements by id and variables provided will be created in the scope of the created
+     * element.
+     *
+     * <pre>{@code
+     * client.newCompleteJobCommand(jobKey)
+     *  .withResult(r -> r.forAdHocSubProcess()
+     *    .activateElement("elementId")           // Activate the element with id 'elementId'
+     *    .variable("key", "value")               // Create variable in the scope of 'elementId'
+     *    .activateElement("anotherElementId"))   // Activate another element with id 'anotherElementId'
+     *    .variable("key", "value")               // Create a variable in the scope of 'anotherElementId'
+     *    .send();
+     *
+     * }</pre>
+     *
+     * @return the builder for this command.
+     */
+    CompleteAdHocSubProcessResultStep1 forAdHocSubProcess();
   }
 }

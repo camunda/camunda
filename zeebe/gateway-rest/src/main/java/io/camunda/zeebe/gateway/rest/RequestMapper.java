@@ -81,6 +81,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobResultAdHocSubProcess;
 import io.camunda.zeebe.gateway.protocol.rest.JobResultUserTask;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -114,6 +115,7 @@ import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -931,16 +933,20 @@ public class RequestMapper {
     if (request == null || request.getResult() == null) {
       return new JobResult();
     }
+    return switch (request.getResult().getType()) {
+      case USER_TASK -> getJobResult((JobResultUserTask) request.getResult());
+      case AD_HOC_SUB_PROCESS -> getJobResult((JobResultAdHocSubProcess) request.getResult());
+    };
+  }
 
+  private static JobResult getJobResult(final JobResultUserTask result) {
     final JobResult jobResult = new JobResult();
-    final var jobResultUserTask = (JobResultUserTask) request.getResult();
-    jobResult.setType(JobResultType.from(jobResultUserTask.getType().getValue()));
-    jobResult.setDenied(
-        getBooleanOrDefault(request, r -> ((JobResultUserTask) r.getResult()).getDenied(), false));
-    jobResult.setDeniedReason(
-        getStringOrEmpty(request, r -> ((JobResultUserTask) r.getResult()).getDeniedReason()));
+    jobResult.setType(JobResultType.from(result.getType().getValue()));
+    jobResult.setDenied(result.getDenied() != null ? result.getDenied() : false);
+    jobResult.setDenied(getBooleanOrDefault(result, JobResultUserTask::getDenied, false));
+    jobResult.setDeniedReason(getStringOrEmpty(result, JobResultUserTask::getDeniedReason));
 
-    final var jobResultCorrections = jobResultUserTask.getCorrections();
+    final var jobResultCorrections = result.getCorrections();
     if (jobResultCorrections == null) {
       return jobResult;
     }
@@ -975,6 +981,24 @@ public class RequestMapper {
 
     jobResult.setCorrections(corrections);
     jobResult.setCorrectedAttributes(correctedAttributes);
+    return jobResult;
+  }
+
+  private static JobResult getJobResult(final JobResultAdHocSubProcess result) {
+    final JobResult jobResult = new JobResult();
+    jobResult.setType(JobResultType.from(result.getType().getValue()));
+    result.getActivateElements().stream()
+        .map(
+            element -> {
+              final var activateElement =
+                  new JobResultActivateElement().setElementId(element.getElementId());
+              if (element.getVariables() != null) {
+                activateElement.setVariables(
+                    new UnsafeBuffer(MsgPackConverter.convertToMsgPack(element.getVariables())));
+              }
+              return activateElement;
+            })
+        .forEach(jobResult::addActivateElement);
     return jobResult;
   }
 

@@ -182,7 +182,7 @@ message JobResult{
   optional JobResultCorrections corrections = 2;
   // The reason provided by the user task listener for denying the work.
   optional string deniedReason = 3;
-  // Used to distinguish between different types of job results. Must be one of ["userTask", "adHocSubprocess"]. If not set, defaults to "userTask".
+  // Used to distinguish between different types of job results. Must be one of ["userTask", "adHocSubProcess"]. If not set, defaults to "userTask".
   optional string type = 4;
   // The list of elements that should be activated after the job is completed. Only relevant for ad-hoc subprocesses.
   repeated JobResultActivateElement activateElements = 5;
