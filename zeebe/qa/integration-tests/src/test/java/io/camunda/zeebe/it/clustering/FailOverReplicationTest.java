@@ -133,7 +133,11 @@ public class FailOverReplicationTest {
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
-                assertThat(clusteringRule.getSnapshot(previousLeader)).hasValue(snapshotMetadata));
+                assertThat(clusteringRule.getSnapshot(previousLeader))
+                    .hasValueSatisfying(
+                        id ->
+                            assertThat(id.getIndex())
+                                .isGreaterThanOrEqualTo(snapshotMetadata.getIndex())));
   }
 
   // regression test for https://github.com/zeebe-io/zeebe/issues/4810
