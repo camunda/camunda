@@ -50,6 +50,8 @@ jobs:
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
