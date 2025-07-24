@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import java.time.OffsetDateTime;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
@@ -94,7 +95,7 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @param creationTime the creation time of incident
    * @return the updated filter
    */
-  IncidentFilter creationTime(final String creationTime);
+  IncidentFilter creationTime(final OffsetDateTime creationTime);
 
   /**
    * Filters incidents by the state of incident.

@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.client.impl.util.ParseUtil;
+import java.time.OffsetDateTime;
 import io.camunda.zeebe.client.api.response.UserTaskProperties;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.List;
@@ -29,8 +30,8 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
   private final List<String> candidateGroups;
   private final List<String> candidateUsers;
   private final List<String> changedAttributes;
-  private final String dueDate;
-  private final String followUpDate;
+  private final OffsetDateTime dueDate;
+  private final OffsetDateTime followUpDate;
   private final Long formKey;
   private final Integer priority;
   private final Long userTaskKey;
@@ -87,12 +88,12 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
   }
 
   @Override
-  public String getDueDate() {
+  public OffsetDateTime getDueDate() {
     return dueDate;
   }
 
   @Override
-  public String getFollowUpDate() {
+  public OffsetDateTime getFollowUpDate() {
     return followUpDate;
   }
 

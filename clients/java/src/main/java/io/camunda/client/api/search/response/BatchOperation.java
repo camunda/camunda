@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
+import java.time.OffsetDateTime;
 
 public interface BatchOperation {
 
@@ -29,9 +30,9 @@ public interface BatchOperation {
 
   BatchOperationType getType();
 
-  String getStartDate();
+  OffsetDateTime getStartDate();
 
-  String getEndDate();
+  OffsetDateTime getEndDate();
 
   Integer getOperationsTotalCount();
 

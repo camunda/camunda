@@ -20,6 +20,7 @@ import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +29,8 @@ public class BatchOperationImpl implements BatchOperation {
   private final String batchOperationKey;
   private final BatchOperationType type;
   private final BatchOperationState status;
-  private final String startDate;
-  private final String endDate;
+  private final OffsetDateTime startDate;
+  private final OffsetDateTime endDate;
   private final Integer operationsTotalCount;
   private final Integer operationsFailedCount;
   private final Integer operationsCompletedCount;
@@ -79,12 +80,12 @@ public class BatchOperationImpl implements BatchOperation {
   }
 
   @Override
-  public String getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
   @Override
-  public String getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 

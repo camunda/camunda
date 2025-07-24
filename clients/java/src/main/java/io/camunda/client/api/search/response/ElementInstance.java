@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package io.camunda.client.api.search.response;
+import java.time.OffsetDateTime;
 
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
@@ -39,10 +40,10 @@ public interface ElementInstance {
   String getElementName();
 
   /** start date of element instance */
-  String getStartDate();
+  OffsetDateTime getStartDate();
 
   /** end date of element instance */
-  String getEndDate();
+  OffsetDateTime getEndDate();
 
   /** whether element instance has an incident */
   Boolean getIncident();

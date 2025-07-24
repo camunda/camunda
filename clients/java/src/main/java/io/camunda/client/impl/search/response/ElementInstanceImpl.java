@@ -19,6 +19,7 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.impl.util.EnumUtil;
+import java.time.OffsetDateTime;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
 import java.util.Objects;
@@ -31,8 +32,8 @@ public final class ElementInstanceImpl implements ElementInstance {
   private final Long processInstanceKey;
   private final String elementId;
   private final String elementName;
-  private final String startDate;
-  private final String endDate;
+  private final OffsetDateTime startDate;
+  private final OffsetDateTime endDate;
   private final Boolean incident;
   private final Long incidentKey;
   private final ElementInstanceState state;
@@ -86,12 +87,12 @@ public final class ElementInstanceImpl implements ElementInstance {
   }
 
   @Override
-  public String getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
   @Override
-  public String getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 
