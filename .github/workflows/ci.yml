@@ -1368,6 +1368,7 @@ jobs:
         id: build-tasklist-fe
         with:
           directory: ./tasklist/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         id: build-identity-fe
         with:
@@ -1424,6 +1425,7 @@ jobs:
         id: build-tasklist-fe
         with:
           directory: ./tasklist/client
+          package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         id: build-identity-fe
         with:
