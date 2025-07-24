@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.reader;
 
+import io.camunda.search.aggregation.result.UsageMetricsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.UsageMetricStatisticsEntity;
 import io.camunda.search.entities.UsageMetricsEntity;
@@ -34,8 +35,9 @@ public class UsageMetricsDocumentReader extends DocumentBasedReader implements U
 
   @Override
   public UsageMetricStatisticsEntity usageMetricStatistics(
-      final UsageMetricsQuery query, final ResourceAccessChecks access) {
-    // TODO not implemented yet
-    return null;
+      final UsageMetricsQuery query, final ResourceAccessChecks resourceAccessChecks) {
+    return getSearchExecutor()
+        .aggregate(query, UsageMetricsAggregationResult.class, resourceAccessChecks)
+        .result();
   }
 }
