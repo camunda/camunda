@@ -10,8 +10,7 @@
 ARG JDK_IMAGE=""
 
 # set to "build" to build camunda from scratch instead of using a distball
-#ARG DIST="distball"
-ARG DIST="build"
+ARG DIST="distball"
 
 
 ### Build camunda from scratch ###
@@ -27,7 +26,8 @@ RUN --mount=type=cache,target=/root/.m2,rw \
 
 ### Extract camunda from distball ###
 # hadolint ignore=DL3006
-FROM base AS distball
+FROM ubuntu:noble@sha256:a08e551cb33850e4740772b38217fc1796a66da2506d312abe51acda354ff061 AS distball
+
 USER root
 WORKDIR /camunda
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
@@ -40,6 +40,18 @@ RUN mkdir camunda-zeebe && \
 ### Image containing the camunda distribution ###
 # hadolint ignore=DL3006
 FROM ${DIST} AS dist
+
+
+### Setup of folders and user for usage without shell ###
+FROM camundaservicesgmbhdhi/dhi-eclipse-temurin:21-jdk-debian12-dev AS setup
+RUN groupadd --gid 1001 camunda
+ENV CAMUNDA_HOME=/usr/local/camunda
+RUN useradd --system --gid 1001 --uid 1001 --home ${CAMUNDA_HOME} camunda
+RUN chmod g=u /etc/passwd
+RUN mkdir -p ${CAMUNDA_HOME}/data
+RUN mkdir ${CAMUNDA_HOME}/logs
+RUN chown -R 1001:0 ${CAMUNDA_HOME}
+RUN chmod -R 0775 ${CAMUNDA_HOME}
 
 
 ### Application Image ###
@@ -80,22 +92,28 @@ LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 LABEL io.openshift.wants="elasticsearch"
 
-ENV CAMUNDA_HOME=/home/build
-ENV PATH "${CAMUNDA_HOME}/bin:${PATH}"
+ENV CAMUNDA_HOME=/usr/local/camunda
+ENV PATH="${CAMUNDA_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
 # We know there's no need to check for musl on this image
 ENV ROCKSDB_MUSL_LIBC=false
 
+USER 1001:1001
+
+WORKDIR ${CAMUNDA_HOME}
+
 EXPOSE 8080 26500 26501 26502
+
 VOLUME /tmp
 VOLUME ${CAMUNDA_HOME}/data
 VOLUME ${CAMUNDA_HOME}/logs
 
 # These directories are to be mounted by users, eagerly creating them and setting ownership
 # helps to avoid potential permission issues due to default volume ownership.
-RUN mkdir ${CAMUNDA_HOME}/data && \
-    mkdir ${CAMUNDA_HOME}/logs
 
-COPY --from=dist --chown=1000:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
+COPY --from=setup /etc/passwd /etc/passwd
+COPY --from=setup /etc/group /etc/group
+COPY --from=setup ${CAMUNDA_HOME} ${CAMUNDA_HOME}
+COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
 
-ENTRYPOINT ["tini", "--", "/usr/local/camunda/bin/camunda"]
+ENTRYPOINT ["java", "-XX:+ExitOnOutOfMemoryError", "-Dfile.encoding=UTF-8", "-Xshare:auto", "-classpath", "/usr/local/camunda/config:/usr/local/camunda/lib/*", "io.camunda.application.StandaloneCamunda"]
