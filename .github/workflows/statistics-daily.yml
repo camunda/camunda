@@ -74,6 +74,7 @@ jobs:
               FULLY_QUALIFIED_TEST_CLASS_NAME=$(echo "$top_flakytest" | jq -r '.test_class_name')
               TEST_CLASS_NAME="${FULLY_QUALIFIED_TEST_CLASS_NAME##*.}"
               TEST_NAME=$(echo "$top_flakytest" | jq -r '.test_name')
+              TEST_OWNER=$(echo "$top_flakytest" | jq -r '.user_decription')
               SUFFIX=""
 
               # Try to find GH issues about related flaky tests:
@@ -87,7 +88,7 @@ jobs:
                 SUFFIX=" (<https://github.com/camunda/camunda/issues/$GH_ISSUE_ID|GH issue>)"
               fi
 
-              printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
+              printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX" "@Matt Bear"
 
             done
             echo ""
