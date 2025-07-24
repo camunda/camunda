@@ -91,8 +91,7 @@ public class StaticEntities {
                   PermissionType.READ_PROCESS_DEFINITION,
                   PermissionType.READ_PROCESS_INSTANCE,
                   PermissionType.UPDATE_PROCESS_INSTANCE,
-                  PermissionType.CREATE_PROCESS_INSTANCE,
-                  PermissionType.DELETE_PROCESS_INSTANCE)),
+                  PermissionType.CREATE_PROCESS_INSTANCE)),
           new CreateAuthorizationRequest(
               OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
@@ -204,8 +203,7 @@ public class StaticEntities {
             Set.of(
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 PermissionType.UPDATE_USER_TASK,
-                PermissionType.CREATE_PROCESS_INSTANCE,
-                PermissionType.DELETE_PROCESS_INSTANCE)),
+                PermissionType.CREATE_PROCESS_INSTANCE)),
         new CreateAuthorizationRequest(
             clientId,
             AuthorizationOwnerType.CLIENT,
@@ -247,10 +245,7 @@ public class StaticEntities {
             AuthorizationOwnerType.CLIENT,
             "*",
             AuthorizationResourceType.PROCESS_DEFINITION,
-            Set.of(
-                PermissionType.READ_PROCESS_DEFINITION,
-                PermissionType.READ_PROCESS_INSTANCE,
-                PermissionType.DELETE_PROCESS_INSTANCE)),
+            Set.of(PermissionType.READ_PROCESS_DEFINITION, PermissionType.READ_PROCESS_INSTANCE)),
         new CreateAuthorizationRequest(
             clientId,
             AuthorizationOwnerType.CLIENT,

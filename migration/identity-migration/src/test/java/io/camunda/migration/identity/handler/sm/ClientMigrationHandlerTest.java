@@ -159,7 +159,6 @@ public class ClientMigrationHandlerTest {
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 Set.of(
                     PermissionType.UPDATE_USER_TASK,
-                    PermissionType.DELETE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
                     PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.READ_PROCESS_INSTANCE,

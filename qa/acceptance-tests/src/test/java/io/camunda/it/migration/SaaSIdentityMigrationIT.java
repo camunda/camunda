@@ -314,8 +314,7 @@ public class SaaSIdentityMigrationIT {
                     PermissionType.READ_USER_TASK,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_USER_TASK,
-                    PermissionType.CREATE_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE)),
+                    PermissionType.CREATE_PROCESS_INSTANCE)),
             tuple(
                 DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
@@ -353,8 +352,7 @@ public class SaaSIdentityMigrationIT {
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
-                    PermissionType.CREATE_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE)),
+                    PermissionType.CREATE_PROCESS_INSTANCE)),
             tuple(
                 OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
@@ -481,8 +479,7 @@ public class SaaSIdentityMigrationIT {
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
-                    PermissionType.CREATE_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE)),
+                    PermissionType.CREATE_PROCESS_INSTANCE)),
             tuple(
                 "user1@email.com",
                 OwnerType.USER,
@@ -552,7 +549,6 @@ public class SaaSIdentityMigrationIT {
                     PermissionType.UPDATE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_USER_TASK,
                     PermissionType.CREATE_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE,
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_PROCESS_INSTANCE)),
             tuple(

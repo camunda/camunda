@@ -174,7 +174,6 @@ public class KeycloakRoleMigrationHandlerTest {
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE)),
             tuple(
                 "role_1",
@@ -260,8 +259,7 @@ public class KeycloakRoleMigrationHandlerTest {
                     PermissionType.READ_USER_TASK,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_USER_TASK,
-                    PermissionType.CREATE_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE)));
+                    PermissionType.CREATE_PROCESS_INSTANCE)));
   }
 
   @Test
