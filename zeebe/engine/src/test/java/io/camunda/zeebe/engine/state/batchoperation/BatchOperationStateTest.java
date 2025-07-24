@@ -203,6 +203,25 @@ public class BatchOperationStateTest {
   }
 
   @Test
+  void batchShouldBePendingWhenInitializationContinues() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+    state.start(1L);
+
+    // when
+    state.continueInitialization(batchOperationKey, "123");
+
+    // then
+    assertThat(state.getNextPendingBatchOperation().get().getKey()).isEqualTo(batchOperationKey);
+    assertThat(state.get(1).get().getInitializationSearchCursor()).isEqualTo("123");
+  }
+
+  @Test
   void startedBatchShouldBeInitialized() {
     // given
     final var batchOperationKey = 1L;
