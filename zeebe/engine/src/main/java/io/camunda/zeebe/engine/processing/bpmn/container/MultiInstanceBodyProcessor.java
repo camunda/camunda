@@ -145,7 +145,7 @@ public final class MultiInstanceBodyProcessor
         stateBehavior.getElementInstance(childContext).getMultiInstanceLoopCounter();
 
     return multiInstanceInputCollectionBehavior
-        .getInputCollection(multiInstanceBody, childContext)
+        .getInputCollection(multiInstanceBody, flowScopeContext)
         .flatMap(
             collection -> {
               // the loop counter starts at 1
