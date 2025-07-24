@@ -26,7 +26,7 @@ final class IdentityMigrationTestUtil {
   public static final String IDENTITY_CLIENT_SECRET = "secret";
   public static final String CAMUNDA_IDENTITY_RESOURCE_SERVER = "camunda-identity-resource-server";
   public static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
-  private static final int IDENTITY_PORT = 8080;
+  public static final int IDENTITY_PORT = 8080;
   private static final String KEYCLOAK_HOST = "keycloak";
   private static final int KEYCLOAK_PORT = 8080;
   private static final String KEYCLOAK_USER = "admin";
@@ -107,6 +107,50 @@ final class IdentityMigrationTestUtil {
         .withEnv("IDENTITY_DATABASE_PASSWORD", IDENTITY_DATABASE_PASSWORD)
         .withEnv("IDENTITY_DATABASE_PORT", Integer.toString(POSTGRES_PORT))
         .withEnv("IDENTITY_DATABASE_USERNAME", IDENTITY_DATABASE_USERNAME)
+        .withNetworkAliases("identity")
+        .withNetwork(NETWORK)
+        .withExposedPorts(IDENTITY_PORT, 8082)
+        .withLogConsumer(
+            new Slf4jLogConsumer(LoggerFactory.getLogger(IdentityMigrationTestUtil.class)));
+  }
+
+  static GenericContainer<?> getManagementIdentitySMOidc(
+      final KeycloakContainer keycloak, final GenericContainer<?> postgres) {
+    return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
+        .withImagePullPolicy(PullPolicy.alwaysPull())
+        .dependsOn(keycloak)
+        .dependsOn(postgres)
+        .withEnv("SPRING_PROFILES_ACTIVE", "oidc")
+        .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
+        .withEnv("MULTITENANCY_ENABLED", "true")
+        .withEnv("CAMUNDA_IDENTITY_TYPE", "GENERIC")
+        .withEnv("CAMUNDA_IDENTITY_BASE_URL", "http://identity:8080")
+        .withEnv(
+            "CAMUNDA_IDENTITY_ISSUER",
+            "http://%s:%d/realms/oidc-camunda-platform".formatted(KEYCLOAK_HOST, KEYCLOAK_PORT))
+        .withEnv(
+            "CAMUNDA_IDENTITY_ISSUER_BACKEND_URL",
+            "http://%s:%d/realms/oidc-camunda-platform".formatted(KEYCLOAK_HOST, KEYCLOAK_PORT))
+        .withEnv("CAMUNDA_IDENTITY_CLIENT_ID", IDENTITY_CLIENT)
+        .withEnv("CAMUNDA_IDENTITY_CLIENT_SECRET", IDENTITY_CLIENT_SECRET)
+        .withEnv("CAMUNDA_IDENTITY_AUDIENCE", CAMUNDA_IDENTITY_RESOURCE_SERVER)
+        .withEnv("IDENTITY_RETRY_ATTEMPTS", "90")
+        .withEnv("IDENTITY_RETRY_DELAY_SECONDS", "1")
+        // this will enable readiness checks by spring to await ApplicationRunner completion
+        .withEnv("MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED", "true")
+        .withEnv("MANAGEMENT_HEALTH_READINESSSTATE_ENABLED", "true")
+        // postgres configuration
+        .withEnv("IDENTITY_DATABASE_HOST", POSTGRES_HOST)
+        .withEnv("IDENTITY_DATABASE_NAME", IDENTITY_DATABASE_NAME)
+        .withEnv("IDENTITY_DATABASE_PASSWORD", IDENTITY_DATABASE_PASSWORD)
+        .withEnv("IDENTITY_DATABASE_PORT", Integer.toString(POSTGRES_PORT))
+        .withEnv("IDENTITY_DATABASE_USERNAME", IDENTITY_DATABASE_USERNAME)
+        .withEnv("IDENTITY_MAPPING_RULES_0_NAME", "Rule 1")
+        .withEnv("IDENTITY_MAPPING_RULES_0_CLAIM_NAME", "client_id")
+        .withEnv("IDENTITY_MAPPING_RULES_0_CLAIM_VALUE", IDENTITY_CLIENT)
+        .withEnv("IDENTITY_MAPPING_RULES_0_OPERATOR", "EQUALS")
+        .withEnv("IDENTITY_MAPPING_RULES_0_RULE_TYPE", "ROLE")
+        .withEnv("IDENTITY_MAPPING_RULES_0_APPLIED_ROLE_NAMES_0", "Identity")
         .withNetworkAliases("identity")
         .withNetwork(NETWORK)
         .withExposedPorts(IDENTITY_PORT, 8082)
