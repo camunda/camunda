@@ -105,13 +105,13 @@ function createMainCommentBody(flakyTests) {
 ${flakyTests}
 \`\`\`
 
-Related to your code? Maybe.
+Might be related, might be a ghost.
 
-Fixable now? Maybe not.
+If the changes affect this area, **please check and fix before merging**.
 
-Please consider investigating if you have time. These tests might return, and
+If not, **leave a quick comment** explaining why it’s likely unrelated.
 
-I’ll be back. 🤖`;
+Just doing some light ghostbusting. 👻`;
 }
 
 module.exports = {
