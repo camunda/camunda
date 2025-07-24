@@ -327,10 +327,6 @@
           <generatorName>java</generatorName>
           <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
           <modelPackage>io.camunda.client.protocol.rest</modelPackage>
-          <typeMappings>OffsetDateTime=String</typeMappings>
-          <generateApis>false</generateApis>
-          <generateApiTests>false</generateApiTests>
-          <generateSupportingFiles>false</generateSupportingFiles>
           <generateModels>true</generateModels>
           <generateModelDocumentation>false</generateModelDocumentation>
           <generateModelTests>false</generateModelTests>
