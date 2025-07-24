@@ -108,12 +108,12 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
         mappingRuleServices
             .withAuthentication(CamundaAuthentication.anonymous())
             .getMatchingMappingRules(claims);
-    final Set<String> mappingIds =
+    final Set<String> mappingRuleIds =
         mappingRules.map(MappingRuleEntity::mappingRuleId).collect(Collectors.toSet());
-    if (mappingIds.isEmpty()) {
+    if (mappingRuleIds.isEmpty()) {
       LOG.debug("No mappingRules found for these claims: {}", claims);
     } else {
-      ownerTypeToIds.put(MAPPING_RULE, mappingIds);
+      ownerTypeToIds.put(MAPPING_RULE, mappingRuleIds);
     }
 
     final Set<String> groups;
@@ -163,6 +163,6 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
         .withRoles(roles)
         .withGroupsClaimEnabled(groupsClaimPresent);
 
-    return new OAuthContext(mappingIds, authContextBuilder.build());
+    return new OAuthContext(mappingRuleIds, authContextBuilder.build());
   }
 }

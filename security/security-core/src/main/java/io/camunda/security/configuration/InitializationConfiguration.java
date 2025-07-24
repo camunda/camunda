@@ -21,7 +21,7 @@ public class InitializationConfiguration {
   public static final String DEFAULT_USER_EMAIL = "demo@example.com";
 
   private List<ConfiguredUser> users = new ArrayList<>();
-  private List<ConfiguredMapping> mappings = new ArrayList<>();
+  private List<ConfiguredMappingRule> mappingRules = new ArrayList<>();
   private Map<String, Map<String, Collection<String>>> defaultRoles = new HashMap<>();
 
   public List<ConfiguredUser> getUsers() {
@@ -32,12 +32,12 @@ public class InitializationConfiguration {
     this.users = users;
   }
 
-  public List<ConfiguredMapping> getMappings() {
-    return mappings;
+  public List<ConfiguredMappingRule> getMappingRules() {
+    return mappingRules;
   }
 
-  public void setMappings(final List<ConfiguredMapping> mappings) {
-    this.mappings = mappings;
+  public void setMappingRules(final List<ConfiguredMappingRule> mappingRules) {
+    this.mappingRules = mappingRules;
   }
 
   public Map<String, Map<String, Collection<String>>> getDefaultRoles() {

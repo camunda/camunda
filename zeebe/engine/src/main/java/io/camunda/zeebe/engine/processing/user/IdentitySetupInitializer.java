@@ -97,15 +97,15 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                         .setPassword(passwordEncoder.encode(user.getPassword()))));
 
     initialization
-        .getMappings()
+        .getMappingRules()
         .forEach(
             mapping ->
                 setupRecord.addMappingRule(
                     new MappingRuleRecord()
-                        .setMappingRuleId(mapping.getMappingId())
+                        .setMappingRuleId(mapping.getMappingRuleId())
                         .setClaimName(mapping.getClaimName())
                         .setClaimValue(mapping.getClaimValue())
-                        .setName(mapping.getMappingId())));
+                        .setName(mapping.getMappingRuleId())));
 
     setupRecord.setDefaultTenant(
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));
@@ -125,7 +125,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             switch (assignmentsForEntityType.getKey()) {
               case "users" -> EntityType.USER;
               case "clients" -> EntityType.CLIENT;
-              case "mappings" -> EntityType.MAPPING_RULE;
+              case "mappingRules" -> EntityType.MAPPING_RULE;
               case "groups" -> EntityType.GROUP;
               case "roles" -> EntityType.ROLE;
               default ->

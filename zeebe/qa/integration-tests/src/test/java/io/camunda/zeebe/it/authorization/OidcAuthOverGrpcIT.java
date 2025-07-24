@@ -17,7 +17,7 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.security.configuration.ConfiguredMapping;
+import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -84,13 +84,13 @@ public class OidcAuthOverGrpcIT {
                 oidcConfig.setRedirectUri("example.com");
 
                 c.getInitialization()
-                    .setMappings(
+                    .setMappingRules(
                         List.of(
-                            new ConfiguredMapping(
+                            new ConfiguredMappingRule(
                                 DEFAULT_USER_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
                 c.getInitialization()
                     .getDefaultRoles()
-                    .put("admin", Map.of("mappings", List.of(DEFAULT_USER_ID)));
+                    .put("admin", Map.of("mappingRules", List.of(DEFAULT_USER_ID)));
               });
 
   @BeforeAll

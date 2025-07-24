@@ -29,7 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.security.configuration.ConfiguredMapping;
+import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -105,8 +105,8 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
                 oidcConfig.setRedirectUri(EXAMPLE_REDIRECT_URI);
 
                 c.getInitialization()
-                    .setMappings(
-                        List.of(new ConfiguredMapping(USER_ID, USER_ID_CLAIM_NAME, USER_ID)));
+                    .setMappingRules(
+                        List.of(new ConfiguredMappingRule(USER_ID, USER_ID_CLAIM_NAME, USER_ID)));
                 c.getInitialization()
                     .getDefaultRoles()
                     .put(ADMIN_ROLE, Map.of(USERS_KEY, List.of(USER_ID)));
