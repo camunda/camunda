@@ -7,17 +7,17 @@
  */
 package io.camunda.authentication.config;
 
-import static io.camunda.authentication.ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.authentication.ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.authentication.ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.authentication.ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
 
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
-import io.camunda.authentication.ConditionalOnNoSecondaryStorage;
 import io.camunda.authentication.ConditionalOnProtectedApi;
-import io.camunda.authentication.ConditionalOnSecondaryStorage;
+import io.camunda.authentication.ConditionalOnSecondaryStorageDisabled;
+import io.camunda.authentication.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
@@ -379,7 +379,7 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @ConditionalOnSecondaryStorage
+  @ConditionalOnSecondaryStorageEnabled
   public static class BasicConfiguration {
     @Bean
     @ConditionalOnMissingBean(UserDetailsService.class)
@@ -504,7 +504,6 @@ public class WebSecurityConfig {
 
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
-  @ConditionalOnSecondaryStorage
   public static class OidcConfiguration {
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
@@ -565,6 +564,7 @@ public class WebSecurityConfig {
     @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
+    @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcApiSecurity(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
@@ -738,7 +738,7 @@ public class WebSecurityConfig {
    */
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
-  @ConditionalOnNoSecondaryStorage
+  @ConditionalOnSecondaryStorageDisabled
   public static class BasicAuthenticationNoDbConfiguration {
 
     @Bean

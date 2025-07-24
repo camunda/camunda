@@ -7,9 +7,6 @@
  */
 package io.camunda.authentication;
 
-import static io.camunda.authentication.ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.authentication.ConditionalOnSecondaryStorage.NoSecondaryStorageCondition.PROPERTY_CAMUNDA_DATABASE_TYPE;
-
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,15 +24,18 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@Conditional(ConditionalOnNoSecondaryStorage.NoSecondaryStorageCondition.class)
-public @interface ConditionalOnNoSecondaryStorage {
+@Conditional(ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.class)
+public @interface ConditionalOnSecondaryStorageEnabled {
 
   class NoSecondaryStorageCondition implements Condition {
+
+    public static final String PROPERTY_CAMUNDA_DATABASE_TYPE = "camunda.database.type";
+    public static final String CAMUNDA_DATABASE_TYPE_NONE = "none";
 
     @Override
     public boolean matches(final ConditionContext context, final AnnotatedTypeMetadata metadata) {
       final String dbType = context.getEnvironment().getProperty(PROPERTY_CAMUNDA_DATABASE_TYPE);
-      return CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
+      return !CAMUNDA_DATABASE_TYPE_NONE.equalsIgnoreCase(dbType);
     }
   }
 }
