@@ -11,9 +11,5 @@ public interface DataGenerator {
 
   void createZeebeDataAsync();
 
-  void createUser(String username, String firstname, String lastname);
-
   boolean shouldCreateData();
-
-  void createDemoUsers();
 }
