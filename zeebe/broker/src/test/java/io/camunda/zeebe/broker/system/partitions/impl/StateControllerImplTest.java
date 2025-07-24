@@ -92,7 +92,7 @@ public final class StateControllerImplTest {
 
     // then
     assertThat(snapshotController.isDbOpened()).isFalse();
-    assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1).join())
+    assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1, false).join())
         .hasCauseInstanceOf(StateClosedException.class);
   }
 
@@ -103,7 +103,7 @@ public final class StateControllerImplTest {
     snapshotController.recover().join();
 
     // then
-    assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1).join())
+    assertThatThrownBy(() -> snapshotController.takeTransientSnapshot(1, false).join())
         .hasCauseInstanceOf(NoEntryAtSnapshotPosition.class);
   }
 
@@ -115,7 +115,8 @@ public final class StateControllerImplTest {
     snapshotController.recover().join();
 
     // when
-    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
+    final var tmpSnapshot =
+        snapshotController.takeTransientSnapshot(snapshotPosition, false).join();
     final var snapshot = tmpSnapshot.persist().join();
 
     // then
@@ -136,7 +137,8 @@ public final class StateControllerImplTest {
     // when
     wrapper.wrap(snapshotController.recover().join());
     wrapper.putInt(key, value);
-    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
+    final var tmpSnapshot =
+        snapshotController.takeTransientSnapshot(snapshotPosition, false).join();
     tmpSnapshot.persist().join();
     snapshotController.close();
     wrapper.wrap(snapshotController.recover().join());
@@ -186,10 +188,11 @@ public final class StateControllerImplTest {
     exporterPosition.set(snapshotPosition - 1);
     snapshotController.recover().join();
     final var firstSnapshot =
-        snapshotController.takeTransientSnapshot(snapshotPosition).join().persist().join();
+        snapshotController.takeTransientSnapshot(snapshotPosition, false).join().persist().join();
 
     // when
-    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition + 1).join();
+    final var tmpSnapshot =
+        snapshotController.takeTransientSnapshot(snapshotPosition + 1, false).join();
     final var snapshot = tmpSnapshot.persist().join();
 
     // then
@@ -209,12 +212,16 @@ public final class StateControllerImplTest {
     exporterPosition.set(snapshotPosition - 1);
     snapshotController.recover().join();
     final var firstSnapshot =
-        snapshotController.takeTransientSnapshot(snapshotPosition).join().persist().join();
+        snapshotController.takeTransientSnapshot(snapshotPosition, false).join().persist().join();
     atomixRecordEntrySupplier.set(emptyEntrySupplier);
 
     // when
     final var snapshot =
-        snapshotController.takeTransientSnapshot(snapshotPosition + 1).join().persist().join();
+        snapshotController
+            .takeTransientSnapshot(snapshotPosition + 1, false)
+            .join()
+            .persist()
+            .join();
 
     // then
     assertThat(snapshot)
@@ -236,11 +243,12 @@ public final class StateControllerImplTest {
     exporterPosition.set(snapshotPosition);
     snapshotController.recover().join();
     final var firstSnapshot =
-        snapshotController.takeTransientSnapshot(snapshotPosition).join().persist().join();
+        snapshotController.takeTransientSnapshot(snapshotPosition, false).join().persist().join();
 
     // when
     exporterPosition.set(snapshotPosition + 1);
-    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
+    final var tmpSnapshot =
+        snapshotController.takeTransientSnapshot(snapshotPosition, false).join();
     final var snapshot = tmpSnapshot.persist().join();
 
     // then
@@ -324,7 +332,7 @@ public final class StateControllerImplTest {
 
     // when
     final var closed = snapshotController.closeDb();
-    final var snapshotTaken = snapshotController.takeTransientSnapshot(1);
+    final var snapshotTaken = snapshotController.takeTransientSnapshot(1, false);
     closed.join();
 
     // then
@@ -337,7 +345,7 @@ public final class StateControllerImplTest {
     snapshotController.recover().join();
 
     // when
-    final var snapshotTaken = snapshotController.takeTransientSnapshot(1);
+    final var snapshotTaken = snapshotController.takeTransientSnapshot(1, false);
     final var closed = snapshotController.closeDb();
     closed.join();
 
@@ -354,7 +362,8 @@ public final class StateControllerImplTest {
     final long snapshotPosition = 5;
 
     // when
-    final var transientSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
+    final var transientSnapshot =
+        snapshotController.takeTransientSnapshot(snapshotPosition, false).join();
 
     // then
     final var snapshot = transientSnapshot.snapshotId();
@@ -378,7 +387,8 @@ public final class StateControllerImplTest {
     exporterPosition.set(-1L);
 
     // when
-    final var transientSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition).join();
+    final var transientSnapshot =
+        snapshotController.takeTransientSnapshot(snapshotPosition, true).join();
 
     // then
     final var snapshot = transientSnapshot.snapshotId();
@@ -400,7 +410,7 @@ public final class StateControllerImplTest {
 
     // when
     final var snapshot =
-        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+        snapshotController.takeTransientSnapshot(processedPosition, false).join().persist().join();
 
     // then
     assertThat(snapshot)
@@ -420,7 +430,7 @@ public final class StateControllerImplTest {
 
     // when
     final var snapshot =
-        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+        snapshotController.takeTransientSnapshot(processedPosition, false).join().persist().join();
 
     // then
     assertThat(snapshot)
@@ -439,7 +449,7 @@ public final class StateControllerImplTest {
 
     // when
     final var snapshot =
-        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+        snapshotController.takeTransientSnapshot(processedPosition, false).join().persist().join();
 
     // then - should use exporter position since backup is disabled
     assertThat(snapshot)
@@ -457,7 +467,7 @@ public final class StateControllerImplTest {
 
     // when
     final var transientSnapshot =
-        snapshotController.takeTransientSnapshot(processedPosition).join();
+        snapshotController.takeTransientSnapshot(processedPosition, false).join();
 
     // then
     final var snapshot = transientSnapshot.snapshotId();
@@ -479,7 +489,7 @@ public final class StateControllerImplTest {
 
     // when
     final var snapshot =
-        snapshotController.takeTransientSnapshot(processedPosition).join().persist().join();
+        snapshotController.takeTransientSnapshot(processedPosition, false).join().persist().join();
 
     // then
     assertThat(snapshot)
@@ -488,7 +498,7 @@ public final class StateControllerImplTest {
   }
 
   private File takeSnapshot(final long position) {
-    final var snapshot = snapshotController.takeTransientSnapshot(position).join();
+    final var snapshot = snapshotController.takeTransientSnapshot(position, false).join();
     return snapshot.persist().join().getPath().toFile();
   }
 

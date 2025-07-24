@@ -70,9 +70,10 @@ public class StateControllerImpl implements StateController {
 
   @Override
   public ActorFuture<TransientSnapshot> takeTransientSnapshot(
-      final long lowerBoundSnapshotPosition) {
+      final long lowerBoundSnapshotPosition, final boolean forceSnapshot) {
     final ActorFuture<TransientSnapshot> future = concurrencyControl.createFuture();
-    concurrencyControl.run(() -> takeTransientSnapshotInternal(lowerBoundSnapshotPosition, future));
+    concurrencyControl.run(
+        () -> takeTransientSnapshotInternal(lowerBoundSnapshotPosition, forceSnapshot, future));
     return future;
   }
 
@@ -151,7 +152,9 @@ public class StateControllerImpl implements StateController {
   }
 
   private void takeTransientSnapshotInternal(
-      final long lowerBoundSnapshotPosition, final ActorFuture<TransientSnapshot> future) {
+      final long lowerBoundSnapshotPosition,
+      final boolean forceSnapshot,
+      final ActorFuture<TransientSnapshot> future) {
     if (!isDbOpened()) {
       final String error =
           String.format(
@@ -174,7 +177,8 @@ public class StateControllerImpl implements StateController {
             nextSnapshotId.index,
             nextSnapshotId.term,
             nextSnapshotId.processedPosition,
-            nextSnapshotId.exportedPosition);
+            nextSnapshotId.exportedPosition,
+            forceSnapshot);
 
     if (transientSnapshot.isLeft()) {
       future.completeExceptionally(transientSnapshot.getLeft());

@@ -20,7 +20,8 @@ public interface StateController extends AutoCloseable {
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
    * @return a future
    */
-  ActorFuture<TransientSnapshot> takeTransientSnapshot(long lowerBoundSnapshotPosition);
+  ActorFuture<TransientSnapshot> takeTransientSnapshot(
+      long lowerBoundSnapshotPosition, final boolean forceSnapshot);
 
   /**
    * Recovers the state from the snapshot and opens the database

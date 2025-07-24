@@ -353,13 +353,16 @@ public final class FileBasedSnapshotStoreImpl {
       final long index,
       final long term,
       final long processedPosition,
-      final long exportedPosition) {
+      final long exportedPosition,
+      final boolean forceSnapshot) {
 
     final var newSnapshotId =
         new FileBasedSnapshotId(index, term, processedPosition, exportedPosition, brokerId);
 
     final FileBasedSnapshot currentSnapshot = this.currentSnapshot.get();
-    if (currentSnapshot != null && currentSnapshot.getSnapshotId().equals(newSnapshotId)) {
+    if (!forceSnapshot
+        && currentSnapshot != null
+        && currentSnapshot.getSnapshotId().compareTo(newSnapshotId) >= 0) {
       final String error =
           String.format(
               "Previous snapshot was taken for the same processed position %d and exported position %d.",

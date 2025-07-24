@@ -540,7 +540,8 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private TransientSnapshot takeTransientSnapshotWithFiles(final long index) {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(index, 1, 123L, 0).get();
+    final var transientSnapshot =
+        snapshotStore.newTransientSnapshot(index, 1, 123L, 0, false).get();
 
     final var snapshotFileNames =
         List.of("zeebe.metadata", "table-0.sst", "table-1.sst", "table-2.sst");
@@ -568,7 +569,7 @@ public class FileBasedSnapshotStoreTest {
 
   private TransientSnapshot takeTransientSnapshot(
       final long index, final FileBasedSnapshotStore store) {
-    final var transientSnapshot = store.newTransientSnapshot(index, 1, 1, 0).get();
+    final var transientSnapshot = store.newTransientSnapshot(index, 1, 1, 0, false).get();
     transientSnapshot.take(this::createSnapshotDir);
     return transientSnapshot;
   }

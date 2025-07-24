@@ -361,7 +361,8 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   private PersistedSnapshot takePersistedSnapshot(final long index) {
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(index, 0L, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(index, 0L, 1, 0, false).get();
     transientSnapshot.take(this::writeSnapshot).join();
     return transientSnapshot.withLastFollowupEventPosition(100L).persist().join();
   }

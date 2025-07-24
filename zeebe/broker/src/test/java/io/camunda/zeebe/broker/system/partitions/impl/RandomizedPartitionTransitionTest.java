@@ -446,7 +446,7 @@ public class RandomizedPartitionTransitionTest {
 
     @Override
     public ActorFuture<TransientSnapshot> takeTransientSnapshot(
-        final long lowerBoundSnapshotPosition) {
+        final long lowerBoundSnapshotPosition, final boolean forceSnapshot) {
       throw new IllegalStateException("Not implemented");
     }
 
