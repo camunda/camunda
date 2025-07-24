@@ -50,7 +50,6 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
     final var totalHits = userTaskMapper.count(dbQuery);
     final var hits =
         userTaskMapper.search(dbQuery).stream().map(UserTaskEntityMapper::toEntity).toList();
-    ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 

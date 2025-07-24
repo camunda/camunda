@@ -49,7 +49,6 @@ public class ProcessDefinitionDbReader extends AbstractEntityReader<ProcessDefin
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = processDefinitionMapper.count(dbQuery);
     final var hits = processDefinitionMapper.search(dbQuery);
-    ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
