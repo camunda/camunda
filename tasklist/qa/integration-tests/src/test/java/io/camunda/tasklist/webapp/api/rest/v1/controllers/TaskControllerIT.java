@@ -35,7 +35,6 @@ import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.group.UserGroupService;
-import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
@@ -1097,8 +1096,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final var assignRequest =
           new TaskAssignRequest().setAssignee("bill_doe").setAllowOverrideAssignment(false);
 
-      setCurrentUser(
-          new UserDTO().setUserId("bob_doe").setPermissions(List.of(Permission.WRITE)), true);
+      setCurrentUser(new UserDTO().setUserId("bob_doe"), true);
 
       // when
       final var errorResult =

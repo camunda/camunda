@@ -16,7 +16,6 @@ import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
-import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -52,8 +51,7 @@ public class UsageMetricIT extends TasklistZeebeIntegrationTest {
       final String username, final String firstname, final String lastname) {
     return new UserDTO()
         .setUserId(username)
-        .setDisplayName(String.format("%s %s", firstname, lastname))
-        .setPermissions(List.of(Permission.WRITE));
+        .setDisplayName(String.format("%s %s", firstname, lastname));
   }
 
   @Override

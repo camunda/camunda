@@ -22,9 +22,6 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.tasklist\\.webapp\\.security\\..*"),
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
           pattern = "io\\.camunda\\.tasklist\\.webapp\\.management\\..*")
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)

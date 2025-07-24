@@ -131,6 +131,7 @@ final class SecuredClusteredMessagingIT {
       new GenericContainer<>(TASKLIST)
           .withNetworkAliases("tasklist")
           .withNetwork(NETWORK)
+          .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_INITIALCONTACTPOINTS", "zeebe:26502")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST", "tasklist")
           .withEnv("ZEEBE_GATEWAY_CLUSTER_MEMBERID", "tasklist")

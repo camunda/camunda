@@ -17,6 +17,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.service.CamundaClientBasedAdapter;
+import io.camunda.tasklist.webapp.service.OrganizationService;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.zeebe.PartitionHolder;
@@ -58,6 +59,7 @@ public abstract class SessionlessTasklistZeebeIntegrationTest extends TasklistIn
 
   public ZeebeContainer zeebeContainer;
 
+  @MockBean protected OrganizationService organizationService;
   @MockBean protected CamundaClient mockedCamundaClient;
   // we don't want to create CamundaClient, we will rather use the one from
   // test rule

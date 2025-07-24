@@ -9,7 +9,6 @@ package io.camunda.tasklist;
 
 import io.camunda.application.commons.condition.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
-import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
@@ -65,7 +64,7 @@ public class TasklistModuleConfiguration {
   }
 
   @Configuration(proxyBeanMethods = false)
-  @Import({WebappSecurityModuleConfiguration.class, ImporterSecurityModuleConfiguration.class})
+  @Import({ImporterSecurityModuleConfiguration.class})
   @Profile("!operate")
   public static class TasklistSecurityModulesConfiguration {}
 

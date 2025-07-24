@@ -22,8 +22,6 @@ import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
-import io.camunda.tasklist.webapp.security.WebSecurityConfig;
-import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -54,9 +52,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
     classes = {
       TestElasticsearchSchemaManager.class,
       TestApplication.class,
-      SearchEngineHealthIndicator.class,
-      WebSecurityConfig.class,
-      OAuth2WebConfigurer.class,
+      SearchEngineHealthIndicator.class
     },
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
