@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
@@ -95,7 +96,8 @@ public class CompactRecordLogger {
           entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
           entry("SIGNAL", "SIG"),
           entry("COMMAND_DISTRIBUTION", "DSTR"),
-          entry("USER_TASK", "UT"));
+          entry("USER_TASK", "UT"),
+          entry("INPUT_COLLECTION_EVALUATED", "IN_COL_EVAL"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -143,6 +145,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
     valueLoggers.put(ValueType.USER_TASK, this::summarizeUserTask);
     valueLoggers.put(ValueType.COMMAND_DISTRIBUTION, this::summarizeCommandDistribution);
+    valueLoggers.put(ValueType.MULTI_INSTANCE, this::summarizeMultiInstance);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -824,6 +827,14 @@ public class CompactRecordLogger {
 
     return stringBuilder
         .append("%s partition %d".formatted(targetPartitionWord, value.getPartitionId()))
+        .toString();
+  }
+
+  private String summarizeMultiInstance(final Record<?> record) {
+    final var value = (MultiInstanceRecordValue) record.getValue();
+    return new StringBuilder()
+        .append("inputCollection: ")
+        .append(value.getInputCollection())
         .toString();
   }
 
