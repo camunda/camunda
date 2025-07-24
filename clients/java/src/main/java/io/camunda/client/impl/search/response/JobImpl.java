@@ -20,12 +20,9 @@ import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.ListenerEventType;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.impl.util.EnumUtil;
-import java.time.OffsetDateTime;
 import io.camunda.client.impl.util.ParseUtil;
-import java.time.OffsetDateTime;
 import io.camunda.client.protocol.rest.JobSearchResult;
 import java.util.Map;
-import java.time.OffsetDateTime;
 
 public class JobImpl implements Job {
 

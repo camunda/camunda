@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 package io.camunda.client.api.search.response;
-import java.time.OffsetDateTime;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionType;
 

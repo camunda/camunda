@@ -19,15 +19,11 @@ import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationType;
 import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.impl.util.EnumUtil;
-import java.time.OffsetDateTime;
 import io.camunda.client.impl.util.ParseUtil;
-import java.time.OffsetDateTime;
 import io.camunda.client.protocol.rest.BatchOperationItemResponse;
 import io.camunda.client.protocol.rest.BatchOperationItemSearchQueryResult;
 import java.util.ArrayList;
-import java.time.OffsetDateTime;
 import java.util.List;
-import java.time.OffsetDateTime;
 
 public class BatchOperationItemsImpl implements BatchOperationItems {
 

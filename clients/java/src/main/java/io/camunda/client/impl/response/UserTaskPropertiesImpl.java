@@ -20,11 +20,8 @@ import io.camunda.client.impl.util.ParseUtil;
 import java.time.OffsetDateTime;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.List;
-import java.time.OffsetDateTime;
 import java.util.function.BooleanSupplier;
-import java.time.OffsetDateTime;
 import java.util.function.Supplier;
-import java.time.OffsetDateTime;
 
 public final class UserTaskPropertiesImpl implements UserTaskProperties {
 

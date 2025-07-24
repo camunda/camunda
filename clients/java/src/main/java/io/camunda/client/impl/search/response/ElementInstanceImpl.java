@@ -21,10 +21,8 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.impl.util.EnumUtil;
 import java.time.OffsetDateTime;
 import io.camunda.client.impl.util.ParseUtil;
-import java.time.OffsetDateTime;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
 import java.util.Objects;
-import java.time.OffsetDateTime;
 
 public final class ElementInstanceImpl implements ElementInstance {
 
