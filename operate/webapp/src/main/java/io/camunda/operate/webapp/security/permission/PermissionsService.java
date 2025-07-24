@@ -11,6 +11,8 @@ import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.AuthorizationScope;
+import io.camunda.security.auth.AuthorizationScope.AuthorizationScopeFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -19,6 +21,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -165,23 +168,24 @@ public class PermissionsService {
       return ResourcesAllowed.all();
     }
     if (!isAuthorized()) {
-      return ResourcesAllowed.withIds(Set.of());
+      return ResourcesAllowed.withAuthorizationScopes(Set.of());
     }
 
     final var authorization =
         Authorization.of(a -> a.resourceType(resourceType).permissionType(permissionType));
     final SecurityContext securityContext = getSecurityContext(authorization);
-    final List<String> ids = authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+    final List<AuthorizationScope> ids =
+        authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
 
     if (hasWildcardPermission(ids)) {
       return ResourcesAllowed.all();
     }
 
-    return ResourcesAllowed.withIds(new LinkedHashSet<>(ids));
+    return ResourcesAllowed.withAuthorizationScopes(new LinkedHashSet<>(ids));
   }
 
-  private boolean hasWildcardPermission(final List<String> resourceKeys) {
-    return resourceKeys != null && resourceKeys.contains("*");
+  private boolean hasWildcardPermission(final List<AuthorizationScope> resourceKeys) {
+    return resourceKeys != null && resourceKeys.contains(AuthorizationScopeFactory.wildcard());
   }
 
   /**
@@ -255,7 +259,8 @@ public class PermissionsService {
         Authorization.of(a -> a.resourceType(resourceType).permissionType(permissionType));
 
     final SecurityContext securityContext = getSecurityContext(authorization);
-    return authorizationChecker.isAuthorized(resourceId, securityContext);
+    return authorizationChecker.isAuthorized(
+        AuthorizationScopeFactory.of(resourceId), securityContext);
   }
 
   private SecurityContext getSecurityContext(final Authorization authorization) {
@@ -287,6 +292,11 @@ public class PermissionsService {
 
     public static ResourcesAllowed all() {
       return new ResourcesAllowed(true, null);
+    }
+
+    public static ResourcesAllowed withAuthorizationScopes(final Set<AuthorizationScope> ids) {
+      return new ResourcesAllowed(
+          false, ids.stream().map(AuthorizationScope::resourceId).collect(Collectors.toSet()));
     }
 
     public static ResourcesAllowed withIds(final Set<String> ids) {

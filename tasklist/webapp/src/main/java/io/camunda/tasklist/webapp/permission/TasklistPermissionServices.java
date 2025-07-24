@@ -8,6 +8,7 @@
 package io.camunda.tasklist.webapp.permission;
 
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.AuthorizationScope;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -18,6 +19,7 @@ import io.camunda.tasklist.util.LazySupplier;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -70,7 +72,9 @@ public class TasklistPermissionServices {
     final var securityContext =
         securityContextProvider.provideSecurityContext(
             authenticationSupplier.get(), CREATE_PROC_INST_AUTH_CHECK);
-    return authorizationChecker.retrieveAuthorizedResourceKeys(securityContext);
+    return authorizationChecker.retrieveAuthorizedResourceKeys(securityContext).stream()
+        .map(AuthorizationScope::resourceId)
+        .collect(Collectors.toList());
   }
 
   private boolean isAuthorizedForResource(
