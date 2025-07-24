@@ -53,7 +53,11 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
     final var dbSort = convertSort(query.sort(), ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY);
     final var dbQuery =
         ProcessInstanceDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizationFilter(resourceAccessChecks.getAuthorization().orElse(null))
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
     final var totalHits = processInstanceMapper.count(dbQuery);

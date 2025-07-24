@@ -10,13 +10,17 @@ package io.camunda.db.rdbms.read.domain;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.security.auth.Authorization;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
 public record ProcessInstanceDbQuery(
-    ProcessInstanceFilter filter, DbQuerySorting<ProcessInstanceEntity> sort, DbQueryPage page) {
+    ProcessInstanceFilter filter,
+    Authorization authorizationFilter,
+    DbQuerySorting<ProcessInstanceEntity> sort,
+    DbQueryPage page) {
 
   public static ProcessInstanceDbQuery of(
       final Function<ProcessInstanceDbQuery.Builder, ObjectBuilder<ProcessInstanceDbQuery>> fn) {
@@ -29,11 +33,17 @@ public record ProcessInstanceDbQuery(
         FilterBuilders.processInstance().build();
 
     private ProcessInstanceFilter filter;
+    private Authorization authorizationFilter;
     private DbQuerySorting<ProcessInstanceEntity> sort;
     private DbQueryPage page;
 
     public Builder filter(final ProcessInstanceFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder authorizationFilter(final Authorization value) {
+      authorizationFilter = value;
       return this;
     }
 
@@ -64,7 +74,7 @@ public record ProcessInstanceDbQuery(
     public ProcessInstanceDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new ProcessInstanceDbQuery(filter, sort, page);
+      return new ProcessInstanceDbQuery(filter, authorizationFilter, sort, page);
     }
   }
 }
