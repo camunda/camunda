@@ -10,8 +10,8 @@ export const Paths = {
   login(application: string): string {
     return `/${application}/login`;
   },
-  forbidden() {
-    return '/forbidden';
+  forbidden(application: string): string {
+    return `/${application}/forbidden`;
   },
   mappings() {
     return '/identity/mappings';

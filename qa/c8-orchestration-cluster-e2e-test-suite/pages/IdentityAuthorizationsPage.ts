@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {sleep} from 'utils/sleep';
+import {waitForItemInList} from 'utils/waitForItemInList';
 
 export class IdentityAuthorizationsPage {
   readonly page: Page;
@@ -24,8 +24,13 @@ export class IdentityAuthorizationsPage {
   readonly createAuthorizationSubmitButton: Locator;
   readonly deleteAuthorizationButton: (name: string) => Locator;
   readonly deleteAuthorizationModal: Locator;
-  readonly deleteAuthorizationModalDeleteButton: Locator;
+  readonly deleteAuthorizationSubButton: Locator;
   readonly selectAuthorizationRow: (name: string) => Locator;
+  readonly selectResourceTypeTab: (resourceType: string) => Promise<void>;
+  readonly resourceTypeComboBox: Locator;
+  readonly getAuthorizationCell: (ownerId: string) => Locator;
+  readonly resourceTypeOption: (resourceType: string) => Locator;
+  readonly resourceTypeTab: (resourceType: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -54,12 +59,9 @@ export class IdentityAuthorizationsPage {
         name: 'Resource ID',
       });
     this.createAuthorizationAccessPermission = (name) =>
-      this.createAuthorizationModal.getByText(name, {
-        exact: true,
-      });
+      this.page.locator(`label[for="${name.toUpperCase()}"]`);
     this.createAuthorizationOwnerTypeComboBox =
       this.createAuthorizationModal.getByRole('combobox', {name: 'Owner type'});
-
     this.createAuthorizationOwnerTypeOption = (name) =>
       this.createAuthorizationModal.getByRole('option', {
         name,
@@ -73,10 +75,25 @@ export class IdentityAuthorizationsPage {
     this.deleteAuthorizationModal = page.getByRole('dialog', {
       name: 'Delete authorization',
     });
-    this.deleteAuthorizationModalDeleteButton =
-      this.deleteAuthorizationModal.getByRole('button', {
+    this.deleteAuthorizationSubButton = this.deleteAuthorizationModal.getByRole(
+      'button',
+      {
         name: 'Delete authorization',
+      },
+    );
+    this.selectResourceTypeTab = (resourceType) =>
+      this.resourceTypeTab(resourceType).click();
+    this.resourceTypeComboBox = page.getByRole('combobox', {
+      name: 'Resource type',
+    });
+    this.getAuthorizationCell = (ownerId) =>
+      this.authorizationsList.getByRole('cell', {
+        name: ownerId.toLowerCase().replace(/ /g, ''),
       });
+    this.resourceTypeOption = (resourceType) =>
+      this.page.getByRole('option', {name: resourceType});
+    this.resourceTypeTab = (resourceType) =>
+      this.page.getByRole('tab', {name: resourceType});
   }
 
   async navigateToAuthorizations() {
@@ -84,7 +101,7 @@ export class IdentityAuthorizationsPage {
   }
 
   async clickResourceType(resourceType: string) {
-    await this.page.getByRole('tab', {name: resourceType}).click();
+    await this.resourceTypeTab(resourceType).click();
   }
 
   async clickCreateAuthorizationButton() {
@@ -110,20 +127,82 @@ export class IdentityAuthorizationsPage {
     await this.createAuthorizationResourceIdField.fill(resourceId);
   }
 
-  async checkAccessPermissions(permission: string[] | any[]) {
+  async checkAccessPermissions(permission: string[]) {
     for (let index = 0; index < permission.length; index++) {
       await this.createAuthorizationAccessPermission(permission[index]).click();
     }
   }
 
-  async clickCreateAuthorizationSubmitButton() {
-    await this.createAuthorizationSubmitButton.click();
-    await sleep(8000);
+  async selectAccessPermissions(permissions: string[]) {
+    for (const permission of permissions) {
+      const checkboxLabel =
+        this.createAuthorizationAccessPermission(permission);
+      await checkboxLabel.waitFor({state: 'visible'});
+      await checkboxLabel.click();
+    }
   }
 
-  async assertAuthorizationExists(values: string[] | any[]) {
+  async clickCreateAuthorizationSubmitButton() {
+    await this.createAuthorizationSubmitButton.click();
+    await expect(this.createAuthorizationModal).toBeHidden();
+  }
+
+  async assertAuthorizationExists(values: string[]) {
     for (let index = 0; index < values.length; index++) {
       await this.selectAuthorizationRow(values[index]).isVisible();
     }
+  }
+
+  async clickDeleteAuthorizationButton(name: string) {
+    await this.deleteAuthorizationButton(name).click();
+  }
+
+  async clickDeleteAuthorizationSubButton() {
+    await this.deleteAuthorizationSubButton.click();
+  }
+
+  async createAuthorization(authorization: {
+    ownerType: string;
+    ownerId: string;
+    resourceType: string;
+    resourceId: string;
+    accessPermissions: string[];
+  }) {
+    await this.createAuthorizationButton.click();
+    await expect(this.createAuthorizationModal).toBeVisible();
+    await this.selectAuthorizationOwnerType({
+      ownerType: authorization.ownerType,
+    });
+    await this.selectAuthorizationOwner({
+      ownerId: authorization.ownerId,
+    });
+    await this.selectResourceType(authorization.resourceType);
+    await this.fillResourceId(authorization.resourceId);
+    await this.selectAccessPermissions(authorization.accessPermissions);
+    await this.createAuthorizationSubmitButton.click();
+    await expect(this.createAuthorizationModal).toBeHidden();
+    await this.selectResourceTypeTab(authorization.resourceType);
+    const item = this.getAuthorizationCell(authorization.ownerId);
+    await waitForItemInList(this.page, item, {
+      clickAuthorizationsPageTab: () =>
+        this.selectResourceTypeTab(authorization.resourceType),
+    });
+  }
+
+  async selectResourceType(resourceType: string) {
+    await this.resourceTypeComboBox.click({timeout: 90000});
+    await this.resourceTypeOption(resourceType).click();
+  }
+
+  async selectAuthorizationOwnerType(authorization: {ownerType: string}) {
+    await this.createAuthorizationOwnerTypeComboBox.click();
+    await this.createAuthorizationOwnerTypeOption(
+      authorization.ownerType,
+    ).click();
+  }
+
+  async selectAuthorizationOwner(authorization: {ownerId: string}) {
+    await this.createAuthorizationOwnerComboBox.click();
+    await this.createAuthorizationOwnerOption(authorization.ownerId).click();
   }
 }

@@ -11,16 +11,22 @@ import {Page, Locator} from '@playwright/test';
 export class IdentityHeader {
   readonly openSettingsButton: Locator;
   readonly logoutButton: Locator;
+  readonly rolesTab: Locator;
 
   constructor(page: Page) {
     this.openSettingsButton = page.getByRole('button', {
       name: 'Open Settings',
     });
     this.logoutButton = page.getByRole('button', {name: 'Log out'});
+    this.rolesTab = page.locator('nav a').filter({hasText: /^Roles$/});
   }
 
   async logout() {
     await this.openSettingsButton.click();
     await this.logoutButton.click();
+  }
+
+  async navigateToRoles() {
+    await this.rolesTab.click();
   }
 }

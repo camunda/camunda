@@ -8,7 +8,6 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {sleep} from 'utils/sleep';
 import {waitForItemInList} from 'utils/waitForItemInList';
 
 export class IdentityUsersPage {
@@ -39,6 +38,7 @@ export class IdentityUsersPage {
   readonly deleteUserModalCancelButton: Locator;
   readonly deleteUserModalDeleteButton: Locator;
   readonly emptyState: Locator;
+  readonly userCell: (name: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -153,6 +153,8 @@ export class IdentityUsersPage {
     );
 
     this.emptyState = page.getByText('No users created yet', {exact: true});
+    this.userCell = (name) =>
+      this.usersList.getByRole('cell', {name, exact: true});
   }
 
   async navigateToUsers() {
@@ -173,7 +175,7 @@ export class IdentityUsersPage {
     await this.createPasswordField.fill(user.password);
     await this.createRepeatPasswordField.fill(user.password);
     await this.createUserModalCreateButton.click();
-    await expect(this.createUserModal).not.toBeVisible();
+    await expect(this.createUserModal).toBeHidden();
 
     const item = this.usersList.getByRole('cell', {
       name: user.email,
@@ -188,7 +190,7 @@ export class IdentityUsersPage {
     await this.deleteUserButton(user.username).click();
     await expect(this.deleteUserModal).toBeVisible();
     await this.deleteUserModalDeleteButton.click();
-    await expect(this.deleteUserModal).not.toBeVisible();
+    await expect(this.deleteUserModal).toBeHidden();
 
     const item = this.usersList.getByRole('cell', {
       name: user.email,
