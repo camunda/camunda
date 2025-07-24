@@ -148,8 +148,9 @@ runs:
       secrets: |
         secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
         secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username;
-        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_PSW${{ inputs.dockerhub-readonly == 'true' && '_READ_ONLY' || ''}} | dockerhub-token;
-        ${{ steps.checks.outputs.dockerhub-vault-path }} REGISTRY_HUB_DOCKER_COM_USR | dockerhub-username;
+        secret/data/products/camunda/ci/github-actions POC_DHI_USR | dockerhub-username;
+        secret/data/products/camunda/ci/github-actions POC_DHI_PSW | dockerhub-token;
+
   - name: Setup Java
     uses: actions/setup-java@v4
     with:
