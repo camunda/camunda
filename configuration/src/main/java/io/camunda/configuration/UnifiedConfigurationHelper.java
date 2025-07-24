@@ -81,7 +81,7 @@ public class UnifiedConfigurationHelper {
 
   private static <T> T getLegacyValue(
       final Set<String> legacyProperties, final Class<T> expectedType) {
-    Set<T> legacyValues = new HashSet<>();
+    final Set<T> legacyValues = new HashSet<>();
 
     for (final String legacyProperty : legacyProperties) {
       final String strValue = environment.getProperty(legacyProperty);
