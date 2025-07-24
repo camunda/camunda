@@ -42,7 +42,6 @@ public class JobDbReader extends AbstractEntityReader<JobEntity> implements JobR
     LOG.trace("[RDBMS DB] Search for jobs with filter {}", dbQuery);
     final var totalHits = jobMapper.count(dbQuery);
     final var hits = jobMapper.search(dbQuery).stream().map(JobEntityMapper::toEntity).toList();
-    ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 

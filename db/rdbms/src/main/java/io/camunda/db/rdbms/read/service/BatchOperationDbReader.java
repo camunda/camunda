@@ -61,7 +61,6 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
         batchOperationMapper.search(dbQuery).stream()
             .map(BatchOperationEntityMapper::toEntity)
             .toList();
-    ensureSingleResultIfRequired(hits, query);
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
