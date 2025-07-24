@@ -12,6 +12,7 @@ import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
 import io.camunda.search.clients.aggregator.SearchParentAggregator;
+import io.camunda.search.clients.aggregator.SearchSumAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
@@ -47,6 +48,7 @@ import io.camunda.search.os.transformers.aggregator.SearchCompositeAggregatorTra
 import io.camunda.search.os.transformers.aggregator.SearchFilterAggregatorTransformer;
 import io.camunda.search.os.transformers.aggregator.SearchFiltersAggregatorTransformer;
 import io.camunda.search.os.transformers.aggregator.SearchParentAggregatorTransformer;
+import io.camunda.search.os.transformers.aggregator.SearchSumAggregatorTransformer;
 import io.camunda.search.os.transformers.aggregator.SearchTermsAggregatorTransformer;
 import io.camunda.search.os.transformers.aggregator.SearchTopHitsAggregatorTransformer;
 import io.camunda.search.os.transformers.query.BoolQueryTransformer;
@@ -147,6 +149,7 @@ public final class OpensearchTransformers {
     mappers.put(SearchCompositeAggregator.class, new SearchCompositeAggregatorTransformer(mappers));
     mappers.put(SearchChildrenAggregator.class, new SearchChildrenAggregatorTransformer(mappers));
     mappers.put(SearchParentAggregator.class, new SearchParentAggregatorTransformer(mappers));
+    mappers.put(SearchSumAggregator.class, new SearchSumAggregatorTransformer(mappers));
 
     // sort
     mappers.put(SearchSortOptions.class, new SortOptionsTransformer(mappers));

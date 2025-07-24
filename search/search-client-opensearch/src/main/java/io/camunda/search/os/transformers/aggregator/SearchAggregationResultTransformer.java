@@ -31,6 +31,7 @@ import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.SingleBucketAggregateBase;
+import org.opensearch.client.opensearch._types.aggregations.SingleMetricAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -59,6 +60,11 @@ public class SearchAggregationResultTransformer<T>
         .docCount(aggregate.docCount())
         .aggregations(transformAggregation(aggregate.aggregations()))
         .build();
+  }
+
+  private AggregationResult transformSingleMetricAggregate(
+      final SingleMetricAggregateBase aggregate) {
+    return new Builder().docCount((long) aggregate.value()).build();
   }
 
   private SearchTopHitsAggregator findTopHitsAggregatorRecursively(
@@ -172,6 +178,7 @@ public class SearchAggregationResultTransformer<T>
             case Sterms -> res = transformMultiBucketAggregate(aggregate.sterms());
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
+            case Sum -> res = transformSingleMetricAggregate(aggregate.sum());
             default ->
                 throw new IllegalStateException(
                     "Unsupported aggregation type: " + aggregate._kind());
