@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
@@ -15,8 +16,12 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JobDbModel implements Copyable<JobDbModel> {
+  private static final Logger LOG = LoggerFactory.getLogger(JobDbModel.class);
+
   private Long jobKey;
   private String type;
   private String worker;
@@ -100,6 +105,40 @@ public class JobDbModel implements Copyable<JobDbModel> {
   public JobDbModel copy(
       final Function<ObjectBuilder<JobDbModel>, ObjectBuilder<JobDbModel>> copyFunction) {
     return copyFunction.apply(toBuilder()).build();
+  }
+
+  public JobDbModel truncateErrorMessage(final int sizeLimit, final Integer byteLimit) {
+    final var truncatedValue = TruncateUtil.truncateValue(errorMessage, sizeLimit, byteLimit);
+
+    if (truncatedValue.length() < errorMessage.length()) {
+      LOG.warn(
+          "Truncated error message for job {}, original message was: {}", jobKey, errorMessage);
+    }
+
+    return new JobDbModel(
+        jobKey,
+        type,
+        worker,
+        state,
+        kind,
+        listenerEventType,
+        retries,
+        isDenied,
+        deniedReason,
+        hasFailedWithRetriesLeft,
+        errorCode,
+        truncatedValue,
+        customHeaders,
+        deadline,
+        endTime,
+        processDefinitionId,
+        processDefinitionKey,
+        processInstanceKey,
+        elementId,
+        elementInstanceKey,
+        tenantId,
+        partitionId,
+        historyCleanupDate);
   }
 
   public Long jobKey() {

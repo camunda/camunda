@@ -113,7 +113,7 @@ public class RdbmsWriter {
     formWriter = new FormWriter(executionQueue);
     mappingRuleWriter = new MappingRuleWriter(executionQueue);
     batchOperationWriter = new BatchOperationWriter(batchOperationReader, executionQueue, config);
-    jobWriter = new JobWriter(executionQueue, jobMapper);
+    jobWriter = new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties);
     sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
     usageMetricWriter = new UsageMetricWriter(executionQueue, usageMetricMapper);
     usageMetricTUWriter = new UsageMetricTUWriter(executionQueue, usageMetricTUMapper);
