@@ -214,28 +214,40 @@ This record is used when lifecycle records are distributed from a follower parti
 | `batchOperationKey` | The primary key of the batch operation            |
 | `sourcePartitionId` | The partition this record is originally sent from |
 
+#### BatchOperationInitializationRecord
+
+This record is used when the batch operation scheduler initializes the batch operation. It contains
+the last searchResultCursor, which is used in the next scheduler run.
+
+|       Property       |                     Description                      |
+|----------------------|------------------------------------------------------|
+| `batchOperationKey`  | The primary key of the batch operation               |
+| `searchResultCursor` | The last endCursor of the last applied search result |
+
 #### BatchOperationIntent
 
-|       Property        |                  Record                   |                                            Description                                            |
-|-----------------------|-------------------------------------------|---------------------------------------------------------------------------------------------------|
-| `CREATE`              | `BatchOperationCreationRecord`            | Request to create a new batch operation                                                           |
-| `CREATED`             | `BatchOperationCreationRecord`            | Response event when a batch operation was created successfully                                    |
-| `START`               | `BatchOperationLifecycleManagementRecord` | Internal command record to append a `STARTED` record from the scheduler                           |
-| `STARTED`             | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as started. This starts the init phase, not the execution.                |
-| `FAIL`                | `BatchOperationCreationRecord`            | Internal command record to mark a batch operation partition as failed from the scheduler          |
-| `FAILED`              | --                                        | Not used?                                                                                         |
-| `CANCEL`              | `BatchOperationLifecycleManagementRecord` | User command record to cancel a running batch operation                                           |
-| `CANCELED`            | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as canceled. This stops any execution loop indefinitely.                  |
-| `SUSPEND`             | `BatchOperationLifecycleManagementRecord` | User command record to suspend a running batch operation                                          |
-| `SUSPENDED`           | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as suspended. This stops any execution loop until it it is resumed again. |
-| `RESUME`              | `BatchOperationLifecycleManagementRecord` | User command record to resume a suspended batch operation                                         |
-| `RESUMED`             | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as resumed.                                                               |
-| `COMPLETE`            | --                                        | Not used?                                                                                         |
-| `COMPLETED`           | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as completed. All partitions have either failed or finished.              |
-| `COMPLETE_PARTITION`  | `BatchOperationPartitionLifecycleRecord`  | Used to notify the leader partition, that a partition completed its processing.                   |
-| `PARTITION_COMPLETED` | `BatchOperationPartitionLifecycleRecord`  | Marks a single partition as completed for this batch operation.                                   |
-| `FAIL_PARTITION`      | `BatchOperationPartitionLifecycleRecord`  | Used to notify the leader partition, that a partition failed its init phase.                      |
-| `PARTITION_FAILED`    | `BatchOperationPartitionLifecycleRecord`  | Marks a single partition as failed for this batch operation.                                      |
+|          Property          |                  Record                   |                                            Description                                            |
+|----------------------------|-------------------------------------------|---------------------------------------------------------------------------------------------------|
+| `CREATE`                   | `BatchOperationCreationRecord`            | Request to create a new batch operation                                                           |
+| `CREATED`                  | `BatchOperationCreationRecord`            | Response event when a batch operation was created successfully                                    |
+| `START`                    | `BatchOperationLifecycleManagementRecord` | Internal command record to append a `STARTED` record from the scheduler                           |
+| `STARTED`                  | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as started. This starts the init phase, not the execution.                |
+| `FAIL`                     | `BatchOperationCreationRecord`            | Internal command record to mark a batch operation partition as failed from the scheduler          |
+| `FAILED`                   | --                                        | Not used?                                                                                         |
+| `CANCEL`                   | `BatchOperationLifecycleManagementRecord` | User command record to cancel a running batch operation                                           |
+| `CANCELED`                 | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as canceled. This stops any execution loop indefinitely.                  |
+| `SUSPEND`                  | `BatchOperationLifecycleManagementRecord` | User command record to suspend a running batch operation                                          |
+| `SUSPENDED`                | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as suspended. This stops any execution loop until it it is resumed again. |
+| `RESUME`                   | `BatchOperationLifecycleManagementRecord` | User command record to resume a suspended batch operation                                         |
+| `RESUMED`                  | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as resumed.                                                               |
+| `COMPLETE`                 | --                                        | Not used?                                                                                         |
+| `COMPLETED`                | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as completed. All partitions have either failed or finished.              |
+| `COMPLETE_PARTITION`       | `BatchOperationPartitionLifecycleRecord`  | Used to notify the leader partition, that a partition completed its processing.                   |
+| `PARTITION_COMPLETED`      | `BatchOperationPartitionLifecycleRecord`  | Marks a single partition as completed for this batch operation.                                   |
+| `FAIL_PARTITION`           | `BatchOperationPartitionLifecycleRecord`  | Used to notify the leader partition, that a partition failed its init phase.                      |
+| `PARTITION_FAILED`         | `BatchOperationPartitionLifecycleRecord`  | Marks a single partition as failed for this batch operation.                                      |
+| `CONTINUE_INITIALIZATION`  | `BatchOperationInitializationRecord`      | Continues the initialization of a batch operation in the next scheduler run.                      |
+| `INITIALIZATION_CONTINUED` | `BatchOperationInitializationRecord`      | Continues the initialization of a batch operation in the next scheduler run.                      |
 
 #### BatchOperationChunkIntent
 
