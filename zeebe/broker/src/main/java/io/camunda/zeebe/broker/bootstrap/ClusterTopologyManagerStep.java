@@ -12,9 +12,14 @@ import io.camunda.zeebe.broker.partitioning.topology.DynamicClusterTopologyServi
 import io.camunda.zeebe.broker.partitioning.topology.StaticClusterTopologyService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.topology.state.ClusterTopology;
+import java.time.Duration;
 
 public class ClusterTopologyManagerStep
     implements io.camunda.zeebe.scheduler.startup.StartupStep<BrokerStartupContext> {
+
+  private static final int MAX_RETRIES = 10;
 
   @Override
   public String getName() {
@@ -24,34 +29,29 @@ public class ClusterTopologyManagerStep
   @Override
   public ActorFuture<BrokerStartupContext> startup(
       final BrokerStartupContext brokerStartupContext) {
-    final ActorFuture<BrokerStartupContext> started =
-        brokerStartupContext.getConcurrencyControl().createFuture();
-
+    final var started =
+        brokerStartupContext.getConcurrencyControl().<BrokerStartupContext>createFuture();
     final ClusterTopologyService clusterTopologyService =
         getClusterTopologyService(brokerStartupContext.getBrokerConfiguration());
     clusterTopologyService
         .start(brokerStartupContext)
+        .andThen(
+            (ignore) -> getClusterConfiguration(brokerStartupContext, MAX_RETRIES),
+            brokerStartupContext.getConcurrencyControl())
         .onComplete(
-            (ignore, error) -> {
+            (clusterConfiguration, error) -> {
               if (error == null) {
                 brokerStartupContext.setClusterTopology(clusterTopologyService);
                 final var brokerInfo = brokerStartupContext.getBrokerInfo();
-                final var clusterConfiguration =
-                    brokerStartupContext
-                        .getBrokerClient()
-                        .getTopologyManager()
-                        .getClusterTopology();
                 brokerInfo
                     .setClusterSize(clusterConfiguration.clusterSize())
                     .setPartitionsCount(clusterConfiguration.partitionCount())
                     .setReplicationFactor(clusterConfiguration.minReplicationFactor());
-
                 started.complete(brokerStartupContext);
               } else {
                 started.completeExceptionally(error);
               }
             });
-
     return started;
   }
 
@@ -77,6 +77,42 @@ public class ClusterTopologyManagerStep
       stopFuture.complete(brokerStartupContext);
     }
     return stopFuture;
+  }
+
+  /**
+   * Retrieves the cluster configuration from the broker client, retrying if it is still
+   * uninitialized. This method will retry up to {@link #MAX_RETRIES} times, waiting 200
+   * milliseconds between each retry. If the configuration is still uninitialized after the maximum
+   * number of retries, it will complete exceptionally with an {@link IllegalStateException}.
+   *
+   * @param brokerStartupContext the context containing the broker client
+   * @param retriesLeft the number of retries left to attempt
+   * @return an ActorFuture that completes with the ClusterConfiguration
+   */
+  private ActorFuture<ClusterTopology> getClusterConfiguration(
+      final BrokerStartupContext brokerStartupContext, final int retriesLeft) {
+    if (retriesLeft <= 0) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalStateException(
+              "Cluster configuration is still uninitialized after maximum retries of "
+                  + MAX_RETRIES));
+    }
+    final var configuration =
+        brokerStartupContext.getBrokerClient().getTopologyManager().getClusterTopology();
+    if (configuration.isUninitialized()) {
+      final ActorFuture<ClusterTopology> future =
+          brokerStartupContext.getConcurrencyControl().createFuture();
+      brokerStartupContext
+          .getConcurrencyControl()
+          .schedule(
+              Duration.ofMillis(200),
+              () ->
+                  getClusterConfiguration(brokerStartupContext, retriesLeft - 1)
+                      .onComplete(future));
+      return future;
+    } else {
+      return CompletableActorFuture.completed(configuration);
+    }
   }
 
   private static ClusterTopologyService getClusterTopologyService(
