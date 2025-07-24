@@ -37,9 +37,18 @@ const List: FC = () => {
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
   const showDetails = ({ groupId }: Group) => navigate(groupId);
 
-  const pageHeader = <PageHeader title="Groups" linkText="groups" linkUrl="" />;
+  const shouldShowEmptyState = success && !groupSearchResults?.items.length;
 
-  if (success && !groupSearchResults?.items.length) {
+  const pageHeader = (
+    <PageHeader
+      title="Groups"
+      linkText="groups"
+      linkUrl=""
+      shouldShowDocumentationLink={!shouldShowEmptyState}
+    />
+  );
+
+  if (shouldShowEmptyState) {
     return (
       <Page>
         {pageHeader}

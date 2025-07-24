@@ -40,15 +40,19 @@ const List: FC = () => {
     reload,
   );
 
+  const shouldShowEmptyState =
+    success && !mappingRuleSearchResults?.items.length;
+
   const pageHeader = (
     <PageHeader
       title={t("mappingRules")}
       linkText={t("mappingRules")}
       linkUrl=""
+      shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
 
-  if (success && !mappingRuleSearchResults?.items.length) {
+  if (shouldShowEmptyState) {
     return (
       <Page>
         {pageHeader}

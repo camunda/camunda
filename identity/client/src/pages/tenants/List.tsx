@@ -36,11 +36,18 @@ const List: FC = () => {
 
   const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
 
+  const shouldShowEmptyState = success && !tenantSearchResults?.items.length;
+
   const pageHeader = (
-    <PageHeader title="Tenants" linkText="tenants" linkUrl="" />
+    <PageHeader
+      title="Tenants"
+      linkText="tenants"
+      linkUrl=""
+      shouldShowDocumentationLink={!shouldShowEmptyState}
+    />
   );
 
-  if (success && !tenantSearchResults?.items.length) {
+  if (shouldShowEmptyState) {
     return (
       <Page>
         {pageHeader}
