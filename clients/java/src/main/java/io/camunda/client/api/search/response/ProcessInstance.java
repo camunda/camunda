@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 import java.time.OffsetDateTime;
 
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 public interface ProcessInstance {

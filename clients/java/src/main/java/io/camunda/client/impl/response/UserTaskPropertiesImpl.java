@@ -17,8 +17,8 @@ package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.UserTaskProperties;
 import io.camunda.client.impl.util.ParseUtil;
-import java.time.OffsetDateTime;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -42,8 +42,8 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
     candidateGroups = props.getCandidateGroupsList();
     candidateUsers = props.getCandidateUsersList();
     changedAttributes = props.getChangedAttributesList();
-    dueDate = orNull(props::hasDueDate, props::getDueDate);
-    followUpDate = orNull(props::hasFollowUpDate, props::getFollowUpDate);
+    dueDate = props.hasDueDate() ? OffsetDateTime.parse(props.getDueDate()) : null;
+    followUpDate = props.hasFollowUpDate() ? OffsetDateTime.parse(props.getFollowUpDate()) : null;
     formKey = orNull(props::hasFormKey, props::getFormKey);
     priority = orNull(props::hasPriority, props::getPriority);
     userTaskKey = orNull(props::hasUserTaskKey, props::getUserTaskKey);

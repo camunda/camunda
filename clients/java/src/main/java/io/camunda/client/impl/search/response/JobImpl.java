@@ -62,8 +62,8 @@ public class JobImpl implements Job {
     errorCode = item.getErrorCode();
     errorMessage = item.getErrorMessage();
     customerHeaders = item.getCustomHeaders();
-    deadline = item.getDeadline();
-    endTime = item.getEndTime();
+    deadline = item.getDeadline() != null ? item.getDeadline().toString() : null;
+    endTime = item.getEndTime() != null ? item.getEndTime().toString() : null;
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());

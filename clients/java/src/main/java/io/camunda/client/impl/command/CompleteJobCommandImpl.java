@@ -43,6 +43,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -140,8 +141,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     final JobResultCorrections correctionsRest = new JobResultCorrections();
     correctionsRest
         .assignee(jobResult.getCorrections().getAssignee())
-        .dueDate(jobResult.getCorrections().getDueDate())
-        .followUpDate(jobResult.getCorrections().getFollowUpDate())
+        .dueDate(parseOffsetDateTime(jobResult.getCorrections().getDueDate()))
+        .followUpDate(parseOffsetDateTime(jobResult.getCorrections().getFollowUpDate()))
         .candidateUsers(jobResult.getCorrections().getCandidateUsers())
         .candidateGroups(jobResult.getCorrections().getCandidateGroups())
         .priority(jobResult.getCorrections().getPriority());
@@ -306,5 +307,12 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
     }
     return this;
+  }
+
+  private OffsetDateTime parseOffsetDateTime(final String dateTimeString) {
+    if (dateTimeString == null || dateTimeString.isEmpty()) {
+      return null;
+    }
+    return OffsetDateTime.parse(dateTimeString);
   }
 }

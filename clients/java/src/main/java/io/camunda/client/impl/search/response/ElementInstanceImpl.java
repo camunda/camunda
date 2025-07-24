@@ -19,9 +19,9 @@ import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.impl.util.EnumUtil;
-import java.time.OffsetDateTime;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public final class ElementInstanceImpl implements ElementInstance {

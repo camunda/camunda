@@ -18,10 +18,10 @@ package io.camunda.client.impl.search.response;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.util.EnumUtil;
-import java.time.OffsetDateTime;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import java.util.Set;
+import java.time.OffsetDateTime;
 
 public class ProcessInstanceImpl implements ProcessInstance {
 

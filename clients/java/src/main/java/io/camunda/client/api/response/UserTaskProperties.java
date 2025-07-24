@@ -15,8 +15,8 @@
  */
 package io.camunda.client.api.response;
 
-import java.util.List;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 /** Represents the properties of a user task associated with a job. */
 public interface UserTaskProperties {

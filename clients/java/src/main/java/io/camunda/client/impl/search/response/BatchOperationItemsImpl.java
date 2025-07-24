@@ -57,7 +57,7 @@ public class BatchOperationItemsImpl implements BatchOperationItems {
       itemKey = ParseUtil.parseLongOrNull(item.getItemKey());
       processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
       status = EnumUtil.convert(item.getState(), BatchOperationItemState.class);
-      processedDate = item.getProcessedDate();
+      processedDate = item.getProcessedDate() != null ? item.getProcessedDate().toString() : null;
       errorMessage = item.getErrorMessage();
     }
 
