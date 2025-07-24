@@ -234,7 +234,7 @@ public final class RequestMapper extends RequestUtil {
             element -> {
               final var activateElement =
                   new JobResultActivateElement().setElementId(element.getElementId());
-              if (element.getVariables() != null && !element.getVariables().isEmpty()) {
+              if (!element.getVariables().isEmpty()) {
                 activateElement.setVariables(
                     new UnsafeBuffer(MsgPackConverter.convertToMsgPack(element.getVariables())));
               }
