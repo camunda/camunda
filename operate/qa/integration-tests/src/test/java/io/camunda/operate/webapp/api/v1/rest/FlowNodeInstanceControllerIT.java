@@ -25,6 +25,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,14 +44,14 @@ import org.springframework.web.context.WebApplicationContext;
 public class FlowNodeInstanceControllerIT {
 
   @Autowired WebApplicationContext context;
-
+  @MockBean PermissionsService permissionsService;
   private MockMvc mockMvc;
-
   @MockBean private FlowNodeInstanceDao flowNodeInstanceDao;
 
   @Before
   public void setupMockMvc() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    when(permissionsService.hasPermissionForFlowNodeInstance(any(), any())).thenReturn(true);
   }
 
   @Test

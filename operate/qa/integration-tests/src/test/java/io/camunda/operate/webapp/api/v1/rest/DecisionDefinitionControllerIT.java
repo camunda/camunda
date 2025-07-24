@@ -24,6 +24,7 @@ import io.camunda.operate.webapp.api.v1.entities.DecisionDefinition;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -48,10 +49,12 @@ public class DecisionDefinitionControllerIT {
   private MockMvc mockMvc;
 
   @MockBean private DecisionDefinitionDao decisionDefinitionDao;
+  @MockBean private PermissionsService permissionsService;
 
   @Before
   public void setupMockMvc() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    when(permissionsService.hasPermissionForDecision(any(), any())).thenReturn(true);
   }
 
   @Test

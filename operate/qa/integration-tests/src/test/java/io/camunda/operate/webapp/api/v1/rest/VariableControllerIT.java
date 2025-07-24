@@ -25,6 +25,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,10 +48,12 @@ public class VariableControllerIT {
   private MockMvc mockMvc;
 
   @MockBean private VariableDao variableDao;
+  @MockBean private PermissionsService permissionsService;
 
   @Before
   public void setupMockMvc() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    when(permissionsService.hasPermissionForVariable(any(), any())).thenReturn(true);
   }
 
   @Test

@@ -27,6 +27,7 @@ import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -51,10 +52,12 @@ public class ProcessDefinitionControllerIT {
   private MockMvc mockMvc;
 
   @MockBean private ProcessDefinitionDao processDefinitionDao;
+  @MockBean private PermissionsService permissionsService;
 
   @Before
   public void setupMockMvc() {
     mockMvc = MockMvcBuilders.webAppContextSetup(context).build();
+    when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
   }
 
   @Test
