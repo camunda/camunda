@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -21,14 +22,17 @@ final class ProcessInstanceElementTerminatedApplier
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final MutableMultiInstanceState multiInstanceState;
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
   public ProcessInstanceElementTerminatedApplier(
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
+      final MutableMultiInstanceState multiInstanceState,
       final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier) {
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
+    this.multiInstanceState = multiInstanceState;
     this.bufferedStartMessageEventStateApplier = bufferedStartMessageEventStateApplier;
   }
 
@@ -36,6 +40,10 @@ final class ProcessInstanceElementTerminatedApplier
   public void applyState(final long key, final ProcessInstanceRecord value) {
 
     bufferedStartMessageEventStateApplier.removeMessageLock(value);
+
+    if (value.getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+      multiInstanceState.deleteInputCollection(key);
+    }
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
