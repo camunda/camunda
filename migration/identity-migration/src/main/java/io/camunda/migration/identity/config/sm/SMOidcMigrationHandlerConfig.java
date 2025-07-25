@@ -9,10 +9,12 @@ package io.camunda.migration.identity.config.sm;
 
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import io.camunda.migration.identity.handler.sm.MappingRuleMigrationHandler;
 import io.camunda.migration.identity.handler.sm.RoleMigrationHandler;
 import io.camunda.migration.identity.handler.sm.TenantMigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import org.springframework.context.annotation.Bean;
@@ -51,5 +53,21 @@ public class SMOidcMigrationHandlerConfig {
         tenantService,
         camundaAuthentication,
         migrationProperties.getMode());
+  }
+
+  @Bean
+  @Order(3)
+  public MappingRuleMigrationHandler mappingRuleMigrationHandler(
+      final ManagementIdentityClient managementIdentityClient,
+      final MappingRuleServices mappingRuleServices,
+      final RoleServices roleServices,
+      final TenantServices tenantServices,
+      final CamundaAuthentication camundaAuthentication) {
+    return new MappingRuleMigrationHandler(
+        managementIdentityClient,
+        mappingRuleServices,
+        roleServices,
+        tenantServices,
+        camundaAuthentication);
   }
 }

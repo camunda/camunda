@@ -14,6 +14,7 @@ import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
+import io.camunda.service.MappingRuleServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -55,5 +56,10 @@ public class MigrationHandlerTestDependenciesConfig {
   @Bean
   public IdentityMigrationProperties identityMigrationProperties() {
     return mock(IdentityMigrationProperties.class);
+  }
+
+  @Bean
+  public MappingRuleServices mappingRuleServices() {
+    return mock(MappingRuleServices.class);
   }
 }
