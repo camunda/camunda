@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.processing.bpmn.task.JobWorkerTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ManualTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ReceiveTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.ScriptTaskProcessor;
+import io.camunda.zeebe.engine.processing.bpmn.task.SendTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.UndefinedTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.UserTaskProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -59,8 +60,7 @@ public final class BpmnElementProcessors {
         BpmnElementType.SCRIPT_TASK,
         new ScriptTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
     processors.put(
-        BpmnElementType.SEND_TASK,
-        new JobWorkerTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
+        BpmnElementType.SEND_TASK, new SendTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
     processors.put(
         BpmnElementType.USER_TASK, new UserTaskProcessor(bpmnBehaviors, stateTransitionBehavior));
     processors.put(
