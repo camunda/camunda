@@ -105,7 +105,13 @@ async function searchFlakyTestsInModifiedFiles(flakyTests, prData, githubConfig)
 async function main(context, github, flakyTests) {
   const owner = context.repo.owner;
   const repo = context.repo.repo;
-  const githubConfig = { github, owner, repo, prNumber: Number(context.issue.number) };
+  const prNumber = Number(context.payload.pull_request?.number || context.issue?.number);
+  const githubConfig = { github, owner, repo, prNumber };
+
+  if (!githubConfig.prNumber || isNaN(githubConfig.prNumber)) {
+    console.log("No PR context detected, skipping PR-based flaky test analysis.");
+    return;
+  }
 
   console.log('🚀 Starting flaky test analysis...');
   console.log(`🧪 Flaky tests found:\n${flakyTests}`);
