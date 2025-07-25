@@ -206,12 +206,7 @@ public class ProcessDefinitionStatisticsTest {
     createInstance(processDefinitionKey);
     createInstance(processDefinitionKey);
     waitForProcessInstances(
-        camundaClient,
-        f ->
-            f.processDefinitionKey(processDefinitionKey)
-                .hasIncident(true)
-                .variables(getScopedVariables(testScopeId)),
-        2);
+        camundaClient, f -> f.hasIncident(true).variables(getScopedVariables(testScopeId)), 2);
 
     // when
     final var actual =
@@ -422,7 +417,6 @@ public class ProcessDefinitionStatisticsTest {
     createInstance(processDefinitionKey);
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
-    // waitForUserTasks(2, processDefinitionKey);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
@@ -458,7 +452,6 @@ public class ProcessDefinitionStatisticsTest {
     createInstance(processDefinitionKey);
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
-    // waitForUserTasks(2, processDefinitionKey);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
@@ -572,7 +565,6 @@ public class ProcessDefinitionStatisticsTest {
     createInstance(processDefinitionKey);
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
-    // waitForUserTasks(2, processDefinitionKey);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
@@ -756,7 +748,6 @@ public class ProcessDefinitionStatisticsTest {
     createInstance(processDefinitionKey);
     // waitForProcessInstances(2, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE));
     waitForScopedProcessInstancesToStart(camundaClient, testScopeId, 2);
-    // waitForUserTasks(2, processDefinitionKey);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
@@ -790,7 +781,6 @@ public class ProcessDefinitionStatisticsTest {
     createInstance(processDefinitionKey);
     waitForProcessInstances(
         camundaClient, f -> f.processDefinitionKey(processDefinitionKey).state(ACTIVE), 2);
-    // waitForUserTasks(2, processDefinitionKey);
     waitForActiveScopedUserTasks(camundaClient, testScopeId, 2);
     final var userTask = getUserTask(processDefinitionKey);
     camundaClient.newUserTaskCompleteCommand(userTask.getUserTaskKey()).send().join();
