@@ -4048,8 +4048,8 @@ __metadata:
     react-debounced: "npm:1.1.2"
     react-dom: "npm:18.3.1"
     react-i18next: "npm:15.6.0"
-    react-router: "npm:7.6.2"
-    react-router-dom: "npm:7.6.2"
+    react-router: "npm:7.7.1"
+    react-router-dom: "npm:7.7.1"
     react-transition-group: "npm:4.4.5"
     rollup: "npm:4.45.0"
     rollup-plugin-license: "npm:^3.5.3"
@@ -5617,21 +5617,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router-dom@npm:7.6.2":
-  version: 7.6.2
-  resolution: "react-router-dom@npm:7.6.2"
+"react-router-dom@npm:7.7.1":
+  version: 7.7.1
+  resolution: "react-router-dom@npm:7.7.1"
   dependencies:
-    react-router: "npm:7.6.2"
+    react-router: "npm:7.7.1"
   peerDependencies:
     react: ">=18"
     react-dom: ">=18"
-  checksum: 10c0/9a8370333b5c1ada5ed76a2c30a90ca5a5a8e6c8565165f147fb42b150f2b258b9e73935fe4945c459d770841abdfaf99c28f7e13da93b1f49b28e6a8e87aadb
+  checksum: 10c0/292455db6991d8559a9e94857440393d9fd011471ff231f8c3a40be6749f74347f20c183a2e9b52830ec54d2bf3b2e1310c006e709e66b27206b0c36ab54def6
   languageName: node
   linkType: hard
 
-"react-router@npm:7.6.2":
-  version: 7.6.2
-  resolution: "react-router@npm:7.6.2"
+"react-router@npm:7.7.1":
+  version: 7.7.1
+  resolution: "react-router@npm:7.7.1"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -5641,7 +5641,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/c8ef65f2a378f38e3cba900d67fa2b80a41c1c3925102875ee07c12faa01ea40991cb3fbefaf3ff6914e724c755732e3d7dec2b1bdef09e0fddd00fccc85a06a
+  checksum: 10c0/e55fe74a2947939526c79e496ab1fc501fd8e89a191a20157d94cfe712d4d9d84f68627811cf1d477a36b98250fcad958bf1237fc41ff0a8b2de00ddc8c53e3b
   languageName: node
   linkType: hard
 
