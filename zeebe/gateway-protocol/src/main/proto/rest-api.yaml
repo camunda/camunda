@@ -4747,8 +4747,12 @@ paths:
               $ref: "#/components/schemas/UserUpdateRequest"
         required: true
       responses:
-        "204":
+        "200":
           description: The user was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserUpdateResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "403":
@@ -7548,7 +7552,19 @@ components:
           type: "string"
         userKey:
           description: The key of the created user
-          type: string
+          type: "string"
+    UserUpdateResult:
+      type: object
+      properties:
+        username:
+          description: The username of the user.
+          type: "string"
+        name:
+          description: The name of the user.
+          type: "string"
+        email:
+          description: The email of the user.
+          type: "string"
     UserSearchQuerySortRequest:
       type: object
       properties:

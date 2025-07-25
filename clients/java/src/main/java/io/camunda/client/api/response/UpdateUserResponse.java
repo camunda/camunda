@@ -15,4 +15,26 @@
  */
 package io.camunda.client.api.response;
 
-public interface UpdateUserResponse {}
+public interface UpdateUserResponse {
+
+  /**
+   * Returns the username of the updated user.
+   *
+   * @return the username of the updated user.
+   */
+  String getUsername();
+
+  /**
+   * Returns the name of the updated user.
+   *
+   * @return the name of the updated user.
+   */
+  String getName();
+
+  /**
+   * Returns the email of the updated user.
+   *
+   * @return the email of the updated user.
+   */
+  String getEmail();
+}

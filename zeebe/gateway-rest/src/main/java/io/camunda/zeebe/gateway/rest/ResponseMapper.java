@@ -62,6 +62,7 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskProperties;
+import io.camunda.zeebe.gateway.protocol.rest.UserUpdateResult;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
@@ -572,6 +573,15 @@ public final class ResponseMapper {
             .email(userRecord.getEmail())
             .name(userRecord.getName());
     return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toUserUpdateResponse(final UserRecord userRecord) {
+    final var response =
+        new UserUpdateResult()
+            .username(userRecord.getUsername())
+            .email(userRecord.getEmail())
+            .name(userRecord.getName());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {

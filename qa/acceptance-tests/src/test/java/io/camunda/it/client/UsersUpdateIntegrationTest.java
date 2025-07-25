@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.UpdateUserResponse;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.User;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -44,14 +45,19 @@ public class UsersUpdateIntegrationTest {
     assertUserCreated(username);
 
     // when
-    camundaClient
-        .newUpdateUserCommand(username)
-        .name(updatedName)
-        .email(updatedEmail)
-        .send()
-        .join();
+    final UpdateUserResponse updateUserResponse =
+        camundaClient
+            .newUpdateUserCommand(username)
+            .name(updatedName)
+            .email(updatedEmail)
+            .send()
+            .join();
 
     // then
+    assertThat(updateUserResponse.getUsername()).isEqualTo(username);
+    assertThat(updateUserResponse.getName()).isEqualTo(updatedName);
+    assertThat(updateUserResponse.getEmail()).isEqualTo(updatedEmail);
+
     Awaitility.await("User is updated")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(

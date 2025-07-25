@@ -22,7 +22,9 @@ import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.response.UpdateUserResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
+import io.camunda.client.impl.response.UpdateUserResponseImpl;
 import io.camunda.client.protocol.rest.UserUpdateRequest;
+import io.camunda.client.protocol.rest.UserUpdateResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -73,8 +75,15 @@ public class UpdateUserCommandImpl implements UpdateUserCommandStep1 {
     ArgumentUtil.ensureNotNullNorEmpty("name", request.getName());
     ArgumentUtil.ensureNotNullNorEmpty("email", request.getEmail());
     final HttpCamundaFuture<UpdateUserResponse> result = new HttpCamundaFuture<>();
+    final UpdateUserResponseImpl response = new UpdateUserResponseImpl();
+
     httpClient.put(
-        "/users/" + username, jsonMapper.toJson(request), httpRequestConfig.build(), result);
+        "/users/" + username,
+        jsonMapper.toJson(request),
+        httpRequestConfig.build(),
+        UserUpdateResult.class,
+        response::setResponse,
+        result);
     return result;
   }
 }
