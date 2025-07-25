@@ -494,6 +494,25 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForProcessInstances(
+      final CamundaClient camundaClient,
+      final Consumer<ProcessInstanceFilter> fn,
+      final int expectedProcessInstances) {
+    Awaitility.await("should wait until process instances are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () ->
+                assertThat(
+                        camundaClient
+                            .newProcessInstanceSearchRequest()
+                            .filter(fn)
+                            .send()
+                            .join()
+                            .items())
+                    .hasSize(expectedProcessInstances));
+  }
+
   public static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     Awaitility.await("should deploy processes and import in Operate")
