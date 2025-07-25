@@ -211,6 +211,16 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
   }
 
   @Override
+  public Duration getDefaultRequestTimeoutOffset() {
+    return getLegacyOrPropertyOrDefault(
+        "DefaultRequestTimeoutOffset",
+        () -> camundaClientProperties.getZeebe().getRequestTimeoutOffset(),
+        () -> null,
+        DEFAULT.getDefaultRequestTimeoutOffset(),
+        configCache);
+  }
+
+  @Override
   public boolean isPlaintextConnectionEnabled() {
     return getLegacyOrPropertyOrDefault(
         "PlaintextConnectionEnabled",

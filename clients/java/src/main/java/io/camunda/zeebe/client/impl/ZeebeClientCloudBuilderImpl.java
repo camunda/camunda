@@ -208,6 +208,12 @@ public class ZeebeClientCloudBuilderImpl
   }
 
   @Override
+  public ZeebeClientBuilder defaultRequestTimeoutOffset(final Duration requestTimeoutOffset) {
+    innerBuilder.defaultRequestTimeoutOffset(requestTimeoutOffset);
+    return this;
+  }
+
+  @Override
   public ZeebeClientBuilder usePlaintext() {
     innerBuilder.usePlaintext();
     return this;
