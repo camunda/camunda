@@ -38,16 +38,10 @@ public class UnifiedConfigurationHelper {
   private static Environment environment;
   private static Map<String, Set<String>> legacyPropertiesDict = LEGACY_PROPERTIES;
 
-  public UnifiedConfigurationHelper(@Autowired Environment environment) {
+  public UnifiedConfigurationHelper(@Autowired final Environment environment) {
     // We need to pin the environment object statically so that it can be used to perform the
     // fallback mechanism.
     UnifiedConfigurationHelper.environment = environment;
-  }
-
-  public enum BackwardsCompatibilityMode {
-    NOT_SUPPORTED,
-    SUPPORTED_ONLY_IF_VALUES_MATCH,
-    SUPPORTED
   }
 
   public static <T> T validateLegacyConfiguration(
@@ -207,7 +201,7 @@ public class UnifiedConfigurationHelper {
     }
   }
 
-  private static boolean legacyConfigPresent(Set<String> legacyProperties) {
+  private static boolean legacyConfigPresent(final Set<String> legacyProperties) {
     for (final String legacyProperty : legacyProperties) {
       if (environment.containsProperty(legacyProperty)) {
         return true;
@@ -217,7 +211,7 @@ public class UnifiedConfigurationHelper {
     return false;
   }
 
-  private static boolean newConfigPresent(String newProperty) {
+  private static boolean newConfigPresent(final String newProperty) {
     return environment.containsProperty(newProperty);
   }
 
@@ -236,14 +230,20 @@ public class UnifiedConfigurationHelper {
     };
   }
 
-  /* Setters used by tests to inject the mock objects */
-
   public static void setCustomLegacyProperties(
       final Map<String, Set<String>> legacyPropertiesDict) {
     UnifiedConfigurationHelper.legacyPropertiesDict = legacyPropertiesDict;
   }
 
+  /* Setters used by tests to inject the mock objects */
+
   public static void setCustomEnvironment(final Environment environment) {
     UnifiedConfigurationHelper.environment = environment;
+  }
+
+  public enum BackwardsCompatibilityMode {
+    NOT_SUPPORTED,
+    SUPPORTED_ONLY_IF_VALUES_MATCH,
+    SUPPORTED
   }
 }
