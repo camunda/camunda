@@ -42,7 +42,7 @@ public class JobWriter {
             "io.camunda.db.rdbms.sql.JobMapper.insert",
             job.truncateErrorMessage(
                 vendorDatabaseProperties.errorMessageSize(),
-                vendorDatabaseProperties.columnMaxBytes())));
+                vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
   public void update(final JobDbModel job) {

@@ -27,7 +27,7 @@ public class VendorDatabaseProperties {
    * Optional property to limit the maximum size of string column in bytes, if required by the
    * database vendor. If not set, no limit is applied.
    */
-  private static final String COLUMN_MAX_BYTES = "column.maxBytes";
+  private static final String CHAR_COLUMN_MAX_BYTES = "charColumn.maxBytes";
 
   private static final String DISABLE_FK_BEFORE_TRUNCATE = "disableFkBeforeTruncate";
 
@@ -35,7 +35,7 @@ public class VendorDatabaseProperties {
 
   private final int variableValuePreviewSize;
   private final boolean disableFkBeforeTruncate;
-  private final Integer columnMaxBytes;
+  private final Integer charColumnMaxBytes;
   private final int errorMessageSize;
 
   public VendorDatabaseProperties(final Properties properties) {
@@ -53,10 +53,10 @@ public class VendorDatabaseProperties {
     }
     errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
 
-    if (!properties.containsKey(COLUMN_MAX_BYTES)) {
-      columnMaxBytes = null;
+    if (!properties.containsKey(CHAR_COLUMN_MAX_BYTES)) {
+      charColumnMaxBytes = null;
     } else {
-      columnMaxBytes = Integer.parseInt(properties.getProperty(COLUMN_MAX_BYTES));
+      charColumnMaxBytes = Integer.parseInt(properties.getProperty(CHAR_COLUMN_MAX_BYTES));
     }
 
     if (!properties.containsKey(DISABLE_FK_BEFORE_TRUNCATE)) {
@@ -75,8 +75,8 @@ public class VendorDatabaseProperties {
     return errorMessageSize;
   }
 
-  public Integer columnMaxBytes() {
-    return columnMaxBytes;
+  public Integer charColumnMaxBytes() {
+    return charColumnMaxBytes;
   }
 
   public boolean disableFkBeforeTruncate() {
