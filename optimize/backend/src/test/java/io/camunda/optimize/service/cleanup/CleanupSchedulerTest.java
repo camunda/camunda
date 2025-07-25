@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.cleanup;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -94,7 +94,7 @@ public class CleanupSchedulerTest {
     final CleanupScheduler underTest = createOptimizeCleanupServiceToTest();
 
     // then
-    assertThrows(OptimizeConfigurationException.class, underTest::init);
+    assertThatExceptionOfType(OptimizeConfigurationException.class).isThrownBy(underTest::init);
   }
 
   private CleanupConfiguration getCleanupConfiguration() {

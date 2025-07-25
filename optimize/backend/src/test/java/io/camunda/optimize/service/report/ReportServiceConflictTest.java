@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.report;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -109,9 +109,8 @@ public class ReportServiceConflictTest {
         .thenReturn(conflicts);
 
     // when
-    assertThrows(
-        OptimizeConflictException.class,
-        () -> underTest.updateSingleProcessReport("test1", updateDto, "user1", false));
+    assertThatExceptionOfType(OptimizeConflictException.class)
+        .isThrownBy(() -> underTest.updateSingleProcessReport("test1", updateDto, "user1", false));
   }
 
   @Test
@@ -152,9 +151,8 @@ public class ReportServiceConflictTest {
         .thenReturn(conflicts);
 
     // when
-    assertThrows(
-        OptimizeConflictException.class,
-        () -> underTest.updateSingleDecisionReport("test1", updateDto, "user1", false));
+    assertThatExceptionOfType(OptimizeConflictException.class)
+        .isThrownBy(() -> underTest.updateSingleDecisionReport("test1", updateDto, "user1", false));
   }
 
   @Test
@@ -190,8 +188,7 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForDeleteReport(any())).thenReturn(conflicts);
 
     // when
-    assertThrows(
-        OptimizeConflictException.class,
-        () -> underTest.deleteReportAsUser("user1", "test1", false));
+    assertThatExceptionOfType(OptimizeConflictException.class)
+        .isThrownBy(() -> underTest.deleteReportAsUser("user1", "test1", false));
   }
 }

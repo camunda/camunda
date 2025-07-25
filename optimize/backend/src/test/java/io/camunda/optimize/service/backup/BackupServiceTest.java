@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
@@ -65,7 +65,9 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeConfigurationException thrown =
-        assertThrows(OptimizeConfigurationException.class, () -> backupService.triggerBackup(123L));
+        assertThatExceptionOfType(OptimizeConfigurationException.class)
+            .isThrownBy(() -> backupService.triggerBackup(123L))
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo(
             "Cannot execute backup request because no snapshot repository name found in Optimize "
@@ -85,7 +87,9 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeRuntimeException thrown =
-        assertThrows(OptimizeRuntimeException.class, () -> backupService.triggerBackup(123L));
+        assertThatExceptionOfType(OptimizeRuntimeException.class)
+            .isThrownBy(() -> backupService.triggerBackup(123L))
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
@@ -105,7 +109,9 @@ public class BackupServiceTest {
 
     // when
     final OptimizeConflictException thrown =
-        assertThrows(OptimizeConflictException.class, () -> backupService.triggerBackup(123L));
+        assertThatExceptionOfType(OptimizeConflictException.class)
+            .isThrownBy(() -> backupService.triggerBackup(123L))
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo(
             "A backup with ID [123] already exists. Found snapshots: "
@@ -122,8 +128,9 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeConfigurationException thrown =
-        assertThrows(
-            OptimizeConfigurationException.class, () -> backupService.getSingleBackupInfo(123L));
+        assertThatExceptionOfType(OptimizeConfigurationException.class)
+            .isThrownBy(() -> backupService.getSingleBackupInfo(123L))
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo(
             "Cannot execute backup request because no snapshot repository name found in Optimize "
@@ -143,7 +150,9 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeRuntimeException thrown =
-        assertThrows(OptimizeRuntimeException.class, () -> backupService.getSingleBackupInfo(123L));
+        assertThatExceptionOfType(OptimizeRuntimeException.class)
+            .isThrownBy(() -> backupService.getSingleBackupInfo(123L))
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
@@ -159,7 +168,9 @@ public class BackupServiceTest {
 
     // when/then
     final NotFoundException thrown =
-        assertThrows(NotFoundException.class, () -> backupService.getSingleBackupInfo(123L));
+        assertThatExceptionOfType(NotFoundException.class)
+            .isThrownBy(() -> backupService.getSingleBackupInfo(123L))
+            .actual();
     assertThat(thrown.getMessage()).isEqualTo("No Optimize backup with ID [123] could be found.");
   }
 
@@ -173,7 +184,9 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeConfigurationException thrown =
-        assertThrows(OptimizeConfigurationException.class, () -> backupService.getAllBackupInfo());
+        assertThatExceptionOfType(OptimizeConfigurationException.class)
+            .isThrownBy(() -> backupService.getAllBackupInfo())
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo(
             "Cannot execute backup request because no snapshot repository name found in Optimize "
@@ -193,7 +206,9 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeRuntimeException thrown =
-        assertThrows(OptimizeRuntimeException.class, () -> backupService.getAllBackupInfo());
+        assertThatExceptionOfType(OptimizeRuntimeException.class)
+            .isThrownBy(() -> backupService.getAllBackupInfo())
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }
@@ -220,7 +235,9 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeConfigurationException thrown =
-        assertThrows(OptimizeConfigurationException.class, () -> backupService.deleteBackup(123L));
+        assertThatExceptionOfType(OptimizeConfigurationException.class)
+            .isThrownBy(() -> backupService.deleteBackup(123L))
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo(
             "Cannot execute backup request because no snapshot repository name found in Optimize "
@@ -240,7 +257,9 @@ public class BackupServiceTest {
 
     // when/then
     final OptimizeRuntimeException thrown =
-        assertThrows(OptimizeRuntimeException.class, () -> backupService.deleteBackup(123L));
+        assertThatExceptionOfType(OptimizeRuntimeException.class)
+            .isThrownBy(() -> backupService.deleteBackup(123L))
+            .actual();
     assertThat(thrown.getMessage())
         .isEqualTo("No repository with name [does_not_exist] could be found.");
   }

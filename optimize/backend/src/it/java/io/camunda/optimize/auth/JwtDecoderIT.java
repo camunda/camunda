@@ -8,9 +8,8 @@
 package io.camunda.optimize.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
@@ -91,7 +90,7 @@ public class JwtDecoderIT extends AbstractCCSMIT {
     // remove alg field from mocked server response and assert it was removed to cover this use case
     final String withoutAlg = publicKey.replaceFirst("\"alg\":\".*\",", "");
     final String authServerResponseBody = "{\"keys\":[" + withoutAlg + "]}";
-    assertFalse(authServerResponseBody.contains("alg\":"));
+    assertThat(authServerResponseBody).contains("alg\":");
     wireMockInfo
         .getWireMock()
         .register(
@@ -99,7 +98,7 @@ public class JwtDecoderIT extends AbstractCCSMIT {
                 .willReturn(WireMock.jsonResponse(authServerResponseBody, HttpStatus.OK.value())));
 
     // when - then
-    assertDoesNotThrow(() -> decoder.decode(serializedJwt));
+    assertThatCode(() -> decoder.decode(serializedJwt)).doesNotThrowAnyException();
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
@@ -122,7 +121,7 @@ public class JwtDecoderIT extends AbstractCCSMIT {
                 .willReturn(WireMock.jsonResponse(authServerResponseBody, HttpStatus.OK.value())));
 
     // when - then
-    assertDoesNotThrow(() -> decoder.decode(serializedJwt));
+    assertThatCode(() -> decoder.decode(serializedJwt)).doesNotThrowAnyException();
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
@@ -146,10 +145,11 @@ public class JwtDecoderIT extends AbstractCCSMIT {
                 .willReturn(WireMock.jsonResponse(authServerResponseBody, HttpStatus.OK.value())));
 
     // when - then
-    final Exception exception =
-        assertThrows(JwtValidationException.class, () -> decoder.decode(serializedJwt));
+    assertThatThrownBy(() -> decoder.decode(serializedJwt))
+        .isInstanceOf(JwtValidationException.class)
+        .message()
+        .containsIgnoringCase("Jwt expired");
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
-    assertThat(exception.getMessage()).containsIgnoringCase("Jwt expired");
   }
 
   @ParameterizedTest
@@ -175,10 +175,11 @@ public class JwtDecoderIT extends AbstractCCSMIT {
     if (jwtParts.length == 3) {
       final String unsignedJwt = jwtParts[0] + "." + jwtParts[1] + ".anySignature";
       // when - then
-      final Exception exception =
-          assertThrows(BadJwtException.class, (() -> decoder.decode(unsignedJwt)));
+      assertThatThrownBy(() -> decoder.decode(unsignedJwt))
+          .isInstanceOf(BadJwtException.class)
+          .message()
+          .containsIgnoringCase("Invalid Signature");
       wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
-      assertThat(exception.getMessage()).containsIgnoringCase("Invalid Signature");
     } else {
       throw new RuntimeException("Invalid JWT token format");
     }

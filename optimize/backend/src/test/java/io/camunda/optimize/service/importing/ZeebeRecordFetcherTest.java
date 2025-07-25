@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.importing;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -277,9 +277,9 @@ public class ZeebeRecordFetcherTest {
 
   private void triggerFailedFetchAttempt() {
     final PositionBasedImportPage positionBasedImportPage = new PositionBasedImportPage();
-    assertThrows(
-        OptimizeRuntimeException.class,
-        () -> underTest.getZeebeRecordsForPrefixAndPartitionFrom(positionBasedImportPage));
+    assertThatExceptionOfType(OptimizeRuntimeException.class)
+        .isThrownBy(
+            () -> underTest.getZeebeRecordsForPrefixAndPartitionFrom(positionBasedImportPage));
   }
 
   private void triggerFetchAttemptForEmptyPage() {

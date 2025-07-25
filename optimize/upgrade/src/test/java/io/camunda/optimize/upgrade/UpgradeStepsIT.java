@@ -10,7 +10,7 @@ package io.camunda.optimize.upgrade;
 import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_SUFFIX_PRE_ROLLOVER;
 import static io.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.optimize.dto.optimize.query.MetadataDto;
 import io.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -498,7 +498,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
             .build();
 
     // when
-    assertThrows(UpgradeRuntimeException.class, () -> upgradeProcedure.performUpgrade(upgradePlan));
+    assertThatExceptionOfType(UpgradeRuntimeException.class)
+        .isThrownBy(() -> upgradeProcedure.performUpgrade(upgradePlan));
   }
 
   @Test

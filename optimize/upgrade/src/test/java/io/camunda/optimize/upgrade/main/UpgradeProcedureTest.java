@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.upgrade.main;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -146,7 +146,8 @@ public class UpgradeProcedureTest {
 
     // when
     final UpgradePlan upgradePlan = createUpgradePlan();
-    assertThrows(UpgradeRuntimeException.class, () -> underTest.performUpgrade(upgradePlan));
+    assertThatExceptionOfType(UpgradeRuntimeException.class)
+        .isThrownBy(() -> underTest.performUpgrade(upgradePlan));
 
     // then the validation and execution happens in the expected order
     final InOrder inOrder = inOrder(createIndexStep, upgradeStepLogService);

@@ -8,8 +8,8 @@
 package io.camunda.optimize.service.alert;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.when;
 
 import io.camunda.optimize.dto.optimize.UserDto;
@@ -43,10 +43,11 @@ public class CCSMAlertRecipientValidatorTest {
         .thenReturn(List.of(TEST_USER_1, TEST_USER_2));
 
     // when/then
-    assertDoesNotThrow(
-        () ->
-            ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(
-                emailsToValidate.stream().toList()));
+    assertThatCode(
+            () ->
+                ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(
+                    emailsToValidate.stream().toList()))
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -56,10 +57,11 @@ public class CCSMAlertRecipientValidatorTest {
         .thenReturn(Collections.emptyList());
 
     // when/then
-    assertDoesNotThrow(
-        () ->
-            ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(
-                Collections.emptyList()));
+    assertThatCode(
+            () ->
+                ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(
+                    Collections.emptyList()))
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -70,11 +72,12 @@ public class CCSMAlertRecipientValidatorTest {
 
     // when/then
     final OptimizeAlertEmailValidationException thrown =
-        assertThrows(
-            OptimizeAlertEmailValidationException.class,
-            () ->
-                ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(
-                    emailsToValidate.stream().toList()));
+        assertThatExceptionOfType(OptimizeAlertEmailValidationException.class)
+            .isThrownBy(
+                () ->
+                    ccsmAlertRecipientValidator.validateAlertRecipientEmailAddresses(
+                        emailsToValidate.stream().toList()))
+            .actual();
     assertThat(thrown.getAlertEmails()).containsExactly(TEST_EMAIL_2);
   }
 }

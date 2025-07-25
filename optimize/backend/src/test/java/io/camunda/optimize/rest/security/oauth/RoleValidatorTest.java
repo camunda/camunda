@@ -7,9 +7,7 @@
  */
 package io.camunda.optimize.rest.security.oauth;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,7 +36,7 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertTrue(result.hasErrors());
+    assertThat(result.hasErrors()).isTrue();
   }
 
   @Test
@@ -56,7 +54,7 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertFalse(result.hasErrors());
+    assertThat(result.hasErrors()).isFalse();
   }
 
   @Test
@@ -77,7 +75,7 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertFalse(result.hasErrors());
+    assertThat(result.hasErrors()).isFalse();
   }
 
   @Test
@@ -95,8 +93,8 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertTrue(result.hasErrors());
-    assertEquals("invalid_token", result.getErrors().iterator().next().getErrorCode());
+    assertThat(result.hasErrors()).isTrue();
+    assertThat(result.getErrors().iterator().next().getErrorCode()).isEqualTo("invalid_token");
   }
 
   @Test
@@ -114,7 +112,7 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertTrue(result.hasErrors());
+    assertThat(result.hasErrors()).isTrue();
   }
 
   @Test
@@ -129,7 +127,7 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertTrue(result.hasErrors());
+    assertThat(result.hasErrors()).isTrue();
   }
 
   @Test
@@ -144,6 +142,6 @@ class RoleValidatorTest {
     final OAuth2TokenValidatorResult result = validator.validate(token);
 
     // then
-    assertTrue(result.hasErrors());
+    assertThat(result.hasErrors()).isTrue();
   }
 }

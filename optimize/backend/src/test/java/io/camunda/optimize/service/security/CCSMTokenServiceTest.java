@@ -7,7 +7,8 @@
  */
 package io.camunda.optimize.service.security;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.*;
 
 import com.google.common.collect.ImmutableList;
@@ -62,11 +63,11 @@ public class CCSMTokenServiceTest {
 
     final UserDto result = ccsmTokenService.getUserInfoFromToken(ID, ACCESS_TOKEN_VALUE);
 
-    assertEquals(ID, result.getId());
-    assertEquals(NAME, result.getFirstName());
-    assertEquals(EMAIL, result.getEmail());
-    assertNull(result.getLastName());
-    assertTrue(result.getRoles().isEmpty());
+    assertThat(result.getId()).isEqualTo(ID);
+    assertThat(result.getFirstName()).isEqualTo(NAME);
+    assertThat(result.getEmail()).isEqualTo(EMAIL);
+    assertThat(result.getLastName()).isNull();
+    assertThat(result.getRoles().isEmpty()).isTrue();
   }
 
   @Test
@@ -78,11 +79,11 @@ public class CCSMTokenServiceTest {
 
     final UserDto result = ccsmTokenService.getUserInfoFromToken(ID, ACCESS_TOKEN_VALUE);
 
-    assertEquals(ID, result.getId());
-    assertEquals(USERNAME, result.getFirstName());
-    assertEquals(EMAIL, result.getEmail());
-    assertNull(result.getLastName());
-    assertTrue(result.getRoles().isEmpty());
+    assertThat(result.getId()).isEqualTo(ID);
+    assertThat(result.getFirstName()).isEqualTo(USERNAME);
+    assertThat(result.getEmail()).isEqualTo(EMAIL);
+    assertThat(result.getLastName()).isNull();
+    assertThat(result.getRoles().isEmpty()).isTrue();
   }
 
   @Test
@@ -94,11 +95,11 @@ public class CCSMTokenServiceTest {
 
     final UserDto result = ccsmTokenService.getUserInfoFromToken(ID, ACCESS_TOKEN_VALUE);
 
-    assertEquals(ID, result.getId());
-    assertEquals(ID, result.getFirstName());
-    assertEquals(EMAIL, result.getEmail());
-    assertNull(result.getLastName());
-    assertTrue(result.getRoles().isEmpty());
+    assertThat(result.getId()).isEqualTo(ID);
+    assertThat(result.getFirstName()).isEqualTo(ID);
+    assertThat(result.getEmail()).isEqualTo(EMAIL);
+    assertThat(result.getLastName()).isNull();
+    assertThat(result.getRoles().isEmpty()).isTrue();
   }
 
   @Test
@@ -109,19 +110,18 @@ public class CCSMTokenServiceTest {
 
     final UserDto result = ccsmTokenService.getUserInfoFromToken(ID, ACCESS_TOKEN_VALUE);
 
-    assertEquals(ID, result.getId());
-    assertEquals(ID, result.getEmail());
-    assertEquals(NAME, result.getFirstName());
-    assertNull(result.getLastName());
-    assertTrue(result.getRoles().isEmpty());
+    assertThat(result.getId()).isEqualTo(ID);
+    assertThat(result.getEmail()).isEqualTo(ID);
+    assertThat(result.getFirstName()).isEqualTo(NAME);
+    assertThat(result.getLastName()).isNull();
+    assertThat(result.getRoles().isEmpty()).isTrue();
   }
 
   @Test
   void getUserInfoFromTokenInvalidTokenThrowsNotAuthorizedException() {
     when(accessToken.getPermissions()).thenReturn(ImmutableList.of());
 
-    assertThrows(
-        NotAuthorizedException.class,
-        () -> ccsmTokenService.getUserInfoFromToken(ID, ACCESS_TOKEN_VALUE));
+    assertThatExceptionOfType(NotAuthorizedException.class)
+        .isThrownBy(() -> ccsmTokenService.getUserInfoFromToken(ID, ACCESS_TOKEN_VALUE));
   }
 }
