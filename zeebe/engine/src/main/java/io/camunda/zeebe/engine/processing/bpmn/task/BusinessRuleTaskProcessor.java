@@ -56,7 +56,7 @@ public final class BusinessRuleTaskProcessor
   @Override
   public void finalizeTermination(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
+    stateTransitionBehavior.executeRuntimeInstructions(element, context);
   }
 
   @Override
@@ -107,8 +107,11 @@ public final class BusinessRuleTaskProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .executeRuntimeInstructions(element, completed)
+                  .ifRight(
+                      notInterrupted ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 

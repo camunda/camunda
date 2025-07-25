@@ -64,7 +64,7 @@ public final class ScriptTaskProcessor
   @Override
   public void finalizeTermination(
       final ExecutableScriptTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
+    stateTransitionBehavior.executeRuntimeInstructions(element, context);
   }
 
   @Override
@@ -113,8 +113,11 @@ public final class ScriptTaskProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .executeRuntimeInstructions(element, completed)
+                  .ifRight(
+                      notInterrupted ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 

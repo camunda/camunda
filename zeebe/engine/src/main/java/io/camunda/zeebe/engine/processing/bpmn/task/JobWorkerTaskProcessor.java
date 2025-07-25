@@ -87,8 +87,11 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .executeRuntimeInstructions(element, completed)
+                  .ifRight(
+                      notInterrupted ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 
@@ -128,6 +131,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   @Override
   public void finalizeTermination(
       final ExecutableJobWorkerTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.executeRuntimeInstructionsIfNeeded(element, context);
+    stateTransitionBehavior.executeRuntimeInstructions(element, context);
   }
 }
