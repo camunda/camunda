@@ -17,4 +17,6 @@ public interface MutableUserState extends UserState {
   void update(final UserRecord user);
 
   void deleteByUsername(final String username);
+
+  void deleteByUserKey(long userKey);
 }

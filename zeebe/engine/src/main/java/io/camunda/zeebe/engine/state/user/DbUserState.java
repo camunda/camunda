@@ -68,6 +68,12 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
+  public void deleteByUserKey(final long userKey) {
+    this.userKey.wrapLong(userKey);
+    userKeyByUsernameColumnFamily.deleteExisting(this.userKey);
+  }
+
+  @Override
   public Optional<PersistedUser> getUser(final String username) {
     this.username.wrapString(username);
     return Optional.ofNullable(usersColumnFamily.get(this.username, PersistedUser::new));
