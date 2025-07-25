@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessActivityActivateProcessor;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionActivateProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -346,7 +346,7 @@ public final class BpmnProcessors {
     typedRecordProcessors.onCommand(
         ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
         AdHocSubProcessInstructionIntent.ACTIVATE,
-        new AdHocSubProcessActivityActivateProcessor(
+        new AdHocSubProcessInstructionActivateProcessor(
             writers, processingState, authCheckBehavior, keyGenerator));
   }
 }

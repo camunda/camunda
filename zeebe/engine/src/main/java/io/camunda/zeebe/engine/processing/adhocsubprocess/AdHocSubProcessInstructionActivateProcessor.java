@@ -34,7 +34,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
-public class AdHocSubProcessActivityActivateProcessor
+public class AdHocSubProcessInstructionActivateProcessor
     implements TypedRecordProcessor<AdHocSubProcessInstructionRecord> {
 
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
@@ -57,7 +57,7 @@ public class AdHocSubProcessActivityActivateProcessor
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
 
-  public AdHocSubProcessActivityActivateProcessor(
+  public AdHocSubProcessInstructionActivateProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
