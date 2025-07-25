@@ -39,6 +39,7 @@ export class IdentityGroupsPage {
   readonly searchBoxResult: Locator;
   readonly assignUserButtonModal: Locator;
   readonly selectGroupRow: (name: string) => Locator;
+  readonly groupCell: (name: string) => Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -46,6 +47,9 @@ export class IdentityGroupsPage {
 
     this.selectGroupRow = (name) =>
       this.groupsList.getByRole('row', {name: name});
+
+    this.groupCell = (name) =>
+      this.groupsList.getByRole('cell', {name, exact: true});
 
     this.createGroupButton = page.getByRole('button', {
       name: /Create( a)? group/,
@@ -142,7 +146,29 @@ export class IdentityGroupsPage {
       await this.createDescriptionField.fill(description);
     }
     await this.createGroupModalCreateButton.click();
-    await sleep(8000);
+    await expect(this.createGroupModal).toBeHidden();
+  }
+
+  async editGroup(
+    currentName: string,
+    newName: string,
+    newDescription?: string,
+  ) {
+    await this.editGroupButton(currentName).click();
+    await expect(this.editGroupModal).toBeVisible();
+    await this.editNameField.fill(newName);
+    if (newDescription) {
+      await this.editDescriptionField.fill(newDescription);
+    }
+    await this.editGroupModalUpdateButton.click();
+    await expect(this.editGroupModal).toBeHidden();
+  }
+
+  async deleteGroup(groupName: string) {
+    await this.deleteGroupButton(groupName).click();
+    await expect(this.deleteGroupModal).toBeVisible();
+    await this.deleteGroupModalDeleteButton.click();
+    await expect(this.deleteGroupModal).toBeHidden();
   }
 
   async assertGroupExists(groupName: string) {
