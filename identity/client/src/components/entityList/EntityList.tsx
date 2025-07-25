@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, ReactNode, useEffect, useMemo, useState } from "react";
+import { FC, ReactNode, useMemo } from "react";
 import {
   Button,
   DataTable,
@@ -25,11 +25,9 @@ import {
   TableSelectRow,
   TableToolbar,
   TableToolbarContent,
-  TableToolbarSearch,
   Pagination,
   Tooltip,
 } from "@carbon/react";
-import useDebounce from "react-debounced";
 import styled from "styled-components";
 import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
 import { Add, CarbonIconType } from "@carbon/react/icons";
@@ -38,6 +36,7 @@ import Flex from "src/components/layout/Flex";
 import useTranslate from "src/utility/localization";
 import { StyledTableContainer } from "./components";
 import { PageResult, SortConfig } from "src/utility/api";
+import SearchBar from "./SearchBar";
 
 const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
   cursor: ${({ $isClickable }) => ($isClickable ? "pointer" : "auto")};
@@ -143,28 +142,7 @@ const EntityList = <D extends EntityData>({
   setSort = () => {},
   setSearch = () => {},
 }: EntityListProps<D>): ReturnType<FC> => {
-  const debounce = useDebounce(300);
   const { t } = useTranslate("components");
-
-  // Search handling
-  const [search, setSearchState] = useState<string>();
-
-  useEffect(() => {
-    if (!searchKey) {
-      return;
-    }
-
-    if (typeof search !== "string") {
-      return;
-    }
-
-    if (search.length === 0) {
-      debounce(() => setSearch(undefined));
-      return;
-    }
-
-    debounce(() => setSearch({ [searchKey]: search }));
-  }, [debounce, search, searchKey]);
 
   const hasMenu = menuItems && menuItems.length > 0;
 
@@ -233,22 +211,10 @@ const EntityList = <D extends EntityData>({
             <TableToolbar {...getToolbarProps()}>
               <TableToolbarContent>
                 {searchKey && (
-                  <TableToolbarSearch
-                    placeholder={searchPlaceholder}
-                    value={search}
-                    persistent
-                    onChange={(_, value) => {
-                      setSearchState(value);
-                    }}
-                    onFocus={(event, handleExpand) => {
-                      handleExpand(event, true);
-                    }}
-                    onBlur={(event, handleExpand) => {
-                      const { value } = event.target;
-                      if (!value) {
-                        handleExpand(event, false);
-                      }
-                    }}
+                  <SearchBar
+                    searchKey={searchKey}
+                    searchPlaceholder={searchPlaceholder}
+                    onSearch={setSearch}
                   />
                 )}
                 {addEntityLabel && (
