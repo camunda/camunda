@@ -7,6 +7,8 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
+
 public class SecondaryStorage {
 
   private static final String PREFIX = "camunda.data.secondary-storage";
@@ -16,7 +18,7 @@ public class SecondaryStorage {
 
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".type", type, SecondaryStorageType.class, true, true);
+        PREFIX + ".type", type, SecondaryStorageType.class, SUPPORTED_ONLY_IF_VALUES_MATCH);
   }
 
   public void setType(SecondaryStorageType type) {
