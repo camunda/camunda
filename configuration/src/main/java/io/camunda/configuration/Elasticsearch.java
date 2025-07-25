@@ -14,12 +14,13 @@ import java.util.Set;
 public class Elasticsearch {
 
   private static final String PREFIX = "camunda.data.secondary-storage.elasticsearch";
-  private static final Set<String> legacyUrlProperties = Set.of(
-      "camunda.database.url",
-      "camunda.operate.elasticsearch.url",
-      "camunda.operate.zeebeElasticsearch.url",
-      "camunda.tasklist.elasticsearch.url",
-      "camunda.tasklist.zeebeElasticsearch.url");
+  private static final Set<String> legacyUrlProperties =
+      Set.of(
+          "camunda.database.url",
+          "camunda.operate.elasticsearch.url",
+          "camunda.operate.zeebeElasticsearch.url",
+          "camunda.tasklist.elasticsearch.url",
+          "camunda.tasklist.zeebeElasticsearch.url");
 
   private String url = "http://localhost:9200";
 

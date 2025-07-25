@@ -7,9 +7,7 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.joda.time.Duration;

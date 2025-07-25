@@ -21,7 +21,10 @@ public class SecondaryStorage {
 
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".type", type, SecondaryStorageType.class, SUPPORTED_ONLY_IF_VALUES_MATCH,
+        PREFIX + ".type",
+        type,
+        SecondaryStorageType.class,
+        SUPPORTED_ONLY_IF_VALUES_MATCH,
         legacyTypeProperties);
   }
 

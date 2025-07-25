@@ -1,15 +1,10 @@
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
-import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import org.junit.jupiter.api.Nested;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@SpringJUnitConfig({
-    UnifiedConfiguration.class,
-    UnifiedConfigurationHelper.class
-})
+@SpringJUnitConfig({UnifiedConfiguration.class, UnifiedConfigurationHelper.class})
 public class SecondaryStorageMetadataTest {
   @Nested
   @TestPropertySource(properties = {})

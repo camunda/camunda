@@ -24,7 +24,8 @@ class UnifiedConfigurationHelperTest {
 
   private static final String NEW_PROPERTY = "modern.prop";
   private static final Set<String> SINGLE_LEGACY_PROPERTY = Set.of("legacy.prop1");
-  private static final Set<String> MULTIPLE_LEGACY_PROPERTIES = Set.of("legacy.prop1", "legacy.prop2");
+  private static final Set<String> MULTIPLE_LEGACY_PROPERTIES =
+      Set.of("legacy.prop1", "legacy.prop2");
 
   Environment mockEnvironment;
 
