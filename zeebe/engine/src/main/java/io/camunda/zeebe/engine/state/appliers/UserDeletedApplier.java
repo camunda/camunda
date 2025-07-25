@@ -23,6 +23,7 @@ public class UserDeletedApplier implements TypedEventApplier<UserIntent, UserRec
   @Override
   public void applyState(final long key, final UserRecord value) {
     final var username = value.getUsername();
-    userState.delete(username);
+    userState.deleteByUserKey(value.getUserKey());
+    userState.deleteByUsername(username);
   }
 }
