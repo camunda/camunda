@@ -63,11 +63,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
@@ -78,6 +81,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -374,6 +378,31 @@ public class WebSecurityConfig {
     }
   }
 
+  @Bean
+  @Order(ORDER_WEBAPP_API)
+  public SecurityFilterChain x509IdentitySecurityFilterChain(
+      final HttpSecurity httpSecurity,
+      final SecurityConfiguration securityConfiguration,
+      final InMemoryUserDetailsManager x509UserDetailsService)
+      throws Exception {
+    // Require client certificate authentication for /identity/**
+    return httpSecurity
+        .securityMatcher(IDENTITY_PATHS.toArray(String[]::new))
+        .x509(
+            x509 ->
+                x509.subjectPrincipalRegex("CN=(.*?)(?:,|$)")
+                    .userDetailsService(x509UserDetailsService))
+        .authorizeHttpRequests(authz -> authz.anyRequest().authenticated())
+        .headers(
+            headers ->
+                setupSecureHeaders(
+                    headers,
+                    securityConfiguration.getHttpHeaders(),
+                    securityConfiguration.getSaas().isConfigured()))
+        .csrf(AbstractHttpConfigurer::disable)
+        .build();
+  }
+
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   public static class BasicConfiguration {
@@ -600,6 +629,36 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public OAuth2AuthorizedClientManager authorizedClientManager(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OAuth2AuthorizedClientRepository authorizedClientRepository,
+        final CertificateClientAssertionService certificateClientAssertionService,
+        final SecurityConfiguration securityConfiguration) {
+
+      // Configure OAuth2 provider for Client Credentials flow
+      final var clientCredentialsTokenResponseClient =
+          new CertificateBasedClientCredentialsTokenResponseClient(
+              certificateClientAssertionService,
+              securityConfiguration.getAuthentication().getOidc());
+
+      final OAuth2AuthorizedClientProvider authorizedClientProvider =
+          OAuth2AuthorizedClientProviderBuilder.builder()
+              .authorizationCode() // Keep authorization code for user flows
+              .refreshToken()
+              .clientCredentials(
+                  configurer ->
+                      configurer.accessTokenResponseClient(clientCredentialsTokenResponseClient))
+              .build();
+
+      final var authorizedClientManager =
+          new DefaultOAuth2AuthorizedClientManager(
+              clientRegistrationRepository, authorizedClientRepository);
+      authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+
+      return authorizedClientManager;
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -705,7 +764,16 @@ public class WebSecurityConfig {
           httpSecurity
               .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
+                  (authorizeHttpRequests) -> {
+                    // If using client credentials flow, allow access without interactive login
+                    if ("client_credentials"
+                        .equals(
+                            securityConfiguration.getAuthentication().getOidc().getGrantType())) {
+                      authorizeHttpRequests.anyRequest().permitAll();
+                    } else {
+                      authorizeHttpRequests.anyRequest().authenticated();
+                    }
+                  })
               .headers(
                   headers ->
                       setupSecureHeaders(
