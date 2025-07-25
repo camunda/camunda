@@ -9,15 +9,23 @@ package io.camunda.configuration;
 
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
 
+import java.util.Set;
+
 public class Elasticsearch {
 
   private static final String PREFIX = "camunda.data.secondary-storage.elasticsearch";
+  private static final Set<String> legacyUrlProperties = Set.of(
+      "camunda.database.url",
+      "camunda.operate.elasticsearch.url",
+      "camunda.operate.zeebeElasticsearch.url",
+      "camunda.tasklist.elasticsearch.url",
+      "camunda.tasklist.zeebeElasticsearch.url");
 
   private String url = "http://localhost:9200";
 
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".url", url, String.class, SUPPORTED_ONLY_IF_VALUES_MATCH);
+        PREFIX + ".url", url, String.class, SUPPORTED_ONLY_IF_VALUES_MATCH, legacyUrlProperties);
   }
 
   public void setUrl(String url) {

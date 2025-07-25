@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,11 +22,8 @@ import org.springframework.core.env.Environment;
 
 class UnifiedConfigurationHelperTest {
 
-  static final Map<String, Set<String>> SINGLE_LEGACY_PROPERTY =
-      Map.of("modern.prop", Set.of("legacy.prop1"));
-
-  static final Map<String, Set<String>> MULTIPLE_LEGACY_PROPERTIES =
-      Map.of("modern.prop", Set.of("legacy.prop1", "legacy.prop2"));
+  static final Set<String> SINGLE_LEGACY_PROPERTY = Set.of("legacy.prop1");
+  static final Set<String> MULTIPLE_LEGACY_PROPERTIES = Set.of("legacy.prop1", "legacy.prop2");
 
   Environment mockEnvironment;
 
@@ -45,8 +41,6 @@ class UnifiedConfigurationHelperTest {
   // single legacy property and new property coexist with same value -> ok + warning
   @Test
   void testNewDefinedLegacySingleLLegacyMatchAllowed() {
-    UnifiedConfigurationHelper.setCustomLegacyProperties(SINGLE_LEGACY_PROPERTY);
-
     // given
     final String newProperty = "modern.prop";
     final String newValue = "matchingValue";
@@ -58,7 +52,7 @@ class UnifiedConfigurationHelperTest {
 
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
-            newProperty, newValue, String.class, mode);
+            newProperty, newValue, String.class, mode, SINGLE_LEGACY_PROPERTY);
 
     // then
     assertEquals(result, "matchingValue");
@@ -72,7 +66,6 @@ class UnifiedConfigurationHelperTest {
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
 
     // when
-    UnifiedConfigurationHelper.setCustomLegacyProperties(MULTIPLE_LEGACY_PROPERTIES);
     setPropertyValues(newProperty, newValue);
     setPropertyValues("legacy.prop1", "legacyValue1");
     setPropertyValues("legacy.prop2", "legacyValue2");
@@ -83,7 +76,7 @@ class UnifiedConfigurationHelperTest {
             UnifiedConfigurationException.class,
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
+                    newProperty, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES));
     assertTrue(expectedException.getMessage().contains("Ambiguous legacy configuration"));
   }
 
@@ -95,7 +88,6 @@ class UnifiedConfigurationHelperTest {
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
 
     // when
-    UnifiedConfigurationHelper.setCustomLegacyProperties(MULTIPLE_LEGACY_PROPERTIES);
     setPropertyValues(newProperty, newValue);
     setPropertyValues("legacy.prop1", "legacyValue");
     setPropertyValues("legacy.prop2", "legacyValue");
@@ -106,7 +98,7 @@ class UnifiedConfigurationHelperTest {
             UnifiedConfigurationException.class,
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
+                    newProperty, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES));
     assertTrue(expectedException.getMessage().contains("Ambiguous configuration"));
   }
 
@@ -118,13 +110,12 @@ class UnifiedConfigurationHelperTest {
     final BackwardsCompatibilityMode mode = SUPPORTED;
 
     // when
-    UnifiedConfigurationHelper.setCustomLegacyProperties(SINGLE_LEGACY_PROPERTY);
     setPropertyValues("legacy.prop1", "legacyValue1");
 
     // then
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
-            newProperty, newValue, String.class, mode);
+            newProperty, newValue, String.class, mode, SINGLE_LEGACY_PROPERTY);
     assertEquals(result, "legacyValue1");
   }
 
@@ -136,7 +127,6 @@ class UnifiedConfigurationHelperTest {
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
 
     // when
-    UnifiedConfigurationHelper.setCustomLegacyProperties(MULTIPLE_LEGACY_PROPERTIES);
     setPropertyValues(newProperty, newValue);
     setPropertyValues("legacy.prop1", "defaultValue");
     setPropertyValues("legacy.prop2", "defaultValue");
@@ -144,7 +134,7 @@ class UnifiedConfigurationHelperTest {
     // then
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
-            newProperty, newValue, String.class, mode);
+            newProperty, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES);
     assertEquals(result, "defaultValue");
   }
 
@@ -156,7 +146,6 @@ class UnifiedConfigurationHelperTest {
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
 
     // when
-    UnifiedConfigurationHelper.setCustomLegacyProperties(MULTIPLE_LEGACY_PROPERTIES);
     setPropertyValues(newProperty, sameValue);
     setPropertyValues("legacy.prop1", sameValue);
     setPropertyValues("legacy.prop2", sameValue);
@@ -164,7 +153,7 @@ class UnifiedConfigurationHelperTest {
     // then
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
-            newProperty, sameValue, String.class, mode);
+            newProperty, sameValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES);
     assertEquals(result, sameValue);
   }
 
@@ -176,7 +165,6 @@ class UnifiedConfigurationHelperTest {
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
 
     // when
-    UnifiedConfigurationHelper.setCustomLegacyProperties(MULTIPLE_LEGACY_PROPERTIES);
     setPropertyValues(newProperty, newValue);
     setPropertyValues("legacy.prop1", "legacyValue");
     setPropertyValues("legacy.prop2", "legacyValue");
@@ -187,7 +175,7 @@ class UnifiedConfigurationHelperTest {
             UnifiedConfigurationException.class,
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
+                    newProperty, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES));
     assertTrue(expectedException.getMessage().contains("Ambiguous configuration"));
   }
 
@@ -199,13 +187,12 @@ class UnifiedConfigurationHelperTest {
     final BackwardsCompatibilityMode mode = SUPPORTED_ONLY_IF_VALUES_MATCH;
 
     // when
-    UnifiedConfigurationHelper.setCustomLegacyProperties(MULTIPLE_LEGACY_PROPERTIES);
     setPropertyValues(newProperty, newValue);
 
     // then
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
-            newProperty, newValue, String.class, mode);
+            newProperty, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES);
     assertEquals(result, newValue);
   }
 
@@ -222,13 +209,12 @@ class UnifiedConfigurationHelperTest {
             UnifiedConfigurationException.class,
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
+                    newProperty, newValue, String.class, mode, SINGLE_LEGACY_PROPERTY));
     assertTrue(expectedException.getMessage().contains("cannot be null"));
   }
 
   @Test
   void testFallbackErrorWhenLegacyConfigIsNotSupported() {
-    UnifiedConfigurationHelper.setCustomLegacyProperties(MULTIPLE_LEGACY_PROPERTIES);
     // given
     final String newProperty = "modern.prop";
     final String newValue = "doesntMatter";
@@ -244,7 +230,7 @@ class UnifiedConfigurationHelperTest {
             UnifiedConfigurationException.class,
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
+                    newProperty, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES));
 
     assertTrue(
         expectedException
@@ -255,7 +241,6 @@ class UnifiedConfigurationHelperTest {
 
   @Test
   void testNoPropertiesAreSetThenDefaultIsExpected() {
-    UnifiedConfigurationHelper.setCustomLegacyProperties(MULTIPLE_LEGACY_PROPERTIES);
     // given
     final String newProperty = "modern.prop";
     final String defaultValue = "defaultValue";
@@ -263,13 +248,12 @@ class UnifiedConfigurationHelperTest {
 
     final String expected =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
-            newProperty, defaultValue, String.class, mode);
+            newProperty, defaultValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES);
     assertEquals(expected, defaultValue);
   }
 
   @Test
   void testLegacySetAndNewNotPresentThenLegacyIsExpected() {
-    UnifiedConfigurationHelper.setCustomLegacyProperties(SINGLE_LEGACY_PROPERTY);
     // given
     final String newProperty = "modern.prop";
     final String defaultValue = "defaultValue";
@@ -281,7 +265,7 @@ class UnifiedConfigurationHelperTest {
     final String expected = "legacyValue";
     final String actual =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
-            newProperty, defaultValue, String.class, mode);
+            newProperty, defaultValue, String.class, mode, SINGLE_LEGACY_PROPERTY);
     assertEquals(expected, actual);
   }
 }
