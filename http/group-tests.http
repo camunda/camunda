@@ -105,7 +105,7 @@ Accept: application/json
 
 > {%
   client.test("Group assignment should be successful", function () {
-    client.assert(response.status === 202, "Response status is not 202");
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -145,31 +145,31 @@ Accept: application/json
 
 > {%
   client.test("Group removal should be successful", function () {
-    client.assert(response.status === 202, "Response status is not 202");
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
 ### Assign Client to Group
 # @name assign-client-to-group
-PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/clients/tasklist
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/clients/{{CLIENT}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
   client.test("Client assignment should be successful", function () {
-    client.assert(response.status === 202, "Response status is not 202");
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
 ### Remove Client from a Group
 # @name remove-client-from-group
-DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/clients/tasklist
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/clients/{{CLIENT}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
   client.test("Client deletion should be successful", function () {
-    client.assert(response.status === 202, "Response status is not 202");
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
