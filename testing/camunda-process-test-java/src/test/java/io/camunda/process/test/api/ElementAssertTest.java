@@ -27,9 +27,9 @@ import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
+import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -44,7 +44,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({CamundaAssertExtension.class, MockitoExtension.class})
 public class ElementAssertTest {
 
   private static final long PROCESS_INSTANCE_KEY = 1L;
@@ -55,14 +55,6 @@ public class ElementAssertTest {
   @BeforeEach
   void configureAssertions() {
     CamundaAssert.initialize(camundaDataSource);
-    CamundaAssert.setAssertionInterval(Duration.ZERO);
-    CamundaAssert.setAssertionTimeout(Duration.ofSeconds(1));
-  }
-
-  @AfterEach
-  void resetAssertions() {
-    CamundaAssert.setAssertionInterval(CamundaAssert.DEFAULT_ASSERTION_INTERVAL);
-    CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
   }
 
   @BeforeEach
