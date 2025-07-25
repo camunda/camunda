@@ -8,10 +8,8 @@
 
 import { ApiDefinition } from "../request";
 import useApi, { UseApiOptions } from "./useApi";
-import usePagination, {
-  PageResult,
-  PaginationRequestParams,
-} from "./usePagination";
+import usePagination, { PageResult } from "./usePagination";
+import { mergeParams } from "./utils";
 
 const usePaginatedApi = <R extends { page?: PageResult }, P>(
   apiDefinition: ApiDefinition<R, P>,
@@ -34,25 +32,3 @@ const usePaginatedApi = <R extends { page?: PageResult }, P>(
 };
 
 export default usePaginatedApi;
-
-const mergeParams = (
-  custom = {} as Record<string, unknown>,
-  page = {} as PaginationRequestParams,
-): Record<string, unknown> => {
-  const result = { ...custom } as Record<string, unknown>;
-
-  for (const key of Object.keys(page)) {
-    const typedKey = key as keyof PaginationRequestParams;
-
-    if (result[typedKey] !== undefined) {
-      result[typedKey] = {
-        ...result[typedKey],
-        ...page[typedKey],
-      };
-    } else {
-      result[typedKey] = page[typedKey];
-    }
-  }
-
-  return result;
-};

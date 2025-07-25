@@ -9,6 +9,7 @@
 import { useCallback, useEffect, useState } from "react";
 import useApiCall from "./useApiCall";
 import usePagination, { PageResult } from "./usePagination";
+import { mergeParams } from "./utils";
 
 const usePaginatedApiCall = <T extends { page?: PageResult }, P>(
   ...props: Parameters<typeof useApiCall<T, P>>
@@ -21,10 +22,9 @@ const usePaginatedApiCall = <T extends { page?: PageResult }, P>(
 
   const call = useCallback(
     (params: P) => {
-      return _call({
-        ...pageParams,
-        ...params,
-      } as P);
+      return _call(
+        mergeParams(params as Record<string, unknown>, pageParams) as P,
+      );
     },
     [_call, pageParams],
   );
