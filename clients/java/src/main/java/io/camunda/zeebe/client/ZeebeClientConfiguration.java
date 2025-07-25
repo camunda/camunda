@@ -90,6 +90,11 @@ public interface ZeebeClientConfiguration {
   Duration getDefaultRequestTimeout();
 
   /**
+   * @see ZeebeClientBuilder#defaultRequestTimeoutOffset(Duration)
+   */
+  Duration getDefaultRequestTimeoutOffset();
+
+  /**
    * @see ZeebeClientBuilder#usePlaintext()
    */
   boolean isPlaintextConnectionEnabled();

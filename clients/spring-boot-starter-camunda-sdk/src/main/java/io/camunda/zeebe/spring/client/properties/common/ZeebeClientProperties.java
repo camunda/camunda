@@ -29,6 +29,7 @@ public class ZeebeClientProperties extends ApiProperties {
   private DataSize maxMessageSize;
   private DataSize maxMetadataSize;
   private Duration requestTimeout;
+  private Duration requestTimeoutOffset;
   private String caCertificatePath;
   private Duration keepAlive;
   private String overrideAuthority;
@@ -76,6 +77,14 @@ public class ZeebeClientProperties extends ApiProperties {
 
   public void setRequestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
+  }
+
+  public Duration getRequestTimeoutOffset() {
+    return requestTimeoutOffset;
+  }
+
+  public void setRequestTimeoutOffset(final Duration requestTimeoutOffset) {
+    this.requestTimeoutOffset = requestTimeoutOffset;
   }
 
   public String getCaCertificatePath() {
