@@ -154,7 +154,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule assignment should be successful", function () {
-    client.assert(response.status === 202, "Response status is not 204");
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -191,7 +191,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule removal should be successful", function () {
-    client.assert(response.status === 202, "Response status is not 204");
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -222,7 +222,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule assignment should be successful", function () {
-    client.assert(response.status === 202, "Response status is not 202");
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -263,7 +263,7 @@ Accept: application/json
 
 > {%
   client.test("Mapping rule removal should be successful", function () {
-    client.assert(response.status === 202, "Response status is not 204");
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 
@@ -351,7 +351,7 @@ Accept: application/json
     "DELETE_PROCESS",
     "DELETE_FORM"
   ],
-  "ownerType": "MAPPING",
+  "ownerType": "MAPPING_RULE",
   "ownerId": "{{MAPPING_ID}}",
   "resourceType": "RESOURCE",
   "resourceId": "*"
