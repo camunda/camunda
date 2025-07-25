@@ -53,6 +53,22 @@ public class IncidentIT {
   }
 
   @TestTemplate
+  public void shouldSaveAndFindIncidentWithLargeErrorMessageByKey(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+
+    final var original = IncidentFixtures.createRandomized(b -> b.errorMessage("x".repeat(9000)));
+    createAndSaveIncident(rdbmsWriter, original);
+
+    final var instance = incidentReader.findOne(original.incidentKey()).orElse(null);
+
+    assertThat(instance).isNotNull();
+    assertThat(instance.errorMessage().length()).isLessThan(original.errorMessage().length());
+  }
+
+  @TestTemplate
   public void shouldSaveAndResolveIncident(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);

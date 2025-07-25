@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
 import io.camunda.db.rdbms.sql.JobMapper;
@@ -21,10 +22,15 @@ public class JobWriter {
 
   private final ExecutionQueue executionQueue;
   private final JobMapper mapper;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
 
-  public JobWriter(final ExecutionQueue executionQueue, final JobMapper mapper) {
+  public JobWriter(
+      final ExecutionQueue executionQueue,
+      final JobMapper mapper,
+      final VendorDatabaseProperties vendorDatabaseProperties) {
     this.executionQueue = executionQueue;
     this.mapper = mapper;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
   }
 
   public void create(final JobDbModel job) {
@@ -34,7 +40,9 @@ public class JobWriter {
             WriteStatementType.INSERT,
             job.jobKey(),
             "io.camunda.db.rdbms.sql.JobMapper.insert",
-            job));
+            job.truncateErrorMessage(
+                vendorDatabaseProperties.errorMessageSize(),
+                vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
   public void update(final JobDbModel job) {

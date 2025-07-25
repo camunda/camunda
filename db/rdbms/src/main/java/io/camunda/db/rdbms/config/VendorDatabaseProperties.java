@@ -18,10 +18,16 @@ public class VendorDatabaseProperties {
   private static final String VARIABLE_VALUE_PREVIEW_SIZE = "variableValue.previewSize";
 
   /**
-   * Optional property to limit the maximum size of variable values in bytes, if required by the
+   * Required property to specify the size of an Incident's errorMessage in characters. Longer error
+   * messages will be truncated to this size.
+   */
+  private static final String ERROR_MESSAGE_SIZE = "errorMessage.size";
+
+  /**
+   * Optional property to limit the maximum size of string column in bytes, if required by the
    * database vendor. If not set, no limit is applied.
    */
-  private static final String VARIABLE_VALUE_MAX_BYTES = "variableValue.maxBytes";
+  private static final String CHAR_COLUMN_MAX_BYTES = "charColumn.maxBytes";
 
   private static final String DISABLE_FK_BEFORE_TRUNCATE = "disableFkBeforeTruncate";
 
@@ -29,7 +35,8 @@ public class VendorDatabaseProperties {
 
   private final int variableValuePreviewSize;
   private final boolean disableFkBeforeTruncate;
-  private final Integer variableValueMaxBytes;
+  private final Integer charColumnMaxBytes;
+  private final int errorMessageSize;
 
   public VendorDatabaseProperties(final Properties properties) {
     this.properties = properties;
@@ -41,10 +48,15 @@ public class VendorDatabaseProperties {
     variableValuePreviewSize =
         Integer.parseInt(properties.getProperty(VARIABLE_VALUE_PREVIEW_SIZE));
 
-    if (!properties.containsKey(VARIABLE_VALUE_MAX_BYTES)) {
-      variableValueMaxBytes = null;
+    if (!properties.containsKey(ERROR_MESSAGE_SIZE)) {
+      throw new IllegalArgumentException("Property '" + ERROR_MESSAGE_SIZE + "' is missing");
+    }
+    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
+
+    if (!properties.containsKey(CHAR_COLUMN_MAX_BYTES)) {
+      charColumnMaxBytes = null;
     } else {
-      variableValueMaxBytes = Integer.parseInt(properties.getProperty(VARIABLE_VALUE_MAX_BYTES));
+      charColumnMaxBytes = Integer.parseInt(properties.getProperty(CHAR_COLUMN_MAX_BYTES));
     }
 
     if (!properties.containsKey(DISABLE_FK_BEFORE_TRUNCATE)) {
@@ -59,8 +71,12 @@ public class VendorDatabaseProperties {
     return variableValuePreviewSize;
   }
 
-  public Integer variableValueMaxBytes() {
-    return variableValueMaxBytes;
+  public int errorMessageSize() {
+    return errorMessageSize;
+  }
+
+  public Integer charColumnMaxBytes() {
+    return charColumnMaxBytes;
   }
 
   public boolean disableFkBeforeTruncate() {

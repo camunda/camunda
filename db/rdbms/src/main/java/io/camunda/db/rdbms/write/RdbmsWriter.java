@@ -102,7 +102,7 @@ public class RdbmsWriter {
     decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
     flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper);
     groupWriter = new GroupWriter(executionQueue);
-    incidentWriter = new IncidentWriter(executionQueue, incidentMapper);
+    incidentWriter = new IncidentWriter(executionQueue, incidentMapper, vendorDatabaseProperties);
     processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
     processInstanceWriter = new ProcessInstanceWriter(processInstanceMapper, executionQueue);
     tenantWriter = new TenantWriter(executionQueue);
@@ -113,7 +113,7 @@ public class RdbmsWriter {
     formWriter = new FormWriter(executionQueue);
     mappingRuleWriter = new MappingRuleWriter(executionQueue);
     batchOperationWriter = new BatchOperationWriter(batchOperationReader, executionQueue, config);
-    jobWriter = new JobWriter(executionQueue, jobMapper);
+    jobWriter = new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties);
     sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
     usageMetricWriter = new UsageMetricWriter(executionQueue, usageMetricMapper);
     usageMetricTUWriter = new UsageMetricTUWriter(executionQueue, usageMetricTUMapper);

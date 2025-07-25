@@ -42,7 +42,7 @@ public class VariableWriter {
             "io.camunda.db.rdbms.sql.VariableMapper.insert",
             variable.truncateValue(
                 vendorDatabaseProperties.variableValuePreviewSize(),
-                vendorDatabaseProperties.variableValueMaxBytes())));
+                vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
   public void update(final VariableDbModel variable) {
@@ -54,7 +54,7 @@ public class VariableWriter {
             "io.camunda.db.rdbms.sql.VariableMapper.update",
             variable.truncateValue(
                 vendorDatabaseProperties.variableValuePreviewSize(),
-                vendorDatabaseProperties.variableValueMaxBytes())));
+                vendorDatabaseProperties.charColumnMaxBytes())));
   }
 
   public void scheduleForHistoryCleanup(
