@@ -68,7 +68,7 @@ public class CamundaClientConfigurationDefaultPropertiesTest {
     assertThat(configuration.getMaxMetadataSize()).isEqualTo(16 * ONE_KB);
     assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
     assertThat(configuration.getOverrideAuthority()).isNull();
-    assertThat(configuration.getRestAddress()).isEqualTo(new URI("http://0.0.0.0:8080"));
+    assertThat(configuration.getRestAddress()).isEqualTo(new URI("http://0.0.0.0:8088"));
     assertThat(configuration.preferRestOverGrpc()).isFalse();
   }
 }
