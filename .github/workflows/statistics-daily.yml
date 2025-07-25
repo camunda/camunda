@@ -97,7 +97,7 @@ jobs:
               # only print if the owner is a team name
               if [ ${#$TEST_OWNER} -lt 20 ]; then
                 if [[ -n "${lookup[$key]}" ]]; then
-                  printf "\t• ${lookup[TEST_OWNER]\n"
+                  printf "\t• ${lookup[TEST_OWNER]}\n"
                 fi
               fi
 
@@ -112,6 +112,19 @@ jobs:
         shell: bash
         run: |
           echo '${{ steps.message.outputs.MESSAGE }}'
+
+      - name: Send report to slack channel
+        if: false
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_API_KEY }}
+          # "C04FM0DRJT0" is the ID of the #optimize-status channel
+          payload: |
+            {
+              "channel": "C089RLDSCEB",
+              "text": "${{ steps.message.outputs.MESSAGE }}"
+            }
 
       - name: Send notification
         if: github.event_name != 'pull_request'
