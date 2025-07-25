@@ -21,5 +21,15 @@ public enum CamundaProcessTestRuntimeMode {
   MANAGED,
 
   /** The runtime is managed remotely outside Camunda Process Test. */
-  REMOTE
+  REMOTE;
+
+  public static CamundaProcessTestRuntimeMode tryValueOf(
+      final String value, final CamundaProcessTestRuntimeMode defaultValue) {
+
+    try {
+      return CamundaProcessTestRuntimeMode.valueOf(value.trim().toUpperCase());
+    } catch (IllegalArgumentException e) {
+      return defaultValue;
+    }
+  }
 }
