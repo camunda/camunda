@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -26,13 +27,16 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
       new StringProperty("adHocSubProcessInstanceKey", DEFAULT_STRING);
   private final ArrayProperty<AdHocSubProcessActivateElementInstruction> activateElements =
       new ArrayProperty<>("activateElements", AdHocSubProcessActivateElementInstruction::new);
+  private final BooleanProperty cancelRemainingInstances =
+      new BooleanProperty("isCancelRemainingInstances", false);
   private final StringProperty tenantId =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public AdHocSubProcessInstructionRecord() {
-    super(3);
+    super(4);
     declareProperty(adHocSubProcessInstanceKey)
         .declareProperty(activateElements)
+        .declareProperty(cancelRemainingInstances)
         .declareProperty(tenantId);
   }
 
@@ -52,6 +56,17 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
     return activateElements.stream()
         .map(AdHocSubProcessActivateElementInstructionValue.class::cast)
         .toList();
+  }
+
+  @Override
+  public boolean isCancelRemainingInstances() {
+    return cancelRemainingInstances.getValue();
+  }
+
+  public AdHocSubProcessInstructionRecord cancelRemainingInstances(
+      final boolean cancelRemainingInstances) {
+    this.cancelRemainingInstances.setValue(cancelRemainingInstances);
+    return this;
   }
 
   /**
