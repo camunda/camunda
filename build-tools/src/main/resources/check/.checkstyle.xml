@@ -154,7 +154,14 @@
     </module>
 
     <module name="IllegalImport">
-      <property name="illegalPkgs" value="org.testcontainers.shaded,org.assertj.core.internal"/>
+      <property name="regexp" value="true"/>
+      <!--
+        Forbid importing shaded dependencies, prefer real dependencies instead;
+        Forbid importing internal AssertJ classes, use public API instead, as we cannot rely on their stability.
+        Forbid JUnit assertions, use AssertJ assertions, for consistency, and because they are generally more powerful.
+       -->
+      <property name="illegalPkgs" value="org\.testcontainers\.shaded,org\.assertj\.core\.internal"/>
+      <property name="illegalClasses" value="^org\.junit\.Assert.*$,^org\.junit\.jupiter\.api\.Assert.*$"/>
     </module>
   </module>
 </module>
