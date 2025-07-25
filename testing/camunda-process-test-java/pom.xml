@@ -186,7 +186,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <systemPropertyVariables>
-            <!-- Set CPT's assertion timeout to 10 seconds for CI -->
+            <!-- Set CPT's assertion timeout to 5 seconds for CI -->
             <cptAssertionTimeout>PT5S</cptAssertionTimeout>
           </systemPropertyVariables>
         </configuration>
