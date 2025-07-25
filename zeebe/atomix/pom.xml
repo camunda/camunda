@@ -47,7 +47,7 @@
   </modules>
 
   <properties>
-    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
   </properties>
 
   <build>

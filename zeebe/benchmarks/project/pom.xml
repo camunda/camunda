@@ -23,7 +23,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
 
     <!-- java version -->
     <version.java>21</version.java>
