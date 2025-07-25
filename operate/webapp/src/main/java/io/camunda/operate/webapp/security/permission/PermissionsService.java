@@ -7,38 +7,35 @@
  */
 package io.camunda.operate.webapp.security.permission;
 
-import io.camunda.authentication.entity.CamundaPrincipal;
-import io.camunda.operate.webapp.security.tenant.TenantService;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.SecurityContext;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
-import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Optional;
+import java.util.Set;
 
 public class PermissionsService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(PermissionsService.class);
-
   private final SecurityConfiguration securityConfiguration;
   private final AuthorizationChecker authorizationChecker;
-  private final TenantService tenantService;
+  private final CamundaAuthenticationProvider authenticationProvider;
+  private final ResourceAccessProvider resourceAccessProvider;
 
   public PermissionsService(
       final SecurityConfiguration securityConfiguration,
       final AuthorizationChecker authorizationChecker,
-      final TenantService tenantService) {
+      final ResourceAccessProvider resourceAccessProvider,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.securityConfiguration = securityConfiguration;
     this.authorizationChecker = authorizationChecker;
-    this.tenantService = tenantService;
+    this.resourceAccessProvider = resourceAccessProvider;
+    this.authenticationProvider = authenticationProvider;
   }
 
   /**
@@ -162,7 +159,7 @@ public class PermissionsService {
   private ResourcesAllowed getResourcesWithPermission(
       final AuthorizationResourceType resourceType, final PermissionType permissionType) {
     if (!permissionsEnabled()) {
-      return ResourcesAllowed.all();
+      return ResourcesAllowed.wildcard();
     }
     if (!isAuthorized()) {
       return ResourcesAllowed.withIds(Set.of());
@@ -170,18 +167,17 @@ public class PermissionsService {
 
     final var authorization =
         Authorization.of(a -> a.resourceType(resourceType).permissionType(permissionType));
-    final SecurityContext securityContext = getSecurityContext(authorization);
-    final List<String> ids = authorizationChecker.retrieveAuthorizedResourceIds(securityContext);
+    final var resourceAccess =
+        resourceAccessProvider.resolveResourceAccess(getAuthentication(), authorization);
 
-    if (hasWildcardPermission(ids)) {
-      return ResourcesAllowed.all();
+    if (resourceAccess.wildcard()) {
+      return ResourcesAllowed.wildcard();
+    } else if (resourceAccess.denied()) {
+      return ResourcesAllowed.withIds(Set.of());
     }
 
+    final var ids = resourceAccess.authorization().resourceIds();
     return ResourcesAllowed.withIds(new LinkedHashSet<>(ids));
-  }
-
-  private boolean hasWildcardPermission(final List<String> resourceKeys) {
-    return resourceKeys != null && resourceKeys.contains("*");
   }
 
   /**
@@ -196,55 +192,9 @@ public class PermissionsService {
   }
 
   private String getAuthenticatedUsername() {
-    final Authentication requestAuthentication =
-        SecurityContextHolder.getContext().getAuthentication();
-    if (requestAuthentication != null) {
-      final Object principal = requestAuthentication.getPrincipal();
-      if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
-        return authenticatedPrincipal.getUsername();
-      }
-    }
-    return null;
-  }
-
-  private List<String> getAuthenticatedUserRoleIds() {
-    final Authentication requestAuthentication =
-        SecurityContextHolder.getContext().getAuthentication();
-    if (requestAuthentication != null) {
-      final Object principal = requestAuthentication.getPrincipal();
-      if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
-        return authenticatedPrincipal.getAuthenticationContext().roles().stream()
-            .map(RoleEntity::roleId)
-            .toList();
-      }
-    }
-    return Collections.emptyList();
-  }
-
-  private List<String> getAuthenticatedUserGroupIds() {
-    final Authentication requestAuthentication =
-        SecurityContextHolder.getContext().getAuthentication();
-    if (requestAuthentication != null) {
-      final Object principal = requestAuthentication.getPrincipal();
-      if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
-        return authenticatedPrincipal.getAuthenticationContext().groups();
-      }
-    }
-    return Collections.emptyList();
-  }
-
-  private List<String> getAuthenticatedUserTenantIds() {
-    final Authentication requestAuthentication =
-        SecurityContextHolder.getContext().getAuthentication();
-    if (requestAuthentication != null) {
-      final Object principal = requestAuthentication.getPrincipal();
-      if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
-        return authenticatedPrincipal.getAuthenticationContext().tenants().stream()
-            .map(TenantDTO::tenantId)
-            .toList();
-      }
-    }
-    return Collections.emptyList();
+    return Optional.ofNullable(getAuthentication())
+        .map(CamundaAuthentication::authenticatedUsername)
+        .orElse(null);
   }
 
   private boolean isAuthorizedFor(
@@ -253,61 +203,24 @@ public class PermissionsService {
       final PermissionType permissionType) {
     final var authorization =
         Authorization.of(a -> a.resourceType(resourceType).permissionType(permissionType));
-
-    final SecurityContext securityContext = getSecurityContext(authorization);
-    return authorizationChecker.isAuthorized(resourceId, securityContext);
-  }
-
-  private SecurityContext getSecurityContext(final Authorization authorization) {
-    return new SecurityContext(getAuthentication(), authorization);
+    return resourceAccessProvider
+        .hasResourceAccessByResourceId(getAuthentication(), authorization, resourceId)
+        .allowed();
   }
 
   private CamundaAuthentication getAuthentication() {
-    final var authenticatedUsername = getAuthenticatedUsername();
-    final List<String> authenticatedRoleIds = getAuthenticatedUserRoleIds();
-    final List<String> authenticatedTenantIds = getAuthenticatedUserTenantIds();
-    final List<String> authenticatedGroupIds = getAuthenticatedUserGroupIds();
-    return new CamundaAuthentication.Builder()
-        .user(authenticatedUsername)
-        .roleIds(authenticatedRoleIds)
-        .tenants(authenticatedTenantIds)
-        .groupIds(authenticatedGroupIds)
-        .build();
+    return authenticationProvider.getCamundaAuthentication();
   }
 
   /** ResourcesAllowed */
-  public static final class ResourcesAllowed {
-    private final boolean all;
-    private final Set<String> ids;
+  public record ResourcesAllowed(boolean all, Set<String> ids) {
 
-    private ResourcesAllowed(final boolean all, final Set<String> ids) {
-      this.all = all;
-      this.ids = ids;
-    }
-
-    public static ResourcesAllowed all() {
+    public static ResourcesAllowed wildcard() {
       return new ResourcesAllowed(true, null);
     }
 
     public static ResourcesAllowed withIds(final Set<String> ids) {
       return new ResourcesAllowed(false, ids);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(all, ids);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      final ResourcesAllowed that = (ResourcesAllowed) o;
-      return all == that.all && Objects.equals(ids, that.ids);
     }
 
     /**

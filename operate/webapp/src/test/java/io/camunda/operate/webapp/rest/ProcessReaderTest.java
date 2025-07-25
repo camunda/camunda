@@ -106,7 +106,7 @@ public class ProcessReaderTest {
 
     when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
     when(mockPermissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(ResourcesAllowed.all());
+        .thenReturn(ResourcesAllowed.wildcard());
 
     final String tenantId = "tenantId";
     when(mockProcessStore.getProcessesGrouped(tenantId, null)).thenReturn(new HashMap<>());

@@ -169,7 +169,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     // then
     final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
@@ -216,7 +216,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     // then
     final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();

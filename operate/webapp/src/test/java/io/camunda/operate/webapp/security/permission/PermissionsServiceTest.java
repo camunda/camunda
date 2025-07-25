@@ -11,33 +11,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.authentication.entity.AuthenticationContext;
-import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
-import io.camunda.operate.webapp.security.tenant.TenantService;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
-import io.camunda.service.TenantServices.TenantDTO;
+import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 public class PermissionsServiceTest {
 
   private SecurityConfiguration mockSecurityConfiguration;
   private AuthorizationsConfiguration mockAuthorizationsConfiguration;
   private AuthorizationChecker mockAuthorizationChecker;
-  private TenantService mockTenantService;
-  private Authentication mockAuthentication;
+  private CamundaAuthenticationProvider mockAuthenticationProvider;
+  private ResourceAccessProvider mockResourceAccessProvider;
 
   private PermissionsService permissionsService;
   private final String username = "foo";
@@ -51,30 +45,25 @@ public class PermissionsServiceTest {
     mockSecurityConfiguration = mock(SecurityConfiguration.class);
     mockAuthorizationsConfiguration = mock(AuthorizationsConfiguration.class);
     mockAuthorizationChecker = mock(AuthorizationChecker.class);
-    mockTenantService = mock(TenantService.class);
-    mockAuthentication = mock(Authentication.class);
+    mockAuthenticationProvider = mock(CamundaAuthenticationProvider.class);
+    mockResourceAccessProvider = mock(ResourceAccessProvider.class);
 
     when(mockSecurityConfiguration.getAuthorizations()).thenReturn(mockAuthorizationsConfiguration);
     when(mockAuthorizationsConfiguration.isEnabled()).thenReturn(true);
 
-    final CamundaUser camundaUser = mock(CamundaUser.class);
-    when(camundaUser.getUsername()).thenReturn(username);
-    when(camundaUser.getAuthenticationContext())
-        .thenReturn(
-            new AuthenticationContext.AuthenticationContextBuilder()
-                .withUsername("test")
-                .withRoles(List.of(new RoleEntity(roleKey, roleId, "roleName", "description")))
-                .withTenants(List.of(new TenantDTO(123L, tenantId, "tenantName", "")))
-                .withGroups(List.of(groupId))
-                .build());
-    when(mockAuthentication.getPrincipal()).thenReturn(camundaUser);
-    final SecurityContext securityContext = mock(SecurityContext.class);
-    when(securityContext.getAuthentication()).thenReturn(mockAuthentication);
-    SecurityContextHolder.setContext(securityContext);
+    final var camundaUser = mock(CamundaAuthentication.class);
+    when(camundaUser.authenticatedUsername()).thenReturn(username);
+    when(camundaUser.authenticatedRoleIds()).thenReturn(List.of(roleId));
+    when(camundaUser.authenticatedGroupIds()).thenReturn(List.of(groupId));
+    when(camundaUser.authenticatedTenantIds()).thenReturn(List.of(tenantId));
+    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(camundaUser);
 
     permissionsService =
         new PermissionsService(
-            mockSecurityConfiguration, mockAuthorizationChecker, mockTenantService);
+            mockSecurityConfiguration,
+            mockAuthorizationChecker,
+            mockResourceAccessProvider,
+            mockAuthenticationProvider);
   }
 
   @Test
@@ -94,6 +83,7 @@ public class PermissionsServiceTest {
 
     final CamundaAuthentication authentication =
         createCamundaAuthentication(username, List.of(tenantId), List.of(roleId), List.of(groupId));
+    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
 
     when(mockAuthorizationChecker.collectPermissionTypes(
             "bpmnProcessId", AuthorizationResourceType.PROCESS_DEFINITION, authentication))
@@ -116,6 +106,7 @@ public class PermissionsServiceTest {
 
     final CamundaAuthentication authentication =
         createCamundaAuthentication(username, List.of(tenantId), List.of(roleId), List.of(groupId));
+    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
 
     when(mockAuthorizationChecker.collectPermissionTypes(
             "decisionId", AuthorizationResourceType.DECISION_DEFINITION, authentication))
@@ -129,6 +120,7 @@ public class PermissionsServiceTest {
 
   @Test
   public void testGetProcessesWithPermissionWithNullAuthentication() {
+    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(null);
     final ResourcesAllowed res =
         permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
     final Set<String> resourceIds = res.getIds();
@@ -137,6 +129,7 @@ public class PermissionsServiceTest {
 
   @Test
   public void testGetDecisionsWithPermissionWithNullAuthentication() {
+    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(null);
     final ResourcesAllowed res =
         permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE);
     final Set<String> resourceIds = res.getIds();

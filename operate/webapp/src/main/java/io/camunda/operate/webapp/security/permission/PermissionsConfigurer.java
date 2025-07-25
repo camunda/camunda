@@ -7,9 +7,10 @@
  */
 package io.camunda.operate.webapp.security.permission;
 
-import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.reader.ResourceAccessProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -20,7 +21,12 @@ public class PermissionsConfigurer {
   public PermissionsService getPermissionsService(
       final SecurityConfiguration securityConfiguration,
       final AuthorizationChecker authorizationChecker,
-      final TenantService tenantService) {
-    return new PermissionsService(securityConfiguration, authorizationChecker, tenantService);
+      final ResourceAccessProvider resourceAccessProvider,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    return new PermissionsService(
+        securityConfiguration,
+        authorizationChecker,
+        resourceAccessProvider,
+        authenticationProvider);
   }
 }

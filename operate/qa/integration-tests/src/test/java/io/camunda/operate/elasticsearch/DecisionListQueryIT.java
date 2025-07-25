@@ -579,7 +579,7 @@ public class DecisionListQueryIT extends OperateAbstractIT {
     // when
     when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.all());
+        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
 
     final DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest();
     final MvcResult mvcResult = postRequest(query(), query);
