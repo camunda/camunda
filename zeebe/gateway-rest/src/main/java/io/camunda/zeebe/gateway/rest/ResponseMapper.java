@@ -568,7 +568,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
     final var response =
         new UserCreateResult()
-            .userKey(KeyUtil.keyToString(userRecord.getUserKey()))
             .username(userRecord.getUsername())
             .email(userRecord.getEmail())
             .name(userRecord.getName());
