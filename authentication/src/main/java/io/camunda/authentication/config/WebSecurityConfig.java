@@ -7,9 +7,18 @@
  */
 package io.camunda.authentication.config;
 
+import static com.nimbusds.jose.JOSEObjectType.JWT;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES256;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES384;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES512;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS384;
+import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS512;
 
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
@@ -35,6 +44,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -143,6 +153,9 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/favicon.ico");
+  // We explicitly support the "at+jwt" JWT 'typ' header defined in
+  // https://datatracker.ietf.org/doc/html/rfc9068#name-header
+  static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
   // Used for chains that grant unauthenticated access, always comes first.
   private static final int ORDER_UNPROTECTED = 0;
@@ -528,7 +541,17 @@ public class WebSecurityConfig {
               .getProviderDetails()
               .getJwkSetUri();
 
-      final var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
+      final var decoder =
+          NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
+              .jwsAlgorithms(
+                  algorithms ->
+                      algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512)))
+              .jwtProcessorCustomizer(
+                  // the default implementation supports only JOSEObjectType.JWT and null
+                  processor ->
+                      processor.setJWSTypeVerifier(
+                          new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null)))
+              .build();
       decoder.setJwtValidator(getTokenValidator(securityConfiguration));
       return decoder;
     }
@@ -730,14 +753,18 @@ public class WebSecurityConfig {
 
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       response.setStatus(HttpStatus.NO_CONTENT.value());
     }
 
     @Override
     public void onLogoutSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       onAuthenticationSuccess(request, response, authentication);
     }
@@ -746,7 +773,9 @@ public class WebSecurityConfig {
   protected static class NoContentWithCsrfTokenSuccessHandler extends NoContentResponseHandler {
     @Override
     public void onAuthenticationSuccess(
-        HttpServletRequest request, HttpServletResponse response, Authentication authentication)
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Authentication authentication)
         throws IOException, ServletException {
       super.onAuthenticationSuccess(request, response, authentication);
 
