@@ -236,6 +236,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
             })
         .exceptionally(
             (e) -> {
+              trackMetricForReindexFailures(processInstanceKeys, e);
               reindexFuture.completeExceptionally(e);
               return null;
             });
@@ -376,6 +377,19 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
         .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
         .setAbortOnVersionConflict(false)
         .setSlices(AUTO_SLICES);
+  }
+
+  private void trackMetricForReindexFailures(
+      final List<Object> processInstanceKeys, final Throwable e) {
+    LOGGER.error(
+        "Failed reindex while trying to reindex the following process instance keys [{}]",
+        processInstanceKeys);
+
+    metrics.recordCounts(
+        Metrics.COUNTER_NAME_REINDEX_FAILURES,
+        1,
+        "exception",
+        e.getCause().getClass().getSimpleName());
   }
 
   private Either<Throwable, Long> handleResponse(
