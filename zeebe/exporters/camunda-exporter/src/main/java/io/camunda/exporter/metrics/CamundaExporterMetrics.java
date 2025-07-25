@@ -14,6 +14,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.TimeGauge;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.time.Duration;
@@ -21,6 +22,7 @@ import java.time.Instant;
 import java.time.InstantSource;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class CamundaExporterMetrics {
@@ -55,6 +57,7 @@ public class CamundaExporterMetrics {
   private final Timer recordExportDuration;
 
   private final AtomicReference<Instant> lastFlushTime = new AtomicReference<>(Instant.now());
+  private final AtomicInteger processInstancesAwaitingArchival = new AtomicInteger(0);
 
   public CamundaExporterMetrics(final MeterRegistry meterRegistry) {
     this(meterRegistry, InstantSource.system());
@@ -143,8 +146,16 @@ public class CamundaExporterMetrics {
             .serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets())
             .register(meterRegistry);
 
-    Gauge.builder(meterName("since.last.flush.seconds"), this::secondSinceLastFlush)
+    TimeGauge.builder(
+            meterName("since.last.flush.seconds"), this::secondSinceLastFlush, TimeUnit.SECONDS)
         .description("Time in seconds since the last successful flush")
+        .register(meterRegistry);
+
+    Gauge.builder(
+            meterName("process.instances.awaiting.archival"),
+            processInstancesAwaitingArchival,
+            AtomicInteger::get)
+        .description("Number of process instances awaiting archival (approximate)")
         .register(meterRegistry);
   }
 
@@ -200,6 +211,10 @@ public class CamundaExporterMetrics {
 
   public void recordFlushOccurrence(final Instant time) {
     lastFlushTime.set(time);
+  }
+
+  public void setProcessInstancesAwaitingArchival(final int count) {
+    processInstancesAwaitingArchival.set(count);
   }
 
   /**

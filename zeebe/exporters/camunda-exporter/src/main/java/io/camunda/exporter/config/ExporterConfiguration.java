@@ -175,6 +175,7 @@ public class ExporterConfiguration {
     private int delayBetweenRuns = 2000;
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
+    private boolean trackArchivalMetricsForProcessInstance = true;
 
     public String getElsRolloverDateFormat() {
       return elsRolloverDateFormat;
@@ -256,7 +257,18 @@ public class ExporterConfiguration {
           + maxDelayBetweenRuns
           + ", retention="
           + retention
+          + ", trackArchivalMetricsForProcessInstance="
+          + trackArchivalMetricsForProcessInstance
           + '}';
+    }
+
+    public boolean isTrackArchivalMetricsForProcessInstance() {
+      return trackArchivalMetricsForProcessInstance;
+    }
+
+    public void setTrackArchivalMetricsForProcessInstance(
+        final boolean trackArchivalMetricsForProcessInstance) {
+      this.trackArchivalMetricsForProcessInstance = trackArchivalMetricsForProcessInstance;
     }
   }
 

@@ -23,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
@@ -112,6 +113,9 @@ public final class BackgroundTaskManagerFactory {
 
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildProcessInstanceArchiverJob());
+    if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
+      tasks.add(buildProcessInstanceToBeArchivedCountJob());
+    }
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationArchiverJob());
       tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
@@ -120,6 +124,28 @@ public final class BackgroundTaskManagerFactory {
 
     executor.setCorePoolSize(tasks.size());
     return tasks;
+  }
+
+  private ReschedulingTask buildProcessInstanceToBeArchivedCountJob() {
+    final var connector = new ElasticsearchConnector(config.getConnect());
+    final var processInstanceToBeArchivedCountJob =
+        new ProcessInstanceToBeArchivedCountJob(
+            metrics,
+            connector.createAsyncClient(),
+            partitionId,
+            config.getHistory().getArchivingTimePoint(),
+            resourceProvider
+                .getIndexTemplateDescriptor(ListViewTemplate.class)
+                .getFullQualifiedName(),
+            logger);
+
+    return new ReschedulingTask(
+        processInstanceToBeArchivedCountJob,
+        0,
+        ProcessInstanceToBeArchivedCountJob.DELAY_BETWEEN_RUNS,
+        ProcessInstanceToBeArchivedCountJob.MAX_DELAY_BETWEEN_RUNS,
+        executor,
+        logger);
   }
 
   private ReschedulingTask buildIncidentMarkerTask() {

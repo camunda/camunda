@@ -19,7 +19,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 6,
+  "id": 2,
   "links": [],
   "panels": [
     {
@@ -242,7 +242,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 493
+            "y": 369
           },
           "id": 32,
           "options": {
@@ -359,7 +359,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 500
+            "y": 376
           },
           "id": 33,
           "options": {
@@ -485,7 +485,7 @@
             "h": 8,
             "w": 8,
             "x": 0,
-            "y": 505
+            "y": 381
           },
           "id": 34,
           "options": {
@@ -592,7 +592,7 @@
             "h": 8,
             "w": 8,
             "x": 8,
-            "y": 505
+            "y": 381
           },
           "id": 35,
           "options": {
@@ -699,7 +699,7 @@
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 505
+            "y": 381
           },
           "id": 36,
           "options": {
@@ -802,7 +802,7 @@
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 513
+            "y": 389
           },
           "id": 37,
           "options": {
@@ -2182,7 +2182,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "description": "Shows the rate of archiving (in-progress) and archived process instance and batch operations. Batch operations or process instances need to be completed before being able to be archived. The rate is aggregated by partition.",
+          "description": "Process instances which can be archived but are waiting to do so.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2243,53 +2243,31 @@
             "x": 12,
             "y": 53
           },
-          "id": 16,
+          "id": 47,
           "options": {
             "legend": {
-              "calcs": [
-                "lastNotNull",
-                "max",
-                "min"
-              ],
-              "displayMode": "table",
+              "calcs": [],
+              "displayMode": "list",
               "placement": "bottom",
               "showLegend": true
             },
             "tooltip": {
               "hideZeros": false,
-              "mode": "multi",
-              "sort": "desc"
+              "mode": "single",
+              "sort": "none"
             }
           },
           "pluginVersion": "12.0.2",
           "targets": [
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
               "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, state)",
-              "instant": false,
-              "legendFormat": "{{state}} process instances [p{{partition}}]",
+              "expr": "zeebe_camunda_exporter_process_instances_awaiting_archival{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}\n",
+              "legendFormat": "Partition {{partition}}",
               "range": true,
               "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(zeebe_camunda_exporter_archiver_batch_operations_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, state)",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "{{state}} batch operations [p{{partition}}]",
-              "range": true,
-              "refId": "B"
             }
           ],
-          "title": "Archiving",
+          "title": "Camunda Exporter (Process Instances Awaiting Archival)",
           "type": "timeseries"
         },
         {
@@ -2375,479 +2353,125 @@
           ],
           "title": "Archiving duration",
           "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "Shows the rate of archiving (in-progress) and archived process instance and batch operations. Batch operations or process instances need to be completed before being able to be archived. The rate is aggregated by partition.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 61
+          },
+          "id": 16,
+          "options": {
+            "legend": {
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "min"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_process_instances_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, state)",
+              "instant": false,
+              "legendFormat": "{{state}} process instances [p{{partition}}]",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(zeebe_camunda_exporter_archiver_batch_operations_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[$__rate_interval])) by (partition, state)",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{state}} batch operations [p{{partition}}]",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Archiving",
+          "type": "timeseries"
         }
       ],
       "title": "Camunda Exporter",
       "type": "row"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 5
-      },
-      "id": 1,
-      "panels": [],
-      "title": "ElasticSearch Exporter",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "description": "Each time a non empty bulk request if flushed, this is how long the flush takes.",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "scaleDistribution": {
-              "type": "linear"
-            }
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 6
-      },
-      "id": 2,
-      "options": {
-        "calculate": false,
-        "calculation": {},
-        "cellGap": 2,
-        "cellValues": {},
-        "color": {
-          "exponent": 0.5,
-          "fill": "#ef843c",
-          "mode": "scheme",
-          "reverse": false,
-          "scale": "exponential",
-          "scheme": "Spectral",
-          "steps": 128
-        },
-        "exemplars": {
-          "color": "rgba(255,0,255,0.7)"
-        },
-        "filterValues": {
-          "le": 1e-9
-        },
-        "legend": {
-          "show": false
-        },
-        "rowsFrame": {
-          "layout": "auto"
-        },
-        "showValue": "never",
-        "tooltip": {
-          "mode": "single",
-          "showColorScale": false,
-          "yHistogram": false
-        },
-        "yAxis": {
-          "axisPlacement": "left",
-          "reverse": false,
-          "unit": "dtdurations"
-        }
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "expr": "sum(increase(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
-          "format": "heatmap",
-          "interval": "30s",
-          "intervalFactor": 1,
-          "legendFormat": "{{le}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Elasticsearch Exporter (Flush Duration)",
-      "type": "heatmap"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "description": "The rate of failure of flush operations, averaged over 15s intervals",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "links": [],
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "percentunit"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 6
-      },
-      "id": 3,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "exemplar": true,
-          "expr": "rate(zeebe_elasticsearch_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_elasticsearch_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
-          "interval": "",
-          "legendFormat": "{{pod}} Exporter {{partition}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Elasticsearch Exporter (Flush Failure Rate)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "description": "For every non empty flush of a bulk request, this is the number of entities flushed.",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "scaleDistribution": {
-              "type": "linear"
-            }
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 14
-      },
-      "id": 4,
-      "options": {
-        "calculate": false,
-        "calculation": {},
-        "cellGap": 2,
-        "cellValues": {},
-        "color": {
-          "exponent": 0.5,
-          "fill": "#ef843c",
-          "mode": "scheme",
-          "reverse": false,
-          "scale": "exponential",
-          "scheme": "Spectral",
-          "steps": 128
-        },
-        "exemplars": {
-          "color": "rgba(255,0,255,0.7)"
-        },
-        "filterValues": {
-          "le": 1e-9
-        },
-        "legend": {
-          "show": false
-        },
-        "rowsFrame": {
-          "layout": "auto"
-        },
-        "showValue": "never",
-        "tooltip": {
-          "mode": "single",
-          "showColorScale": false,
-          "yHistogram": false
-        },
-        "yAxis": {
-          "axisPlacement": "left",
-          "reverse": false,
-          "unit": "short"
-        }
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "expr": "sum(increase(zeebe_elasticsearch_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
-          "format": "heatmap",
-          "interval": "30s",
-          "intervalFactor": 1,
-          "legendFormat": "{{le}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Elasticsearch Exporter (Bulk Size)",
-      "type": "heatmap"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "description": "Each bulk request has a number of records, the memory usage to flush this bulk request is crudely measured through content length and tracked here. ",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "links": [],
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "bytes"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 14
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "multi",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "datasource": {
-            "uid": "$DS_PROMETHEUS"
-          },
-          "expr": "zeebe_elasticsearch_exporter_bulk_memory_size{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "{{pod}} p{{partition}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Elasticsearch Exporter (Bulk Memory Size)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
-      "description": "How far behind each exporter is from exporting the records which have been committed.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "barWidthFactor": 0.6,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "insertNulls": false,
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green"
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 22
-      },
-      "id": 47,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "hideZeros": false,
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "12.0.2",
-      "targets": [
-        {
-          "editorMode": "code",
-          "expr": "max (zeebe_log_appender_last_committed_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}) by (partition) - max (zeebe_exporter_last_exported_position{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", exporter=~\"elasticsearchexporter\"}) by (partition)",
-          "legendFormat": "partition {{partition}}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Elasticsearch Exporter (Records to export backlog)",
-      "type": "timeseries"
     },
     {
       "collapsed": true,
@@ -2855,7 +2479,384 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 5
+      },
+      "id": 1,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "Each time a non empty bulk request if flushed, this is how long the flush takes.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 118
+          },
+          "id": 2,
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#ef843c",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(zeebe_elasticsearch_exporter_flush_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Elasticsearch Exporter (Flush Duration)",
+          "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "The rate of failure of flush operations, averaged over 15s intervals",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 118
+          },
+          "id": 3,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "exemplar": true,
+              "expr": "rate(zeebe_elasticsearch_exporter_failed_flush_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval]) / rate(zeebe_elasticsearch_exporter_flush_duration_seconds_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} Exporter {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Elasticsearch Exporter (Flush Failure Rate)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "For every non empty flush of a bulk request, this is the number of entities flushed.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 144
+          },
+          "id": 4,
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#ef843c",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "short"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "sum(increase(zeebe_elasticsearch_exporter_bulk_size_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Elasticsearch Exporter (Bulk Size)",
+          "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "description": "Each bulk request has a number of records, the memory usage to flush this bulk request is crudely measured through content length and tracked here. ",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "bytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 144
+          },
+          "id": 5,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "12.0.2",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "expr": "zeebe_elasticsearch_exporter_bulk_memory_size{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Elasticsearch Exporter (Bulk Memory Size)",
+          "type": "timeseries"
+        }
+      ],
+      "title": "ElasticSearch Exporter",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
       },
       "id": 21,
       "panels": [
@@ -2883,7 +2884,7 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 161
+            "y": 7
           },
           "id": 22,
           "options": {
@@ -2969,7 +2970,7 @@
             "h": 8,
             "w": 11,
             "x": 10,
-            "y": 161
+            "y": 7
           },
           "id": 23,
           "options": {
@@ -3070,7 +3071,7 @@
             "h": 8,
             "w": 3,
             "x": 21,
-            "y": 161
+            "y": 7
           },
           "id": 24,
           "options": {
@@ -3130,7 +3131,7 @@
             "h": 10,
             "w": 11,
             "x": 0,
-            "y": 169
+            "y": 79
           },
           "id": 25,
           "options": {
@@ -3257,7 +3258,7 @@
             "h": 10,
             "w": 8,
             "x": 11,
-            "y": 169
+            "y": 79
           },
           "id": 26,
           "options": {
@@ -3334,7 +3335,7 @@
             "h": 10,
             "w": 5,
             "x": 19,
-            "y": 169
+            "y": 79
           },
           "id": 27,
           "options": {
@@ -3457,25 +3458,6 @@
         "query": {
           "qryType": 1,
           "query": "label_values($exporterId)",
-          "refId": "PrometheusVariableQueryEditor-VariableQuery"
-        },
-        "refresh": 1,
-        "regex": "",
-        "type": "query"
-      },
-      {
-        "allValue": ".*",
-        "current": {
-          "text": "All",
-          "value": "$__all"
-        },
-        "definition": "label_values($pod)",
-        "includeAll": true,
-        "name": "pod",
-        "options": [],
-        "query": {
-          "qryType": 1,
-          "query": "label_values($pod)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,
