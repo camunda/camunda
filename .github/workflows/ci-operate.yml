@@ -8,22 +8,22 @@ name: Operate CI
 on:
   workflow_dispatch:
     inputs:
-      feChanges:
-        description: "Boolean variable for if there are front end changes to Operate"
+      runFeTests:
+        description: "Set to true to run front end tests for Operate"
         type: boolean
         required: true
-      beChanges:
-        description: "Boolean variable for if there are back end changes to Operate"
+      runBeTests:
+        description: "Set to true to run back end tests for Operate"
         type: boolean
         required: true
   workflow_call:
     inputs:
-      feChanges:
-        description: "Boolean variable for if there are front end changes to Operate"
+      runFeTests:
+        description: "Set to true if Operate front-end code was changed"
         type: boolean
         required: true
-      beChanges:
-        description: "Boolean variable for if there are back end changes to Operate"
+      runBeTests:
+        description: "Set to true if Operate back-end code was changed"
         type: boolean
         required: true
 
@@ -37,9 +37,28 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
+  # run every time this CI file is called
+  operate-backend-unit-tests:
+    name: "[UT] Back End / ${{matrix.suiteName}}"
+    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [ DataLayer, CoreFeatures ]
+        include:
+          - suite: DataLayer
+            suiteName: Data Layer
+          - suite: CoreFeatures
+            suiteName: Core Features
+    with:
+      componentName: "Operate"
+      suite: ${{ matrix.suite }}
+
   # Checks to see if Operate can properly build itself and a docker image
   build-operate-backend:
-    if: inputs.beChanges
+    if: inputs.runBeTests
     name: "Build Checks"
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -79,33 +98,14 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   operate-frontend-tests:
-    if: inputs.feChanges
+    if: inputs.runFeTests
     name: "[UT] Front End"
     uses: ./.github/workflows/operate-ci-fe.yml
     secrets: inherit
     permissions: { }  # GITHUB_TOKEN unused in this job
 
-  # run every time this CI file is called
-  operate-backend-unit-tests:
-    name: "[UT] Back End / ${{matrix.suiteName}}"
-    uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
-    permissions: { }  # GITHUB_TOKEN unused in this job
-    secrets: inherit
-    strategy:
-      fail-fast: false
-      matrix:
-        suite: [ DataLayer, CoreFeatures ]
-        include:
-          - suite: DataLayer
-            suiteName: Data Layer
-          - suite: CoreFeatures
-            suiteName: Core Features
-    with:
-      componentName: "Operate"
-      suite: ${{ matrix.suite }}
-
   run-importer-tests:
-    if: inputs.beChanges
+    if: inputs.runBeTests
     name: "[IT] Importer Tests / Data Layer"
     uses: ./.github/workflows/operate-run-tests.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -115,7 +115,7 @@ jobs:
     secrets: inherit
 
   run-backup-restore-tests:
-    if: inputs.beChanges
+    if: inputs.runBeTests
     name: "[IT] Backup Restore Tests / Data Layer"
     timeout-minutes: 10
     runs-on: ubuntu-latest
@@ -178,7 +178,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   docker-container-tests:
-    if: inputs.beChanges
+    if: inputs.runBeTests
     name: "[IT] Docker Container Tests / Core Features"
     runs-on: gcp-core-4-default
     timeout-minutes: 10

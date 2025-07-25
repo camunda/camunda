@@ -1043,18 +1043,15 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
 
   operate-ci:
-    # TODO renable the if, currently running for all for testing purposes
-    # todo this handles both FE and BE
-    #if: needs.detect-changes.outputs.operate-backend-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Operate"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-operate.yml
     secrets: inherit
     permissions: { }
     with:
-      # TODO - change these inputs to things like  needs.detect-changes.outputs.operate-backend-changes == 'true'
-      feChanges: true
-      beChanges: true
+      runFeTests: ${{ needs.detect-changes.outputs.operate-frontend-changes == 'true' }}
+      runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true'}}
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
