@@ -15,10 +15,10 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.env.Environment;
+import org.springframework.stereotype.Component;
 
-@ComponentScan("io.camunda.configuration")
+@Component
 public class UnifiedConfigurationHelper {
 
   private static final Map<String, Set<String>> LEGACY_PROPERTIES =
@@ -31,7 +31,13 @@ public class UnifiedConfigurationHelper {
               "camunda.tasklist.elasticsearch.url",
               "camunda.tasklist.zeebeElasticsearch.url"),
           "camunda.data.secondary-storage.type",
-          Set.of("camunda.database.type"));
+          Set.of("camunda.database.type"),
+          "camunda.cluster.metadata.sync-delay",
+          Set.of("zeebe.broker.cluster.configManager.gossip.syncDelay"),
+          "camunda.cluster.metadata.sync-request-timeout",
+          Set.of("zeebe.broker.cluster.configManager.gossip.syncRequestTimeout"),
+          "camunda.cluster.metadata.gossip-fanout",
+          Set.of("zeebe.broker.cluster.configManager.gossip.gossipFanout"));
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
 
