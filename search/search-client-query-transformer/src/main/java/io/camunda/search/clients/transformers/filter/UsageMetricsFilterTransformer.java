@@ -10,58 +10,40 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import java.util.ArrayList;
 import java.util.List;
 
 public class UsageMetricsFilterTransformer extends IndexFilterTransformer<UsageMetricsFilter> {
 
-  private final TasklistMetricIndex tasklistMetricIndex;
-  private final MetricIndex operateMetricIndex;
-  private UsageMetricsFilter filter;
-
-  public UsageMetricsFilterTransformer(
-      final TasklistMetricIndex tasklistMetricIndex, final MetricIndex metricIndex) {
-    super(metricIndex);
-    this.tasklistMetricIndex = tasklistMetricIndex;
-    operateMetricIndex = metricIndex;
+  public UsageMetricsFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
   }
 
   @Override
   public SearchQuery toSearchQuery(final UsageMetricsFilter filter) {
-    this.filter = filter;
-    final var queries = new ArrayList<SearchQuery>();
-    queries.add(stringTerms("event", filter.events()));
-    queries.addAll(
-        dateTimeOperations(
-            "eventTime",
-            List.of(Operation.gte(filter.startTime()), Operation.lte(filter.endTime()))));
+    final var queries =
+        new ArrayList<>(
+            dateTimeOperations(
+                UsageMetricIndex.EVENT_TIME,
+                List.of(Operation.gte(filter.startTime()), Operation.lt(filter.endTime()))));
+
+    if (filter.tenantId() != null) {
+      queries.add(term(UsageMetricIndex.TENANT_ID, filter.tenantId()));
+    }
+
     return and(queries);
   }
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
     return matchAll();
-  }
-
-  @Override
-  public IndexDescriptor getIndex() {
-    if (shouldUseTasklistIndex(filter)) {
-      return tasklistMetricIndex;
-    } else {
-      return operateMetricIndex;
-    }
-  }
-
-  private boolean shouldUseTasklistIndex(final UsageMetricsFilter filter) {
-    return filter != null && filter.events().contains("task_completed_by_assignee");
   }
 }

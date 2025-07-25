@@ -28,14 +28,13 @@ import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 @MultiDbTest
-// TODO remove once ES/OS is complete
-@EnabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class UsageMetricsTest {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
+
+  public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(2);
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -49,7 +48,7 @@ public class UsageMetricsTest {
                       .getExperimental()
                       .getEngine()
                       .getUsageMetrics()
-                      .setExportInterval(Duration.ofSeconds(1)));
+                      .setExportInterval(EXPORT_INTERVAL));
 
   private static final String ADMIN = "admin";
   private static final String USER1 = "user1";
@@ -64,13 +63,14 @@ public class UsageMetricsTest {
   private static final TestUser USER1_USER = new TestUser(USER1, "password", List.of());
 
   private static CamundaClient camundaClient;
+  private static OffsetDateTime exportedTime;
 
   private static void waitForUsageMetrics(
       final OffsetDateTime startTime,
       final OffsetDateTime endTime,
       final Consumer<UsageMetricsStatistics> fnRequirements) {
     Awaitility.await("should export metrics to secondary storage")
-        .atMost(Duration.ofSeconds(10))
+        .atMost(EXPORT_INTERVAL.multipliedBy(2))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
@@ -79,19 +79,29 @@ public class UsageMetricsTest {
   }
 
   @BeforeAll
-  static void setup(@Authenticated(ADMIN) final CamundaClient adminClient) {
+  static void setup(@Authenticated(ADMIN) final CamundaClient adminClient)
+      throws InterruptedException {
     createTenant(adminClient, TENANT_A);
     createTenant(adminClient, TENANT_B);
     assignUserToTenant(adminClient, ADMIN, TENANT_A);
     assignUserToTenant(adminClient, ADMIN, TENANT_B);
     assignUserToTenant(adminClient, USER1, TENANT_A);
 
+    // Create PI & wait for metrics to be exported
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+    waitForUsageMetrics(
+        NOW.minusDays(1),
+        NOW.plusDays(1),
+        res -> assertThat(res.getProcessInstances()).isEqualTo(1));
 
+    // Store first export time & wait 2 export intervals
+    exportedTime = OffsetDateTime.now();
+    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
+
+    // Create PI & wait for metrics to be exported
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_B);
-
     waitForUsageMetrics(
         NOW.minusDays(1),
         NOW.plusDays(1),
@@ -137,6 +147,26 @@ public class UsageMetricsTest {
                     new UsageMetricsStatisticsItemImpl(1, 0, 0),
                     TENANT_B,
                     new UsageMetricsStatisticsItemImpl(1, 0, 0))));
+  }
+
+  @Test
+  void shouldReturnMetricsWithinInterval() {
+    // given
+    final var now = OffsetDateTime.now();
+
+    // when
+    final var actual =
+        camundaClient
+            .newUsageMetricsRequest(now.minusDays(1), exportedTime)
+            .withTenants(true)
+            .send()
+            .join();
+
+    // then
+    assertThat(actual)
+        .isEqualTo(
+            new UsageMetricsStatisticsImpl(
+                1, 0, 0, 1, Map.of(TENANT_A, new UsageMetricsStatisticsItemImpl(1, 0, 0))));
   }
 
   @Test
