@@ -24,8 +24,8 @@ public final class SearchAggregatorBuilders {
     return new SearchSumAggregator.Builder();
   }
 
-  public static SearchSumAggregator sum(final String field) {
-    return sum().field(field).build();
+  public static SearchSumAggregator sum(final String name, final String field) {
+    return sum().name(name).field(field).build();
   }
 
   public static SearchParentAggregator.Builder parent() {
