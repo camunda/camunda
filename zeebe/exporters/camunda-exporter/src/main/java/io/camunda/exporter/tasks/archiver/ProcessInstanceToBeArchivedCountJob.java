@@ -7,10 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.BackgroundTask;
-import io.camunda.exporter.tasks.util.ElasticsearchArchiverQueries;
 import java.util.concurrent.CompletionStage;
 import org.slf4j.Logger;
 
@@ -19,44 +17,30 @@ public class ProcessInstanceToBeArchivedCountJob implements BackgroundTask {
   public static final int MAX_DELAY_BETWEEN_RUNS = 300000;
 
   private final CamundaExporterMetrics metrics;
-  private final ElasticsearchAsyncClient client;
-  private final int partitionId;
-  private final String archivingTimePoint;
-  private final String listViewIndexName;
+  private final ArchiverRepository repository;
   private final Logger logger;
 
   public ProcessInstanceToBeArchivedCountJob(
       final CamundaExporterMetrics metrics,
-      final ElasticsearchAsyncClient client,
-      final int partitionId,
-      final String archivingTimePoint,
-      final String listViewIndexName,
+      final ArchiverRepository repository,
       final Logger logger) {
     this.metrics = metrics;
-    this.client = client;
-    this.partitionId = partitionId;
-    this.archivingTimePoint = archivingTimePoint;
-    this.listViewIndexName = listViewIndexName;
+    this.repository = repository;
     this.logger = logger;
   }
 
   @Override
   public CompletionStage<Integer> execute() {
-    final var countRequest =
-        ElasticsearchArchiverQueries.createFinishedInstancesCountRequest(
-            listViewIndexName, archivingTimePoint, partitionId);
-    final var countFuture = client.count(countRequest);
-
-    return countFuture
+    return repository
+        .getCountOfProcessInstancesAwaitingArchival()
         .whenCompleteAsync(
             (res, err) -> {
               if (err == null) {
-                metrics.setProcessInstancesAwaitingArchival((int) res.count());
+                metrics.setProcessInstancesAwaitingArchival(res);
               } else {
                 logger.error("Failed to count number of process instances awaiting archival", err);
               }
-            })
-        .thenApply(res -> (int) res.count()); // return the count as Integer
+            });
   }
 
   @Override

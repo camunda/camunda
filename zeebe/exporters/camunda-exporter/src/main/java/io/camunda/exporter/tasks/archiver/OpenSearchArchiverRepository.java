@@ -36,6 +36,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
+import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
@@ -188,6 +189,48 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .thenApplyAsync(ignored -> null, executor);
   }
 
+  @Override
+  public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
+    final var countRequest =
+        CountRequest.of(
+            cr ->
+                cr.index(processInstanceIndex)
+                    .query(
+                        finishedProcessInstancesQuery(
+                            config.getArchivingTimePoint(), partitionId)));
+
+    try {
+      return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(e);
+    }
+  }
+
+  private Query finishedProcessInstancesQuery(
+      final String archivingTimePoint, final int partitionId) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(ListViewTemplate.END_DATE)
+            .lte(JsonData.of(archivingTimePoint))
+            .build();
+    final var isProcessInstanceQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.JOIN_RELATION)
+            .value(FieldValue.of(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION))
+            .build();
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build();
+    return QueryBuilders.bool()
+        .filter(endDateQ.toQuery())
+        .filter(isProcessInstanceQ.toQuery())
+        .filter(partitionQ.toQuery())
+        .build()
+        .toQuery();
+  }
+
   private CompletableFuture<List<String>> fetchIndexMatchingIndexes(final String indexWildCard)
       throws IOException {
     final var pattern = Pattern.compile(indexWildCard);
@@ -299,28 +342,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   private SearchRequest createFinishedInstancesSearchRequest() {
-    final var endDateQ =
-        QueryBuilders.range()
-            .field(ListViewTemplate.END_DATE)
-            .lte(JsonData.of(config.getArchivingTimePoint()))
-            .build();
-    final var isProcessInstanceQ =
-        QueryBuilders.term()
-            .field(ListViewTemplate.JOIN_RELATION)
-            .value(FieldValue.of(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION))
-            .build();
-    final var partitionQ =
-        QueryBuilders.term()
-            .field(ListViewTemplate.PARTITION_ID)
-            .value(FieldValue.of(partitionId))
-            .build();
-    final var combinedQuery =
-        QueryBuilders.bool()
-            .must(endDateQ.toQuery(), isProcessInstanceQ.toQuery(), partitionQ.toQuery())
-            .build();
-
     return createSearchRequest(
-        processInstanceIndex, combinedQuery.toQuery(), ListViewTemplate.END_DATE);
+        processInstanceIndex,
+        finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        ListViewTemplate.END_DATE);
   }
 
   private SearchRequest createSearchRequest(

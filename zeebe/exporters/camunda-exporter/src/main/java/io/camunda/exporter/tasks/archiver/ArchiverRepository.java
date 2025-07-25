@@ -43,6 +43,8 @@ public interface ArchiverRepository extends AutoCloseable {
         .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, idFieldName, ids), executor);
   }
 
+  CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
+
   class NoopArchiverRepository implements ArchiverRepository {
 
     @Override
@@ -80,6 +82,11 @@ public interface ArchiverRepository extends AutoCloseable {
         final String idFieldName,
         final List<String> processInstanceKeys) {
       return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival() {
+      return CompletableFuture.completedFuture(0);
     }
 
     @Override
