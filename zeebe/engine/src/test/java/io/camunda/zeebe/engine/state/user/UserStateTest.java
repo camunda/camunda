@@ -204,6 +204,11 @@ public class UserStateTest {
   @Nested
   class DeleteUserTests {
 
+    private void deleteUser(final UserRecord user) {
+      userState.deleteByUserKey(user.getUserKey());
+      userState.deleteByUsername(user.getUsername());
+    }
+
     @DisplayName("a deleted user should not be found by username")
     @Test
     void shouldNotFindUserByUsernameAfterDelete() {
@@ -224,8 +229,7 @@ public class UserStateTest {
 
       assertThat(userState.getUser(username)).isNotEmpty();
 
-      userState.deleteByUsername(username);
-      userState.deleteByUserKey(user.getUserKey());
+      deleteUser(user);
 
       assertThat(userState.getUser(username)).isEmpty();
     }
@@ -250,8 +254,7 @@ public class UserStateTest {
 
       assertThat(userState.getUser(userKey)).isNotEmpty();
 
-      userState.deleteByUsername(username);
-      userState.deleteByUserKey(user.getUserKey());
+      deleteUser(user);
 
       assertThat(userState.getUser(userKey)).isEmpty();
     }
@@ -272,8 +275,7 @@ public class UserStateTest {
       assertThat(userState.getUser(user.getUserKey())).isNotEmpty();
 
       // when
-      userState.deleteByUsername(user.getUsername());
-      userState.deleteByUserKey(user.getUserKey());
+      deleteUser(user);
 
       // then
       final var dbUserState = (DbUserState) userState;
