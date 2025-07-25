@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.adhocsubprocess;
 
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
@@ -38,6 +39,8 @@ public class ActivateAdHocSubProcessActivityTest {
 
   private static final String PROCESS_ID = "process";
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
+  private static final String AHSP_INNER_INSTANCE_ELEMENT_ID =
+      "ad-hoc" + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
   private static final String COMPLETION_CONDITION_VAR = "completionCondition";
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
@@ -89,6 +92,12 @@ public class ActivateAdHocSubProcessActivityTest {
         .withElementIds("A")
         .activate();
 
+    final var activatedInnerInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(AHSP_INNER_INSTANCE_ELEMENT_ID)
+            .getFirst();
+
     final var activatedElementInstance =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
@@ -98,7 +107,10 @@ public class ActivateAdHocSubProcessActivityTest {
     final var expectedElementPath =
         List.of(
             List.of(
-                processInstanceKey, adHocSubProcessInstanceKey, activatedElementInstance.getKey()));
+                processInstanceKey,
+                adHocSubProcessInstanceKey,
+                activatedInnerInstance.getKey(),
+                activatedElementInstance.getKey()));
 
     assertThat(activatedElementInstance.getValue().getElementInstancePath())
         .isEqualTo(expectedElementPath);

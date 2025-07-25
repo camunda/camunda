@@ -24,11 +24,16 @@ public final class BpmnAdHocSubProcessBehavior {
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
+  private final BpmnStateBehavior stateBehavior;
 
-  public BpmnAdHocSubProcessBehavior(final KeyGenerator keyGenerator, final Writers writers) {
+  public BpmnAdHocSubProcessBehavior(
+      final KeyGenerator keyGenerator,
+      final Writers writers,
+      final BpmnStateBehavior stateBehavior) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     commandWriter = writers.command();
+    this.stateBehavior = stateBehavior;
   }
 
   public void activateElement(
@@ -36,21 +41,29 @@ public final class BpmnAdHocSubProcessBehavior {
       final ExecutableAdHocSubProcess adHocSubProcess,
       final ExecutableFlowNode elementToActivate) {
     final var innerInstanceKey = createInnerInstance(adHocSubProcessContext, adHocSubProcess);
-    // TODO create tree path (https://github.com/camunda/ad-hoc-sub-process-phase-3/issues/4)
     activateElement(adHocSubProcessContext, adHocSubProcess, elementToActivate, innerInstanceKey);
   }
 
   private long createInnerInstance(
       final BpmnElementContext adHocSubProcessContext,
       final ExecutableAdHocSubProcess adHocSubProcess) {
+    final var adHocSubProcessElementInstanceKey = adHocSubProcessContext.getElementInstanceKey();
+
     final var innerInstanceKey = keyGenerator.nextKey();
     final var innerInstanceRecord = new ProcessInstanceRecord();
     innerInstanceRecord.wrap(adHocSubProcessContext.getRecordValue());
     innerInstanceRecord
-        .setFlowScopeKey(adHocSubProcessContext.getElementInstanceKey())
+        .setFlowScopeKey(adHocSubProcessElementInstanceKey)
         .setElementId(adHocSubProcess.getInnerInstanceId())
         .setBpmnElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
         .setBpmnEventType(BpmnEventType.UNSPECIFIED);
+
+    final var elementTreePath =
+        stateBehavior.getElementTreePath(
+            innerInstanceKey, adHocSubProcessElementInstanceKey, innerInstanceRecord);
+    innerInstanceRecord.setElementInstancePath(elementTreePath.elementInstancePath());
+    innerInstanceRecord.setProcessDefinitionPath(elementTreePath.processDefinitionPath());
+    innerInstanceRecord.setCallingElementPath(elementTreePath.callingElementPath());
 
     stateWriter.appendFollowUpEvent(
         innerInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, innerInstanceRecord);
