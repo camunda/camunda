@@ -7,7 +7,7 @@
  */
 package io.camunda.identity;
 
-import io.camunda.authentication.ConditionalOnSecondaryStorageEnabled;
+import io.camunda.search.util.ConditionalOnSecondaryStorageEnabled;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;

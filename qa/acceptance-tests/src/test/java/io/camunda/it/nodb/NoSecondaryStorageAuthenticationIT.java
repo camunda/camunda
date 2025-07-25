@@ -7,8 +7,8 @@
  */
 package io.camunda.it.nodb;
 
-import static io.camunda.application.commons.utils.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
-import static io.camunda.authentication.ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

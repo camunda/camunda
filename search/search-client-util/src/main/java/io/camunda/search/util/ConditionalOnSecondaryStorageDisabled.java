@@ -5,10 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.search.util;
 
-import static io.camunda.authentication.ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.CAMUNDA_DATABASE_TYPE_NONE;
-import static io.camunda.authentication.ConditionalOnSecondaryStorageEnabled.NoSecondaryStorageCondition.PROPERTY_CAMUNDA_DATABASE_TYPE;
+import static io.camunda.search.util.DatabaseTypeUtils.CAMUNDA_DATABASE_TYPE_NONE;
+import static io.camunda.search.util.DatabaseTypeUtils.PROPERTY_CAMUNDA_DATABASE_TYPE;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
