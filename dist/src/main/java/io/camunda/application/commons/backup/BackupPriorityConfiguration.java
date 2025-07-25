@@ -33,7 +33,6 @@ import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
@@ -158,7 +157,6 @@ public class BackupPriorityConfiguration {
             // TASKLIST
             new FormIndex(indexPrefix, isElasticsearch),
             new TasklistMetricIndex(indexPrefix, isElasticsearch),
-            new TasklistUserIndex(indexPrefix, isElasticsearch),
             // USER MANAGEMENT
             new AuthorizationIndex(indexPrefix, isElasticsearch),
             new GroupIndex(indexPrefix, isElasticsearch),

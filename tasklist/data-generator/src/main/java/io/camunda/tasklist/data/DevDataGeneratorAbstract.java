@@ -10,13 +10,9 @@ package io.camunda.tasklist.data;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static io.camunda.zeebe.protocol.record.value.TenantOwned.DEFAULT_TENANT_IDENTIFIER;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
-import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.text.SimpleDateFormat;
@@ -30,19 +26,12 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
-@DependsOn("searchEngineSchemaInitializer")
 public abstract class DevDataGeneratorAbstract implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorAbstract.class);
 
   @Autowired protected TasklistProperties tasklistProperties;
-  @Autowired protected TasklistUserIndex userIndex;
-  protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @Autowired private TasklistServicesAdapter tasklistServicesAdapter;
 
@@ -51,10 +40,6 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   private final Random random = new Random();
 
   private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
-  @Autowired
-  @Qualifier("tasklistObjectMapper")
-  private ObjectMapper objectMapper;
 
   private boolean shutdown = false;
 
@@ -81,7 +66,6 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
             boolean created = false;
             while (!created && !shutdown) {
               try {
-                createDemoUsers();
                 Thread.sleep(10_000);
                 createZeebeData();
                 created = true;
@@ -91,22 +75,6 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
             }
           });
     }
-  }
-
-  @Override
-  public void createDemoUsers() {
-    createUser("john", "John", "Doe");
-    createUser("jane", "Jane", "Doe");
-    createUser("joe", "Average", "Joe");
-    for (int i = 0; i < 5; i++) {
-      final String firstname = NameGenerator.getRandomFirstName();
-      final String lastname = NameGenerator.getRandomLastName();
-      createUser(firstname + "." + lastname, firstname, lastname);
-    }
-  }
-
-  protected String userEntityToJSONString(final UserEntity aUser) throws JsonProcessingException {
-    return objectMapper.writeValueAsString(aUser);
   }
 
   private void createZeebeData() {

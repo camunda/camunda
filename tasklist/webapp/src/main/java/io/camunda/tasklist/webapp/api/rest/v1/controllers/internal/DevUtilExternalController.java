@@ -17,7 +17,6 @@ import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistUserIndex;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -70,7 +69,6 @@ public class DevUtilExternalController {
             getIndexFullQualifiedName(TaskTemplate::new),
             getIndexFullQualifiedName(TasklistImportPositionIndex::new),
             getIndexFullQualifiedName(TasklistMetricIndex::new),
-            getIndexFullQualifiedName(TasklistUserIndex::new),
             getIndexFullQualifiedName(VariableTemplate::new));
 
     try (final var elasticsearchClient = connector.createClient()) {

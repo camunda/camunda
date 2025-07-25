@@ -180,7 +180,6 @@ class BackupPrioritiesTest {
             "operate-process-8.3.0_",
             "tasklist-form-8.4.0_",
             "tasklist-metric-8.3.0_",
-            "tasklist-user-1.4.0_",
             "camunda-authorization-8.8.0_",
             "camunda-group-8.8.0_",
             "camunda-mapping-rule-8.8.0_",
