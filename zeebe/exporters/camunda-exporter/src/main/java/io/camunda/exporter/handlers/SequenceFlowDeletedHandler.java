@@ -45,8 +45,7 @@ public class SequenceFlowDeletedHandler
   @Override
   public List<String> generateIds(final Record<ProcessInstanceRecordValue> record) {
     final var recordValue = record.getValue();
-    return List.of(
-        String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId()));
+    return List.of(formatId(recordValue.getProcessInstanceKey(), recordValue.getElementId()));
   }
 
   @Override
@@ -59,9 +58,7 @@ public class SequenceFlowDeletedHandler
       final Record<ProcessInstanceRecordValue> record, final SequenceFlowEntity entity) {
     final var recordValue = record.getValue();
     entity
-        .setId(
-            String.format(
-                ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId()))
+        .setId(formatId(recordValue.getProcessInstanceKey(), recordValue.getElementId()))
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setBpmnProcessId(recordValue.getBpmnProcessId())
@@ -78,5 +75,9 @@ public class SequenceFlowDeletedHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private static String formatId(final long processInstanceKey, final String elementId) {
+    return String.format(ID_PATTERN, processInstanceKey, elementId);
   }
 }
