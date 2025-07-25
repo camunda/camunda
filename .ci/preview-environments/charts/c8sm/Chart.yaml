@@ -9,6 +9,9 @@ type: application
 version: 0.1.0
 
 dependencies:
+- name: infra-preview-environments-ingress
+  repository: oci://registry.camunda.cloud/library
+  version: 1.6.6
 - name: camunda-platform
-  repository: oci://ghcr.io/camunda/helm
-  version: 0.0.0-snapshot-8.6
+  repository: https://helm.camunda.io
+  version: 13.0.0-alpha6
