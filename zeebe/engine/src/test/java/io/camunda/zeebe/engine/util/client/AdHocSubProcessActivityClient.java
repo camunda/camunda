@@ -67,7 +67,7 @@ public class AdHocSubProcessActivityClient {
 
   public AdHocSubProcessActivityClient withElementIds(final String... elementIds) {
     for (final String elementId : elementIds) {
-      adHocSubProcessInstructionRecord.elements().add().setElementId(elementId);
+      adHocSubProcessInstructionRecord.activateElements().add().setElementId(elementId);
     }
     return this;
   }

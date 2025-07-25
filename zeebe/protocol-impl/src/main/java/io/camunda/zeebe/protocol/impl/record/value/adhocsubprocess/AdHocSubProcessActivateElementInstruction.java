@@ -10,7 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivityActivationElementValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivateElementInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @JsonIgnoreProperties({
@@ -18,12 +18,12 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
   "encodedLength",
   "empty"
 })
-public final class AdHocSubProcessActivityActivationElement extends ObjectValue
-    implements AdHocSubProcessActivityActivationElementValue {
+public final class AdHocSubProcessActivateElementInstruction extends ObjectValue
+    implements AdHocSubProcessActivateElementInstructionValue {
 
   private final StringProperty elementId = new StringProperty("elementId");
 
-  public AdHocSubProcessActivityActivationElement() {
+  public AdHocSubProcessActivateElementInstruction() {
     super(1);
     declareProperty(elementId);
   }
@@ -33,7 +33,7 @@ public final class AdHocSubProcessActivityActivationElement extends ObjectValue
     return BufferUtil.bufferAsString(elementId.getValue());
   }
 
-  public AdHocSubProcessActivityActivationElement setElementId(final String elementId) {
+  public AdHocSubProcessActivateElementInstruction setElementId(final String elementId) {
     this.elementId.setValue(elementId);
     return this;
   }

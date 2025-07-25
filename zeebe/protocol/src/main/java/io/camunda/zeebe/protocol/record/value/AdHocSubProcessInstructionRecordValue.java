@@ -36,13 +36,14 @@ public interface AdHocSubProcessInstructionRecordValue extends RecordValue, Tena
   String getAdHocSubProcessInstanceKey();
 
   /**
-   * @return the list of flow node ids of the activities that need to be activated.
+   * @return the list of elements that should be activated.
    */
-  List<AdHocSubProcessActivityActivationElementValue> getElements();
+  List<AdHocSubProcessActivateElementInstructionValue> getActivateElements();
 
   @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableAdHocSubProcessActivityActivationElementValue.Builder.class)
-  interface AdHocSubProcessActivityActivationElementValue {
+  @ImmutableProtocol(
+      builder = ImmutableAdHocSubProcessActivateElementInstructionValue.Builder.class)
+  interface AdHocSubProcessActivateElementInstructionValue {
     String getElementId();
   }
 }
