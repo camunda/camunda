@@ -9,6 +9,7 @@ package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import org.springframework.beans.BeanUtils;
@@ -19,15 +20,16 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@EnableConfigurationProperties(BrokerBasedProperties.class)
+@EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
 public class BrokerBasedPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final BrokerBasedProperties legacyBrokerBasedProperties;
+  private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
 
   public BrokerBasedPropertiesOverride(
-      final UnifiedConfiguration unifiedConfiguration, final BrokerBasedProperties properties) {
+      final UnifiedConfiguration unifiedConfiguration,
+      final LegacyBrokerBasedProperties properties) {
     this.unifiedConfiguration = unifiedConfiguration;
     legacyBrokerBasedProperties = properties;
   }
