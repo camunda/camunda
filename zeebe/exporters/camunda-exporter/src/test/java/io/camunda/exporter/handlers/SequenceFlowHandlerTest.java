@@ -68,24 +68,26 @@ public class SequenceFlowHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final ProcessInstanceRecordValue variableRecordValue =
+    final ProcessInstanceRecordValue sequenceFlowRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .build();
 
-    final Record<ProcessInstanceRecordValue> variableRecord =
+    final Record<ProcessInstanceRecordValue> sequenceFlowRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             r ->
                 r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                    .withValue(variableRecordValue));
+                    .withValue(sequenceFlowRecordValue));
 
     // when
-    final var idList = underTest.generateIds(variableRecord);
+    final var idList = underTest.generateIds(sequenceFlowRecord);
     // then
     assertThat(idList)
         .containsExactly(
-            variableRecordValue.getProcessInstanceKey() + "_" + variableRecordValue.getElementId());
+            sequenceFlowRecordValue.getProcessInstanceKey()
+                + "_"
+                + sequenceFlowRecordValue.getElementId());
   }
 
   @Test

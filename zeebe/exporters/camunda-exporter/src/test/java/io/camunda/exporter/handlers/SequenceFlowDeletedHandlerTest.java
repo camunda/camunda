@@ -70,24 +70,26 @@ public class SequenceFlowDeletedHandlerTest {
   @Test
   void shouldGenerateIds() {
     // given
-    final ProcessInstanceRecordValue variableRecordValue =
+    final ProcessInstanceRecordValue sequenceFlowRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .build();
 
-    final io.camunda.zeebe.protocol.record.Record<ProcessInstanceRecordValue> variableRecord =
+    final io.camunda.zeebe.protocol.record.Record<ProcessInstanceRecordValue> sequenceFlowRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             r ->
                 r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_DELETED)
-                    .withValue(variableRecordValue));
+                    .withValue(sequenceFlowRecordValue));
 
     // when
-    final var idList = underTest.generateIds(variableRecord);
+    final var idList = underTest.generateIds(sequenceFlowRecord);
     // then
     assertThat(idList)
         .containsExactly(
-            variableRecordValue.getProcessInstanceKey() + "_" + variableRecordValue.getElementId());
+            sequenceFlowRecordValue.getProcessInstanceKey()
+                + "_"
+                + sequenceFlowRecordValue.getElementId());
   }
 
   @Test
