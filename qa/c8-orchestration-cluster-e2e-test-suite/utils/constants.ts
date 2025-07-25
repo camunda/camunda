@@ -33,6 +33,25 @@ export const createUniqueAuthRole = (customId?: string) => {
   };
 };
 
+// Create unique group with optional custom ID
+export const createUniqueGroup = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    groupId: `testgroup${id}`,
+    name: `Test Group ${id}`,
+    description: `Test group description ${id}`,
+  };
+};
+
+// Create unique edited group data with optional custom ID
+export const createEditedGroup = (customId?: string) => {
+  const id = customId || generateUniqueId();
+  return {
+    name: `Edited Group ${id}`,
+    description: `Edited group description ${id}`,
+  };
+};
+
 export const createUserAuthorization = (authRole: {name: string}) => ({
   ownerType: 'Role',
   ownerId: authRole.name,
@@ -55,12 +74,16 @@ export const createTestData = (options: {
   authRole?: boolean;
   userAuth?: boolean;
   applicationAuth?: boolean;
+  group?: boolean;
+  editedGroup?: boolean;
 }) => {
   const {
     user = false,
     authRole = false,
     userAuth = false,
     applicationAuth = false,
+    group = false,
+    editedGroup = false,
   } = options;
   const sharedId = generateUniqueId();
 
@@ -69,6 +92,8 @@ export const createTestData = (options: {
     authRole?: ReturnType<typeof createUniqueAuthRole>;
     userAuth?: ReturnType<typeof createUserAuthorization>;
     applicationAuth?: ReturnType<typeof createApplicationAuthorization>;
+    group?: ReturnType<typeof createUniqueGroup>;
+    editedGroup?: ReturnType<typeof createEditedGroup>;
     id: string;
   } = {id: sharedId};
 
@@ -78,6 +103,14 @@ export const createTestData = (options: {
 
   if (authRole) {
     result.authRole = createUniqueAuthRole(sharedId);
+  }
+
+  if (group) {
+    result.group = createUniqueGroup(sharedId);
+  }
+
+  if (editedGroup) {
+    result.editedGroup = createEditedGroup(sharedId);
   }
 
   // Create authorizations only if authRole is also created

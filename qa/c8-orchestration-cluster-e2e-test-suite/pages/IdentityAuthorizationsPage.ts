@@ -26,6 +26,7 @@ export class IdentityAuthorizationsPage {
   readonly deleteAuthorizationModal: Locator;
   readonly deleteAuthorizationSubButton: Locator;
   readonly selectAuthorizationRow: (name: string) => Locator;
+  readonly authorizationRowByOwnerId: (ownerId: string) => Locator;
   readonly selectResourceTypeTab: (resourceType: string) => Promise<void>;
   readonly resourceTypeComboBox: Locator;
   readonly getAuthorizationCell: (ownerId: string) => Locator;
@@ -38,6 +39,9 @@ export class IdentityAuthorizationsPage {
 
     this.selectAuthorizationRow = (name) =>
       this.authorizationsList.getByRole('row', {name: name});
+
+    this.authorizationRowByOwnerId = (ownerId) =>
+      this.authorizationsList.getByRole('row').filter({hasText: ownerId});
 
     this.createAuthorizationButton = page.getByRole('button', {
       name: 'Create authorization',
@@ -147,12 +151,6 @@ export class IdentityAuthorizationsPage {
     await expect(this.createAuthorizationModal).toBeHidden();
   }
 
-  async assertAuthorizationExists(values: string[]) {
-    for (let index = 0; index < values.length; index++) {
-      await this.selectAuthorizationRow(values[index]).isVisible();
-    }
-  }
-
   async clickDeleteAuthorizationButton(name: string) {
     await this.deleteAuthorizationButton(name).click();
   }
@@ -204,5 +202,21 @@ export class IdentityAuthorizationsPage {
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
     await this.createAuthorizationOwnerComboBox.click();
     await this.createAuthorizationOwnerOption(authorization.ownerId).click();
+  }
+
+  async assertAuthorizationExists(
+    ownerId: string,
+    ownerType: string,
+    accessPermissions?: string[],
+  ) {
+    const authorizationRow = this.authorizationRowByOwnerId(ownerId);
+    await expect(authorizationRow).toBeVisible();
+    await expect(authorizationRow).toContainText(ownerType.toUpperCase());
+
+    if (accessPermissions) {
+      for (const permission of accessPermissions) {
+        await expect(authorizationRow).toContainText(permission.toUpperCase());
+      }
+    }
   }
 }
