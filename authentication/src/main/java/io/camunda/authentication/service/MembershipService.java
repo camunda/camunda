@@ -7,13 +7,22 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.authentication.entity.OAuthContext;
-import io.camunda.authentication.service.PrincipalExtractionHelper.PrincipalExtractionResult;
+import io.camunda.search.entities.RoleEntity;
+import io.camunda.service.TenantServices.TenantDTO;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
-public interface MembershipService {
-  OAuthContext resolveMemberships(
-      Map<String, Object> claims, PrincipalExtractionResult principalResult)
+public abstract class MembershipService {
+  public abstract MembershipResult resolveMemberships(
+      Map<String, Object> claims, String username, String clientId)
       throws OAuth2AuthenticationException;
+
+  public record MembershipResult(
+      Set<String> groups,
+      List<RoleEntity> roles,
+      List<TenantDTO> tenants,
+      Set<String> mappings,
+      List<String> authorizedApplications) {}
 }
