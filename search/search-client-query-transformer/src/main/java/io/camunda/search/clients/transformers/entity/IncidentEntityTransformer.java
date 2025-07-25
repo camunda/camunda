@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.entity;
 
+import static io.camunda.search.entities.IncidentEntity.ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.CALLED_DECISION_ERROR;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.CALLED_ELEMENT_ERROR;
 import static io.camunda.search.entities.IncidentEntity.ErrorType.CONDITION_ERROR;
@@ -79,6 +80,7 @@ public class IncidentEntityTransformer
       case JOB_NO_RETRIES -> JOB_NO_RETRIES;
       case EXECUTION_LISTENER_NO_RETRIES -> EXECUTION_LISTENER_NO_RETRIES;
       case TASK_LISTENER_NO_RETRIES -> TASK_LISTENER_NO_RETRIES;
+      case AD_HOC_SUB_PROCESS_NO_RETRIES -> AD_HOC_SUB_PROCESS_NO_RETRIES;
       case CONDITION_ERROR -> CONDITION_ERROR;
       case EXTRACT_VALUE_ERROR -> EXTRACT_VALUE_ERROR;
       case CALLED_ELEMENT_ERROR -> CALLED_ELEMENT_ERROR;
