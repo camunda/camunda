@@ -65,7 +65,7 @@
     <version.httpcore5>5.3.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.8.0-alpha3</version.identity>
-    <version.instancio>5.4.1</version.instancio>
+    <version.instancio>5.5.0</version.instancio>
     <version.surefire>3.5.3</version.surefire>
     <version.jackson>2.19.2</version.jackson>
     <version.junit>5.13.4</version.junit>
