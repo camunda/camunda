@@ -192,6 +192,8 @@ public interface Intent {
         return BatchOperationIntent.from(intent);
       case BATCH_OPERATION_PARTITION_LIFECYCLE:
         return BatchOperationIntent.from(intent);
+      case BATCH_OPERATION_INITIALIZATION:
+        return BatchOperationIntent.from(intent);
       case ASYNC_REQUEST:
         return AsyncRequestIntent.from(intent);
       case USAGE_METRIC:
@@ -304,6 +306,8 @@ public interface Intent {
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
         return BatchOperationIntent.valueOf(intent);
       case BATCH_OPERATION_PARTITION_LIFECYCLE:
+        return BatchOperationIntent.valueOf(intent);
+      case BATCH_OPERATION_INITIALIZATION:
         return BatchOperationIntent.valueOf(intent);
       case ASYNC_REQUEST:
         return AsyncRequestIntent.valueOf(intent);
