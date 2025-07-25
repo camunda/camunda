@@ -23,10 +23,10 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-public class SequenceFlowHandlerTest {
+public class SequenceFlowDeletedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "sequence-flow";
-  private final SequenceFlowHandler underTest = new SequenceFlowHandler(indexName);
+  private final SequenceFlowDeletedHandler underTest = new SequenceFlowDeletedHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -41,10 +41,11 @@ public class SequenceFlowHandlerTest {
   @Test
   void shouldHandleRecord() {
     // given
-    final Record<ProcessInstanceRecordValue> processInstanceRecord =
-        factory.generateRecord(
-            ValueType.PROCESS_INSTANCE,
-            r -> r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN));
+    final io.camunda.zeebe.protocol.record.Record<ProcessInstanceRecordValue>
+        processInstanceRecord =
+            factory.generateRecord(
+                ValueType.PROCESS_INSTANCE,
+                r -> r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_DELETED));
 
     // when - then
     assertThat(underTest.handlesRecord(processInstanceRecord)).isTrue();
@@ -54,11 +55,12 @@ public class SequenceFlowHandlerTest {
   void shouldNotHandleRecord() {
     // given
     Arrays.stream(ProcessInstanceIntent.values())
-        .filter(intent -> intent != ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+        .filter(intent -> intent != ProcessInstanceIntent.SEQUENCE_FLOW_DELETED)
         .forEach(
             intent -> {
-              final Record<ProcessInstanceRecordValue> processInstanceRecord =
-                  factory.generateRecord(ValueType.PROCESS_INSTANCE, r -> r.withIntent(intent));
+              final io.camunda.zeebe.protocol.record.Record<ProcessInstanceRecordValue>
+                  processInstanceRecord =
+                      factory.generateRecord(ValueType.PROCESS_INSTANCE, r -> r.withIntent(intent));
 
               // when - then
               assertThat(underTest.handlesRecord(processInstanceRecord)).isFalse();
@@ -73,11 +75,11 @@ public class SequenceFlowHandlerTest {
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .build();
 
-    final Record<ProcessInstanceRecordValue> sequenceFlowRecord =
+    final io.camunda.zeebe.protocol.record.Record<ProcessInstanceRecordValue> sequenceFlowRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             r ->
-                r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_DELETED)
                     .withValue(sequenceFlowRecordValue));
 
     // when
@@ -101,7 +103,7 @@ public class SequenceFlowHandlerTest {
   }
 
   @Test
-  void shouldAddEntityOnFlush() {
+  void shouldDeleteEntityOnFlush() {
     // given
     final SequenceFlowEntity inputEntity = new SequenceFlowEntity();
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -110,7 +112,7 @@ public class SequenceFlowHandlerTest {
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).delete(indexName, inputEntity.getId());
   }
 
   @Test
@@ -125,7 +127,7 @@ public class SequenceFlowHandlerTest {
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             r ->
-                r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
+                r.withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_DELETED)
                     .withValue(processInstanceRecordValue));
 
     // when
