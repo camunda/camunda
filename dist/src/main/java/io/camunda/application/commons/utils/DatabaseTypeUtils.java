@@ -11,6 +11,8 @@ import org.springframework.core.env.Environment;
 
 public final class DatabaseTypeUtils {
   public static final String PROPERTY_CAMUNDA_DATABASE_TYPE = "camunda.database.type";
+  public static final String UNIFIED_CONFIG_PROPERTY_CAMUNDA_DATABASE_TYPE =
+      "camunda.data.secondary-storage.type";
 
   private DatabaseTypeUtils() {}
 

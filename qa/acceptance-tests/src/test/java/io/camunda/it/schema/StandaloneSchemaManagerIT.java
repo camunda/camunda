@@ -172,25 +172,28 @@ final class StandaloneSchemaManagerIT {
                     .putUser(r -> r.username(APP_USER).password(APP_PASSWORD).roles(APP_ROLE))
                     .created());
 
+    final String esUrl = "http://" + es.getHttpHostAddress();
+
     // Connect to ES in Standalone Schema Manager
     schemaManager
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "zeebe.broker.exporters.elasticsearch.args.url", "http://" + es.getHttpHostAddress());
+        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
+        .withProperty("camunda.database.url", esUrl)
+        .withProperty("zeebe.broker.exporters.elasticsearch.args.url", esUrl);
     // Connect to ES in Camunda
     camunda
-        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.operate.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty("camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress())
-        .withProperty(
-            "camunda.tasklist.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
+        .withProperty("camunda.database.url", esUrl)
+        .withProperty("camunda.operate.elasticsearch.url", esUrl)
+        .withProperty("camunda.operate.zeebeelasticsearch.url", esUrl)
+        .withProperty("camunda.tasklist.elasticsearch.url", esUrl)
+        .withProperty("camunda.tasklist.zeebeelasticsearch.url", esUrl)
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
-            args -> ((Map) args.get("connect")).put("url", "http://" + es.getHttpHostAddress()))
+            args -> ((Map) args.get("connect")).put("url", esUrl))
         .updateExporterArgs(
-            ElasticsearchExporter.class.getSimpleName(),
-            args -> args.put("url", "http://" + es.getHttpHostAddress()));
+            ElasticsearchExporter.class.getSimpleName(), args -> args.put("url", esUrl));
   }
 
   @Test

@@ -8,7 +8,6 @@
 package io.camunda.configuration;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.joda.time.Duration;
@@ -21,22 +20,9 @@ import org.springframework.core.env.Environment;
 @ComponentScan("io.camunda.configuration")
 public class UnifiedConfigurationHelper {
 
-  private static final Map<String, Set<String>> LEGACY_PROPERTIES =
-      Map.of(
-          "camunda.data.secondary-storage.elasticsearch.url",
-          Set.of(
-              "camunda.database.url",
-              "camunda.operate.elasticsearch.url",
-              "camunda.operate.zeebeElasticsearch.url",
-              "camunda.tasklist.elasticsearch.url",
-              "camunda.tasklist.zeebeElasticsearch.url"),
-          "camunda.data.secondary-storage.type",
-          Set.of("camunda.database.type"));
-
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);
 
   private static Environment environment;
-  private static Map<String, Set<String>> legacyPropertiesDict = LEGACY_PROPERTIES;
 
   public UnifiedConfigurationHelper(@Autowired Environment environment) {
     // We need to pin the environment object statically so that it can be used to perform the
@@ -54,14 +40,15 @@ public class UnifiedConfigurationHelper {
       final String newProperty,
       final T newValue,
       final Class<T> expectedType,
-      final BackwardsCompatibilityMode backwardsCompatibilityMode) {
+      final BackwardsCompatibilityMode backwardsCompatibilityMode,
+      final Set<String> legacyProperties) {
     // Input validation
     if (backwardsCompatibilityMode == null) {
       throw new UnifiedConfigurationException("backwardsCompatibilityMode cannot be null");
     }
-
-    // Tools
-    final Set<String> legacyProperties = legacyPropertiesDict.get(newProperty);
+    if (legacyProperties == null) {
+      throw new UnifiedConfigurationException("legacyProperties cannot be null");
+    }
 
     return switch (backwardsCompatibilityMode) {
       case NOT_SUPPORTED -> {
@@ -237,11 +224,6 @@ public class UnifiedConfigurationHelper {
   }
 
   /* Setters used by tests to inject the mock objects */
-
-  public static void setCustomLegacyProperties(
-      final Map<String, Set<String>> legacyPropertiesDict) {
-    UnifiedConfigurationHelper.legacyPropertiesDict = legacyPropertiesDict;
-  }
 
   public static void setCustomEnvironment(final Environment environment) {
     UnifiedConfigurationHelper.environment = environment;
