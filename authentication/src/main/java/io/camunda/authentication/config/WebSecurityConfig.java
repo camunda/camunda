@@ -111,7 +111,6 @@ public class WebSecurityConfig {
       Set.of(
           "/login/**",
           "/logout",
-          "/identity/**",
           "/operate/**",
           "/tasklist/**",
           "/",
@@ -127,6 +126,7 @@ public class WebSecurityConfig {
           "/decisions/*",
           "/instances",
           "/instances/*");
+  public static final Set<String> IDENTITY_PATHS = Set.of("/identity/**");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -652,6 +652,42 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnUnprotectedApi
+    @Order(ORDER_UNPROTECTED)
+    public SecurityFilterChain unprotectedIdentityAuthSecurityFilterChain(
+        final HttpSecurity httpSecurity,
+        final SecurityConfiguration securityConfiguration,
+        final AuthFailureHandler authFailureHandler,
+        final CookieCsrfTokenRepository csrfTokenRepository)
+        throws Exception {
+      LOG.warn(
+          "The Identity endpoint is unprotected. Please disable {} for any deployment.",
+          AuthenticationProperties.API_UNPROTECTED);
+      final var filterChainBuilder =
+          httpSecurity
+              .securityMatcher(IDENTITY_PATHS.toArray(String[]::new))
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
+              .headers(
+                  headers ->
+                      setupSecureHeaders(
+                          headers,
+                          securityConfiguration.getHttpHeaders(),
+                          securityConfiguration.getSaas().isConfigured()))
+              .cors(AbstractHttpConfigurer::disable)
+              .exceptionHandling(
+                  // this prevents the usage of the default BasicAuthenticationEntryPoint returning
+                  // a WWW-Authenticate header that causes browsers to prompt for basic login
+                  exceptionHandling -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+              .formLogin(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable);
+
+      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+      return filterChainBuilder.build();
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     public SecurityFilterChain oidcWebappSecurity(
         final HttpSecurity httpSecurity,
@@ -676,8 +712,6 @@ public class WebSecurityConfig {
                           headers,
                           securityConfiguration.getHttpHeaders(),
                           securityConfiguration.getSaas().isConfigured()))
-              .exceptionHandling(
-                  (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
               .cors(AbstractHttpConfigurer::disable)
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
