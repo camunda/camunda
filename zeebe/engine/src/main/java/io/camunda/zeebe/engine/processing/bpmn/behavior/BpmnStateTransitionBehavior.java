@@ -26,12 +26,14 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionInterruptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -46,8 +48,7 @@ public final class BpmnStateTransitionBehavior {
 
   private final ProcessInstanceRecord childInstanceRecord = new ProcessInstanceRecord();
   private final ProcessInstanceRecord followUpInstanceRecord = new ProcessInstanceRecord();
-  private final RuntimeInstructionInterruptionRecord interruptionRecord =
-      new RuntimeInstructionInterruptionRecord();
+  private final RuntimeInstructionRecord runtimeInstructionRecord = new RuntimeInstructionRecord();
 
   private final KeyGenerator keyGenerator;
   private final BpmnStateBehavior stateBehavior;
@@ -75,7 +76,7 @@ public final class BpmnStateTransitionBehavior {
       final Writers writers) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
-    jobBehavior = bpmnJobBehavior;
+    this.jobBehavior = bpmnJobBehavior;
     this.userTaskBehavior = userTaskBehavior;
     this.metrics = metrics;
     this.processorLookUp = processorLookUp;
@@ -461,42 +462,50 @@ public final class BpmnStateTransitionBehavior {
    * @param element the flow node element that is being processed
    * @param context the context of the process instance
    */
-  public <T extends ExecutableFlowNode> void executeRuntimeInstructionsIfNeeded(
-      final T element, final BpmnElementContext context) {
+  public <T extends ExecutableFlowNode>
+      Either<ProcessInstanceInterrupted, BpmnElementContext> executeRuntimeInstructions(
+          final T element, final BpmnElementContext context) {
 
     final var runtimeInstructions =
         stateBehavior.getRuntimeInstructionsForElementId(
             context.getProcessInstanceKey(), BufferUtil.bufferAsString(element.getId()));
 
     if (runtimeInstructions.isEmpty()) {
-      return;
+      return Either.right(context);
     }
 
     // We only have one runtime instruction type for now (termination), so we can directly execute
     // its logic (interrupt process instance and request termination).
+    // Due to this, we also assume that only one non-duplicate instruction can be present for each
+    // element, and always take the first one.
     // In the future, we might have branches for different instruction types
+
+    final var runtimeInstruction = runtimeInstructions.getFirst();
+    if (runtimeInstruction.getType() != RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE) {
+      // other runtime instruction types are not supported yet
+      return Either.right(context);
+    }
 
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
     if (processInstance.isTerminating()) {
       // if the process instance is already terminating, we don't need to interrupt and terminate it
       // again, the instruction has already been processed.
-      return;
+      return Either.right(context);
     }
 
-    interruptionRecord.reset();
-    interruptionRecord.setProcessInstanceKey(context.getProcessInstanceKey());
-    interruptionRecord.setTenantId(context.getTenantId());
-    // assuming only one runtime instruction type, duplicates for the same element are not expected
-    interruptionRecord.setInterruptingElementId(runtimeInstructions.getFirst().getAfterElementId());
+    runtimeInstructionRecord.reset();
+    runtimeInstructionRecord.setProcessInstanceKey(context.getProcessInstanceKey());
+    runtimeInstructionRecord.setTenantId(context.getTenantId());
+    runtimeInstructionRecord.setElementId(runtimeInstruction.getAfterElementId());
 
     stateWriter.appendFollowUpEvent(
-        processInstance.getKey(),
-        ProcessInstanceIntent.INTERRUPTED_BY_RUNTIME_INSTRUCTION,
-        interruptionRecord);
+        processInstance.getKey(), RuntimeInstructionIntent.INTERRUPTED, runtimeInstructionRecord);
     commandWriter.appendFollowUpCommand(
         processInstance.getKey(),
         ProcessInstanceIntent.TERMINATE_ELEMENT,
         processInstance.getValue());
+
+    return Either.left(ProcessInstanceInterrupted.INSTANCE);
   }
 
   public Either<Failure, ?> beforeExecutionPathCompleted(
@@ -659,6 +668,12 @@ public final class BpmnStateTransitionBehavior {
             child ->
                 terminateElement(context.copy(child.getKey(), child.getValue(), child.getState())),
             () -> containerProcessor.onChildTerminated(element, context, null));
+  }
+
+  public static final class ProcessInstanceInterrupted {
+    private static final ProcessInstanceInterrupted INSTANCE = new ProcessInstanceInterrupted();
+
+    private ProcessInstanceInterrupted() {}
   }
 
   private static final class ChildTerminationStackOverflowException extends RuntimeException {
