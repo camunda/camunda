@@ -11,7 +11,7 @@ import static io.camunda.client.api.search.enums.PermissionType.*;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -24,11 +24,11 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.function.Executable;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
@@ -128,10 +128,11 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_2);
     // when
-    final Executable executeGet =
+    final ThrowingCallable executeGet =
         () -> camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
     // then
-    final var problemException = assertThrows(ProblemException.class, executeGet);
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
@@ -173,10 +174,11 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var elementInstanceKey = getAnyElementInstanceKey(adminClient, PROCESS_ID_2);
     // when
-    final Executable executeGet =
+    final ThrowingCallable executeGet =
         () -> camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
     // then
-    final var problemException = assertThrows(ProblemException.class, executeGet);
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
@@ -214,10 +216,11 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var incidentKey = getAnyIncidentKey(adminClient, PROCESS_ID_1);
     // when
-    final Executable executeGet =
+    final ThrowingCallable executeGet =
         () -> camundaClient.newIncidentGetRequest(incidentKey).send().join();
     // then
-    final var problemException = assertThrows(ProblemException.class, executeGet);
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
@@ -259,10 +262,11 @@ class ProcessInstanceAuthorizationIT {
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_2);
     final var variableKey = getAnyVariableKey(adminClient, processInstanceKey);
     // when
-    final Executable executeGet =
+    final ThrowingCallable executeGet =
         () -> camundaClient.newVariableGetRequest(variableKey).send().join();
     // then
-    final var problemException = assertThrows(ProblemException.class, executeGet);
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(

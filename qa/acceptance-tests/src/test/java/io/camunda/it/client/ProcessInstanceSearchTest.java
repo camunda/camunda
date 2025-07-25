@@ -18,9 +18,9 @@ import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilJobWorkerHasFailedJob;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -150,13 +150,15 @@ public class ProcessInstanceSearchTest {
 
     // when / then
     final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () ->
-                camundaClient
-                    .newProcessInstanceGetRequest(invalidProcessInstanceKey)
-                    .send()
-                    .join());
+        (ProblemException)
+            assertThatThrownBy(
+                    () ->
+                        camundaClient
+                            .newProcessInstanceGetRequest(invalidProcessInstanceKey)
+                            .send()
+                            .join())
+                .isInstanceOf(ProblemException.class)
+                .actual();
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
@@ -888,14 +890,15 @@ public class ProcessInstanceSearchTest {
 
     // when
     final var exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            () ->
-                camundaClient
-                    .newProcessInstanceSearchRequest()
-                    .filter(f -> f.variables(Arrays.asList(vf -> vf.name("xyz"))))
-                    .send()
-                    .join());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newProcessInstanceSearchRequest()
+                        .filter(f -> f.variables(Arrays.asList(vf -> vf.name("xyz"))))
+                        .send()
+                        .join())
+            .actual();
     // then
     assertThat(exception.getMessage()).contains("Variable value cannot be null for variable 'xyz'");
   }

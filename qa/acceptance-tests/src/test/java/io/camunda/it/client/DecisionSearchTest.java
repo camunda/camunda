@@ -9,7 +9,7 @@ package io.camunda.it.client;
 
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -173,9 +173,10 @@ class DecisionSearchTest {
     // when
     final long decisionKey = new Random().nextLong();
     final var problemException =
-        assertThrows(
-            ProblemException.class,
-            () -> camundaClient.newDecisionDefinitionGetXmlRequest(decisionKey).send().join());
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () -> camundaClient.newDecisionDefinitionGetXmlRequest(decisionKey).send().join())
+            .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
@@ -197,9 +198,10 @@ class DecisionSearchTest {
     // when
     final long decisionKey = new Random().nextLong();
     final var problemException =
-        assertThrows(
-            ProblemException.class,
-            () -> camundaClient.newDecisionDefinitionGetRequest(decisionKey).send().join());
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () -> camundaClient.newDecisionDefinitionGetRequest(decisionKey).send().join())
+            .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
@@ -570,13 +572,14 @@ class DecisionSearchTest {
     // when
     final long decisionRequirementsKey = new Random().nextLong();
     final var problemException =
-        assertThrows(
-            ProblemException.class,
-            () ->
-                camundaClient
-                    .newDecisionRequirementsGetRequest(decisionRequirementsKey)
-                    .send()
-                    .join());
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+                        .send()
+                        .join())
+            .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())

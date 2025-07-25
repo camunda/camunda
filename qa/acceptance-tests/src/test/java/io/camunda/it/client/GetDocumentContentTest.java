@@ -8,7 +8,7 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -59,7 +59,9 @@ public class GetDocumentContentTest {
     final var command = camundaClient.newDocumentContentGetRequest(documentId).send();
 
     // then
-    final var exception = assertThrowsExactly(ProblemException.class, command::join);
+    final var exception =
+        (ProblemException)
+            assertThatThrownBy(command::join).isInstanceOf(ProblemException.class).actual();
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getStatus()).isEqualTo(404);
@@ -78,7 +80,9 @@ public class GetDocumentContentTest {
         camundaClient.newDocumentContentGetRequest(documentId).storeId(storeId).send();
 
     // then
-    final var exception = assertThrowsExactly(ProblemException.class, command::join);
+    final var exception =
+        (ProblemException)
+            assertThatThrownBy(command::join).isInstanceOf(ProblemException.class).actual();
     assertThat(exception.getMessage()).startsWith("Failed with code 400");
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getStatus()).isEqualTo(400);
@@ -93,7 +97,9 @@ public class GetDocumentContentTest {
         camundaClient.newDocumentContentGetRequest(documentReference.getDocumentId()).send();
 
     // then
-    final var exception = assertThrowsExactly(ProblemException.class, command::join);
+    final var exception =
+        (ProblemException)
+            assertThatThrownBy(command::join).isInstanceOf(ProblemException.class).actual();
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getStatus()).isEqualTo(400);
     assertThat(exception.details().getDetail())
@@ -113,7 +119,9 @@ public class GetDocumentContentTest {
             .send();
 
     // then
-    final var exception = assertThrowsExactly(ProblemException.class, command::join);
+    final var exception =
+        (ProblemException)
+            assertThatThrownBy(command::join).isInstanceOf(ProblemException.class).actual();
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getStatus()).isEqualTo(400);
     assertThat(exception.details().getDetail())

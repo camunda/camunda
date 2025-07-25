@@ -11,7 +11,7 @@ import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForStartFormsBeingExported;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -219,13 +219,15 @@ public class ProcessDefinitionSearchTest {
 
     // when / then
     final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () ->
-                camundaClient
-                    .newProcessDefinitionGetRequest(invalidProcessDefinitionKey)
-                    .send()
-                    .join());
+        (ProblemException)
+            assertThatThrownBy(
+                    () ->
+                        camundaClient
+                            .newProcessDefinitionGetRequest(invalidProcessDefinitionKey)
+                            .send()
+                            .join())
+                .isInstanceOf(ProblemException.class)
+                .actual();
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
     assertThat(exception.details()).isNotNull();
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");

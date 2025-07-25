@@ -8,7 +8,7 @@
 package io.camunda.it.tenancy;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -151,14 +151,15 @@ public class DecisionRequirementsTenancyIT {
 
     // when
     final var exception =
-        assertThrowsExactly(
-            ProblemException.class,
-            () ->
-                camundaClient
-                    .newDecisionRequirementsGetRequest(
-                        decisionRequirements.getDecisionRequirementsKey())
-                    .send()
-                    .join());
+        assertThatExceptionOfType(ProblemException.class)
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newDecisionRequirementsGetRequest(
+                            decisionRequirements.getDecisionRequirementsKey())
+                        .send()
+                        .join())
+            .actual();
 
     // then
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
