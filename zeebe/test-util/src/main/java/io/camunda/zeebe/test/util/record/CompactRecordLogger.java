@@ -784,7 +784,7 @@ public class CompactRecordLogger {
 
     final var builder = new StringBuilder();
     builder
-        .append(String.format("ACTIVATE elements %s", value.getElements()))
+        .append(String.format("ACTIVATE elements %s", value.getActivateElements()))
         .append(
             String.format(
                 " in ad-hoc sub-process [%s]",

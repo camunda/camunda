@@ -163,7 +163,8 @@ public class ActivateAdHocSubProcessActivityTest {
             RecordingExporter.adHocSubProcessActivityActivationRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
                 .limit(record -> record.getIntent() == AdHocSubProcessInstructionIntent.ACTIVATED))
-        .extracting(r -> r.getValue().getElements().getFirst().getElementId(), Record::getIntent)
+        .extracting(
+            r -> r.getValue().getActivateElements().getFirst().getElementId(), Record::getIntent)
         .contains(tuple("A", AdHocSubProcessInstructionIntent.ACTIVATED));
   }
 

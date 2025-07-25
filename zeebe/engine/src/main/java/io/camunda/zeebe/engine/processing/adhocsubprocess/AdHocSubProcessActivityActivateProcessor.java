@@ -21,13 +21,13 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationElement;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivateElementInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivityActivationElementValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivateElementInstructionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -112,7 +112,7 @@ public class AdHocSubProcessActivityActivateProcessor
       return;
     }
 
-    if (hasDuplicateElements(command)) {
+    if (hasDuplicateElementsToActivate(command)) {
       writeRejectionError(
           command,
           RejectionType.INVALID_ARGUMENT,
@@ -148,8 +148,8 @@ public class AdHocSubProcessActivityActivateProcessor
 
     // check that the given elements exist within the ad-hoc sub-process
     final var elementsNotInAdHocSubProcess =
-        command.getValue().elements().stream()
-            .map(AdHocSubProcessActivityActivationElement::getElementId)
+        command.getValue().activateElements().stream()
+            .map(AdHocSubProcessActivateElementInstruction::getElementId)
             .filter(elementId -> !adHocActivitiesById.containsKey(elementId))
             .toList();
     if (!elementsNotInAdHocSubProcess.isEmpty()) {
@@ -165,7 +165,7 @@ public class AdHocSubProcessActivityActivateProcessor
     }
 
     // activate the elements
-    for (final var elementValue : command.getValue().getElements()) {
+    for (final var elementValue : command.getValue().getActivateElements()) {
       final var elementToActivate =
           adHocSubProcessDefinition.getElementById(elementValue.getElementId());
       final var elementProcessInstanceRecord = new ProcessInstanceRecord();
@@ -198,13 +198,13 @@ public class AdHocSubProcessActivityActivateProcessor
     responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
   }
 
-  private boolean hasDuplicateElements(
+  private boolean hasDuplicateElementsToActivate(
       final TypedRecord<AdHocSubProcessInstructionRecord> command) {
-    return command.getValue().getElements().stream()
-            .map(AdHocSubProcessActivityActivationElementValue::getElementId)
+    return command.getValue().getActivateElements().stream()
+            .map(AdHocSubProcessActivateElementInstructionValue::getElementId)
             .distinct()
             .count()
-        != command.getValue().getElements().size();
+        != command.getValue().getActivateElements().size();
   }
 
   private Either<Rejection, Void> authorize(

@@ -24,14 +24,16 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
 
   private final StringProperty adHocSubProcessInstanceKey =
       new StringProperty("adHocSubProcessInstanceKey", DEFAULT_STRING);
-  private final ArrayProperty<AdHocSubProcessActivityActivationElement> elements =
-      new ArrayProperty<>("elements", AdHocSubProcessActivityActivationElement::new);
+  private final ArrayProperty<AdHocSubProcessActivateElementInstruction> activateElements =
+      new ArrayProperty<>("activateElements", AdHocSubProcessActivateElementInstruction::new);
   private final StringProperty tenantId =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public AdHocSubProcessInstructionRecord() {
     super(3);
-    declareProperty(adHocSubProcessInstanceKey).declareProperty(elements).declareProperty(tenantId);
+    declareProperty(adHocSubProcessInstanceKey)
+        .declareProperty(activateElements)
+        .declareProperty(tenantId);
   }
 
   @Override
@@ -46,21 +48,21 @@ public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public List<AdHocSubProcessActivityActivationElementValue> getElements() {
-    return elements.stream()
-        .map(AdHocSubProcessActivityActivationElementValue.class::cast)
+  public List<AdHocSubProcessActivateElementInstructionValue> getActivateElements() {
+    return activateElements.stream()
+        .map(AdHocSubProcessActivateElementInstructionValue.class::cast)
         .toList();
   }
 
   /**
-   * Returns the {@link ValueArray} of `elements` which then can have more elements added/removed.
-   * This is used in setting up test scenarios.
+   * Returns the {@link ValueArray} of `activateElements` which then can have more elements
+   * added/removed. This is used in setting up test scenarios.
    *
    * @return a {@link ValueArray} of flow nodes that can easily be added to.
    */
   @JsonIgnore
-  public ValueArray<AdHocSubProcessActivityActivationElement> elements() {
-    return elements;
+  public ValueArray<AdHocSubProcessActivateElementInstruction> activateElements() {
+    return activateElements;
   }
 
   @Override
