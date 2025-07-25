@@ -160,6 +160,7 @@ public class ActivateAdHocSubProcessActivityTest {
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .contains(
             tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AHSP_INNER_INSTANCE_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple("ad-hoc", ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
