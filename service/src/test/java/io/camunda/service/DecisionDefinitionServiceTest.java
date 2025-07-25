@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -29,9 +29,9 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 public final class DecisionDefinitionServiceTest {
 
@@ -119,10 +119,11 @@ public final class DecisionDefinitionServiceTest {
                 Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
-    final Executable executable = () -> services.getByKey(1L);
+    final ThrowingCallable executable = () -> services.getByKey(1L);
 
     // then
-    final var exception = assertThrows(ServiceException.class, executable);
+    final var exception =
+        assertThatExceptionOfType(ServiceException.class).isThrownBy(executable).actual();
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");
@@ -141,10 +142,11 @@ public final class DecisionDefinitionServiceTest {
                 Authorizations.DECISION_DEFINITION_READ_AUTHORIZATION));
 
     // when
-    final Executable executable = () -> services.getDecisionDefinitionXml(1L);
+    final ThrowingCallable executable = () -> services.getDecisionDefinitionXml(1L);
 
     // then
-    final var exception = assertThrows(ServiceException.class, executable);
+    final var exception =
+        assertThatExceptionOfType(ServiceException.class).isThrownBy(executable).actual();
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_DECISION_DEFINITION' on resource 'DECISION_DEFINITION'");

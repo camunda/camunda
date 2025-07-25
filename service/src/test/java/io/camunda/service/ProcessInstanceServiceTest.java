@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -49,9 +49,9 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 import org.mockito.ArgumentCaptor;
 
 public final class ProcessInstanceServiceTest {
@@ -151,9 +151,11 @@ public final class ProcessInstanceServiceTest {
         .thenThrow(
             new ResourceAccessDeniedException(Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION));
     // when
-    final Executable executeGetByKey = () -> services.getByKey(1L);
+    final ThrowingCallable executeGetByKey = () -> services.getByKey(1L);
     // then
-    final var exception = assertThrowsExactly(ServiceException.class, executeGetByKey);
+    final var exception =
+        (ServiceException)
+            assertThatThrownBy(executeGetByKey).isInstanceOf(ServiceException.class).actual();
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
@@ -430,10 +432,13 @@ public final class ProcessInstanceServiceTest {
     final var query = new IncidentQuery.Builder().build();
 
     // when
-    final Executable executeGetByKey = () -> services.searchIncidents(processInstanceKey, query);
+    final ThrowingCallable executeGetByKey =
+        () -> services.searchIncidents(processInstanceKey, query);
 
     // then
-    final var exception = assertThrowsExactly(ServiceException.class, executeGetByKey);
+    final var exception =
+        (ServiceException)
+            assertThatThrownBy(executeGetByKey).isInstanceOf(ServiceException.class).actual();
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");

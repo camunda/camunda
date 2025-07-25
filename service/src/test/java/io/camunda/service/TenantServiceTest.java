@@ -8,7 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -209,9 +209,11 @@ public class TenantServiceTest {
     when(client.getTenant(eq("tenant-id")))
         .thenThrow(new ResourceAccessDeniedException(Authorizations.TENANT_READER_AUTHORIZATION));
 
-    assertThat(
-            assertThrowsExactly(ServiceException.class, () -> services.getById("tenant-id"))
-                .getStatus())
-        .isEqualTo(Status.FORBIDDEN);
+    final var exception =
+        (ServiceException)
+            assertThatThrownBy(() -> services.getById("tenant-id"))
+                .isInstanceOf(ServiceException.class)
+                .actual();
+    assertThat(exception.getStatus()).isEqualTo(Status.FORBIDDEN);
   }
 }
