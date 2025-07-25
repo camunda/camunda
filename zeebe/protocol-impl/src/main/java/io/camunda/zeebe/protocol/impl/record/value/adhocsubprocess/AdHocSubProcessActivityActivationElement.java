@@ -10,7 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ObjectValue;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationElementValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessActivityActivationElementValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @JsonIgnoreProperties({

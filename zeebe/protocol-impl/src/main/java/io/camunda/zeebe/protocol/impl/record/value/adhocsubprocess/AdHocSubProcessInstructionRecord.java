@@ -12,13 +12,13 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
-public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecordValue
-    implements AdHocSubProcessActivityActivationRecordValue {
+public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
+    implements AdHocSubProcessInstructionRecordValue {
 
   private static final String DEFAULT_STRING = "";
 
@@ -29,7 +29,7 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
   private final StringProperty tenantId =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-  public AdHocSubProcessActivityActivationRecord() {
+  public AdHocSubProcessInstructionRecord() {
     super(3);
     declareProperty(adHocSubProcessInstanceKey).declareProperty(elements).declareProperty(tenantId);
   }
@@ -39,7 +39,7 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
     return BufferUtil.bufferAsString(adHocSubProcessInstanceKey.getValue());
   }
 
-  public AdHocSubProcessActivityActivationRecord setAdHocSubProcessInstanceKey(
+  public AdHocSubProcessInstructionRecord setAdHocSubProcessInstanceKey(
       final String adHocSubProcessInstanceKey) {
     this.adHocSubProcessInstanceKey.setValue(adHocSubProcessInstanceKey);
     return this;
@@ -68,7 +68,7 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
     return BufferUtil.bufferAsString(tenantId.getValue());
   }
 
-  public AdHocSubProcessActivityActivationRecord setTenantId(final String tenantId) {
+  public AdHocSubProcessInstructionRecord setTenantId(final String tenantId) {
     this.tenantId.setValue(tenantId);
     return this;
   }

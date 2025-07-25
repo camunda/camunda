@@ -24,7 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -165,7 +165,7 @@ public class CompactRecordLogger {
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION, this::summarizeProcessInstanceSubscription);
     valueLoggers.put(
         ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
-        this::summarizeAdHocSubProcessActivityActivation);
+        this::summarizeAdHocSubProcessInstruction);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     valueLoggers.put(ValueType.ERROR, this::summarizeError);
@@ -779,8 +779,8 @@ public class CompactRecordLogger {
     return result.toString();
   }
 
-  private String summarizeAdHocSubProcessActivityActivation(final Record<?> record) {
-    final var value = (AdHocSubProcessActivityActivationRecordValue) record.getValue();
+  private String summarizeAdHocSubProcessInstruction(final Record<?> record) {
+    final var value = (AdHocSubProcessInstructionRecordValue) record.getValue();
 
     final var builder = new StringBuilder();
     builder

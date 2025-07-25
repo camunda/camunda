@@ -9,7 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
@@ -103,8 +103,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.DECISION_EVALUATION, DecisionEvaluationRecord.class);
     registry.put(ValueType.RESOURCE_DELETION, ResourceDeletionRecord.class);
     registry.put(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
-        AdHocSubProcessActivityActivationRecord.class);
+        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION, AdHocSubProcessInstructionRecord.class);
     registry.put(ValueType.COMMAND_DISTRIBUTION, CommandDistributionRecord.class);
 
     registry.put(ValueType.CHECKPOINT, CheckpointRecord.class);

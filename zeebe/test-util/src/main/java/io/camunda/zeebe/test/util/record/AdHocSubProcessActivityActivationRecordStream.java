@@ -9,22 +9,21 @@ package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import java.util.stream.Stream;
 
 public class AdHocSubProcessActivityActivationRecordStream
     extends ExporterRecordStream<
-        AdHocSubProcessActivityActivationRecordValue,
-        AdHocSubProcessActivityActivationRecordStream> {
+        AdHocSubProcessInstructionRecordValue, AdHocSubProcessActivityActivationRecordStream> {
 
   public AdHocSubProcessActivityActivationRecordStream(
-      final Stream<Record<AdHocSubProcessActivityActivationRecordValue>> wrappedStream) {
+      final Stream<Record<AdHocSubProcessInstructionRecordValue>> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
   protected AdHocSubProcessActivityActivationRecordStream supply(
-      final Stream<Record<AdHocSubProcessActivityActivationRecordValue>> wrappedStream) {
+      final Stream<Record<AdHocSubProcessInstructionRecordValue>> wrappedStream) {
     return new AdHocSubProcessActivityActivationRecordStream(wrappedStream);
   }
 

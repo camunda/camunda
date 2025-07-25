@@ -17,21 +17,21 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import java.util.List;
 import org.immutables.value.Value;
 
 /**
- * Represents a command to activate activities in a given ad-hoc sub-process.
+ * Represents a command to modify a given ad-hoc sub-process.
  *
- * <p>See {@link io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent}
- * for intents.
+ * <p>See {@link AdHocSubProcessInstructionIntent} for intents.
  */
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableAdHocSubProcessActivityActivationRecordValue.Builder.class)
-public interface AdHocSubProcessActivityActivationRecordValue extends RecordValue, TenantOwned {
+@ImmutableProtocol(builder = ImmutableAdHocSubProcessInstructionRecordValue.Builder.class)
+public interface AdHocSubProcessInstructionRecordValue extends RecordValue, TenantOwned {
 
   /**
-   * @return the instance key of the ad-hoc sub-process that will have its activities activated.
+   * @return the instance key of the ad-hoc sub-process to modify.
    */
   String getAdHocSubProcessInstanceKey();
 
