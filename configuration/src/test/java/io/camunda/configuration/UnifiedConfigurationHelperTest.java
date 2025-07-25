@@ -10,7 +10,8 @@ package io.camunda.configuration;
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.NOT_SUPPORTED;
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED;
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
@@ -61,7 +62,7 @@ class UnifiedConfigurationHelperTest {
             newProperty, newValue, String.class, mode);
 
     // then
-    assertEquals(result, "matchingValue");
+    assertThat(result).isEqualTo("matchingValue");
   }
 
   @Test
@@ -78,13 +79,12 @@ class UnifiedConfigurationHelperTest {
     setPropertyValues("legacy.prop2", "legacyValue2");
 
     // then
-    final UnifiedConfigurationException expectedException =
-        assertThrows(
-            UnifiedConfigurationException.class,
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
-    assertTrue(expectedException.getMessage().contains("Ambiguous legacy configuration"));
+                    newProperty, newValue, String.class, mode))
+        .withMessageContaining("Ambiguous legacy configuration");
   }
 
   @Test
@@ -101,13 +101,12 @@ class UnifiedConfigurationHelperTest {
     setPropertyValues("legacy.prop2", "legacyValue");
 
     // then
-    final UnifiedConfigurationException expectedException =
-        assertThrows(
-            UnifiedConfigurationException.class,
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
-    assertTrue(expectedException.getMessage().contains("Ambiguous configuration"));
+                    newProperty, newValue, String.class, mode))
+        .withMessageContaining("Ambiguous configuration");
   }
 
   @Test
@@ -125,7 +124,7 @@ class UnifiedConfigurationHelperTest {
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             newProperty, newValue, String.class, mode);
-    assertEquals(result, "legacyValue1");
+    assertThat(result).isEqualTo("legacyValue1");
   }
 
   @Test
@@ -145,7 +144,7 @@ class UnifiedConfigurationHelperTest {
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             newProperty, newValue, String.class, mode);
-    assertEquals(result, "defaultValue");
+    assertThat(result).isEqualTo("defaultValue");
   }
 
   @Test
@@ -165,7 +164,7 @@ class UnifiedConfigurationHelperTest {
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             newProperty, sameValue, String.class, mode);
-    assertEquals(result, sameValue);
+    assertThat(result).isEqualTo(sameValue);
   }
 
   @Test
@@ -182,13 +181,12 @@ class UnifiedConfigurationHelperTest {
     setPropertyValues("legacy.prop2", "legacyValue");
 
     // then
-    final UnifiedConfigurationException expectedException =
-        assertThrows(
-            UnifiedConfigurationException.class,
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
-    assertTrue(expectedException.getMessage().contains("Ambiguous configuration"));
+                    newProperty, newValue, String.class, mode))
+        .withMessageContaining("Ambiguous configuration");
   }
 
   @Test
@@ -206,7 +204,7 @@ class UnifiedConfigurationHelperTest {
     final String result =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             newProperty, newValue, String.class, mode);
-    assertEquals(result, newValue);
+    assertThat(result).isEqualTo(newValue);
   }
 
   @Test
@@ -217,13 +215,12 @@ class UnifiedConfigurationHelperTest {
     final BackwardsCompatibilityMode mode = null;
 
     // then
-    final UnifiedConfigurationException expectedException =
-        assertThrows(
-            UnifiedConfigurationException.class,
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
-    assertTrue(expectedException.getMessage().contains("cannot be null"));
+                    newProperty, newValue, String.class, mode))
+        .withMessageContaining("cannot be null");
   }
 
   @Test
@@ -239,18 +236,14 @@ class UnifiedConfigurationHelperTest {
     setPropertyValues("legacy.prop2", "legacyValue");
 
     // then
-    final UnifiedConfigurationException expectedException =
-        assertThrows(
-            UnifiedConfigurationException.class,
+    assertThatExceptionOfType(UnifiedConfigurationException.class)
+        .isThrownBy(
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
-                    newProperty, newValue, String.class, mode));
-
-    assertTrue(
-        expectedException
-            .getMessage()
-            .contains("The following legacy configuration properties are no longer supported"));
-    assertTrue(expectedException.getMessage().contains("in favor of"));
+                    newProperty, newValue, String.class, mode))
+        .withMessageContaining(
+            "The following legacy configuration properties are no longer supported")
+        .withMessageContaining("in favor of");
   }
 
   @Test
@@ -264,7 +257,7 @@ class UnifiedConfigurationHelperTest {
     final String expected =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             newProperty, defaultValue, String.class, mode);
-    assertEquals(expected, defaultValue);
+    assertThat(expected).isEqualTo(defaultValue);
   }
 
   @Test
@@ -282,6 +275,6 @@ class UnifiedConfigurationHelperTest {
     final String actual =
         UnifiedConfigurationHelper.validateLegacyConfiguration(
             newProperty, defaultValue, String.class, mode);
-    assertEquals(expected, actual);
+    assertThat(actual).isEqualTo(expected);
   }
 }
