@@ -3,27 +3,26 @@
 # called by: ci.yml
 # type: CI
 # owner: @camunda/core-features
-name: Operate CI
+name: Tasklist CI
 
 on:
   workflow_dispatch:
     inputs:
-      feChanges:
-        description: "Boolean variable for if there are front end changes to Tasklist"
+      runFeTests:
+        description: "Set to true to run front end tests for Tasklist"
         type: boolean
         required: true
-      beChanges:
-        description: "Boolean variable for if there are back end changes to Tasklist"
+      runBeTests:
+        description: "Set to true to run back end tests for Tasklist"
         type: boolean
         required: true
   workflow_call:
     inputs:
-      feChanges:
-        description: "Boolean variable for if there are front end changes to Tasklist"
-        type: boolean
-        required: true
-      beChanges:
-        description: "Boolean variable for if there are back end changes to Tasklist"
+      description: "Set to true if Tasklist front-end code was changed"
+      type: boolean
+      required: true
+      runBeTests:
+        description: "Set to true if Tasklist back-end code was changed"
         type: boolean
         required: true
 
@@ -37,6 +36,7 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
+  # run this test every time the worfkflow is triggered
   tasklist-backend-unit-tests:
     name: "[UT] Back End / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
@@ -57,14 +57,14 @@ jobs:
 
   tasklist-frontend-tests:
     name: "[UT] Front End"
-    if: inputs.feChanges
+    if: inputs.runFeTests
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
     secrets: inherit
     permissions: { }  # GITHUB_TOKEN unused in this job
 
   elasticsearch:
     name: "[IT] ElasticSearch Backup Restore / Data Layer"
-    if: inputs.beChanges
+    if: inputs.runBeTests
     permissions: { }  # GITHUB_TOKEN unused in this job
     uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
     secrets: inherit
@@ -73,7 +73,7 @@ jobs:
 
   opensearch:
     name: "[IT] OpenSearch Backup Restore / Data Layer"
-    if: inputs.beChanges
+    if: inputs.runBeTests
     permissions: { }  # GITHUB_TOKEN unused in this job
     uses: ./.github/workflows/tasklist-backup-restore-tests-reusable.yml
     secrets: inherit
@@ -83,7 +83,7 @@ jobs:
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
     name: "[IT] Docker Tests / Core Features"
-    if: inputs.beChanges
+    if: inputs.runBeTests
     uses: ./.github/workflows/tasklist-docker-tests.yml
     secrets: inherit
     permissions: { }  # GITHUB_TOKEN unused in this job
