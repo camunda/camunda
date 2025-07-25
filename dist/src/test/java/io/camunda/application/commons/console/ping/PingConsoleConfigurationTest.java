@@ -7,7 +7,9 @@
  */
 package io.camunda.application.commons.console.ping;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -78,12 +80,13 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Ping endpoint must not be null.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage()).isEqualTo("Ping endpoint must not be null.");
   }
 
   @Test
@@ -101,12 +104,13 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Ping endpoint 123 must be a valid URI.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage()).isEqualTo("Ping endpoint 123 must be a valid URI.");
   }
 
   @Test
@@ -124,12 +128,13 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Cluster ID must not be null or empty.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage()).isEqualTo("Cluster ID must not be null or empty.");
   }
 
   @Test
@@ -147,12 +152,13 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Cluster name must not be null or empty.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage()).isEqualTo("Cluster name must not be null or empty.");
   }
 
   @Test
@@ -170,12 +176,13 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Ping period must be greater than zero.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage()).isEqualTo("Ping period must be greater than zero.");
   }
 
   @Test
@@ -196,12 +203,14 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Number of max retries must be greater than zero.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage())
+        .isEqualTo("Number of max retries must be greater than zero.");
   }
 
   @Test
@@ -222,12 +231,14 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Retry delay multiplier must be greater than zero.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage())
+        .isEqualTo("Retry delay multiplier must be greater than zero.");
   }
 
   @Test
@@ -244,10 +255,11 @@ class PingConsoleConfigurationTest {
             null);
 
     // then
-    assertDoesNotThrow(
-        () ->
-            new PingConsoleRunner(
-                consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT));
+    assertThatCode(
+            () ->
+                new PingConsoleRunner(
+                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -268,12 +280,13 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Max retry delay must be greater than zero.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage()).isEqualTo("Max retry delay must be greater than zero.");
   }
 
   @Test
@@ -294,12 +307,13 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals("Min retry delay must be greater than zero.", exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage()).isEqualTo("Min retry delay must be greater than zero.");
   }
 
   @Test
@@ -321,14 +335,14 @@ class PingConsoleConfigurationTest {
 
     // then
     final IllegalArgumentException exception =
-        assertThrows(
-            IllegalArgumentException.class,
-            new PingConsoleRunner(
-                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
-                ::validateConfiguration);
-    assertEquals(
-        "Max retry delay must be greater than or equal to min retry delay.",
-        exception.getMessage());
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                new PingConsoleRunner(
+                        consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT)
+                    ::validateConfiguration)
+            .actual();
+    assertThat(exception.getMessage())
+        .isEqualTo("Max retry delay must be greater than or equal to min retry delay.");
   }
 
   @Test
@@ -344,10 +358,11 @@ class PingConsoleConfigurationTest {
             new RetryConfiguration(),
             null);
     // then
-    assertDoesNotThrow(
-        () ->
-            new PingConsoleRunner(
-                consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT));
+    assertThatCode(
+            () ->
+                new PingConsoleRunner(
+                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+        .doesNotThrowAnyException();
   }
 
   @Test
@@ -364,10 +379,11 @@ class PingConsoleConfigurationTest {
             null);
 
     // then we assert that it is not throwing an exception due to the feature being disabled
-    assertDoesNotThrow(
-        () ->
-            new PingConsoleRunner(
-                consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT));
+    assertThatCode(
+            () ->
+                new PingConsoleRunner(
+                    consolePingConfiguration, MANAGEMENT_SERVICES, APPLICATION_CONTEXT))
+        .doesNotThrowAnyException();
   }
 
   @Test
