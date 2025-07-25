@@ -141,8 +141,8 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
     final JobResultCorrections correctionsRest = new JobResultCorrections();
     correctionsRest
         .assignee(jobResult.getCorrections().getAssignee())
-        .dueDate(parseOffsetDateTime(jobResult.getCorrections().getDueDate()))
-        .followUpDate(parseOffsetDateTime(jobResult.getCorrections().getFollowUpDate()))
+        .dueDate(jobResult.getCorrections().getDueDate())
+        .followUpDate(jobResult.getCorrections().getFollowUpDate())
         .candidateUsers(jobResult.getCorrections().getCandidateUsers())
         .candidateGroups(jobResult.getCorrections().getCandidateGroups())
         .priority(jobResult.getCorrections().getPriority());
@@ -162,10 +162,10 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       correctionsGrpc.setAssignee(jobResult.getCorrections().getAssignee());
     }
     if (jobResult.getCorrections().getDueDate() != null) {
-      correctionsGrpc.setDueDate(jobResult.getCorrections().getDueDate());
+      correctionsGrpc.setDueDate(jobResult.getCorrections().getDueDate().toString());
     }
     if (jobResult.getCorrections().getFollowUpDate() != null) {
-      correctionsGrpc.setFollowUpDate(jobResult.getCorrections().getFollowUpDate());
+      correctionsGrpc.setFollowUpDate(jobResult.getCorrections().getFollowUpDate().toString());
     }
     if (jobResult.getCorrections().getCandidateUsers() != null) {
       correctionsGrpc.setCandidateUsers(
@@ -307,12 +307,5 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
     }
     return this;
-  }
-
-  private OffsetDateTime parseOffsetDateTime(final String dateTimeString) {
-    if (dateTimeString == null || dateTimeString.isEmpty()) {
-      return null;
-    }
-    return OffsetDateTime.parse(dateTimeString);
   }
 }

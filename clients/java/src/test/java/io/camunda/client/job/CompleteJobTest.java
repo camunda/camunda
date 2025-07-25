@@ -32,6 +32,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -359,8 +360,8 @@ public final class CompleteJobTest extends ClientTest {
             r ->
                 r.forUserTask()
                     .correctAssignee("Test")
-                    .correctDueDate("due date")
-                    .correctFollowUpDate("follow up date")
+                    .correctDueDate(OffsetDateTime.parse("2024-01-15T10:30:00Z"))
+                    .correctFollowUpDate(OffsetDateTime.parse("2024-01-20T15:45:00Z"))
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
                     .correctPriority(80))
@@ -414,8 +415,8 @@ public final class CompleteJobTest extends ClientTest {
             r ->
                 r.forUserTask()
                     .correctAssignee("Test")
-                    .correctDueDate("due date")
-                    .correctFollowUpDate("")
+                    .correctDueDate(OffsetDateTime.parse("2024-01-15T10:30:00Z"))
+                    .correctFollowUpDate(null)
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctPriority(80))
         .send()
@@ -515,7 +516,7 @@ public final class CompleteJobTest extends ClientTest {
                     .deny(false)
                     .correctAssignee("Test")
                     .correctDueDate(null)
-                    .correctFollowUpDate("")
+                    .correctFollowUpDate(null)
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctPriority(80))
         .send()
