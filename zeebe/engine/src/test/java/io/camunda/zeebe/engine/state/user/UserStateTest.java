@@ -11,10 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -201,6 +204,40 @@ public class UserStateTest {
     userState.delete(username);
 
     assertThat(userState.getUser(userKey)).isEmpty();
+  }
+
+  @DisplayName("[regression] should remove user from userKeyByUsername column family on delete")
+  @RegressionTest("https://github.com/camunda/camunda/issues/35404")
+  void shouldRemoveUserFromUserKeyByUsernameColumnFamilyOnDelete() {
+    // given
+    final var user =
+        new UserRecord()
+            .setUserKey(1L)
+            .setUsername("username" + UUID.randomUUID())
+            .setName("name" + UUID.randomUUID())
+            .setPassword("password" + UUID.randomUUID())
+            .setEmail("email" + UUID.randomUUID());
+    userState.create(user);
+
+    assertThat(userState.getUser(user.getUserKey())).isNotEmpty();
+
+    // when
+    userState.delete(user.getUsername());
+
+    // then
+    final var dbUserState = (DbUserState) userState;
+
+    final var dbUsername = new DbString();
+    dbUsername.wrapString(user.getUsername());
+    assertThat(dbUserState.getUsersColumnFamily().get(dbUsername))
+        .describedAs("Expect that the users column family no longer stores this user")
+        .isNull();
+
+    final var dbUserKey = new DbLong();
+    dbUserKey.wrapLong(user.getUserKey());
+    assertThat(dbUserState.getUserKeyByUsernameColumnFamily().get(dbUserKey))
+        .describedAs("Expect that the userKeyByUsername column family no longer stores this user")
+        .isNull();
   }
 
   @Test

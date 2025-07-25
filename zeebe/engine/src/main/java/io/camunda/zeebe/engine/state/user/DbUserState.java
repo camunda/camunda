@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.Optional;
 
 public class DbUserState implements UserState, MutableUserState {
@@ -79,5 +80,15 @@ public class DbUserState implements UserState, MutableUserState {
 
     return Optional.ofNullable(username)
         .flatMap(dbUsername -> getUser(dbUsername.inner().toString()));
+  }
+
+  @VisibleForTesting
+  ColumnFamily<DbString, PersistedUser> getUsersColumnFamily() {
+    return usersColumnFamily;
+  }
+
+  @VisibleForTesting
+  ColumnFamily<DbLong, DbForeignKey<DbString>> getUserKeyByUsernameColumnFamily() {
+    return userKeyByUsernameColumnFamily;
   }
 }
