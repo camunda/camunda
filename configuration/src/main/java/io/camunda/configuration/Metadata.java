@@ -7,10 +7,12 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import java.time.Duration;
 
 public class Metadata {
+  private static final String PREFIX = "camunda.cluster.metadata.";
 
   /**
    * The delay between two sync requests in the ClusterConfigurationManager. A sync request is sent
@@ -23,10 +25,11 @@ public class Metadata {
       ClusterConfigurationGossiperConfig.DEFAULT_SYNC_REQUEST_TIMEOUT;
 
   /** The number of nodes to which a cluster topology is gossiped. */
-  private Integer gossipFanout = ClusterConfigurationGossiperConfig.DEFAULT_GOSSIP_FANOUT;
+  private int gossipFanout = ClusterConfigurationGossiperConfig.DEFAULT_GOSSIP_FANOUT;
 
   public Duration getSyncDelay() {
-    return syncDelay;
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + "sync-delay", syncDelay, Duration.class, BackwardsCompatibilityMode.SUPPORTED);
   }
 
   public void setSyncDelay(final Duration syncDelay) {
@@ -34,15 +37,23 @@ public class Metadata {
   }
 
   public Duration getSyncRequestTimeout() {
-    return syncRequestTimeout;
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + "sync-request-timeout",
+        syncRequestTimeout,
+        Duration.class,
+        BackwardsCompatibilityMode.SUPPORTED);
   }
 
   public void setSyncRequestTimeout(final Duration syncRequestTimeout) {
     this.syncRequestTimeout = syncRequestTimeout;
   }
 
-  public Integer getGossipFanout() {
-    return gossipFanout;
+  public int getGossipFanout() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + "gossip-fanout",
+        gossipFanout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED);
   }
 
   public void setGossipFanout(final Integer gossipFanout) {
