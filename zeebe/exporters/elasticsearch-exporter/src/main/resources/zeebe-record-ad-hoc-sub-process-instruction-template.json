@@ -34,7 +34,7 @@
                 }
               }
             },
-            "isCancelRemainingInstances": {
+            "cancelRemainingInstances": {
               "type": "boolean"
             },
             "tenantId": {
