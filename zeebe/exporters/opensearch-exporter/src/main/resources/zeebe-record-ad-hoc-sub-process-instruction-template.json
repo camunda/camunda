@@ -28,8 +28,14 @@
               "properties": {
                 "elementId": {
                   "type": "keyword"
+                },
+                "variables": {
+                  "enabled": false
                 }
               }
+            },
+            "isCancelRemainingInstances": {
+              "type": "boolean"
             },
             "tenantId": {
               "type": "keyword"
