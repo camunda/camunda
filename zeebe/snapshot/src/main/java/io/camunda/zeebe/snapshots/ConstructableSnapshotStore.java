@@ -22,5 +22,9 @@ public interface ConstructableSnapshotStore extends PersistedSnapshotStore {
    * @return either an exception or transientSnapshot, if it was taken successfully.
    */
   Either<SnapshotException, TransientSnapshot> newTransientSnapshot(
-      long index, long term, long processedPosition, long exportedPosition);
+      long index,
+      long term,
+      long processedPosition,
+      long exportedPosition,
+      final boolean forceSnapshot);
 }

@@ -51,7 +51,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldNotCreateTransientDirectoryIfNothingWritten() {
     // when
-    snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L);
+    snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L, false);
 
     // then
     assertThat(snapshotsDir)
@@ -60,20 +60,9 @@ public class FileBasedTransientSnapshotTest {
   }
 
   @Test
-  public void shouldEncodeSnapshotIdInPath() {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
-
-    // when
-    final var pathId = FileBasedSnapshotId.ofPath(transientSnapshot.getPath()).getOrThrow();
-
-    // then
-    assertThat(pathId).isEqualTo(transientSnapshot.snapshotId());
-  }
-
-  @Test
   public void shouldNotCommitUntilPersisted() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L, false).get();
 
     // when
     transientSnapshot.take(this::writeSnapshot).join();
@@ -87,7 +76,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldTakeTransientSnapshot() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3L, 4L, false).get();
 
     // when
     transientSnapshot.take(this::writeSnapshot).join();
@@ -102,7 +91,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldDeleteTransientDirectoryOnAbort() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L, false).get();
     transientSnapshot.take(this::writeSnapshot).join();
 
     // when
@@ -117,7 +106,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldNotDeletePersistedSnapshotOnPurge() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L, false).get();
     transientSnapshot.take(this::writeSnapshot).join();
     final var persistedSnapshot = transientSnapshot.persist().join();
 
@@ -137,7 +126,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldPersistSnapshot() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L, false).get();
     transientSnapshot.take(this::writeSnapshot);
 
     // when
@@ -161,12 +150,12 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldReplacePreviousSnapshotOnPersist() {
     // given
-    final var oldSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    final var oldSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L, false).get();
     oldSnapshot.take(this::writeSnapshot);
     oldSnapshot.persist().join();
 
     // when
-    final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
+    final var newSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L, false).get();
     newSnapshot.take(this::writeSnapshot);
     final var persistedSnapshot = (FileBasedSnapshot) newSnapshot.persist().join();
 
@@ -181,11 +170,12 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldNotRemoveTransientSnapshotWithGreaterIdOnPersist() {
     // given
-    final var newerTransientSnapshot = snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L).get();
+    final var newerTransientSnapshot =
+        snapshotStore.newTransientSnapshot(2L, 0L, 1L, 0L, false).get();
     newerTransientSnapshot.take(this::writeSnapshot);
 
     // when
-    final var newSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    final var newSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L, false).get();
     newSnapshot.take(this::writeSnapshot);
     newSnapshot.persist().join();
 
@@ -199,7 +189,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldRemoveTransientDirectoryOnTakeException() {
     // given
-    final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L).get();
+    final var snapshot = snapshotStore.newTransientSnapshot(1L, 0L, 1L, 0L, false).get();
 
     // when
     final var didTakeSnapshot =
@@ -215,7 +205,7 @@ public class FileBasedTransientSnapshotTest {
 
   @Test
   public void shouldNotPersistNonExistentTransientSnapshot() {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L, false).get();
     transientSnapshot.take(p -> {});
 
     // when
@@ -229,7 +219,7 @@ public class FileBasedTransientSnapshotTest {
 
   @Test
   public void shouldNotPersistEmptyTransientSnapshot() {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 0L, 2L, 3L, false).get();
     transientSnapshot.take(p -> p.toFile().mkdir());
 
     // when
@@ -244,7 +234,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldPersistIdempotently() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4, false).get();
     transientSnapshot.take(this::writeSnapshot).join();
     final var firstSnapshot = (FileBasedSnapshot) transientSnapshot.persist().join();
 
@@ -265,7 +255,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldAddMetadataToPersistedSnapshot() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4, false).get();
     transientSnapshot.take(this::writeSnapshot).join();
     // when
     final var persistedSnapshot =
@@ -285,7 +275,7 @@ public class FileBasedTransientSnapshotTest {
   @Test
   public void shouldPersistMetadata() {
     // given
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4, false).get();
     transientSnapshot.take(this::writeSnapshot).join();
 
     // when

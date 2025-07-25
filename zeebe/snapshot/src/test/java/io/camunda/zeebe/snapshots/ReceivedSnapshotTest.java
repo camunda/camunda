@@ -179,8 +179,8 @@ public class ReceivedSnapshotTest {
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(SnapshotAlreadyExistsException.class)
-        .withMessageContaining(
-            "Expected to receive snapshot with id 1-0-1-0-0, but was already persisted");
+        .withMessageMatching(
+            "Expected to receive snapshot with id 1-0-1-0-0-\\S+, but was already persisted. This shouldn't happen.");
   }
 
   @Test
@@ -396,7 +396,8 @@ public class ReceivedSnapshotTest {
   }
 
   private PersistedSnapshot takePersistedSnapshot() {
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0, false).get();
     transientSnapshot
         .take(
             p -> SnapshotTransferUtil.writeSnapshot(p, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS))

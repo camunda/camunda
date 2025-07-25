@@ -434,8 +434,8 @@ public class FileBasedSnapshotStoreTest {
     assertThat(copiedSnapshot)
         .satisfies(
             s -> {
-              assertThat(s.getId()).isEqualTo("1-1-0-0-0");
-              assertThat(s.getPath().getFileName().toString()).isEqualTo("1-1-0-0-0");
+              assertThat(s.getId()).startsWith("1-1-0-0-0-");
+              assertThat(s.getPath().getFileName().toString()).startsWith("1-1-0-0-0-");
               assertThat(s.getMetadata())
                   .isEqualTo(
                       FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION));
@@ -471,7 +471,7 @@ public class FileBasedSnapshotStoreTest {
         .satisfies(s -> assertThat(s.get().getId()).isEqualTo(copiedSnapshot.getId()));
 
     assertThat(rootDirectory.resolve("snapshots"))
-        .isDirectoryContaining(p -> p.getFileName().startsWith("1-1-0-0-0"));
+        .isDirectoryContaining(p -> p.getFileName().toString().startsWith("1-1-0-0-0"));
   }
 
   @Test
@@ -540,7 +540,8 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private TransientSnapshot takeTransientSnapshotWithFiles(final long index) {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(index, 1, 123L, 0).get();
+    final var transientSnapshot =
+        snapshotStore.newTransientSnapshot(index, 1, 123L, 0, false).get();
 
     final var snapshotFileNames =
         List.of("zeebe.metadata", "table-0.sst", "table-1.sst", "table-2.sst");
@@ -568,7 +569,7 @@ public class FileBasedSnapshotStoreTest {
 
   private TransientSnapshot takeTransientSnapshot(
       final long index, final FileBasedSnapshotStore store) {
-    final var transientSnapshot = store.newTransientSnapshot(index, 1, 1, 0).get();
+    final var transientSnapshot = store.newTransientSnapshot(index, 1, 1, 0, false).get();
     transientSnapshot.take(this::createSnapshotDir);
     return transientSnapshot;
   }

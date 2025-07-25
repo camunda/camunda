@@ -134,8 +134,10 @@ public final class FileBasedSnapshotStore extends Actor
       final long index,
       final long term,
       final long processedPosition,
-      final long exportedPosition) {
-    return snapshotStore.newTransientSnapshot(index, term, processedPosition, exportedPosition);
+      final long exportedPosition,
+      final boolean forceSnapshot) {
+    return snapshotStore.newTransientSnapshot(
+        index, term, processedPosition, exportedPosition, forceSnapshot);
   }
 
   @Override

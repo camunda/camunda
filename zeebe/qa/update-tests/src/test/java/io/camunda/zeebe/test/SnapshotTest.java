@@ -12,8 +12,10 @@ import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -56,5 +58,31 @@ final class SnapshotTest {
     // then
     testCase.runAfter(state, processInstanceKey, key);
     assertThat(state).eventuallyHasCompletedProcess(PROCESS_ID);
+  }
+
+  @Test
+  void takesSnapshotAfterUpdate(final ContainerState state) {
+    // given - we take an initial snapshot on the old version
+    state.withNetwork(network).withOldBroker().start(true);
+    state
+        .client()
+        .newPublishMessageCommand()
+        .messageName("test")
+        .correlationKey("key")
+        .send()
+        .join();
+    state.getPartitionsActuator().takeSnapshot();
+    assertThat(state).eventuallyHasSnapshotAvailable(1);
+    final var oldSnapshotId = state.getPartitionsActuator().query().get(1).snapshotId();
+
+    // when - we update to the new version without any new processing
+    state.close();
+    state.withNewBroker().start(true);
+
+    // then - the new version takes a new snapshot to persist migrations and version marker
+    Awaitility.await()
+        .until(
+            () -> state.getPartitionsActuator().query().get(1).snapshotId(),
+            newSnapshotId -> !newSnapshotId.equals(oldSnapshotId));
   }
 }

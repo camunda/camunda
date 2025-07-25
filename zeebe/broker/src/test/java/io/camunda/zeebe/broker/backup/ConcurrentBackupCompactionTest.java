@@ -198,7 +198,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   }
 
   private PersistedSnapshot takeSnapshot(final long index, final long lastWrittenPosition) {
-    final var transientSnapshot = snapshotStore.newTransientSnapshot(index, 1, 1, 1).get();
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(index, 1, 1, 1, false).get();
     transientSnapshot.take(
         path -> {
           try {

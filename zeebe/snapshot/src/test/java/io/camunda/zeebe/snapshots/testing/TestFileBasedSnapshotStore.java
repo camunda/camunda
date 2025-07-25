@@ -123,7 +123,7 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
             .map(i -> "chunk-" + i)
             .collect(Collectors.toMap(k -> k, v -> String.valueOf(random.nextLong())));
     final var transientSnapshot =
-        snapshotStore.newTransientSnapshot(index, term, index, index).get();
+        snapshotStore.newTransientSnapshot(index, term, index, index, false).get();
     transientSnapshot.take(p -> writeSnapshot(p, chunks)).join();
     transientSnapshot.persist().join();
   }

@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
@@ -160,8 +161,8 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void scheduleSnapshotOnRate() {
-    actor.runAtFixedRate(snapshotRate, this::trySnapshot);
-    trySnapshot();
+    actor.runAtFixedRate(snapshotRate, () -> trySnapshot(false));
+    trySnapshot(false);
   }
 
   /**
@@ -172,7 +173,7 @@ public final class AsyncSnapshotDirector extends Actor
    */
   public ActorFuture<PersistedSnapshot> forceSnapshot() {
     final var newSnapshotFuture = new CompletableActorFuture<PersistedSnapshot>();
-    actor.call(() -> trySnapshot().onComplete(newSnapshotFuture));
+    actor.call(() -> trySnapshot(true).onComplete(newSnapshotFuture));
     return newSnapshotFuture;
   }
 
@@ -200,7 +201,7 @@ public final class AsyncSnapshotDirector extends Actor
   // there is nothing to snapshot. Future is completed with null if the snapshot is skipped.
   // Otherwise, future is completed with the committed snapshot, or completed exceptionally if
   // snapshotting fails.
-  private ActorFuture<PersistedSnapshot> trySnapshot() {
+  private ActorFuture<PersistedSnapshot> trySnapshot(final boolean forceSnapshot) {
     if (ongoingSnapshotFuture != null) {
       LOG.debug("Already taking snapshot, skipping this request for a new snapshot");
       return CompletableActorFuture.completed(null);
@@ -217,13 +218,10 @@ public final class AsyncSnapshotDirector extends Actor
               if (error != null) {
                 LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
                 snapshotFuture.completeExceptionally(error);
-              } else if (position == StreamProcessor.UNSET_POSITION) {
-                LOG.debug(
-                    "We will skip taking this snapshot, because we haven't processed anything yet.");
-                snapshotFuture.complete(null);
               } else {
-                inProgressSnapshot.lowerBoundSnapshotPosition = position;
-                snapshot(inProgressSnapshot).onComplete(snapshotFuture);
+                inProgressSnapshot.lowerBoundSnapshotPosition =
+                    position == StreamProcessor.UNSET_POSITION ? 0L : position;
+                snapshot(inProgressSnapshot, forceSnapshot).onComplete(snapshotFuture);
               }
             });
 
@@ -239,8 +237,9 @@ public final class AsyncSnapshotDirector extends Actor
     return snapshotFuture;
   }
 
-  private ActorFuture<PersistedSnapshot> snapshot(final InProgressSnapshot inProgressSnapshot) {
-    return takeTransientSnapshot(inProgressSnapshot)
+  private ActorFuture<PersistedSnapshot> snapshot(
+      final InProgressSnapshot inProgressSnapshot, final boolean forceSnapshot) {
+    return takeTransientSnapshot(inProgressSnapshot, forceSnapshot)
         .andThen(() -> getLastWrittenPosition(inProgressSnapshot), actor)
         .andThen(() -> waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot), actor)
         .andThen(this::flushJournal, actor)
@@ -277,15 +276,19 @@ public final class AsyncSnapshotDirector extends Actor
             .persist();
     snapshotPersisted.onComplete(
         (snapshot, persistError) -> {
-          if (persistError != null) {
-            if (persistError instanceof SnapshotNotFoundException) {
-              LOG.warn(
-                  "Failed to persist transient snapshot {}. Nothing to worry if a newer snapshot exists.",
-                  inProgressSnapshot.pendingSnapshot,
-                  persistError);
-            } else {
-              LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
-            }
+          switch (persistError) {
+            case null -> {}
+            case final SnapshotNotFoundException notFoundException ->
+                LOG.warn(
+                    "Failed to persist transient snapshot {}. Nothing to worry if a newer snapshot exists.",
+                    inProgressSnapshot.pendingSnapshot,
+                    notFoundException);
+            case final SnapshotAlreadyExistsException alreadyExistsException ->
+                LOG.debug(
+                    "Failed to persist transient snapshot {}. Snapshot already exists.",
+                    inProgressSnapshot.pendingSnapshot,
+                    alreadyExistsException);
+            default -> LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
           }
         });
     return snapshotPersisted;
@@ -320,9 +323,10 @@ public final class AsyncSnapshotDirector extends Actor
     }
   }
 
-  private ActorFuture<Void> takeTransientSnapshot(final InProgressSnapshot inProgressSnapshot) {
+  private ActorFuture<Void> takeTransientSnapshot(
+      final InProgressSnapshot inProgressSnapshot, final boolean forceSnapshot) {
     return stateController
-        .takeTransientSnapshot(inProgressSnapshot.lowerBoundSnapshotPosition)
+        .takeTransientSnapshot(inProgressSnapshot.lowerBoundSnapshotPosition, forceSnapshot)
         .andThen(
             (snapshot, error) -> {
               if (error != null) {
@@ -386,7 +390,7 @@ public final class AsyncSnapshotDirector extends Actor
     final var inProgressSnapshot = new InProgressSnapshot();
     inProgressSnapshot.lowerBoundSnapshotPosition = lastProcessedPosition;
     final var result = actor.<PersistedSnapshot>createFuture();
-    actor.run(() -> snapshot(inProgressSnapshot).onComplete(result));
+    actor.run(() -> snapshot(inProgressSnapshot, true).onComplete(result));
     return result;
   }
 

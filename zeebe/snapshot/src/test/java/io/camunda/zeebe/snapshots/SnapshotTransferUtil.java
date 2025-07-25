@@ -31,7 +31,8 @@ public final class SnapshotTransferUtil {
       final ConstructableSnapshotStore senderSnapshotStore,
       final Map<String, String> snapshotFileContents,
       final ConcurrencyControl control) {
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0, false).get();
     return transientSnapshot
         .take(p -> writeSnapshot(p, snapshotFileContents))
         .andThen(ignored -> transientSnapshot.persist(), control);

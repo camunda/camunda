@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -352,22 +353,30 @@ public final class FileBasedSnapshotStoreImpl {
       final long index,
       final long term,
       final long processedPosition,
-      final long exportedPosition) {
+      final long exportedPosition,
+      final boolean forceSnapshot) {
 
     final var newSnapshotId =
         new FileBasedSnapshotId(index, term, processedPosition, exportedPosition, brokerId);
 
     final FileBasedSnapshot currentSnapshot = this.currentSnapshot.get();
-    if (currentSnapshot != null && currentSnapshot.getSnapshotId().compareTo(newSnapshotId) == 0) {
+    if (!forceSnapshot
+        && currentSnapshot != null
+        && currentSnapshot.getSnapshotId().compareTo(newSnapshotId) >= 0) {
       final String error =
           String.format(
               "Previous snapshot was taken for the same processed position %d and exported position %d.",
               processedPosition, exportedPosition);
       return Either.left(new SnapshotAlreadyExistsException(error));
     }
-    // transient snapshots are directly written to our snapshot dir
-    // with the sfv checksum file they are marked as valid
-    final var directory = buildSnapshotDirectory(newSnapshotId, false);
+    // transient snapshots are first written to a temporary directory and then later moved to the
+    // final location once the snapshot checksum is known.
+    Path directory;
+    do {
+      directory =
+          snapshotsDirectory.resolve(
+              "transient-" + Long.toHexString(ThreadLocalRandom.current().nextLong()));
+    } while (Files.exists(directory));
     final var newPendingSnapshot =
         new FileBasedTransientSnapshot(
             newSnapshotId, directory, this, actor, checksumProvider, false);
@@ -418,7 +427,7 @@ public final class FileBasedSnapshotStoreImpl {
   private boolean isCurrentSnapshotNewer(final FileBasedSnapshotId snapshotId) {
     final var persistedSnapshot = currentSnapshot.get();
     return (persistedSnapshot != null
-        && persistedSnapshot.getSnapshotId().compareTo(snapshotId) >= 0);
+        && persistedSnapshot.getSnapshotId().compareTo(snapshotId) > 0);
   }
 
   FileBasedSnapshot persistNewSnapshot(

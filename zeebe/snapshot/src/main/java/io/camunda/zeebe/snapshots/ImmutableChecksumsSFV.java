@@ -36,4 +36,10 @@ public interface ImmutableChecksumsSFV {
    * @return boolean denoting match
    */
   boolean sameChecksums(ImmutableChecksumsSFV o);
+
+  /**
+   * Returns some combined checksum over all the file checksums. If any of the individual checksums
+   * or file names change, the combined checksum will change as well.
+   */
+  long getCombinedChecksum();
 }

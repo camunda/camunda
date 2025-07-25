@@ -14,6 +14,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map.Entry;
@@ -80,6 +81,19 @@ public final class SfvChecksumImpl implements MutableChecksumsSFV {
       return false;
     }
     return Objects.equals(checksums, o.getChecksums());
+  }
+
+  @Override
+  public long getCombinedChecksum() {
+    final var combinedChecksum = new CRC32C();
+    for (final var entry : checksums.entrySet()) {
+      combinedChecksum.update(entry.getKey().getBytes(StandardCharsets.UTF_8));
+      final int upper = (int) (entry.getValue() >> 32);
+      final int lower = (int) entry.getValue().longValue();
+      combinedChecksum.update(upper);
+      combinedChecksum.update(lower);
+    }
+    return combinedChecksum.getValue();
   }
 
   @Override

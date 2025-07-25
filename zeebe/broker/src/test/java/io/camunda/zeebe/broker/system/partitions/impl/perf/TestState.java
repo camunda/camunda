@@ -58,7 +58,7 @@ final class TestState {
 
   private void generateSnapshot(
       final ConstructableSnapshotStore snapshotStore, final long sizeInBytes) {
-    final var snapshot = snapshotStore.newTransientSnapshot(1, 1, 1, 1).get();
+    final var snapshot = snapshotStore.newTransientSnapshot(1, 1, 1, 1, false).get();
     snapshot.take(path -> generateSnapshot(path, sizeInBytes)).join();
     snapshot.persist().join();
   }

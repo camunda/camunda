@@ -93,7 +93,8 @@ public class PersistedSnapshotStoreTest {
   @Test
   public void shouldListAllFiles() {
     // given
-    final var transientSnapshot = persistedSnapshotStore.newTransientSnapshot(1, 0, 123, 121).get();
+    final var transientSnapshot =
+        persistedSnapshotStore.newTransientSnapshot(1, 0, 123, 121, false).get();
     final var snapshotFileNames =
         List.of("zeebe.metadata", "table-0.sst", "table-1.sst", "table-2.sst");
     transientSnapshot

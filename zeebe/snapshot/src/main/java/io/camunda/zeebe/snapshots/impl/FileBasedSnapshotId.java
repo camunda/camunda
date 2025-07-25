@@ -13,11 +13,8 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId.SnapshotParseResult.P
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class FileBasedSnapshotId implements SnapshotId {
-  private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotId.class);
   private static final int SNAPSHOT_ID_PARTS = 6;
   private static final int PREV_SNAPSHOT_ID_PARTS = 5;
 
@@ -144,6 +141,10 @@ public final class FileBasedSnapshotId implements SnapshotId {
           "%d-%d-%d-%d-%d",
           getIndex(), getTerm(), getProcessedPosition(), getExportedPosition(), brokerId);
     }
+  }
+
+  public int getBrokerId() {
+    return brokerId;
   }
 
   @Override
