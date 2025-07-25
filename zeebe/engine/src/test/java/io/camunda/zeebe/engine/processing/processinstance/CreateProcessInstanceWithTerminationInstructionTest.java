@@ -195,4 +195,83 @@ public class CreateProcessInstanceWithTerminationInstructionTest {
         .doesNotContain(Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, processId))
         .doesNotContain(Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, processId));
   }
+
+  @Test
+  public void shouldTerminateWhenElementIsInNestedEmbeddedSubprocess() {
+    // given
+    final String processId = "process";
+    final String elementBeforeTermination = "element";
+    final String boundaryEventNestedSubProcessEnd = "boundaryNestedSubProcessEnd";
+    final String boundaryEventId = "boundary";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .subProcess("firstSubProcess")
+                .embeddedSubProcess()
+                .startEvent()
+                .subProcess("nestedSubProcess")
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask(elementBeforeTermination, t -> t.zeebeJobType("jobType"))
+                .subProcessDone()
+                .boundaryEvent("boundary")
+                .cancelActivity(true)
+                .message(
+                    messageBuilder ->
+                        messageBuilder
+                            .name("myMessage")
+                            .zeebeCorrelationKey("=\"myCorrelationKey\""))
+                .endEvent(boundaryEventNestedSubProcessEnd)
+                .moveToActivity("nestedSubProcess")
+                .endEvent("nestedSubProcessEnd")
+                .subProcessDone()
+                .endEvent()
+                .done())
+        .deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeTerminateInstruction(elementBeforeTermination)
+            .create();
+
+    // when
+    ENGINE
+        .message()
+        .withName("myMessage")
+        .withCorrelationKey("myCorrelationKey")
+        .withTimeToLive(1000)
+        .publish();
+
+    // then
+    final var result =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(processId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .filter(
+                record ->
+                    record.getValue().getElementId().equals(processId)
+                        || record.getValue().getElementId().equals(elementBeforeTermination)
+                        || record.getValue().getElementId().equals(boundaryEventNestedSubProcessEnd)
+                        || record.getValue().getElementId().equals(boundaryEventId));
+
+    assertThat(result)
+        .extracting(Record::getIntent, record -> record.getValue().getElementId())
+        .containsSequence(
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, elementBeforeTermination),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, elementBeforeTermination),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATING, boundaryEventId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_ACTIVATED, boundaryEventId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, processId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, boundaryEventId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, boundaryEventId),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, processId))
+        .doesNotContain(
+            Tuple.tuple(
+                ProcessInstanceIntent.ELEMENT_ACTIVATING, boundaryEventNestedSubProcessEnd));
+  }
 }

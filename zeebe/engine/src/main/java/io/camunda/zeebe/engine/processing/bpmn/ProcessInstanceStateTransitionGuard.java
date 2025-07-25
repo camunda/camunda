@@ -60,6 +60,7 @@ public final class ProcessInstanceStateTransitionGuard {
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT ->
           hasActiveFlowScopeInstance(context)
+              .flatMap(ok -> hasActiveProcessInstance(context))
               .flatMap(ok -> canActivateParallelGateway(context, element))
               .flatMap(ok -> canActivateInclusiveGateway(context, element));
       case COMPLETE_ELEMENT ->
@@ -69,6 +70,7 @@ public final class ProcessInstanceStateTransitionGuard {
                   context,
                   ProcessInstanceIntent.ELEMENT_ACTIVATED,
                   ProcessInstanceIntent.ELEMENT_COMPLETING)
+              .flatMap(ok -> hasActiveProcessInstance(context))
               .flatMap(ok -> hasActiveFlowScopeInstance(context));
       case TERMINATE_ELEMENT ->
           hasElementInstanceWithState(
@@ -204,6 +206,22 @@ public final class ProcessInstanceStateTransitionGuard {
     } else {
       // a root process has no flow scope instance
       return Either.right(null);
+    }
+  }
+
+  private Either<String, ?> hasActiveProcessInstance(final BpmnElementContext context) {
+    if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
+      return Either.right(null);
+    }
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (processInstance.isInterrupted()
+        && !processInstance.getInterruptingElementId().equals(context.getElementId())) {
+      return Either.left(
+          String.format(
+              "Expected process instance to be not interrupted but was interrupted by an event with id '%s'.",
+              BufferUtil.bufferAsString(processInstance.getInterruptingElementId())));
+    } else {
+      return Either.right(context);
     }
   }
 
