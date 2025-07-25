@@ -61,8 +61,8 @@ public class ClusterMetadataTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "zeebe.broker.cluster.configManager.gossip.syncDelay=PT50S",
-        "zeebe.broker.cluster.configManager.gossip.syncRequestTimeout=PT30S",
+        "zeebe.broker.cluster.configManager.gossip.syncDelay=50s",
+        "zeebe.broker.cluster.configManager.gossip.syncRequestTimeout=30s",
         "zeebe.broker.cluster.configManager.gossip.gossipFanout=200"
       })
   class WithOnlyLegacySet {
@@ -98,8 +98,8 @@ public class ClusterMetadataTest {
         "camunda.cluster.metadata.sync-request-timeout=15s",
         "camunda.cluster.metadata.gossip-fanout=10",
         // legacy
-        "zeebe.broker.cluster.configManager.gossip.syncDelay=PT5M",
-        "zeebe.broker.cluster.configManager.gossip.syncRequestTimeout=PT1M",
+        "zeebe.broker.cluster.configManager.gossip.syncDelay=5m",
+        "zeebe.broker.cluster.configManager.gossip.syncRequestTimeout=1m",
         "zeebe.broker.cluster.configManager.gossip.gossipFanout=300"
       })
   class WithNewAndLegacySet {
