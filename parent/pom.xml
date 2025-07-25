@@ -132,7 +132,7 @@
     <version.feign>13.6</version.feign>
     <version.google-sdk>26.64.0</version.google-sdk>
     <version.azure-sdk>1.2.36</version.azure-sdk>
-    <version.awssdk>2.32.8</version.awssdk>
+    <version.awssdk>2.32.9</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
