@@ -26,6 +26,7 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.client.protocol.rest.AdHocSubProcessActivateActivityReference;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -56,6 +57,14 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
   public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(final String elementId) {
     httpRequestObject.addElementsItem(
         new AdHocSubProcessActivateActivityReference().elementId(elementId));
+    return this;
+  }
+
+  @Override
+  public ActivateAdHocSubProcessActivitiesCommandStep2 activateElement(
+      final String elementId, final Map<String, Object> variables) {
+    httpRequestObject.addElementsItem(
+        new AdHocSubProcessActivateActivityReference().elementId(elementId).variables(variables));
     return this;
   }
 

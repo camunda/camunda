@@ -22,6 +22,7 @@ import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivat
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,7 +73,12 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
               """
             {
               "elements": [
-                {"elementId": "A"},
+                {
+                   "elementId": "A",
+                   "variables": {
+                      "key": "value"
+                   }
+                },
                 {"elementId": "B"},
                 {"elementId": "C"}
               ]
@@ -92,6 +98,11 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
                     assertThat(request.elements())
                         .extracting(AdHocSubProcessActivateActivityReference::elementId)
                         .containsExactly("A", "B", "C");
+
+                    assertThat(request.elements())
+                        .filteredOn(AdHocSubProcessActivateActivityReference::elementId, "A")
+                        .extracting(AdHocSubProcessActivateActivityReference::variables)
+                        .containsExactly(Map.of("key", "value"));
                   }));
     }
 
