@@ -93,7 +93,7 @@ public class JwtDecoderIT extends AbstractCCSMIT {
     // remove alg field from mocked server response and assert it was removed to cover this use case
     final String withoutAlg = publicKey.replaceFirst("\"alg\":\".*\",", "");
     final String authServerResponseBody = "{\"keys\":[" + withoutAlg + "]}";
-    assertThat(authServerResponseBody).contains("alg\":");
+    assertThat(authServerResponseBody).doesNotContain("alg\":");
     wireMockInfo
         .getWireMock()
         .register(

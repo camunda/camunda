@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.13.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-8.16.0}
     # By leaving the first profile entry blank, this container will also start if no profile is defined (default)
     profiles: ["", "elasticsearch", "setup-integration-test"]
     container_name: elasticsearch
@@ -30,7 +30,7 @@ services:
     volumes:
       - /var/tmp:/var/tmp
   opensearch:
-    image: opensearchproject/opensearch:${OS_VERSION:-2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796}
+    image: opensearchproject/opensearch:${OS_VERSION:-2.17.0}
     profiles: ["opensearch", "setup-integration-test"]
     container_name: opensearch
     environment:
