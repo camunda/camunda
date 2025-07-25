@@ -257,7 +257,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
         + ", snapshotId="
         + snapshotId
         + ", checksum="
-        + checksum.getCombinedChecksum()
+        + (checksum == null ? "none" : checksum.getCombinedChecksum())
         + '}';
   }
 }
