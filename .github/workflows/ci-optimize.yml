@@ -8,22 +8,22 @@ name: Optimize CI
 on:
   workflow_dispatch:
     inputs:
-      feChanges:
-        description: "Boolean variable for if there are front end changes to Optimize"
+      runFeTests:
+        description: "Set to true to run front end tests for Optimize"
         type: boolean
         required: true
-      beChanges:
-        description: "Boolean variable for if there are back end changes to Optimize"
+      runBeTests:
+        description: "Set to true to run back end tests for Optimize"
         type: boolean
         required: true
   workflow_call:
     inputs:
-      feChanges:
-        description: "Boolean variable for if there are front end changes to Optimize"
+      runFeTests:
+        description: "Set to true if Optimize front-end code was changed"
         type: boolean
         required: true
-      beChanges:
-        description: "Boolean variable for if there are back end changes to Optimize"
+      runBeTests:
+        description: "Set to true if Optimize back-end code was changed"
         type: boolean
         required: true
 
@@ -37,8 +37,8 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
+  # run every time this workflow is called
   optimize-backend-unit-tests:
-    if: inputs.beChanges
     name: "[UT] Back End / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -58,7 +58,7 @@ jobs:
 
   optimize-frontend-unit-tests:
     name: "[UT] Front End / Core Features"
-    if: inputs.feChanges
+    if: inputs.runFeTests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -105,6 +105,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   hadolint:
+    if: inputs.runBeTests
     name: "[Linting] Dockerfile / Core Features"
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job

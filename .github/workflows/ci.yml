@@ -1061,18 +1061,15 @@ jobs:
       runBeTests: ${{ needs.detect-changes.outputs.operate-backend-changes == 'true'}}
 
   optimize-ci:
-    # TODO renable the if, currently running for all for testing purposes
-    # todo this handles both FE and BE
-    #if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
+    if: ${{ needs.detect-changes.outputs.java-code-changes == 'true' }}
     name: "Optimize"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-optimize.yml
     secrets: inherit
     permissions: { }
     with:
-      # TODO - change these inputs to things like  needs.detect-changes.outputs.optimize-backend-changes == 'true'
-      feChanges: true
-      beChanges: true
+      runFeTests: ${{ needs.detect-changes.outputs.optimize-frontend-changes == 'true' }}
+      runBeTests: ${{ needs.detect-changes.outputs.optimize-backend-changes == 'true' }}
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
