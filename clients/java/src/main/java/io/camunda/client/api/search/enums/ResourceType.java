@@ -20,7 +20,6 @@ public enum ResourceType {
   MAPPING_RULE,
   MESSAGE,
   BATCH,
-  BATCH_OPERATION,
   APPLICATION,
   SYSTEM,
   TENANT,

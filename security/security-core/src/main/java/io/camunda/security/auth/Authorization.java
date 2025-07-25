@@ -8,7 +8,7 @@
 package io.camunda.security.auth;
 
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH_OPERATION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.GROUP;
@@ -155,7 +155,7 @@ public record Authorization<T>(
     }
 
     public Builder<T> batchOperation() {
-      return resourceType(BATCH_OPERATION);
+      return resourceType(BATCH);
     }
 
     public Builder<T> resourceId(final String resourceId) {

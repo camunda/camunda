@@ -137,7 +137,7 @@ public class StaticEntities {
                     ownerId,
                     ownerType,
                     "*",
-                    AuthorizationResourceType.BATCH_OPERATION,
+                    AuthorizationResourceType.BATCH,
                     Set.of(PermissionType.READ)),
                 new CreateAuthorizationRequest(
                     ownerId,
@@ -185,7 +185,7 @@ public class StaticEntities {
                     ownerId,
                     ownerType,
                     "*",
-                    AuthorizationResourceType.BATCH_OPERATION,
+                    AuthorizationResourceType.BATCH,
                     Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
                 new CreateAuthorizationRequest(
                     ownerId,

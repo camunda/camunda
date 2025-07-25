@@ -141,7 +141,7 @@ public class KeycloakRoleMigrationHandlerTest {
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.BATCH_OPERATION,
+                AuthorizationResourceType.BATCH,
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
             tuple(
                 "role_1",

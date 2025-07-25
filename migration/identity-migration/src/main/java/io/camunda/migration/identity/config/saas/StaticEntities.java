@@ -73,7 +73,7 @@ public class StaticEntities {
               DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
-              AuthorizationResourceType.BATCH_OPERATION,
+              AuthorizationResourceType.BATCH,
               Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
           // OPERATIONS ENGINEER
           new CreateAuthorizationRequest(
@@ -110,7 +110,7 @@ public class StaticEntities {
               OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
-              AuthorizationResourceType.BATCH_OPERATION,
+              AuthorizationResourceType.BATCH,
               Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
           // TASK USER
           new CreateAuthorizationRequest(
@@ -168,7 +168,7 @@ public class StaticEntities {
               VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
-              AuthorizationResourceType.BATCH_OPERATION,
+              AuthorizationResourceType.BATCH,
               Set.of(PermissionType.READ)));
 
   public static List<CreateAuthorizationRequest> getZeebeClientPermissions(final String clientId) {
@@ -234,7 +234,7 @@ public class StaticEntities {
             clientId,
             AuthorizationOwnerType.CLIENT,
             "*",
-            AuthorizationResourceType.BATCH_OPERATION,
+            AuthorizationResourceType.BATCH,
             Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
         new CreateAuthorizationRequest(
             clientId,

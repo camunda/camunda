@@ -134,7 +134,7 @@ public class ClientMigrationHandlerTest {
                 "ClientOne",
                 AuthorizationOwnerType.CLIENT,
                 "*",
-                AuthorizationResourceType.BATCH_OPERATION,
+                AuthorizationResourceType.BATCH,
                 Set.of(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE)),
             tuple(
                 "ClientOne",
@@ -204,7 +204,7 @@ public class ClientMigrationHandlerTest {
                 "ClientTwo",
                 AuthorizationOwnerType.CLIENT,
                 "*",
-                AuthorizationResourceType.BATCH_OPERATION,
+                AuthorizationResourceType.BATCH,
                 Set.of(PermissionType.READ)),
             tuple(
                 "ClientTwo",

@@ -303,7 +303,7 @@ abstract class AbstractBatchOperationTest {
         .withPermissions(permissionType)
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
-        .withResourceType(AuthorizationResourceType.BATCH_OPERATION)
+        .withResourceType(AuthorizationResourceType.BATCH)
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
   }
