@@ -144,7 +144,7 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 
-  <delete id="delete">
+  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
     DELETE FROM ${prefix}SEQUENCE_FLOW
     WHERE FLOW_NODE_ID = #{flowNodeId}
       AND PROCESS_INSTANCE_KEY = #{processInstanceKey}
