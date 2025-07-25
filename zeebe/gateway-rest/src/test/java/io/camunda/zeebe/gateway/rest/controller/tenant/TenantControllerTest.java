@@ -294,13 +294,12 @@ public class TenantControllerTest {
           .json(
               """
             {
-              "tenantKey": "%d",
               "tenantId": "%s",
               "name": "%s",
               "description": "%s"
             }
             """
-                  .formatted(tenantKey, tenantId, tenantName, tenantDescription),
+                  .formatted(tenantId, tenantName, tenantDescription),
               JsonCompareMode.STRICT);
 
       // then
