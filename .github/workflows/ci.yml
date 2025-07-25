@@ -443,6 +443,7 @@ jobs:
           version: ${{ steps.build-camunda-docker.outputs.version }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           goldenfile: camunda-docker-labels.golden.json
+          dockerfile: camunda.Dockerfile
       - name: Run Docker tests
         run: |
           ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
