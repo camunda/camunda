@@ -150,6 +150,18 @@ public interface ZeebeClientBuilder {
   /** The request timeout used if not overridden by the command. Default is 10 seconds. */
   ZeebeClientBuilder defaultRequestTimeout(Duration requestTimeout);
 
+  /**
+   * The request timeout client offset is used in commands where the {@link
+   * #defaultRequestTimeout(Duration)} is also passed to the server. This ensures that the client
+   * timeout does not occur before the server timeout.
+   *
+   * <p>The client-side timeout for these commands is calculated as the sum of {@code
+   * defaultRequestTimeout} and {@code defaultRequestTimeoutOffset}.
+   *
+   * <p>Default is 1 second.
+   */
+  ZeebeClientBuilder defaultRequestTimeoutOffset(Duration requestTimeoutOffset);
+
   /** Use a plaintext connection between the client and the gateway. */
   ZeebeClientBuilder usePlaintext();
 

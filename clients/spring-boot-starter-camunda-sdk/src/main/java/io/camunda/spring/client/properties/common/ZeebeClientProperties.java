@@ -31,6 +31,7 @@ public class ZeebeClientProperties extends ApiProperties {
   private DataSize maxMessageSize;
   private DataSize maxMetadataSize;
   private Duration requestTimeout;
+  private Duration requestTimeoutOffset;
   private String caCertificatePath;
   private Duration keepAlive;
   private String overrideAuthority;
@@ -86,7 +87,18 @@ public class ZeebeClientProperties extends ApiProperties {
     this.requestTimeout = requestTimeout;
   }
 
+<<<<<<< HEAD:clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/properties/common/ZeebeClientProperties.java
   @DeprecatedConfigurationProperty(replacement = "camunda.client.ca-certificate-path")
+=======
+  public Duration getRequestTimeoutOffset() {
+    return requestTimeoutOffset;
+  }
+
+  public void setRequestTimeoutOffset(final Duration requestTimeoutOffset) {
+    this.requestTimeoutOffset = requestTimeoutOffset;
+  }
+
+>>>>>>> ffb5e258 (fix: prevent ActivateJobsCommand timeout before the server):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/properties/common/ZeebeClientProperties.java
   public String getCaCertificatePath() {
     return caCertificatePath;
   }

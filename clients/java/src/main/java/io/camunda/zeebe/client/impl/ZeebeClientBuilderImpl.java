@@ -24,6 +24,7 @@ import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_NAME;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
+import static io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
 import static io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS;
@@ -103,6 +104,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = DEFAULT_MESSAGE_TTL;
   private Duration defaultRequestTimeout = Duration.ofSeconds(10);
+  private Duration defaultRequestTimeoutOffset = Duration.ofSeconds(1);
   private boolean usePlaintextConnection = false;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
@@ -175,6 +177,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public Duration getDefaultRequestTimeout() {
     return defaultRequestTimeout;
+  }
+
+  @Override
+  public Duration getDefaultRequestTimeoutOffset() {
+    return defaultRequestTimeoutOffset;
   }
 
   @Override
@@ -316,6 +323,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     BuilderUtils.applyIfNotNull(
         properties,
+        DEFAULT_REQUEST_TIMEOUT_OFFSET,
+        value -> defaultRequestTimeoutOffset(Duration.ofMillis(Long.parseLong(value))));
+
+    BuilderUtils.applyIfNotNull(
+        properties,
         USE_PLAINTEXT_CONNECTION,
         value -> {
           /**
@@ -445,6 +457,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
     defaultRequestTimeout = requestTimeout;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultRequestTimeoutOffset(final Duration requestTimeoutOffset) {
+    defaultRequestTimeoutOffset = requestTimeoutOffset;
     return this;
   }
 
@@ -601,6 +619,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     BuilderUtils.appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);
     BuilderUtils.appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
     BuilderUtils.appendProperty(sb, "defaultRequestTimeout", defaultRequestTimeout);
+    BuilderUtils.appendProperty(sb, "defaultRequestTimeoutOffset", defaultRequestTimeoutOffset);
     BuilderUtils.appendProperty(sb, "overrideAuthority", overrideAuthority);
     BuilderUtils.appendProperty(sb, "maxMessageSize", maxMessageSize);
     BuilderUtils.appendProperty(sb, "maxMetadataSize", maxMetadataSize);

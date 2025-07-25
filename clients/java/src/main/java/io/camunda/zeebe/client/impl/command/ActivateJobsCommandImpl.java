@@ -61,6 +61,7 @@ public final class ActivateJobsCommandImpl
 
   private final Set<String> defaultTenantIds;
   private final Set<String> customTenantIds;
+  private final ZeebeClientConfiguration config;
 
   public ActivateJobsCommandImpl(
       final GatewayStub asyncStub,
@@ -68,6 +69,7 @@ public final class ActivateJobsCommandImpl
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
       final Predicate<StatusCode> retryPredicate) {
+    this.config = config;
     this.asyncStub = asyncStub;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -142,7 +144,10 @@ public final class ActivateJobsCommandImpl
     grpcRequestObjectBuilder.setRequestTimeout(requestTimeout.toMillis());
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
     this.requestTimeout = requestTimeout;
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    // increment response timeout so client doesn't time out before the server
+    final long offsetMillis = config.getDefaultRequestTimeoutOffset().toMillis();
+    httpRequestConfig.setResponseTimeout(
+        requestTimeout.toMillis() + offsetMillis, TimeUnit.MILLISECONDS);
     return this;
   }
 
