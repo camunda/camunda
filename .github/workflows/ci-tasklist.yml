@@ -18,9 +18,10 @@ on:
         required: true
   workflow_call:
     inputs:
-      description: "Set to true if Tasklist front-end code was changed"
-      type: boolean
-      required: true
+      runFeTests:
+        description: "Set to true if Tasklist front-end code was changed"
+        type: boolean
+        required: true
       runBeTests:
         description: "Set to true if Tasklist back-end code was changed"
         type: boolean
@@ -36,7 +37,7 @@ env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
-  # run this test every time the worfkflow is triggered
+  # run this test every time the workflow is triggered
   tasklist-backend-unit-tests:
     name: "[UT] Back End / ${{matrix.suiteName}}"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml

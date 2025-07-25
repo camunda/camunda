@@ -1052,18 +1052,15 @@ jobs:
 
 
   tasklist-ci:
-    # TODO renable the if, currently running for all for testing purposes
-    # todo this handles both FE and BE
-    #if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Tasklist"
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-tasklist.yml
     secrets: inherit
     permissions: { }
     with:
-      # TODO - change these inputs to things like  needs.detect-changes.outputs.tasklist-backend-changes == 'true'
-      feChanges: true
-      beChanges: true
+      runFeTests: ${{ needs.detect-changes.outputs.tasklist-frontend-changes }}
+      runBeTests: ${{ needs.detect-changes.outputs.tasklist-backend-changes }}
 
   zeebe-ci:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
