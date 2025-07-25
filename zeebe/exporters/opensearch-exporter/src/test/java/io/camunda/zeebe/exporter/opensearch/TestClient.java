@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collections;
@@ -109,7 +110,13 @@ final class TestClient implements CloseableSilently {
 
   Optional<ComponentTemplateWrapper> getComponentTemplate() {
     try {
-      final var request = new Request("GET", "/_component_template/" + config.index.prefix);
+      final var request =
+          new Request(
+              "GET",
+              "/_component_template/"
+                  + config.index.prefix
+                  + "-"
+                  + VersionUtil.getVersionLowerCase());
       final var response = restClient.performRequest(request);
       final var templates =
           MAPPER.readValue(response.getEntity().getContent(), ComponentTemplatesDto.class);

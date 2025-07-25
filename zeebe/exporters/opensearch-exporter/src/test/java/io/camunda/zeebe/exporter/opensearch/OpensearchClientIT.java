@@ -107,7 +107,7 @@ public class OpensearchClientIT {
         .isPresent()
         .get()
         .extracting(ComponentTemplateWrapper::name)
-        .isEqualTo(searchDB.config().index.prefix);
+        .isEqualTo(searchDB.config().index.prefix + "-" + VersionUtil.getVersionLowerCase());
 
     final var template = templateWrapper.get().template();
     assertIndexTemplate(template, expectedTemplate);
