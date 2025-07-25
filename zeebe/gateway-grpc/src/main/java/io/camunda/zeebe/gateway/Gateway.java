@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
@@ -66,6 +67,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
+import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -221,19 +224,39 @@ public final class Gateway implements CloseableSilently {
     return buildServer(serverBuilder, gatewayGrpcService);
   }
 
+  private static final class NamedForkJoinPoolThreadFactory implements
+      ForkJoinWorkerThreadFactory {
+    @Override
+    public ForkJoinWorkerThread newThread(final ForkJoinPool pool) {
+      final var worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+      worker.setName("grpc-executor-" + worker.getPoolIndex());
+      return worker;
+    }
+  }
+
   private void applyExecutorConfiguration(final NettyServerBuilder builder) {
+
+    ThreadsCfg config = gatewayCfg.getThreads();
+
     // the default boss and worker event loop groups defined by the library are good enough; they
     // will appropriately select epoll or nio based on availability, and the boss loop gets 1
     // thread, while the worker gets the number of cores
 
     // by default will start 1 thread per core; however, fork join pools may start more threads when
     // blocked on tasks, and here up to 2 threads per core.
-    final ThreadFactory factory =
-        Thread.ofVirtual()
-            .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOG))
-            .name("grpc-virtual-executor")
-            .factory();
-    grpcExecutor = newThreadPerTaskExecutor(factory);
+
+    grpcExecutor =
+        new ForkJoinPool(
+            config.getGrpcMinThreads(),
+            new NamedForkJoinPoolThreadFactory(),
+            FatalErrorHandler.uncaughtExceptionHandler(LOG),
+            true,
+            0,
+            config.getGrpcMaxThreads(),
+            1,
+            pool -> false,
+            1,
+            TimeUnit.MINUTES);
 
     builder.executor(grpcExecutor);
   }
