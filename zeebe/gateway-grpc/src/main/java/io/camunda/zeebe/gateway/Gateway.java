@@ -228,12 +228,12 @@ public final class Gateway implements CloseableSilently {
 
     // by default will start 1 thread per core; however, fork join pools may start more threads when
     // blocked on tasks, and here up to 2 threads per core.
-    final ThreadFactory factory =
-        Thread.ofVirtual()
-            .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(LOG))
-            .name("grpc-virtual-executor")
-            .factory();
-    grpcExecutor = newThreadPerTaskExecutor(factory);
+
+    grpcExecutor = new ForkJoinPool(
+        Runtime.getRuntime().availableProcessors(),
+        ForkJoinPool.defaultForkJoinWorkerThreadFactory,
+        FatalErrorHandler.uncaughtExceptionHandler(LOG),
+        true);
 
     builder.executor(grpcExecutor);
   }
