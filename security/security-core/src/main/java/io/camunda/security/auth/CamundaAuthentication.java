@@ -10,8 +10,10 @@ package io.camunda.security.auth;
 import static java.util.Collections.unmodifiableList;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.auth.Authorization;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,7 +28,16 @@ public record CamundaAuthentication(
     @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
     @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
     @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
-    @JsonProperty("claims") Map<String, Object> claims) {
+    @JsonProperty("claims") Map<String, Object> claims)
+    implements Serializable {
+
+  @JsonIgnore
+  public boolean isAnonymous() {
+    if (claims != null && claims.containsKey(Authorization.AUTHORIZED_ANONYMOUS_USER)) {
+      return ((boolean) claims.get(Authorization.AUTHORIZED_ANONYMOUS_USER));
+    }
+    return false;
+  }
 
   public static CamundaAuthentication none() {
     return of(b -> b);
