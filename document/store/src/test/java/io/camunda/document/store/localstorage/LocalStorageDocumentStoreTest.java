@@ -9,7 +9,6 @@ package io.camunda.document.store.localstorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mockStatic;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,15 +63,16 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.createDocument(request).join();
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final var documentReference = result.get();
-    assertEquals(documentId, documentReference.documentId());
-    assertEquals(
-        "577bac45ad58fe5ee4e7f50d2d39a955d65baa825a61a970ba790d579f78e40e",
-        documentReference.contentHash());
-    assertTrue(Files.exists(storagePath.resolve(documentId)));
-    assertTrue(
-        Files.exists(storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)));
+    assertThat(documentReference.documentId()).isEqualTo(documentId);
+    assertThat(documentReference.contentHash())
+        .isEqualTo("577bac45ad58fe5ee4e7f50d2d39a955d65baa825a61a970ba790d579f78e40e");
+    assertThat(Files.exists(storagePath.resolve(documentId))).isTrue();
+    assertThat(
+            Files.exists(
+                storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)))
+        .isTrue();
   }
 
   @Test
@@ -88,13 +88,15 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.createDocument(request).join();
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
 
     final var documentId = result.get().documentId();
     assertThat(documentId).isNotNull();
-    assertTrue(Files.exists(storagePath.resolve(documentId)));
-    assertTrue(
-        Files.exists(storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)));
+    assertThat(Files.exists(storagePath.resolve(documentId))).isTrue();
+    assertThat(
+            Files.exists(
+                storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)))
+        .isTrue();
   }
 
   @Test
@@ -112,8 +114,8 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.createDocument(request).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentAlreadyExists.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentAlreadyExists.class);
   }
 
   @ParameterizedTest
@@ -131,7 +133,7 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.createDocument(request).join();
 
     // then
-    assertInstanceOf(InvalidInput.class, result.getLeft());
+    assertThat(result.getLeft()).isInstanceOf(InvalidInput.class);
   }
 
   @Test
@@ -145,8 +147,8 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.getDocument(documentId).join();
 
     // then
-    assertTrue(result.isRight());
-    assertNotNull(result.get().inputStream());
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().inputStream()).isNotNull();
   }
 
   @Test
@@ -158,8 +160,8 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.getDocument(documentId).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentNotFound.class);
   }
 
   @ParameterizedTest
@@ -169,7 +171,7 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.getDocument(documentId).join();
 
     // then
-    assertInstanceOf(InvalidInput.class, result.getLeft());
+    assertThat(result.getLeft()).isInstanceOf(InvalidInput.class);
   }
 
   @Test
@@ -183,10 +185,12 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.deleteDocument(documentId).join();
 
     // then
-    assertTrue(result.isRight());
-    assertFalse(Files.exists(storagePath.resolve(documentId)));
-    assertFalse(
-        Files.exists(storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)));
+    assertThat(result.isRight()).isTrue();
+    assertThat(Files.exists(storagePath.resolve(documentId))).isFalse();
+    assertThat(
+            Files.exists(
+                storagePath.resolve(documentId + LocalStorageDocumentStore.METADATA_SUFFIX)))
+        .isFalse();
   }
 
   @Test
@@ -199,8 +203,8 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.createLink(documentId, durationInMillis).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(OperationNotSupported.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(OperationNotSupported.class);
   }
 
   @Test
@@ -216,7 +220,7 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
   }
 
   @Test
@@ -230,8 +234,8 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, "incorrect-hash").join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentHashMismatch.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentHashMismatch.class);
   }
 
   @Test
@@ -243,8 +247,8 @@ class LocalStorageDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, "contentHash").join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentNotFound.class);
   }
 
   @Test

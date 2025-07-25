@@ -9,7 +9,6 @@ package io.camunda.document.store.aws;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import io.camunda.document.api.*;
@@ -107,8 +106,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.createDocument(request).join();
 
     // then
-    assertTrue(result.isRight());
-    assertEquals(documentId, result.get().documentId());
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get().documentId()).isEqualTo(documentId);
 
     final var putRequestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
     verify(s3Client).putObject(putRequestCaptor.capture(), any(RequestBody.class));
@@ -142,8 +141,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.createDocument(request).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentAlreadyExists.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentAlreadyExists.class);
   }
 
   @Test
@@ -173,7 +172,7 @@ class AwsDocumentStoreTest {
 
     // then
     verify(s3Client).putObject(putObjectRequestCaptor.capture(), any(RequestBody.class));
-    assertEquals("NoAutoDelete=true", putObjectRequestCaptor.getValue().tagging());
+    assertThat(putObjectRequestCaptor.getValue().tagging()).isEqualTo("NoAutoDelete=true");
   }
 
   @Test
@@ -190,8 +189,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.createDocument(request).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(UnknownDocumentError.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(UnknownDocumentError.class);
   }
 
   @Test
@@ -209,8 +208,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.getDocument(documentId).join();
 
     // then
-    assertTrue(result.isRight());
-    assertEquals(expectedResponse, result.get());
+    assertThat(result.isRight()).isTrue();
+    assertThat(result.get()).isEqualTo(expectedResponse);
   }
 
   @Test
@@ -225,8 +224,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.getDocument(documentId).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentNotFound.class);
     verify(s3Client).getObject(any(GetObjectRequest.class));
   }
 
@@ -244,8 +243,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.getDocument(documentId).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentNotFound.class);
   }
 
   @Test
@@ -262,7 +261,7 @@ class AwsDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
   }
 
   @Test
@@ -279,8 +278,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, "wronHash").join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentHashMismatch.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentHashMismatch.class);
   }
 
   @Test
@@ -296,8 +295,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentNotFound.class);
   }
 
   @Test
@@ -313,8 +312,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(InvalidInput.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(InvalidInput.class);
   }
 
   @Test
@@ -330,8 +329,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(InvalidInput.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(InvalidInput.class);
   }
 
   @Test
@@ -346,8 +345,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.verifyContentHash(documentId, contentHash).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(UnknownDocumentError.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(UnknownDocumentError.class);
   }
 
   @Test
@@ -360,9 +359,10 @@ class AwsDocumentStoreTest {
     final var result = documentStore.createLink(documentId, durationInMillis).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(InvalidInput.class, result.getLeft());
-    assertEquals("Duration must be greater than 0", ((InvalidInput) result.getLeft()).message());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(InvalidInput.class);
+    assertThat(((InvalidInput) result.getLeft()).message())
+        .isEqualTo("Duration must be greater than 0");
   }
 
   @Test
@@ -377,8 +377,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.createLink(documentId, durationInMillis).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentNotFound.class);
   }
 
   @Test
@@ -396,8 +396,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.createLink(documentId, durationInMillis).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(DocumentNotFound.class);
   }
 
   @Test
@@ -421,9 +421,9 @@ class AwsDocumentStoreTest {
     final var result = documentStore.createLink(documentId, durationInMillis).join();
 
     // then
-    assertTrue(result.isRight());
+    assertThat(result.isRight()).isTrue();
     final DocumentLink documentLink = result.get();
-    assertEquals("https://example.com", documentLink.link());
+    assertThat(documentLink.link()).isEqualTo("https://example.com");
 
     // Assert expiration time is within 1 second of the expected expiration time
     final OffsetDateTime expectedExpiration =
@@ -432,8 +432,9 @@ class AwsDocumentStoreTest {
     final Duration durationBetween = Duration.between(expectedExpiration, actualExpiration);
 
     // Assert that the difference between expected and actual expiration is within 1 second
-    assertTrue(
-        durationBetween.abs().getSeconds() <= 1, "Expiration times differ by more than 1 second");
+    assertThat(durationBetween.abs().getSeconds() <= 1)
+        .as("Expiration times differ by more than 1 second")
+        .isTrue();
   }
 
   @Test
@@ -449,8 +450,8 @@ class AwsDocumentStoreTest {
     final var result = documentStore.createLink(documentId, durationInMillis).join();
 
     // then
-    assertTrue(result.isLeft());
-    assertInstanceOf(UnknownDocumentError.class, result.getLeft());
+    assertThat(result.isLeft()).isTrue();
+    assertThat(result.getLeft()).isInstanceOf(UnknownDocumentError.class);
   }
 
   @Test

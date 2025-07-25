@@ -7,7 +7,7 @@
  */
 package io.camunda.document.store.localstorage;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
@@ -33,6 +33,6 @@ class LocalStorageDocumentStoreProviderTest {
         provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
     // then
-    assertNotNull(documentStore);
+    assertThat(documentStore).isNotNull();
   }
 }

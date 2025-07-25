@@ -8,8 +8,7 @@
 package io.camunda.document.store.aws;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -48,7 +47,7 @@ public class AwsDocumentStoreProviderTest {
           provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
       // then
-      assertNotNull(documentStore);
+      assertThat(documentStore).isNotNull();
     }
   }
 
@@ -62,9 +61,12 @@ public class AwsDocumentStoreProviderTest {
 
     // when / then
     final var ex =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor()));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'my-aws': missing required property 'BUCKET'");
@@ -84,9 +86,12 @@ public class AwsDocumentStoreProviderTest {
 
     // when / then
     final var ex =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor()));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'aws': 'BUCKET_TTL must be a number'");
@@ -107,9 +112,12 @@ public class AwsDocumentStoreProviderTest {
 
     // when / then
     final var ex =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor()));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'aws': 'BUCKET_PATH is invalid. Must not contain \\ character'");

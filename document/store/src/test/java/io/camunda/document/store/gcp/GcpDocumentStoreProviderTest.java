@@ -8,8 +8,7 @@
 package io.camunda.document.store.gcp;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
@@ -33,7 +32,7 @@ public class GcpDocumentStoreProviderTest {
         provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
     // then
-    assertNotNull(documentStore);
+    assertThat(documentStore).isNotNull();
   }
 
   @Test
@@ -46,9 +45,12 @@ public class GcpDocumentStoreProviderTest {
 
     // when / then
     final var ex =
-        assertThrows(
-            IllegalArgumentException.class,
-            () -> provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor()));
+        assertThatExceptionOfType(IllegalArgumentException.class)
+            .isThrownBy(
+                () ->
+                    provider.createDocumentStore(
+                        configuration, Executors.newSingleThreadExecutor()))
+            .actual();
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'my-gcp': missing required property 'BUCKET'");
@@ -68,7 +70,7 @@ public class GcpDocumentStoreProviderTest {
         provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
     // then
-    assertNotNull(documentStore);
+    assertThat(documentStore).isNotNull();
   }
 
   @Test
@@ -86,6 +88,6 @@ public class GcpDocumentStoreProviderTest {
         provider.createDocumentStore(configuration, Executors.newSingleThreadExecutor());
 
     // then
-    assertNotNull(documentStore);
+    assertThat(documentStore).isNotNull();
   }
 }
