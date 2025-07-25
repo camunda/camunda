@@ -307,6 +307,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.USAGE_METRIC,
         new Mapping<>(UsageMetricRecordValue.class, UsageMetricIntent.class));
+    mapping.put(
+        ValueType.USAGE_METRIC_TU,
+        new Mapping<>(UsageMetricRecordValue.class, UsageMetricIntent.class));
     return mapping;
   }
 

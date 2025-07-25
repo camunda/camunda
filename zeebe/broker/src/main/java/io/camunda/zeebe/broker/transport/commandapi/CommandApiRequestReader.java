@@ -98,6 +98,7 @@ public class CommandApiRequestReader implements RequestReader {
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         BatchOperationLifecycleManagementRecord::new);
     RECORDS_BY_TYPE.put(ValueType.USAGE_METRIC, UsageMetricRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.USAGE_METRIC_TU, UsageMetricRecord::new);
   }
 
   private UnifiedRecordValue value;

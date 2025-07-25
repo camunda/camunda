@@ -35,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -166,7 +167,8 @@ public class BackupPriorityConfiguration {
             new TenantIndex(indexPrefix, isElasticsearch),
             new UserIndex(indexPrefix, isElasticsearch),
             // USAGE METRICS
-            new UsageMetricIndex(indexPrefix, isElasticsearch));
+            new UsageMetricIndex(indexPrefix, isElasticsearch),
+            new UsageMetricTUIndex(indexPrefix, isElasticsearch));
 
     LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);

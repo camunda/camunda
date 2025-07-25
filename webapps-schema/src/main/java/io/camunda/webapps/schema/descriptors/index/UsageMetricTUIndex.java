@@ -9,20 +9,20 @@ package io.camunda.webapps.schema.descriptors.index;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 
-public class UsageMetricIndex extends AbstractIndexDescriptor implements Prio5Backup {
-  public static final String INDEX_NAME = "usage-metric";
+public class UsageMetricTUIndex extends AbstractIndexDescriptor implements Prio5Backup {
+  public static final String INDEX_NAME = "usage-metric-tu";
   public static final String INDEX_VERSION = "8.8.0";
 
   public static final String ID = "id";
-  public static final String EVENT_TIME = "eventTime";
-  public static final String EVENT_TYPE = "eventType";
-  public static final String EVENT_VALUE = "eventValue";
-  public static final String TENANT_ID = "tenantId";
+  public static final String TENANT_ID = IndexDescriptor.TENANT_ID;
   public static final String PARTITION_ID = "partitionId";
+  public static final String EVENT_TIME = "eventTime";
+  public static final String ASSIGNEE_HASH = "assigneeHash";
 
-  public UsageMetricIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public UsageMetricTUIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 

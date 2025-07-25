@@ -9,4 +9,5 @@ package io.camunda.search.entities;
 
 import java.time.OffsetDateTime;
 
-public record UsageMetricsEntity(String id, OffsetDateTime eventTime, String event, String value) {}
+public record UsageMetricsEntity(
+    String id, String tenantId, OffsetDateTime eventTime, String event, String value) {}
