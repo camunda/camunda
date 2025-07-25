@@ -11,6 +11,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
@@ -126,5 +127,63 @@ public class AdHocSubProcessValidatorTest {
     ProcessValidationUtil.validateProcess(
         process,
         ExpectedValidationResult.expect(AdHocSubProcess.class, "failed to parse expression '???'"));
+  }
+
+  @Test
+  void withNonInterruptingEventSubProcess() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .embeddedSubProcess()
+                        .eventSubProcess(
+                            "event-subprocess",
+                            eventSubProcess ->
+                                eventSubProcess
+                                    .startEvent()
+                                    .message("message")
+                                    .interrupting(false)
+                                    .manualTask()
+                                    .endEvent()))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.validateProcess(process);
+  }
+
+  @Test
+  void withInterruptingEventSubProcess() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                adHocSubProcess ->
+                    adHocSubProcess
+                        .embeddedSubProcess()
+                        .eventSubProcess(
+                            "event-subprocess",
+                            eventSubProcess ->
+                                eventSubProcess
+                                    .startEvent()
+                                    .message("message")
+                                    .interrupting(true)
+                                    .manualTask()
+                                    .endEvent()))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.validateProcess(
+        process,
+        ExpectedValidationResult.expect(
+            SubProcess.class,
+            "An interrupting event subprocess is not allowed inside an ad-hoc subprocess"));
   }
 }

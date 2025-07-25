@@ -108,5 +108,10 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
         });
 
     ModelUtil.verifyEventDefinition(start, error -> validationResultCollector.addError(0, error));
+
+    if (start.isInterrupting() && element.getParentElement() instanceof AdHocSubProcess) {
+      validationResultCollector.addError(
+          0, "An interrupting event subprocess is not allowed inside an ad-hoc subprocess");
+    }
   }
 }
