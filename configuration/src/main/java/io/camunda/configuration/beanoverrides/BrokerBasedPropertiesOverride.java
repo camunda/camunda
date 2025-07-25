@@ -16,12 +16,14 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
 @EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
+@DependsOn("unifiedConfigurationHelper")
 public class BrokerBasedPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
