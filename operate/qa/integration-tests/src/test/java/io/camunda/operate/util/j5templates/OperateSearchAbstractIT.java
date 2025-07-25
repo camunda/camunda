@@ -20,6 +20,7 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.reader.TenantAccess;
 import java.util.Collections;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -80,9 +81,7 @@ public class OperateSearchAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyMap()));
-    doReturn(TenantService.AuthenticatedTenants.allTenants())
-        .when(tenantService)
-        .getAuthenticatedTenants();
+    doReturn(TenantAccess.wildcard(null)).when(tenantService).getAuthenticatedTenants();
 
     // Start elasticsearch/opensearch
     searchContainerManager.startContainer();
@@ -108,9 +107,7 @@ public class OperateSearchAbstractIT {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyMap()));
-    doReturn(TenantService.AuthenticatedTenants.allTenants())
-        .when(tenantService)
-        .getAuthenticatedTenants();
+    doReturn(TenantAccess.wildcard(null)).when(tenantService).getAuthenticatedTenants();
 
     // Implementing tests can add any additional setup needed to run before each test
     runAdditionalBeforeEachSetup();

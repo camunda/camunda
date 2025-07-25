@@ -11,7 +11,6 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.TENA
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.tenant.TenantCheckApplier;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.security.tenant.TenantService;
@@ -29,38 +28,21 @@ public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<Searc
 
   @Override
   public SearchRequest apply(final SearchRequest searchRequest) {
-    final var tenants = tenantService.getAuthenticatedTenants();
-
-    final var tenantCheckQueryType = tenants.getTenantAccessType();
-    final var tenantIds = tenants.getTenantIds();
-    final var actualQuery = searchRequest.source().query();
+    final var tenantAccess = tenantService.getAuthenticatedTenants();
+    final var tenantIds = tenantAccess.tenantIds();
 
     final QueryBuilder finalQuery;
+    final var actualQuery = searchRequest.source().query();
 
-    switch (tenantCheckQueryType) {
-      case TENANT_ACCESS_ASSIGNED:
-        {
-          final var tenantTermsQuery = termsQuery(TENANT_ID, tenantIds);
-          finalQuery = ElasticsearchUtil.joinWithAnd(tenantTermsQuery, actualQuery);
-          break;
-        }
-      case TENANT_ACCESS_NONE:
-        {
-          // no data must be returned
-          finalQuery = ElasticsearchUtil.createMatchNoneQuery();
-          break;
-        }
-      case TENANT_ACCESS_ALL:
-        {
-          finalQuery = actualQuery;
-          break;
-        }
-      default:
-        {
-          final var message =
-              String.format("Unexpected tenant check query type %s", tenantCheckQueryType);
-          throw new OperateRuntimeException(message);
-        }
+    if (tenantAccess.denied()) {
+      finalQuery = ElasticsearchUtil.createMatchNoneQuery();
+
+    } else if (tenantAccess.wildcard()) {
+      finalQuery = actualQuery;
+
+    } else {
+      final var tenantTermsQuery = termsQuery(TENANT_ID, tenantIds);
+      finalQuery = ElasticsearchUtil.joinWithAnd(tenantTermsQuery, actualQuery);
     }
 
     // replace query with final query
